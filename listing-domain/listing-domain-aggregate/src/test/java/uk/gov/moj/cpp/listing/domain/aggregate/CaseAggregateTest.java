@@ -35,7 +35,7 @@ public class CaseAggregateTest {
         caseAggregate.apply(HearingAddedToCase.hearingAddedToCase().withHearingId(hearingId).withCaseId(caseId).build());
 
         final Stream<Object> addedStreams = caseAggregate.addHearing(caseId, hearingId);
-        assertThat(addedStreams.count(), is(0L));
+        assertThat(addedStreams.count(), is(1L));
         assertThat(caseAggregate.getHearingIds().size(), is(1));
     }
 

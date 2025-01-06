@@ -572,10 +572,6 @@ public class ListingCommandHandler {
         final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
 
         final uk.gov.justice.listing.events.Hearing storedHearing = hearingFactory.getHearingById(hearingId, command);
-        final uk.gov.justice.listing.events.Hearing storedHearingFromAggregate = hearingAggregate.getCurrentHearingEventState();
-
-        System.out.println("Hearing payload from viewStore : "+objectToJsonObjectConverter.convert(storedHearing).toString());
-        System.out.println("Hearing payload from aggregate : "+objectToJsonObjectConverter.convert(storedHearingFromAggregate).toString());
 
         final uk.gov.justice.listing.events.Hearing actualStoredHearing = SerializationUtils.clone(storedHearing);
 

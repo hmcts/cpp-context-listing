@@ -6,6 +6,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,6 +26,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.command.service.HmiService;
 import uk.gov.moj.cpp.listing.command.utils.FileUtil;
+import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 
@@ -75,6 +77,9 @@ public class HearingMarkedAsDuplicateCommandHandlerTest {
     @Mock
     private HmiService hmiService;
 
+    @Mock
+    private HearingSlotsService hearingSlotsService;
+
     @Spy
     private JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
 
@@ -105,6 +110,7 @@ public class HearingMarkedAsDuplicateCommandHandlerTest {
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
         when(hearingAggregate.markHearingAsDuplicate(eq(hearingId), eq(caseIds))).thenReturn(mock(Stream.class));
         when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
+        doNothing().when(hearingSlotsService).delete(hearingId);
         when(hearingAggregate.getCurrentHearingEventState()).thenReturn(uk.gov.justice.listing.events.Hearing.hearing()
                 .withId(hearingId)
                 .withCourtCentreId(UUID.randomUUID()).build());
@@ -113,6 +119,7 @@ public class HearingMarkedAsDuplicateCommandHandlerTest {
 
         verify(hearingAggregate).markHearingAsDuplicate(eq(hearingId), eq(caseIds));
         verify(hearingAggregate).deleteHearingForHmi();
+        verify(hearingSlotsService).delete(eq(hearingId));
     }
 
     @Test
