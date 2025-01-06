@@ -2655,4 +2655,14 @@ public class ListCourtHearingSteps extends AbstractIT  {
         assertThat(((ArrayList)((Map)jsonResponse.get("hearing")).get("listedCases")).size(), is(2));
     }
 
+    public void verifyHearingForCourtSchedulerCourtSessionAndBusinessType(final String jurisdictionType, final String courtSession, final String businessType, final boolean allocated, final Matcher... matchers) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.hearings.by.allocated.jurisdiction-type.court-session.business-type"), jurisdictionType, courtSession, businessType, allocated));
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).
+                until(status().is(OK),
+                        payload().isJson(allOf(matchers))
+                );
+    }
+
 }

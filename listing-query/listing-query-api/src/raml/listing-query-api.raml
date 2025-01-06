@@ -144,6 +144,10 @@ protocols: [ HTTP, HTTPS ]
           description: reference data id for the court centre
           type: string
           required: false
+        ouCode:
+          description: Courthouse oucode, this is an alternative to the courtCentreId. used for MAGs only
+          type: string
+          required: false
         courtRoomId:
           description: reference data id for the court room
           type: string
@@ -194,6 +198,10 @@ protocols: [ HTTP, HTTPS ]
           required: false
         courtSession:
           description: Any/AM/PM/AD. used for MAGs only
+          type: string
+          required: false
+        panel:
+          description: panel Type ( ADULT/YOUTH/ADULT,YOUTH), default is ADULT,YOUTH. used for MAGs only
           type: string
           required: false
       responses:

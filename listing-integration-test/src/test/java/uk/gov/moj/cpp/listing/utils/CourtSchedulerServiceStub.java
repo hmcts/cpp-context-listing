@@ -82,6 +82,21 @@ public class CourtSchedulerServiceStub {
                 ));
     }
 
+    public static void stubGetHearingIds(boolean isEmpty) {
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
+                .withQueryParam("sessionStartDate", matching("1900-01-01"))
+                .withQueryParam("pageNumber", matching("1"))
+                .withQueryParam("pageSize", matching("20"))
+                .withQueryParam("panel", matching("ADULT,YOUTH"))
+                .withQueryParam("ouCode", matching("B01LY00"))
+                .withQueryParam("sessionEndDate", matching("9999-01-01"))
+                .withHeader("Accept", containing("application/vnd.courtscheduler.get.hearing.ids+json"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(isEmpty ? "stub-data/listing.search.hearing.ids.empty.json" : "stub-data/listing.search.hearing.ids.json"))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
     public static void stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate sessionDate, final Map<String, String> values) {
         final String courtRoomId = ofNullable(values.get("courtRoomId")).orElse("fce80cd4-0c00-3c30-9471-2c2ee7a52453");
         stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + PROVISIONAL_BOOKING)))

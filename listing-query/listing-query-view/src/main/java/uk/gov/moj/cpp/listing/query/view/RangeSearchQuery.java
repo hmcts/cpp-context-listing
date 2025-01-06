@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.query.view;
 
 import static java.time.LocalDate.parse;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
@@ -15,6 +16,9 @@ import static uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory.n
 
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
+import uk.gov.moj.cpp.listing.common.service.HearingIdsResponse;
+import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
@@ -39,6 +43,7 @@ public class RangeSearchQuery {
     private static final String AUTHORITY_ID = "authorityId";
     private static final String HEARING_TYPE = "hearingTypeId";
     private static final String JURISDICTION_TYPE = "jurisdictionType";
+    private static final String OU_CODE = "ouCode";
     private static final String START_DATE = "startDate";
     private static final String END_DATE = "endDate";
     private static final String HEARINGS = "hearings";
@@ -47,7 +52,7 @@ public class RangeSearchQuery {
     private static final String EARLIEST_SEARCH_DATE = "1900-01-01";
     private static final String LATEST_SEARCH_DATE = "9999-01-01";
     private static final String TRIAL_HEARING_TYPE_ID = "bf8155e1-90b9-4080-b133-bfbad895d6e4";
-    private static final Set<String> hearingTypeIds = new HashSet<>(Arrays.asList(TRIAL_HEARING_TYPE_ID));
+    private static final Set<String> hearingTypeIds = new HashSet<>(List.of(TRIAL_HEARING_TYPE_ID));
     private static final String POSSIBLE_DISQUALIFICATION_QUERY_PARAMETER = "possibleDisqualification";
 
     @SuppressWarnings("squid:S1312")
@@ -66,6 +71,10 @@ public class RangeSearchQuery {
     @Inject
     private NotesService notesService;
 
+    @Inject
+    private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
+
+
     public JsonEnvelope rangeSearchHearingsForJudgeList(final JsonEnvelope query) {
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
         final String courtRoomId = query.payloadAsJsonObject().getString(COURT_ROOM_ID, null);
@@ -78,8 +87,8 @@ public class RangeSearchQuery {
         final List<Hearing> hearings = findHearings(true, courtCentreId, courtRoomId, authorityId, null, null, startDate, endDate);
 
         final List<Hearing> allocatedHearings = hearings.stream()
-                .filter(hearing->nonNull(hearing.getAllocated()))
-                .filter(hearing ->hearing.getAllocated().equals(true))
+                .filter(hearing -> nonNull(hearing.getAllocated()))
+                .filter(hearing -> hearing.getAllocated().equals(true))
                 .collect(toList());
 
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.range.search.hearings.for.judge"),
@@ -94,12 +103,16 @@ public class RangeSearchQuery {
         final String authorityId = query.payloadAsJsonObject().getString(AUTHORITY_ID, null);
         final String hearingTypeId = query.payloadAsJsonObject().getString(HEARING_TYPE, null);
         final String jurisdictionType = query.payloadAsJsonObject().getString(JURISDICTION_TYPE, null);
+        final String ouCode = query.payloadAsJsonObject().getString(OU_CODE, null);
         final String startDate = query.payloadAsJsonObject().getString(START_DATE, EARLIEST_SEARCH_DATE);
         final String endDate = query.payloadAsJsonObject().getString(END_DATE, LATEST_SEARCH_DATE);
         String weekCommencingStartDate = trimToEmpty(query.payloadAsJsonObject().getString(WEEK_COMMENCING_START_DATE, null));
         final String weekCommencingEndDate = trimToEmpty(query.payloadAsJsonObject().getString(WEEK_COMMENCING_END_DATE, null));
         final PaginationParameter paginationParameter = newPaginationParameter(query.payloadAsJsonObject());
         final boolean noPagination = query.payloadAsJsonObject().getBoolean("noPagination", false);
+        Optional<String> businessType = Optional.ofNullable(query.payloadAsJsonObject().getString("businessType", null));
+        Optional<String> courtSessionOptional = Optional.ofNullable(query.payloadAsJsonObject().getString("courtSession", null));
+        Optional<String> panel = Optional.ofNullable(query.payloadAsJsonObject().getString("panel", null));
 
         if (!weekCommencingStartDate.isEmpty() && !LocalDate.parse(weekCommencingStartDate).getDayOfWeek().equals(DayOfWeek.MONDAY)) {
             weekCommencingStartDate = LocalDate.parse(weekCommencingStartDate).minusDays(1).toString();
@@ -114,6 +127,7 @@ public class RangeSearchQuery {
         logger.info("Query params -  " +
                         "allocated: {}, " +
                         "courtCentreId: {}, " +
+                        "ouCode: {}, " +
                         "courtRoomId: {}, " +
                         "authorityId: {}, " +
                         "hearingTypeId: {}, " +
@@ -123,8 +137,14 @@ public class RangeSearchQuery {
                         "weekCommencingStartDate: {}, " +
                         "weekCommencingEndDate: {}, " +
                         "noPagination : {}, " +
-                        "possibleDisqualification : {}, ",
-                allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, startDate, endDate, weekCommencingStartDate, weekCommencingEndDate, noPagination, possibleDisqualificationOpt);
+                        "possibleDisqualification : {}, " +
+                        "businessType : {}, " +
+                        "courtSessionOptional : {}, ",
+                allocated, courtCentreId, ouCode, courtRoomId, authorityId, hearingTypeId, jurisdictionType, startDate, endDate, weekCommencingStartDate, weekCommencingEndDate, noPagination, possibleDisqualificationOpt, businessType, courtSessionOptional);
+
+        if (isMags(jurisdictionType) && ouCode != null && (courtSessionOptional.isPresent() || businessType.isPresent())) {
+           return getCourtSchedulerHearings(query, allocated, ouCode, courtSessionOptional, courtRoomId, startDate, endDate, businessType, panel, paginationParameter);
+        }
 
         final List<Hearing> hearings = !weekCommencingStartDate.isEmpty()
                 ? findHearingsByWeekCommencingRange(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, possibleDisqualificationOpt, paginationParameter.getOffSet(), paginationParameter.getPageSize(), noPagination)
@@ -133,14 +153,10 @@ public class RangeSearchQuery {
 
         final Long totalCount = !(hearings.isEmpty()) ? hearings.get(0).getTotalCount() : 0;
 
-        final List<Notes> notes = notesService.findNotes(allocated, courtRoomId, startDate, hearings);
-
-        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
-                createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
-                        .add("notes", listToJsonArrayConverter.convert(notes))
-                        .add("results", totalCount)
-                        .add("pageCount", toPageCount(totalCount, paginationParameter.getPageSize())));
+        return buildHearingsResponse(query, allocated, courtRoomId, startDate, hearings, totalCount, paginationParameter);
     }
+
+
 
     public JsonEnvelope searchHearingsForCotr(final JsonEnvelope query) {
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
@@ -157,6 +173,16 @@ public class RangeSearchQuery {
 
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                 createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings)));
+    }
+
+    private JsonEnvelope buildHearingsResponse(final JsonEnvelope query, final boolean allocated, final String courtRoomId, final String startDate, final List<Hearing> hearings, final Long totalCount, final PaginationParameter paginationParameter) {
+        final List<Notes> notes = notesService.findNotes(allocated, courtRoomId, startDate, hearings);
+
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
+                createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
+                        .add("notes", listToJsonArrayConverter.convert(notes))
+                        .add("results", totalCount)
+                        .add("pageCount", toPageCount(totalCount, paginationParameter.getPageSize())));
     }
 
     private long toPageCount(final long totalCount, final Integer pageSize) {
@@ -251,13 +277,13 @@ public class RangeSearchQuery {
                     ofNullable(jurisdictionType).orElse(null),
                     parse(startDate),
                     parse(endDate));
-            return  hearings.stream()
-                    .filter(hearing->nonNull(hearing.getAllocated()))
-                    .filter(hearing ->hearing.getAllocated().equals(allocated))
+            return hearings.stream()
+                    .filter(hearing -> nonNull(hearing.getAllocated()))
+                    .filter(hearing -> hearing.getAllocated().equals(allocated))
                     .collect(toList());
 
         } else {
-            final List<Hearing> hearings =  repository.findHearings(
+            final List<Hearing> hearings = repository.findHearings(
                     allocated,
                     getUUID(courtCentreId),
                     getUUID(courtRoomId),
@@ -266,17 +292,13 @@ public class RangeSearchQuery {
                     ofNullable(jurisdictionType).orElse(null),
                     parse(startDate),
                     parse(endDate), offSet, pageSize);
-            return  hearings.stream()
-                    .filter(hearing->nonNull(hearing.getAllocated()))
-                    .filter(hearing ->hearing.getAllocated().equals(allocated))
+            return hearings.stream()
+                    .filter(hearing -> nonNull(hearing.getAllocated()))
+                    .filter(hearing -> hearing.getAllocated().equals(allocated))
                     .collect(toList());
         }
 
     }
-
-
-
-
 
     private List<Hearing> findHearingsForCotr(final Set<String> hearingTypeIds, final String courtCentreId, final String startDate, final String endDate) {
         return repository.findHearingsForCotr(hearingTypeIds, courtCentreId, parse(startDate), parse(endDate));
@@ -294,4 +316,34 @@ public class RangeSearchQuery {
                 parse(startDate),
                 parse(endDate));
     }
+
+
+     private JsonEnvelope getCourtSchedulerHearings(final JsonEnvelope query , final boolean allocated, final String ouCode, final Optional<String> courtSessionOptional, final String courtRoomId, final String startDate, final String endDate, final Optional<String> businessType, final Optional<String> panel, final PaginationParameter paginationParameter) {
+        final HearingIdsResponse hearingCourtScheduleIds = courtSchedulerServiceAdapter.getCourtSchedulerHearings(ouCode, courtSessionOptional, courtRoomId, startDate, endDate, businessType, panel, paginationParameter.getPageSize(), paginationParameter.getPageNumber());
+        final List<Hearing> soredtedHearingList = hearingCourtScheduleIds.getUuids().isEmpty()? emptyList(): enrichAllCourtSchedulerHearingIdsIntoHearings(hearingCourtScheduleIds.getUuids());
+        return buildHearingsResponse(query, allocated, courtRoomId, startDate,soredtedHearingList, hearingCourtScheduleIds.getResults(), paginationParameter);
+    }
+
+
+    private List<Hearing> enrichAllCourtSchedulerHearingIdsIntoHearings(final List<UUID> hearingIds) {
+
+        final List<Hearing> hearings = repository.findAllCourtSchedulerHearingByIds(hearingIds);
+        final HashMap<UUID, Hearing> hearingMap = new HashMap<>();
+        hearings.forEach(h -> hearingMap.put(h.getId(), h));
+
+        List<Hearing> sortedHearing = new ArrayList<>();
+        hearingIds.forEach(id -> {
+            final Hearing fromMap = hearingMap.get(id);
+            if(fromMap !=null){
+                sortedHearing.add(fromMap);
+            }
+        });
+
+        return sortedHearing;
+    }
+
+    private boolean isMags(final String jurisdictionType) {
+        return JurisdictionType.MAGISTRATES.name().equalsIgnoreCase(jurisdictionType);
+    }
+
 }

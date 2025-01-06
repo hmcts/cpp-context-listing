@@ -1,10 +1,12 @@
 package uk.gov.moj.cpp.listing.persistence.repository;
 
 import org.apache.deltaspike.data.api.*;
+
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.HearingJdbcRepository;
 
 import javax.inject.Inject;
+
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -963,7 +965,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
         return findByHearingId(hearingId.toString());
     }
 
-    @Query("FROM hearing h where h.id in (:hearingIds)")
-    public abstract List<Hearing> findAllHearingIds(@QueryParam("hearingIds") final List<UUID> hearingIds);
+    @Query(value = "select h.*, 0 as totalCount FROM hearing h where h.id in (:hearingIds)", isNative = true)
+    public abstract List<Hearing> findAllCourtSchedulerHearingByIds(@QueryParam("hearingIds") final List<UUID> hearingIds);
 
 }

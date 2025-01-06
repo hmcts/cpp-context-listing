@@ -2,9 +2,12 @@ package uk.gov.moj.cpp.listing.query.view;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static java.time.LocalDate.parse;
+import static java.util.Optional.empty;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -21,6 +24,8 @@ import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
+import uk.gov.moj.cpp.listing.common.service.HearingIdsResponse;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
@@ -30,15 +35,18 @@ import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterE
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,6 +60,7 @@ import org.slf4j.Logger;
 public class RangeSearchQueryTest {
 
     private static final UUID COURT_CENTRE_ID = randomUUID();
+    private static final String OU_CODE = "B01LY00";
     private static final UUID COURT_ROOM_ID = randomUUID();
     private static final boolean ALLOCATED = true;
     private static final String ALLOCATEDSTR = "true";
@@ -64,6 +73,9 @@ public class RangeSearchQueryTest {
     private static final String WEEK_COMMENCING_START_DATE_QUERY_PARAMETER = "weekCommencingStartDate";
     private static final String WEEK_COMMENCING_END_DATE_QUERY_PARAMETER = "weekCommencingEndDate";
     private static final String COURT_CENTRE_QUERY_PARAMETER = "courtCentreId";
+    private static final String OU_CODE_QUERY_PARAMETER = "ouCode";
+    private static final String BUSINESS_TYPE_QUERY_PARAMETER = "businessType";
+    private static final String COURT_SESSION_QUERY_PARAMETER = "courtSession";
 
     private static final String COURT_ROOM_QUERY_PARAMETER = "courtRoomId";
     private static final String AUTHORITY_ID_QUERY_PARAMETER = "authorityId";
@@ -74,9 +86,12 @@ public class RangeSearchQueryTest {
     private static final String PROSECUTOR_ID_SEARCH = String.format("[ { \"prosecutor\": { \"prosecutorId\": \"%s\" } } ]", AUTHORITY_ID);
     private static final UUID HEARING_TYPE_ID = randomUUID();
     private static final JurisdictionType JURISDICTION_TYPE = JurisdictionType.CROWN;
+    private static final JurisdictionType MAGISTRATES_TYPE = JurisdictionType.MAGISTRATES;
     private static final LocalDate WEEK_COMMENCING_START_DATE = LocalDate.parse("2023-08-29");
     private static final LocalDate SEARCH_DATE = WEEK_COMMENCING_START_DATE;
     private static final LocalDate WEEK_COMMENCING_END_DATE = WEEK_COMMENCING_START_DATE.plusDays(7);
+    private static final String BUSINESS_TYPE = "G1T";
+    private static final String COURT_SESSION = "AD";
 
     private static final String EARLIEST_SEARCH_DATE = "1900-01-01";
     private static final String LATEST_SEARCH_DATE = "9999-01-01";
@@ -99,6 +114,9 @@ public class RangeSearchQueryTest {
     private HearingRepository hearingRepository;
 
     @Mock
+    private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
+
+    @Mock
     private Logger logger;
 
     @Spy
@@ -106,6 +124,7 @@ public class RangeSearchQueryTest {
 
     @Mock
     private PaginationParameter paginationParameter;
+
     @Mock
     private NotesService notesService;
 
@@ -124,7 +143,7 @@ public class RangeSearchQueryTest {
         FieldUtils.writeField(this.listToJsonArrayConverter, "stringToJsonObjectConverter", stringToJsonObjectConverter, true);
         FieldUtils.writeField(this.rangeSearchQuery, "listToJsonArrayConverter", listToJsonArrayConverter, true);
         paginationParameter = new PaginationParameter(50, 1, 0);
-        hearingJsonListConverterFilterEjectCases= new HearingJsonListConverterFilterEjectCases();
+        hearingJsonListConverterFilterEjectCases = new HearingJsonListConverterFilterEjectCases();
     }
 
     @Test
@@ -231,6 +250,51 @@ public class RangeSearchQueryTest {
         assertEquals("listing.search.hearings", results.metadata().name());
     }
 
+    @Test
+    public void searchMagistratesHearings() {
+        final List<Hearing> hearings = hearingsJson(ALLOCATEDSTR);
+        final List<UUID> hearingIds = new ArrayList<>();
+        hearings.forEach(hearing -> hearingIds.add(hearing.getId()));
+
+        final HearingIdsResponse response = new HearingIdsResponse(hearingIds, 2, 1);
+
+        when(courtSchedulerServiceAdapter
+                .getCourtSchedulerHearings(
+                        OU_CODE,
+                        Optional.of(COURT_SESSION),
+                        COURT_ROOM_ID.toString(),
+                        SEARCH_DATE.toString(),
+                        SEARCH_DATE.toString(),
+                        Optional.of(BUSINESS_TYPE), empty(), 50, 1)).thenReturn(response);
+
+        when(hearingRepository.findAllCourtSchedulerHearingByIds(hearingIds)).thenReturn(hearings);
+
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, ALLOCATED)
+                        .add(OU_CODE_QUERY_PARAMETER, OU_CODE)
+                        .add(COURT_SESSION_QUERY_PARAMETER, COURT_SESSION.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, MAGISTRATES_TYPE.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(BUSINESS_TYPE_QUERY_PARAMETER, BUSINESS_TYPE.toString())
+                        .add(PAGE_SIZE, "50")
+                        .add(PAGE_NUMBER, "1")
+                        .build());
+
+        final JsonEnvelope results = rangeSearchQuery.rangeSearchHearings(query);
+
+        assertThat(results.payloadAsJsonObject().getInt("results"), is(2));
+        assertThat(results.payloadAsJsonObject().getJsonArray("hearings").size(), is(2));
+        assertThat(results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("startDate"), is("2020-09-03"));
+        assertThat(results.metadata().name(), is("listing.search.hearings"));
+    }
+
 
     @Test
     public void searchHearingsWithDateRangeWithAllParametersProvidedWithoutPagination() {
@@ -296,8 +360,7 @@ public class RangeSearchQueryTest {
                         null,
                         null,
                         WEEK_COMMENCING_START_DATE.minusDays(1),
-                        WEEK_COMMENCING_END_DATE,0, paginationParameter.getPageSize());
-
+                        WEEK_COMMENCING_END_DATE, 0, paginationParameter.getPageSize());
 
 
         final JsonEnvelope query = envelopeFrom(
@@ -333,7 +396,6 @@ public class RangeSearchQueryTest {
                         null,
                         WEEK_COMMENCING_START_DATE.minusDays(1),
                         WEEK_COMMENCING_END_DATE);
-
 
 
         final JsonEnvelope query = envelopeFrom(
@@ -403,7 +465,7 @@ public class RangeSearchQueryTest {
                 null,
                 parse(WEEK_COMMENCING_START_DATE.toString()).minusDays(1),
                 parse(WEEK_COMMENCING_END_DATE.toString()),
-                false, true,0, paginationParameter.getPageSize()))
+                false, true, 0, paginationParameter.getPageSize()))
                 .thenReturn(hearingsJson);
 
 

@@ -1,0 +1,153 @@
+package uk.gov.moj.cpp.listing.it;
+
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.lang.String.format;
+import static javax.ws.rs.core.Response.Status.OK;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static uk.gov.justice.services.test.utils.core.http.BaseUriProvider.getBaseUri;
+import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
+import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetHearingIds;
+
+import uk.gov.justice.core.courts.JurisdictionType;
+import uk.gov.justice.services.test.utils.core.http.RequestParams;
+import uk.gov.justice.services.test.utils.core.http.ResponseData;
+import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
+import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
+import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
+import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+
+import java.util.Map;
+import java.util.UUID;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+@SuppressWarnings({"squid:S1607"})
+public class RangeSearchQueryForMagistratesIT extends AbstractIT {
+
+    public static final String CASE_AND_MATCHED_DEFENDANTS = "CASE_IN_HEARING,MATCHED_DEFENDANTS";
+
+    private static final String CONTEXT_NAME = "listing";
+
+    private final DatabaseCleaner databaseCleaner = new DatabaseCleaner();
+
+    @BeforeEach
+    public void cleanPublishedEventTable() {
+        databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
+        databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
+        databaseCleaner.cleanStreamStatusTable(CONTEXT_NAME);
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing");
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "listing_notes");
+    }
+
+    @Test
+    public void shouldReturnNotesAndHearingsForMagistratesRangeSearch() {//this test show missing court
+        final UUID hearingId1 = UUID.fromString("51e0e229-f22e-4ab6-87fa-2b1c07f97028");
+        final UUID hearingId2 = UUID.fromString("ed4f666a-866a-4fcb-8c3b-e89f6ce1e7e5");
+
+        final UUID masterDefendantId1 = UUID.randomUUID();
+        final String caseUrn1 = STRING.next();
+        final String caseUrnForLinkedCases1 = STRING.next();
+
+        final UUID masterDefendantId2 = UUID.randomUUID();
+        final String caseUrn2 = STRING.next();
+        final String caseUrnForLinkedCases2 = STRING.next();
+
+        final String jurisdictionTypeMags = JurisdictionType.MAGISTRATES.name();
+
+        final CaseAndDefendantData caseAndDefendantData1 = new CaseAndDefendantData(hearingId1, null, caseUrn1, masterDefendantId1, CASE_AND_MATCHED_DEFENDANTS, null, jurisdictionTypeMags,
+                caseUrnForLinkedCases1, caseUrnForLinkedCases1);
+
+        final CaseAndDefendantData caseAndDefendantData2 = new CaseAndDefendantData(hearingId2, null, caseUrn2, masterDefendantId2, CASE_AND_MATCHED_DEFENDANTS, null, jurisdictionTypeMags,
+                caseUrnForLinkedCases2, caseUrnForLinkedCases2);
+
+        ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData1));
+        listCourtHearingSteps1.createListingNotes();
+        listCourtHearingSteps1.whenCaseIsSubmittedForListing();
+
+        ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData2));
+        listCourtHearingSteps2.createListingNotes();
+        listCourtHearingSteps2.whenCaseIsSubmittedForListing();
+
+        final String queryString = getQueryString(getParamsWithoutPanel());
+
+        stubGetHearingIds(false);
+        final RequestParams requestParams = getRangeRequestParams(queryString);
+        final ResponseData res = poll(requestParams).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.results", is(2)),
+                        withJsonPath("$.pageCount", is(1)),
+                        withJsonPath("$.notes.size()", is(2)),
+                        withJsonPath("$.hearings.size()", is(2)),
+                        withJsonPath("$.hearings[0].id", is("51e0e229-f22e-4ab6-87fa-2b1c07f97028")),
+                        withJsonPath("$.hearings[0].allocated", is(true)),
+                        withJsonPath("$.hearings[0].jurisdictionType", is(JurisdictionType.MAGISTRATES.name())),
+                        withJsonPath("$.hearings[1].id", is("ed4f666a-866a-4fcb-8c3b-e89f6ce1e7e5")),
+                        withJsonPath("$.hearings[1].allocated", is(true)),
+                        withJsonPath("$.hearings[1].jurisdictionType", is(JurisdictionType.MAGISTRATES.name())),
+                        withJsonPath("$.notes[0].id", notNullValue()),
+                        withJsonPath("$.notes[0].courtRoomId", notNullValue()),
+                        withJsonPath("$.notes[0].date", notNullValue()),
+                        withJsonPath("$.notes[0].note", notNullValue()),
+                        withJsonPath("$.notes[1].id", notNullValue()),
+                        withJsonPath("$.notes[1].courtRoomId", notNullValue()),
+                        withJsonPath("$.notes[1].date", notNullValue()),
+                        withJsonPath("$.notes[1].note", notNullValue())
+                ))
+        );
+
+        assertThat(res.getPayload(), is(notNullValue()));
+    }
+
+    @Test
+    public void shouldRetunNothingForMagistrateRangeSearchIfNoHearingInCourtScheduler() {
+        final UUID hearingId1 = UUID.fromString("2329ea2b-b7dd-4aa7-97ba-951ac32aa635");
+
+        final UUID masterDefendantId1 = UUID.randomUUID();
+        final String caseUrn = STRING.next();
+        final String caseUrnForLinkedCases = STRING.next();
+        final String jurisdictionTypeCrown = JurisdictionType.MAGISTRATES.name();
+
+        final CaseAndDefendantData caseAndDefendantData1 = new CaseAndDefendantData(hearingId1, null, caseUrn, masterDefendantId1, CASE_AND_MATCHED_DEFENDANTS, null, jurisdictionTypeCrown,
+                caseUrnForLinkedCases, caseUrnForLinkedCases);
+
+        ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData1));
+        listCourtHearingSteps1.createListingNotes();
+        listCourtHearingSteps1.whenCaseIsSubmittedForListing();
+
+        final String queryString = getQueryString(getParamsWithoutPanel());
+
+        stubGetHearingIds(true);
+        final RequestParams requestParams = getRangeRequestParams(queryString);
+        final ResponseData res = poll(requestParams).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.results", is(0)),
+                        withJsonPath("$.pageCount", is(0)),
+                        withJsonPath("$.notes.size()", is(0)),
+                        withJsonPath("$.hearings.size()", is(0))
+                ))
+        );
+
+        assertThat(res.getPayload(), is(notNullValue()));
+    }
+
+    private RequestParams getRangeRequestParams(final String queryString) {
+        final String url = format("%s%s%s%s&allocated=true&jurisdictionType=MAGISTRATES&businessType=TRIAL&ouCode=B01LY00&courtRoomNumber=2331&courtRoomId=0205eb29-5d01-4779-a8c1-3038bc39dc09&sessionStartDate=2020-06-01&sessionEndDate=2020-06-01&pageSize=10&pageNumber=1", getBaseUri(), "/listing-query-api/query/api/rest/listing/hearings/range-search", "?", queryString);
+        return requestParams(url, "application/vnd.listing.search.hearings+json")
+                .withHeader(CPP_UID_HEADER.getName(), CPP_UID_HEADER.getValue())
+                .build();
+    }
+
+    private Map<String, String> getParamsWithoutPanel() {
+        final Map<String, String> params = getParams();
+        params.remove("panel");
+        return params;
+    }
+}
