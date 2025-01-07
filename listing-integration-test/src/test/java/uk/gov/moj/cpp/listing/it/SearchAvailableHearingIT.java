@@ -174,6 +174,7 @@ public class SearchAvailableHearingIT extends AbstractIT {
         listCourtHearingSteps1.createListingNotes();
         listCourtHearingSteps1.whenCaseIsSubmittedForListing();
         listCourtHearingSteps1.verifyAvailableHearing(caseAndDefendantData1, masterDefendantId1, true);
+        listCourtHearingSteps1.verifyNotesViaRangeSearch();
     }
 
     @Test
