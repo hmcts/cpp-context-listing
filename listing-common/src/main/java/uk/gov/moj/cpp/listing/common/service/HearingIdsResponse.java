@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.common.service;
 
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.UUID;
 
 public class HearingIdsResponse{
@@ -25,5 +26,14 @@ public class HearingIdsResponse{
 
     public long getResults() {
         return results;
+    }
+
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", HearingIdsResponse.class.getSimpleName() + "[", "]")
+                .add("pageCount=" + getPageCount())
+                .add("uuids=" + getUuids())
+                .add("results=" + getResults())
+                .toString();
     }
 }

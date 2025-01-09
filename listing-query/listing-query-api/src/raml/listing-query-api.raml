@@ -33,7 +33,7 @@ protocols: [ HTTP, HTTPS ]
           type: string
           required: false
         jurisdictionType:
-          description: the jurisdiction under which the hearing is being prosecuted, for example CROWN or MAGISTRATE
+          description: the jurisdiction under which the hearing is being prosecuted, for example CROWN or MAGISTRATES
           type: string
           required: false
         searchDate:
@@ -145,7 +145,7 @@ protocols: [ HTTP, HTTPS ]
           type: string
           required: false
         ouCode:
-          description: Courthouse oucode, this is an alternative to the courtCentreId. used for MAGs only
+          description: Courthouse oucode, this is an alternative to the courtCentreId.  Used only for MAGs whith ouCode and (courtSession or businessType) only. Otherwise, ignored.
           type: string
           required: false
         courtRoomId:
@@ -161,7 +161,7 @@ protocols: [ HTTP, HTTPS ]
           type: string
           required: false
         jurisdictionType:
-          description: the jurisdiction under which the hearing is being prosecuted, for example CROWN or MAGISTRATE
+          description: the jurisdiction under which the hearing is being prosecuted, for example CROWN or MAGISTRATES
           type: string
           required: false
         startDate:
@@ -193,15 +193,15 @@ protocols: [ HTTP, HTTPS ]
           type: boolean
           required: false
         businessType:
-          description: businessType. used for MAGs only
+          description: businessType. Used only for MAGs whith ouCode and (courtSession or businessType) only. Otherwise, ignored.
           type: string
           required: false
         courtSession:
-          description: Any/AM/PM/AD. used for MAGs only
+          description: Any/AM/PM/AD.  Used only for MAGs whith ouCode and (courtSession or businessType) only. Otherwise, ignored.
           type: string
           required: false
         panel:
-          description: panel Type ( ADULT/YOUTH/ADULT,YOUTH), default is ADULT,YOUTH. used for MAGs only
+          description: panel Type ( ADULT/YOUTH/ADULT,YOUTH), default is ADULT,YOUTH. Used only for MAGs whith ouCode and (courtSession or businessType) only. Otherwise, ignored.
           type: string
           required: false
       responses:

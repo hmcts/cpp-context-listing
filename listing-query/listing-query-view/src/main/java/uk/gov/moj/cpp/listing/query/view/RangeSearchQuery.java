@@ -320,7 +320,9 @@ public class RangeSearchQuery {
 
      private JsonEnvelope getCourtSchedulerHearings(final JsonEnvelope query , final boolean allocated, final String ouCode, final Optional<String> courtSessionOptional, final String courtRoomId, final String startDate, final String endDate, final Optional<String> businessType, final Optional<String> panel, final PaginationParameter paginationParameter) {
         final HearingIdsResponse hearingCourtScheduleIds = courtSchedulerServiceAdapter.getCourtSchedulerHearings(ouCode, courtSessionOptional, courtRoomId, startDate, endDate, businessType, panel, paginationParameter.getPageSize(), paginationParameter.getPageNumber());
-        final List<Hearing> soredtedHearingList = hearingCourtScheduleIds.getUuids().isEmpty()? emptyList(): enrichAllCourtSchedulerHearingIdsIntoHearings(hearingCourtScheduleIds.getUuids());
+        logger.info("CourtScheduler Hearings response : {}", hearingCourtScheduleIds);
+        final List<Hearing> soredtedHearingList = hearingCourtScheduleIds.getUuids()==null || hearingCourtScheduleIds.getUuids().isEmpty()? emptyList(): enrichAllCourtSchedulerHearingIdsIntoHearings(hearingCourtScheduleIds.getUuids());
+        logger.info("getCourtSchedulerHearings found {} hearings", soredtedHearingList.size());
         return buildHearingsResponse(query, allocated, courtRoomId, startDate,soredtedHearingList, hearingCourtScheduleIds.getResults(), paginationParameter);
     }
 
