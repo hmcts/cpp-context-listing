@@ -51,6 +51,7 @@ public class SequenceHearingSteps extends AbstractIT {
 
     private static final String EVENT_SELECTOR_HEARING_DAYS_SEQUENCED = "listing.events.hearing-days-sequenced";
     private static final String EVENT_SELECTED_PUBLIC_HEARING_UPDATED = "public.listing.hearing-updated";
+    private static final String EVENT_SELECTED_PUBLIC_HEARING_SEQUENCED = "public.listing.hearing-days-sequenced";
     private static final String EVENT_SELECTOR_ALLOCATED_HEARING_UPDATED_FOR_LISTING = "listing.events.allocated-hearing-updated-for-listing-v2";
 
     private static final String LISTING_COMMAND_SEQUENCE_HEARING_DAYS = "listing.command.sequence-hearings";
@@ -62,13 +63,15 @@ public class SequenceHearingSteps extends AbstractIT {
     private JmsMessageConsumerClient privateMessageConsumerHearingDaysSequenced;
     private JmsMessageConsumerClient privateMessageConsumerAllocatedHearingUpdatedForListing;
     private JmsMessageConsumerClient publicMessageConsumerHearingUpdated;
+    private JmsMessageConsumerClient publicMessageConsumerHearingSequenced;
 
 
     private SequenceHearingData sequenceHearingData;
 
     private String request;
 
-    public SequenceHearingSteps() {}
+    public SequenceHearingSteps() {
+    }
 
     public SequenceHearingSteps(SequenceHearingData sequenceHearingData) {
         this.sequenceHearingData = sequenceHearingData;
@@ -92,10 +95,14 @@ public class SequenceHearingSteps extends AbstractIT {
 
 
     public void verifyHearingWithSequencedDaysInMQ() {
-        verifyHearingDaySequences();
+        verifyHearingDaySequences(privateMessageConsumerHearingDaysSequenced);
         verifyAllocatedHearingUpdatedForListing();
     }
 
+    public void verifyHearingWithSequencedDaysInPublicMQ() {
+        verifyHearingDaySequences(publicMessageConsumerHearingSequenced);
+        verifyAllocatedHearingUpdatedForListing();
+    }
 
     public void verifyHearingDaysAreSequencedFromAPI() {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
@@ -159,6 +166,7 @@ public class SequenceHearingSteps extends AbstractIT {
     private void createMessageConsumers() {
         privateMessageConsumerHearingDaysSequenced = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_DAYS_SEQUENCED);
         publicMessageConsumerHearingUpdated = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_UPDATED);
+        publicMessageConsumerHearingSequenced = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_SEQUENCED);
         privateMessageConsumerAllocatedHearingUpdatedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_ALLOCATED_HEARING_UPDATED_FOR_LISTING);
     }
 
@@ -192,7 +200,7 @@ public class SequenceHearingSteps extends AbstractIT {
         Integer sequence1 = sequenceHearingData.getSequencedDays().get(parse(endDate));
         String startDateTime = sequenceHearingData.getUpdatedHearingData().getNonDefaultDays().get(0).getStartTime();
         ZonedDateTime endDateTime = ZonedDateTime.of(
-                parse(sequenceHearingData.getUpdatedHearingData().getEndDate()), DEFAULT_START_TIME, UTC) ;
+                parse(sequenceHearingData.getUpdatedHearingData().getEndDate()), DEFAULT_START_TIME, UTC);
 
         assertThat(jsonResponse.get("updatedHearing.id"), is(sequenceHearingData.getHearingId().toString()));
 
@@ -205,8 +213,8 @@ public class SequenceHearingSteps extends AbstractIT {
 
     }
 
-    private void verifyHearingDaySequences() {
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingDaysSequenced);
+    private void verifyHearingDaySequences(JmsMessageConsumerClient messageConsumerHearingDaysSequenced) {
+        JsonPath jsonResponse = QueueUtil.retrieveMessage(messageConsumerHearingDaysSequenced);
         LOGGER.info("jsonResponse from privateMessageConsumerHearingDaysSequenced: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("hearingId"), is(sequenceHearingData.getHearingId().toString()));

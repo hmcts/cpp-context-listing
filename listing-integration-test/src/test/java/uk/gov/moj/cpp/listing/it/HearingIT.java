@@ -612,6 +612,7 @@ public class HearingIT extends AbstractIT {
         final SequenceHearingSteps sequenceHearingSteps = new SequenceHearingSteps(sequenceHearingData);
         sequenceHearingSteps.whenHearingDaysAreSequenced();
         sequenceHearingSteps.verifyHearingWithSequencedDaysInMQ();
+        sequenceHearingSteps.verifyHearingWithSequencedDaysInPublicMQ();
         sequenceHearingSteps.verifyHearingDaysAreSequencedFromAPI();
         sequenceHearingSteps.verifyHearingUpdatedInPublicMQ();
     }
