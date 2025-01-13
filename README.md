@@ -122,4 +122,3 @@ Server: WildFly/10
 Content-Length: 0
 Date: Tue, 03 Dec 2019 16:14:28 GMT
 ```
-
