@@ -145,7 +145,7 @@ protocols: [ HTTP, HTTPS ]
           type: string
           required: false
         ouCode:
-          description: Courthouse oucode, this is an alternative to the courtCentreId.  Used only for MAGs whith ouCode and (courtSession or businessType) only. Otherwise, ignored.
+          description: Courthouse oucode, this is an alternative to the courtCentreId.  Used only for MAGs with ouCode and (courtSession or businessType) only. Otherwise, BAD_REQUEST.
           type: string
           required: false
         courtRoomId:
@@ -193,15 +193,11 @@ protocols: [ HTTP, HTTPS ]
           type: boolean
           required: false
         businessType:
-          description: businessType. Used only for MAGs whith ouCode and (courtSession or businessType) only. Otherwise, ignored.
+          description: businessType. Used only for MAGs with ouCode and (courtSession or businessType) only. Otherwise, BAD_REQUEST.
           type: string
           required: false
         courtSession:
-          description: Any/AM/PM/AD.  Used only for MAGs whith ouCode and (courtSession or businessType) only. Otherwise, ignored.
-          type: string
-          required: false
-        panel:
-          description: panel Type ( ADULT/YOUTH/ADULT,YOUTH), default is ADULT,YOUTH. Used only for MAGs whith ouCode and (courtSession or businessType) only. Otherwise, ignored.
+          description: Any/AM/PM/AD.  Used only for MAGs with ouCode and (courtSession or businessType) only. Otherwise, BAD_REQUEST.
           type: string
           required: false
       responses:

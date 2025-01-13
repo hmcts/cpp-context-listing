@@ -9,6 +9,7 @@ import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
@@ -19,6 +20,7 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
 
+import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
@@ -46,6 +48,7 @@ import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -106,6 +109,8 @@ public class RangeSearchQueryTest {
     private static final String IS_CIVIL = "isCivil";
     private static final String IS_GROUP_MEMBER = "isGroupMember";
     private static final String IS_GROUP_MASTER = "isGroupMaster";
+    private static final String COURT_SESSION_OR_BUSINESS_ERR = "courtSession or businessType are only relevant to allocated MAGs with ouCode";
+    private static final String AM = "AM";
 
     @Spy
     private Enveloper enveloper = createEnveloper();
@@ -265,7 +270,7 @@ public class RangeSearchQueryTest {
                         COURT_ROOM_ID.toString(),
                         SEARCH_DATE.toString(),
                         SEARCH_DATE.toString(),
-                        Optional.of(BUSINESS_TYPE), empty(), 50, 1)).thenReturn(response);
+                        Optional.of(BUSINESS_TYPE), "ADULT,YOUTH", 50, 1)).thenReturn(response);
 
         when(hearingRepository.findAllCourtSchedulerHearingByIds(hearingIds)).thenReturn(hearings);
 
@@ -549,6 +554,106 @@ public class RangeSearchQueryTest {
         assertEquals("2020-09-03", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("startDate"));
         assertTrue(results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getBoolean("isPossibleDisqualification"));
         assertEquals("listing.search.hearings", results.metadata().name());
+    }
+
+    @Test
+    void searchHearingsWithBusinessTypeUnallocated() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, false)
+                        .add(BUSINESS_TYPE_QUERY_PARAMETER, BUSINESS_TYPE)
+                        .build());
+
+        BadRequestException thrown = assertThrows(
+                BadRequestException.class,
+                () ->  rangeSearchQuery.rangeSearchHearings(query)
+        );
+
+        assertThat(thrown.getMessage(), CoreMatchers.is(COURT_SESSION_OR_BUSINESS_ERR));
+    }
+
+    @Test
+    void searchHearingsWithSessionTypeUnallocated() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, false)
+                        .add("courtSession", AM)
+                        .build());
+
+        BadRequestException thrown = assertThrows(
+                BadRequestException.class,
+                () ->  rangeSearchQuery.rangeSearchHearings(query)
+        );
+
+        assertThat(thrown.getMessage(), CoreMatchers.is(COURT_SESSION_OR_BUSINESS_ERR));
+    }
+
+    @Test
+    void searchHearingsWithBusinessTypeNoOuCode() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add("businessType", BUSINESS_TYPE)
+                        .build());
+
+        BadRequestException thrown = assertThrows(
+                BadRequestException.class,
+                () ->  rangeSearchQuery.rangeSearchHearings(query)
+        );
+
+        assertThat(thrown.getMessage(), CoreMatchers.is(COURT_SESSION_OR_BUSINESS_ERR));
+    }
+
+    @Test
+    void searchHearingsWithSessionTypeNoOuCode() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add("courtSession", AM)
+                        .build());
+
+        BadRequestException thrown = assertThrows(
+                BadRequestException.class,
+                () ->  rangeSearchQuery.rangeSearchHearings(query)
+        );
+
+        assertThat(thrown.getMessage(), CoreMatchers.is(COURT_SESSION_OR_BUSINESS_ERR));
+    }
+
+    @Test
+    void searchHearingsWithBusinessTypeCrown() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(BUSINESS_TYPE_QUERY_PARAMETER, BUSINESS_TYPE)
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JurisdictionType.CROWN.name())
+                        .build());
+
+        BadRequestException thrown = assertThrows(
+                BadRequestException.class,
+                () ->  rangeSearchQuery.rangeSearchHearings(query)
+        );
+
+        assertThat(thrown.getMessage(), CoreMatchers.is(COURT_SESSION_OR_BUSINESS_ERR));
+    }
+
+    @Test
+    void searchHearingsWithSessionTypeCrown() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(COURT_SESSION_QUERY_PARAMETER, AM)
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JurisdictionType.CROWN.name())
+                        .build());
+
+        BadRequestException thrown = assertThrows(
+                BadRequestException.class,
+                () ->  rangeSearchQuery.rangeSearchHearings(query)
+        );
+
+        assertThat(thrown.getMessage(), CoreMatchers.is(COURT_SESSION_OR_BUSINESS_ERR));
     }
 
     private List<Hearing> hearingsJson(String allocated) {

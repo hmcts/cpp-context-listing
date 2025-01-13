@@ -6,9 +6,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.common.utils.FileUtil.givenPayload;
 
@@ -212,7 +210,7 @@ public class CourtSchedulerServiceAdapterTest {
         when(response.getEntity()).thenReturn(hearingIdsResponse);
         when(hearingSlotsService.getCourtSchedulerHearingIds(anyMap())).thenReturn(response);
 
-        final HearingIdsResponse finalResp = courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, businessTypeOptional, Optional.empty(), pageSize, pageNumber);
+        final HearingIdsResponse finalResp = courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, businessTypeOptional, "ADULT,YOUTH", pageSize, pageNumber);
 
         assertThat(finalResp.getUuids().size(), is(4));
         assertThat(finalResp.getPageCount(), is(1L));

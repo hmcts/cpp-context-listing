@@ -42,7 +42,7 @@ public class CourtSchedulerServiceAdapter {
     public static final String COURT_SESSION = "courtSession";
     public static final String BUSINESS_TYPE = "businessType";
     private static final Logger LOGGER = LoggerFactory.getLogger(CourtSchedulerServiceAdapter.class);
-    private static final String PANEL_ADULT_YOUTH = "ADULT,YOUTH";
+    public static final String PANEL_ADULT_YOUTH = "ADULT,YOUTH";
     private static final String PANEL = "panel";
     @Inject
     private HearingSlotsService hearingSlotsService;
@@ -166,10 +166,9 @@ public class CourtSchedulerServiceAdapter {
                                               final Optional<String> courtSessionOptional,
                                               final String courtRoomId, final String startDate,
                                               final String endDate, final Optional<String> businessTypeOptional,
-                                              final Optional<String> panelOptional, final Integer pageSize, final Integer pageNumber
+                                              final String panel, final Integer pageSize, final Integer pageNumber
     ) {
         final Map<String, String> queryParams = new HashMap<>();
-        final String panel = panelOptional.orElse(PANEL_ADULT_YOUTH);
         queryParams.put(PANEL, panel);
         queryParams.put(SESSION_START_DATE, startDate);
         queryParams.put(SESSION_END_DATE, endDate);
