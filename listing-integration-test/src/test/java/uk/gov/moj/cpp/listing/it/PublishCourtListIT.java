@@ -173,6 +173,7 @@ public class PublishCourtListIT extends AbstractIT {
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, "publicListNote");
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        TimeUnit.SECONDS.sleep(20);
         updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
         updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
         updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
@@ -215,6 +216,7 @@ public class PublishCourtListIT extends AbstractIT {
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, null);
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        TimeUnit.SECONDS.sleep(20);
         updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
         updateHearingSteps.verifyHearingWithUpdatedNoPublicListNoteWhenQueryingFromAPI();
 
@@ -257,6 +259,7 @@ public class PublishCourtListIT extends AbstractIT {
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, "videoLinkDetails");
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        TimeUnit.SECONDS.sleep(20);
         updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
         updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
         updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
@@ -300,6 +303,7 @@ public class PublishCourtListIT extends AbstractIT {
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, "publicListNote");
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        TimeUnit.SECONDS.sleep(20);
         updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
         updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
         updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
@@ -358,6 +362,7 @@ public class PublishCourtListIT extends AbstractIT {
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, null);
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        TimeUnit.SECONDS.sleep(20);
         updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
         updateHearingSteps.verifyHearingWithUpdatedNoPublicListNoteWhenQueryingFromAPI();
 

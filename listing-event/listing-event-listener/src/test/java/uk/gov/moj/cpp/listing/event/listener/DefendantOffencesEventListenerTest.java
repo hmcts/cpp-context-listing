@@ -131,6 +131,48 @@ public class DefendantOffencesEventListenerTest {
     }
 
     @Test
+    public void shouldHandleOffenceUpdatedWhenDefendantIsNotInListedCasedDb() throws Exception {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final List<ListedCase> testCases = createListedCases();
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+
+        final OffenceUpdated hearingData = OffenceUpdated.offenceUpdated()
+                .withHearingId(HEARING_ID)
+                .withCaseId(CASE_ID)
+                .withDefendantId(DEFENDANT_ID_2)
+                .withOffence(Offence.offence()
+                        .withStartDate(LocalDates.to(LocalDate.now()))
+                        .withOffenceCode(EXPECTED_OFFENCE_CODE)
+                        .withId(randomUUID())
+                        .withShadowListed(null)
+                        .withStatementOfOffence(StatementOfOffence.statementOfOffence()
+                                .withTitle(STRING.next())
+                                .withWelshTitle(STRING.next())
+                                .withLegislation(STRING.next())
+                                .build())
+                        .build())
+                .build();
+
+        given(offenceUpdatedEnvelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptur =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        defendantOffencesEventListener.offenceUpdated(offenceUpdatedEnvelope);
+
+        verify(properties).replace(any(), objectNodeCaptur.capture());
+
+        int numberOffence = objectNodeCaptur.getValue().get(0).get("defendants").get(0).get("offences").size();
+        assertThat(numberOffence, equalTo(1));
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
     public void shouldHandleOffenceAdded() throws Exception {
         final ObjectMapper objectMapper = new ObjectMapper();
         final List<ListedCase> testCases = createListedCases();

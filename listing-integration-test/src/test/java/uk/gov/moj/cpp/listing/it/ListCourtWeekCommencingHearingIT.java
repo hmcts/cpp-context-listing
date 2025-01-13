@@ -6,7 +6,6 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
-import static uk.gov.moj.cpp.listing.it.util.ContextNameProvider.CONTEXT_NAME;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.loadFixedHearingData;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.updateLoadedFixedHearingToWeekCommencingHearing;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.updatedHearingListedData;
@@ -24,7 +23,6 @@ import java.util.List;
 
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +36,7 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
     private List<UpdatedHearingData> updatedHearingDataList;
 
     @BeforeEach
-    public void initialize() {
+    public void initialize() throws InterruptedException {
         cleanListingTables();
         hearingsData = loadFixedHearingData();
 

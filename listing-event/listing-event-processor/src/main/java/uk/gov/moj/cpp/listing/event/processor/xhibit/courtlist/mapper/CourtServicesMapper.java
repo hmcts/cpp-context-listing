@@ -13,6 +13,7 @@ import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils.c
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.PublicListNoteFormatter.getFormattedPublicListNote;
 
 import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
+import uk.gov.moj.cpp.listing.common.xhibit.ThreadLocalCommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.common.xhibit.XhibitReferenceDataValidator;
 import uk.gov.moj.cpp.listing.domain.referencedata.HearingType;
 import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
@@ -58,6 +59,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.annotation.PreDestroy;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.xml.datatype.DatatypeConfigurationException;
@@ -107,17 +109,18 @@ public class CourtServicesMapper {
     private static final String DEFENDANTS = "defendants";
     private static final String COMMA = ", ";
 
-    private RequestedNameMapper judicialRequestedName = new RequestedNameMapper();
+    private final RequestedNameMapper judicialRequestedName = new RequestedNameMapper();
 
-    private CourtListGenerationContext context;
+    private final CourtListGenerationContext context;
 
-    private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
+    private final ThreadLocalCommonXhibitReferenceDataService threadLocalCommonXhibitReferenceDataService = new  ThreadLocalCommonXhibitReferenceDataService();
+
     private XhibitReferenceDataValidator xhibitReferenceDataValidator = new XhibitReferenceDataValidator();
 
     public CourtServicesMapper(final CourtListGenerationContext context,
                                final CommonXhibitReferenceDataService commonXhibitReferenceDataService) {
         this.context = context;
-        this.commonXhibitReferenceDataService = commonXhibitReferenceDataService;
+        this.threadLocalCommonXhibitReferenceDataService.set(commonXhibitReferenceDataService);
     }
 
     public DocumentIDstructure generateDocumentID() {
@@ -156,7 +159,7 @@ public class CourtServicesMapper {
 
     public CourtHouseStructure generateCrownCourtStructure(final UUID courtCentreId) {
 
-        final CourtLocation courtLocation = commonXhibitReferenceDataService.getCrownCourtDetails(courtCentreId);
+        final CourtLocation courtLocation = threadLocalCommonXhibitReferenceDataService.get().getCrownCourtDetails(courtCentreId);
 
         final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
 
@@ -169,7 +172,7 @@ public class CourtServicesMapper {
 
     public CourtHouseStructure generateCourtHouseStructure(final UUID courtCentreId) {
 
-        final CourtLocation courtLocation = commonXhibitReferenceDataService.getCrownCourtDetails(courtCentreId);
+        final CourtLocation courtLocation = threadLocalCommonXhibitReferenceDataService.get().getCrownCourtDetails(courtCentreId);
 
         final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
 
@@ -218,6 +221,7 @@ public class CourtServicesMapper {
     public SittingStructure generateSittingStructure(final JsonObject sittingJson,
                                                      final int sittingSequenceNumber) {
 
+
         final SittingStructure sittingStructure = objectFactory.createSittingStructure();
 
         if (sittingJson.containsKey("courtRoomId")) {
@@ -225,7 +229,7 @@ public class CourtServicesMapper {
             final UUID courtRoomId = fromString(sittingJson.getString("courtRoomId"));
             final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-            sittingStructure.setCourtRoomNumber(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, courtRoomId));
+            sittingStructure.setCourtRoomNumber(threadLocalCommonXhibitReferenceDataService.get().getCourtRoomNumber(courtCentreId, courtRoomId));
             sittingStructure.setSittingPriority("T");
         } else {
             sittingStructure.setCourtRoomNumber(UNMAPPED_COURT_ROOM);
@@ -289,7 +293,7 @@ public class CourtServicesMapper {
 
     private JudiciaryStructure.Judge generateJudgeStructure(final UUID judiciaryId) {
 
-        final JsonObject judiciary = commonXhibitReferenceDataService.getJudiciary(judiciaryId);
+        final JsonObject judiciary = threadLocalCommonXhibitReferenceDataService.get().getJudiciary(judiciaryId);
 
         final JudiciaryStructure.Judge judgeStructure = objectFactory.createJudiciaryStructureJudge();
 
@@ -302,7 +306,7 @@ public class CourtServicesMapper {
 
     private JudiciaryStructure.Justice generateJusticeStructure(final UUID judiciaryId) {
 
-        final JsonObject judiciary = commonXhibitReferenceDataService.getJudiciary(judiciaryId);
+        final JsonObject judiciary = threadLocalCommonXhibitReferenceDataService.get().getJudiciary(judiciaryId);
 
         final JudiciaryStructure.Justice justice = objectFactory.createJudiciaryStructureJustice();
 
@@ -324,7 +328,7 @@ public class CourtServicesMapper {
         final List<JsonObject> hearingJsonList = sittingJson.getJsonArray(HEARINGS)
                 .getValuesAs(JsonObject.class)
                 .stream()
-                .sorted(Comparator.comparing(hearing -> LocalDateTime.parse(((JsonObject) hearing).getString(START_TIME))))
+                .sorted(Comparator.comparing(hearing -> LocalDateTime.parse(hearing.getString(START_TIME))))
                 .collect(Collectors.toList());
 
         for (final JsonObject hearingJson : hearingJsonList) {
@@ -377,7 +381,7 @@ public class CourtServicesMapper {
 
             final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
 
-            final String crestCourtId = commonXhibitReferenceDataService.getMagsCourtDetails(fromString(committingCourt.getString("courtCentreId"))).getCourtSiteCode();
+            final String crestCourtId = threadLocalCommonXhibitReferenceDataService.get().getMagsCourtDetails(fromString(committingCourt.getString("courtCentreId"))).getCourtSiteCode();
 
             courtHouseStructure.setCourtHouseType(CourtType.MAGISTRATES_COURT);
             courtHouseStructure.setCourtHouseCode(generateCourtHouseCode(crestCourtId));
@@ -468,7 +472,7 @@ public class CourtServicesMapper {
 
         final HearingTypeStructure hearingTypeStructure = objectFactory.createHearingTypeStructure();
 
-        final HearingType xhibitHearingType = commonXhibitReferenceDataService.getXhibitHearingType(
+        final HearingType xhibitHearingType = threadLocalCommonXhibitReferenceDataService.get().getXhibitHearingType(
                 fromString(hearing.getJsonObject(HEARING_TYPE).getString("id")));
 
         hearingTypeStructure.setHearingDescription(xhibitHearingType.getExhibitHearingDescription());
@@ -693,7 +697,7 @@ public class CourtServicesMapper {
             return null;
         }
 
-        return commonXhibitReferenceDataService.getXhibitHearingType(cppHearingId).getExhibitHearingCode();
+        return threadLocalCommonXhibitReferenceDataService.get().getXhibitHearingType(cppHearingId).getExhibitHearingCode();
     }
 
     public FixtureStructure generateFixtureStructure(final JsonObject sittingJson,
@@ -709,6 +713,11 @@ public class CourtServicesMapper {
         fixtureStructure.setCases(generateCasesStructure(sittingJson, hearingTypeId));
 
         return fixtureStructure;
+    }
+
+    @PreDestroy
+    public void unload() {
+        threadLocalCommonXhibitReferenceDataService.unload();
     }
 
     private CasesStructure generateCasesStructure(final JsonObject sittingJson,

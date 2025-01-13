@@ -14,6 +14,7 @@ import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.Matcher;
 
@@ -75,9 +76,10 @@ public class ListCourtHearingStepsWithWeekCommencing {
         listCourtHearingSteps.verifyHearingForWeekCommencingRange(jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, allocated, matchers);
     }
 
-    public static UpdatedHearingData updatedHearingListedData(final HearingsData hearingsData) {
+    public static UpdatedHearingData updatedHearingListedData(final HearingsData hearingsData) throws InterruptedException {
         UpdatedHearingData updatedHearingData = updatedHearingData(hearingsData.getHearingData().get(0));
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingData);
+        TimeUnit.SECONDS.sleep(20);
         updateHearingSteps.whenHearingIsUpdatedForListing();
         updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();
         updateHearingSteps.verifyPublicHearingChangesSaved();
