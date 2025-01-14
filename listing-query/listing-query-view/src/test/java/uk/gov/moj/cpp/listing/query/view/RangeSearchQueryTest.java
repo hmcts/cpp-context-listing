@@ -2,13 +2,13 @@ package uk.gov.moj.cpp.listing.query.view;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static java.time.LocalDate.parse;
-import static java.util.Optional.empty;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -654,6 +654,32 @@ public class RangeSearchQueryTest {
         );
 
         assertThat(thrown.getMessage(), CoreMatchers.is(COURT_SESSION_OR_BUSINESS_ERR));
+    }
+
+    @Test
+    void searchHearingsWithSessionTypeAnyUnallocated() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, false)
+                        .add(COURT_SESSION_QUERY_PARAMETER, "ANY")
+                        .build());
+
+        final JsonEnvelope response = rangeSearchQuery.rangeSearchHearings(query);
+
+        assertNotNull(response);
+        verify(hearingRepository).findHearings(
+                false,
+                null,
+                null,
+                null,
+                null,
+                null,
+                LocalDate.parse("1900-01-01"),
+                LocalDate.parse("9999-01-01"),
+                0,
+                50);
+
     }
 
     private List<Hearing> hearingsJson(String allocated) {

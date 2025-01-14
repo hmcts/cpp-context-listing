@@ -113,7 +113,7 @@ public class RangeSearchQuery {
         final PaginationParameter paginationParameter = newPaginationParameter(query.payloadAsJsonObject());
         final boolean noPagination = query.payloadAsJsonObject().getBoolean("noPagination", false);
         Optional<String> businessType = Optional.ofNullable(query.payloadAsJsonObject().getString("businessType", null));
-        Optional<String> courtSessionOptional = Optional.ofNullable(query.payloadAsJsonObject().getString("courtSession", null));
+        Optional<String> courtSessionOptional = extractCourtSession(query);
 
         if (!weekCommencingStartDate.isEmpty() && !LocalDate.parse(weekCommencingStartDate).getDayOfWeek().equals(DayOfWeek.MONDAY)) {
             weekCommencingStartDate = LocalDate.parse(weekCommencingStartDate).minusDays(1).toString();
@@ -355,4 +355,11 @@ public class RangeSearchQuery {
         return JurisdictionType.MAGISTRATES.name().equalsIgnoreCase(jurisdictionType);
     }
 
+    private Optional<String> extractCourtSession(final JsonEnvelope query) {
+        String courtSession = query.payloadAsJsonObject().getString("courtSession", null);
+        if (courtSession != null && "any".equalsIgnoreCase(courtSession.toLowerCase().trim())) {
+            courtSession = null;
+        }
+        return Optional.ofNullable(courtSession);
+    }
 }
