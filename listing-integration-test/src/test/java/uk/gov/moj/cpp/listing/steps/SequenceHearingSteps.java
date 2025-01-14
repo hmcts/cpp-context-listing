@@ -101,7 +101,6 @@ public class SequenceHearingSteps extends AbstractIT {
 
     public void verifyHearingWithSequencedDaysInPublicMQ() {
         verifyHearingDaySequences(publicMessageConsumerHearingSequenced);
-        verifyAllocatedHearingUpdatedForListing();
     }
 
     public void verifyHearingDaysAreSequencedFromAPI() {

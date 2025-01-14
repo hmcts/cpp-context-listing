@@ -176,6 +176,9 @@ subscriptions_descriptor:
         - name: listing.events.hearing-days-changed-for-hearing
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-days-changed-for-hearing.json
 
+        - name: listing.events.hearing-days-sequenced
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-days-sequenced.json
+
         - name: listing.events.hearing-partially-updated
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-partially-updated.json
 
