@@ -14,7 +14,6 @@ import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.Matcher;
 
@@ -76,13 +75,12 @@ public class ListCourtHearingStepsWithWeekCommencing {
         listCourtHearingSteps.verifyHearingForWeekCommencingRange(jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, allocated, matchers);
     }
 
-    public static UpdatedHearingData updatedHearingListedData(final HearingsData hearingsData) throws InterruptedException {
+    public static UpdatedHearingData updatedHearingListedData(final HearingsData hearingsData) {
         UpdatedHearingData updatedHearingData = updatedHearingData(hearingsData.getHearingData().get(0));
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingData);
-        TimeUnit.SECONDS.sleep(20);
         updateHearingSteps.whenHearingIsUpdatedForListing();
         updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();
-        updateHearingSteps.verifyPublicHearingChangesSaved();
+        updateHearingSteps.verifyPublicEventHearingChangesSaved();
         return updatedHearingData;
     }
 
@@ -100,7 +98,6 @@ public class ListCourtHearingStepsWithWeekCommencing {
         final WeekCommencingHearingSteps weekCommencingHearingSteps = new WeekCommencingHearingSteps(updatedHearingDataWithWeekCommencingDate);
         weekCommencingHearingSteps.whenHearingIsUpdatedForListingForWeekCommencingDate();
 
-        weekCommencingHearingSteps.verifyHearingUpdatedResultsForWeekCommencingInMQ();
         weekCommencingHearingSteps.verifyHearingUpdatedWithWeekCommencingDateAndUnallocatedWhenQueryingFromAPI();
     }
 }

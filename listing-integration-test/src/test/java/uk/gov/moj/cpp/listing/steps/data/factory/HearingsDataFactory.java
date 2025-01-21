@@ -72,10 +72,6 @@ public class HearingsDataFactory {
         return manyRandomHearings(2);
     }
 
-    public static List<HearingData> hearingsData(UUID courtCenterId, UUID courtRoomId) {
-        return manyRandomHearings(2, courtCenterId, courtRoomId);
-    }
-
     public static List<HearingData> trialHearingsData() {
         return manyRandomHearings(2, TRIAL_HEARING_TYPE);
     }
@@ -178,20 +174,12 @@ public class HearingsDataFactory {
         return manyRandomHearingsWithAllocationDataAndIsAdjournmentWithParameters(numberOfHearing, courtCenterId, courtRoomId, judiciaryType);
     }
 
-    public static List<HearingData> hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(UUID courtCenterid,UUID courtRoomUUID, String court) {
-        return manyRandomHearingsWithAllocationDataAndIsAdjournmentWithCourt(2,courtCenterid,courtRoomUUID, court);
-    }
-
     public static List<HearingData> hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(final Integer numberOfHearings) {
         return manyRandomHearingsWithAllocationDataAndIsAdjournment(numberOfHearings);
     }
 
     public static List<HearingData> hearingsDataWithAllocationDataAndAdjournmentFromDateWithoutJudiciary(final Integer numberOfHearings) {
         return manyRandomHearingsWithAllocationDataAndIsAdjournmentWithoutJudiciary(numberOfHearings);
-    }
-
-    public static List<HearingData> hearingsDataWithAllocationDataAndJudiciary(final UUID courtCentreId) {
-        return manyRandomHearingsWithAllocationData(2, courtCentreId);
     }
 
     public static List<HearingData> hearingsDataWithAllocationDataAndJudiciary(final UUID courtCentreId, final UUID courtRoomId, final String judiciaryType) {

@@ -3,6 +3,9 @@ package uk.gov.moj.cpp.listing.utils;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.delete;
+import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.exactly;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
@@ -10,15 +13,18 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_OK;
+import static org.awaitility.Awaitility.await;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 
 import uk.gov.justice.service.wiremock.testutil.InternalEndpointMockUtils;
@@ -28,6 +34,9 @@ import java.time.LocalDate;
 import java.util.Map;
 
 import javax.json.JsonObject;
+
+import com.github.tomakehurst.wiremock.client.VerificationException;
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 
 public class CourtSchedulerServiceStub {
 
@@ -56,6 +65,23 @@ public class CourtSchedulerServiceStub {
     public static void stubUpdateAvailableHearingSlotsService() {
         stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
                 .willReturn(aResponse().withStatus(NO_CONTENT.getStatusCode())));
+    }
+
+    public static void stubDeleteAvailableHearingSlotsService(final String hearingId) {
+        stubFor(delete(urlPathMatching(COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS + "/" + hearingId))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())));
+    }
+
+    public static void verifyDeleteAvailableHearingSlotsStubCommandInvoked(final String hearingId) {
+        await().atMost(30, SECONDS).pollInterval(1, SECONDS).until(() -> {
+            final RequestPatternBuilder requestPatternBuilder = deleteRequestedFor(urlPathMatching(COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS + "/" + hearingId));
+            try {
+                verify(exactly(1), requestPatternBuilder);
+            } catch (VerificationException e) {
+                return false;
+            }
+            return true;
+        });
     }
 
     public static void stubGetAvailableHearingSlots(boolean isEmpty) {
@@ -89,14 +115,14 @@ public class CourtSchedulerServiceStub {
                 .withHeader("Accept", containing(COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_WITH_SESSION_DATE_JSON)
-                                .replace("%SESSION_DATE%",sessionDate.toString())
+                                .replace("%SESSION_DATE%", sessionDate.toString())
                                 .replace("%COURT_ROOM_ID%", courtRoomId))
                         .withHeader("Content-Type", "application/json")
                 ));
     }
 
     public static void stubPingForOrganisationUnitHmiSServiceForCache() {
-       InternalEndpointMockUtils.stubPingFor("staginghmi-service");
+        InternalEndpointMockUtils.stubPingFor("staginghmi-service");
 
         String payload = getPayload("stub-data/staginghmi.query.organisation-unit-hmi-status-rota.json");
 

@@ -21,6 +21,7 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
@@ -50,7 +51,6 @@ import com.jayway.jsonpath.Filter;
 import io.restassured.path.json.JsonPath;
 import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -81,7 +81,7 @@ public class ListingNoteIT extends AbstractIT {
 
         notesSteps.createNoteForListing(courtRoomId, date.toString(), NOTE_DESCRIPTION);
         final UUID noteId = verifyNoteExists(courtRoomId, date);
-        Assert.assertThat(noteId.toString(), CoreMatchers.is(notNullValue()));
+        assertThat(noteId.toString(), CoreMatchers.is(notNullValue()));
         verifyInMessagingQueueForCreateRole(messageConsumerClientPublicForCreateNote, noteId.toString(), courtRoomId.toString(), date, NOTE_DESCRIPTION);
     }
 
@@ -132,7 +132,7 @@ public class ListingNoteIT extends AbstractIT {
     public void shouldReturnNotesForAllocatedHearingOnSearchQuery() {
 
         //Given 1 : Hearing data
-        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate();
+        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate();
         List<HearingData> hearingData = hearingsData.getHearingData();
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", hearingData.get(0).getCourtRoomId().toString()));
 
@@ -304,8 +304,7 @@ public class ListingNoteIT extends AbstractIT {
         final UUID courtRoomId = randomUUID();
 
         notesSteps.createNoteForListing(courtRoomId, date.toString(), NOTE_DESCRIPTION);
-        final UUID noteId = verifyNoteExists(courtRoomId, date);
-        return noteId;
+        return verifyNoteExists(courtRoomId, date);
     }
 
     private void verifyInMessagingQueueForCreateRole(JmsMessageConsumerClient messageConsumerClient, String noteId, String courtRoomId, LocalDate date, final String noteDescription) {

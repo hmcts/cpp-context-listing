@@ -5,6 +5,8 @@ import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.buildPublishCourtListCommandPayload;
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataForWeekCommencing;
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDateWithParameters;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubUpdateAvailableHearingSlotsService;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
@@ -30,7 +32,6 @@ import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import javax.json.JsonObject;
 
@@ -74,7 +75,7 @@ public class ExhibitScenarioIT extends AbstractIT {
         final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
-        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDateWithParameters(1, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
+        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDateWithParameters(1, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
@@ -88,7 +89,6 @@ public class ExhibitScenarioIT extends AbstractIT {
                 startDate);
 
         stubGetReferenceDataCourtCentreById(courtCentreId);
-
         stubIdMapperReturningExistingAssociation(courtListId);
         stubOrganisationUnit(courtCentreId);
         stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
@@ -101,7 +101,6 @@ public class ExhibitScenarioIT extends AbstractIT {
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "false");
-        TimeUnit.SECONDS.sleep(20);
         publishCourtListSteps.verifySentPublishedCourtListHearingDataForDraft(true, "RestrictionApplied");
     }
 
@@ -167,7 +166,6 @@ public class ExhibitScenarioIT extends AbstractIT {
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "false");
-        TimeUnit.SECONDS.sleep(20);
         publishCourtListSteps.verifySentPublishedCourtListHearingDataForDraft(true, "RestrictionApplied");
     }
 
@@ -230,7 +228,6 @@ public class ExhibitScenarioIT extends AbstractIT {
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "false");
-        TimeUnit.SECONDS.sleep(20);
         publishCourtListSteps.verifySentPublishedCourtListHearingDataForDraft(true, "RestrictionApplied");
     }
 
@@ -294,7 +291,6 @@ public class ExhibitScenarioIT extends AbstractIT {
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "false");
-        TimeUnit.SECONDS.sleep(20);
         publishCourtListSteps.verifySentPublishedCourtListHearingDataForDraft(true, "RestrictionApplied");
     }
 
@@ -318,17 +314,17 @@ public class ExhibitScenarioIT extends AbstractIT {
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
 
-        final HearingsData hearingsData1 = HearingsData.hearingsDataForWeekCommencing(LocalDate.now(), 1, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
+        final HearingsData hearingsData1 = hearingsDataForWeekCommencing(LocalDate.now(), 1, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
         hearingsData1.getHearingData().get(0).setName("Nottingham crown court");
         final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(hearingsData1);
         listCourtHearingSteps1.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps1.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps1.verifyHearingListedFromAPI(ALLOCATED);
 
-        final HearingsData hearingsData2 = HearingsData.hearingsDataForWeekCommencing(LocalDate.now(), 1, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
+        final HearingsData hearingsData2 = hearingsDataForWeekCommencing(LocalDate.now(), 1, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
         hearingsData2.getHearingData().get(0).setName("Nottingham crown court");
         final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(hearingsData2);
         listCourtHearingSteps2.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps2.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps2.verifyHearingListedFromAPI(ALLOCATED);
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.WARN;
         final LocalDate startDate = LocalDate.now();
@@ -351,7 +347,6 @@ public class ExhibitScenarioIT extends AbstractIT {
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "true");
-        TimeUnit.SECONDS.sleep(20);
         publishCourtListSteps.verifySentPublishedCourtListHearingDataForWarn();
     }
 
@@ -386,17 +381,17 @@ public class ExhibitScenarioIT extends AbstractIT {
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
 
-        final HearingsData hearingsData1 = HearingsData.hearingsDataForWeekCommencing(LocalDate.now(), 2, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
+        final HearingsData hearingsData1 = hearingsDataForWeekCommencing(LocalDate.now(), 2, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
         hearingsData1.getHearingData().get(0).setName("Nottingham crown court");
         final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(hearingsData1);
         listCourtHearingSteps1.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps1.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps1.verifyHearingListedFromAPI(ALLOCATED);
 
-        final HearingsData hearingsData2 = HearingsData.hearingsDataForWeekCommencing(LocalDate.now(), 2, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
+        final HearingsData hearingsData2 = hearingsDataForWeekCommencing(LocalDate.now(), 2, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
         hearingsData2.getHearingData().get(0).setName("Nottingham crown court");
         final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(hearingsData2);
         listCourtHearingSteps2.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps2.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps2.verifyHearingListedFromAPI(ALLOCATED);
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
         final LocalDate startDate = LocalDate.now();
@@ -419,7 +414,6 @@ public class ExhibitScenarioIT extends AbstractIT {
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "true");
-        TimeUnit.SECONDS.sleep(20);
         publishCourtListSteps.verifySentPublishedCourtListHearingDataForFirm();
     }
 
@@ -439,7 +433,7 @@ public class ExhibitScenarioIT extends AbstractIT {
         final HearingsData hearingsData1 = HearingsData.singleHearingDataSingleCaseWithSingleOffence(courtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData1);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
         final LocalDate startDate = LocalDate.now();
@@ -462,7 +456,6 @@ public class ExhibitScenarioIT extends AbstractIT {
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "true");
-        TimeUnit.SECONDS.sleep(20);
         publishCourtListSteps.verifySentPublishedCourtListHearingDataFirmWithSittingTagPresent();
     }
 
@@ -495,7 +488,7 @@ public class ExhibitScenarioIT extends AbstractIT {
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(firstHearing, updatedHearingDataForAllocation);
         updateHearingSteps.whenHearingIsUpdatedForListing();
         updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
-        updateHearingSteps.verifyPublicHearingChangesSaved();
+        updateHearingSteps.verifyPublicEventHearingChangesSaved();
         CourtListSteps courtListSteps = new CourtListSteps(updatedHearingDataForAllocation);
         courtListSteps.verifyCourtListRequestedAndIsCorrect(CourtListType.USHERS_MAGISTRATE.name());
     }

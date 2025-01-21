@@ -3,24 +3,13 @@ package uk.gov.moj.cpp.listing.steps;
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
-import static java.text.MessageFormat.format;
 import static java.util.UUID.randomUUID;
-import static javax.ws.rs.core.Response.Status.OK;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.core.courts.Organisation.organisation;
-import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
-import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
-import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
-import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
-import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
-import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.Defendant;
@@ -31,14 +20,12 @@ import uk.gov.justice.core.courts.Person;
 import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.steps.data.UpdateCaseDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedDefendantData;
-import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.util.UUID;
 
@@ -46,28 +33,12 @@ import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Filter;
-import io.restassured.path.json.JsonPath;
-import org.junit.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.hamcrest.Matcher;
 
 public class UpdateDefendantSteps extends AbstractIT {
-    private static final Logger LOGGER = LoggerFactory.getLogger(UpdateDefendantSteps.class);
-
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED = "public.progression.case-defendant-changed";
-    private static final String EVENT_SELECTOR_DEFENDANTS_TO_BE_UPDATED = "listing.events.defendants-to-be-updated";
-    private static final String EVENT_SELECTOR_DEFENDANT_DETAILS_UPDATED = "listing.events.new-defendant-details-updated";
-    public static final String PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI = "public.listing.updated-hearing-in-staging-hmi";
-
-    private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
 
     private final JmsMessageProducerClient publicEventDefendantUpdated;
-    private final JmsMessageConsumerClient publicEventMessageConsumerDefendantUpdated;
-    private final JmsMessageConsumerClient privateEventMessageDefendantsToBeUpdated;
-    private final JmsMessageConsumerClient privateEventsMessageDefendantDetailsUpdated;
-    private final JmsMessageConsumerClient publicMessageConsumerHmiHearingUpdated;
-
-    private String request;
 
     private final HearingData hearingData;
     private final UpdatedDefendantData updatedDefendantData;
@@ -83,149 +54,68 @@ public class UpdateDefendantSteps extends AbstractIT {
         this.listedCaseData = hearingData.getListedCases().get(0);
         this.updatedDefendantData = defendantData;
 
-
         publicEventDefendantUpdated = publicEvents.createPublicProducer();
-        publicEventMessageConsumerDefendantUpdated = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED);
-        privateEventMessageDefendantsToBeUpdated = privateEvents.createPrivateConsumer(EVENT_SELECTOR_DEFENDANTS_TO_BE_UPDATED);
-        privateEventsMessageDefendantDetailsUpdated = privateEvents.createPrivateConsumer(EVENT_SELECTOR_DEFENDANT_DETAILS_UPDATED);
-        publicMessageConsumerHmiHearingUpdated = publicEvents.createPublicConsumer(PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
-    public void whenCaseDefendantsUpdatedPublicEventIsPublished() {
+    public void whenPublicEventProgressionCaseDefendantsUpdatedIsPublished() {
         final UpdateCaseDefendantData updateCaseDefendantDetails = getUpdateCaseDefendantDetails(caseId, updatedDefendantData);
         final JsonObject updateCaseDefendantDetailsObject = (JsonObject) objectToJsonValueConverter.convert(updateCaseDefendantDetails);
 
-        QueueUtil.sendMessage(
+        sendMessage(
                 publicEventDefendantUpdated,
                 PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED,
                 updateCaseDefendantDetailsObject,
                 metadataOf(randomUUID(), PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED).withUserId(randomUUID().toString()).build());
-
-        request = updateCaseDefendantDetailsObject.toString();
-        LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n", PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED, request);
-    }
-
-
-    public void verifyEventDefendantUpdatedInActiveMQ() {
-        final JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicEventMessageConsumerDefendantUpdated);
-        LOGGER.debug("jsonResponse from publicEventMessageConsumerDefendantUpdated: {}", jsonResponse.prettify());
-
-        assertThat(jsonResponse.get("defendant.id"), is(jsRequest.getString("defendant.id")));
-        assertThat(jsonResponse.get("defendant.masterDefendantId"), is(jsRequest.getString("defendant.masterDefendantId")));
-        assertThat(jsonResponse.get("defendant.personDefendant.custodyTimeLimit"), is(jsRequest.getString("defendant.personDefendant.custodyTimeLimit")));
-        assertThat(jsonResponse.get("defendant.personDefendant.personDetails.dateOfBirth"), is(jsRequest.getString("defendant.personDefendant.personDetails.dateOfBirth")));
-        assertThat(jsonResponse.get("defendant.defenceOrganisation.name"), is(jsRequest.getString("defendant.defenceOrganisation.name")));
-        assertThat(jsonResponse.get("defendant.defenceOrganisation.id"), is(jsRequest.getString("defendant.defenceOrganisation.id")));
-        assertThat(jsonResponse.get("defendant.personDefendant.bailStatus"), equalTo(jsRequest.getJsonObject("defendant.personDefendant.bailStatus")));
-        assertThat(jsonResponse.get("defendant.personDefendant.personDetails.firstName"), is(jsRequest.getString("defendant.personDefendant.personDetails.firstName")));
-        assertThat(jsonResponse.get("defendant.personDefendant.personDetails.lastName"), is(jsRequest.getString("defendant.personDefendant.personDetails.lastName")));
-        assertThat(jsonResponse.get("defendant.personDefendant.personDetails.specificRequirements"), is(jsRequest.getString("defendant.personDefendant.personDetails.specificRequirements")));
-        assertThat(jsonResponse.get("defendant.personDefendant.personDetails.gender"), is(jsRequest.getString("defendant.personDefendant.personDetails.gender")));
-        assertThat(jsonResponse.get("defendant.legalEntityDefendant.organisation.name"), is(jsRequest.getString("defendant.legalEntityDefendant.organisation.name")));
-        assertThat(jsonResponse.get("defendant.legalEntityDefendant.organisation.id"), is(jsRequest.getString("defendant.legalEntityDefendant.organisation.id")));
-        assertThat(jsonResponse.get("defendant.pncId"), is(jsRequest.getString("defendant.pncId")));
-        assertThat(jsonResponse.get("defendant.isYouth"), is(jsRequest.getBoolean("defendant.isYouth")));
-        assertThat(jsonResponse.get("defendant.aliases[0].firstName"), is(jsRequest.getString("defendant.aliases[0].firstName")));
-        assertThat(jsonResponse.get("defendant.aliases[0].lastName"), is(jsRequest.getString("defendant.aliases[0].lastName")));
-        assertThat(jsonResponse.get("defendant.associatedDefenceOrganisation.defenceOrganisation.laaContractNumber"), is(jsRequest.getString("defendant.associatedDefenceOrganisation.defenceOrganisation.laaContractNumber")));
-    }
-
-    public void verifyEventDefendantsToBeUpdateInActiveMQ() {
-        final JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageDefendantsToBeUpdated);
-        LOGGER.debug("jsonResponse from privateEventMessageDefendantsToBeUpdated: {}", jsonResponse.prettify());
-
-        assertThat(jsonResponse.get("defendants[0].id"), is(jsRequest.getString("defendant.id")));
-        assertThat(jsonResponse.get("defendants[0].masterDefendantId"), is(jsRequest.getString("defendant.masterDefendantId")));
-        assertThat(jsonResponse.get("defendants[0].custodyTimeLimit"), is(jsRequest.getString("defendant.personDefendant.custodyTimeLimit")));
-        assertThat(jsonResponse.get("defendants[0].dateOfBirth"), is(jsRequest.getString("defendant.personDefendant.personDetails.dateOfBirth")));
-        assertThat(jsonResponse.get("defendants[0].defenceOrganisation"), is(jsRequest.getString("defendant.defenceOrganisation.name")));
-        assertThat(jsonResponse.get("defendants[0].bailStatus"), equalTo(jsRequest.getJsonObject("defendant.personDefendant.bailStatus")));
-        assertThat(jsonResponse.get("defendants[0].firstName"), is(jsRequest.getString("defendant.personDefendant.personDetails.firstName")));
-        assertThat(jsonResponse.get("defendants[0].lastName"), is(jsRequest.getString("defendant.personDefendant.personDetails.lastName")));
-        assertThat(jsonResponse.get("defendants[0].specificRequirements"), is(jsRequest.getString("defendant.personDefendant.personDetails.specificRequirements")));
-        assertThat(jsonResponse.get("defendants[0].organisationName"), is(jsRequest.getString("defendant.legalEntityDefendant.organisation.name")));
-        assertThat(jsonResponse.get("defendants[0].isYouth"), is(jsRequest.getBoolean("defendant.isYouth")));
-    }
-
-    public void verifyEventDefendantDetailsUpdatedInActiveMQ() {
-        final JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventsMessageDefendantDetailsUpdated);
-        LOGGER.debug("jsonResponse from privateEventsMessageDefendantDetailsUpdated: {}", jsonResponse.prettify());
-
-        assertThat(jsonResponse.get("defendant.id"), is(jsRequest.getString("defendant.id")));
-        assertThat(jsonResponse.get("defendant.masterDefendantId"), is(jsRequest.getString("defendant.masterDefendantId")));
-        assertThat(jsonResponse.get("defendant.custodyTimeLimit"), is(jsRequest.getString("defendant.personDefendant.custodyTimeLimit")));
-        assertThat(jsonResponse.get("defendant.dateOfBirth"), is(jsRequest.getString("defendant.personDefendant.personDetails.dateOfBirth")));
-        assertThat(jsonResponse.get("defendant.defenceOrganisation"), is(jsRequest.getString("defendant.defenceOrganisation.name")));
-        assertThat(jsonResponse.get("defendant.bailStatus"), equalTo(jsRequest.getJsonObject("defendant.personDefendant.bailStatus")));
-        assertThat(jsonResponse.get("defendant.firstName"), is(jsRequest.getString("defendant.personDefendant.personDetails.firstName")));
-        assertThat(jsonResponse.get("defendant.specificRequirements"), is(jsRequest.getString("defendant.personDefendant.personDetails.specificRequirements")));
-        assertThat(jsonResponse.get("defendant.organisationName"), is(jsRequest.getString("defendant.legalEntityDefendant.organisation.name")));
-        assertThat(jsonResponse.get("defendant.isYouth"), is(jsRequest.getBoolean("defendant.isYouth")));
     }
 
     public void verifyHearingListedFromAPI(final boolean isAllocated) {
-        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.range.search.hearings"), hearingData.getCourtCentreId(), isAllocated));
 
         final com.jayway.jsonpath.JsonPath lastNameFilter = getJsonPathQueryForDefendantLastName(hearingData, listedCaseData, updatedDefendantData, updatedDefendantData.getLastName());
         final com.jayway.jsonpath.JsonPath caseReferenceFilter = getJsonPathQueryForCaseReference(hearingData, listedCaseData, updatedDefendantData, listedCaseData.getCaseReference());
 
+        pollForHearing(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
 
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
-                .until(
-                        status().is(OK),
-                        payload().isJson(allOf(
-                                withJsonPath(lastNameFilter),
-                                withJsonPath(caseReferenceFilter),
-                                withJsonPath("$.hearings[0].id",
-                                        equalTo(hearingData.getId().toString())),
-                                withJsonPath("$.hearings[0].jurisdictionType",
-                                        equalTo(hearingData.getJurisdictionType())),
-                                withJsonPath("$.hearings[0].courtCentreId",
-                                        equalTo(hearingData.getCourtCentreId().toString())),
-                                withJsonPath("$.hearings[0].type.id",
-                                        equalTo(hearingData.getHearingTypeData().getTypeId().toString())),
-                                withJsonPath("$.hearings[0].type.description",
-                                        equalTo(hearingData.getHearingTypeData().getTypeDescription())),
-                                withJsonPath("$.hearings[0].startDate",
-                                        equalTo(hearingData.getHearingStartDate().toString())),
-                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].id",
-                                        equalTo(updatedDefendantData.getDefendantId().toString())),
-                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
-                                        equalTo(updatedDefendantData.getMasterDefendantId().toString())),
-                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].custodyTimeLimit",
-                                        equalTo(updatedDefendantData.getCustodyTimeLimit())),
-                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].dateOfBirth",
-                                        equalTo(updatedDefendantData.getDateOfBirth())),
-                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].bailStatus.code",
-                                        equalTo(updatedDefendantData.getBailStatus().getCode())),
-                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].bailStatus.id",
-                                        equalTo(updatedDefendantData.getBailStatus().getId().toString())),
-                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].firstName",
-                                        equalTo(updatedDefendantData.getFirstName())),
-                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].lastName",
-                                        equalTo(updatedDefendantData.getLastName())),
-                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].specificRequirements",
-                                        equalTo(updatedDefendantData.getSpecificRequirements())),
-                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].organisationName",
-                                        equalTo(updatedDefendantData.getLegalEntityName())),
-                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].restrictFromCourtList",
-                                        equalTo(hearingData.getListedCases().get(0).getDefendants().get(0).getRestrictFromCourtList()))
-                        )));
+                withJsonPath(lastNameFilter),
+                withJsonPath(caseReferenceFilter),
+                withJsonPath("$.hearings[0].id",
+                        equalTo(hearingData.getId().toString())),
+                withJsonPath("$.hearings[0].jurisdictionType",
+                        equalTo(hearingData.getJurisdictionType())),
+                withJsonPath("$.hearings[0].courtCentreId",
+                        equalTo(hearingData.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[0].type.id",
+                        equalTo(hearingData.getHearingTypeData().getTypeId().toString())),
+                withJsonPath("$.hearings[0].type.description",
+                        equalTo(hearingData.getHearingTypeData().getTypeDescription())),
+                withJsonPath("$.hearings[0].startDate",
+                        equalTo(hearingData.getHearingStartDate().toString())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants[0].id",
+                        equalTo(updatedDefendantData.getDefendantId().toString())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
+                        equalTo(updatedDefendantData.getMasterDefendantId().toString())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants[0].custodyTimeLimit",
+                        equalTo(updatedDefendantData.getCustodyTimeLimit())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants[0].dateOfBirth",
+                        equalTo(updatedDefendantData.getDateOfBirth())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants[0].bailStatus.code",
+                        equalTo(updatedDefendantData.getBailStatus().getCode())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants[0].bailStatus.id",
+                        equalTo(updatedDefendantData.getBailStatus().getId().toString())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants[0].firstName",
+                        equalTo(updatedDefendantData.getFirstName())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants[0].lastName",
+                        equalTo(updatedDefendantData.getLastName())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants[0].specificRequirements",
+                        equalTo(updatedDefendantData.getSpecificRequirements())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants[0].organisationName",
+                        equalTo(updatedDefendantData.getLegalEntityName())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants[0].restrictFromCourtList",
+                        equalTo(hearingData.getListedCases().get(0).getDefendants().get(0).getRestrictFromCourtList()))
+        });
 
     }
-
 
     private static com.jayway.jsonpath.JsonPath getJsonPathQueryForDefendantLastName(final HearingData hearing, final ListedCaseData listedCase, final UpdatedDefendantData defendant, final String expectedLastName) {
         final UpdateDefendantSteps.HearingDefendantFilter hearingDefendantFilter = new UpdateDefendantSteps.HearingDefendantFilter(hearing, listedCase, defendant).invoke();
@@ -248,41 +138,40 @@ public class UpdateDefendantSteps extends AbstractIT {
         return com.jayway.jsonpath.JsonPath.compile("$.hearings[?].listedCases[?].caseIdentifier.[?]", hearingFilter, listingCaseFilter, caseReferenceFilter);
     }
 
-
     private UpdateCaseDefendantData getUpdateCaseDefendantDetails(final UUID caseId, final UpdatedDefendantData defendantData) {
 
         return UpdateCaseDefendantData.updateCaseDefendantDetails()
-            .withDefendant(Defendant.defendant()
-                    .withId(defendantData.getDefendantId())
-                    .withMasterDefendantId(defendantData.getMasterDefendantId())
-                .withLegalEntityDefendant(LegalEntityDefendant.legalEntityDefendant()
-                        .withOrganisation(Organisation.organisation()
-                                .withName(defendantData.getLegalEntityName())
+                .withDefendant(Defendant.defendant()
+                        .withId(defendantData.getDefendantId())
+                        .withMasterDefendantId(defendantData.getMasterDefendantId())
+                        .withLegalEntityDefendant(LegalEntityDefendant.legalEntityDefendant()
+                                .withOrganisation(Organisation.organisation()
+                                        .withName(defendantData.getLegalEntityName())
+                                        .build())
                                 .build())
-                        .build())
-                .withPersonDefendant(PersonDefendant.personDefendant()
-                    .withPersonDetails(Person.person()
-                            .withLastName(defendantData.getLastName())
-                            .withFirstName(defendantData.getFirstName())
-                            .withDateOfBirth(defendantData.getDateOfBirth())
-                            .withSpecificRequirements(defendantData.getSpecificRequirements())
-                            .withGender(Gender.FEMALE)
+                        .withPersonDefendant(PersonDefendant.personDefendant()
+                                .withPersonDetails(Person.person()
+                                        .withLastName(defendantData.getLastName())
+                                        .withFirstName(defendantData.getFirstName())
+                                        .withDateOfBirth(defendantData.getDateOfBirth())
+                                        .withSpecificRequirements(defendantData.getSpecificRequirements())
+                                        .withGender(Gender.FEMALE)
+                                        .build()
+                                )
+                                .withBailStatus(new BailStatus.Builder().withCode(defendantData.getBailStatus().getCode()).withDescription(defendantData.getBailStatus().getDescription()).withId(defendantData.getBailStatus().getId()).build())
+                                .withCustodyTimeLimit(defendantData.getCustodyTimeLimit())
+                                .build()
+                        )
+                        .withProsecutionCaseId(caseId)
+                        .withDefenceOrganisation(organisation()
+                                .withName(defendantData.getOrganisationName())
+                                .build())
+                        .withPncId(defendantData.getPncId())
+                        .withIsYouth(defendantData.getYouth().orElse(null))
+                        .withAliases(defendantData.getAliases())
+                        .withAssociatedDefenceOrganisation(defendantData.getAssociatedDefenceOrganisation())
                         .build()
-                    )
-                    .withBailStatus(new BailStatus.Builder().withCode(defendantData.getBailStatus().getCode()).withDescription(defendantData.getBailStatus().getDescription()).withId(defendantData.getBailStatus().getId()).build())
-                    .withCustodyTimeLimit(defendantData.getCustodyTimeLimit())
-                    .build()
-                )
-                .withProsecutionCaseId(caseId)
-                .withDefenceOrganisation(organisation()
-                        .withName(defendantData.getOrganisationName())
-                        .build())
-                .withPncId(defendantData.getPncId())
-                .withIsYouth(defendantData.getYouth().orElse(null))
-                .withAliases(defendantData.getAliases())
-                    .withAssociatedDefenceOrganisation(defendantData.getAssociatedDefenceOrganisation())
-                .build()
-            ).build();
+                ).build();
     }
 
     private static class HearingDefendantFilter {
@@ -317,12 +206,6 @@ public class UpdateDefendantSteps extends AbstractIT {
             defendantFilter = filter(where("id").is(defendant.getDefendantId().toString()));
             return this;
         }
-    }
-
-    public void verifyHmiPublicEventForUpdateHearing() {
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHmiHearingUpdated);
-        LOGGER.info("jsonResponse from publicMessageConsumerHmiHearingUpdated: {}", jsonResponse.prettify());
-        Assert.assertThat(jsonResponse.get("hearing.id"), is(hearingData.getId().toString()));
     }
 
 }

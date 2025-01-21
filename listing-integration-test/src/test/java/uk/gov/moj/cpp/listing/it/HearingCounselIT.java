@@ -6,7 +6,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClientProvider.newPublicJmsMessageProducerClientProvider;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
-import static uk.gov.moj.cpp.listing.it.util.HearingHelper.getHearingById;
+import static uk.gov.moj.cpp.listing.it.util.HearingHelper.pollForHearingById;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.payloadToObject;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
@@ -42,17 +42,17 @@ public class HearingCounselIT extends AbstractIT {
         //when
         sendPublicHearingDefenceCounselAdded(hearingId);
         //then
-        getHearingById(USER_ID_VALUE, hearingId, withJsonPath("$.defenceCounsels[0].firstName", equalTo("Eric")));
+        pollForHearingById(USER_ID_VALUE, hearingId, withJsonPath("$.defenceCounsels[0].firstName", equalTo("Eric")));
 
         //when
         sendPublicHearingDefenceCounselUpdated(hearingId);
         //then
-        getHearingById(USER_ID_VALUE, hearingId, withJsonPath("$.defenceCounsels[0].firstName", equalTo("EricUpdated")));
+        pollForHearingById(USER_ID_VALUE, hearingId, withJsonPath("$.defenceCounsels[0].firstName", equalTo("EricUpdated")));
 
         //when
         sendPublicHearingDefenceCounselRemoved(hearingId);
         //then
-        getHearingById(USER_ID_VALUE, hearingId, withJsonPath("$.defenceCounsels", hasSize(0)));
+        pollForHearingById(USER_ID_VALUE, hearingId, withJsonPath("$.defenceCounsels", hasSize(0)));
     }
 
     private void sendPublicHearingDefenceCounselAdded(final UUID hearingId) throws IOException {

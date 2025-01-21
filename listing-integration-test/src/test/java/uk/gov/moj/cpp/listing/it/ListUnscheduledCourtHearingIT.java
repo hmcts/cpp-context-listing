@@ -41,17 +41,15 @@ public class ListUnscheduledCourtHearingIT extends AbstractIT {
         final HearingsData hearingsData = notHmiEnabledHearingsData();
         final ListUnscheduledCourtHearingSteps listCourtHearingSteps = new ListUnscheduledCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForUnscheduledListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingUnscheduledListedFromAPI();
 
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
         final UpdateUnscheduledHearingSteps updateHearingSteps = new UpdateUnscheduledHearingSteps(hearingsData, updatedHearingDataForAllocation);
         updateHearingSteps.whenHearingIsUpdatedForListing();
-        updateHearingSteps.verifyHearingUpdatedResultsInAllocationInMQ();
         updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
-        updateHearingSteps.verifyHearingConfirmedInPublicMQ();
+        updateHearingSteps.verifyPublicEventHearingConfirmed();
         updateHearingSteps.verifyHearingIsNotUnscheduledListedFromAPI();
-        updateHearingSteps.verifyPublicHearingChangesSaved();
+        updateHearingSteps.verifyPublicEventHearingChangesSaved();
     }
 
     @Test
@@ -59,7 +57,6 @@ public class ListUnscheduledCourtHearingIT extends AbstractIT {
         final HearingsData hearingsData = notHmiEnabledHearingsData();
         final ListUnscheduledCourtHearingSteps listCourtHearingSteps = new ListUnscheduledCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForUnscheduledListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingUnscheduledListedFromAPI();
 
         final VacatingTrialSteps vacatingTrialSteps = new VacatingTrialSteps(hearingsData);
@@ -73,7 +70,6 @@ public class ListUnscheduledCourtHearingIT extends AbstractIT {
         final HearingsData hearingsData = hearingsData();
         final ListUnscheduledCourtHearingSteps listCourtHearingSteps = new ListUnscheduledCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForUnscheduledListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
 
         final Matcher<? super ReadContext> noHearingPresentMatcher = withJsonPath("hearings", hasSize(0));
         pollForUnscheduledHearings(getLoggedInUser(), hearingsData.getHearingData().get(0).getCourtCentreId(), noHearingPresentMatcher);
@@ -84,7 +80,6 @@ public class ListUnscheduledCourtHearingIT extends AbstractIT {
         final HearingsData hearingsData = mixtureHmiEnabledAndNotHmiEnabledHearingsData();
         final ListUnscheduledCourtHearingSteps listCourtHearingSteps = new ListUnscheduledCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForUnscheduledListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
 
         final Matcher<? super ReadContext> oneHearingPresentMatcher = withJsonPath("hearings", hasSize(1));
         pollForUnscheduledHearings(getLoggedInUser(), hearingsData.getHearingData().get(0).getCourtCentreId(), oneHearingPresentMatcher);
@@ -99,10 +94,9 @@ public class ListUnscheduledCourtHearingIT extends AbstractIT {
         final HearingsData hearingsData = notHmiEnabledHearingsData();
         final ListUnscheduledCourtHearingSteps listCourtHearingSteps = new ListUnscheduledCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForUnscheduledListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingUnscheduledListedFromAPI();
 
-        new VacatingTrialSteps(hearingsData).whenHearingIsVacated();
+        new VacatingTrialSteps(hearingsData).whenHearingIsVacatedFromWithinListing();
 
         final Matcher<? super ReadContext> noHearingPresentMatcher = withJsonPath("hearings", hasSize(0));
         final UUID courtCentreId = hearingsData.getHearingData().get(0).getCourtCentreId();

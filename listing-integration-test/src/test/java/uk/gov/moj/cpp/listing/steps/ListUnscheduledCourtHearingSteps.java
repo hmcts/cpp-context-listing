@@ -46,9 +46,9 @@ import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
 import uk.gov.justice.core.courts.SummonsTemplateType;
+import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.listing.courts.ListUnscheduledCourtHearing;
 import uk.gov.justice.listing.courts.TypeOfList;
-import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
@@ -65,32 +65,17 @@ import javax.ws.rs.core.Response;
 
 import com.jayway.jsonpath.ReadContext;
 import org.hamcrest.Matcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ListUnscheduledCourtHearingSteps.class);
     private static final String LISTING_COMMAND_UNSCHEDULED_LIST_COURT_HEARING = "listing.command.list-unscheduled-court-hearing";
     private static final String MEDIA_TYPE_LIST_UNSCHEDULED_COURT_HEARING = "application/vnd.listing.command.list-unscheduled-court-hearing+json";
-
 
     public ListUnscheduledCourtHearingSteps(final HearingsData hearingsData) {
         super(hearingsData);
     }
 
-
     public void whenCaseIsSubmittedForUnscheduledListing() {
-        final Response response = getResponseCaseSubmittedForUnscheduledListing(false);
-        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
-    }
-
-    public void whenCaseIsSubmittedForUnscheduledListingHmiEnabled() {
-        final Response response = getResponseCaseSubmittedForUnscheduledListingHmiEnabled(false);
-        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
-    }
-
-    public void getResponseCaseSubmittedForUnscheduledListingHmiEnabled() {
         final Response response = getResponseCaseSubmittedForUnscheduledListing(false);
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
@@ -111,34 +96,10 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
         final JsonObject listCourtHearingJsonObject = (JsonObject) objectToJsonValueConverter.convert(listCourtHearingData);
 
         request = listCourtHearingJsonObject.toString();
-        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", listCaseForHearingUrl, MEDIA_TYPE_LIST_UNSCHEDULED_COURT_HEARING, request, getLoggedInHeader());
 
         return restClient.postCommand(listCaseForHearingUrl, MEDIA_TYPE_LIST_UNSCHEDULED_COURT_HEARING,
                 request, getLoggedInHeader());
     }
-
-    private Response getResponseCaseSubmittedForUnscheduledListingHmiEnabled(final boolean isStandaloneApp) {
-
-        stubReferenceDataForFirstHearingHmiEnabled();
-
-        final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
-                (readConfig().getProperty(LISTING_COMMAND_UNSCHEDULED_LIST_COURT_HEARING)));
-
-        ListUnscheduledCourtHearing listCourtHearingData = null;
-        if (isStandaloneApp) {
-            listCourtHearingData = getListCourtHearingDataStandaloneApplication(getHearingsData());
-        } else {
-            listCourtHearingData = getListCourtHearingData(getHearingsData());
-        }
-        final JsonObject listCourtHearingJsonObject = (JsonObject) objectToJsonValueConverter.convert(listCourtHearingData);
-
-        request = listCourtHearingJsonObject.toString();
-        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", listCaseForHearingUrl, MEDIA_TYPE_LIST_UNSCHEDULED_COURT_HEARING, request, getLoggedInHeader());
-
-        return restClient.postCommand(listCaseForHearingUrl, MEDIA_TYPE_LIST_UNSCHEDULED_COURT_HEARING,
-                request, getLoggedInHeader());
-    }
-
 
     public void verifyHearingUnscheduledListedFromAPI() {
         final HearingData hearingData = getHearingsData().getHearingData().get(0);
@@ -226,10 +187,10 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                                 .withProsecutionCases(convertToListedCases(hearingData, listedCaseData))
                                 .withDefendantListingNeeds(hearingData.getListedCases().stream()
                                         .map(lc -> lc.getDefendants().stream().map(d ->
-                                                DefendantListingNeeds.defendantListingNeeds()
-                                                        .withDefendantId(d.getDefendantId())
-                                                        .withProsecutionCaseId(lc.getCaseId())
-                                                        .build())
+                                                        DefendantListingNeeds.defendantListingNeeds()
+                                                                .withDefendantId(d.getDefendantId())
+                                                                .withProsecutionCaseId(lc.getCaseId())
+                                                                .build())
                                                 .collect(Collectors.toList()))
                                         .flatMap(List::stream)
                                         .collect(Collectors.toList()))
@@ -259,70 +220,70 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                                 .withMarkerTypeDescription("Description")
                                 .withMarkerTypeid(randomUUID()).build()))
                         .withDefendants(lc.getDefendants().stream().map(d -> Defendant.defendant()
-                                .withId(d.getDefendantId())
-                                .withMasterDefendantId(d.getMasterDefendantId())
-                                .withCourtProceedingsInitiated(ZonedDateTime.now())
-                                .withIsYouth(d.getIsYouth())
-                                .withPersonDefendant(PersonDefendant.personDefendant()
-                                        .withBailStatus(new BailStatus.Builder().withCode(d.getBailStatus().getCode()).withDescription(d.getBailStatus().getDescription()).withId(d.getBailStatus().getId()).build())
-                                        .withPersonDetails(Person.person()
-                                                .withTitle(PERSON_TITLE)
-                                                .withNationalityId(randomUUID())
-                                                .withNationalityDescription(PERSON_NATIONALITY_DESCRIPTION)
-                                                .withAddress(Address.address()
-                                                        .withAddress1(PERSON_ADDRESS_1)
-                                                        .withAddress2(PERSON_ADDRESS_2)
-                                                        .withAddress3(PERSON_ADDRESS_3)
-                                                        .withAddress4(PERSON_ADDRESS_4)
-                                                        .withAddress5(PERSON_ADDRESS_5)
-                                                        .withPostcode(PERSON_POSTCODE)
+                                        .withId(d.getDefendantId())
+                                        .withMasterDefendantId(d.getMasterDefendantId())
+                                        .withCourtProceedingsInitiated(ZonedDateTime.now())
+                                        .withIsYouth(d.getIsYouth())
+                                        .withPersonDefendant(PersonDefendant.personDefendant()
+                                                .withBailStatus(new BailStatus.Builder().withCode(d.getBailStatus().getCode()).withDescription(d.getBailStatus().getDescription()).withId(d.getBailStatus().getId()).build())
+                                                .withPersonDetails(Person.person()
+                                                        .withTitle(PERSON_TITLE)
+                                                        .withNationalityId(randomUUID())
+                                                        .withNationalityDescription(PERSON_NATIONALITY_DESCRIPTION)
+                                                        .withAddress(Address.address()
+                                                                .withAddress1(PERSON_ADDRESS_1)
+                                                                .withAddress2(PERSON_ADDRESS_2)
+                                                                .withAddress3(PERSON_ADDRESS_3)
+                                                                .withAddress4(PERSON_ADDRESS_4)
+                                                                .withAddress5(PERSON_ADDRESS_5)
+                                                                .withPostcode(PERSON_POSTCODE)
+                                                                .build())
+                                                        .withFirstName(d.getFirstName())
+                                                        .withLastName(d.getLastName())
+                                                        .withGender(Gender.MALE)
+                                                        .withAdditionalNationalityId(randomUUID())
+                                                        .withEthnicity(Ethnicity.ethnicity()
+                                                                .withObservedEthnicityId(randomUUID())
+                                                                .withObservedEthnicityDescription(STRING.next())
+                                                                .build())
+                                                        .withDateOfBirth(LocalDate.now().minusYears(21).toString())
                                                         .build())
-                                                .withFirstName(d.getFirstName())
-                                                .withLastName(d.getLastName())
-                                                .withGender(Gender.MALE)
-                                                .withAdditionalNationalityId(randomUUID())
-                                                .withEthnicity(Ethnicity.ethnicity()
-                                                        .withObservedEthnicityId(randomUUID())
-                                                        .withObservedEthnicityDescription(STRING.next())
-                                                        .build())
-                                                .withDateOfBirth(LocalDate.now().minusYears(21).toString())
                                                 .build())
+                                        .withAssociatedPersons(asList(AssociatedPerson.associatedPerson()
+                                                .withRole(STRING.next())
+                                                .withPerson(Person.person()
+                                                        .withAdditionalNationalityId(randomUUID())
+                                                        .withGender(Gender.FEMALE)
+                                                        .withLastName(d.getLastName())
+                                                        .withNationalityId(randomUUID())
+                                                        .withTitle(PERSON_TITLE)
+                                                        .withEthnicity(Ethnicity.ethnicity()
+                                                                .withObservedEthnicityId(randomUUID())
+                                                                .withObservedEthnicityDescription(STRING.next())
+                                                                .build())
+                                                        .build())
+                                                .build()))
+                                        .withOffences(d.getOffences().stream()
+                                                .map(o -> Offence.offence()
+                                                        .withCount(INTEGER.next())
+                                                        .withId(o.getOffenceId())
+                                                        .withOffenceCode(STRING.next())
+                                                        .withOffenceDefinitionId(randomUUID())
+                                                        .withWording(STRING.next())
+                                                        .withStartDate(LocalDate.now().toString())
+                                                        .withOrderIndex(INTEGER.next())
+                                                        .withOffenceTitle(o.getStatementOfOffenceTitle())
+                                                        .withLaaApplnReference(
+                                                                LaaReference.laaReference()
+                                                                        .withApplicationReference(STRING.next())
+                                                                        .withStatusCode(STRING.next())
+                                                                        .withStatusDate((format(LocalDate.now().toString())))
+                                                                        .withStatusDescription(STRING.next())
+                                                                        .withStatusId(randomUUID()).build())
+                                                        .build())
+                                                .collect(Collectors.toList()))
+                                        .withProsecutionCaseId(listedCaseData.getCaseId())
                                         .build())
-                                .withAssociatedPersons(asList(AssociatedPerson.associatedPerson()
-                                        .withRole(STRING.next())
-                                        .withPerson(Person.person()
-                                                .withAdditionalNationalityId(randomUUID())
-                                                .withGender(Gender.FEMALE)
-                                                .withLastName(d.getLastName())
-                                                .withNationalityId(randomUUID())
-                                                .withTitle(PERSON_TITLE)
-                                                .withEthnicity(Ethnicity.ethnicity()
-                                                        .withObservedEthnicityId(randomUUID())
-                                                        .withObservedEthnicityDescription(STRING.next())
-                                                        .build())
-                                                .build())
-                                        .build()))
-                                .withOffences(d.getOffences().stream()
-                                        .map(o -> Offence.offence()
-                                                .withCount(INTEGER.next())
-                                                .withId(o.getOffenceId())
-                                                .withOffenceCode(STRING.next())
-                                                .withOffenceDefinitionId(randomUUID())
-                                                .withWording(STRING.next())
-                                                .withStartDate(LocalDate.now().toString())
-                                                .withOrderIndex(INTEGER.next())
-                                                .withOffenceTitle(o.getStatementOfOffenceTitle())
-                                                .withLaaApplnReference(
-                                                        LaaReference.laaReference()
-                                                                .withApplicationReference(STRING.next())
-                                                                .withStatusCode(STRING.next())
-                                                                .withStatusDate((format(LocalDate.now().toString())))
-                                                                .withStatusDescription(STRING.next())
-                                                                .withStatusId(randomUUID()).build())
-                                                .build())
-                                        .collect(Collectors.toList()))
-                                .withProsecutionCaseId(listedCaseData.getCaseId())
-                                .build())
                                 .collect(Collectors.toList()))
                         .build())
                 .collect(Collectors.toList());
@@ -343,7 +304,7 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
     }
 
     private List<CourtApplication> getCourtApplications(final HearingData hearingData) {
-        final CourtApplicationParty applicant  = CourtApplicationParty.courtApplicationParty()
+        final CourtApplicationParty applicant = CourtApplicationParty.courtApplicationParty()
                 .withId(hearingData.getCourtApplications().get(0).getApplicant().getId())
                 .withPersonDetails(Person.person().withLastName(hearingData.getCourtApplications().get(0).getApplicant().getLastName())
                         .withFirstName(hearingData.getCourtApplications().get(0).getApplicant().getFirstName())

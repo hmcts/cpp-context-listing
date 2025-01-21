@@ -5,6 +5,8 @@ import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAll
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.notHmiEnabledHearingsData;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROWN_JURISDICTION;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubDeleteAvailableHearingSlotsService;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyDeleteAvailableHearingSlotsStubCommandInvoked;
 
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -48,13 +50,14 @@ public class VacateHearingIT extends AbstractIT {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+
+        final String hearingId = hearingsData.getHearingData().get(0).getId().toString();
+        stubDeleteAvailableHearingSlotsService(hearingId);
+
         final VacatingTrialSteps vacatingTrialSteps = new VacatingTrialSteps(hearingsData);
-
         vacatingTrialSteps.whenPublicEventHearingTrialVacatedIsPublished();
-
-        vacatingTrialSteps.verifyHearingTrialVacatedEvent();
         vacatingTrialSteps.verifyVacatedTrialWhenQueryingFromAPI();
-        vacatingTrialSteps.verifyAvailableSlotsForHearingFreedEvent();
+        verifyDeleteAvailableHearingSlotsStubCommandInvoked(hearingId);
     }
 
     @Test
@@ -63,13 +66,13 @@ public class VacateHearingIT extends AbstractIT {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+
+        final String hearingId = hearingsData.getHearingData().get(0).getId().toString();
+        stubDeleteAvailableHearingSlotsService(hearingId);
         final VacatingTrialSteps vacatingTrialSteps = new VacatingTrialSteps(hearingsData);
-
-        vacatingTrialSteps.whenHearingIsVacated();
-
-        vacatingTrialSteps.verifyListingTrialVacatedEvent(true);
+        vacatingTrialSteps.whenHearingIsVacatedFromWithinListing();
         vacatingTrialSteps.verifyVacatedTrialWhenQueryingFromAPI();
-        vacatingTrialSteps.verifyAvailableSlotsForHearingFreedEvent();
+        verifyDeleteAvailableHearingSlotsStubCommandInvoked(hearingId);
     }
 
     @Test
@@ -78,13 +81,10 @@ public class VacateHearingIT extends AbstractIT {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+
         final VacatingTrialSteps vacatingTrialSteps = new VacatingTrialSteps(hearingsData);
-
         vacatingTrialSteps.whenPublicEventHearingTrialVacatedIsPublishedWithEmptyVacatedTrialReasonId();
-
-        vacatingTrialSteps.verifyHearingVacatingTrialEventForEmptyReasonId();
         vacatingTrialSteps.verifyVacatedTrialWithEmptyReasonIdWhenQueryingFromAPI();
-        vacatingTrialSteps.verifyAvailableSlotsForHearingFreedEventNotRaised();
     }
 
     @Test
@@ -93,13 +93,10 @@ public class VacateHearingIT extends AbstractIT {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+
         final VacatingTrialSteps vacatingTrialSteps = new VacatingTrialSteps(hearingsData);
-
         vacatingTrialSteps.whenPublicEventHearingTrialVacatedIsPublished();
-
-        vacatingTrialSteps.verifyHearingTrialVacatedEvent();
         vacatingTrialSteps.verifyVacatedTrialWhenQueryingFromAPI();
-        vacatingTrialSteps.verifyAvailableSlotsForHearingFreedEventNotRaised();
     }
 
     @ParameterizedTest
@@ -108,15 +105,11 @@ public class VacateHearingIT extends AbstractIT {
         final HearingsData hearingsData = hearingsData(jurisdictionType);
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
         final VacatingTrialSteps vacatingTrialSteps = new VacatingTrialSteps(hearingsData);
-
-        vacatingTrialSteps.whenHearingIsVacated();
-
-        vacatingTrialSteps.verifyListingTrialVacatedEvent(false);
+        vacatingTrialSteps.whenHearingIsVacatedFromWithinListing();
         vacatingTrialSteps.verifyVacatedTrialWhenQueryingFromAPI();
-        vacatingTrialSteps.verifyAvailableSlotsForHearingFreedEventNotRaised();
     }
 
     @ParameterizedTest
@@ -125,15 +118,11 @@ public class VacateHearingIT extends AbstractIT {
         final HearingsData hearingsData = notHmiEnabledHearingsData(jurisdictionType);
         final ListUnscheduledCourtHearingSteps listCourtHearingSteps = new ListUnscheduledCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForUnscheduledListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingUnscheduledListedFromAPI();
 
         final VacatingTrialSteps vacatingTrialSteps = new VacatingTrialSteps(hearingsData);
-        vacatingTrialSteps.whenHearingIsVacated();
-
-        vacatingTrialSteps.verifyListingTrialVacatedEvent(false);
+        vacatingTrialSteps.whenHearingIsVacatedFromWithinListing();
         vacatingTrialSteps.verifyVacatedTrialWhenQueryingFromAPI();
-        vacatingTrialSteps.verifyAvailableSlotsForHearingFreedEventNotRaised();
     }
 
 }

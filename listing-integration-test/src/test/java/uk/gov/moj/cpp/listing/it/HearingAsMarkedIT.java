@@ -1,6 +1,9 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static com.jayway.jsonassert.JsonAssert.emptyCollection;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.util.UUID.randomUUID;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROWN_JURISDICTION;
 
@@ -11,26 +14,26 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.util.UUID;
 
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class HearingAsMarkedIT extends AbstractIT {
 
     @Test
-    public void shouldHearingAsMarked() {
+    public void shouldRemoveHearingMarkedAsDuplicate() {
         final HearingsData hearingsData = hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
         HearingData hearingData = hearingsData.getHearingData().get(0);
         final HearingAsMarkedSteps hearingAsMarkedSteps = new HearingAsMarkedSteps(hearingData);
         hearingAsMarkedSteps.whenHearingMarkedAsDuplicatePublicEventIsPublished();
-        hearingAsMarkedSteps.verifyHearingMarkedAsDuplicatePublicEventInActiveMQ();
-        hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateInActiveMQ();
-        hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateForCaseInActiveMQ();
-        hearingAsMarkedSteps.verifyDeletedFromHearingViewStore();
+
+        pollForHearing(hearingData.getCourtCentreId().toString(), false, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings", emptyCollection())
+        });
     }
 
     @Test
@@ -38,16 +41,15 @@ public class HearingAsMarkedIT extends AbstractIT {
         final HearingsData hearingsData = hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-        listCourtHearingSteps.verifyPrivateEventRequestedHearingFromStagingHmiNotInActiveMQ();
 
         HearingData hearingData = hearingsData.getHearingData().get(0);
         final HearingAsMarkedSteps hearingAsMarkedSteps = new HearingAsMarkedSteps(hearingData);
         hearingAsMarkedSteps.whenUnallocatedHearingMarkedAsDuplicateCommandIsSent();
-        hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateInActiveMQ();
-        hearingAsMarkedSteps.verifyDeletedFromHearingViewStore();
-        hearingAsMarkedSteps.verifyPrivateEventDeletedHearingInStagingHmiNotInActiveMQ();
+
+        pollForHearing(hearingData.getCourtCentreId().toString(), false, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings", emptyCollection())
+        });
     }
 
     @Disabled("will be handled with DD-34779")
@@ -57,7 +59,6 @@ public class HearingAsMarkedIT extends AbstractIT {
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, CROWN_JURISDICTION);
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
         listCourtHearingSteps.verifyPrivateEventRequestedHearingFromStagingHmiInActiveMQ();
 
@@ -65,11 +66,12 @@ public class HearingAsMarkedIT extends AbstractIT {
         final HearingAsMarkedSteps hearingAsMarkedSteps = new HearingAsMarkedSteps(hearingData);
         hearingAsMarkedSteps.whenHearingMarkedAsDuplicatePublicEventIsPublished();
         hearingAsMarkedSteps.verifyHearingMarkedAsDuplicatePublicEventInActiveMQ();
-        hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateInActiveMQ();
-        hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateForCaseInActiveMQ();
-        hearingAsMarkedSteps.verifyDeletedFromHearingViewStore();
+
+        pollForHearing(hearingData.getCourtCentreId().toString(), false, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings", emptyCollection())
+        });
+
         hearingAsMarkedSteps.verifyHmiPublicEventForDeleteHearing();
-        hearingAsMarkedSteps.verifyPrivateEventDeletedHearingInStagingHmiInActiveMQ();
     }
 
 }

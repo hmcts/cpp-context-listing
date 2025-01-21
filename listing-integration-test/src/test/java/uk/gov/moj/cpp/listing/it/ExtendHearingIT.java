@@ -14,7 +14,6 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,7 +34,7 @@ public class ExtendHearingIT extends AbstractIT {
     private final String JURISDICTION_TYPE = JurisdictionType.CROWN.name();
 
     @Test
-    public void shouldExtendHearingForCase() throws IOException {
+    public void shouldExtendHearingForCase() {
 
         final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(ALLOCATED_HEARING_ID, null, CASE_URN, randomUUID(), null, JURISDICTION_TYPE, JURISDICTION_TYPE,
                 null, null);
@@ -50,12 +49,12 @@ public class ExtendHearingIT extends AbstractIT {
 
         listCourtHearingSteps2.verifyHearingIsCreated(ALLOCATED_HEARING_ID, 1);
         listCourtHearingSteps2.extendHearing(UNALLOCATED_HEARING_ID, ALLOCATED_HEARING_ID);
-        listCourtHearingSteps2.verifyHearingConfirmedEventForExtendHearingPublicMQ(ALLOCATED_HEARING_ID, UNALLOCATED_HEARING_ID);
+        listCourtHearingSteps2.verifyPublicEventHearingConfirmedAndExtendHearingFromProgression(ALLOCATED_HEARING_ID, UNALLOCATED_HEARING_ID);
         listCourtHearingSteps2.verifyHearingUpdatedToCaseInActiveMQ(ALLOCATED_HEARING_ID, UNALLOCATED_HEARING_ID, 2);
     }
 
     @Test
-    public void shouldExtendHearingPartially() throws IOException {
+    public void shouldExtendHearingPartially() {
 
         final CaseAndDefendantData allocatedHearingCaseAndDefendantData = new CaseAndDefendantData(ALLOCATED_HEARING_ID, null, CASE_URN, randomUUID(), null, JURISDICTION_TYPE, JURISDICTION_TYPE,
                 null, null);
@@ -77,11 +76,10 @@ public class ExtendHearingIT extends AbstractIT {
 
         listCourtHearingSteps2.verifyHearingIsCreated(ALLOCATED_HEARING_ID, 1);
         listCourtHearingSteps2.extendHearingPartially(unallocatedHearingId, ALLOCATED_HEARING_ID, listedCaseData);
-        listCourtHearingSteps2.verifyHearingConfirmedEventForExtendPartialHearingPublicMQ(ALLOCATED_HEARING_ID, unallocatedHearingId);
+        listCourtHearingSteps2.verifyPublicEventHearingConfirmedEventAndExtendPartialHearingFromProgression(ALLOCATED_HEARING_ID, unallocatedHearingId);
         listCourtHearingSteps2.verifyHearingUpdatedToCaseInActiveMQ(ALLOCATED_HEARING_ID, unallocatedHearingId, 1);
-        listCourtHearingSteps2.verifyHearingUpdatedPartiallyInActiveMQ(unallocatedHearingId);
-        listCourtHearingSteps2.verifyPublicHearingChangesSavedInPublicMQ(ALLOCATED_HEARING_ID);
-        listCourtHearingSteps2.verifyPublicHearingUpdatedPartiallyInActiveMQ(unallocatedHearingId);
+        listCourtHearingSteps2.verifyPublicEVentHearingChangesSaved(ALLOCATED_HEARING_ID);
+        listCourtHearingSteps2.verifyPublicEventHearingUpdatedPartially(unallocatedHearingId);
 
 
         final UpdatedHearingData updatedHearingDataWithUpdatedJudiciary = UpdatedHearingData.updatedHearingDataDifferentJudiciary(allocatedHearingData.getHearingData().get(0));
@@ -91,7 +89,7 @@ public class ExtendHearingIT extends AbstractIT {
     }
 
     @Test
-    public void shouldExtendHearingWhole() throws IOException {
+    public void shouldExtendHearingWhole() {
 
         final CaseAndDefendantData allocatedHearingCaseAndDefendantData = new CaseAndDefendantData(ALLOCATED_HEARING_ID, null, CASE_URN, randomUUID(), null, JURISDICTION_TYPE, JURISDICTION_TYPE, null, null);
 
@@ -111,7 +109,7 @@ public class ExtendHearingIT extends AbstractIT {
 
         listCourtHearingSteps2.verifyHearingIsCreated(ALLOCATED_HEARING_ID, 1);
         listCourtHearingSteps2.extendWholeHearing(unallocatedHearingId, ALLOCATED_HEARING_ID, listedCaseDataList);
-        listCourtHearingSteps2.verifyHearingConfirmedEventForExtendHearingPublicMQ(ALLOCATED_HEARING_ID, unallocatedHearingId);
+        listCourtHearingSteps2.verifyPublicEventHearingConfirmedAndExtendHearingFromProgression(ALLOCATED_HEARING_ID, unallocatedHearingId);
         listCourtHearingSteps2.verifyHearingUpdatedToCaseInActiveMQ(ALLOCATED_HEARING_ID, unallocatedHearingId, 2);
     }
 
@@ -144,7 +142,7 @@ public class ExtendHearingIT extends AbstractIT {
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(unallocatedHearingsData1, updatedHearingData);
         updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
-        updateHearingSteps.verifyHearingConfirmedInPublicMQ();
+        updateHearingSteps.verifyPublicEventHearingConfirmed();
     }
 
 

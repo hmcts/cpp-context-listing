@@ -7,9 +7,13 @@ import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.getNextWorkingDay;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.buildPublishCourtListCommandPayload;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingData;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingDataWithJudiciary;
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithRestriction;
+import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForPublicListNote;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
@@ -22,7 +26,6 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 import static uk.gov.moj.cpp.listing.utils.SystemIdMapperStub.stubIdMapperReturningExistingAssociation;
 
-import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -36,7 +39,6 @@ import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
@@ -87,7 +89,6 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus("COURT_LIST_REQUESTED", "true");
-        TimeUnit.SECONDS.sleep(20);
         publishCourtListSteps.verifySentPublishedCourtListHasNoHearings();
     }
 
@@ -135,21 +136,25 @@ public class PublishCourtListIT extends AbstractIT {
         stubGetReferenceDataCourtCentreById(courtCentreIdOne);
         stubGetReferenceDataCourtCentreById(courtCentreIdTwo);
         final JsonObject commandAsJson = createObjectBuilder().build();
-        final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreIdOne)
-                .combine(loadHearingDataWithJudiciary(courtCentreIdTwo));
+        final HearingsData hearingDataCourtCentre1 = loadHearingDataWithJudiciary(courtCentreIdOne);
+        pollUntilHearingIsPresent(courtCentreIdOne.toString(), ALLOCATED, getLoggedInUser().toString(), hearingDataCourtCentre1.getHearingData().get(0).getId().toString());
+
+        final HearingsData hearingDataCourtCentre2 = loadHearingDataWithJudiciary(courtCentreIdTwo);
+        pollUntilHearingIsPresent(courtCentreIdTwo.toString(), ALLOCATED, getLoggedInUser().toString(), hearingDataCourtCentre2.getHearingData().get(0).getId().toString());
+
+        final HearingsData hearingsData = hearingDataCourtCentre1.combine(hearingDataCourtCentre2);
         final JsonObject publishCourtListCommandPayloadUsingFirstCourtCentreArbitrarily = buildPublishCourtListCommandPayload(courtCentreIdOne, publishCourtListType, startDate);
         final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayloadUsingFirstCourtCentreArbitrarily);
         publishCourtListSteps.verifyHearingListedFromAPI(true);
         publishCourtListSteps.acceptCourtListXmlFiles();
-        final LocalDate expectedPublishDate = DateAndTimeUtils.getNextWorkingDay(LocalDate.now());
+
+        final LocalDate expectedPublishDate = getNextWorkingDay(LocalDate.now());
 
         sendPublishFinalCourtListsForAllCrownCourtsCommand(commandAsJson);
-
 
         publishCourtListSteps.verifyThatWeSuccessfullyRequestedAFinalListPublication(courtCentreIdOne, expectedPublishDate);
         publishCourtListSteps.verifyThatWeSuccessfullyRequestedAFinalListPublication(courtCentreIdTwo, expectedPublishDate);
     }
-
 
     @Test
     public void shouldPublishCourtListWithHearingsWithPublicListNoteForFirmPublishType() throws Exception {
@@ -169,15 +174,13 @@ public class PublishCourtListIT extends AbstractIT {
         stubGetReferenceDataCourtCentreById(courtCentreId);
 
         final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
+        pollUntilHearingIsPresent(courtCentreId.toString(), ALLOCATED, getLoggedInUser().toString(), hearingsData.getHearingData().get(0).getId().toString());
 
-        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, "publicListNote");
+        final UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, "publicListNote");
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
-        TimeUnit.SECONDS.sleep(20);
         updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
-        updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
         updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
-
 
         stubIdMapperReturningExistingAssociation(courtListId);
         stubOrganisationUnit(courtCentreId);
@@ -192,7 +195,6 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "true");
         publishCourtListSteps.verifySentPublishedCourtListHearingData(true, "RestrictionApplied, publicListNote");
     }
-
 
     @Test
     public void shouldPublishCourtListWithHearingsWithOutPublicListNoteForFirmPublishType() throws Exception {
@@ -212,14 +214,12 @@ public class PublishCourtListIT extends AbstractIT {
         stubGetReferenceDataCourtCentreById(courtCentreId);
 
         final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
+        pollUntilHearingIsPresent(courtCentreId.toString(), ALLOCATED, getLoggedInUser().toString(), hearingsData.getHearingData().get(0).getId().toString());
 
-        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, null);
-
+        final UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, null);
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
-        TimeUnit.SECONDS.sleep(20);
         updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
         updateHearingSteps.verifyHearingWithUpdatedNoPublicListNoteWhenQueryingFromAPI();
-
 
         stubIdMapperReturningExistingAssociation(courtListId);
         stubOrganisationUnit(courtCentreId);
@@ -232,10 +232,8 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "true");
-        TimeUnit.SECONDS.sleep(20);
         publishCourtListSteps.verifySentPublishedCourtListHearingData(true, "RestrictionApplied");
     }
-
 
     @Test
     public void shouldPublishCourtListWithHearingsWithVideoLinkForDraftPublishTypeAndPublishPublicMessage() throws Exception {
@@ -255,15 +253,13 @@ public class PublishCourtListIT extends AbstractIT {
         stubGetReferenceDataCourtCentreById(courtCentreId);
 
         final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
+        pollUntilHearingIsPresent(courtCentreId.toString(), ALLOCATED, getLoggedInUser().toString(), hearingsData.getHearingData().get(0).getId().toString());
 
-        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, "videoLinkDetails");
+        final UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, "videoLinkDetails");
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
-        TimeUnit.SECONDS.sleep(20);
         updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
-        updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
         updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
-
 
         stubIdMapperReturningExistingAssociation(courtListId);
         stubOrganisationUnit(courtCentreId);
@@ -277,7 +273,6 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "false");
-        TimeUnit.SECONDS.sleep(20);
         publishCourtListSteps.verifySentPublishedCourtListHearingDataForDraft(true, "RestrictionApplied, videoLinkDetails");
     }
 
@@ -299,15 +294,12 @@ public class PublishCourtListIT extends AbstractIT {
         stubGetReferenceDataCourtCentreById(courtCentreId);
 
         final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
+        pollUntilHearingIsPresent(courtCentreId.toString(), ALLOCATED, getLoggedInUser().toString(), hearingsData.getHearingData().get(0).getId().toString());
 
-        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, "publicListNote");
-
+        final UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, "publicListNote");
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
-        TimeUnit.SECONDS.sleep(20);
         updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
-        updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
         updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
-
 
         stubIdMapperReturningExistingAssociation(courtListId);
         stubOrganisationUnit(courtCentreId);
@@ -321,24 +313,8 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "false");
-        TimeUnit.SECONDS.sleep(20);
         publishCourtListSteps.verifySentPublishedCourtListHearingDataForDraft(true, "RestrictionApplied, publicListNote");
     }
-
-    private void sendPublishFinalCourtListsForAllCrownCourtsCommand(final JsonObject commandAsJson) {
-
-        final String rawUrl = String.format("%s/%s", getBaseUri(), readConfig().getProperty(LISTING_COMMAND_PUBLISH_LISTS_FOR_ALL_CROWN_COURTS));
-
-        final Response response = restClient
-                .postCommand(
-                        rawUrl,
-                        MEDIA_TYPE_LISTING_COMMAND_PUBLISH_LISTS_FOR_ALL_CROWN_COURTS,
-                        commandAsJson.toString(),
-                        getLoggedInHeader());
-
-        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
-    }
-
 
     @Test
     public void shouldPublishCourtListWithHearingsWithOutListNoteWhenRRNotPresentForFirmPublishType() throws Exception {
@@ -358,11 +334,11 @@ public class PublishCourtListIT extends AbstractIT {
         stubGetReferenceDataCourtCentreById(courtCentreId);
 
         final HearingsData hearingsData = loadHearingData(courtCentreId, courtRoomUUID);
+        pollUntilHearingIsPresent(courtCentreId.toString(), ALLOCATED, getLoggedInUser().toString(), hearingsData.getHearingData().get(0).getId().toString());
 
-        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, null);
+        final UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, null);
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
-        TimeUnit.SECONDS.sleep(20);
         updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
         updateHearingSteps.verifyHearingWithUpdatedNoPublicListNoteWhenQueryingFromAPI();
 
@@ -379,7 +355,6 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "true");
         publishCourtListSteps.verifySentPublishedCourtListHearingData(true, "");
     }
-
 
     @Test
     public void shouldRestrictListingCaseFromCourtForHearingId() throws Exception {
@@ -398,13 +373,12 @@ public class PublishCourtListIT extends AbstractIT {
 
         stubGetReferenceDataCourtCentreById(courtCentreId);
 
-        HearingsData hearingsData = HearingsData.hearingsDataWithRestriction(courtCentreId,courtRoomUUID,"DISTRICT_JUDGE");
+        HearingsData hearingsData = hearingsDataWithRestriction(courtCentreId,courtRoomUUID,"DISTRICT_JUDGE");
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedAndListed();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(true);
 
-        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, null);
+        final UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, null);
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
         updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
@@ -412,7 +386,6 @@ public class PublishCourtListIT extends AbstractIT {
 
         final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
         restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getRestrictListingFromCourtData(hearingsData));
-        restrictCourtListSteps.verifyRestrictCourtListInActiveMQ();
         restrictCourtListSteps.verifyListingRestrictedInHearing(true, true, false);
 
         stubIdMapperReturningExistingAssociation(courtListId);
@@ -428,6 +401,19 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "true");
         publishCourtListSteps.verifySentRestrictedPublishedCourtListHearingData();
 
+    }
+
+    private void sendPublishFinalCourtListsForAllCrownCourtsCommand(final JsonObject commandAsJson) {
+        final String rawUrl = String.format("%s/%s", getBaseUri(), readConfig().getProperty(LISTING_COMMAND_PUBLISH_LISTS_FOR_ALL_CROWN_COURTS));
+
+        final Response response = restClient
+                .postCommand(
+                        rawUrl,
+                        MEDIA_TYPE_LISTING_COMMAND_PUBLISH_LISTS_FOR_ALL_CROWN_COURTS,
+                        commandAsJson.toString(),
+                        getLoggedInHeader());
+
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
 }

@@ -80,7 +80,7 @@ public class GroupCasesIT extends AbstractIT {
         stubGetReferenceDataCourtCentreById(courtCentreId);
         postListCourtHearingCommand(masterCaseId);
 
-        JsonPath jsonResponse = listCourtHearingSteps.verifyPublicHearingConfirmedInMQ();
+        JsonPath jsonResponse = listCourtHearingSteps.getHearingConfirmedPublicEventPayload();
         assertPublicHearingConfirmed(jsonResponse, masterCaseId);
         assertViewStoreUpdated(masterCaseId, Collections.emptyList());
 

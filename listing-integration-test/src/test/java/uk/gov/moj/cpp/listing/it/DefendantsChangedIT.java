@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.it;
 
 
+import static uk.gov.moj.cpp.listing.steps.data.UpdatedDefendantData.updatedDefendantData;
+
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateDefendantSteps;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
@@ -19,19 +21,15 @@ public class DefendantsChangedIT extends AbstractIT {
         HearingsData hearingsData = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
         DefendantData defendantData = hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0);
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
         HearingData hearingData = hearingsData.getHearingData().get(0);
-        UpdatedDefendantData updatedDefendantData = UpdatedDefendantData.updatedDefendantData(defendantData);
+        UpdatedDefendantData updatedDefendantData = updatedDefendantData(defendantData);
 
         final UpdateDefendantSteps updateDefendantSteps = new UpdateDefendantSteps(caseId, hearingData, updatedDefendantData);
-        updateDefendantSteps.whenCaseDefendantsUpdatedPublicEventIsPublished();
-        updateDefendantSteps.verifyEventDefendantUpdatedInActiveMQ();
-        updateDefendantSteps.verifyEventDefendantsToBeUpdateInActiveMQ();
-        updateDefendantSteps.verifyEventDefendantDetailsUpdatedInActiveMQ();
+        updateDefendantSteps.whenPublicEventProgressionCaseDefendantsUpdatedIsPublished();
         updateDefendantSteps.verifyHearingListedFromAPI(false);
     }
 
@@ -40,19 +38,15 @@ public class DefendantsChangedIT extends AbstractIT {
         HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         DefendantData defendantData = hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0);
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
         HearingData hearingData = hearingsData.getHearingData().get(0);
-        UpdatedDefendantData updatedDefendantData = UpdatedDefendantData.updatedDefendantData(defendantData);
+        UpdatedDefendantData updatedDefendantData = updatedDefendantData(defendantData);
 
         final UpdateDefendantSteps updateDefendantSteps = new UpdateDefendantSteps(caseId, hearingData, updatedDefendantData);
-        updateDefendantSteps.whenCaseDefendantsUpdatedPublicEventIsPublished();
-        updateDefendantSteps.verifyEventDefendantUpdatedInActiveMQ();
-        updateDefendantSteps.verifyEventDefendantsToBeUpdateInActiveMQ();
-        updateDefendantSteps.verifyEventDefendantDetailsUpdatedInActiveMQ();
+        updateDefendantSteps.whenPublicEventProgressionCaseDefendantsUpdatedIsPublished();
         updateDefendantSteps.verifyHearingListedFromAPI(true);
     }
 }

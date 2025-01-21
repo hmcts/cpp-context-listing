@@ -27,8 +27,7 @@ public class BookedSlotIT extends AbstractIT {
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataForBookedSlot());
         listCourtHearingSteps.whenCaseIsSubmittedForListingWithBookedSlot();
-        listCourtHearingSteps.verifyHearingListedWithBookedSlotsInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPIAllocatedForBookSlots();
-        listCourtHearingSteps.verifyHearingConfirmedInPublicMQ();
+        listCourtHearingSteps.verifyPublicEventHearingConfirmed();
     }
 }

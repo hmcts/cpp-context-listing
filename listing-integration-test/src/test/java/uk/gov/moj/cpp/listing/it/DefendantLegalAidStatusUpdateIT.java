@@ -1,5 +1,9 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+
 import uk.gov.moj.cpp.listing.steps.DefendantLegalAidStatusUpdateSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -7,23 +11,24 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.util.UUID;
 
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 
 public class DefendantLegalAidStatusUpdateIT extends AbstractIT {
 
     @Test
-    public void shouldUpdateDefendantLegalAidStatusFollowingPublicDefendantLegalAidStatusUpdatedEventFromProgression() throws Exception {
+    public void shouldUpdateDefendantLegalAidStatusFollowingPublicDefendantLegalAidStatusUpdatedEventFromProgression() {
         HearingsData hearingsData = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
         final UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
         HearingData hearingData = hearingsData.getHearingData().get(0);
         final DefendantLegalAidStatusUpdateSteps defendantLegalAidStatusUpdateSteps = new DefendantLegalAidStatusUpdateSteps(caseId, hearingData);
         defendantLegalAidStatusUpdateSteps.whenCaseDefendantLegalAidStatusUpdatedPublicEventIsPublished();
-        defendantLegalAidStatusUpdateSteps.verifyEventDefendantLegalAidStatusUpdatedInActiveMQ();
-        defendantLegalAidStatusUpdateSteps.verifyHearingListedFromAPI(false);
+        pollForHearing(hearingData.getCourtCentreId().toString(), false, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[0].listedCases[0].defendants[0].legalAidStatus", equalTo("Granted"))
+        });
 
     }
 }

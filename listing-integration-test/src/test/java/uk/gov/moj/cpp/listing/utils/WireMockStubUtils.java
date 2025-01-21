@@ -8,19 +8,16 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static java.text.MessageFormat.format;
 import static java.util.UUID.randomUUID;
-import static javax.ws.rs.client.Entity.entity;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
 import static uk.gov.justice.service.wiremock.testutil.InternalEndpointMockUtils.stubPingFor;
 import static uk.gov.justice.services.common.http.HeaderConstants.ID;
-import static uk.gov.justice.services.test.utils.core.rest.ResteasyClientBuilderFactory.clientBuilder;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 
 import java.util.UUID;
 
 import javax.json.Json;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 /**
@@ -80,10 +77,4 @@ public class WireMockStubUtils {
 
     }
 
-    private static Response put(final String url, final String contentType) {
-        return clientBuilder().build()
-                .target(url)
-                .request()
-                .put(entity("", MediaType.valueOf(contentType)));
-    }
 }
