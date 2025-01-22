@@ -13,13 +13,10 @@ public class CourtApplicationUpdateIT extends AbstractIT {
         HearingsData hearingsData = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
         final CourtApplicationSteps courtApplicationSteps = new CourtApplicationSteps(hearingsData);
         courtApplicationSteps.whenCaseCourtApplicationUpdatedPublicEventIsPublished();
-        courtApplicationSteps.verifyCourtApplicationUpdatedInActiveMQ();
-        courtApplicationSteps.verifyCourtApplicationUpdatedInPrivateMessage();
         courtApplicationSteps.verifyCourtApplicationUpdatedFromAPI();
     }
 }

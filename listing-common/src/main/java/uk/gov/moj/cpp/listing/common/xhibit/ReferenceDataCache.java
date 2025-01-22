@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -41,7 +42,7 @@ public class ReferenceDataCache {
 
     private Map<String, List<CourtMapping>> magsCourtMappingListMapCache = new HashMap<>();
 
-    private Map<UUID, HearingType> hearingTypesMapCache = new HashMap<>();
+    private Map<UUID, HearingType> hearingTypesMapCache = new ConcurrentHashMap<>() ;
 
     private Map<UUID, List<JsonObject>> cpCourtRoomCache = new HashMap<>();
 

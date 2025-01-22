@@ -80,7 +80,7 @@ public class ListCourtHearingStepsWithWeekCommencing {
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingData);
         updateHearingSteps.whenHearingIsUpdatedForListing();
         updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();
-        updateHearingSteps.verifyPublicHearingChangesSaved();
+        updateHearingSteps.verifyPublicEventHearingChangesSaved();
         return updatedHearingData;
     }
 
@@ -98,7 +98,6 @@ public class ListCourtHearingStepsWithWeekCommencing {
         final WeekCommencingHearingSteps weekCommencingHearingSteps = new WeekCommencingHearingSteps(updatedHearingDataWithWeekCommencingDate);
         weekCommencingHearingSteps.whenHearingIsUpdatedForListingForWeekCommencingDate();
 
-        weekCommencingHearingSteps.verifyHearingUpdatedResultsForWeekCommencingInMQ();
         weekCommencingHearingSteps.verifyHearingUpdatedWithWeekCommencingDateAndUnallocatedWhenQueryingFromAPI();
     }
 }

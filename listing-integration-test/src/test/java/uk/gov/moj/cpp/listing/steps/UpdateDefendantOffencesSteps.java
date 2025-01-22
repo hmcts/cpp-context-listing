@@ -9,6 +9,7 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
+import static uk.gov.justice.core.courts.LaaReference.laaReference;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
@@ -18,6 +19,9 @@ import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderF
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessageString;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 
 import uk.gov.justice.core.courts.LaaReference;
 import uk.gov.justice.core.courts.Offence;
@@ -60,7 +64,6 @@ import org.slf4j.LoggerFactory;
 public class UpdateDefendantOffencesSteps extends AbstractIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateDefendantOffencesSteps.class);
 
-
     private static final String PUBLIC_EVENT_PROGRESSION_OFFENCES_FOR_DEFENDANT_CHANGED = "public.progression.defendant-offences-changed";
 
     private static final String PRIVATE_EVENT_OFFENCES_TO_BE_UPDATED = "listing.events.offences-to-be-updated";
@@ -74,9 +77,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
 
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
 
-
     JSONComparator ignoreMetaDataComparator = new CustomComparator(JSONCompareMode.LENIENT, new Customization("_metadata", (o1, o2) -> true));
-
 
     private JmsMessageProducerClient publicEventDefendantOffencesUpdated;
     private JmsMessageConsumerClient publicEventMessageConsumerDefendantOffencesUpdated;
@@ -89,9 +90,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
     private JmsMessageConsumerClient privateEventsMessageOffenceDeleted;
     private JmsMessageConsumerClient privateEventsMessageOffenceAdded;
 
-
     private String request;
-
 
     private final HearingData hearingData;
     private final UpdatedOffenceData updatedOffenceData;
@@ -119,9 +118,8 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
         this.userId = randomUUID();
         this.offenceIdToBeDeleted = offenceIdToBeDeleted;
 
-
-        publicEventDefendantOffencesUpdated = QueueUtil.publicEvents.createPublicProducer();
-        publicEventMessageConsumerDefendantOffencesUpdated = QueueUtil.publicEvents.createPublicConsumer(PUBLIC_EVENT_PROGRESSION_OFFENCES_FOR_DEFENDANT_CHANGED);
+        publicEventDefendantOffencesUpdated = publicEvents.createPublicProducer();
+        publicEventMessageConsumerDefendantOffencesUpdated = publicEvents.createPublicConsumer(PUBLIC_EVENT_PROGRESSION_OFFENCES_FOR_DEFENDANT_CHANGED);
 
         privateEventMessageOffencesToBeUpdated = privateEvents.createPrivateConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_UPDATED);
         privateEventMessageOffencesToBeDeleted = privateEvents.createPrivateConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_DELETED);
@@ -157,23 +155,18 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
     private void publishCaseDefendantOffencesUpdated(OffencesForDefendantUpdated offencesForDefendantUpdated) {
         final JsonObject updateCaseDefendantDetailsObject = (JsonObject) objectToJsonValueConverter.convert(offencesForDefendantUpdated);
 
-        QueueUtil.sendMessage(
+        sendMessage(
                 publicEventDefendantOffencesUpdated,
                 PUBLIC_EVENT_PROGRESSION_OFFENCES_FOR_DEFENDANT_CHANGED,
                 updateCaseDefendantDetailsObject,
                 metadataOf(metadataId, PUBLIC_EVENT_PROGRESSION_OFFENCES_FOR_DEFENDANT_CHANGED).withUserId(userId.toString()).build());
 
         request = updateCaseDefendantDetailsObject.toString();
-        LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n", PUBLIC_EVENT_PROGRESSION_OFFENCES_FOR_DEFENDANT_CHANGED, request, getLoggedInHeader());
     }
 
 
-    public void verifyPublicEventDefendantOffencesUpdatedInActiveMQ() throws Exception {
-        JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        String jsonResponse = QueueUtil.retrieveMessageString(publicEventMessageConsumerDefendantOffencesUpdated);
-        LOGGER.debug("jsonResponse from publicEventMessageConsumerDefendantOffencesUpdated: {}", jsonResponse);
+    public void verifyPublicEventDefendantOffencesUpdatedInActiveMQ() {
+        String jsonResponse = retrieveMessageString(publicEventMessageConsumerDefendantOffencesUpdated);
 
         String expected =
                 "{\n" +
@@ -206,7 +199,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
                         "       \"id\": \"" + updatedOffenceData.getReportingRestriction().get(0).getId() + "\",\n" +
                         "       \"judicialResultId\": \"" + updatedOffenceData.getReportingRestriction().get(0).getJudicialResultId().get() + "\",\n" +
                         "       \"label\": \"" + updatedOffenceData.getReportingRestriction().get(0).getLabel() + "\",\n" +
-                        "       \"orderedDate\": \"" + updatedOffenceData.getReportingRestriction().get(0).getOrderedDate().get().toString() + "\"\n}\n" +
+                        "       \"orderedDate\": \"" + updatedOffenceData.getReportingRestriction().get(0).getOrderedDate().get() + "\"\n}\n" +
                         "      ]\n" +
                         "        }\n]\n," +
                         "      \"prosecutionCaseId\": \"" + caseId + "\"\n" +
@@ -221,7 +214,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
                         "      \"prosecutionCaseId\": \"" + caseId + "\"\n" +
                         "    }\n" +
                         "  ],\n" +
-                        "  \"modifiedDate\": \"" + LocalDate.now().toString() + "\",\n" +
+                        "  \"modifiedDate\": \"" + LocalDate.now() + "\",\n" +
                         "  \"updatedOffences\": [\n" +
                         "    {\n" +
                         "      \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
@@ -252,7 +245,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
                         "       \"id\": \"" + updatedOffenceData.getReportingRestriction().get(0).getId() + "\",\n" +
                         "       \"judicialResultId\": \"" + updatedOffenceData.getReportingRestriction().get(0).getJudicialResultId().get() + "\",\n" +
                         "       \"label\": \"" + updatedOffenceData.getReportingRestriction().get(0).getLabel() + "\",\n" +
-                        "       \"orderedDate\": \"" + updatedOffenceData.getReportingRestriction().get(0).getOrderedDate().get().toString() + "\"\n}\n" +
+                        "       \"orderedDate\": \"" + updatedOffenceData.getReportingRestriction().get(0).getOrderedDate().get() + "\"\n}\n" +
                         "      ]\n" +
                         "        }\n]\n," +
                         "      \"prosecutionCaseId\": \"" + caseId + "\"\n" +
@@ -270,7 +263,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
         assertEquals(expected, jsonResponse, true);
     }
 
-    public void verifyEventDefendantOffencesToBeUpdateInActiveMQ() throws Exception {
+    public void verifyEventDefendantOffencesToBeUpdateInActiveMQ() {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
@@ -334,7 +327,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
         assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
     }
 
-    public void verifyEventDefendantOffencesToBeAddedInActiveMQ() throws Exception {
+    public void verifyEventDefendantOffencesToBeAddedInActiveMQ() {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
@@ -391,7 +384,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
         assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
     }
 
-    public void verifyEventDefendantOffencesToBeDeletedInActiveMQ() throws Exception {
+    public void verifyEventDefendantOffencesToBeDeletedInActiveMQ() {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
@@ -432,7 +425,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
         assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
     }
 
-    public void verifyEventOffenceUpdatedInActiveMQ() throws Exception {
+    public void verifyEventOffenceUpdatedInActiveMQ() {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
@@ -497,7 +490,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
         assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
     }
 
-    public void verifyEventOffenceAddedInActiveMQ() throws Exception {
+    public void verifyEventOffenceAddedInActiveMQ() {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
@@ -565,7 +558,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
     }
 
 
-    public void verifyEventOffenceDeletedInActiveMQ() throws Exception {
+    public void verifyEventOffenceDeletedInActiveMQ() {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
@@ -750,7 +743,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
 
     private LaaReference buildLaaReference(LaaReferenceData laaReferenceData) {
 
-        return LaaReference.laaReference()
+        return laaReference()
                 .withStatusCode(laaReferenceData.getStatusCode())
                 .withStatusDescription(laaReferenceData.getStatusDescription())
                 .withStatusId(laaReferenceData.getStatusId())

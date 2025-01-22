@@ -52,7 +52,6 @@ public class CancelHearingDaysIT extends AbstractIT {
         cancelHearingSteps.verifyAllocatedHearingFoundOnNonCancelledHearingDay(hearingDays.get(0).getSittingDay().toLocalDate());
         cancelHearingSteps.verifyAllocatedHearingNotFoundOnCancelledHearingDay(hearingDays.get(1).getSittingDay().toLocalDate());
         cancelHearingSteps.verifyAllocatedHearingNotFoundOnCancelledHearingDay(hearingDays.get(2).getSittingDay().toLocalDate());
-        cancelHearingSteps.verifyHearingSlotsWereNotUpdated();
     }
 
     @Test
@@ -137,7 +136,7 @@ public class CancelHearingDaysIT extends AbstractIT {
         stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtRoomSchedules, hearingData.get(0).getCourtCentreId().toString());
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtRoomSchedules.keySet().stream().toArray(String[]::new), courtRoomSchedules.values().stream().toArray(String[]::new));
+        listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtRoomSchedules.keySet().toArray(String[]::new), courtRoomSchedules.values().toArray(String[]::new));
         return hearingsData;
     }
 

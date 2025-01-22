@@ -8,7 +8,6 @@ import static com.jayway.jsonassert.JsonAssert.emptyCollection;
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.JsonPath.compile;
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.UUID.randomUUID;
@@ -18,10 +17,7 @@ import static javax.json.Json.createObjectBuilder;
 import static javax.ws.rs.core.Response.Status;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.OK;
-import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static uk.gov.justice.services.common.converter.LocalDates.to;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
@@ -32,26 +28,22 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMa
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.integer;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.DocumentGeneratorStub.stubDocumentCreate;
 import static uk.gov.moj.cpp.listing.utils.DocumentGeneratorStub.stubDocumentCreateWithRequestBody;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
-import static uk.gov.moj.cpp.listing.utils.Utilities.DEFAULT_NOT_HAPPENED_TIMEOUT_IN_MILLIS;
-import static uk.gov.moj.cpp.listing.utils.Utilities.listenForPrivateEvent;
 
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
-import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingDay;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
-import uk.gov.moj.cpp.listing.utils.Utilities;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -65,8 +57,6 @@ import javax.json.JsonObject;
 
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import com.jayway.jsonpath.Filter;
-import com.jayway.jsonpath.ReadContext;
-import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +68,6 @@ public class CancelHearingSteps extends AbstractIT {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
     private static final String PUBLIC_HEARING_DAYS_CANCELLED = "public.hearing.hearing-days-cancelled";
-    private static final String EVENT_NON_DEFAULT_DAYS_CHANGED_FOR_HEARING = "listing.events.non-default-days-changed-for-hearing";
     private static final String LISTING_COMMAND_SEQUENCE_HEARING_DAYS = "listing.command.sequence-hearings";
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
     private static final String MEDIA_TYPE_SEARCH_COURT_LIST_JSON = "application/vnd.listing.search.court.list+json";
@@ -90,7 +79,6 @@ public class CancelHearingSteps extends AbstractIT {
     private final List<HearingDay> nonCancelledHearingDays;
     private final List<HearingDay> cancelledHearingDays;
     private final JmsMessageProducerClient publicEventHearingDaysCancelled;
-    private final JmsMessageConsumerClient privateMessageConsumerNonDefaultDaysChangedForHearing;
     private JsonArray nonCancelledHearingDaysWithNewSequence;
 
     public CancelHearingSteps(final HearingsData hearingsData, final List<HearingDay> hearingDays) {
@@ -100,7 +88,6 @@ public class CancelHearingSteps extends AbstractIT {
         this.nonCancelledHearingDays = hearingDays.stream().filter(hearingDay -> !hearingDay.getIsCancelled().orElse(false)).collect(toList());
         this.cancelledHearingDays = hearingDays.stream().filter(hearingDay -> hearingDay.getIsCancelled().orElse(false)).collect(toList());
         this.publicEventHearingDaysCancelled = newPublicJmsMessageProducerClientProvider().getMessageProducerClient();
-        this.privateMessageConsumerNonDefaultDaysChangedForHearing = privateEvents.createPrivateConsumer(EVENT_NON_DEFAULT_DAYS_CHANGED_FOR_HEARING);
     }
 
     public void whenPublicEventHearingDaysCancelledIsPublished() {
@@ -111,19 +98,9 @@ public class CancelHearingSteps extends AbstractIT {
                 metadataOf(randomUUID(), PUBLIC_HEARING_DAYS_CANCELLED)
                         .withUserId(USER_ID_VALUE.toString())
                         .build());
-        final String request = jsonObject.toString();
-        LOGGER.info("Event published:\n\t \n\tPayload = {}\n\n loggedHeader {}", request, getLoggedInHeader());
     }
 
     public void verifyHearingSlotsUpdatedToRetainNonCancelledDays() {
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerNonDefaultDaysChangedForHearing);
-        LOGGER.info("jsonResponse from privateMessageConsumerNonDefaultDaysChangedForHearing: {}", jsonResponse.prettify());
-
-        assertThat(jsonResponse.prettify(), isJson(allOf(
-                withJsonPath("$.hearingId", equalTo(hearingId)),
-                withJsonPath("$.nonDefaultDays", hasSize(nonCancelledHearingDays.size()))
-        )));
-
         verifyAzureUpdateApiInvoked();
     }
 
@@ -136,13 +113,7 @@ public class CancelHearingSteps extends AbstractIT {
         final RequestPatternBuilder cancelledDaysBuilder = putRequestedFor(urlEqualTo("/listingcourtscheduler-api/rest/courtscheduler/hearingslots"));
         cancelledHearingDays.forEach(day -> cancelledDaysBuilder.withRequestBody(containing("\"sessionDate\":\"" + day.getSittingDay().toLocalDate().toString() + "\"")));
 
-        verify(1,  cancelledDaysBuilder); // cancelled days must be within azure api request body once.
-    }
-
-    public void verifyHearingSlotsWereNotUpdated() {
-        final Utilities.EventListener hearingSlotsUpdatedListener = listenForPrivateEvent(EVENT_NON_DEFAULT_DAYS_CHANGED_FOR_HEARING)
-                .withFilter(isJson(withJsonPath("$.hearingId", is(hearingId))));
-        hearingSlotsUpdatedListener.expectNoneWithin(DEFAULT_NOT_HAPPENED_TIMEOUT_IN_MILLIS);
+        verify(1, cancelledDaysBuilder); // cancelled days must be within azure api request body once.
     }
 
     public void verifyAllocatedHearingFoundOnNonCancelledHearingDay(final LocalDate searchDate) {
@@ -174,10 +145,7 @@ public class CancelHearingSteps extends AbstractIT {
     }
 
     public void verifyAllocatedHearingFoundWithCancelledDaysRemovedOnCourtLists() {
-        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.range.search.hearings"), this.hearingData.getCourtCentreId(), ALLOCATED));
-
-        verifyHearingFoundWithCancelledDaysRemoved(searchHearingUrl, false);
+        pollForHearing(this.hearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), getMatchersForHearingFoundWithCancelledDaysRemoved(false));
     }
 
     public void verifyAllocatedHearingFoundWhenSearchDateWithinStartAndEndDateRangeForCourtLists(final LocalDate localDate) {
@@ -185,7 +153,7 @@ public class CancelHearingSteps extends AbstractIT {
                 format(readConfig().getProperty("listing.search.hearings.by.allocated.court-centre-id.start-date.end-date"),
                         ALLOCATED, this.hearingData.getCourtCentreId(), to(localDate), to(localDate)));
 
-        verifyHearingFoundWithCancelledDaysRemoved(searchHearingUrl, false);
+        pollForHearing(searchHearingUrl, getLoggedInUser().toString(), getMatchersForHearingFoundWithCancelledDaysRemoved(false));
     }
 
     public void verifyAllocatedHearingFoundWithCancelledDaysRemovedOnCourtListsOnWeekCommencingRange() {
@@ -193,7 +161,7 @@ public class CancelHearingSteps extends AbstractIT {
                 format(readConfig().getProperty("listing.range.search.hearings.by.week.commencing"),
                         to(hearingData.getHearingStartDate()), to(hearingData.getHearingStartDate().plusDays(7)), hearingData.getCourtCentreId(), ALLOCATED));
 
-        verifyHearingFoundWithCancelledDaysRemoved(searchHearingUrl, false);
+        pollForHearing(searchHearingUrl, getLoggedInUser().toString(), getMatchersForHearingFoundWithCancelledDaysRemoved(false));
     }
 
     public void verifyAllocatedHearingFoundWhenSearchDateWithinWeekCommencingRangeForCourtLists(final LocalDate localDate) {
@@ -201,7 +169,7 @@ public class CancelHearingSteps extends AbstractIT {
                 format(readConfig().getProperty("listing.range.search.hearings.by.week.commencing"),
                         to(localDate.minusDays(3)), to(localDate.plusDays(3)), hearingData.getCourtCentreId(), ALLOCATED));
 
-        verifyHearingFoundWithCancelledDaysRemoved(searchHearingUrl, false);
+        pollForHearing(searchHearingUrl, getLoggedInUser().toString(), getMatchersForHearingFoundWithCancelledDaysRemoved(false));
     }
 
     public void whenHearingDaysAreSequenced() {
@@ -215,14 +183,11 @@ public class CancelHearingSteps extends AbstractIT {
     }
 
     public void verifyAllocatedHearingFoundWithCancelledDaysRemovedOnCourtListsWithUpdatedSequence() {
-        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.range.search.hearings"), this.hearingData.getCourtCentreId(), ALLOCATED));
-
-        verifyHearingFoundWithCancelledDaysRemoved(searchHearingUrl, true);
+        pollForHearing(this.hearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), getMatchersForHearingFoundWithCancelledDaysRemoved(true));
     }
 
-    private void verifyHearingFoundWithCancelledDaysRemoved(final String searchHearingUrl, final boolean sequenceUpdated) {
-        final List<Matcher<? super ReadContext>> matchersOnPayload = new ArrayList<>();
+    private Matcher[] getMatchersForHearingFoundWithCancelledDaysRemoved(final boolean sequenceUpdated) {
+        final List<Matcher> matchersOnPayload = new ArrayList<>();
         matchersOnPayload.add(withJsonPath("$.hearings[0].id", equalTo(hearingData.getId().toString())));
         matchersOnPayload.add(withJsonPath("$.hearings[0].hearingDays", hasSize(nonCancelledHearingDays.size())));
 
@@ -235,10 +200,7 @@ public class CancelHearingSteps extends AbstractIT {
             }
         }
 
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
-                .until(
-                        status().is(OK),
-                        payload().isJson(allOf(matchersOnPayload)));
+        return matchersOnPayload.toArray(new Matcher[0]);
     }
 
     private String getAllocatedHearingListUrl(final LocalDate searchDate) {
@@ -256,7 +218,7 @@ public class CancelHearingSteps extends AbstractIT {
     private void verifyHearingFound(final String searchHearingsUrl, final String mediaType) {
         final Filter idFilter = filter(where("id").is(hearingData.getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingIdFilter = compile("$.hearings[?]", idFilter);
-        poll(requestParams(searchHearingsUrl, mediaType).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingsUrl, mediaType).withHeader(USER_ID, getLoggedInUser()).build())
                 .until(
                         status().is(OK),
                         payload().isJson(

@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
 import uk.gov.justice.core.courts.JurisdictionType;
@@ -36,13 +37,12 @@ public class SearchAvailableHearingIT extends AbstractIT {
     @Test
     public void shouldListAvailableHearingForCaseInHearingAndCaseUrn() {
 
-        final UUID hearingId = UUID.randomUUID();
-        final UUID hearingId2 = UUID.randomUUID();
-        final UUID masterDefendantId = UUID.randomUUID();
-        final UUID masterDefendantId2 = UUID.randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID hearingId2 = randomUUID();
+        final UUID masterDefendantId = randomUUID();
+        final UUID masterDefendantId2 = randomUUID();
         final String caseUrn = STRING.next();
         final String jurisdictionType = JurisdictionType.CROWN.name();
-        final String caseUrnForLinkedCases = STRING.next();
 
         final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(hearingId, caseUrn, caseUrn, masterDefendantId, CASE_IN_HEARING, jurisdictionType, jurisdictionType,
                 null, null);
@@ -59,9 +59,9 @@ public class SearchAvailableHearingIT extends AbstractIT {
     @Test
     public void shouldListAvailableHearingForMatchedDefendant() {
 
-        final UUID hearingId = UUID.randomUUID();
-        final UUID hearingId2 = UUID.randomUUID();
-        final UUID masterDefendantId = UUID.randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID hearingId2 = randomUUID();
+        final UUID masterDefendantId = randomUUID();
         final String caseUrn = STRING.next();
         final String caseUrn2 = STRING.next();
         final String jurisdictionType = JurisdictionType.CROWN.name();
@@ -81,11 +81,10 @@ public class SearchAvailableHearingIT extends AbstractIT {
     @Test
     public void shouldListAllAvailableHearingForMatchedCaseUrn() {
 
-        final UUID hearingId = UUID.randomUUID();
-        final UUID hearingId2 = UUID.randomUUID();
-        final UUID masterDefendantId = UUID.randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID hearingId2 = randomUUID();
+        final UUID masterDefendantId = randomUUID();
         final String caseUrn = STRING.next();
-        final String caseUrn2 = STRING.next();
         final String jurisdictionType = JurisdictionType.CROWN.name();
 
         final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(hearingId, null, caseUrn, masterDefendantId, MATCHED_DEFENDANTS, jurisdictionType, jurisdictionType,
@@ -103,10 +102,10 @@ public class SearchAvailableHearingIT extends AbstractIT {
     @Test
     public void shouldListAvailableHearingWithCaseInHearingAndMatchedDefendant() {
 
-        final UUID hearingId = UUID.randomUUID();
-        final UUID hearingId2 = UUID.randomUUID();
-        final UUID masterDefendantId = UUID.randomUUID();
-        final UUID masterDefendantId2 = UUID.randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID hearingId2 = randomUUID();
+        final UUID masterDefendantId = randomUUID();
+        final UUID masterDefendantId2 = randomUUID();
         final String caseUrn = STRING.next();
         final String jurisdictionTypeCrown = JurisdictionType.CROWN.name();
 
@@ -124,8 +123,8 @@ public class SearchAvailableHearingIT extends AbstractIT {
 
     @Test
     public void shouldListAvailableHearingsWithMatchedDefendant() {
-        final UUID hearingId1 = UUID.randomUUID();
-        final UUID masterDefendantId1 = UUID.randomUUID();
+        final UUID hearingId1 = randomUUID();
+        final UUID masterDefendantId1 = randomUUID();
         final String caseUrn = STRING.next();
         final String jurisdictionTypeCrown = JurisdictionType.CROWN.name();
 
@@ -142,8 +141,8 @@ public class SearchAvailableHearingIT extends AbstractIT {
 
     @Test
     public void shouldListAvailableHearingsWithCaseUrnForLinkedCases() {
-        final UUID hearingId1 = UUID.randomUUID();
-        final UUID masterDefendantId1 = UUID.randomUUID();
+        final UUID hearingId1 = randomUUID();
+        final UUID masterDefendantId1 = randomUUID();
         final String caseUrn = STRING.next();
         final String caseUrnForLinkedCases = STRING.next();
         final String jurisdictionTypeCrown = JurisdictionType.CROWN.name();
@@ -161,8 +160,8 @@ public class SearchAvailableHearingIT extends AbstractIT {
 
     @Test
     public void shouldRetunNotesAndListAvailableHearingsWhenHearingsAndNotesExist() {
-        final UUID hearingId1 = UUID.randomUUID();
-        final UUID masterDefendantId1 = UUID.randomUUID();
+        final UUID hearingId1 = randomUUID();
+        final UUID masterDefendantId1 = randomUUID();
         final String caseUrn = STRING.next();
         final String caseUrnForLinkedCases = STRING.next();
         final String jurisdictionTypeCrown = JurisdictionType.CROWN.name();
@@ -179,8 +178,8 @@ public class SearchAvailableHearingIT extends AbstractIT {
 
     @Test
     public void shouldNotReturnNotesWhenAvailableHearingsNotExist() {
-        final UUID hearingId1 = UUID.randomUUID();
-        final UUID masterDefendantId1 = UUID.randomUUID();
+        final UUID hearingId1 = randomUUID();
+        final UUID masterDefendantId1 = randomUUID();
         final String caseUrn = STRING.next();
         final String caseUrnForLinkedCases = STRING.next();
         final String jurisdictionTypeCrown = JurisdictionType.CROWN.name();
@@ -190,6 +189,6 @@ public class SearchAvailableHearingIT extends AbstractIT {
 
         ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData1));
         listCourtHearingSteps1.createListingNotes();
-        listCourtHearingSteps1.verifyAvailableHearingNotExists(caseAndDefendantData1, masterDefendantId1);
+        listCourtHearingSteps1.verifyAvailableHearingNotExists(masterDefendantId1);
     }
 }

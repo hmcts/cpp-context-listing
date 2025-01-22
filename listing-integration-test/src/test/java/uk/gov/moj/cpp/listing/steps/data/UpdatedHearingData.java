@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
@@ -150,12 +151,12 @@ public class UpdatedHearingData {
     }
 
     public static UpdatedHearingData updatedHearingDataForAllocation(final UUID hearingId) {
-        final List<JudicialRoleData> judiciary = Collections.singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "MAGISTRATE")));
+        final List<JudicialRoleData> judiciary = singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "MAGISTRATE")));
         return updatedHearingDataForAllocation(hearingId, judiciary);
     }
 
     public static UpdatedHearingData updatedHearingDataForAllocationWithJurisdictionType(final UUID hearingId, final String jurisdictionType) {
-        final List<JudicialRoleData> judiciary = Collections.singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), jurisdictionType)));
+        final List<JudicialRoleData> judiciary = singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), jurisdictionType)));
         return updatedHearingDataForAllocation(hearingId, judiciary);
     }
 
@@ -164,12 +165,12 @@ public class UpdatedHearingData {
     }
 
     public static UpdatedHearingData updatedHearingDataForAllocationWithNonDefaultDays(final UUID hearingId) {
-        final List<JudicialRoleData> judiciary = Collections.singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "MAGISTRATE")));
+        final List<JudicialRoleData> judiciary = singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "MAGISTRATE")));
         return updatedHearingDataForAllocationWithNonDefaultDays(hearingId, judiciary);
     }
 
     public static UpdatedHearingData updatedHearingDataForAllocationWithNonDefaultDaysWithAdditionalFields(final UUID hearingId) {
-        final List<JudicialRoleData> judiciary = Collections.singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "MAGISTRATE")));
+        final List<JudicialRoleData> judiciary = singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "MAGISTRATE")));
         return updatedHearingDataForAllocationWithNonDefaultDaysWithAdditionalFields(hearingId, judiciary);
     }
 
@@ -186,7 +187,7 @@ public class UpdatedHearingData {
         final LocalDate startDate = nextOrSameWorkingDay(LocalDate.now());
         final ZonedDateTime startTimeWithZone = ZonedDateTime.of(startDate, DEFAULT_START_TIME, UTC);
 
-        final List<String> nonSittingDays = Collections.singletonList(startDate.plusDays(1).toString());
+        final List<String> nonSittingDays = singletonList(startDate.plusDays(1).toString());
 
         final NonDefaultDayData firstNonDefaultDayData = new NonDefaultDayData(startTimeWithZone.format(DATE_TIME_FORMAT), of(DURATION), of(COURT_SCHEDULE_ID), of(1), of(OUCODE), of(SESSION), of(courtCentreId).map(UUID::toString), of(roomId).map(UUID::toString));
         final NonDefaultDayData secondNonDefaultDayData = new NonDefaultDayData(startTimeWithZone.plusDays(2).format(DATE_TIME_FORMAT), of(DURATION), of(randomUUID().toString()), of(2), of("BAHOO2"), of("PM"), of(courtCentreId).map(UUID::toString), of(roomId).map(UUID::toString));
@@ -234,7 +235,7 @@ public class UpdatedHearingData {
 
         final LocalDate startDate = nextOrSameWorkingDay(LocalDate.now());
 
-        final List<String> nonSittingDays = Collections.singletonList(startDate.plusDays(1).toString());
+        final List<String> nonSittingDays = singletonList(startDate.plusDays(1).toString());
 
         return new UpdatedHearingData(hearingData.getId(), hearingData.getCourtCentreId(), RandomGenerator.STRING.next(), hearingData.getCourtRoomId(), hearingData.getHearingTypeData(),
                 hearingData.getHearingStartDate().toString(), hearingData.getHearingEndDate().toString(), Collections.emptyList(),
@@ -262,40 +263,24 @@ public class UpdatedHearingData {
         final String endDate = "2020-04-23";
         final LocalDate startDate = LocalDate.parse(endDate);
         final ZonedDateTime startTimeWithZone = ZonedDateTime.parse("2020-04-23T11:32:41.587Z");
-        final List<String> nonSittingDays = Collections.singletonList(startDate.plusDays(1).toString());
+        final List<String> nonSittingDays = singletonList(startDate.plusDays(1).toString());
         final UUID courtRoomId = randomUUID();
         final UUID courtCentreId = randomUUID();
 
 
-        final List<NonDefaultDayData> nonDefaultDays = Collections.singletonList(new NonDefaultDayData(startTimeWithZone.toString(), of(15), of(courtCentreId).map(UUID::toString), of(courtRoomId).map(UUID::toString)));
+        final List<NonDefaultDayData> nonDefaultDays = singletonList(new NonDefaultDayData(startTimeWithZone.toString(), of(15), of(courtCentreId).map(UUID::toString), of(courtRoomId).map(UUID::toString)));
 
         return new UpdatedHearingData(hearingId, courtCentreId, "Carmarthen Magistrates Court", courtRoomId, SENTENCE_HEARING_TYPE,
                 startDate.toString(), endDate, nonDefaultDays,
                 nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null, null, null, false, null, null);
     }
 
-    public static UpdatedHearingData updatedHearingDataForAllocationWithNonDefaultDays(final UUID hearingId, final List<JudicialRoleData> judiciary, UUID courtCentreId, UUID courtRoomId) {
-        final String endDate = "2020-04-23";
-        final LocalDate startDate = LocalDate.parse(endDate);
-        final ZonedDateTime startTimeWithZone = ZonedDateTime.parse("2020-04-23T11:32:41.587Z");
-        final List<String> nonSittingDays = Collections.singletonList(startDate.plusDays(1).toString());
-
-
-        final List<NonDefaultDayData> nonDefaultDays = Collections.singletonList(new NonDefaultDayData(startTimeWithZone.toString(), of(15), of(courtCentreId).map(UUID::toString), of(courtRoomId).map(UUID::toString)));
-
-        return new UpdatedHearingData(hearingId, courtCentreId, "Carmarthen Magistrates Court", courtRoomId, SENTENCE_HEARING_TYPE,
-                startDate.toString(), endDate, nonDefaultDays,
-                nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null, null, null, true, null, null);
-    }
-
-
-
     public static UpdatedHearingData updatedHearingDataForAllocationWithNonDefaultDaysWithoutCourtRoomSelection(final UUID hearingId, final UUID courtCentreId) {
         final String endDate = LocalDate.now().toString();
         final LocalDate startDate = LocalDate.parse(endDate);
         final ZonedDateTime startTimeWithZone = ZonedDateTime.parse("2020-04-23T11:32:41.587Z");
 
-        final List<NonDefaultDayData> nonDefaultDays = Collections.singletonList(new NonDefaultDayData(startTimeWithZone.toString(), of(15), of(courtCentreId).map(UUID::toString), null));
+        final List<NonDefaultDayData> nonDefaultDays = singletonList(new NonDefaultDayData(startTimeWithZone.toString(), of(15), of(courtCentreId).map(UUID::toString), null));
 
         return new UpdatedHearingData(hearingId, courtCentreId, "Worcester Crown Court", null, SENTENCE_HEARING_TYPE,
                 startDate.toString(), endDate, nonDefaultDays,
@@ -306,12 +291,12 @@ public class UpdatedHearingData {
         final String endDate = "2020-04-23";
         final LocalDate startDate = LocalDate.parse(endDate);
         final ZonedDateTime startTimeWithZone = ZonedDateTime.parse("2020-04-23T11:32:41.587Z");
-        final List<String> nonSittingDays = Collections.singletonList(startDate.plusDays(1).toString());
+        final List<String> nonSittingDays = singletonList(startDate.plusDays(1).toString());
         final UUID courtRoomId = randomUUID();
         final UUID courtCentreId = randomUUID();
 
 
-        final List<NonDefaultDayData> nonDefaultDays = Collections.singletonList(new NonDefaultDayData(startTimeWithZone.toString(), of(15), of(courtCentreId).map(UUID::toString), of(courtRoomId).map(UUID::toString)));
+        final List<NonDefaultDayData> nonDefaultDays = singletonList(new NonDefaultDayData(startTimeWithZone.toString(), of(15), of(courtCentreId).map(UUID::toString), of(courtRoomId).map(UUID::toString)));
 
         return new UpdatedHearingData(hearingId, courtCentreId, "Carmarthen Magistrates Court", courtRoomId, SENTENCE_HEARING_TYPE,
                 startDate.toString(), endDate, nonDefaultDays,
@@ -326,10 +311,10 @@ public class UpdatedHearingData {
         final String endDate = startDate.toString();
         final UUID courtRoomId = randomUUID();
         final UUID courtCentreId = hearingData.getCourtCentreId();
-        final List<JudicialRoleData> judiciary = Collections.singletonList(new JudicialRoleData(of(true), of(false), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "CIRCUIT_JUDGE")));
+        final List<JudicialRoleData> judiciary = singletonList(new JudicialRoleData(of(true), of(false), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "CIRCUIT_JUDGE")));
 
         final ZonedDateTime startTimeWithZone = ZonedDateTime.of(startDate, startTime, UTC);
-        final List<NonDefaultDayData> nonDefaultDays = Collections.singletonList(new NonDefaultDayData(startTimeWithZone.format(DATE_TIME_FORMAT), of(DURATION), of(courtCentreId).map(UUID::toString), of(courtRoomId).map(UUID::toString)));
+        final List<NonDefaultDayData> nonDefaultDays = singletonList(new NonDefaultDayData(startTimeWithZone.format(DATE_TIME_FORMAT), of(DURATION), of(courtCentreId).map(UUID::toString), of(courtRoomId).map(UUID::toString)));
         return new UpdatedHearingData(hearingData.getId(), courtCentreId, hearingData.getName(), courtRoomId, SENTENCE_HEARING_TYPE,
                 startDate.toString(), endDate, nonDefaultDays,
                 Collections.emptyList(), HEARING_LANGUAGE_WELSH, judiciary, hearingData.getJurisdictionType(), null, null, null, hearingData.getHasVideoLink(), hearingData.getPublicListNote(), false, null, null);
@@ -366,7 +351,7 @@ public class UpdatedHearingData {
 
         return new UpdatedHearingData(hearingData.getId(), courtCentreId, hearingData.getName(), courtRoomId, hearingData.getHearingTypeData(),
                 hearingData.getHearingStartDate().toString(), hearingData.getHearingEndDate().toString(),
-                Collections.singletonList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(DURATION), of(courtCentreId).map(UUID::toString), ofNullable(courtRoomId).map(UUID::toString))),
+                singletonList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(DURATION), of(courtCentreId).map(UUID::toString), ofNullable(courtRoomId).map(UUID::toString))),
                 Collections.emptyList(), HEARING_LANGUAGE_ENGLISH, hearingData.getJudiciary(), hearingData.getJurisdictionType(), null, null, null, hearingData.getHasVideoLink(), hearingData.getPublicListNote(), false, null, null);
 
     }
@@ -381,7 +366,7 @@ public class UpdatedHearingData {
 
         return new UpdatedHearingData(hearingData.getId(), courtCentreId, hearingData.getName(), courtRoomId, hearingData.getHearingTypeData(),
                 hearingData.getHearingStartDate().toString(), endDate,
-                Collections.singletonList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(DURATION), of(courtCentreId).map(UUID::toString), of(courtRoomId).map(UUID::toString))),
+                singletonList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(DURATION), of(courtCentreId).map(UUID::toString), of(courtRoomId).map(UUID::toString))),
                 Collections.emptyList(), HEARING_LANGUAGE_ENGLISH, hearingData.getJudiciary(), hearingData.getJurisdictionType(), null, null, null, hearingData.getHasVideoLink(), hearingData.getPublicListNote(), false, null, null);
 
     }
@@ -389,7 +374,7 @@ public class UpdatedHearingData {
     public static UpdatedHearingData updatedHearingDataDifferentJudiciary(final HearingData hearingData) {
 
         //changed values
-        final List<JudicialRoleData> judiciary = Collections.singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "MAGISTRATE")));
+        final List<JudicialRoleData> judiciary = singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "MAGISTRATE")));
 
         final UUID courtRoomId = hearingData.getCourtRoomId();
         final UUID courtCentreId = hearingData.getCourtCentreId();
@@ -397,7 +382,7 @@ public class UpdatedHearingData {
 
         return new UpdatedHearingData(hearingData.getId(), courtCentreId, hearingData.getName(), courtRoomId, hearingData.getHearingTypeData(),
                 hearingData.getHearingStartDate().toString(), ofNullable(hearingData.getHearingEndDate()).map(LocalDate::toString).orElse(null),
-                Collections.singletonList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(courtCentreId).map(UUID::toString), ofNullable(courtRoomId).map(UUID::toString))),
+                singletonList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(courtCentreId).map(UUID::toString), ofNullable(courtRoomId).map(UUID::toString))),
                 Collections.emptyList(), HEARING_LANGUAGE_ENGLISH, judiciary, hearingData.getJurisdictionType(), null, null, null, hearingData.getHasVideoLink(), hearingData.getPublicListNote(), false, null, null);
 
     }
@@ -408,7 +393,7 @@ public class UpdatedHearingData {
 
         return new UpdatedHearingData(hearingData.getId(), courtCentreId, hearingData.getName(), courtRoomId, hearingData.getHearingTypeData(),
                 null, null,
-                Collections.singletonList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(1), of(courtCentreId).map(UUID::toString), ofNullable(courtRoomId).map(UUID::toString))),
+                singletonList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(1), of(courtCentreId).map(UUID::toString), ofNullable(courtRoomId).map(UUID::toString))),
                 Collections.emptyList(), HEARING_LANGUAGE_ENGLISH, hearingData.getJudiciary(), hearingData.getJurisdictionType(), weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingData.getHasVideoLink(), hearingData.getPublicListNote(), false, null, null);
 
     }
@@ -417,7 +402,7 @@ public class UpdatedHearingData {
 
         return new UpdatedHearingData(hearingData.getId(), hearingData.getCourtCentreId(), hearingData.getName(), hearingData.getCourtRoomId(), hearingData.getHearingTypeData(),
                 null, null,
-                Collections.singletonList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(1), of(hearingData.getCourtCentreId()).map(UUID::toString), ofNullable(hearingData.getCourtRoomId()).map(UUID::toString))),
+                singletonList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(1), of(hearingData.getCourtCentreId()).map(UUID::toString), ofNullable(hearingData.getCourtRoomId()).map(UUID::toString))),
                 Collections.emptyList(), HEARING_LANGUAGE_ENGLISH, hearingData.getJudiciary(), hearingData.getJurisdictionType(), weekCommencingStartDate.toString(), weekCommencingEndDate.toString(), weekCommencingDurationInWeeks, hearingData.getHasVideoLink(), hearingData.getPublicListNote(), false, null, null);
 
     }

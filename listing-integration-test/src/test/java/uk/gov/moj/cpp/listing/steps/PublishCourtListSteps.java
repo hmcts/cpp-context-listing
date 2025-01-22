@@ -2,13 +2,14 @@ package uk.gov.moj.cpp.listing.steps;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static javax.json.Json.createObjectBuilder;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
+import static org.awaitility.Awaitility.await;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
 import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -19,16 +20,17 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithForPublishingCourtListsWithoutReportingRestriction;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
+import static uk.gov.moj.cpp.listing.utils.WebDavStub.acceptCourtListXmlFile;
 
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
-import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.it.util.XmlEditor;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
@@ -37,6 +39,7 @@ import uk.gov.moj.cpp.listing.utils.WebDavStub;
 
 import java.io.StringReader;
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.json.Json;
@@ -57,21 +60,16 @@ public class PublishCourtListSteps extends CommonHearingSteps {
 
     private static final String MEDIA_TYPE_QUERY_COURT_LIST_STATUS = "application/vnd.listing.court.list.publish.status+json";
     private static final String LISTING_COMMAND_PUBLISH_COURT_LIST = "listing.command.publish-court-list";
-    private static final String LISTING_COMMAND_EXPORT_COURT_LIST = "listing.command.export-court-list";
     private static final String MEDIA_TYPE_LISTING_COMMAND_PUBLISH_COURT_LIST = "application/vnd.listing.command.publish-court-list+json";
-    private static final String MEDIA_TYPE_QUERY_PUBLISHEDCOURTLIST = "application/vnd.listing.publishedcourtlist+json";
-    private static final String MEDIA_TYPE_LISTING_COMMAND_EXPORT_COURT_LIST = "application/vnd.listing.command.court-list-request-export+json";
 
     private static final String PRESTON_COURT_NAME = "PRESTON";
     private static final String PRESTON_COURT_SITE_NAME = "PRESTON";
     private static final String PRESTON_COURT_ID = "448";
     private static final String PRESTON_COURT_SITE_ID = "448";
-    private static final String EVENT_SELECTED_PUBLIC_COURT_LIST_STAGING_DARTS = "public.listing.court-daily-list";
     private static final String EVENT_SELECTED_PUBLIC_COURT_LIST_PUBLISHED = "public.listing.court-list-published";
 
 
     private JsonObject commandJsonObject;
-    private JmsMessageConsumerClient publicMessageConsumerStagingDartsUpdated;
     private JmsMessageConsumerClient publicMessageConsumerPublishCourtList;
 
     public PublishCourtListSteps(final HearingsData hearingsData, final JsonObject commandJsonObject) {
@@ -86,7 +84,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     }
 
     public void acceptCourtListXmlFiles() {
-        WebDavStub.acceptCourtListXmlFile(Response.Status.OK);
+        acceptCourtListXmlFile(Response.Status.OK);
     }
 
     public void sendPublishCourtListCommand() {
@@ -95,14 +93,12 @@ public class PublishCourtListSteps extends CommonHearingSteps {
                 commandJsonObject.getString("courtCentreId")));
         final String request = commandJsonObject.toString();
 
-        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", updateHearingUrl, MEDIA_TYPE_LISTING_COMMAND_PUBLISH_COURT_LIST, request, getLoggedInHeader());
-
         final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_LISTING_COMMAND_PUBLISH_COURT_LIST, request, getLoggedInHeader());
 
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
-    public JsonObject verifyCourtListPublishStatus(final String expectedPublishStatus, final String weekCommencing) {
+    public void verifyCourtListPublishStatus(final String expectedPublishStatus, final String weekCommencing) {
         final String courtCentreId = commandJsonObject.getString("courtCentreId");
         final String courtListType = commandJsonObject.getString("publishCourtListType");
         final String publishDate = LocalDate.now().toString();
@@ -113,7 +109,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
                 weekCommencing);
         final String searchCourtListUrl = String.format("%s/%s", getBaseUri(), queryPart);
 
-        final ResponseData response = poll(requestParams(searchCourtListUrl, MEDIA_TYPE_QUERY_COURT_LIST_STATUS).withHeader(USER_ID, getLoggedInUser()))
+        final ResponseData response = pollWithDefaults(requestParams(searchCourtListUrl, MEDIA_TYPE_QUERY_COURT_LIST_STATUS).withHeader(USER_ID, getLoggedInUser()).build())
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(
@@ -127,11 +123,10 @@ public class PublishCourtListSteps extends CommonHearingSteps {
                                         equalTo(expectedPublishStatus))
                         )));
 
-        return jsonFromString(response.getPayload());
+        jsonFromString(response.getPayload());
     }
 
     public void createMessageConsumer() {
-        publicMessageConsumerStagingDartsUpdated = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_COURT_LIST_STAGING_DARTS);
         publicMessageConsumerPublishCourtList = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_COURT_LIST_PUBLISHED);
     }
 
@@ -174,6 +169,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         verifyCourtCourtListDailyList(checkVideoLink, videoLinkDetails);
 
     }
+
     public void verifySentPublishedCourtListHearingDataForFirm() throws Exception {
 
         verifyCourtHeaderFirmList();
@@ -279,7 +275,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         assertXpathEvaluatesTo("PTP", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='HearingDetails']/@HearingType", sentXml);
 
-        if(checkVideoLink) {
+        if (checkVideoLink) {
             assertXpathEvaluatesTo(videoLinkDetails, "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                     "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='ListNote']/text()", sentXml);
         }
@@ -305,7 +301,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         assertXpathEvaluatesTo("PTP", "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='HearingDetails']/@HearingType", sentXml);
 
-        if(checkVideoLink) {
+        if (checkVideoLink) {
             assertXpathEvaluatesTo(videoLinkDetails, "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                     "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='ListNote']/text()", sentXml);
         }
@@ -328,12 +324,13 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     }
 
     private String getSentXml() {
-        String sentXml = WebDavStub.getSentXml();
+        Optional<String> sentXml = await()
+                .pollDelay(0, MILLISECONDS)
+                .pollInterval(1000, MILLISECONDS)
+                .atMost(60000, MILLISECONDS)
+                .until(WebDavStub::getSentXml, Optional::isPresent);
 
-        sentXml = replaceIndeterminantElements(sentXml);
-
-        LOGGER.info("sentXml=\n" + sentXml);
-        return sentXml;
+        return replaceIndeterminantElements(sentXml.get());
     }
 
     private String updateDynamicElements(final String expectedXml) {
@@ -401,93 +398,21 @@ public class PublishCourtListSteps extends CommonHearingSteps {
                 .build();
     }
 
-    public static JsonObject buildCourtListCommandPayload(final UUID courtCentreId,
-                                                                 final CourtListType courtListType,
-                                                                 final LocalDate startDate) {
-        return createObjectBuilder()
-                .add("courtCentreId", courtCentreId.toString())
-                .add("startDate", startDate.toString())
-                .add("endDate", startDate.plusDays(5).toString())
-                .add("listId", courtListType.name())
-                .build();
-    }
-
-
-
-
-    public void waitForCompletedExport(final UUID courtCentreId, final PublishCourtListType publishCourtListType, final LocalDate startDate) {
-
-        final String queryPart = format(readConfig().getProperty("listing.publishedcourtlist"),
-                courtCentreId,
-                publishCourtListType,
-                startDate);
-        final String url = String.format("%s/%s", getBaseUri(), queryPart);
-
-        final ResponseData response = poll(requestParams(url, MEDIA_TYPE_QUERY_PUBLISHEDCOURTLIST).withHeader(USER_ID, getLoggedInUser()))
-                .until(
-                        status().is(OK),
-                        payload().isJson(allOf(
-                                withJsonPath("$.publishedCourtLists[0].lastExported",
-                                        is(notNullValue()))
-                        )));
-    }
-
-    public void waitForPublishedCourtListStored(final UUID courtCentreId, final PublishCourtListType publishCourtListType, final LocalDate startDate) {
-
-        final String queryPart = format(readConfig().getProperty("listing.publishedcourtlist"),
-                courtCentreId,
-                publishCourtListType,
-                startDate);
-        final String url = String.format("%s/%s", getBaseUri(), queryPart);
-
-        final ResponseData response = poll(requestParams(url, MEDIA_TYPE_QUERY_PUBLISHEDCOURTLIST).withHeader(USER_ID, getLoggedInUser()))
-                .until(
-                        status().is(OK),
-                        payload().isJson(allOf(
-                                withJsonPath("$.publishedCourtLists[0].lastUpdated",
-                                        is(notNullValue()))
-                        )));
-    }
-
-    public void triggerExportTimer(final UUID courtCentreId, final PublishCourtListType publishCourtListType, final LocalDate startDate) {
-
-        final String commandUrl = String.format("%s/%s", getBaseUri(), format(readConfig().getProperty(LISTING_COMMAND_EXPORT_COURT_LIST),
-                courtCentreId.toString(), publishCourtListType.name(), startDate.toString()));
-        final String request = commandJsonObject.toString();
-
-        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", commandUrl, MEDIA_TYPE_LISTING_COMMAND_PUBLISH_COURT_LIST, request);
-
-        final Response response = restClient.postCommand(commandUrl, MEDIA_TYPE_LISTING_COMMAND_EXPORT_COURT_LIST, request, getLoggedInHeader());
-
-        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
-    }
-
     private static void createHearingForListing(final HearingsData hearingsData) {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedAndListed();
-    }
-
-    public void verifyPublicEventForCourtList(final UUID courtCentreId) {
-
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerStagingDartsUpdated);
-        LOGGER.info("jsonResponse from publicMessageConsumerHearingUpdated: {}", jsonResponse.prettify());
-        assertThat(jsonResponse.get("courtCentreId"), is(courtCentreId.toString()));
-        assertThat(jsonResponse.get("dailyListDocument"), containsString("DailyList"));
-
     }
 
     public void verifyPublicEventForCourtListPublished(final String courtCentreId, final String publishCourtListType, final Boolean weekCommencing, final Boolean sendNotificationToParties, final int courtListItems) {
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerPublishCourtList);
         LOGGER.info("jsonResponse from publicMessageConsumerHearingUpdated: {}", jsonResponse.prettify());
         LOGGER.info("jsonResponse from publicMessageConsumerHearingUpdated ");
-        assertThat(jsonResponse.get("courtCentreId"), is(courtCentreId.toString()));
+        assertThat(jsonResponse.get("courtCentreId"), is(courtCentreId));
         assertThat(jsonResponse.get("publishCourtListType"), is(publishCourtListType));
         assertThat(jsonResponse.getBoolean("weekCommencing"), is(weekCommencing));
         assertThat(jsonResponse.getBoolean("sendNotificationToParties"), is(sendNotificationToParties));
         assertThat(jsonResponse.getList("courtLists"), Matchers.hasSize(courtListItems));
     }
-
-
 
     public void verifyDefendantNameIsMasked() throws Exception {
 

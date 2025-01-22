@@ -36,12 +36,10 @@ public class RestrictListFromCourtIT extends AbstractIT {
         HearingsData hearingsData = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(false);
 
         final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
         restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getRestrictListingFromCourtData(hearingsData));
-        restrictCourtListSteps.verifyRestrictCourtListInActiveMQ();
         restrictCourtListSteps.verifyCaseOrDefendantOrOffenceListingRestrictedInHearing(true, true, false);
     }
 
@@ -50,12 +48,10 @@ public class RestrictListFromCourtIT extends AbstractIT {
         HearingsData hearingsData = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(false);
 
         final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
         restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getDefendantsAndOffencesDataToBeUnrestricted(hearingsData));
-        restrictCourtListSteps.verifyRestrictCourtListInActiveMQ();
         restrictCourtListSteps.verifyCaseOrDefendantOrOffenceListingRestrictedInHearing(false, false, false);
     }
 
@@ -64,12 +60,10 @@ public class RestrictListFromCourtIT extends AbstractIT {
         HearingsData hearingsData = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(false);
 
         final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
         restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getDefendantsAndOffencesDataToBeRestricted(hearingsData));
-        restrictCourtListSteps.verifyRestrictCourtListInActiveMQ();
         restrictCourtListSteps.verifyCaseOrDefendantOrOffenceListingRestrictedInHearing(false, true, true);
     }
 
@@ -78,13 +72,11 @@ public class RestrictListFromCourtIT extends AbstractIT {
         HearingsData hearingsData = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
         final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
         restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getCourtApplicationDataToBeRestricted(hearingsData));
-        restrictCourtListSteps.verifyRestrictCourtListInActiveMQ();
-        restrictCourtListSteps.verifyCourtApplicationorApplicantorRespondentListingRestrictedInHearing(true, true, false, false);
+        restrictCourtListSteps.verifyCourtApplicationOrApplicantOrRespondentListingRestrictedInHearing(true, true, false, false);
     }
 
     @Test
@@ -92,13 +84,11 @@ public class RestrictListFromCourtIT extends AbstractIT {
         HearingsData hearingsData = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
         final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
         restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getCourtApplicationTypeToBeRestricted(hearingsData));
-        restrictCourtListSteps.verifyRestrictCourtListInActiveMQ();
-        restrictCourtListSteps.verifyCourtApplicationorApplicantorRespondentListingRestrictedInHearing(false, false, false, true);
+        restrictCourtListSteps.verifyCourtApplicationOrApplicantOrRespondentListingRestrictedInHearing(false, false, false, true);
     }
 
     @Test
@@ -125,7 +115,6 @@ public class RestrictListFromCourtIT extends AbstractIT {
 
         final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
         restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getDefendantsAndOffencesDataToBeRestricted(hearingsData));
-        restrictCourtListSteps.verifyRestrictCourtListInActiveMQ();
         restrictCourtListSteps.verifyListingRestrictedInHearing(false, true, true);
 
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(

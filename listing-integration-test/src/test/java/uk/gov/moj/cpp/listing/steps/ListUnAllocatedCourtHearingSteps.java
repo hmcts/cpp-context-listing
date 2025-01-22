@@ -99,7 +99,6 @@ public class ListUnAllocatedCourtHearingSteps extends ListCourtHearingSteps {
         final JsonObject listCourtHearingJsonObject = (JsonObject) objectToJsonValueConverter.convert(listCourtHearingData);
 
         request = listCourtHearingJsonObject.toString();
-        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", listCaseForHearingUrl, MEDIA_TYPE_LIST_UNSCHEDULED_COURT_HEARING, request, getLoggedInHeader());
 
         return restClient.postCommand(listCaseForHearingUrl, MEDIA_TYPE_LIST_UNSCHEDULED_COURT_HEARING,
                 request, getLoggedInHeader());
@@ -109,7 +108,6 @@ public class ListUnAllocatedCourtHearingSteps extends ListCourtHearingSteps {
 
         final HearingData hearingData = hearingsData.getHearingData().get(0);
         final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
-        //   List<DefendantData> defendantData = listedCaseData.getDefendants();
 
         return ListUnscheduledCourtHearing.listUnscheduledCourtHearing()
                 .withHearings(asList(
@@ -396,10 +394,6 @@ public class ListUnAllocatedCourtHearingSteps extends ListCourtHearingSteps {
 
     public void verifyHearingUnallocatededFromAPI() {
         final HearingData hearingData = getHearingsData().getHearingData().get(0);
-
-        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.unallocated-hearings"),
-                        getHearingsData().getHearingData().get(0).getListedCases().get(0).getCaseId()));
 
         final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
 

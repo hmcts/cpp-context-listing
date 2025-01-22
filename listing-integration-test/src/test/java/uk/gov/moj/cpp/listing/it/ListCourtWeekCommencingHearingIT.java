@@ -5,8 +5,9 @@ import static java.time.LocalDate.now;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
-import static uk.gov.moj.cpp.listing.it.util.ContextNameProvider.CONTEXT_NAME;
+import static uk.gov.moj.cpp.listing.it.util.HearingHelper.pollForHearingById;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.loadFixedHearingData;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.updateLoadedFixedHearingToWeekCommencingHearing;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.updatedHearingListedData;
@@ -24,7 +25,6 @@ import java.util.List;
 
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -41,6 +41,9 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
     public void initialize() {
         cleanListingTables();
         hearingsData = loadFixedHearingData();
+        hearingsData.forEach(hd -> {
+            pollForHearingById(getLoggedInUser(), hd.getHearingData().get(0).getId(), withJsonPath("$.listedCases", hasSize(greaterThan(0))));
+        });
 
         //update start date for a hearing
         final UpdatedHearingData updatedHearingData1 = updatedHearingListedData(hearingsData.get(3));
@@ -71,7 +74,8 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
         final UpdatedHearingData firstUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(1);
         final UpdatedHearingData secondUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(2);
 
-        final Matcher[] matchers = {withJsonPath("$.hearings", hasSize(7)),
+        final Matcher[] matchers = {
+                withJsonPath("$.hearings", hasSize(7)),
                 withJsonPath("$.hearings[0].id", is(hearingsData5.getHearingData().get(0).getId().toString())),
                 withJsonPath("$.hearings[0].jurisdictionType", is(hearingsData5.getHearingData().get(0).getJurisdictionType())),
                 withJsonPath("$.hearings[0].courtCentreId", is(hearingsData5.getHearingData().get(0).getCourtCentreId().toString())),
@@ -121,7 +125,8 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
 
         final UpdatedHearingData firstUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(1);
 
-        final Matcher[] matchers = {withJsonPath("$.hearings", hasSize(3)),
+        final Matcher[] matchers = {
+                withJsonPath("$.hearings", hasSize(3)),
                 withJsonPath("$.hearings[0].id", is(hearingsData1.getHearingData().get(0).getId().toString())),
                 withJsonPath("$.hearings[0].jurisdictionType", is(hearingsData1.getHearingData().get(0).getJurisdictionType())),
                 withJsonPath("$.hearings[0].courtCentreId", is(hearingsData1.getHearingData().get(0).getCourtCentreId().toString())),
@@ -146,7 +151,8 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
 
         final UpdatedHearingData UpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(2);
 
-        final Matcher[] matchers = {withJsonPath("$.hearings", hasSize(2)),
+        final Matcher[] matchers = {
+                withJsonPath("$.hearings", hasSize(2)),
                 withJsonPath("$.hearings[0].id", is(updatedHearingData.getHearingId().toString())),
                 withJsonPath("$.hearings[0].jurisdictionType", is(updatedHearingData.getJurisdictionType())),
                 withJsonPath("$.hearings[0].courtCentreId", is(updatedHearingData.getCourtCentreId().toString())),
@@ -170,7 +176,8 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
         final UpdatedHearingData firstUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(1);
         final UpdatedHearingData secondUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(2);
 
-        final Matcher[] matchers = {withJsonPath("$.hearings", hasSize(3)),
+        final Matcher[] matchers = {
+                withJsonPath("$.hearings", hasSize(3)),
                 withJsonPath("$.hearings[0].id", is(hearingsData5.getHearingData().get(0).getId().toString())),
                 withJsonPath("$.hearings[0].jurisdictionType", is(hearingsData5.getHearingData().get(0).getJurisdictionType())),
                 withJsonPath("$.hearings[0].courtCentreId", is(hearingsData5.getHearingData().get(0).getCourtCentreId().toString())),
@@ -195,7 +202,8 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
         final String weekCommencingSearchStartDate = now().minusDays(14).toString();
         final String weekCommencingSearchEndDate = now().minusDays(7).toString();
 
-        final Matcher[] matchers = {withJsonPath("$.hearings", hasSize(0)),
+        final Matcher[] matchers = {
+                withJsonPath("$.hearings", hasSize(0)),
                 withJsonPath("$.hearings", empty()),
         };
 
@@ -208,7 +216,8 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
 
         final UpdatedHearingData firstUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(1);
 
-        final Matcher[] matchers = {withJsonPath("$.hearings", hasSize(3)),
+        final Matcher[] matchers = {
+                withJsonPath("$.hearings", hasSize(3)),
                 withJsonPath("$.hearings[1].id", is(firstUpdatedHearingDataWithWeekCommencingDate.getHearingId().toString())),
                 withJsonPath("$.hearings[1].weekCommencingStartDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingStartDate())),
                 withJsonPath("$.hearings[1].weekCommencingEndDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),

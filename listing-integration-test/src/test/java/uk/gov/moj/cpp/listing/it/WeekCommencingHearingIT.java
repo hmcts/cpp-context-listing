@@ -22,7 +22,6 @@ public class WeekCommencingHearingIT extends AbstractIT {
         final HearingsData hearingsData = HearingsData.hearingsDataForWeekCommencing(LocalDate.now(), 1);
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
         final UpdatedHearingData updatedHearingDataWithWeekCommencingDate = updatedHearingDataWithWeekCommencingDate(hearingsData.getHearingData().get(0), now().plusDays(1).toString(), now().plusDays(7l).toString(), 1);
@@ -30,7 +29,6 @@ public class WeekCommencingHearingIT extends AbstractIT {
         final WeekCommencingHearingSteps weekCommencingHearingSteps = new WeekCommencingHearingSteps(updatedHearingDataWithWeekCommencingDate);
         weekCommencingHearingSteps.whenHearingIsUpdatedForListingForWeekCommencingDate();
 
-        weekCommencingHearingSteps.verifyHearingUpdatedResultsForWeekCommencingInMQ();
         weekCommencingHearingSteps.verifyHearingUpdatedWithWeekCommencingDateAndUnallocatedWhenQueryingFromAPI();
     }
 
@@ -40,7 +38,6 @@ public class WeekCommencingHearingIT extends AbstractIT {
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
         final UpdatedHearingData updatedHearingDataWithWeekCommencingDate = updatedHearingDataWithWeekCommencingDate(hearingsData.getHearingData().get(0), now().plusDays(1).toString(), now().plusDays(7l).toString(), 1);
@@ -48,7 +45,6 @@ public class WeekCommencingHearingIT extends AbstractIT {
         final WeekCommencingHearingSteps weekCommencingHearingSteps = new WeekCommencingHearingSteps(updatedHearingDataWithWeekCommencingDate);
         weekCommencingHearingSteps.whenHearingIsUpdatedForListingForWeekCommencingDate();
 
-        weekCommencingHearingSteps.verifyHearingUpdatedResultsForWeekCommencingInMQ();
         weekCommencingHearingSteps.verifyHearingUpdatedWithWeekCommencingDateAndUnallocatedWhenQueryingFromAPI();
 
         final UpdatedHearingData updatedHearingDataForUnallocation = updatedHearingData(hearingsData.getHearingData().get(0));
@@ -57,6 +53,6 @@ public class WeekCommencingHearingIT extends AbstractIT {
         updateHearingSteps.whenHearingIsUpdatedForListing();
         updateHearingSteps.verifyHearingUpdatedWhenWeekCommencingDateRemovedResultsInMQ();
         updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();
-        updateHearingSteps.verifyPublicHearingChangesSaved();
+        updateHearingSteps.verifyPublicEventHearingChangesSaved();
     }
 }

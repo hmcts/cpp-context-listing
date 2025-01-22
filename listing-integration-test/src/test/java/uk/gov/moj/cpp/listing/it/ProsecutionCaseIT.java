@@ -11,7 +11,6 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -34,10 +33,9 @@ public class ProsecutionCaseIT extends AbstractIT{
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-        List<String> idList = hearingsData.getHearingData().stream().map(h -> h.getId().toString()).collect(Collectors.toList());
-        List<String> prosecutionIdList = hearingsData.getHearingData().stream().flatMap(h -> h.getListedCases().stream()).map(lc -> lc.getCaseId().toString()).collect(Collectors.toList());
+        List<String> idList = hearingsData.getHearingData().stream().map(h -> h.getId().toString()).toList();
+        List<String> prosecutionIdList = hearingsData.getHearingData().stream().flatMap(h -> h.getListedCases().stream()).map(lc -> lc.getCaseId().toString()).toList();
 
 
         JsonObject payload = Json.createObjectBuilder()

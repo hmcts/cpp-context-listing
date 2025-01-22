@@ -34,7 +34,6 @@ public class ReferenceDataStub {
     private static final String REFERENCE_DATA_HEARING_TYPES_URL = "/referencedata-service/query/api/rest/referencedata/hearing-types";
     private static final String REFERENCE_DATA_HEARING_TYPES_MEDIA_TYPE = "application/vnd.referencedata.query.all-hearing-types+json";
     private static final String REFERENCE_DATA_GET_COURTROOM_URL = "/referencedata-service/query/api/rest/referencedata/courtrooms";
-    private static final String REFERENCE_DATA_GET_COURTROOM_MAPPINGS_MEDIA_TYPE = "application/vnd.referencedata.ou-courtroom+json";
     private static final String REFERENCE_DATA_ORGANISATIONAL_UNITS_URL = "/referencedata-service/query/api/rest/referencedata/organisationunits";
     private static final String REFERENCE_DATA_ORGANISATIONAL_UNITS_MEDIA_TYPE = "application/vnd.referencedata.query.organisationunits+json";
     private static final String REFERENCE_DATA_OU_COURTROOM_URL = "/referencedata-service/query/api/rest/referencedata/courtrooms";
@@ -60,20 +59,6 @@ public class ReferenceDataStub {
                 .replace("COURT_ROOM_UUID", courtRoomUUID.toString());
 
         stubFor(get(urlPathMatching(REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_QUERY_URL))
-                .willReturn(aResponse().withStatus(SC_OK)
-                        .withHeader("CPPID", randomUUID().toString())
-                        .withHeader("Content-Type", REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_MEDIA_TYPE)
-                        .withBody(payload)));
-    }
-
-    public static void stubGetReferenceDataXhibitCourtRoomMappings(final UUID courtRoomUUID, final UUID courtCentreId) {
-        InternalEndpointMockUtils.stubPingFor("referencedata-service");
-
-        String payload = getPayload("stub-data/referencedata.query.cp-xhibit-courtroom-mappings.json")
-                .replace("COURT_ROOM_UUID", courtRoomUUID.toString());
-
-        stubFor(get(urlPathMatching(REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_QUERY_URL))
-                .withQueryParam("ouId", equalTo(courtCentreId.toString()))
                 .willReturn(aResponse().withStatus(SC_OK)
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_MEDIA_TYPE)

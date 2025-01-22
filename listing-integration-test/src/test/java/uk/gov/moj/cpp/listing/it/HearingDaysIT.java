@@ -109,7 +109,7 @@ public class HearingDaysIT extends AbstractIT {
         final Matcher[] unallocatedMatchers = {withJsonPath(hearingIdFilter),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].hearingDate", hasItem(startDate.toString())),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtCentreId", hasItem(courtCentreId.toString()))};
-        listCourtHearingSteps.verifyUnallocatedHearingFound(hearingId.toString(), unallocatedMatchers);
+        listCourtHearingSteps.verifyUnallocatedHearingFound(unallocatedMatchers);
 
         //Allocate to different courts
         UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps();
@@ -121,8 +121,8 @@ public class HearingDaysIT extends AbstractIT {
         //Query for allocated for each court
         final Matcher[] allocatedMatchers = getAllocatedMatchers(hearingIdFilter);
 
-        updateHearingSteps.verifyAllocatedHearingFound(hearingId.toString(), courtCentreId, courtRoomId, startDate.toString(), allocatedMatchers);
-        updateHearingSteps.verifyAllocatedHearingFound(hearingId.toString(), otherCourtCentreId, otherCourtRoomId, endDate.toString(), allocatedMatchers);
+        updateHearingSteps.verifyAllocatedHearingFound(courtCentreId, courtRoomId, startDate.toString(), allocatedMatchers);
+        updateHearingSteps.verifyAllocatedHearingFound(otherCourtCentreId, otherCourtRoomId, endDate.toString(), allocatedMatchers);
 
         //Extend end date for allocated hearing
         final LocalDate extendedDate = endDate.plusDays(1);
@@ -134,9 +134,9 @@ public class HearingDaysIT extends AbstractIT {
         updateHearingSteps.updateHearingForListing(objectMapper.treeToValue(jsonNode, JsonObject.class), hearingId);
 
         //Range Search for each court
-        updateHearingSteps.verifyAllocatedHearingFoundByRangeSearch(hearingId.toString(), courtCentreId, startDate.toString(), allocatedMatchers);
-        updateHearingSteps.verifyAllocatedHearingFoundByRangeSearch(hearingId.toString(), otherCourtCentreId, endDate.toString(), allocatedMatchers);
-        updateHearingSteps.verifyAllocatedHearingFoundByRangeSearch(hearingId.toString(), otherCourtCentreId, extendedDate.toString(), allocatedMatchers);
+        updateHearingSteps.verifyAllocatedHearingFoundByRangeSearch(courtCentreId, startDate.toString(), allocatedMatchers);
+        updateHearingSteps.verifyAllocatedHearingFoundByRangeSearch(otherCourtCentreId, endDate.toString(), allocatedMatchers);
+        updateHearingSteps.verifyAllocatedHearingFoundByRangeSearch(otherCourtCentreId, extendedDate.toString(), allocatedMatchers);
 
         //Sequencing command
         SequenceHearingSteps sequenceHearingSteps = new SequenceHearingSteps();
@@ -235,7 +235,7 @@ public class HearingDaysIT extends AbstractIT {
         final Matcher[] matchers = {withJsonPath(hearingIdFilter),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].hearingDate", hasItem(startDate.toString())),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtCentreId", hasItem(courtCentreId.toString()))};
-        listCourtHearingSteps.verifyUnallocatedHearingFound(hearingId.toString(), matchers);
+        listCourtHearingSteps.verifyUnallocatedHearingFound(matchers);
 
         //Trigger command to correct hearing days with court centre
         final String correctHearingDaysWithCourtCentre = String.format("%s/%s", getBaseUri(), format
@@ -256,7 +256,7 @@ public class HearingDaysIT extends AbstractIT {
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].hearingDate", hasItem(startDate.toString())),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtCentreId", hasItem(courtCentreId.toString())),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtRoomId", hasItem(courtRoomId.toString()))};
-        listCourtHearingSteps.verifyUnallocatedHearingFound(hearingId.toString(), unallocatedMatchers);
+        listCourtHearingSteps.verifyUnallocatedHearingFound(unallocatedMatchers);
 
         final JsonPath message = messageConsumerClient.retrieveMessageAsJsonPath().get();
         assertThat(message.get("id"), is(hearingId.toString()));
@@ -268,18 +268,17 @@ public class HearingDaysIT extends AbstractIT {
     }
 
     private Matcher[] getAllocatedMatchers(final com.jayway.jsonpath.JsonPath hearingIdFilter) {
-        final Matcher[] allocatedMatchers = {withJsonPath(hearingIdFilter),
+        return new Matcher[]{withJsonPath(hearingIdFilter),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].hearingDate", hasItem(startDate.toString())),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtCentreId", hasItem(courtCentreId.toString())),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtRoomId", hasItem(courtRoomId.toString())),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].hearingDate", hasItem(endDate.toString())),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].courtCentreId", hasItem(otherCourtCentreId.toString())),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].courtRoomId", hasItem(otherCourtRoomId.toString()))};
-        return allocatedMatchers;
     }
 
     private Matcher[] getSequenceMatchers(final com.jayway.jsonpath.JsonPath hearingIdFilter) {
-        final Matcher[] sequenceMatchers = {withJsonPath(hearingIdFilter),
+        return new Matcher[]{withJsonPath(hearingIdFilter),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].hearingDate", hasItem(startDate.toString())),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].sequence", hasItem(1)),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtCentreId", hasItem(courtCentreId.toString())),
@@ -288,7 +287,6 @@ public class HearingDaysIT extends AbstractIT {
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].sequence", hasItem(2)),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].courtCentreId", hasItem(otherCourtCentreId.toString())),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].courtRoomId", hasItem(otherCourtRoomId.toString()))};
-        return sequenceMatchers;
     }
 
     private JsonObjectBuilder populateCorrectedHearingDays() {

@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
+import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
@@ -358,6 +359,8 @@ public class NextHearingProcessorTest {
 
         assertThat(commandEvent.metadata().name(), is("listing.command.list-unscheduled-next-hearing"));
     }
+
+
 
     public void shouldHandleSeedHearingEarliestNextHearingDateUpdated() {
 

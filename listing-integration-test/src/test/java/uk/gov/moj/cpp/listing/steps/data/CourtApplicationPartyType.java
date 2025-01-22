@@ -23,10 +23,10 @@ public enum CourtApplicationPartyType {
   }
 
   public static Optional<CourtApplicationPartyType> valueFor(final String value) {
-    if(PROSECUTING_AUTHORITY.value.equals(value)) { return Optional.of(PROSECUTING_AUTHORITY); };
-    if(PERSON.value.equals(value)) { return Optional.of(PERSON); };
-    if(ORGANISATION.value.equals(value)) { return Optional.of(ORGANISATION); };
-    if(PERSON_DEFENDANT.value.equals(value)) { return Optional.of(PERSON_DEFENDANT); };
-    return Optional.empty();
+    if(PROSECUTING_AUTHORITY.value.equals(value)) { return Optional.of(PROSECUTING_AUTHORITY); }
+      if(PERSON.value.equals(value)) { return Optional.of(PERSON); }
+      if(ORGANISATION.value.equals(value)) { return Optional.of(ORGANISATION); }
+      if(PERSON_DEFENDANT.value.equals(value)) { return Optional.of(PERSON_DEFENDANT); }
+      return Optional.empty();
   }
 }

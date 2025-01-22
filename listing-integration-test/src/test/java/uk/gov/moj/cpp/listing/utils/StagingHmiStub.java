@@ -37,16 +37,8 @@ public class StagingHmiStub {
         stubStagingHmiGetSessions("MAGISTRATES", LocalDate.now().plusDays(2), "stub-data/staginghmi.query.sessions.json");
     }
 
-    public static void stubHmiCrownSession() {
-        stubStagingHmiGetSessions("CROWN", LocalDate.now().plusDays(2), "stub-data/staginghmi.query.sessions.json");
-    }
-
     public static void stubHmiNoSessionsAvailable() {
         stubStagingHmiGetSessions("MAGISTRATES", LocalDate.now().plusDays(2), "stub-data/staginghmi.query.nosessions.json");
-    }
-
-    public static void stubHmiSessionsCourtRoomValidationFailed() {
-        stubStagingHmiGetSessions("MAGS", LocalDate.now().plusDays(2), "stub-data/staginghmi.query.sessions.withnocourtroom.json");
     }
 
     private static void stubStagingHmiGetSessions(final String jurisdictionType, final LocalDate sessionStartDate, final String payloadPath) {

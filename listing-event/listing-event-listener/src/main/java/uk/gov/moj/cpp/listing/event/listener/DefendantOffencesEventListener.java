@@ -109,9 +109,12 @@ public class DefendantOffencesEventListener {
     private List<ListedCase> getUpdatedListedCase(UUID caseId, UUID defendantId, Offence updatedOffence, List<ListedCase> listedCases) {
         ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(caseId));
         List<Defendant> defendants = listedCase.getDefendants();
-        Defendant originalDefendant = Iterables.find(defendants, defendant -> defendant.getId().equals(defendantId));
-        final Optional<Offence> originalOffence = originalDefendant.getOffences().stream().filter(oo -> oo.getId().equals(updatedOffence.getId())).findFirst();
-        originalDefendant.getOffences().replaceAll(offence -> offence.getId().equals(updatedOffence.getId()) ? buildOffence(updatedOffence, originalOffence, getRestrictCourtList(originalOffence)) : offence);
+        final Optional<Defendant> optionalDefendant = defendants.stream().filter(defendant -> defendant.getId().equals(defendantId)).findFirst();
+        if (optionalDefendant.isPresent()) {
+            final Defendant originalDefendant = optionalDefendant.get();
+            final Optional<Offence> originalOffence = originalDefendant.getOffences().stream().filter(oo -> oo.getId().equals(updatedOffence.getId())).findFirst();
+            originalDefendant.getOffences().replaceAll(offence -> offence.getId().equals(updatedOffence.getId()) ? buildOffence(updatedOffence, originalOffence, getRestrictCourtList(originalOffence)) : offence);
+        }
         return listedCases;
     }
 

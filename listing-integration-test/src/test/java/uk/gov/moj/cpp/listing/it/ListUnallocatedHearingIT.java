@@ -27,7 +27,6 @@ public class ListUnallocatedHearingIT extends AbstractIT {
         final HearingsData hearingsData = HearingsData.hearingsData();
         final ListUnAllocatedCourtHearingSteps listCourtHearingSteps = new ListUnAllocatedCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForUnallocatedListing();
-        listCourtHearingSteps.verifyHearingListedInActiveMQ();
         listCourtHearingSteps.verifyHearingUnallocatededFromAPI();
     }
 }

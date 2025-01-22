@@ -1,25 +1,15 @@
 package uk.gov.moj.cpp.listing.steps;
 
-import static com.jayway.jsonassert.JsonAssert.emptyCollection;
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.UUID.randomUUID;
-import static javax.ws.rs.core.Response.Status.OK;
-import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
-import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
-import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
-import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
@@ -27,10 +17,6 @@ import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClien
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
 
 import javax.json.JsonObject;
 
@@ -42,22 +28,14 @@ public class HearingAsMarkedSteps extends AbstractIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(HearingAsMarkedSteps.class);
 
     private static final String PUBLIC_HEARING_MARKED_AS_DUPLICATE_EVENT = "public.events.hearing.marked-as-duplicate";
-    private static final String PRIVATE_HEARING_MARKED_AS_DUPLICATE_EVENT = "listing.events.hearing-marked-as-duplicate";
-    private static final String PRIVATE_HEARING_MARKED_AS_DUPLICATE_FOR_CASE_EVENT = "listing.events.hearing-marked-as-duplicate-for-case";
     private static final String LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING = "listing.mark-unallocated-hearing-as-duplicate";
     private static final String MEDIA_TYPE_DUPLICATE_UNALLOCATED_HEARING = "application/vnd.listing.duplicate-unallocated-hearing+json";
     public static final String PUBLIC_LISTING_DELETED_HEARING_IN_STAGING_HMI = "public.listing.deleted-hearing-in-staging-hmi";
-    public static final String LISTING_EVENTS_DELETED_HEARING_IN_STAGING_HMI = "listing.events.deleted-hearing-in-staging-hmi";
 
 
     private final JmsMessageProducerClient publicEventHearingMarkedAsDuplicateEvent;
     private final JmsMessageConsumerClient publicMessageConsumerHearingMarkedAsDuplicateEvent;
-    private final JmsMessageConsumerClient privateMessageConsumerHearingMarkedAsDuplicateEvent;
-    private final JmsMessageConsumerClient privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent;
     private final JmsMessageConsumerClient publicMessageConsumerHmiHearingDeleted;
-    private final JmsMessageConsumerClient privateEventMessageConsumerDeletedHearingInStagingHmi;
-
-    private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
 
     private String request;
 
@@ -68,10 +46,7 @@ public class HearingAsMarkedSteps extends AbstractIT {
 
         publicMessageConsumerHearingMarkedAsDuplicateEvent = publicEvents.createPublicConsumer(PUBLIC_HEARING_MARKED_AS_DUPLICATE_EVENT);
         publicEventHearingMarkedAsDuplicateEvent = QueueUtil.publicEvents.createPublicProducer();
-        privateMessageConsumerHearingMarkedAsDuplicateEvent = privateEvents.createPrivateConsumer(PRIVATE_HEARING_MARKED_AS_DUPLICATE_EVENT);
-        privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent = privateEvents.createPrivateConsumer(PRIVATE_HEARING_MARKED_AS_DUPLICATE_FOR_CASE_EVENT);
         publicMessageConsumerHmiHearingDeleted = publicEvents.createPublicConsumer(PUBLIC_LISTING_DELETED_HEARING_IN_STAGING_HMI);
-        privateEventMessageConsumerDeletedHearingInStagingHmi = privateEvents.createPrivateConsumer(LISTING_EVENTS_DELETED_HEARING_IN_STAGING_HMI);
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
@@ -94,7 +69,6 @@ public class HearingAsMarkedSteps extends AbstractIT {
                 metadataOf(randomUUID(), PUBLIC_HEARING_MARKED_AS_DUPLICATE_EVENT).withUserId(randomUUID().toString()).build());
 
         request = hearingMarkedAsDuplicateObject.toString();
-        LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n", PUBLIC_HEARING_MARKED_AS_DUPLICATE_EVENT, request, getLoggedInHeader());
     }
 
     public void whenUnallocatedHearingMarkedAsDuplicateCommandIsSent() {
@@ -107,7 +81,7 @@ public class HearingAsMarkedSteps extends AbstractIT {
 
     public void verifyHearingMarkedAsDuplicatePublicEventInActiveMQ() {
         final JsonPath jsRequest = new JsonPath(request);
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingMarkedAsDuplicateEvent);
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingMarkedAsDuplicateEvent);
         LOGGER.info("jsonResponse from publicMessageConsumerHearingMarkedAsDuplicateEvent: {}", jsonResponse.prettify());
 
 
@@ -118,76 +92,14 @@ public class HearingAsMarkedSteps extends AbstractIT {
         assertThat(jsonResponse.get("defendantIds[1]").toString(), is(jsRequest.getString("defendantIds[1]")));
         assertThat(jsonResponse.get("offenceIds[0]").toString(), is(jsRequest.getString("offenceIds[0]")));
         assertThat(jsonResponse.get("offenceIds[1]").toString(), is(jsRequest.getString("offenceIds[1]")));
-
-
-    }
-
-    public void verifyHearingMarkedAsDuplicateInActiveMQ() {
-        final JsonPath jsRequest = new JsonPath(request);
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingMarkedAsDuplicateEvent);
-
-        LOGGER.debug("jsonResponse from privateMessageConsumerHearingMarkedAsDuplicateEvent: {}", jsonResponse.prettify());
-
-        if (request != null) {
-            assertThat(jsonResponse.get("hearingId").toString(), is(jsRequest.getString("hearingId")));
-        } else {
-            assertThat(jsonResponse.get("hearingId").toString(), is(hearingData.getId().toString()));
-        }
-
-    }
-
-    public void verifyHearingMarkedAsDuplicateForCaseInActiveMQ() {
-        final JsonPath jsRequest = new JsonPath(request);
-
-        final JsonPath jsonResponse1 = QueueUtil.retrieveMessage(privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent);
-        LOGGER.debug("jsonResponse1 from privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent: {}", jsonResponse1.prettify());
-
-
-        final JsonPath jsonResponse2 = QueueUtil.retrieveMessage(privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent);
-        LOGGER.debug("jsonResponse2 from privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent: {}", jsonResponse1.prettify());
-        final List<String> responseCaseIds = Arrays.asList(jsonResponse1.get("caseId").toString(),
-                jsonResponse2.get("caseId").toString());
-
-        assertThat(jsonResponse1.get("hearingId").toString(), is(jsRequest.getString("hearingId")));
-        assertThat(jsonResponse2.get("hearingId").toString(), is(jsRequest.getString("hearingId")));
-        assertThat(responseCaseIds, hasItems(jsRequest.getString("prosecutionCaseIds[0]")));
-        assertThat(responseCaseIds, hasItems(jsRequest.getString("prosecutionCaseIds[1]")));
-    }
-    public void verifyDeletedFromHearingViewStore() {
-        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.range.search.hearings"),
-                        hearingData.getCourtCentreId(), false));
-
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
-                .until(
-                        status().is(OK),
-                        payload().isJson(
-                                withJsonPath("$.hearings", emptyCollection())
-                        ));
     }
 
     public void verifyHmiPublicEventForDeleteHearing() {
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHmiHearingDeleted);
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHmiHearingDeleted);
         LOGGER.info("jsonResponse from publicMessageConsumerHmiHearingUpdated: {}", jsonResponse.prettify());
         assertThat(jsonResponse.getString("hearingId"), is(hearingData.getId().toString()));
         assertThat(jsonResponse.getString("cancellationReasonCode"), is("CNCL"));
         assertThat(jsonResponse.getList("caseAndApplicationIds").size(), is(3));
     }
 
-    public void verifyPrivateEventDeletedHearingInStagingHmiInActiveMQ() {
-        final JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerDeletedHearingInStagingHmi);
-
-        LOGGER.info("json response : {}", jsonResponse.prettify());
-        assertThat(jsonResponse.getString("hearingId"), is(hearingData.getId().toString()));
-        assertThat(jsonResponse.getString("cancellationReasonCode"), is("CNCL"));
-        assertThat(jsonResponse.getList("caseAndApplicationIds").size(), is(3));
-    }
-
-    public void verifyPrivateEventDeletedHearingInStagingHmiNotInActiveMQ() {
-        final Optional<JsonPath> jsonResponse = privateEventMessageConsumerDeletedHearingInStagingHmi.retrieveMessageAsJsonPath();
-        assertTrue(jsonResponse.isEmpty());
-    }
 }

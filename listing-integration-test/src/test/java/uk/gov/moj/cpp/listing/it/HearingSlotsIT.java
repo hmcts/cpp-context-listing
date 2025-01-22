@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.listAllStubMappings;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.lang.String.format;
 import static javax.ws.rs.core.Response.Status.OK;
@@ -31,7 +32,6 @@ import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
 import com.github.tomakehurst.wiremock.admin.model.ListStubMappingsResult;
-import com.github.tomakehurst.wiremock.client.WireMock;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,7 +63,7 @@ public class HearingSlotsIT extends AbstractIT {
         final String queryString = getQueryString(getParams());
 
         stubGetAvailableHearingSlots(false);
-        final ListStubMappingsResult listStubMappingsResult = WireMock.listAllStubMappings();
+        listAllStubMappings();
         final RequestParams requestParams = getRequestParams(queryString);
         poll(requestParams).until(status().is(OK),
                 payload().isJson(allOf(
@@ -91,7 +91,7 @@ public class HearingSlotsIT extends AbstractIT {
         final String queryString = getQueryString(getParams());
 
         stubGetAvailableHearingSlots(true);
-        final ListStubMappingsResult listStubMappingsResult = WireMock.listAllStubMappings();
+        listAllStubMappings();
         final RequestParams requestParams = getRequestParams(queryString);
         poll(requestParams).until(status().is(OK),
                 payload().isJson(allOf(
@@ -108,7 +108,7 @@ public class HearingSlotsIT extends AbstractIT {
         final String queryString = getQueryString(getParams());
         createListingNotes();
         stubGetAvailableHearingSlots(false);
-        final ListStubMappingsResult listStubMappingsResult = WireMock.listAllStubMappings();
+        listAllStubMappings();
         final RequestParams requestParams = getRequestParams(queryString);
         poll(requestParams).until(status().is(OK),
                 payload().isJson(allOf(

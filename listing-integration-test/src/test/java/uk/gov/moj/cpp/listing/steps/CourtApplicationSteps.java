@@ -6,23 +6,24 @@ import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
-import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
-import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClientProvider.newPublicJmsMessageConsumerClientProvider;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.ApplicationStatus;
@@ -51,7 +52,6 @@ import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationUpdateData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
-import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -64,8 +64,8 @@ import javax.ws.rs.core.Response;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Filter;
 import io.restassured.path.json.JsonPath;
+import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,26 +82,14 @@ public class CourtApplicationSteps extends AbstractIT {
     private static final UUID LINKED_CASE_ID = UUID.randomUUID();
     private static final UUID LINKED_APPLICATION_ID = UUID.randomUUID();
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED = "public.progression.events.hearing-extended";
-    private static final String PRIVATE_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING = "listing.events.court-application-added-for-hearing";
     private static final String PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING = "public.listing.court-application-added-for-hearing";
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED = "public.progression.court-application-changed";
-    private static final String PRIVATE_EVENT_APPLICATION_UPDATED_FOR_HEARING = "listing.events.court-application-updated-for-hearing";
-    private static final String EVENT_SELECTED_CASES_ADDED_TO_HEARING = "listing.event.cases-added-to-hearing";
     private static final String POSTCODE = "CR1 4BX";
-    private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
-            ".search.hearings+json";
-    private static final String PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI = "public.listing.updated-hearing-in-staging-hmi";
+    private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
 
     private JmsMessageProducerClient publicEventCourtApplicationUpdated;
-    private JmsMessageConsumerClient publicEventMessageConsumerCourtApplicationUpdated;
-    private JmsMessageConsumerClient privateMessageConsumerCourtApplicationUpdatedForHearing;
     private JmsMessageProducerClient publicEventCourtApplicationAdded;
-    private JmsMessageConsumerClient publicEventMessageConsumerCourtApplicationAdded;
-    private JmsMessageConsumerClient privateMessageConsumerCourtApplicationAddedForHearing;
-    private final JmsMessageConsumerClient privateMessageConsumerAddedCaseForHearing;
     private JmsMessageConsumerClient publicMessageConsumerCourtApplicationAddedForHearing;
-
-    private JmsMessageConsumerClient publicMessageConsumerHmiHearingUpdated;
 
     private String request;
 
@@ -116,16 +104,9 @@ public class CourtApplicationSteps extends AbstractIT {
     public CourtApplicationSteps(HearingsData hearingsData) {
         this.hearingsData = hearingsData;
 
-        publicEventCourtApplicationUpdated = QueueUtil.publicEvents.createPublicProducer();
-        publicEventMessageConsumerCourtApplicationUpdated = QueueUtil.publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED);
-        privateMessageConsumerCourtApplicationUpdatedForHearing = QueueUtil.privateEvents.createPrivateConsumer(PRIVATE_EVENT_APPLICATION_UPDATED_FOR_HEARING);
-        publicEventCourtApplicationAdded = QueueUtil.publicEvents.createPublicProducer();
-        publicEventMessageConsumerCourtApplicationAdded = QueueUtil.publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED);
-        privateMessageConsumerCourtApplicationAddedForHearing = QueueUtil.privateEvents.createPrivateConsumer(PRIVATE_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
-        privateMessageConsumerAddedCaseForHearing = privateEvents.createPrivateConsumer(EVENT_SELECTED_CASES_ADDED_TO_HEARING);
-        publicMessageConsumerCourtApplicationAddedForHearing = QueueUtil.publicEvents.createPublicConsumer(PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
-        publicMessageConsumerHmiHearingUpdated = newPublicJmsMessageConsumerClientProvider()
-                .withEventNames( PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI).getMessageConsumerClient();
+        publicEventCourtApplicationUpdated = publicEvents.createPublicProducer();
+        publicEventCourtApplicationAdded = publicEvents.createPublicProducer();
+        publicMessageConsumerCourtApplicationAddedForHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -133,20 +114,19 @@ public class CourtApplicationSteps extends AbstractIT {
     public void whenCaseCourtApplicationIsAddedToListingAndHearingIsExtended() {
         AddCourtApplicationData addCourtApplicationData = getCourtApplicationForHearingData(hearingsData);
         final JsonObject courtApplicationUpdateDataObject = (JsonObject) objectToJsonValueConverter.convert(addCourtApplicationData);
-        QueueUtil.sendMessage(
+        sendMessage(
                 publicEventCourtApplicationAdded,
                 PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED,
                 courtApplicationUpdateDataObject,
                 metadataOf(randomUUID(), PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED).withUserId(randomUUID().toString()).build());
         request = courtApplicationUpdateDataObject.toString();
-        LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n, \n\tHeader = {}", PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED, request, getLoggedInHeader());
     }
 
     public void whenCaseCourtApplicationAndLinkedCaseAreAddedToListingAndHearingIsExtended() {
         AddCourtApplicationData addCourtApplicationData = getCourtApplicationForHearingData(hearingsData);
 
         final String eventPayloadString = getPayload("prosecution-case.json")
-                .replaceAll("HEARING_ID",  hearingsData.getHearingData().get(0).getId().toString())
+                .replaceAll("HEARING_ID", hearingsData.getHearingData().get(0).getId().toString())
                 .replaceAll("CASE_ID_1", randomUUID().toString())
                 .replaceAll("DEFENDANT_ID_1", randomUUID().toString())
                 .replaceAll("OFFENCE_ID_1", randomUUID().toString())
@@ -159,20 +139,19 @@ public class CourtApplicationSteps extends AbstractIT {
 
         addCourtApplicationData.setProsecutionCases(Stream.of(prosecutionCase).collect(Collectors.toList()));
         final JsonObject courtApplicationUpdateDataObject = (JsonObject) objectToJsonValueConverter.convert(addCourtApplicationData);
-        QueueUtil.sendMessage(
+        sendMessage(
                 publicEventCourtApplicationAdded,
                 PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED,
                 courtApplicationUpdateDataObject,
                 metadataOf(randomUUID(), PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED).withUserId(randomUUID().toString()).build());
         request = courtApplicationUpdateDataObject.toString();
-        LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n, \n\tHeader = {}", PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED, request, getLoggedInHeader());
     }
 
     public void whenCaseCourtApplicationUpdatedPublicEventIsPublished() {
         CourtApplicationUpdateData courtApplicationUpdateData = getUpdateCourtApplicationForHearingsData(hearingsData);
         final JsonObject courtApplicationUpdateDataObject = (JsonObject) objectToJsonValueConverter.convert(courtApplicationUpdateData);
 
-        QueueUtil.sendMessage(
+        sendMessage(
                 publicEventCourtApplicationUpdated,
                 PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED,
                 courtApplicationUpdateDataObject,
@@ -182,161 +161,89 @@ public class CourtApplicationSteps extends AbstractIT {
         LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n, \n\tHeader = {}", PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED, request, getLoggedInHeader());
     }
 
-    public void verifyCourtApplicationUpdatedInPrivateMessage() {
+    public void verifyPublicEventCourtApplicationAdded() {
         JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerCourtApplicationUpdatedForHearing);
-        LOGGER.debug("jsonResponse from privateMessageConsumerCourtApplicationUpdatedForHearing: {}", jsonResponse.prettify());
-        assertThat(jsonResponse.get("courtApplication.id"), is(jsRequest.getString("courtApplication.id")));
-    }
-
-    public void verifyCourtApplicationAddedInPrivateMessage() {
-        JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerCourtApplicationAddedForHearing);
-        LOGGER.debug("jsonResponse from privateMessageConsumerCourtApplicationAddedForHearing: {}", jsonResponse.prettify());
-        assertThat(jsonResponse.get("hearingId"), is(jsRequest.getString("hearingId")));
-        assertThat(jsonResponse.get("courtApplication.id"), is(jsRequest.getString("courtApplication.id")));
-
-        jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerCourtApplicationAddedForHearing);
+        JsonPath jsonResponse = retrieveMessage(publicMessageConsumerCourtApplicationAddedForHearing);
         LOGGER.debug("jsonResponse from publicMessageConsumerCourtApplicationAddedForHearing: {}", jsonResponse.prettify());
         assertThat(jsonResponse.get("hearingId"), is(jsRequest.getString("hearingId")));
         assertThat(jsonResponse.get("courtApplication.id"), is(jsRequest.getString("courtApplication.id")));
     }
 
-    public void verifyCourtApplicationUpdatedInActiveMQ() {
-        JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(publicEventMessageConsumerCourtApplicationUpdated);
-        LOGGER.debug("jsonResponse from publicEventMessageConsumerCourtApplicationAdded: {}", jsonResponse.prettify());
-        assertThat(jsonResponse.get("courtApplication.applicant.personDetails.firstName"), is(jsRequest.getString("courtApplication.applicant.personDetails.firstName")));
-        assertThat(jsonResponse.get("courtApplication.applicant.personDetails.lastName"), is(jsRequest.getString("courtApplication.applicant.personDetails.lastName")));
-        assertThat(jsonResponse.get("courtApplication.respondents[0].personDetails.firstName"), is(jsRequest.getString("courtApplication.respondents[0].personDetails.firstName")));
-        assertThat(jsonResponse.get("courtApplication.respondents[0].personDetails.lastName"), is(jsRequest.getString("courtApplication.respondents[0].personDetails.lastName")));
-        assertThat(jsonResponse.get("courtApplication.type.applicationType"), is(jsRequest.getString("courtApplication.type.applicationType")));
-        assertThat(jsonResponse.get("courtApplication.id"), is(jsRequest.getString("courtApplication.id")));
-        assertThat(jsonResponse.get("courtApplication.applicationStatus"), is(jsRequest.getString("courtApplication.applicationStatus")));
-        assertThat(jsonResponse.get("courtApplication.linkedCaseId"), is(jsRequest.getString("courtApplication.linkedCaseId")));
-    }
-
-    public void verifyCourtApplicationAddedInActiveMQ() {
-        JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(publicEventMessageConsumerCourtApplicationAdded);
-        LOGGER.debug("jsonResponse from publicEventMessageConsumerCourtApplicationAdded: {}", jsonResponse.prettify());
-        assertThat(jsonResponse.get("hearingId"), is(jsRequest.getString("hearingId")));
-        assertThat(jsonResponse.get("courtApplication.applicant.personDetails.firstName"), is(jsRequest.getString("courtApplication.applicant.personDetails.firstName")));
-        assertThat(jsonResponse.get("courtApplication.applicant.personDetails.lastName"), is(jsRequest.getString("courtApplication.applicant.personDetails.lastName")));
-        assertThat(jsonResponse.get("courtApplication.respondents[0].personDetails.firstName"), is(jsRequest.getString("courtApplication.respondents[0].personDetails.firstName")));
-        assertThat(jsonResponse.get("courtApplication.respondents[0].personDetails.lastName"), is(jsRequest.getString("courtApplication.respondents[0].personDetails.lastName")));
-        assertThat(jsonResponse.get("courtApplication.type.applicationType"), is(jsRequest.getString("courtApplication.type.applicationType")));
-        assertThat(jsonResponse.get("courtApplication.id"), is(jsRequest.getString("courtApplication.id")));
-        assertThat(jsonResponse.get("courtApplication.applicant.id"), is(jsRequest.getString("courtApplication.applicant.id")));
-        assertThat(jsonResponse.get("courtApplication.applicationStatus"), is(jsRequest.getString("courtApplication.applicationStatus")));
-        assertThat(jsonResponse.get("courtApplication.linkedCaseId"), is(jsRequest.getString("courtApplication.linkedCaseId")));
-    }
-
     public void verifyCourtApplicationUpdatedFromAPI() {
-        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), false));
-
         final Filter idFilter = filter(where("id").is(hearingsData.getHearingData().get(0).getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
 
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
-                .until(
-                        status().is(OK),
-                        payload().isJson(allOf(
-                                withJsonPath(hearingIdFilter),
-                                withJsonPath("$.hearings[0].id",
-                                        equalTo(hearingsData.getHearingData().get(0).getId().toString())),
-                                withJsonPath("$.hearings[0].courtApplications[0].applicant.lastName",
-                                        equalTo(APPLICANT_LAST_NAME)),
-                                withJsonPath("$.hearings[0].courtApplications[0].applicant.firstName",
-                                        equalTo(APPLICANT_FIRST_NAME)),
-                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].firstName",
-                                        equalTo(RESPONDENT_FIRST_NAME)),
-                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].lastName",
-                                        equalTo(RESPONDENT_LAST_NAME)),
-                                withJsonPath("$.hearings[0].courtApplications[0].applicationType",
-                                        equalTo(APPLICATION_TYPE)),
-                                withJsonPath("$.hearings[0].courtApplications[0].linkedCaseIds[0]",
-                                        equalTo(LINKED_CASE_ID.toString())),
-                                withJsonPath("$.hearings[0].courtApplications[0].id",
-                                        equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getId().toString())),
-                                withJsonPath("$.hearings[0].courtApplications[0].parentApplicationId",
-                                        equalTo(LINKED_APPLICATION_ID.toString())),
-                                withJsonPath("$.hearings[0].courtApplications[0].restrictFromCourtList",
-                                        equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictFromCourtList())),
-                                withJsonPath("$.hearings[0].courtApplications[0].restrictCourtApplicationType",
-                                        equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictCourtApplicationType()))
-                        )));
+        pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), false, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(hearingIdFilter),
+                withJsonPath("$.hearings[0].id",
+                        equalTo(hearingsData.getHearingData().get(0).getId().toString())),
+                withJsonPath("$.hearings[0].courtApplications[0].applicant.lastName",
+                        equalTo(APPLICANT_LAST_NAME)),
+                withJsonPath("$.hearings[0].courtApplications[0].applicant.firstName",
+                        equalTo(APPLICANT_FIRST_NAME)),
+                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].firstName",
+                        equalTo(RESPONDENT_FIRST_NAME)),
+                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].lastName",
+                        equalTo(RESPONDENT_LAST_NAME)),
+                withJsonPath("$.hearings[0].courtApplications[0].applicationType",
+                        equalTo(APPLICATION_TYPE)),
+                withJsonPath("$.hearings[0].courtApplications[0].linkedCaseIds[0]",
+                        equalTo(LINKED_CASE_ID.toString())),
+                withJsonPath("$.hearings[0].courtApplications[0].id",
+                        equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getId().toString())),
+                withJsonPath("$.hearings[0].courtApplications[0].parentApplicationId",
+                        equalTo(LINKED_APPLICATION_ID.toString())),
+                withJsonPath("$.hearings[0].courtApplications[0].restrictFromCourtList",
+                        equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictFromCourtList())),
+                withJsonPath("$.hearings[0].courtApplications[0].restrictCourtApplicationType",
+                        equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictCourtApplicationType()))
+        });
     }
 
     public void verifyCourtApplicationAddedFromAPI(final boolean allocated) {
-        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), allocated));
-
         final Filter idFilter = filter(where("id").is(hearingsData.getHearingData().get(0).getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
 
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
-                .until(
-                        status().is(OK),
-                        payload().isJson(allOf(
-                                withJsonPath(hearingIdFilter),
-                                withJsonPath("$.hearings[0].courtApplications.size()", is(1)),
-                                withJsonPath("$.hearings[0].id",
-                                        equalTo(hearingsData.getHearingData().get(0).getId().toString())),
-                                withJsonPath("$.hearings[0].courtApplications[0].applicant.lastName",
-                                        Matchers.anyOf(equalTo(APPLICANT_LAST_NAME),
-                                                equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getApplicant().getLastName()))),
-                                withJsonPath("$.hearings[0].courtApplications[0].applicant.firstName",
-                                        Matchers.anyOf(equalTo(APPLICANT_FIRST_NAME),
-                                                equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getApplicant().getFirstName()))),
-                                withJsonPath("$.hearings[0].courtApplications[0].applicationType",
-                                        Matchers.anyOf(equalTo(APPLICATION_TYPE),
-                                                equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getType()))),
-                                withJsonPath("$.hearings[0].courtApplications[0].linkedCaseIds[0]",
-                                        Matchers.anyOf(equalTo(LINKED_CASE_ID.toString()),
-                                                equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getLinkedCaseId().toString()))),
-                                withJsonPath("$.hearings[0].courtApplications[0].parentApplicationId",
-                                        Matchers.anyOf(equalTo(LINKED_APPLICATION_ID.toString()),
-                                                equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getParentApplicationId().toString()))),
-                                withJsonPath("$.hearings[0].courtApplications[0].restrictFromCourtList",
-                                        equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictFromCourtList())),
-                                withJsonPath("$.hearings[0].courtApplications[0].restrictCourtApplicationType",
-                                        equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictCourtApplicationType())),
-                                 withJsonPath("$.hearings[0].courtApplications[0].respondents[0].firstName",
-                                        Matchers.anyOf(equalTo(RESPONDENT_FIRST_NAME),
-                                                equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRespondent().getFirstName())))
-                        )));
+        pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), allocated, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(hearingIdFilter),
+                withJsonPath("$.hearings[0].courtApplications.size()", is(1)),
+                withJsonPath("$.hearings[0].id",
+                        equalTo(hearingsData.getHearingData().get(0).getId().toString())),
+                withJsonPath("$.hearings[0].courtApplications[0].applicant.lastName",
+                        Matchers.anyOf(equalTo(APPLICANT_LAST_NAME),
+                                equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getApplicant().getLastName()))),
+                withJsonPath("$.hearings[0].courtApplications[0].applicant.firstName",
+                        Matchers.anyOf(equalTo(APPLICANT_FIRST_NAME),
+                                equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getApplicant().getFirstName()))),
+                withJsonPath("$.hearings[0].courtApplications[0].applicationType",
+                        Matchers.anyOf(equalTo(APPLICATION_TYPE),
+                                equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getType()))),
+                withJsonPath("$.hearings[0].courtApplications[0].linkedCaseIds[0]",
+                        Matchers.anyOf(equalTo(LINKED_CASE_ID.toString()),
+                                equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getLinkedCaseId().toString()))),
+                withJsonPath("$.hearings[0].courtApplications[0].parentApplicationId",
+                        Matchers.anyOf(equalTo(LINKED_APPLICATION_ID.toString()),
+                                equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getParentApplicationId().toString()))),
+                withJsonPath("$.hearings[0].courtApplications[0].restrictFromCourtList",
+                        equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictFromCourtList())),
+                withJsonPath("$.hearings[0].courtApplications[0].restrictCourtApplicationType",
+                        equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictCourtApplicationType())),
+                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].firstName",
+                        Matchers.anyOf(equalTo(RESPONDENT_FIRST_NAME),
+                                equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRespondent().getFirstName())))
+        });
     }
 
     public void verifyCaseCountFromAPI(final boolean allocated, final int caseCount) {
-        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), allocated));
 
         final Filter idFilter = filter(where("id").is(hearingsData.getHearingData().get(0).getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
 
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
-                .until(
-                        status().is(OK),
-                        payload().isJson(allOf(
-                                withJsonPath(hearingIdFilter),
-                                withJsonPath("$.hearings[0].listedCases.size()", is(caseCount))
-                        )));
-    }
-
-    public void verifyHmiPublicEventForUpdateHearing() {
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHmiHearingUpdated);
-        LOGGER.info("jsonResponse from publicMessageConsumerHmiHearingUpdated: {}", jsonResponse.prettify());
-        Assert.assertThat(jsonResponse.get("hearing.id"), is(hearingsData.getHearingData().get(0).getId().toString()));
+        pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), allocated, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(hearingIdFilter),
+                withJsonPath("$.hearings[0].listedCases.size()", is(caseCount))
+        });
     }
 
     public void verifyTimeLine(HearingData hearingsData) {
@@ -344,27 +251,15 @@ public class CourtApplicationSteps extends AbstractIT {
                 format(readConfig().getProperty("listing.unallocated-hearings_for_application"),
                         hearingsData.getCourtApplications().get(0).getId()));
 
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()).build())
                 .until(
                         status().is(Response.Status.OK),
                         payload().isJson(allOf(
-                                withJsonPath("$.hearings[0].id", is(hearingsData.getId().toString())),
-                                withJsonPath("$.hearings[0].courtApplications.size()", is(1)),
-                                withJsonPath("$.hearings[0].courtApplications[0].id", is(hearingsData.getCourtApplications().get(0).getId().toString()))
-                        )
-                ));
-    }
-
-    public void verifyAddedCaseForHearingInActiveMQ() {
-        final UUID hearingId = hearingsData.getHearingData().get(0).getId();
-        final JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerAddedCaseForHearing);
-        LOGGER.debug("jsonResponse from privateMessageConsumerAddedCaseForHearing: {}", jsonResponse.prettify());
-
-        assertThat(jsonResponse.get("hearingId"), is(hearingId.toString()));
-        assertThat(jsonResponse.get("unAllocatedListedCases.size()"), is(1));
+                                        withJsonPath("$.hearings[0].id", is(hearingsData.getId().toString())),
+                                        withJsonPath("$.hearings[0].courtApplications.size()", is(1)),
+                                        withJsonPath("$.hearings[0].courtApplications[0].id", is(hearingsData.getCourtApplications().get(0).getId().toString()))
+                                )
+                        ));
     }
 
     private CourtApplicationUpdateData getUpdateCourtApplicationForHearingsData(HearingsData hearingsData) {
