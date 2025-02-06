@@ -367,6 +367,7 @@ public class ListNextHearingCommandHandlerTest {
         final UUID hearingId = randomUUID();
         final UUID seedingHearingId = randomUUID();
         final UUID caseId = randomUUID();
+        final UUID caseId2 = randomUUID();
         final UUID offenceId = randomUUID();
         final UUID offence2Id = randomUUID();
         final Hearing hearingAggregate = new Hearing();
@@ -402,7 +403,7 @@ public class ListNextHearingCommandHandlerTest {
                                                 .build()))
                                         .build(),
                                 ListedCase.listedCase()
-                                        .withId(caseId)
+                                        .withId(caseId2)
                                         .withDefendants(asList(uk.gov.justice.listing.events.Defendant.defendant()
                                                 .withId(randomUUID())
                                                 .withOffences(asList(uk.gov.justice.listing.events.Offence.offence()
@@ -445,7 +446,7 @@ public class ListNextHearingCommandHandlerTest {
         assertThat(unallocateEventObject.getString("hearingId"), is(hearingId.toString()));
         assertThat(unallocateEventObject.getString("seedingHearingId"), is(seedingHearingId.toString()));
         assertThat(unallocateEventObject.containsKey("unallocated"), is(true));
-        assertThat(unallocateEventObject.getJsonArray("caseIdsSeededByOnlySeedingHearingId").size(), is(0));
+        assertThat(unallocateEventObject.getJsonArray("caseIdsSeededByOnlySeedingHearingId").size(), is(1));
 
         final JsonEnvelope deletedEventForHmi = events.get(1);
         assertThat(deletedEventForHmi.metadata().name(), is("listing.events.deleted-hearing-in-staging-hmi"));

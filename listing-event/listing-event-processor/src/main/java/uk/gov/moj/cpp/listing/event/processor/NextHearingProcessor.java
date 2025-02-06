@@ -77,6 +77,7 @@ public class NextHearingProcessor {
     private static final String PUBLIC_EVENT_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING = "public.events.listing.offences-removed-from-existing-allocated-hearing";
     private static final String PUBLIC_EVENT_OFFENCES_REMOVED_FROM_EXISTING_UNALLOCATED_HEARING = "public.events.listing.offences-removed-from-existing-unallocated-hearing";
     public static final String PUBLIC_EVENTS_LISTING_OFFENCES_REMOVED_FROM_ALLOCATED_HEARING = "public.events.listing.offences-removed-from-allocated-hearing";
+    public static final String LISTING_EVENTS_NEXT_HEARING_REPLACED = "listing.events.next-hearing-replaced";
 
     @Inject
     private Sender sender;
@@ -230,6 +231,14 @@ public class NextHearingProcessor {
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_OFFENCES_REMOVED_FROM_EXISTING_UNALLOCATED_HEARING), envelope.payloadAsJsonObject()));
     }
+
+    @Handles(LISTING_EVENTS_NEXT_HEARING_REPLACED)
+    public void handleNextHearingReplaced(final JsonEnvelope envelope){
+        logEventReceived(envelope,LISTING_EVENTS_NEXT_HEARING_REPLACED);
+
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName("public.listing.offences-moved-to-next-hearing"), envelope.payloadAsJsonObject()));
+    }
+
 
     private JsonObject buildListNextHearingCommand(final NextHearingRequested event) {
         final JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();

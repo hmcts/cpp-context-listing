@@ -188,6 +188,9 @@ subscriptions_descriptor:
         - name: listing.events.hearing-added-to-case
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-added-to-case.json
 
+        - name: listing.events.next-hearing-replaced
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.next-hearing-replaced.json
+
 
       event_source_name: listing
 
