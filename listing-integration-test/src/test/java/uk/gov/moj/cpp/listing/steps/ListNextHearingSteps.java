@@ -7,6 +7,7 @@ import static java.util.UUID.randomUUID;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -23,6 +24,7 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
+
 
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.ApplicationStatus;
@@ -123,7 +125,9 @@ public class ListNextHearingSteps extends AbstractIT {
     private final JmsMessageConsumerClient publicMessageConsumerOffencesRemovedFromExistingHearing;
     private final JmsMessageConsumerClient publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing;
     private final JmsMessageConsumerClient publicMessageConsumerHearingAddedToCase;
-    private final JmsMessageProducerClient publicEventAdhocCreated;
+
+    private final JmsMessageConsumerClient publicMessageConsumerOffencesMovedToHearing;
+    private final JmsMessageProducerClient publicEventAdhocCreated ;
 
 
     private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
@@ -140,8 +144,9 @@ public class ListNextHearingSteps extends AbstractIT {
         publicMessageConsumerUnallocatedHearingDeleted = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_UNALLOCATED_HEARING_DELETED);
         publicMessageConsumerOffencesRemovedFromExistingHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_HEARING);
         publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING);
-        publicMessageConsumerHearingAddedToCase = publicEvents.createPublicConsumer("public.listing.hearing-added-to-case");
-        publicEventAdhocCreated = publicEvents.createPublicProducer();
+        publicMessageConsumerHearingAddedToCase =publicEvents.createPublicConsumer("public.listing.hearing-added-to-case");
+        publicMessageConsumerOffencesMovedToHearing = publicEvents.createPublicConsumer("public.listing.offences-moved-to-next-hearing");
+        publicEventAdhocCreated =  publicEvents.createPublicProducer();
 
     }
 
@@ -378,6 +383,28 @@ public class ListNextHearingSteps extends AbstractIT {
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingAddedToCase);
 
         assertThat(jsonResponse.get("hearingId"), is(existedHearingId.toString()));
+
+    }
+
+    public void verifyPublicOffencesMovedToHearingInActiveMQ(final HearingsData hearingsData, final HearingsData oldHearingsData, final UUID seedingHearingId) {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesMovedToHearing);
+
+        final JsonPath jsonResponse2 = QueueUtil.retrieveMessage(publicMessageConsumerOffencesMovedToHearing);
+
+        assertThat(jsonResponse.get("seedingHearingId"), is(seedingHearingId.toString()));
+
+        assertThat(Arrays.asList(jsonResponse.get("newHearingId"), jsonResponse2.get("newHearingId")),
+                hasItems(hearingsData.getHearingData().get(0).getId().toString(),
+                        hearingsData.getHearingData().get(1).getId().toString()));
+
+
+        assertThat(jsonResponse.get("oldHearingIds"),
+                hasItems(oldHearingsData.getHearingData().get(0).getId().toString(),
+                        oldHearingsData.getHearingData().get(1).getId().toString()));
+
+        assertThat(jsonResponse2.get("oldHearingIds"),
+                hasItems(oldHearingsData.getHearingData().get(0).getId().toString(),
+                        oldHearingsData.getHearingData().get(1).getId().toString()));
 
     }
 

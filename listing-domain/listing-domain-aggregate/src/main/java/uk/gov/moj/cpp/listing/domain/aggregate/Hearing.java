@@ -1401,15 +1401,19 @@ public class Hearing implements Aggregate {
         }
 
         Optional<uk.gov.moj.cpp.listing.domain.OffenceIds> offenceIdsSeededByOtherHearings = Optional.empty();
+        boolean hasMultipleCase = false;
         if (!isNull(prosecutionCaseDefendantOffenceIds)) {
             offenceIdsSeededByOtherHearings = prosecutionCaseDefendantOffenceIds.stream().flatMap(pc -> pc.getDefendants().stream())
                     .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
+                    .filter(offence -> nonNull(offence.getSeedingHearing()))
                     .filter(offence -> isNotSeededOffenceBySeedId(seedingHearingId, offence))
                     .findFirst();
+
+            hasMultipleCase = currentHearingEventState.getListedCases().stream().map(c->c.getId()).collect(Collectors.toSet()).size() > 1;
         }
 
 
-        if (offenceIdsSeededByOtherHearings.isPresent() && !getOffencesSeededBySeededHeariinig(seedingHearingId).isEmpty()) {
+        if (offenceIdsSeededByOtherHearings.isPresent() &&  hasMultipleCase) {
             return getOffencesRemovedFromHearingStream(seedingHearingId, hearingId);
         } else {
             final List<UUID> caseIds = prosecutionCaseDefendants.keySet().stream().collect(toList());
@@ -1622,6 +1626,7 @@ public class Hearing implements Aggregate {
 
         if (!isHearingInThePast() && isHearingContainsCase(caseId)) {
             final List<Object> events = defendants.stream()
+                    .filter(defendant -> !isCaseContainsDefendant(caseId, defendant.getId()))
                     .map(defendant -> defendantsAddedForCourtProceedings(caseId, defendant))
                     .collect(toList());
             return apply(events.stream());
@@ -3096,11 +3101,11 @@ public class Hearing implements Aggregate {
      * only seedingHearing Id
      */
     private Stream<Object> getOffencesRemovedFromHearingStream(final UUID seedingHearingId, final UUID hearingId) {
-        final List<UUID> offencesSeededBySeedingHearing = getOffencesSeededBySeededHeariinig(seedingHearingId);
 
         final List<UUID> caseIdsSeededByOnlyOtherHearings = prosecutionCaseDefendantOffenceIds.stream()
                 .filter(pc -> pc.getDefendants().stream()
                         .flatMap(d -> d.getOffences().stream())
+                        .filter(offence -> nonNull(offence.getSeedingHearing()))
                         .anyMatch(offence -> isNotSeededOffenceBySeedId(seedingHearingId, offence)))
                 .map(ProsecutionCaseDefendantOffenceIds::getId)
                 .collect(toList());
@@ -3108,6 +3113,14 @@ public class Hearing implements Aggregate {
         final List<UUID> caseIdsSeededBySeedingHearingId = prosecutionCaseDefendantOffenceIds.stream()
                 .filter(pc -> !caseIdsSeededByOnlyOtherHearings.contains(pc.getId()))
                 .map(ProsecutionCaseDefendantOffenceIds::getId)
+                .collect(toList());
+
+        final List<UUID> offencesSeededBySeedingHearing = prosecutionCaseDefendantOffenceIds.stream()
+                .filter(c-> caseIdsSeededBySeedingHearingId.contains(c.getId()))
+                .flatMap(pc -> pc.getDefendants().stream())
+                .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
+                .filter(offenceIds -> isNull(offenceIds.getSeedingHearing()) || offenceIds.getSeedingHearing().getSeedingHearingId().equals(seedingHearingId))
+                .map(OffenceIds::getId)
                 .collect(toList());
 
         final Stream.Builder<Object> eventStreamBuilder = Stream.builder();
@@ -3126,15 +3139,6 @@ public class Hearing implements Aggregate {
         }
 
         return apply(eventStreamBuilder.build());
-    }
-
-    private List<UUID> getOffencesSeededBySeededHeariinig(UUID seedingHearingId) {
-        return prosecutionCaseDefendantOffenceIds.stream()
-                .flatMap(pc -> pc.getDefendants().stream())
-                .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
-                .filter(offenceIds -> nonNull(offenceIds.getSeedingHearing()) && offenceIds.getSeedingHearing().getSeedingHearingId().equals(seedingHearingId))
-                .map(OffenceIds::getId)
-                .collect(toList());
     }
 
     private boolean isNotSeededOffenceBySeedId(final UUID seedingHearingId, final uk.gov.moj.cpp.listing.domain.OffenceIds offence) {

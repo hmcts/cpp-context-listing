@@ -6,10 +6,8 @@ import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
@@ -25,6 +23,7 @@ import uk.gov.justice.listing.events.Hearing;
 import uk.gov.justice.listing.events.HearingDeleted;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.NextHearingDayChanged;
+import uk.gov.justice.listing.events.NextHearingReplaced;
 import uk.gov.justice.listing.events.NextHearingRequested;
 import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.listing.events.OffencesRemovedFromExistingAllocatedHearing;
@@ -482,5 +481,36 @@ public class NextHearingProcessorTest {
         assertThat(jsonObject.getJsonArray("offenceIds").getString(0), is(offenceId1.toString()));
         assertThat(jsonObject.getJsonArray("offenceIds").getString(1), is(offenceId2.toString()));
         assertThat(jsonObject.size(), is(2));
+    }
+
+    @Test
+    public void shouldHandleNextHearingReplaced() {
+        final UUID seedingHearingId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID oldHearingId1 = randomUUID();
+        final UUID oldHearingId2 = randomUUID();
+
+        final NextHearingReplaced nextHearingReplaced = NextHearingReplaced.nextHearingReplaced()
+                .withNewHearingId(hearingId)
+                .withSeedingHearingId(seedingHearingId)
+                .withOldHearingIds(asList(oldHearingId1, oldHearingId2))
+                .build();
+
+        final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.next-hearing-replaced"),
+                objectToJsonObjectConverter.convert(nextHearingReplaced));
+
+        nextHearingProcessor.handleNextHearingReplaced(event);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final JsonEnvelope publishedEvent = this.senderJsonEnvelopeCaptor.getValue();
+        final JsonObject jsonObject = publishedEvent.payloadAsJsonObject();
+
+        assertThat(publishedEvent.metadata().name(), is("public.listing.offences-moved-to-next-hearing"));
+        assertThat(jsonObject.getString("newHearingId"), is(hearingId.toString()));
+        assertThat(jsonObject.getString("seedingHearingId"), is(seedingHearingId.toString()));
+        assertThat(jsonObject.getJsonArray("oldHearingIds").getString(0), is(oldHearingId1.toString()));
+        assertThat(jsonObject.getJsonArray("oldHearingIds").getString(1), is(oldHearingId2.toString()));
+
     }
 }

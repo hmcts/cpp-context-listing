@@ -16,6 +16,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
@@ -40,10 +41,12 @@ public class HearingMarkedAsDuplicateEventListener {
 
 
     private HearingRepository hearingRepository;
+    private HearingSearchSyncService hearingSearchSyncService;
 
     @Inject
-    public HearingMarkedAsDuplicateEventListener(final HearingRepository hearingRepository) {
+    public HearingMarkedAsDuplicateEventListener(final HearingRepository hearingRepository,  final HearingSearchSyncService hearingSearchSyncService) {
         this.hearingRepository = hearingRepository;
+        this.hearingSearchSyncService = hearingSearchSyncService;
     }
 
     @Handles("listing.events.hearing-marked-as-duplicate")
@@ -103,6 +106,7 @@ public class HearingMarkedAsDuplicateEventListener {
                 .putSubList("hearingDays", typeHearingDayRef, getHearingDaysWithRemoveCourtRoomIdFunction())
                 .putSubList("listedCases", typeRef, getListedCaseWithRemoveDeletedOffencesFunction(seedingHearingId, seedCaseIds))
                 .save();
+        hearingSearchSyncService.sync(hearingId);
 
     }
 
@@ -143,6 +147,8 @@ public class HearingMarkedAsDuplicateEventListener {
                 .find(hearingId)
                 .putSubList("listedCases", typeRef, getListedCaseWithRemoveDeletedOffencesFunction(offenceIds))
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 
     private void deleteHearing(final UUID hearingId) {
