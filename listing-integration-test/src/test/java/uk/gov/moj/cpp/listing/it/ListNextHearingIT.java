@@ -63,6 +63,7 @@ public class ListNextHearingIT extends AbstractIT {
 
         listNextHearingSteps2.whenNextHearingSubmittedForListing(nextHearings);
         listNextHearingSteps2.verifyHearingListedFromAPI(nextHearings);
+        listNextHearingSteps2.verifyPublicOffencesMovedToHearingInActiveMQ(nextHearings, oldNextHearings, firstHearings.getHearingData().get(0).getId());
     }
 
 
@@ -88,6 +89,7 @@ public class ListNextHearingIT extends AbstractIT {
 
         listNextHearingSteps2.whenUnscheduledNextHearingSubmittedForListing(nextHearings);
         listNextHearingSteps2.verifyUnscheduledHearingListedFromApi(nextHearings);
+        listNextHearingSteps2.verifyPublicOffencesMovedToHearingInActiveMQ(nextHearings, oldNextHearings, firstHearings.getHearingData().get(0).getId());
     }
 
 

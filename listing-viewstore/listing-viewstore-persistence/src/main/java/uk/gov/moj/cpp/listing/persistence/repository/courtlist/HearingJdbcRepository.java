@@ -43,6 +43,23 @@ public class HearingJdbcRepository {
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
             " LEFT JOIN court_applications ca ON ca.hearing_id = h.id ";
 
+    public static final String RANGE_SEARCH_FIELD_LIST = " h.id, h.properties,  " +
+            "h.court_centre_id, " +
+            "h.court_room_id, " +
+            "h.type_id, " +
+            "h.start_date, " +
+            "h.end_date, " +
+            "h.is_vacated_trial, " +
+            "h.jurisdiction_type, " +
+            "h.unscheduled, " +
+            "h.week_commencing_start_date, " +
+            "h.week_commencing_end_date, " +
+            "h.allocated, " +
+            "h.type_of_list_id, " +
+            "h.is_possible_disqualification ";
+
+    public static final String RANGE_SEARCH_FIELD_LIST_NO_ALIAS = RANGE_SEARCH_FIELD_LIST.replace("h.", "");
+
     @Inject
     private ViewStoreJdbcDataSourceProvider viewStoreJdbcDataSourceProvider;
 
@@ -67,22 +84,9 @@ public class HearingJdbcRepository {
                                       final Integer pageSize) {
         final List<Hearing> hearingResults = new ArrayList<>();
 
-        final String query = "select distinct " +
-                "h.id, h.properties,  " +
-                "h.court_centre_id, " +
-                "h.court_room_id, " +
-                "h.type_id, " +
-                "h.start_date, " +
-                "h.end_date, " +
-                "h.is_vacated_trial, " +
-                "h.jurisdiction_type, " +
-                "h.unscheduled, " +
-                "h.week_commencing_start_date, " +
-                "h.week_commencing_end_date, " +
-                "h.allocated, " +
-                "h.type_of_list_id, " +
-                "count(*) OVER() as totalCount, " +
-                "h.is_possible_disqualification " +
+        final String query = "select " + RANGE_SEARCH_FIELD_LIST_NO_ALIAS + ", count(*) OVER() as totalCount from (select distinct " +
+                RANGE_SEARCH_FIELD_LIST +
+                " ,min(hd.start_time) as hdst " + // query could be optimized by extracting min_start_time on the hearing table and getting DBA to extract it for existing records
                 "from hearing h " +
                 "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
                 "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
@@ -99,7 +103,8 @@ public class HearingJdbcRepository {
                 "(h.end_date between ? and ? ) or " +
                 "(h.start_date <=  ? and h.end_date >=  ?)  " +
                 ") " +
-                " order by h.id, h.court_centre_id ASC OFFSET (?) ROWS FETCH NEXT (?) ROWS ONLY";
+                " group by " + RANGE_SEARCH_FIELD_LIST +
+                " order by hdst asc, h.court_centre_id asc, h.id asc ) as distinct_hearings OFFSET (?) ROWS FETCH NEXT (?) ROWS ONLY";
 
         try (final Connection viewstoreConnection = dataSource.getConnection(); final PreparedStatement ps = viewstoreConnection.prepareStatement(query)) {
             int indexPointer = 1;

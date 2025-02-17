@@ -118,6 +118,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import javax.json.Json;
@@ -2077,6 +2078,15 @@ public class ListCourtHearingSteps extends AbstractIT {
     public void createListingNotes() {
         this.hearingsData.getHearingData().stream().filter(hearing -> hearing.getCourtRoomId() != null).
                 forEach(hearing -> notesSteps.createNoteForListing(hearing.getCourtRoomId(), "2020-05-21", "note 1"));
+    }
+
+    public void createListingNotes(LocalDate date, String note) {
+        AtomicReference<LocalDate> currentLocalDate = new AtomicReference<>(date);
+        this.hearingsData.getHearingData().stream().filter(hearing -> hearing.getCourtRoomId() != null).
+                forEach(hearing -> {
+                    notesSteps.createNoteForListing(hearing.getCourtRoomId(), currentLocalDate.get().toString(), note);
+                    currentLocalDate.set(currentLocalDate.get().plusDays(1));
+                });
     }
 
     public void listCourtHearing(final JsonObject listCourtHearingJsonObject, Optional<LocalDate> adjournedFromDate, Optional<List<UUID>> shadowListedOffences) {

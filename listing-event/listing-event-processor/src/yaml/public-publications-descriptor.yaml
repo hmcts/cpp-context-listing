@@ -104,4 +104,10 @@ subscriptions_descriptor:
         - name: public.listing.hearing-added-to-case
           schema_uri: http://justice.gov.uk/listing/courts/public.listing.hearing-added-to-case.json
 
+        - name: public.listing.offences-moved-to-next-hearing
+          schema_uri: http://justice.gov.uk/listing/events/public.listing.offences-moved-to-next-hearing.json
+
+        - name: public.listing.judiciary-changed-for-hearings-status
+          schema_uri: http://justice.gov.uk/listing/courts/public.listing.judiciary-changed-for-hearings-status.json
+
       event_source_name: public.event.source

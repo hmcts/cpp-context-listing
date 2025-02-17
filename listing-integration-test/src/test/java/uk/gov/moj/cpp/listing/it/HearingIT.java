@@ -593,4 +593,16 @@ public class HearingIT extends AbstractIT {
         pollForHearingById(getLoggedInUser(), hearingId, allOf(matchers.toArray(new Matcher[0])));
     }
 
+    @Test
+    public void judiciaryChangedForHearingStatusPublicEvent() {
+        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+
+        final UpdatedHearingData updatedHearingDataWithUpdatedJudiciary = UpdatedHearingData.updatedHearingDataDifferentJudiciary(hearingsData.getHearingData().get(0));
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataWithUpdatedJudiciary);
+        updateHearingSteps.whenJudiciaryIsChangedForHearings();
+        updateHearingSteps.verifyJudiciaryChangedForHearingStatusPublicEvent();
+    }
 }

@@ -25,6 +25,7 @@ import uk.gov.moj.cpp.listing.domain.HearingDay;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
 import uk.gov.moj.cpp.listing.domain.Offence;
 import uk.gov.moj.cpp.listing.domain.SeedingHearing;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
@@ -45,6 +46,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class HearingMarkedAsDuplicateEventListenerTest {
 
+    @Mock
+    private HearingSearchSyncService hearingSearchSyncService;
 
     @Mock
     private HearingRepository hearingRepository;
@@ -204,6 +207,7 @@ public class HearingMarkedAsDuplicateEventListenerTest {
                 .thenReturn(hearing);
 
         hearingMarkedAsDuplicateEventListener.hearingUnAllocatedForListingV2(offencesRemovedFromHearingEnvelope);
+        verify(hearingSearchSyncService).sync(hearingId);
 
         verify(hearingRepository).save(argumentCaptor.capture());
 
@@ -279,6 +283,7 @@ public class HearingMarkedAsDuplicateEventListenerTest {
         hearingMarkedAsDuplicateEventListener.removeOffencesFromExistingAllocatedHearing(offencesRemovedFromExistingAllocatedHearingEnvelope);
 
         verify(hearingRepository).save(argumentCaptor.capture());
+        verify(hearingSearchSyncService).sync(hearingId);
 
         final Hearing savedHearing = argumentCaptor.getValue();
 
@@ -348,6 +353,7 @@ public class HearingMarkedAsDuplicateEventListenerTest {
         hearingMarkedAsDuplicateEventListener.removeOffencesFromExistingUnallocatedHearing(offencesRemovedFromExistingUnallocatedHearingEnvelope);
 
         verify(hearingRepository).save(argumentCaptor.capture());
+        verify(hearingSearchSyncService).sync(hearingId);
 
         final Hearing savedHearing = argumentCaptor.getValue();
 

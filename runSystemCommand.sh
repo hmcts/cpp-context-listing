@@ -14,10 +14,10 @@
 #
 # To run --help against the java client jar
 #   ./runSystemCommand.sh --help
-#
+#.
 ##################################################################################################
 
-FRAMEWORK_VERSION=17.100.4
+FRAMEWORK_VERSION=17.101.6
 CONTEXT_NAME="listing"
 USER_NAME="admin"
 PASSWORD="admin"

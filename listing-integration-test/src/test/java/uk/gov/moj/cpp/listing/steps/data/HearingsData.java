@@ -142,6 +142,12 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData));
     }
 
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciary(final CaseAndDefendantData caseAndDefendantData,
+                                                                          final UUID courtCentreId,
+                                                                          final UUID courtRoomId) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData, courtCentreId, courtRoomId));
+    }
+
     public static HearingsData hearingsDataWithUnAllocationDataAndJudiciary(final CaseAndDefendantData caseAndDefendantData) {
         return new HearingsData(HearingsDataFactory.hearingsDataWithUnAllocationDataAndJudiciary(caseAndDefendantData));
     }

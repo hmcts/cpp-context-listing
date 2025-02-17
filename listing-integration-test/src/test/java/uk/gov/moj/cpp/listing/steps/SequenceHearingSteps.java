@@ -59,6 +59,7 @@ public class SequenceHearingSteps extends AbstractIT {
 
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
     private JmsMessageConsumerClient publicMessageConsumerHearingUpdated;
+
     private JmsMessageConsumerClient publicMessageConsumerHearingSequenced;
 
     private SequenceHearingData sequenceHearingData;
@@ -127,7 +128,6 @@ public class SequenceHearingSteps extends AbstractIT {
     private void createMessageConsumers() {
         publicMessageConsumerHearingUpdated = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_UPDATED);
         publicMessageConsumerHearingSequenced = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_SEQUENCED);
-
     }
 
     private String prepareJsonForSequenceHearingDays() {
