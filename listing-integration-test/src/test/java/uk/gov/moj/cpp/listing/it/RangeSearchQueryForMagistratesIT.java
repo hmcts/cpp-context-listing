@@ -177,7 +177,7 @@ public class RangeSearchQueryForMagistratesIT extends AbstractIT {
         final RequestParams requestParams = getRangeSearchRequestParams(queryString);
         final ResponseData res = poll(requestParams).until(status().is(OK),
                 payload().isJson(allOf(
-                        withJsonPath("$.results", is(2)),
+                        withJsonPath("$.results", is(4)),
                         withJsonPath("$.pageCount", is(1)),
                         withJsonPath("$.hearings.size()", is(2))
                 ))

@@ -3328,6 +3328,7 @@ public class Hearing implements Aggregate {
         currentHearingEventState.getListedCases().removeIf(pc -> pc.getDefendants().isEmpty());
     }
 
+
     /**
      * This method is responsible for merging cases, defendants and offences between
      * HearingListingNeeds which is passed in payload and hearing in aggregate. Since the case can

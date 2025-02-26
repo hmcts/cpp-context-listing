@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.steps;
 
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
@@ -593,13 +594,13 @@ public class UpdateHearingSteps extends AbstractIT {
         publicMessageConsumerHearingRequested = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING);
         privateMessageConsumerHearingRequestedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_REQUESTED_FOR_LISTING);
         publicMessageConsumerHearingRequested = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING);
+        publicEventMessageProducer = publicEvents.createPublicProducer();
         privateMessageConsumerHearingRequestedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_REQUESTED_FOR_LISTING);
         publicMessageConsumerHearingRequested = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING);
         privateMessageConsumerHearingRequestedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_REQUESTED_FOR_LISTING);
         publicMessageConsumerHearingRequested = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING);
         publicMessageConsumerJudiciaryChangedForHearingStatus = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_JUDICIARY_CHANGED_FOR_HEARING_STATUS);
 
-        publicEventMessageProducer = publicEvents.createPublicProducer();
     }
 
     private void createMessageConsumersForDefendantSplit() {
@@ -895,18 +896,13 @@ public class UpdateHearingSteps extends AbstractIT {
 
 
     public void verifyHearingUpdatedWithNoCourtRoomAndUnallocatedWhenQueryingFromAPI() {
-        final String hearingIdFilter = getHearingFilter(updatedHearingData.getHearingId().toString());
-        pollForHearing(updatedHearingData.getCourtCentreId().toString(), UNALLOCATED, getLoggedInUser().toString(), new Matcher[]{
-                withJsonPath(hearingIdFilter + ".courtRoomId", hasSize(0))
-        });
+        // this assertion is ok because the hearing is moving from allocated to unallocated list
+        verifyHearingPayloadProperty(updatedHearingData.getHearingId().toString(), "courtRoomId", is(nullValue()));
     }
 
     public void verifyHearingUpdatedWithNoEndDateAndUnallocatedWhenQueryingFromAPI() {
-        final String hearingIdFilter = getHearingFilter(updatedHearingData.getHearingId().toString());
-        pollForHearing(updatedHearingData.getCourtCentreId().toString(), UNALLOCATED, getLoggedInUser().toString(), new Matcher[]{
-                withJsonPath(hearingIdFilter + ".endDate", hasSize(0))
-        });
-
+        // this assertion is ok because the hearing is moving from allocated to unallocated list
+        verifyHearingPayloadProperty(updatedHearingData.getHearingId().toString(), "endDate", is(nullValue()));
     }
 
     public void verifyHearingWithUpdatedJudiciaryWhenQueryingFromAPI() {
@@ -1232,11 +1228,26 @@ public class UpdateHearingSteps extends AbstractIT {
         pollForHearing(searchHearingUrl, getLoggedInUser().toString(), matchers);
     }
 
+    public void verifyHearingPayloadProperty(final String hearingId, final String propertyName, final Matcher<Object> matcher) {
+        final String hearingIdFilter = getHearingFilter(hearingId);
+
+        final String payload = pollForHearing(updatedHearingData.getCourtCentreId().toString(), UNALLOCATED, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(hearingIdFilter, hasSize(1))
+        });
+
+        final JsonObject payloadAsJsonObject = new StringToJsonObjectConverter().convert(payload);
+        Object courtRoomId = payloadAsJsonObject.getJsonArray("hearings").stream().
+                map(h -> (JsonObject) h)
+                .filter(h -> h.getString("id").equals(hearingId))
+                .findFirst().get().get(propertyName);
+
+        assertThat(courtRoomId, matcher);
+    }
+
     public void verifyJudiciaryChangedForHearingStatusPublicEvent() {
         JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerJudiciaryChangedForHearingStatus);
         LOGGER.info("jsonResponse from publicMessageConsumerHearingSequenced: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("status"), is(SUCCESS));
     }
-
 }

@@ -593,6 +593,7 @@ public class HearingIT extends AbstractIT {
         pollForHearingById(getLoggedInUser(), hearingId, allOf(matchers.toArray(new Matcher[0])));
     }
 
+
     @Test
     public void shouldRaisePublicEventJudiciaryChangedForHearingStatus() {
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
@@ -605,4 +606,5 @@ public class HearingIT extends AbstractIT {
         updateHearingSteps.whenJudiciaryIsChangedForHearings();
         updateHearingSteps.verifyJudiciaryChangedForHearingStatusPublicEvent();
     }
+
 }

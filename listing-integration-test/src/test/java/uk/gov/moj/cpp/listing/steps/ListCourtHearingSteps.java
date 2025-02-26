@@ -1172,6 +1172,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                         )));
     }
 
+
     public void verifyNotesViaRangeSearch() {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),

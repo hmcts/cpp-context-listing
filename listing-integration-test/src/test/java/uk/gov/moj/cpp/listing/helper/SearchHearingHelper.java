@@ -20,12 +20,13 @@ public class SearchHearingHelper {
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
     private static final String HEARING_FILTER = "$.hearings[?(@.id == '%s')]";
 
-    public static void pollForHearing(final String url, final String userId, final Matcher[] matchers) {
+    public static String pollForHearing(final String url, final String userId, final Matcher[] matchers) {
 
-        pollWithDefaults(requestParams(url, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, userId).build())
+        return pollWithDefaults(requestParams(url, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, userId).build())
                 .until(
                         status().is(OK),
-                        payload().isJson(allOf(matchers)));
+                        payload().isJson(allOf(matchers))
+                ).getPayload();
 
     }
 
@@ -43,12 +44,12 @@ public class SearchHearingHelper {
         });
     }
 
-    public static void pollForHearing(final String courtCentreId, final boolean allocated, final String userId, final Matcher[] matchers) {
+    public static String pollForHearing(final String courtCentreId, final boolean allocated, final String userId, final Matcher[] matchers) {
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), courtCentreId, allocated));
 
-        pollForHearing(searchHearingUrl, userId, matchers);
+        return pollForHearing(searchHearingUrl, userId, matchers);
     }
 
     public static String getHearingFilter(final String hearingId) {

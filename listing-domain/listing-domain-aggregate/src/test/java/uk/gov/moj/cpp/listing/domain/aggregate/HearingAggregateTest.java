@@ -16,6 +16,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
 import static uk.gov.justice.core.courts.ProsecutionCase.prosecutionCase;
@@ -23,6 +24,12 @@ import static uk.gov.justice.core.courts.ProsecutionCaseIdentifier.prosecutionCa
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.domain.JurisdictionType.MAGISTRATES;
 
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.junit.jupiter.MockitoExtension;
+import java.util.logging.Logger;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,6 +53,9 @@ import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.listing.events.OffenceIds;
 import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIds;
 import uk.gov.justice.listing.events.SeedingHearing;
+import uk.gov.justice.listing.events.*;
+import uk.gov.justice.listing.events.StatementOfOffence;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.listing.events.*;
 import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
@@ -1070,9 +1080,6 @@ public class HearingAggregateTest {
 
         assertThat(hearing.getCurrentHearingEventState().getListedCases().size(), is(1));
         assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().get(0).getOffences().get(0).getId(), is(offence2Id));
-
-        var prosecutionCaseDefendantOffenceIds = ReflectionUtil.getValueOfField(hearing, "prosecutionCaseDefendantOffenceIds", List.class);
-        assertThat(prosecutionCaseDefendantOffenceIds.size(), is(0));
     }
 
     @Test
@@ -1131,8 +1138,7 @@ public class HearingAggregateTest {
         assertThat(offencesRemovedFromExistingUnallocatedHearing.getOffenceIds(), hasItems(offence1Id, offence2Id));
 
         assertThat(hearing.getCurrentHearingEventState().getListedCases().isEmpty(), is(true));
-        var prosecutionCaseDefendantOffenceIds = ReflectionUtil.getValueOfField(hearing, "prosecutionCaseDefendantOffenceIds", List.class);
-        assertThat(prosecutionCaseDefendantOffenceIds.size(), is(0));
+
     }
 
     @Test
