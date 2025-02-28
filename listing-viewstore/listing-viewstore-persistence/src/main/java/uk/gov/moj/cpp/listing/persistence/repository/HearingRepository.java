@@ -962,4 +962,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
     public Hearing findBy(final UUID hearingId) {
         return findByHearingId(hearingId.toString());
     }
+
+    @Query(value = "select h.*, 0 as totalCount FROM hearing h where h.id in (:hearingIds)", isNative = true)
+    public abstract List<Hearing> findAllCourtSchedulerHearingByIds(@QueryParam("hearingIds") final List<UUID> hearingIds);
+
 }

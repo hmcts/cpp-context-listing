@@ -15,6 +15,8 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
 import static uk.gov.justice.core.courts.ProsecutionCase.prosecutionCase;
@@ -46,7 +48,6 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.listing.events.UnallocatedHearingDeleted;
 import uk.gov.justice.listing.events.UpdatedHearingInStagingHmi;
 import uk.gov.justice.listing.events.UpdatedHmiFieldsForHearing;
-import uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
@@ -4157,4 +4158,10 @@ public class HearingAggregateTest {
                 .build();
     }
 
+    @Test
+    public void shouldChangeJudiciaryStatusForHearingsStatus(){
+        final List<Object> eventStreams = hearing.judiciaryChangedForHearingsStatus().toList();
+        assertThat(eventStreams, hasSize(1));
+        assertThat(((JudiciaryChangedForHearingsStatus)eventStreams.get(0)).getStatus(), is("Success"));
+    }
 }

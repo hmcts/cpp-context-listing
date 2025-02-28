@@ -4,6 +4,7 @@ import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.when;
@@ -69,9 +70,7 @@ public class CourtSchedulerServiceAdapterTest {
         IntStream.range(0, judicialRoleList.size()).forEach(index -> {
             final JudicialRole judicialRole = judicialRoleList.get(index);
 
-            final JsonObject judiciaryJsonObject = (JsonObject) ((JsonObject)hearingSlotsResponse.getJsonArray("hearingSlots").get(0))
-                    .getJsonArray("judiciaries")
-                    .get(index);
+            final JsonObject judiciaryJsonObject = (JsonObject) ((JsonObject) hearingSlotsResponse.getJsonArray("hearingSlots").get(0)).getJsonArray("judiciaries").get(index);
 
             assertThat(judicialRole.getJudicialId().toString(), is(judiciaryJsonObject.getString("judiciaryId")));
             assertThat(judicialRole.getIsBenchChairman(), is(Optional.of(judiciaryJsonObject.getBoolean("benchChairman"))));
@@ -172,7 +171,7 @@ public class CourtSchedulerServiceAdapterTest {
         final Optional<String> actualPanelInfo = courtSchedulerServiceAdapter.getPanelInfo(panelInfoFromPayload, startDate, endDate, courtRoomId, ouCode);
 
 
-        assertTrue(!actualPanelInfo.isPresent());
+        assertFalse(actualPanelInfo.isPresent());
     }
 
     @Test
@@ -193,6 +192,30 @@ public class CourtSchedulerServiceAdapterTest {
         final Optional<String> actualPanelInfo = courtSchedulerServiceAdapter.getPanelInfo(panelInfoFromPayload, startDate, endDate, courtRoomId, ouCode);
 
 
-        assertTrue(!actualPanelInfo.isPresent());
+        assertFalse(actualPanelInfo.isPresent());
+    }
+
+    @Test
+    public void shouldGetHearingIds() {
+        final String courtCentreId = UUID.randomUUID().toString();
+        final Optional<String> courtSessionOptional = Optional.of("AD");
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String startDate = LocalDate.now().toString();
+        final String endDate = LocalDate.now().plusDays(7).toString();
+        final Optional<String> businessTypeOptional = Optional.ofNullable("BA123");
+        final Integer pageSize = 50;
+        final Integer pageNumber = 1;
+
+        final JsonObject hearingIdsResponse = givenPayload("/mock-data/azure.rotasl.getHearingIds.stub-data.json");
+
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(hearingIdsResponse);
+        when(hearingSlotsService.getCourtSchedulerHearingIds(anyMap())).thenReturn(response);
+
+        final HearingIdsResponse finalResp = courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, businessTypeOptional, "ADULT,YOUTH", pageSize, pageNumber);
+
+        assertThat(finalResp.getUuids().size(), is(4));
+        assertThat(finalResp.getPageCount(), is(1L));
+        assertThat(finalResp.getResults(), is(4L));
     }
 }

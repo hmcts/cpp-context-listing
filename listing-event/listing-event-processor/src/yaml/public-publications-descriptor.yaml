@@ -83,6 +83,9 @@ subscriptions_descriptor:
         - name: public.listing.hearing-days-changed-for-hearing
           schema_uri: http://justice.gov.uk/listing/courts/hearing-days-changed-for-hearing.json
 
+        - name: public.listing.hearing-days-sequenced
+          schema_uri: http://justice.gov.uk/listing/courts/public.listing.hearing-days-sequenced.json
+
         - name: public.listing.hearing-listed
           schema_uri: http://justice.gov.uk/listing/courts/public.listing.hearing-listed.json
 
@@ -103,5 +106,8 @@ subscriptions_descriptor:
 
         - name: public.listing.offences-moved-to-next-hearing
           schema_uri: http://justice.gov.uk/listing/events/public.listing.offences-moved-to-next-hearing.json
+
+        - name: public.listing.judiciary-changed-for-hearings-status
+          schema_uri: http://justice.gov.uk/listing/courts/public.listing.judiciary-changed-for-hearings-status.json
 
       event_source_name: public.event.source

@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.domain;
 
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
 
 import java.io.Serializable;
 import java.time.ZonedDateTime;
@@ -168,6 +169,18 @@ public class NonDefaultDay implements Serializable {
 
         public NonDefaultDay build() {
             return new NonDefaultDay(courtScheduleId, courtRoomId, duration, oucode, session, startTime, courtCentreId, roomId);
+        }
+
+        public NonDefaultDay.Builder withValuesFrom(final NonDefaultDay nonDefaultDay) {
+            this.courtCentreId = ofNullable(nonDefaultDay.courtCentreId);
+            this.courtRoomId = ofNullable(nonDefaultDay.courtRoomId);
+            this.courtScheduleId = ofNullable(nonDefaultDay.courtScheduleId);
+            this.duration = ofNullable(nonDefaultDay.duration);
+            this.oucode = ofNullable(nonDefaultDay.oucode);
+            this.roomId = ofNullable(nonDefaultDay.roomId);
+            this.session = ofNullable(nonDefaultDay.session);
+            this.startTime = nonDefaultDay.startTime;
+            return this;
         }
     }
 }

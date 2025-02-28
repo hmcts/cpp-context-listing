@@ -21,6 +21,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonString;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -32,34 +33,39 @@ import org.slf4j.LoggerFactory;
 @ApplicationScoped
 public class CourtSchedulerServiceAdapter {
 
+    public static final String SESSION_START_DATE = "sessionStartDate";
+    public static final String SESSION_END_DATE = "sessionEndDate";
+    public static final String OU_CODE = "ouCode";
+    public static final String PAGE_SIZE = "pageSize";
+    public static final String PAGE_NUMBER = "pageNumber";
+    public static final String COURT_ROOM_ID = "courtRoomId";
+    public static final String COURT_SESSION = "courtSession";
+    public static final String BUSINESS_TYPE = "businessType";
     private static final Logger LOGGER = LoggerFactory.getLogger(CourtSchedulerServiceAdapter.class);
-
+    public static final String PANEL_ADULT_YOUTH = "ADULT,YOUTH";
+    private static final String PANEL = "panel";
     @Inject
     private HearingSlotsService hearingSlotsService;
-
     @Inject
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
-
-    private static final String PANEL_ADULT_YOUTH = "ADULT,YOUTH";
-    private static final String PANEL = "panel";
 
     public List<JudicialRole> getJudicialRoles(final String startDate,
                                                final String ouCode,
                                                final Optional<String> courtSessionOptional,
                                                final String courtRoomId) {
         final Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("sessionStartDate", startDate);
-        queryParams.put("sessionEndDate", startDate);
-        queryParams.put("ouCode", ouCode);
-        queryParams.put("pageSize", "1");
-        queryParams.put("pageNumber", "1");
-        queryParams.put("courtRoomId", courtRoomId);
+        queryParams.put(SESSION_START_DATE, startDate);
+        queryParams.put(SESSION_END_DATE, startDate);
+        queryParams.put(OU_CODE, ouCode);
+        queryParams.put(PAGE_SIZE, "1");
+        queryParams.put(PAGE_NUMBER, "1");
+        queryParams.put(COURT_ROOM_ID, courtRoomId);
         queryParams.put(PANEL, PANEL_ADULT_YOUTH);
         courtSessionOptional.ifPresent(courtSession -> {
             if (!StringUtils.equalsIgnoreCase(courtSession, "AD")) {
                 courtSession += ",AD";
             }
-            queryParams.put("courtSession", courtSession);
+            queryParams.put(COURT_SESSION, courtSession);
         });
 
         final Response hearingSlotResponse = hearingSlotsSearch(queryParams);
@@ -96,14 +102,14 @@ public class CourtSchedulerServiceAdapter {
         return judiciaries;
     }
 
-    public Response getHearingSlotResponse(final String startDate, final String endDate,final String ouCode,final String courtRoomId) {
+    public Response getHearingSlotResponse(final String startDate, final String endDate, final String ouCode, final String courtRoomId) {
         final Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("sessionStartDate", startDate);
-        queryParams.put("sessionEndDate", endDate);
-        queryParams.put("ouCode", ouCode);
-        queryParams.put("pageSize", "1");
-        queryParams.put("pageNumber", "1");
-        queryParams.put("courtRoomId", courtRoomId);
+        queryParams.put(SESSION_START_DATE, startDate);
+        queryParams.put(SESSION_END_DATE, endDate);
+        queryParams.put(OU_CODE, ouCode);
+        queryParams.put(PAGE_SIZE, "1");
+        queryParams.put(PAGE_NUMBER, "1");
+        queryParams.put(COURT_ROOM_ID, courtRoomId);
         queryParams.put(PANEL, PANEL_ADULT_YOUTH);
 
         return hearingSlotsSearch(queryParams);
@@ -118,7 +124,7 @@ public class CourtSchedulerServiceAdapter {
         final Response hearingSlotResponse = getHearingSlotResponse(startDate.toString(), endDate.toString(), ouCode, courtRoomId.toString());
         if (HttpStatus.SC_OK != hearingSlotResponse.getStatus()) {
             final String errorMessage = format("getHearingSlotResponse from rota returned an error : {%s} with status {%s}",
-                    (hearingSlotResponse.hasEntity() ?  hearingSlotResponse.getEntity().toString() : ""), hearingSlotResponse.getStatus());
+                    (hearingSlotResponse.hasEntity() ? hearingSlotResponse.getEntity().toString() : ""), hearingSlotResponse.getStatus());
 
             LOGGER.warn(errorMessage);
         } else {
@@ -128,11 +134,11 @@ public class CourtSchedulerServiceAdapter {
                     .map(JsonObject.class::cast)
                     .collect(Collectors.toList());
 
-            if(CollectionUtils.isNotEmpty(hearingSlots)) {
+            if (CollectionUtils.isNotEmpty(hearingSlots)) {
                 panelOptional = Optional.of(hearingSlots.get(0).getString(PANEL));
             } else {
                 final String errorMessage = format("No hearingSlots found from rota with given filter, startDate {%s}, endDate {%s}, courtRoomId {%s}, ouCode {%s},",
-                        startDate, endDate,courtRoomId, ouCode);
+                        startDate, endDate, courtRoomId, ouCode);
 
                 LOGGER.warn(errorMessage);
             }
@@ -155,4 +161,57 @@ public class CourtSchedulerServiceAdapter {
         LOGGER.error("hearingSlotsSearch from rota returned an error : {} with status {}", responsePayload, hearingSlotResponse.getStatus());
         return hearingSlotResponse;
     }
+
+    public HearingIdsResponse getCourtSchedulerHearings(final String ouCode,
+                                              final Optional<String> courtSessionOptional,
+                                              final String courtRoomId, final String startDate,
+                                              final String endDate, final Optional<String> businessTypeOptional,
+                                              final String panel, final Integer pageSize, final Integer pageNumber
+    ) {
+        final Map<String, String> queryParams = new HashMap<>();
+        queryParams.put(PANEL, panel);
+        queryParams.put(SESSION_START_DATE, startDate);
+        queryParams.put(SESSION_END_DATE, endDate);
+        queryParams.put(OU_CODE, ouCode);
+        queryParams.put(PAGE_SIZE, pageSize.toString());
+        queryParams.put(PAGE_NUMBER, pageNumber.toString());
+        queryParams.put(COURT_ROOM_ID, courtRoomId);
+        courtSessionOptional.ifPresent(courtSession -> queryParams.put(COURT_SESSION, courtSession));
+        businessTypeOptional.ifPresent(businessType -> queryParams.put(BUSINESS_TYPE, businessType));
+
+        final Response hearingsResponse = getCourtSchedulerHearingIds(queryParams);
+
+        return getHearingIds(hearingsResponse);
+    }
+
+    Response getCourtSchedulerHearingIds(final Map<String, String> queryParams) {
+        final Response courtSchedulerHearingResponse = hearingSlotsService.getCourtSchedulerHearingIds(queryParams);
+
+        if (HttpStatus.SC_OK == courtSchedulerHearingResponse.getStatus()) {
+            return courtSchedulerHearingResponse;
+        }
+
+        String responsePayload = "";
+        if (courtSchedulerHearingResponse.hasEntity()) {
+            responsePayload = courtSchedulerHearingResponse.getEntity().toString();
+        }
+        LOGGER.error("courtSchedulerHearingResponse from rota returned an error : {} with status {}", responsePayload, courtSchedulerHearingResponse.getStatus());
+        return courtSchedulerHearingResponse;
+    }
+
+    HearingIdsResponse getHearingIds(final Response response) {
+        final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
+
+        final List<UUID> uuids = responseJson.getJsonArray("hearingIds").stream()
+                .map(JsonString.class::cast)
+                .map(JsonString::getString)
+                .map(UUID::fromString)
+                .collect(Collectors.toList());
+
+        final int results = responseJson.getInt("results");
+        final int pageCount = responseJson.getInt("pageCount");
+
+        return new HearingIdsResponse(uuids, results, pageCount);
+    }
+
 }

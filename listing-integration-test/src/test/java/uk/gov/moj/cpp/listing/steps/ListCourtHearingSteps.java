@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.gov.justice.core.courts.Organisation.organisation;
+import static uk.gov.justice.services.common.converter.LocalDates.to;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
@@ -117,6 +118,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import javax.json.Json;
@@ -676,7 +678,8 @@ public class ListCourtHearingSteps extends AbstractIT {
                     filter(hearing -> hearing.getCourtRoomId() != null).
                     limit(1).
                     map(hearing -> allOf(withJsonPath("$.notes[" + index.get() + "].courtRoomId", equalTo(hearing.getCourtRoomId().toString())),
-                            withJsonPath("$.notes[" + index.getAndIncrement() + "].date", equalTo("2020-05-21")))).
+                            withJsonPath("$.notes[" + index.get() + "].date", equalTo("2020-05-21")),
+                            withJsonPath("$.notes[" + index.getAndIncrement() + "].note", equalTo("note 1")))).
                     collect(Collectors.toList());
             noteMatchers.add(withJsonPath("$.notes.size()", is(noteMatchers.size())));
             return allOf(noteMatchers.toArray(new Matcher[noteMatchers.size()]));
@@ -1183,6 +1186,23 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 getNotesMatcher(true, false)
                         )));
     }
+
+    public void verifyNotesViaRangeSearch() {
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings.by.week.commencing"),
+                        to(hearingData.getHearingStartDate()), to(hearingData.getHearingStartDate().plusDays(7)), hearingData.getCourtCentreId(), ALLOCATED));
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings.size()", equalTo(1)),
+                                withJsonPath("$.hearings[0].id", equalTo(hearingData.getId().toString())),
+                                getNotesMatcher(true, true)
+                        )));
+
+    }
+
 
     public void verifyNonExistentHearingById() {
 
@@ -2095,6 +2115,15 @@ public class ListCourtHearingSteps extends AbstractIT {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
+    public void createListingNotes(LocalDate date, String note) {
+        AtomicReference<LocalDate> currentLocalDate = new AtomicReference<>(date);
+        this.hearingsData.getHearingData().stream().filter(hearing -> hearing.getCourtRoomId() != null).
+                forEach(hearing -> {
+                    notesSteps.createNoteForListing(hearing.getCourtRoomId(), currentLocalDate.get().toString(), note);
+                    currentLocalDate.set(currentLocalDate.get().plusDays(1));
+                });
+    }
+
     public void listCourtHearing(final JsonObject listCourtHearingJsonObject, final UUID courtCentreId, final UUID hearingTypeId) {
 
         final CourtCentreData courtCentreData = new CourtCentreData(courtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, null, "City of London Magistrates' Court");
@@ -2206,5 +2235,5 @@ public class ListCourtHearingSteps extends AbstractIT {
         final JsonPath jsonResponse = retrieveMessage(privateEventMessageConsumerRequestedHearingFromStagingHmi);
         assertThat(((ArrayList) ((Map) jsonResponse.get("hearing")).get("listedCases")).size(), is(2));
     }
-
+    
 }

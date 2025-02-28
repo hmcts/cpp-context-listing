@@ -228,7 +228,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.json.Json;
@@ -401,6 +403,7 @@ public class ListingCommandHandlerTest {
     private static final UUID COURT_SCHEDULE_ID_1 = randomUUID();
     private static final UUID COURT_SCHEDULE_ID_2 = randomUUID();
     private static final String PANEL = "ADULT";
+    private static int SIX_HOUR_HEARING_DAY = 360;
 
     @Mock
     CaseOffences caseOffences;
@@ -878,7 +881,7 @@ public class ListingCommandHandlerTest {
         verify(hearing, atLeast(2)).assignJudiciary(judicialRoleCaptor.capture(), hearingIdCaptor.capture());
         verify(hearing, times(2)).applyAllocationRules(Collections.emptyList(), false, false);
         verify(hearing, times(2)).raiseUpdateHearingInStagingHmi(any(Stream.class));
-
+        verify(hearing).judiciaryChangedForHearingsStatus();
         final List<List<JudicialRole>> judicialRoleArguments = judicialRoleCaptor.getAllValues();
 
         assertThat(judicialRoleArguments.get(0).get(0).getJudicialId(), equalTo(JUDICIAL_ID_1));
@@ -958,10 +961,12 @@ public class ListingCommandHandlerTest {
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
+        final List<NonDefaultDay> multiDayNonDefaultDay = toMultiDayNonDefaultDay(nonDefaultDays);
+
         verify(hearing).changeCourtCentre(COURT_CENTRE_ID, HEARING_ID_1);
         verify(hearing).assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1, empty());
         verify(hearing).changeHearingLanguage(valueFor(HEARING_LANGUAGE).get(), HEARING_ID_1);
-        verify(hearing).assignNonDefaultDays(nonDefaultDays, HEARING_ID_1);
+        verify(hearing).assignNonDefaultDays(multiDayNonDefaultDay, HEARING_ID_1);
         verify(hearing).assignNonSittingDays(NON_SITTING_DAYS1, HEARING_ID_1);
         verify(hearing).changeEndDate(LocalDate.parse(END_DATE), HEARING_ID_1);
         verify(hearing).changeStartDate(START_DATE, HEARING_ID_1);
@@ -969,7 +974,7 @@ public class ListingCommandHandlerTest {
         verify(hearing).changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1);
         verify(hearing).assignJudiciary(judicialRoles, HEARING_ID_1);
         verify(hearing).applyRescheduledCheck(any());
-        verify(hearing).assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS1, nonDefaultDays,
+        verify(hearing).assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS1, multiDayNonDefaultDay,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre);
         verify(hearing).removeWeekCommencingDates(HEARING_ID_1);
         verify(hearing).assignPublicListNote(PUBLIC_LIST_NOTE, HEARING_ID_1);
@@ -4142,11 +4147,13 @@ public class ListingCommandHandlerTest {
 
         when(courtCentreFactory.getCourtRoomNumber(any(), any())).thenReturn(Optional.of(1));
 
-        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30,filteredNonDefaultDays,mockOrganisationUnitMap, selectedCourtCentreId, selectedCourtRoomId);
+        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30,filteredNonDefaultDays,mockOrganisationUnitMap, selectedCourtCentreId, selectedCourtRoomId, JurisdictionType.CROWN);
         assertThat(filteredNonDefaultDays.size(),is(3));
         assertThat(filteredNonDefaultDays.get(0).getStartTime(),is(firstDay));
         assertThat(filteredNonDefaultDays.get(1).getStartTime(),is(firstDay.plusDays(1)));
         assertThat(filteredNonDefaultDays.get(2).getStartTime(),is(firstDay.plusDays(2)));
+
+        checkMultiDayDuration(filteredNonDefaultDays);
     }
 
     @Test
@@ -4161,11 +4168,13 @@ public class ListingCommandHandlerTest {
 
         when(courtCentreFactory.getCourtRoomNumber(any(), any())).thenReturn(Optional.of(1));
 
-        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30, filteredNonDefaultDays, mockOrganisationUnitMap, selectedCourtCentreId, selectedCourtRoomId);
+        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30, filteredNonDefaultDays, mockOrganisationUnitMap, selectedCourtCentreId, selectedCourtRoomId, JurisdictionType.CROWN);
         assertThat(filteredNonDefaultDays.size(),is(3));
         assertThat(filteredNonDefaultDays.get(0).getStartTime(),is(firstDay));
         assertThat(filteredNonDefaultDays.get(1).getStartTime(),is(firstDay.plusDays(1)));
         assertThat(filteredNonDefaultDays.get(2).getStartTime(),is(firstDay.plusDays(2)));
+
+        checkMultiDayDuration(filteredNonDefaultDays);
     }
 
     @Test
@@ -4180,10 +4189,12 @@ public class ListingCommandHandlerTest {
 
         when(courtCentreFactory.getCourtRoomNumber(any(), any())).thenReturn(Optional.of(1));
 
-        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30,filteredNonDefaultDays,mockOrganisationUnitMap, selectedCourtCentreId,selectedCourtRoomId);
+        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30,filteredNonDefaultDays,mockOrganisationUnitMap, selectedCourtCentreId,selectedCourtRoomId, JurisdictionType.CROWN);
         assertThat(filteredNonDefaultDays.size(), is(2));
         assertThat(filteredNonDefaultDays.get(0).getStartTime(),is(firstDay));
         assertThat(filteredNonDefaultDays.get(1).getStartTime(),is(firstDay.plusDays(2)));
+
+        checkMultiDayDuration(filteredNonDefaultDays);
     }
 
     @Test
@@ -4208,13 +4219,34 @@ public class ListingCommandHandlerTest {
 
         when(courtCentreFactory.getCourtRoomNumber(any(), any())).thenReturn(Optional.of(1));
 
-        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30,filteredNonDefaultDays,mockOrganisationUnitMap, selectedCourtCentreId,selectedCourtRoomId);
+        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30,filteredNonDefaultDays,mockOrganisationUnitMap, selectedCourtCentreId,selectedCourtRoomId, JurisdictionType.CROWN);
         assertThat(filteredNonDefaultDays.size(),is(3));
         assertThat(filteredNonDefaultDays.get(0).getStartTime(),is(firstDay));
         assertThat(filteredNonDefaultDays.get(1).getStartTime().toLocalDate(),is(firstDay.plusDays(1).toLocalDate()));
         assertThat(filteredNonDefaultDays.get(2).getStartTime().toLocalDate(),is(firstDay.plusDays(2).toLocalDate()));
         assertThat(filteredNonDefaultDays.get(1).getStartTime().withZoneSameInstant(BST).toLocalTime(),is(LocalTime.of(9,0)));
         assertThat(filteredNonDefaultDays.get(2).getStartTime().withZoneSameInstant(BST).toLocalTime(),is(LocalTime.of(9,0)));
+
+        checkMultiDayDuration(filteredNonDefaultDays);
+    }
+
+
+    @Test
+    public void calculateNonDefaultDays_Command_SingleDayHearing_NonDefaultDaysEmpty_NonSittingDaysEmpty() {
+        final LocalDate startDate = LocalDate.of(2024, 9, 12);
+        final LocalDate endDate = LocalDate.of(2024, 9, 12);
+        final ZonedDateTime firstDay = ZonedDateTime.of(LocalDateTime.of(2024, 9, 12, 9, 0), BST).withZoneSameInstant(UTC);
+        final List<NonDefaultDay> filteredNonDefaultDays = new ArrayList<>();
+        final List<LocalDate> nonSittingDays = emptyList();
+        final String selectedCourtCentreId = randomUUID().toString();
+        final Optional<String> selectedCourtRoomId = Optional.of(randomUUID().toString());
+
+        when(courtCentreFactory.getCourtRoomNumber(any(), any())).thenReturn(Optional.of(1));
+
+        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30,filteredNonDefaultDays,mockOrganisationUnitMap, selectedCourtCentreId, selectedCourtRoomId, JurisdictionType.CROWN);
+        assertThat(filteredNonDefaultDays.size(),is(1));
+        assertThat(filteredNonDefaultDays.get(0).getStartTime(),is(firstDay));
+        assertThat(filteredNonDefaultDays.get(0).getDuration(),is(Optional.of(30)));
     }
 
     @Test
@@ -4237,11 +4269,15 @@ public class ListingCommandHandlerTest {
 
         when(courtCentreFactory.getCourtRoomNumber(any(), any())).thenReturn(Optional.of(1));
 
-        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30,filteredNonDefaultDays,mockOrganisationUnitMap, selectedCourtCentreId,selectedCourtRoomId);
+        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30,filteredNonDefaultDays,mockOrganisationUnitMap, selectedCourtCentreId,selectedCourtRoomId, JurisdictionType.MAGISTRATES);
         assertThat(filteredNonDefaultDays.size(), is(2));
         assertThat(filteredNonDefaultDays.get(0).getStartTime(),is(firstDay));
         assertThat(filteredNonDefaultDays.get(1).getStartTime().toLocalDate(),is(firstDay.plusDays(2).toLocalDate()));
         assertThat(filteredNonDefaultDays.get(1).getStartTime().withZoneSameInstant(BST).toLocalTime(),is(LocalTime.of(9,0)));
+
+        final Set<Optional<Integer>> durations = filteredNonDefaultDays.stream().map(NonDefaultDay::getDuration).collect(Collectors.toSet());
+        assertThat(durations, hasSize(1));
+        assertThat(durations.stream().findFirst().get(), is(of(30)));
     }
 
     @Test
@@ -4267,4 +4303,22 @@ public class ListingCommandHandlerTest {
         }
     }
 
+    private static void checkMultiDayDuration(final List<NonDefaultDay> filteredNonDefaultDays) {
+        final Set<Optional<Integer>> durations = filteredNonDefaultDays.stream().map(NonDefaultDay::getDuration).collect(Collectors.toSet());
+        assertThat(durations, hasSize(1));
+        assertThat(durations.stream().findFirst().get(), is(Optional.of(SIX_HOUR_HEARING_DAY)));
+    }
+
+
+    private List<NonDefaultDay> toMultiDayNonDefaultDay(final List<NonDefaultDay> nonDefaultDays) {
+        final List<NonDefaultDay> multiDateNonDefaultDays = new ArrayList<>();
+
+        nonDefaultDays.forEach(nonDefaultDay -> {
+            multiDateNonDefaultDays.add(NonDefaultDay.nonDefaultDay().
+                            withValuesFrom(nonDefaultDay).
+                    withDuration(of(SIX_HOUR_HEARING_DAY)).
+                    build());
+        });
+        return multiDateNonDefaultDays;
+    }
 }

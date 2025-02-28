@@ -108,6 +108,7 @@ import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.JudicialRoleType;
 import uk.gov.justice.listing.events.JudiciaryAssignedToHearing;
 import uk.gov.justice.listing.events.JudiciaryChangedForHearing;
+import uk.gov.justice.listing.events.JudiciaryChangedForHearingsStatus;
 import uk.gov.justice.listing.events.JudiciaryRemovedFromHearing;
 import uk.gov.justice.listing.events.JurisdictionChangedForHearing;
 import uk.gov.justice.listing.events.LinkedCasesUpdated;
@@ -1898,6 +1899,12 @@ public class Hearing implements Aggregate {
             eventStreamBuilder.add(RequestedHearingFromStagingHmi.requestedHearingFromStagingHmi().withHearing(currentHearingEventState).build());
         }
         return apply(eventStreamBuilder.build());
+    }
+
+    public Stream<Object> judiciaryChangedForHearingsStatus() {
+            return apply(Stream.of(JudiciaryChangedForHearingsStatus.judiciaryChangedForHearingsStatus()
+                    .withStatus("Success")
+                    .build()));
     }
 
     private Stream<Object> onUnallocationEvents(final Optional<String> source) {

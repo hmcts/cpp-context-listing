@@ -491,6 +491,7 @@ public class HearingIT extends AbstractIT {
 
         final SequenceHearingSteps sequenceHearingSteps = new SequenceHearingSteps(sequenceHearingData);
         sequenceHearingSteps.whenHearingDaysAreSequenced();
+        sequenceHearingSteps.verifyHearingDaySequencedPublicEvent();
         sequenceHearingSteps.verifyHearingDaysAreSequencedFromAPI();
         sequenceHearingSteps.verifyPublicEventHearingUpdated();
     }
@@ -590,6 +591,20 @@ public class HearingIT extends AbstractIT {
                 });
 
         pollForHearingById(getLoggedInUser(), hearingId, allOf(matchers.toArray(new Matcher[0])));
+    }
+
+
+    @Test
+    public void shouldRaisePublicEventJudiciaryChangedForHearingStatus() {
+        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+
+        final UpdatedHearingData updatedHearingDataWithUpdatedJudiciary = UpdatedHearingData.updatedHearingDataDifferentJudiciary(hearingsData.getHearingData().get(0));
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataWithUpdatedJudiciary);
+        updateHearingSteps.whenJudiciaryIsChangedForHearings();
+        updateHearingSteps.verifyJudiciaryChangedForHearingStatusPublicEvent();
     }
 
 }

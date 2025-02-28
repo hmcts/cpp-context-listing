@@ -50,6 +50,7 @@ public class SequenceHearingSteps extends AbstractIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(SequenceHearingSteps.class);
 
     private static final String EVENT_SELECTED_PUBLIC_HEARING_UPDATED = "public.listing.hearing-updated";
+    private static final String EVENT_SELECTED_PUBLIC_HEARING_SEQUENCED = "public.listing.hearing-days-sequenced";
 
     private static final String LISTING_COMMAND_SEQUENCE_HEARING_DAYS = "listing.command.sequence-hearings";
     private static final String MEDIA_TYPE_SEQUENCE_HEARING_DAYS = "application/vnd.listing.command.sequence-hearings+json";
@@ -57,6 +58,8 @@ public class SequenceHearingSteps extends AbstractIT {
 
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
     private JmsMessageConsumerClient publicMessageConsumerHearingUpdated;
+
+    private JmsMessageConsumerClient publicMessageConsumerHearingSequenced;
 
     private SequenceHearingData sequenceHearingData;
 
@@ -123,6 +126,7 @@ public class SequenceHearingSteps extends AbstractIT {
 
     private void createMessageConsumers() {
         publicMessageConsumerHearingUpdated = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_UPDATED);
+        publicMessageConsumerHearingSequenced = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_SEQUENCED);
     }
 
     private String prepareJsonForSequenceHearingDays() {
@@ -164,6 +168,18 @@ public class SequenceHearingSteps extends AbstractIT {
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(matchers)));
+    }
+
+    public void verifyHearingDaySequencedPublicEvent() {
+        JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingSequenced);
+        LOGGER.info("jsonResponse from privateMessageConsumerHearingDaysSequenced: {}", jsonResponse.prettify());
+
+        assertThat(jsonResponse.get("hearingId"), is(sequenceHearingData.getHearingId().toString()));
+        assertThat(jsonResponse.get("hearingDays.size()"), is(2));
+        assertThat(jsonResponse.get("hearingDays[0].hearingDate"), is(sequenceHearingData.getUpdatedHearingData().getStartDate()));
+        assertThat(jsonResponse.get("hearingDays[0].sequence"), is(sequenceHearingData.getSequencedDays().get(parse(sequenceHearingData.getUpdatedHearingData().getStartDate()))));
+        assertThat(jsonResponse.get("hearingDays[1].hearingDate"), is(sequenceHearingData.getUpdatedHearingData().getEndDate()));
+        assertThat(jsonResponse.get("hearingDays[1].sequence"), is(sequenceHearingData.getSequencedDays().get(parse(sequenceHearingData.getUpdatedHearingData().getEndDate()))));
     }
 }
 

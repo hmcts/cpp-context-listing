@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.steps;
 
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
@@ -149,9 +148,12 @@ public class UpdateHearingSteps extends AbstractIT {
     protected static final Logger LOGGER = LoggerFactory.getLogger(UpdateHearingSteps.class);
     public static final String PUBLIC_LISTING_HEARING_CHANGES_SAVED = "public.listing.hearing-changes-saved";
     private static final String PUBLIC_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING = "public.listing.hearing-days-changed-for-hearing";
+    private static final String EVENT_SELECTED_PUBLIC_JUDICIARY_CHANGED_FOR_HEARING_STATUS = "public.listing.judiciary-changed-for-hearings-status";
+
     public static final String FIELD_WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
     public static final String FIELD_WEEK_COMMENCING_DURATION_IN_WEEKS = "weekCommencingDurationInWeeks";
     public static final String FIELD_WEEK_COMMENCING_END_DATE = "weekCommencingEndDate";
+    private static final String SUCCESS = "Success";
     protected UpdatedHearingData updatedHearingData;
     protected HearingData hearingData;
     private List<ListedCaseData> listedCaseDatas;
@@ -174,6 +176,8 @@ public class UpdateHearingSteps extends AbstractIT {
     private JmsMessageConsumerClient privateMessageConsumerWeekCommencingDateChanged;
     private JmsMessageConsumerClient privateMessageConsumerHearingRequestedForListing;
     private JmsMessageConsumerClient publicMessageConsumerHearingRequested;
+
+    private JmsMessageConsumerClient publicMessageConsumerJudiciaryChangedForHearingStatus;
 
     private String request;
 
@@ -589,6 +593,7 @@ public class UpdateHearingSteps extends AbstractIT {
         privateMessageConsumerHearingRequestedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_REQUESTED_FOR_LISTING);
         publicMessageConsumerHearingRequested = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING);
         publicEventMessageProducer = publicEvents.createPublicProducer();
+        publicMessageConsumerJudiciaryChangedForHearingStatus = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_JUDICIARY_CHANGED_FOR_HEARING_STATUS);
     }
 
     private void createMessageConsumersForDefendantSplit() {
@@ -1232,4 +1237,10 @@ public class UpdateHearingSteps extends AbstractIT {
         assertThat(courtRoomId, matcher);
     }
 
+    public void verifyJudiciaryChangedForHearingStatusPublicEvent() {
+        JsonPath jsonResponse = retrieveMessage(publicMessageConsumerJudiciaryChangedForHearingStatus);
+        LOGGER.info("jsonResponse from publicMessageConsumerHearingSequenced: {}", jsonResponse.prettify());
+
+        assertThat(jsonResponse.get("status"), is(SUCCESS));
+    }
 }

@@ -44,6 +44,8 @@ public class HearingSlotsService {
     private static final String COURTSCHEDULER_UPDATE_HEARING_SLOTS = "application/vnd.courtscheduler.update.hearing.slots+json";
     private static final String COURTSCHEDULER_GET_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.get.hearing.slots+json";
     private static final String COURTSCHEDULER_DELETE_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.remove.hearing.slots+json";
+    private static final String COUTRT_SCHEDULER_HEARING_IDS = "application/vnd.courtscheduler.get.hearing.ids+json";
+
     private static final String CJS_CPP_UID = "CJSCPPUID";
     @Inject
     @Value(key = "courtscheduler.base.url", defaultValue = "http://localhost:8080/listingcourtscheduler-api/rest/courtscheduler")
@@ -56,48 +58,7 @@ public class HearingSlotsService {
     StringToJsonObjectConverter stringToJsonObjectConverter;
 
     public Response search(final Map<String, String> params) {
-        if (LOGGER.isInfoEnabled() && Objects.nonNull(params)) {
-            params.forEach((key, value) -> LOGGER.info("hearing-getSlots in CourtScheduler S & L with params '{}-{}'", key, value));
-        }
-
-        if (params == null) {
-            throw new DataValidationException("Params for search Hearing Slots is null ....");
-        }
-
-        try {
-            final HttpGet httpGet = new HttpGet(new URL(baseUri + HEARING_RESOURCE).toString());
-            httpGet.addHeader(ACCEPT, COURTSCHEDULER_GET_HEARING_SLOTS_TYPE);
-            httpGet.addHeader(CJS_CPP_UID, getUserId().toString());
-
-            final URIBuilder uriBuilder = new URIBuilder(httpGet.getURI());
-            params.forEach(uriBuilder::addParameter);
-            httpGet.setURI(uriBuilder.build());
-
-            final HttpResponse httpResponse = execute(httpGet);
-
-            if (isOkay(httpResponse)) {
-                if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info("Retrieve HearingSlots successfully");
-                }
-                return Response
-                        .status(Response.Status.fromStatusCode(httpResponse.getStatusLine().getStatusCode()))
-                        .entity(stringToJsonObjectConverter.convert(EntityUtils.toString(httpResponse.getEntity())))
-                        .build();
-            } else {
-                LOGGER.error("Retrieve HearingSlots failed with status code:{}",
-                        httpResponse.getStatusLine().getStatusCode());
-                return Response
-                        .status(Response.Status.fromStatusCode(httpResponse.getStatusLine().getStatusCode()))
-                        .entity(EntityUtils.toString(httpResponse.getEntity()))
-                        .build();
-            }
-        } catch (URISyntaxException | IOException ex) {
-            LOGGER.error("Exception thrown on trying to Retrieving Hearing Slots", ex);
-            return Response
-                    .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-                    .entity(ex.getMessage())
-                    .build();
-        }
+        return query(HEARING_RESOURCE, COURTSCHEDULER_GET_HEARING_SLOTS_TYPE, params);
     }
 
     public void update(final Object payload) {
@@ -155,6 +116,10 @@ public class HearingSlotsService {
         }
     }
 
+    public Response getCourtSchedulerHearingIds(final Map<String, String> params) {
+        return query(HEARING_RESOURCE, COUTRT_SCHEDULER_HEARING_IDS, params);
+    }
+
     private UUID getUserId() {
         return systemUserProvider.getContextSystemUserId().orElseThrow(() -> new IllegalStateException("contextSystemUserId missing!!!"));
     }
@@ -168,5 +133,50 @@ public class HearingSlotsService {
                 .create()
                 .build()
                 .execute(httpRequest);
+    }
+
+    private Response query(final String urlPath, final String acceptHeader, final Map<String, String> params) {
+        if (LOGGER.isInfoEnabled() && Objects.nonNull(params)) {
+            params.forEach((key, value) -> LOGGER.info("{} in CourtScheduler S & L with params '{}-{}'", acceptHeader, key, value));
+        }
+
+        if (params == null) {
+            throw new DataValidationException("Params for search %s is null ....".formatted(acceptHeader));
+        }
+
+        try {
+            final HttpGet httpGet = new HttpGet(new URL(baseUri + urlPath).toString());
+            httpGet.addHeader(ACCEPT, acceptHeader);
+            httpGet.addHeader(CJS_CPP_UID, getUserId().toString());
+
+            final URIBuilder uriBuilder = new URIBuilder(httpGet.getURI());
+            params.forEach(uriBuilder::addParameter);
+            httpGet.setURI(uriBuilder.build());
+
+            final HttpResponse httpResponse = execute(httpGet);
+
+            if (isOkay(httpResponse)) {
+                if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info("Retrieve {} successfully", acceptHeader);
+                }
+                return Response
+                        .status(Response.Status.fromStatusCode(httpResponse.getStatusLine().getStatusCode()))
+                        .entity(stringToJsonObjectConverter.convert(EntityUtils.toString(httpResponse.getEntity())))
+                        .build();
+            } else {
+                LOGGER.error("Retrieve {} failed with status code:{}", acceptHeader,
+                        httpResponse.getStatusLine().getStatusCode());
+                return Response
+                        .status(Response.Status.fromStatusCode(httpResponse.getStatusLine().getStatusCode()))
+                        .entity(EntityUtils.toString(httpResponse.getEntity()))
+                        .build();
+            }
+        } catch (URISyntaxException | IOException ex) {
+            LOGGER.error("Exception thrown on trying to Retrieving %s".formatted(acceptHeader), ex);
+            return Response
+                    .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+                    .entity(ex.getMessage())
+                    .build();
+        }
     }
 }

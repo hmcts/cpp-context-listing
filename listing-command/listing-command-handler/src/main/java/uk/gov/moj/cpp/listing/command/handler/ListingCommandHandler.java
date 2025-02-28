@@ -21,7 +21,6 @@ import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
 import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
 import static uk.gov.justice.services.eventsourcing.source.core.Events.streamOf;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
-import static uk.gov.justice.services.messaging.JsonObjects.getString;
 import static uk.gov.moj.cpp.listing.command.utils.json.PublishCourtListJsonSupport.asJson;
 import static uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
@@ -206,6 +205,7 @@ public class ListingCommandHandler {
     public static final int PAGE_SIZE_FOR_SINGLE_SLOT = 1;
     public static final String OUCODE = "oucode";
     public static final String ALL_DAY = "AD";
+    public static final int SIX_HOUR_HEARING_DAY_IN_MINUTES = 360;
 
     @Inject
     private EventSource eventSource;
@@ -758,16 +758,20 @@ public class ListingCommandHandler {
             populateNonDefaultDaysDetails(command, filteredNonDefaultDays, selectedCourtCentreId, of(selectedCourtRoomId), organisationUnitMap);
 
             // Create missing nonDefaultDays and populate details for updating slots
-            calculateNonDefaultDays(command, nonSittingDays,  startDate, endDate, defaultDuration, filteredNonDefaultDays, organisationUnitMap, selectedCourtCentreId.toString(), of(selectedCourtRoomId.toString()));
+            calculateNonDefaultDays(command, nonSittingDays,  startDate, endDate, defaultDuration, filteredNonDefaultDays, organisationUnitMap, selectedCourtCentreId.toString(), of(selectedCourtRoomId.toString()), jurisdictionType);
 
-        } else if (JurisdictionType.CROWN.equals(jurisdictionType)) {
+        } else if (isCrown(jurisdictionType)) {
             final Map<UUID, JsonObject> organisationUnitMap = new HashMap<>();
             final UUID courtCentreId = getCourtCentreId(updateHearingForListing);
             populateNonDefaultDaysDetails(command, filteredNonDefaultDays, courtCentreId, optionalCourtRoomId, organisationUnitMap);
             organisationUnitMap.computeIfAbsent(courtCentreId, k -> courtCentreFactory.getOrganisationUnit(courtCentreId, command));
-            calculateNonDefaultDays(command, nonSittingDays, startDate, endDate, defaultDuration, filteredNonDefaultDays, organisationUnitMap, courtCentreId.toString(), optionalCourtRoomId.map(UUID::toString));
+            calculateNonDefaultDays(command, nonSittingDays, startDate, endDate, defaultDuration, filteredNonDefaultDays, organisationUnitMap, courtCentreId.toString(), optionalCourtRoomId.map(UUID::toString), jurisdictionType);
         }
         return filteredNonDefaultDays;
+    }
+
+    private static boolean isCrown(final JurisdictionType jurisdictionType) {
+        return JurisdictionType.CROWN.equals(jurisdictionType);
     }
 
     private void populateNonDefaultDaysDetails(final JsonEnvelope command, final List<NonDefaultDay> filteredNonDefaultDays, final UUID courtCentreId, final Optional<UUID> courtRoomId, final Map<UUID, JsonObject> organisationUnitMap) {
@@ -787,9 +791,23 @@ public class ListingCommandHandler {
     }
 
     public void calculateNonDefaultDays(final JsonEnvelope command, final List<LocalDate> nonSittingDays,  final LocalDate startDate,final LocalDate endDate, final Integer defaultDuration,
-                                        final List<NonDefaultDay> filteredNonDefaultDays, final Map<UUID, JsonObject> organisationUnitMap, final String courtCentreId, final Optional<String> courtRoomId) {
+                                        final List<NonDefaultDay> filteredNonDefaultDays, final Map<UUID, JsonObject> organisationUnitMap, final String courtCentreId, final Optional<String> courtRoomId,
+                                        final JurisdictionType jurisdictionType) {
         final List<LocalDate> nonDefaultDates = filteredNonDefaultDays.stream().map(NonDefaultDay::getStartTime).map(ZonedDateTime::toLocalDate).toList();
         final long numOfDaysBetween = ChronoUnit.DAYS.between(startDate, endDate);
+        boolean isMultiDay = numOfDaysBetween > 1;
+        boolean isMultiDayAndCrown = isMultiDay && isCrown(jurisdictionType);
+        // If the hearing is multi-day and crown, the duration of the non-default days should be 360 minutes i.e a whole day as per spec
+        final Integer nonDefaultDayDuration = isMultiDayAndCrown ? SIX_HOUR_HEARING_DAY_IN_MINUTES : defaultDuration;
+
+        if(isMultiDayAndCrown){
+            filteredNonDefaultDays.replaceAll(d->NonDefaultDay.
+                    nonDefaultDay().
+                    withValuesFrom(d).
+                    withDuration(of(nonDefaultDayDuration)).
+                    build());
+        }
+
         IntStream.rangeClosed(0, (int) numOfDaysBetween)
                 .mapToObj(startDate::plusDays)
                 .filter(d -> !nonDefaultDates.contains(d) && !nonSittingDays.contains(d))
@@ -800,7 +818,7 @@ public class ListingCommandHandler {
                     final LocalTime defaultStartTime = LocalTime.parse(courtCentreObj.getString("defaultStartTime"));
                     final ZonedDateTime hearingStartTime = ZonedDateTime.of(date, defaultStartTime, BST).withZoneSameInstant(UTC);
 
-                    final NonDefaultDay nonDefaultDay = getNonDefaultDay(of(defaultDuration), courtCentreId, courtRoomId, courtCentreObj, hearingStartTime);
+                    final NonDefaultDay nonDefaultDay = getNonDefaultDay(of(nonDefaultDayDuration), courtCentreId, courtRoomId, courtCentreObj, hearingStartTime);
                     filteredNonDefaultDays.add(nonDefaultDay);
                 });
     }
@@ -1112,6 +1130,15 @@ public class ListingCommandHandler {
                 return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(Stream.of(allocationEvents, judicialEvents).flatMap(i -> i)) : Stream.of(allocationEvents, judicialEvents).flatMap(i -> i);
             });
         }
+
+        if (isNotEmpty(hearingIds)) {
+            final UUID last = hearingIds.get(hearingIds.size() - 1);
+            final EventStream eventStream = eventSource.getStreamById(last);
+            final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
+            final Stream<Object> events = hearingAggregate.judiciaryChangedForHearingsStatus();
+            appendEventsToStream(command, eventStream, events);
+        }
+
     }
 
     @Handles("listing.command.sequence-hearings")
