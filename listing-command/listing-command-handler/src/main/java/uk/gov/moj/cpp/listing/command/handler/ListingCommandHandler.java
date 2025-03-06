@@ -1131,7 +1131,7 @@ public class ListingCommandHandler {
             });
         }
 
-        if (!hearingIds.isEmpty()) {
+        if (isNotEmpty(hearingIds)) {
             final UUID last = hearingIds.get(hearingIds.size() - 1);
             final EventStream eventStream = eventSource.getStreamById(last);
             final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);

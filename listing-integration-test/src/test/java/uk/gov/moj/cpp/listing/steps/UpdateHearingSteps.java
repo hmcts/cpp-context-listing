@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.steps;
 
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
@@ -63,7 +62,6 @@ import uk.gov.moj.cpp.listing.steps.data.JudicialRoleTypeData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
-import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.io.IOException;
 import java.time.LocalTime;
@@ -595,12 +593,7 @@ public class UpdateHearingSteps extends AbstractIT {
         privateMessageConsumerHearingRequestedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_REQUESTED_FOR_LISTING);
         publicMessageConsumerHearingRequested = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING);
         publicEventMessageProducer = publicEvents.createPublicProducer();
-        privateMessageConsumerHearingRequestedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_REQUESTED_FOR_LISTING);
-        publicMessageConsumerHearingRequested = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING);
-        privateMessageConsumerHearingRequestedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_REQUESTED_FOR_LISTING);
-        publicMessageConsumerHearingRequested = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING);
         publicMessageConsumerJudiciaryChangedForHearingStatus = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_JUDICIARY_CHANGED_FOR_HEARING_STATUS);
-
     }
 
     private void createMessageConsumersForDefendantSplit() {
@@ -1245,7 +1238,7 @@ public class UpdateHearingSteps extends AbstractIT {
     }
 
     public void verifyJudiciaryChangedForHearingStatusPublicEvent() {
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerJudiciaryChangedForHearingStatus);
+        JsonPath jsonResponse = retrieveMessage(publicMessageConsumerJudiciaryChangedForHearingStatus);
         LOGGER.info("jsonResponse from publicMessageConsumerHearingSequenced: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("status"), is(SUCCESS));

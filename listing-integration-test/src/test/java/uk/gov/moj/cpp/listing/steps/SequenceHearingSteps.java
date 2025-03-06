@@ -27,7 +27,6 @@ import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.SequenceHearingData;
-import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -172,7 +171,7 @@ public class SequenceHearingSteps extends AbstractIT {
     }
 
     public void verifyHearingDaySequencedPublicEvent() {
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingSequenced);
+        JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingSequenced);
         LOGGER.info("jsonResponse from privateMessageConsumerHearingDaysSequenced: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("hearingId"), is(sequenceHearingData.getHearingId().toString()));

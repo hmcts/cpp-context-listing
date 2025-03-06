@@ -983,7 +983,6 @@ public class ListingCommandHandlerTest {
         verify(hearing).raiseUpdateHearingInStagingHmi(any(Optional.class));
     }
 
-
     @Test
     public void listingCommandHandlerShouldUpdateHearingForListingWithoutJudiciariesOnMagistrates() throws Exception {
         final JsonEnvelope commandEnvelope = updateHearingForListingWithoutJudiciariesCommandEnvelope();
@@ -4155,7 +4154,6 @@ public class ListingCommandHandlerTest {
         assertThat(filteredNonDefaultDays.get(2).getStartTime(),is(firstDay.plusDays(2)));
 
         checkMultiDayDuration(filteredNonDefaultDays);
-
     }
 
     @Test
@@ -4177,7 +4175,6 @@ public class ListingCommandHandlerTest {
         assertThat(filteredNonDefaultDays.get(2).getStartTime(),is(firstDay.plusDays(2)));
 
         checkMultiDayDuration(filteredNonDefaultDays);
-
     }
 
     @Test
@@ -4233,6 +4230,7 @@ public class ListingCommandHandlerTest {
         checkMultiDayDuration(filteredNonDefaultDays);
     }
 
+
     @Test
     public void calculateNonDefaultDays_Command_SingleDayHearing_NonDefaultDaysEmpty_NonSittingDaysEmpty() {
         final LocalDate startDate = LocalDate.of(2024, 9, 12);
@@ -4250,7 +4248,6 @@ public class ListingCommandHandlerTest {
         assertThat(filteredNonDefaultDays.get(0).getStartTime(),is(firstDay));
         assertThat(filteredNonDefaultDays.get(0).getDuration(),is(Optional.of(30)));
     }
-
 
     @Test
     public void calculateNonDefaultDays_Command_NonDefaultDaysPopulated_NonSittingDaysPopulated() {
@@ -4272,7 +4269,7 @@ public class ListingCommandHandlerTest {
 
         when(courtCentreFactory.getCourtRoomNumber(any(), any())).thenReturn(Optional.of(1));
 
-        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30,filteredNonDefaultDays, mockOrganisationUnitMap, selectedCourtCentreId,selectedCourtRoomId, JurisdictionType.MAGISTRATES);
+        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30,filteredNonDefaultDays,mockOrganisationUnitMap, selectedCourtCentreId,selectedCourtRoomId, JurisdictionType.MAGISTRATES);
         assertThat(filteredNonDefaultDays.size(), is(2));
         assertThat(filteredNonDefaultDays.get(0).getStartTime(),is(firstDay));
         assertThat(filteredNonDefaultDays.get(1).getStartTime().toLocalDate(),is(firstDay.plusDays(2).toLocalDate()));

@@ -1172,6 +1172,20 @@ public class ListCourtHearingSteps extends AbstractIT {
                         )));
     }
 
+    public void verifyAvailableHearingNotExists(final UUID masterDefendantId) {
+
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.available.search.hearings-defendant.ids"),
+                        masterDefendantId.toString()));
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings.size()",
+                                        equalTo(0)),
+                                getNotesMatcher(true, false)
+                        )));
+    }
 
     public void verifyNotesViaRangeSearch() {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
@@ -1189,21 +1203,6 @@ public class ListCourtHearingSteps extends AbstractIT {
 
     }
 
-
-    public void verifyAvailableHearingNotExists(final UUID masterDefendantId) {
-
-        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.available.search.hearings-defendant.ids"),
-                        masterDefendantId.toString()));
-
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
-                .until(status().is(OK),
-                        payload().isJson(allOf(
-                                withJsonPath("$.hearings.size()",
-                                        equalTo(0)),
-                                getNotesMatcher(true, false)
-                        )));
-    }
 
     public void verifyNonExistentHearingById() {
 
@@ -2081,15 +2080,6 @@ public class ListCourtHearingSteps extends AbstractIT {
                 forEach(hearing -> notesSteps.createNoteForListing(hearing.getCourtRoomId(), "2020-05-21", "note 1"));
     }
 
-    public void createListingNotes(LocalDate date, String note) {
-        AtomicReference<LocalDate> currentLocalDate = new AtomicReference<>(date);
-        this.hearingsData.getHearingData().stream().filter(hearing -> hearing.getCourtRoomId() != null).
-                forEach(hearing -> {
-                    notesSteps.createNoteForListing(hearing.getCourtRoomId(), currentLocalDate.get().toString(), note);
-                    currentLocalDate.set(currentLocalDate.get().plusDays(1));
-                });
-    }
-
     public void listCourtHearing(final JsonObject listCourtHearingJsonObject, Optional<LocalDate> adjournedFromDate, Optional<List<UUID>> shadowListedOffences) {
 
         final UUID courtCentreId = getUUID(getJsonObject(listCourtHearingJsonObject, "courtCentre").get(), "id").orElse(null);
@@ -2123,6 +2113,15 @@ public class ListCourtHearingSteps extends AbstractIT {
         final Response response = restClient.postCommand(listCaseForHearingUrl, MEDIA_TYPE_LIST_COURT_HEARING,
                 request, getLoggedInHeader());
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    public void createListingNotes(LocalDate date, String note) {
+        AtomicReference<LocalDate> currentLocalDate = new AtomicReference<>(date);
+        this.hearingsData.getHearingData().stream().filter(hearing -> hearing.getCourtRoomId() != null).
+                forEach(hearing -> {
+                    notesSteps.createNoteForListing(hearing.getCourtRoomId(), currentLocalDate.get().toString(), note);
+                    currentLocalDate.set(currentLocalDate.get().plusDays(1));
+                });
     }
 
     public void listCourtHearing(final JsonObject listCourtHearingJsonObject, final UUID courtCentreId, final UUID hearingTypeId) {
@@ -2235,16 +2234,6 @@ public class ListCourtHearingSteps extends AbstractIT {
     public void verifyPrivateEventRequestedHearingFromStagingHmiInActiveMQ() {
         final JsonPath jsonResponse = retrieveMessage(privateEventMessageConsumerRequestedHearingFromStagingHmi);
         assertThat(((ArrayList) ((Map) jsonResponse.get("hearing")).get("listedCases")).size(), is(2));
-    }
-
-    public void verifyHearingForCourtSchedulerCourtSessionAndBusinessType(final String jurisdictionType, final String courtSession, final String businessType, final boolean allocated, final Matcher... matchers) {
-        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.search.hearings.by.allocated.jurisdiction-type.court-session.business-type"), jurisdictionType, courtSession, businessType, allocated));
-
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).
-                until(status().is(OK),
-                        payload().isJson(allOf(matchers))
-                );
     }
 
 }
