@@ -66,7 +66,7 @@ public class HearingJdbcRepository {
                                       final Integer pageSize) {
         final List<Hearing> hearingResults = new ArrayList<>();
 
-        final String query = "select distinct " +
+        final String query = "select *, count(*) OVER() as totalCount from (select distinct " +
                 "h.id, h.properties,  " +
                 "h.court_centre_id, " +
                 "h.court_room_id, " +
@@ -80,10 +80,8 @@ public class HearingJdbcRepository {
                 "h.week_commencing_end_date, " +
                 "h.allocated, " +
                 "h.type_of_list_id, " +
-                "count(*) OVER() as totalCount, " +
                 "h.is_possible_disqualification " +
                 "from hearing h " +
-                "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
                 "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
                 "LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
                 "where  " +
@@ -98,7 +96,7 @@ public class HearingJdbcRepository {
                 "(h.end_date between ? and ? ) or " +
                 "(h.start_date <=  ? and h.end_date >=  ?)  " +
                 ") " +
-                " order by h.id, h.court_centre_id ASC OFFSET (?) ROWS FETCH NEXT (?) ROWS ONLY";
+                " order by h.start_date, h.week_commencing_start_date, h.court_centre_id, h.id ) as distinct_hearings OFFSET (?) ROWS FETCH NEXT (?) ROWS ONLY";
 
         try (final Connection viewstoreConnection = dataSource.getConnection(); final PreparedStatement ps = viewstoreConnection.prepareStatement(query)) {
             int indexPointer = 1;
