@@ -58,9 +58,10 @@ public class DefendantOffencesEventListener {
                     .find(hearingId)
                     .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getUpdatedListedCaseFunction(caseId, defendantId, offence))
                     .save();
+            hearingSearchSyncService.sync(hearingId);
         }
 
-        hearingSearchSyncService.sync(hearingId);
+
     }
 
     private Function<List<ListedCase>, List<ListedCase>> getUpdatedListedCaseFunction(UUID caseId, UUID defendantId, Offence offence) {
@@ -75,12 +76,14 @@ public class DefendantOffencesEventListener {
         final UUID defendantId = offenceDeleted.getDefendantId();
         final UUID offenceId = offenceDeleted.getOffenceId();
 
-        using(hearingRepository)
-                .find(hearingId)
-                .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getDeletedListedCaseFunction(caseId, defendantId, offenceId))
-                .save();
+        if(nonNull(hearingRepository.findBy(hearingId))) {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getDeletedListedCaseFunction(caseId, defendantId, offenceId))
+                    .save();
 
-        hearingSearchSyncService.sync(hearingId);
+            hearingSearchSyncService.sync(hearingId);
+        }
 
     }
 
@@ -96,10 +99,12 @@ public class DefendantOffencesEventListener {
         final UUID defendantId = offenceAdded.getDefendantId();
         final Offence offence = dedupAllReportingRestrictions(offenceAdded.getOffence());
 
-        using(hearingRepository)
-                .find(hearingId)
-                .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getAddedListedCaseFunction(caseId, defendantId, offence))
-                .save();
+        if(nonNull(hearingRepository.findBy(hearingId))) {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getAddedListedCaseFunction(caseId, defendantId, offence))
+                    .save();
+        }
     }
 
     private Function<List<ListedCase>, List<ListedCase>> getAddedListedCaseFunction(UUID caseId, UUID defendantId, Offence offence) {

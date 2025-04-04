@@ -593,6 +593,60 @@ public class HearingAggregateTest {
 
     }
 
+    @Test
+    public void shouldNotRaiseAnyEventsAsHearingIsMarkedAsDuplicated() {
+        final UUID case1Id = randomUUID();
+        final UUID case2Id = randomUUID();
+        final UUID defendant1Id = randomUUID();
+        final UUID defendant2Id = randomUUID();
+        final UUID offence1Id = randomUUID();
+        final UUID offence2Id = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withListedCases(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case1Id)
+                                        .withDefendants(asList(Defendant.defendant()
+                                                .withId(defendant1Id)
+                                                .withOffences(asList(Offence.offence()
+                                                        .withId(offence1Id)
+                                                        .withSeedingHearing(SeedingHearing.seedingHearing()
+                                                                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                                                                .withSeedingHearingId(seedingHearingId)
+                                                                .build())
+                                                        .build()))
+                                                .build()))
+                                        .build(),
+                                uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case2Id)
+                                        .withDefendants(asList(Defendant.defendant()
+                                                .withId(defendant2Id)
+                                                .withOffences(asList(Offence.offence()
+                                                        .withId(offence2Id)
+                                                        .withSeedingHearing(SeedingHearing.seedingHearing()
+                                                                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                                                                .withSeedingHearingId(seedingHearingId)
+                                                                .build())
+                                                        .build()))
+                                                .build()))
+                                        .build()))
+                        .build())
+                .build());
+
+        hearing.apply(HearingMarkedAsDuplicate.hearingMarkedAsDuplicate().withHearingId(hearingId)
+                .build());
+
+        final Stream<Object> events = hearing.deleteHearing(seedingHearingId, hearingId);
+        final List<Object> eventsList = events.collect(Collectors.toList());
+        assertThat(eventsList.size(), is(0));
+
+    }
 
     @Test
     public void shouldCreateAllocatedHearingDeletedWithoutFreeingSlotsOfNonMagistratesJurisdiction() {
@@ -4071,6 +4125,46 @@ public class HearingAggregateTest {
                 .build());
 
         hearing.apply(HearingDeleted.hearingDeleted().withHearingIdToBeDeleted(hearingId).build());
+
+
+        final Stream<Object> events = hearing.removeSelectedOffencesFromExistingHearing(hearingId, asList(offence1Id, offence2Id), null);
+        assertThat(events.count(), is(0L));
+    }
+
+    @Test
+    public void shouldNotRaiseOffenceRemovedEventWhenHearingDeleted() {
+        final UUID case1Id = randomUUID();
+        final UUID case2Id = randomUUID();
+        final UUID defendant1Id = randomUUID();
+        final UUID defendant2Id = randomUUID();
+        final UUID offence1Id = randomUUID();
+        final UUID offence2Id = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withListedCases(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case1Id)
+                                        .withDefendants(new ArrayList<>(asList(Defendant.defendant()
+                                                .withId(defendant1Id)
+                                                .withOffences(new ArrayList(asList(Offence.offence().withId(offence1Id).build())))
+                                                .build())))
+                                        .build(),
+                                uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case2Id)
+                                        .withDefendants(new ArrayList(asList(Defendant.defendant()
+                                                .withId(defendant2Id)
+                                                .withOffences(new ArrayList<>(asList(Offence.offence().withId(offence2Id).build())))
+                                                .build())))
+                                        .build()))
+                        .build())
+                .build());
+
+        hearing.apply(HearingMarkedAsDuplicate.hearingMarkedAsDuplicate().withHearingId(hearingId).build());
 
 
         final Stream<Object> events = hearing.removeSelectedOffencesFromExistingHearing(hearingId, asList(offence1Id, offence2Id), null);

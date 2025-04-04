@@ -224,6 +224,47 @@ public class HearingMarkedAsDuplicateEventListenerTest {
 
     }
 
+    @Test
+    public void shouldNotUnallocatedHearingAndRemoveOffencesIfThereIsNoHearing() throws JsonProcessingException {
+        final UUID seedingHearingId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID case1Id = randomUUID();
+
+        final ArgumentCaptor<Hearing> argumentCaptor = ArgumentCaptor.forClass(Hearing.class);
+
+        when(offencesRemovedFromHearingEnvelope.payload())
+                .thenReturn(OffencesRemovedFromHearing.offencesRemovedFromHearing()
+                        .withHearingId(hearingId)
+                        .withCaseIdsSeededByOnlySeedingHearingId(Arrays.asList(case1Id))
+                        .withSeedingHearingId(seedingHearingId)
+                        .build());
+
+
+        hearingMarkedAsDuplicateEventListener.hearingUnAllocatedForListingV2(offencesRemovedFromHearingEnvelope);
+        verify(hearingSearchSyncService,never()).sync(hearingId);
+
+        verify(hearingRepository, never()).save(argumentCaptor.capture());
+    }
+
+    @Test
+    public void shouldNotDeleteOffencesFromExistingAllocatedHearingIfThereIsNoHearing() {
+        final UUID hearingId = randomUUID();
+        final UUID offence1Id = randomUUID();
+
+
+        final ArgumentCaptor<Hearing> argumentCaptor = ArgumentCaptor.forClass(Hearing.class);
+
+        when(offencesRemovedFromExistingAllocatedHearingEnvelope.payload())
+                .thenReturn(OffencesRemovedFromExistingAllocatedHearing.offencesRemovedFromExistingAllocatedHearing()
+                        .withHearingId(hearingId)
+                        .withOffenceIds(Arrays.asList(offence1Id))
+                        .build());
+
+        hearingMarkedAsDuplicateEventListener.removeOffencesFromExistingAllocatedHearing(offencesRemovedFromExistingAllocatedHearingEnvelope);
+
+        verify(hearingRepository, never()).save(argumentCaptor.capture());
+        verify(hearingSearchSyncService, never()).sync(hearingId);
+    }
 
     @Test
     public void shouldDeleteOffencesFromExistingAllocatedHearing() {

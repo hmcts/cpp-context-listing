@@ -1,11 +1,13 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static uk.gov.moj.cpp.listing.event.listener.utils.FileUtil.getPayload;
@@ -56,6 +58,12 @@ public class HearingCounselEventListenerTest {
                 "hearing-counsel-modified-action-remove-properties.json");
     }
 
+    @Test
+    public void shouldRemoveDefenceCounselIfThereIsNoHearing() throws Exception {
+        verifyCounselAction(null, "/listing.event.hearing-counsel-removed.json",
+                "hearing-counsel-modified-action-remove-properties.json");
+    }
+
     private void verifyCounselAction(final String existingHearing, final String counselModifiedEvent, final String expectedHearing) throws IOException {
         final Envelope<HearingCounselModified> envelope = (Envelope<HearingCounselModified>) mock(Envelope.class);
         JsonObject payload = givenPayload(counselModifiedEvent);
@@ -66,28 +74,38 @@ public class HearingCounselEventListenerTest {
                 uk.gov.justice.listing.event.CounselType.valueFor(payload.getString("counselType")).orElse(null),
                 hearingId,
                 payload.getString("payload"));
-
-        final Hearing hearing = spy(Hearing.class);
-        hearing.setId(hearingId);
         final ObjectMapper objectMapper = new ObjectMapper();
-        if (isNull(existingHearing)) {
-            hearing.setProperties(objectMapper.createObjectNode());
-        } else {
-            hearing.setProperties(objectMapper.readTree(getPayload(existingHearing)));
-        }
+        if(nonNull(existingHearing)) {
+            final Hearing hearing = spy(Hearing.class);
+            hearing.setId(hearingId);
 
-        given(envelope.payload()).willReturn(hearingCounselModified);
-        given(hearingRepository.findBy(hearingId)).willReturn(hearing);
+            if (isNull(existingHearing)) {
+                hearing.setProperties(objectMapper.createObjectNode());
+            } else {
+                hearing.setProperties(objectMapper.readTree(getPayload(existingHearing)));
+            }
+
+            given(envelope.payload()).willReturn(hearingCounselModified);
+            given(hearingRepository.findBy(hearingId)).willReturn(hearing);
+        } else {
+            given(envelope.payload()).willReturn(hearingCounselModified);
+            given(hearingRepository.findBy(hearingId)).willReturn(null);
+        }
 
         final ArgumentCaptor<Hearing> hearingArgumentCaptor =
                 ArgumentCaptor.forClass(Hearing.class);
 
         HearingCounselEventListener hearingCounselEventListener = new HearingCounselEventListener(hearingRepository, objectMapper);
         hearingCounselEventListener.hearingCounselModified(envelope);
-        verify(hearingRepository).save(hearingArgumentCaptor.capture());
-        assertThat(hearingArgumentCaptor.getValue().getId(), equalTo(hearingId));
 
-        JsonNode expectedProperties = objectMapper.readTree(getPayload(expectedHearing));
-        assertThat(hearingArgumentCaptor.getValue().getProperties(), equalTo(expectedProperties));
+        if(nonNull(existingHearing)) {
+            verify(hearingRepository).save(hearingArgumentCaptor.capture());
+            assertThat(hearingArgumentCaptor.getValue().getId(), equalTo(hearingId));
+
+            JsonNode expectedProperties = objectMapper.readTree(getPayload(expectedHearing));
+            assertThat(hearingArgumentCaptor.getValue().getProperties(), equalTo(expectedProperties));
+        } else {
+            verify(hearingRepository, never()).save(hearingArgumentCaptor.capture());
+        }
     }
 }
