@@ -7,6 +7,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
@@ -79,6 +80,41 @@ public class DefendantOffencesEventListenerTest {
 
     @Mock
     ObjectNode properties;
+
+    @Test
+    public void shouldHandleOffenceUpdatedAndPersistSimpleOffenceIfThereIsNoHearing() throws Exception {
+
+
+
+        final OffenceUpdated hearingData = OffenceUpdated.offenceUpdated()
+                .withHearingId(HEARING_ID)
+                .withCaseId(CASE_ID)
+                .withDefendantId(DEFENDANT_ID)
+                .withOffence(Offence.offence()
+                        .withStartDate(LocalDates.to(LocalDate.now()))
+                        .withOffenceCode(EXPECTED_OFFENCE_CODE)
+                        .withId(OFFENCE_ID)
+                        .withEndDate(LocalDates.to(LocalDate.now()))
+                        .withStatementOfOffence(StatementOfOffence.statementOfOffence()
+                                .withTitle(STRING.next())
+                                .withWelshTitle(STRING.next())
+                                .withLegislation(STRING.next())
+                                .build())
+                        .build())
+                .build();
+
+        given(offenceUpdatedEnvelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(null);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptur =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        defendantOffencesEventListener.offenceUpdated(offenceUpdatedEnvelope);
+
+        verify(properties, never()).replace(any(), objectNodeCaptur.capture());
+        verify(hearingSearchSyncService, never()).sync(HEARING_ID);
+       verify(hearingRepository, never()).save(hearing);
+    }
 
     @Test
     public void shouldHandleOffenceUpdatedAndPersistSimpleOffence() throws Exception {
@@ -170,6 +206,38 @@ public class DefendantOffencesEventListenerTest {
         int numberOffence = objectNodeCaptur.getValue().get(0).get("defendants").get(0).get("offences").size();
         assertThat(numberOffence, equalTo(1));
         verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldHandleOffenceAddedIfThereIsNoHearing() throws Exception {
+        final OffenceAdded hearingData = OffenceAdded.offenceAdded()
+                .withHearingId(HEARING_ID)
+                .withCaseId(CASE_ID)
+                .withDefendantId(DEFENDANT_ID)
+                .withOffence(Offence.offence()
+                        .withStartDate(LocalDates.to(LocalDate.now()))
+                        .withOffenceCode(EXPECTED_OFFENCE_CODE)
+                        .withId(randomUUID())
+                        .withShadowListed(null)
+                        .withStatementOfOffence(StatementOfOffence.statementOfOffence()
+                                .withTitle(STRING.next())
+                                .withWelshTitle(STRING.next())
+                                .withLegislation(STRING.next())
+                                .build())
+                        .build())
+                .build();
+
+        given(offenceAddedEnvelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(null);
+
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptur =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        defendantOffencesEventListener.offenceAdded(offenceAddedEnvelope);
+
+        verify(properties, never()).replace(any(), objectNodeCaptur.capture());
+        verify(hearingRepository, never()).save(hearing);
     }
 
     @Test
@@ -283,6 +351,25 @@ public class DefendantOffencesEventListenerTest {
         int numberOffence = objectNodeCaptur.getValue().get(0).get("defendants").get(0).get("offences").size();
         assertThat(numberOffence, equalTo(0));
         verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldHandleOffenceDeleteAndDeleteSimpleOffenceIfThereIsNoHearing() throws Exception {
+
+        final OffenceDeleted offenceDeleted = createOffenceDeleted();
+
+        given(offenceDeletedEnvelope.payload()).willReturn(offenceDeleted);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(null);
+
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptur =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        defendantOffencesEventListener.offenceDeleted(offenceDeletedEnvelope);
+
+        verify(properties, never()).replace(any(), objectNodeCaptur.capture());
+        verify(hearingRepository, never()).save(hearing);
+        verify(hearingSearchSyncService, never()).sync(any());
     }
 
     private OffenceDeleted createOffenceDeleted() {

@@ -15,6 +15,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -47,12 +48,14 @@ public class LinkOrUnlinkCasesEventListener {
         final List<LinkedToCases> linkedToCases = payload.getLinkedToCases();
         final String linkActionType = payload.getLinkActionType();
 
-        using(hearingRepository)
-                .find(hearingId)
-                .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getLinkedToCasesAddFunction(linkActionType, prosecutionCaseId, linkedToCases))
-                .save();
+        if(Objects.nonNull(hearingRepository.findBy(hearingId))) {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getLinkedToCasesAddFunction(linkActionType, prosecutionCaseId, linkedToCases))
+                    .save();
 
-        hearingSearchSyncService.sync(hearingId);
+            hearingSearchSyncService.sync(hearingId);
+        }
     }
 
     private Function<List<ListedCase>, List<ListedCase>> getLinkedToCasesAddFunction(final String linkActionType, final UUID caseId, final List<LinkedToCases> linkedToCases) {

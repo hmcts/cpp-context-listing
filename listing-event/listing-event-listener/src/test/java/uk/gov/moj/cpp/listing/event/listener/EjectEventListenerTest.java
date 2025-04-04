@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
@@ -103,6 +104,26 @@ public class EjectEventListenerTest {
     @InjectMocks
     private EjectEventListener ejectEventListener;
 
+    @Test
+    public void shouldEjectCaseForListingIfThereIsNoHearing() throws IOException {
+
+        CaseEjected ejectCase = CaseEjected.caseEjected()
+                .withHearingId(HEARING_ID)
+                .withProsecutionCaseId(CASE_ID)
+                .build();
+        given(ejectCaseEnvelopeForCase.payload()).willReturn(ejectCase);
+
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(null);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        ejectEventListener.caseEjected(ejectCaseEnvelopeForCase);
+        verify(properties, never()).replace(any(), objectNodeCaptor.capture());
+        verify(hearingRepository, never()).save(hearing);
+        verify(hearingSearchSyncService, never()).sync(any());
+
+    }
 
     @Test
     public void shouldEjectCaseForListing() throws IOException {
@@ -216,6 +237,30 @@ public class EjectEventListenerTest {
             validateAddress(applicationNode.get("respondents").get(0).get("address"), RESPONDENT_ADDRESS);
         });
         verify(hearingRepository).save(hearing);
+
+    }
+
+    @Test
+    public void shouldEjectApplicationForListingIfThereIsNoHearing() throws IOException {
+
+        final Envelope<ApplicationEjected> applicationEjectedEnvelope = (Envelope<ApplicationEjected>) mock(Envelope.class);
+
+        ApplicationEjected ejectApplication = ApplicationEjected.applicationEjected()
+                .withHearingId(HEARING_ID)
+                .withApplicationId(COURT_APPLICATIONS_ID)
+                .build();
+        given(applicationEjectedEnvelope.payload()).willReturn(ejectApplication);
+
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(null);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        ejectEventListener.applicationEjected(applicationEjectedEnvelope);
+
+        verify(properties, never()).replace(any(), objectNodeCaptor.capture());
+        verify(hearingRepository, never()).save(hearing);
+        verify(hearingSearchSyncService, never()).sync(any());
 
     }
 

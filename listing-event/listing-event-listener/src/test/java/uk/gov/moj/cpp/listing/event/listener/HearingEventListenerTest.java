@@ -51,7 +51,6 @@ import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -235,6 +234,34 @@ public class HearingEventListenerTest {
     }
 
     @Test
+    public void shouldNotHandleDefendantProceedingsConcludedIfThereIsNoHearing() throws Exception {
+        final UUID CASE_ID = fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
+        final UUID DEFENDANT_ID = fromString("ddc332a5-c141-40e2-b50f-94ab7552b763");
+        final Envelope<CaseUpdateDefendantProceedingsUpdated> envelope = (Envelope<CaseUpdateDefendantProceedingsUpdated>) mock(Envelope.class);
+
+        final CaseUpdateDefendantProceedingsUpdated caseUpdateDefendantProceedingsUpdated = CaseUpdateDefendantProceedingsUpdated
+                .caseUpdateDefendantProceedingsUpdated()
+                .withHearingId(HEARING_ID)
+                .withProsecutionCase(ProsecutionCase.prosecutionCase()
+                        .withId(CASE_ID)
+                        .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
+                                .withId(DEFENDANT_ID)
+                                .withProceedingsConcluded(true)
+                                .build()))
+                        .build())
+                .build();
+        given(envelope.payload()).willReturn(caseUpdateDefendantProceedingsUpdated);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(null);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        hearingEventListener.defendantProceedingsConcluded(envelope);
+        verify(properties, never()).replace(any(), objectNodeCaptor.capture());
+        verify(hearingRepository, never()).save(hearing);
+    }
+
+    @Test
     public void shouldUpdateDefendantCourtProceedingsWhenDefendantIsPresent() throws Exception {
         final UUID CASE_ID = fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
         final UUID DEFENDANT_ID = fromString("ddc332a5-c141-40e2-b50f-94ab7552b763");
@@ -370,6 +397,22 @@ public class HearingEventListenerTest {
         verify(properties).put(eq("isVacatedTrial"), eq(true));
         verify(properties).put(eq("vacatedTrialReasonId"), eq(VACATE_TRIAL_REASON.toString()));
         verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldHearingTrialVacatedIfThereIsNoHearing() {
+        final Envelope<HearingTrialVacated> envelope = (Envelope<HearingTrialVacated>) mock(Envelope.class);
+
+        given(envelope.payload()).willReturn(hearingTrialVacated);
+        given(hearingTrialVacated.getHearingId()).willReturn(HEARING_ID);
+
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(null);
+
+
+        hearingEventListener.hearingTrialVacated(envelope);
+
+        verify(hearingRepository, never()).save(hearing);
+        verify(hearingSearchSyncService, never()).sync(any());
     }
 
     @Test

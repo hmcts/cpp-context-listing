@@ -7,6 +7,7 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.listing.events.Marker.marker;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
@@ -86,6 +87,41 @@ public class CaseMarkersEventListenerTest {
 
     @Mock
     private ObjectNode properties;
+
+    @Test
+    public void shouldHandleCaseMarkerToBeUpdatedIfThereIsNoHearing() throws Exception {
+
+        final Marker marker1 = marker()
+                .withId(CASE_MARKER_ID_1)
+                .withMarkerTypeid(CASE_MARKER_TYPE_ID_1)
+                .withMarkerTypeDescription(CASE_MARKER_DESCRIPTION_1)
+                .withMarkerTypeCode(CASE_MARKER_CODE_1)
+                .build();
+        final Marker marker2 = marker()
+                .withId(CASE_MARKER_ID_2)
+                .withMarkerTypeid(CASE_MARKER_TYPE_ID_2)
+                .withMarkerTypeDescription(CASE_MARKER_DESCRIPTION_2)
+                .withMarkerTypeCode(CASE_MARKER_CODE_2)
+                .build();
+
+        final NewCaseMarkerUpdated caseMarkersToBeUpdated = NewCaseMarkerUpdated.newCaseMarkerUpdated()
+                .withHearingId(HEARING_ID)
+                .withCaseId(CASE_ID)
+                .withCaseMarkers(Arrays.asList(marker1, marker2))
+                .build();
+
+        given(caseMarkersToBeUpdatedEnvelope.payload()).willReturn(caseMarkersToBeUpdated);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(null);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptur =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        caseMarkersEventListener.handleCaseMarkersUpdated(caseMarkersToBeUpdatedEnvelope);
+
+        verify(properties, never()).replace(any(), objectNodeCaptur.capture());
+        verify(hearingRepository, never()).save(hearing);
+        verify(hearingSearchSyncService, never()).sync(any());
+    }
 
     @Test
     public void shouldHandleCaseMarkerToBeUpdated() throws Exception {

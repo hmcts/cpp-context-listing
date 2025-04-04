@@ -46,13 +46,16 @@ public class EjectEventListener {
         };
         final TypeReference<List<CourtApplication>> typeRefCourtApplication = new TypeReference<List<CourtApplication>>() {
         };
-        using(hearingRepository)
-                .find(hearingId).putSubList(LISTED_CASES, typeRef, getCasesFunction(caseId)).save();
+
+        if(nonNull(hearingRepository.findBy(hearingId))) {
+            using(hearingRepository)
+                    .find(hearingId).putSubList(LISTED_CASES, typeRef, getCasesFunction(caseId)).save();
             using(hearingRepository)
                     .find(hearingId)
                     .putSubList(COURT_APPLICATION_FIELD, typeRefCourtApplication, getCourtApplicationFunctionForLinkedCaseId(caseId)).save();
 
-        hearingSearchSyncService.sync(hearingId);
+            hearingSearchSyncService.sync(hearingId);
+        }
 
     }
 
@@ -64,12 +67,13 @@ public class EjectEventListener {
 
         final TypeReference<List<CourtApplication>> typeRefCourtApplication = new TypeReference<List<CourtApplication>>() {
         };
+        if(nonNull(hearingRepository.findBy(hearingId))) {
             using(hearingRepository)
                     .find(hearingId)
                     .putSubList(COURT_APPLICATION_FIELD, typeRefCourtApplication, getCourtApplicationFunction(applicationId)).save();
 
-        hearingSearchSyncService.sync(hearingId);
-
+            hearingSearchSyncService.sync(hearingId);
+        }
 
     }
 
