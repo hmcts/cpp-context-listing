@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.command.api;
 import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
+import static javax.json.Json.createReader;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -45,10 +46,12 @@ import uk.gov.justice.listing.courts.ListUnscheduledCourtHearingEnriched;
 import uk.gov.justice.listing.courts.ListUnscheduledNextHearings;
 import uk.gov.justice.listing.courts.ListUnscheduledNextHearingsEnriched;
 import uk.gov.justice.listing.courts.ProsecutionCases;
+import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.listing.courts.UpdateRelatedHearing;
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
@@ -59,23 +62,27 @@ import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
 import uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.ReferenceDataService;
+import uk.gov.moj.cpp.listing.command.api.util.FileUtil;
 import uk.gov.moj.cpp.staginghmi.common.StagingHmiService;
 
+import java.io.StringReader;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonReader;
 import javax.json.JsonValue;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -186,6 +193,67 @@ public class ListingCommandApiTest {
         //then
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
         verify(jsonObjectConverter, never()).convert(any(), eq(ProsecutionCases.class));
+    }
+
+    @Test
+    public void shouldUpdateHearingsForListing() {
+        String jsonString = FileUtil.getPayload("listing.command.update-hearings-for-listing.json");
+        JsonReader jsonReader = createReader(new StringReader(jsonString));
+        final JsonObject hearingsJsonObj = jsonReader.readObject();
+        final JsonArray hearingsJsonArr = hearingsJsonObj.getJsonArray("hearings");
+
+        JsonObjectToObjectConverter jsonConverter = new JsonObjectToObjectConverter(new ObjectMapperProducer().objectMapper());
+        ObjectToJsonValueConverter objConverter = new ObjectToJsonValueConverter(new ObjectMapperProducer().objectMapper());
+
+        final JsonObject hearingJsonObj1 = hearingsJsonArr.getJsonObject(0);
+        final UpdateHearingForListing hearing1 = jsonConverter.convert(hearingJsonObj1, UpdateHearingForListing.class);
+        final List<ProsecutionCases> prosecutionCases1 =
+                hearingJsonObj1.getJsonArray("prosecutionCases").stream().map(
+                        p -> jsonConverter.convert((JsonObject) p, ProsecutionCases.class)).collect(Collectors.toList());
+        final UpdateHearingForListingEnriched enrichedHearing1 =
+                UpdateHearingForListingEnriched.updateHearingForListingEnriched()
+                        .withUpdateHearingForListing(hearing1)
+                        .withProsecutionCases(prosecutionCases1)
+                        .build();
+
+        final JsonObject hearingJsonObj2 = hearingsJsonArr.getJsonObject(1);
+        final UpdateHearingForListing hearing2 = jsonConverter.convert(hearingJsonObj2, UpdateHearingForListing.class);
+        final List<ProsecutionCases> prosecutionCases2 =
+                hearingJsonObj2.getJsonArray("prosecutionCases").stream().map(
+                        p -> jsonConverter.convert((JsonObject) p, ProsecutionCases.class)).collect(Collectors.toList());
+        final UpdateHearingForListingEnriched enrichedHearing2 =
+                UpdateHearingForListingEnriched.updateHearingForListingEnriched()
+                        .withUpdateHearingForListing(hearing2)
+                        .withProsecutionCases(prosecutionCases2)
+                        .build();
+
+        given(envelope.payloadAsJsonObject()).willReturn(hearingsJsonObj);
+        given(jsonObjectConverter.convert(hearingJsonObj1, UpdateHearingForListing.class)).willReturn(hearing1);
+        given(objectToJsonValueConverter.convert(eq(enrichedHearing1))).willReturn(objConverter.convert(enrichedHearing1));
+        AtomicInteger idx = new AtomicInteger();
+        hearingJsonObj1.getJsonArray("prosecutionCases").forEach(
+                pc -> given(jsonObjectConverter.convert((JsonObject) pc, ProsecutionCases.class))
+                        .willReturn(prosecutionCases1.get(idx.getAndIncrement())));
+
+        given(jsonObjectConverter.convert(hearingJsonObj2, UpdateHearingForListing.class)).willReturn(hearing2);
+        given(objectToJsonValueConverter.convert(eq(enrichedHearing2))).willReturn(objConverter.convert(enrichedHearing2));
+        idx.set(0);
+        hearingJsonObj2.getJsonArray("prosecutionCases").forEach(
+                pc -> given(jsonObjectConverter.convert((JsonObject) pc, ProsecutionCases.class)).
+                        willReturn(prosecutionCases2.get(idx.getAndIncrement())));
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+
+        final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
+        listingCommandApi.handleUpdateHearingsForListing(envelope);
+
+        verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
+        verify(jsonObjectConverter, times(1)).convert(hearingJsonObj1, UpdateHearingForListing.class);
+        verify(jsonObjectConverter, times(1)).convert(hearingJsonObj2, UpdateHearingForListing.class);
+        hearingJsonObj1.getJsonArray("prosecutionCases").forEach(
+                pc -> verify(jsonObjectConverter, times(2)).convert((JsonObject) pc, ProsecutionCases.class));
+        verify(jsonObjectConverter, times(1)).convert(hearingJsonObj2, UpdateHearingForListing.class);
+        hearingJsonObj2.getJsonArray("prosecutionCases").forEach(
+                pc -> verify(jsonObjectConverter, times(2)).convert((JsonObject) pc, ProsecutionCases.class));
     }
 
     @Test
@@ -575,7 +643,6 @@ public class ListingCommandApiTest {
                 CourtCentreDetails.courtCentreDetails().withDefaultDuration(10).build(),
                 CourtCentreDetails.courtCentreDetails().withDefaultDuration(20).build());
     }
-
 
 
 }

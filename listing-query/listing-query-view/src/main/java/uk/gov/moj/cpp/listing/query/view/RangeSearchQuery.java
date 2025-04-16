@@ -13,8 +13,6 @@ import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter.PANEL_ADULT_YOUTH;
-import static uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory.newPaginationParameter;
-
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -25,6 +23,7 @@ import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
+import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
@@ -76,6 +75,8 @@ public class RangeSearchQuery {
     @Inject
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
 
+    @Inject
+    private PaginationParameterFactory paginationParameterFactory;
 
     public JsonEnvelope rangeSearchHearingsForJudgeList(final JsonEnvelope query) {
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
@@ -110,7 +111,7 @@ public class RangeSearchQuery {
         final String endDate = query.payloadAsJsonObject().getString(END_DATE, LATEST_SEARCH_DATE);
         String weekCommencingStartDate = trimToEmpty(query.payloadAsJsonObject().getString(WEEK_COMMENCING_START_DATE, null));
         final String weekCommencingEndDate = trimToEmpty(query.payloadAsJsonObject().getString(WEEK_COMMENCING_END_DATE, null));
-        final PaginationParameter paginationParameter = newPaginationParameter(query.payloadAsJsonObject());
+        final PaginationParameter paginationParameter = paginationParameterFactory.newPaginationParameter(query.payloadAsJsonObject());
         final boolean noPagination = query.payloadAsJsonObject().getBoolean("noPagination", false);
         Optional<String> businessType = Optional.ofNullable(query.payloadAsJsonObject().getString("businessType", null));
         Optional<String> courtSessionOptional = extractCourtSession(query);

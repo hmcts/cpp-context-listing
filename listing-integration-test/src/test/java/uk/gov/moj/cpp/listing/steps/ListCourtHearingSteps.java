@@ -507,6 +507,21 @@ public class ListCourtHearingSteps extends AbstractIT {
         });
     }
 
+    public void verifyHearingDayCourtScheduledUpdated(String[] courtSchedules) {
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final String hearingIdFilter = getHearingFilter(hearingData.getId().toString());
+        final String s = pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), true, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[0].hearingDays[*].courtScheduleId", hasItem(courtSchedules[0])),
+                withJsonPath(hearingIdFilter + "jurisdictionType", hasItem(hearingData.getJurisdictionType())),
+                withJsonPath(hearingIdFilter + "courtCentreId", hasItem(hearingData.getCourtCentreId().toString())),
+                withJsonPath(hearingIdFilter + "type.id", hasItem(hearingData.getHearingTypeData().getTypeId().toString())),
+                withJsonPath(hearingIdFilter + "type.description", hasItem(hearingData.getHearingTypeData().getTypeDescription())),
+                withJsonPath(hearingIdFilter + "startDate", hasItem(hearingData.getHearingStartDate().toString())),
+                withJsonPath(hearingIdFilter + "hearingLanguage", hasItem("ENGLISH"))
+        });
+        System.out.println("returned::" + s);
+    }
+
     public void verifyQueryAPIFindCaseByPersonDefendantAndHearingDate() {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
         final String caseId = hearingData.getListedCases().get(0).getCaseId().toString();
@@ -2235,5 +2250,16 @@ public class ListCourtHearingSteps extends AbstractIT {
         final JsonPath jsonResponse = retrieveMessage(privateEventMessageConsumerRequestedHearingFromStagingHmi);
         assertThat(((ArrayList) ((Map) jsonResponse.get("hearing")).get("listedCases")).size(), is(2));
     }
+
+    public void verifyHearingForCourtSchedulerCourtSessionAndBusinessType(final String jurisdictionType, final String courtSession, final String businessType, final boolean allocated, final Matcher... matchers) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.hearings.by.allocated.jurisdiction-type.court-session.business-type"), jurisdictionType, courtSession, businessType, allocated));
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).
+                until(status().is(OK),
+                        payload().isJson(allOf(matchers))
+                );
+    }
+
 
 }

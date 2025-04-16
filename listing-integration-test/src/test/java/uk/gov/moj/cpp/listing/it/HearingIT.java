@@ -207,6 +207,19 @@ public class HearingIT extends AbstractIT {
     }
 
     @Test
+    void updateMultiHearingsWithAllocationAndRaisesPublicEventWithFailures() {
+        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+
+        final UpdatedHearingData updatedHearingDataForUnallocation = updatedHearingData(hearingsData.getHearingData().get(0));
+        final UpdatedHearingData updatedHearingDataForUnallocation1 = updatedHearingData(hearingsData.getHearingData().get(1));
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForUnallocation);
+        updateHearingSteps.whenMultiHearingsUpdatedForListing(updatedHearingDataForUnallocation1);
+        updateHearingSteps.verifyPublicEventHearingsUpdateCompleted();
+    }
+    @Test
     public void updateHearingResultsInUpdatedListingAndUpdateSlotDetails() {
         final UUID courtCentreId = randomUUID();
 
@@ -303,7 +316,6 @@ public class HearingIT extends AbstractIT {
         updateHearingSteps.verifyHearingDaysWhenQueryingFromAPI();
     }
 
-    @Disabled("will be handled with DD-34779")
     @Test
     public void ShouldUnAllocateHearingWhenHmiRemoveCourtRoom() {
         final UUID courtCentreId = randomUUID();
@@ -318,12 +330,7 @@ public class HearingIT extends AbstractIT {
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
         updateHearingSteps.whenHearingIsUpdatedFromHmi(Arrays.asList("courtRoomId"));
 
-        final String hearingIdFilter = getHearingFilter(updatedHearingDataForAllocation.getHearingId().toString());
-        updateHearingSteps.verifyHearingListedFromAPI(UNALLOCATED, new Matcher[]{
-                withJsonPath(hearingIdFilter + ".id", equalTo(updatedHearingDataForAllocation.getHearingId().toString())),
-                withJsonPath(hearingIdFilter + ".allocated", equalTo(false)),
-                withoutJsonPath(hearingIdFilter + ".hearingDays[0].courtRoomId")
-        }, null, null);
+        updateHearingSteps.verifyHearingUpdatedWithNoCourtRoomAndUnallocatedWhenQueryingFromAPI();
     }
 
     @Disabled("will be handled with DD-34779")
@@ -595,7 +602,7 @@ public class HearingIT extends AbstractIT {
 
 
     @Test
-    public void shouldRaisePublicEventJudiciaryChangedForHearingStatus() {
+    void shouldRaisePublicEventJudiciaryChangedForHearingStatus() {
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();

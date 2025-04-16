@@ -35,6 +35,11 @@ import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderF
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
+import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocationWithNonDefaultDays;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
@@ -45,6 +50,8 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreHmiListingEnabled;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreHmiListingEnabledWithoutCourtRoomSelection;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentres;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentres;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtWithHmiListingEnabledCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
@@ -95,8 +102,10 @@ public class UpdateHearingSteps extends AbstractIT {
     public static final String FIELD_JUDICIAL_ROLE_TYPE_ID = "judicialRoleTypeId";
     public static final String FIELD_JUDICIARY_TYPE = "judiciaryType";
     public static final String LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING = "listing.command.update-hearing-for-listing";
+    public static final String LISTING_COMMAND_UPDATE_HEARINGS_FOR_LISTING = "listing.command.update-hearings-for-listing";
     public static final String PUBLIC_UPDATED_HEARING_FOR_LISTING_FROM_HMI = "public.staginghmi.hearing-updated-from-hmi";
     public static final String MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING = "application/vnd.listing.command.update-hearing-for-listing+json";
+    public static final String MEDIA_TYPE_UPDATE_HEARINGS_FOR_LISTING = "application/vnd.listing.command.update-hearings-for-listing+json";
     public static final String FIELD_DURATION = "duration";
     public static final String FIELD_COURT_SCHEDULE_ID = "courtScheduleId";
     public static final String FIELD_OUCODE = "oucode";
@@ -150,6 +159,8 @@ public class UpdateHearingSteps extends AbstractIT {
     private static final String PUBLIC_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING = "public.listing.hearing-days-changed-for-hearing";
     private static final String EVENT_SELECTED_PUBLIC_JUDICIARY_CHANGED_FOR_HEARING_STATUS = "public.listing.judiciary-changed-for-hearings-status";
 
+    private static final String PUBLIC_LISTING_HEARING_UPDATE_COMPLETED = "public.listing.hearings-update-completed";
+
     public static final String FIELD_WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
     public static final String FIELD_WEEK_COMMENCING_DURATION_IN_WEEKS = "weekCommencingDurationInWeeks";
     public static final String FIELD_WEEK_COMMENCING_END_DATE = "weekCommencingEndDate";
@@ -171,6 +182,7 @@ public class UpdateHearingSteps extends AbstractIT {
     private JmsMessageConsumerClient privateMessageConsumerPublicListNoteRemoved;
     private JmsMessageConsumerClient publicMessageConsumerHearingChangesSaved;
     private JmsMessageConsumerClient publicEventHearingDaysChangedForHearing;
+    private JmsMessageConsumerClient publicEventHearingsUpdateCompleted;
     private JmsMessageProducerClient publicEventMessageProducer;
     private JmsMessageConsumerClient privateMessageConsumerStartDateRemoved;
     private JmsMessageConsumerClient privateMessageConsumerWeekCommencingDateChanged;
@@ -586,6 +598,7 @@ public class UpdateHearingSteps extends AbstractIT {
         privateMessageConsumerPublicListNoteRemoved = privateEvents.createPrivateConsumer(EVENT_SELECTOR_PUBLIC_LIST_NOTE_REMOVED);
         publicMessageConsumerHearingChangesSaved = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_CHANGES_SAVED);
         publicEventHearingDaysChangedForHearing = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING);
+        publicEventHearingsUpdateCompleted = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_UPDATE_COMPLETED);
         privateMessageConsumerStartDateRemoved = privateEvents.createPrivateConsumer(EVENT_SELECTOR_START_DATE_REMOVED);
         privateMessageConsumerWeekCommencingDateChanged = privateEvents.createPrivateConsumer(EVENT_SELECTOR_LISTING_EVENTS_WEEK_COMMENCING_DATE_CHANGED_FOR_HEARING);
         privateMessageConsumerHearingRequestedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_REQUESTED_FOR_LISTING);
@@ -616,6 +629,30 @@ public class UpdateHearingSteps extends AbstractIT {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
+    public void whenMultiHearingsUpdatedForListing(final UpdatedHearingData updatedHearingDataForUnallocation1) {
+        final CourtCentreData courtCenter1 = new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court");
+        final CourtCentreData courtCenter2 = new CourtCentreData(updatedHearingDataForUnallocation1.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court");
+        stubGetReferenceDataCourtCentres(courtCenter1, courtCenter2);
+        stubGetReferenceDataCourtCentreById(updatedHearingData.getCourtCentreId());
+        stubGetReferenceDataHearingTypes(updatedHearingData.getHearingTypData().getTypeId());
+        final String updateHearingUrl = String.format("%s/%s", getBaseUri(), readConfig().getProperty(LISTING_COMMAND_UPDATE_HEARINGS_FOR_LISTING));
+
+
+        final JsonObjectBuilder updatedHearingDataJsonBuilder = prepareJsonForUpdatedHearingData(updatedHearingData);
+        final JsonObjectBuilder updatedHearingDataNonDefaultDaysJsonBuilder = prepareJsonForUpdatedHearingData(updatedHearingDataForUnallocation1);
+
+        JsonArrayBuilder updatedHearingsDataJsonArrBuilder = createArrayBuilder();
+        updatedHearingsDataJsonArrBuilder.add(updatedHearingDataJsonBuilder.add("hearingId", randomUUID().toString()).build());
+        updatedHearingsDataJsonArrBuilder.add(updatedHearingDataNonDefaultDaysJsonBuilder.add("hearingId", randomUUID().toString()).build());
+        JsonObjectBuilder updatedHearingsJsonObjBuilder = createObjectBuilder();
+        updatedHearingsJsonObjBuilder.add("hearings", updatedHearingsDataJsonArrBuilder.build());
+
+        request = updatedHearingsJsonObjBuilder.build().toString();
+
+        final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_UPDATE_HEARINGS_FOR_LISTING, request, getLoggedInHeader());
+
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
     public void whenHearingIsUpdatedForListingHmiEnabled() {
         stubGetReferenceDataCourtCentreHmiListingEnabled(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court"));
         stubGetReferenceDataCourtWithHmiListingEnabledCentreById(updatedHearingData.getCourtCentreId());
@@ -781,6 +818,12 @@ public class UpdateHearingSteps extends AbstractIT {
 
         assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
         assertThat(jsonResponse.get("hearingDays[0].courtCentreId"), is(updatedHearingData.getCourtCentreId().toString()));
+    }
+
+    public void verifyPublicEventHearingsUpdateCompleted() {
+        final JsonPath jsonResponse = retrieveMessage(publicEventHearingsUpdateCompleted);
+
+        assertThat(jsonResponse.getString("failedHearingIds").split(",").length, is(2));
     }
 
     public void verifyPublicEventHearingConfirmed_hasNoJudiciary() {
@@ -1199,7 +1242,9 @@ public class UpdateHearingSteps extends AbstractIT {
             eventPayloadString = eventPayloadString.replaceAll("UPDATED_CENTRE_ID", values.get("updatedCourtCentreId"));
             eventPayloadString = eventPayloadString.replaceAll("UPDATED_ROOM_ID", values.get("updatedCourtRoomId"));
         }
-
+        if (values.get("courtScheduleId") != null) {
+            eventPayloadString = eventPayloadString.replaceAll("COURT_SCHEDULE_ID", values.get("courtScheduleId"));
+        }
         return new StringToJsonObjectConverter().convert(eventPayloadString);
     }
 

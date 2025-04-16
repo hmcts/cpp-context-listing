@@ -17,6 +17,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
 import static uk.gov.justice.core.courts.ProsecutionCase.prosecutionCase;
@@ -25,6 +26,17 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STR
 import static uk.gov.moj.cpp.listing.domain.JurisdictionType.MAGISTRATES;
 
 import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.junit.jupiter.MockitoExtension;
+import java.util.logging.Logger;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.junit.jupiter.MockitoExtension;
+import java.util.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -45,9 +57,15 @@ import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.*;
 import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.listing.events.*;
+import uk.gov.justice.listing.events.StatementOfOffence;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.listing.events.*;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.listing.events.UnallocatedHearingDeleted;
 import uk.gov.justice.listing.events.UpdatedHearingInStagingHmi;
 import uk.gov.justice.listing.events.UpdatedHmiFieldsForHearing;
+import uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
@@ -4159,7 +4177,7 @@ public class HearingAggregateTest {
     }
 
     @Test
-    public void shouldChangeJudiciaryStatusForHearingsStatus(){
+    void shouldChangeJudiciaryStatusForHearingsStatus(){
         final List<Object> eventStreams = hearing.judiciaryChangedForHearingsStatus().toList();
         assertThat(eventStreams, hasSize(1));
         assertThat(((JudiciaryChangedForHearingsStatus)eventStreams.get(0)).getStatus(), is("Success"));

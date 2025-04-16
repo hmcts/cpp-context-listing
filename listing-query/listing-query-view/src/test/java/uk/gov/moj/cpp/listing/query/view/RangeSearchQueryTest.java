@@ -33,6 +33,7 @@ import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
+import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
@@ -45,11 +46,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import javax.json.JsonObject;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -127,6 +131,9 @@ public class RangeSearchQueryTest {
     @Spy
     private HearingJsonListConverterFilterEjectCases hearingJsonListConverterFilterEjectCases;
 
+    @Spy
+    private PaginationParameterFactory paginationParameterFactory;
+
     @Mock
     private PaginationParameter paginationParameter;
 
@@ -147,7 +154,8 @@ public class RangeSearchQueryTest {
         FieldUtils.writeField(this.listToJsonArrayConverter, "mapper", objectMapper, true);
         FieldUtils.writeField(this.listToJsonArrayConverter, "stringToJsonObjectConverter", stringToJsonObjectConverter, true);
         FieldUtils.writeField(this.rangeSearchQuery, "listToJsonArrayConverter", listToJsonArrayConverter, true);
-        paginationParameter = new PaginationParameter(50, 1, 0);
+        final JsonObject paginationParametersAsJson = createObjectBuilder().add("pageSize", 50).add("pageNumber", 1).add("offset", 0).build();
+        paginationParameter = paginationParameterFactory.newPaginationParameter(paginationParametersAsJson);
         hearingJsonListConverterFilterEjectCases = new HearingJsonListConverterFilterEjectCases();
     }
 

@@ -49,7 +49,7 @@ public class CourtCentreFactoryTest {
 
         //given
         given(referenceDataService.getCourtCentreById(COURT_CENTRE_ID, envelope)).willReturn(finalEnvelope);
-        given(finalEnvelope.payloadAsJsonObject()).willReturn(getJsonEnvelope());
+        given(finalEnvelope.payloadAsJsonObject()).willReturn(getDefaultJsonEnvelope());
 
         //when
         CourtCentreDetails courtCentre = courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope);
@@ -64,7 +64,7 @@ public class CourtCentreFactoryTest {
 
         //given
         given(referenceDataService.getCourtCentreById(COURT_CENTRE_ID, envelope)).willReturn(finalEnvelope);
-        given(finalEnvelope.payloadAsJsonObject()).willReturn(getJsonEnvelope(DEFAULT_TIME.toString(), DEFAULT_DURATION_6_HOURS_AND_NO_MINS, COURT_CENTRE_ID.toString()));
+        given(finalEnvelope.payloadAsJsonObject()).willReturn(getDefaultJsonEnvelope(DEFAULT_TIME.toString(), DEFAULT_DURATION_6_HOURS_AND_NO_MINS, COURT_CENTRE_ID.toString()));
 
         //when
         CourtCentreDetails courtCentre = courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope);
@@ -78,7 +78,7 @@ public class CourtCentreFactoryTest {
 
         //given
         given(referenceDataService.getCourtCentreById(COURT_CENTRE_ID, envelope)).willReturn(finalEnvelope);
-        given(finalEnvelope.payloadAsJsonObject()).willReturn(getJsonEnvelope(DEFAULT_TIME.toString(), DEFAULT_DURATION_6_HOURS_AND_NO_COLON, COURT_CENTRE_ID.toString()));
+        given(finalEnvelope.payloadAsJsonObject()).willReturn(getDefaultJsonEnvelope(DEFAULT_TIME.toString(), DEFAULT_DURATION_6_HOURS_AND_NO_COLON, COURT_CENTRE_ID.toString()));
 
         //when
         CourtCentreDetails courtCentre = courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope);
@@ -98,11 +98,11 @@ public class CourtCentreFactoryTest {
         assertThrows(IllegalArgumentException.class, () -> courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope));
     }
 
-    private JsonObject getJsonEnvelope() {
-        return getJsonEnvelope(DEFAULT_TIME.toString(), DEFAULT_DURATION_HOURS_MINS, COURT_CENTRE_ID.toString());
+    private JsonObject getDefaultJsonEnvelope() {
+        return getDefaultJsonEnvelope(DEFAULT_TIME.toString(), DEFAULT_DURATION_HOURS_MINS, COURT_CENTRE_ID.toString());
     }
 
-    private JsonObject getJsonEnvelope(String defaultTime, String defaultDurationHours, String courtCentreId) {
+    private JsonObject getDefaultJsonEnvelope(String defaultTime, String defaultDurationHours, String courtCentreId) {
         String jsonString = FileUtil.getPayload("stubbed.referencedata.query.courtroom.json")
                 .replace("DEFAULT_START_TIME", defaultTime)
                 .replace("DEFAULT_DURATION_HOURS_MINS", defaultDurationHours)
@@ -113,7 +113,7 @@ public class CourtCentreFactoryTest {
     }
 
     private JsonObject getJsonEnvelopeWithNoDefaultStartTime() {
-        return getJsonEnvelope(DEFAULT_TIME.toString(), "", COURT_CENTRE_ID.toString());
+        return getDefaultJsonEnvelope(DEFAULT_TIME.toString(), "", COURT_CENTRE_ID.toString());
 
     }
 }

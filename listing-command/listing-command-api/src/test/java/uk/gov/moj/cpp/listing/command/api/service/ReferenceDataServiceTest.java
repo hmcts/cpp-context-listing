@@ -16,6 +16,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.MetadataBuilder;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
 
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -57,6 +58,22 @@ public class ReferenceDataServiceTest {
 
         verify(requester).requestAsAdmin(senderJsonEnvelopeCaptor.capture());
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is("referencedata.query.courtroom"));
+    }
+
+    @Test
+    public void shouldGetCourtCentreSById(){
+        final UUID courtCentreId = randomUUID();
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
+                ArgumentCaptor.forClass(JsonEnvelope.class);
+
+        final JsonEnvelope command = mock(JsonEnvelope.class);
+        final MetadataBuilder metadataBuilder = metadataWithRandomUUID("referencedata.query.courtrooms");
+        when(command.metadata()).thenReturn(metadataBuilder.build());
+
+        referenceDataService.getCourtCentresById(Set.of(courtCentreId), command);
+
+        verify(requester).requestAsAdmin(senderJsonEnvelopeCaptor.capture());
+        assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is("referencedata.query.courtrooms"));
     }
 
     @Test

@@ -32,6 +32,7 @@ import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.dto.LinkedCase;
 import uk.gov.moj.cpp.listing.query.view.dto.ListedCase;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
+import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory;
 import uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
@@ -90,7 +91,6 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonObjects.getString;
 import static uk.gov.justice.services.messaging.JsonObjects.toJsonArray;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.valueFor;
-import static uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory.newPaginationParameter;
 import static uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria.MATCHED_DEFENDANTS;
 
 
@@ -181,6 +181,9 @@ public class HearingQueryView {
     @Inject
     private StringToJsonObjectConverter stringToJsonObjectConverter;
 
+    @Inject
+    private PaginationParameterFactory paginationParameterFactory;
+
     public static final String TYPE = "type";
 
     public static final String LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS = "listing.allocated.and.unallocated.hearings";
@@ -252,7 +255,7 @@ public class HearingQueryView {
         final String typeOfListQueryParam = query.payloadAsJsonObject().getString(TYPE_OF_LIST, null);
         final String caseUrnQueryParam = query.payloadAsJsonObject().getString(CASE_URN, null);
         final String courtCentreIdQueryParam = query.payloadAsJsonObject().getString(COURT_CENTRE_IDS, null);
-        final PaginationParameter paginationParameter = newPaginationParameter(query.payloadAsJsonObject());
+        final PaginationParameter paginationParameter = paginationParameterFactory.newPaginationParameter(query.payloadAsJsonObject());
 
         LOGGER.info("listing.unscheduled.search.hearings Query params -  " +
                         "caseUrn: {}, " +

@@ -5,6 +5,7 @@ import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.time.ZoneOffset.UTC;
+import static java.util.Collections.emptyMap;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
@@ -15,6 +16,8 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClientProvider.newPublicJmsMessageConsumerClientProvider;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlots;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
@@ -25,6 +28,8 @@ import uk.gov.moj.cpp.listing.steps.CourtListSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.SequenceHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
+import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -33,6 +38,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,8 +55,6 @@ import com.jayway.jsonpath.Filter;
 import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
-import uk.gov.moj.cpp.listing.steps.data.HearingData;
-import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 public class HearingDaysIT extends AbstractIT {
 
@@ -115,7 +119,7 @@ public class HearingDaysIT extends AbstractIT {
         UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps();
         final JsonObject updateHearingJsonObject = updateHearingSteps.preparePayloadToUpdateHearing(UPDATE_HEARING_FOR_LISTING_JSON, getPayloadValues("allocating"));
 
-        final JsonNode hearingNode = populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateHearingJsonObject);
+        final JsonNode hearingNode = populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateHearingJsonObject, randomUUID().toString());
         updateHearingSteps.updateHearingForListing(objectMapper.treeToValue(hearingNode, JsonObject.class), hearingId);
 
         //Query for allocated for each court
@@ -128,9 +132,11 @@ public class HearingDaysIT extends AbstractIT {
         final LocalDate extendedDate = endDate.plusDays(1);
         final Map<String, String> valueMap = getPayloadValues("updating");
         valueMap.put("endDate", extendedDate.toString());
+        final String courtScheduleId = randomUUID().toString();
+        valueMap.put("courtScheduleId", courtScheduleId);
         final JsonObject updateAllocatedHearingJsonObject = updateHearingSteps.preparePayloadToUpdateHearing(UPDATE_ALLOCATED_HEARING_FOR_LISTING_JSON, valueMap);
 
-        final JsonNode jsonNode = populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateAllocatedHearingJsonObject);
+        final JsonNode jsonNode = populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateAllocatedHearingJsonObject, courtScheduleId);
         updateHearingSteps.updateHearingForListing(objectMapper.treeToValue(jsonNode, JsonObject.class), hearingId);
 
         //Range Search for each court
@@ -178,31 +184,37 @@ public class HearingDaysIT extends AbstractIT {
 
         UpdateHearingSteps updateHearingStepsSplit = new UpdateHearingSteps();
 
-        final JsonObject updateHearingJsonObjectSplit = updateHearingStepsSplit.preparePayloadToUpdateHearing(UPDATE_HEARING_FOR_LISTING_SPLIT_JSON,
+        final JsonObject updateHearingJsonObjectSplit =
+                updateHearingStepsSplit.preparePayloadToUpdateHearing(UPDATE_HEARING_FOR_LISTING_SPLIT_JSON,
                 getSplitPayloadValues(hearingData.getId().toString(), hearingData.getListedCases().get(0).getCaseId().toString(),
                         hearingData.getCourtCentreId().toString(), hearingData.getCourtRoomId().toString(),
                         hearingData.getHearingStartDate().plusDays(1).toString(), hearingData.getHearingEndDate().plusDays(2).toString(),
                         hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString(),
-                        hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().get(1).getOffenceId().toString()));
+                        hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().get(1).getOffenceId().toString(), randomUUID().toString()));
 
 
-        final JsonNode jsonNode = populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateHearingJsonObjectSplit);
+        final JsonNode jsonNode = populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateHearingJsonObjectSplit, randomUUID().toString());
         updateHearingStepsSplit.updateHearingForListing(objectMapper.treeToValue(jsonNode, JsonObject.class), hearingData.getId());
         updateHearingStepsSplit.verifyHearingRequestedForListingEvent(2);
         updateHearingStepsSplit.verifyHearingRequestedForListingInPublicMQ();
 
     }
 
-    private Map<String, String> getSplitPayloadValues(final String hearingId, final String caseId,
-                                                      final String courtCentreId, final String courtRoomId,
-                                                      final String startDate, final String endDate,
-                                                      final String defendantId, final String offenceId) {
+    private Map<String, String> getSplitPayloadValues(final String hearingId,
+                                                      final String caseId,
+                                                      final String courtCentreId,
+                                                      final String courtRoomId,
+                                                      final String startDate,
+                                                      final String endDate,
+                                                      final String defendantId,
+                                                      final String offenceId, final String courtScheduleId) {
 
-        return new HashMap<String, String>() {{
+        return new HashMap<>() {{
             put("hearingId", hearingId);
             put("caseId", caseId);
             put("courtCentreId", courtCentreId);
             put("courtRoomId", courtRoomId);
+            put("courtScheduleId", courtScheduleId);
             put("startDate", startDate);
             put("defendantId", defendantId);
             put("offenceId", offenceId);
@@ -267,6 +279,21 @@ public class HearingDaysIT extends AbstractIT {
         assertThat(message.get("hearingDays[0].listingSequence"), is(0));
     }
 
+    @Test
+    public void testHearingDaysCorrectedWithCourtSchedule()  {
+        courtCentreId = randomUUID();
+        final HearingsData hearingsData = HearingsData.singleHearingsDataWithAllocationDataAndJudiciary();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData) ;
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        final Map<String, String> courtRoomSchedules = new LinkedHashMap<>() {{
+            put("2020-05-21", "8e837de0-743a-4a2c-9db3-b2e678c48729");
+            put(LocalDate.now().toString(), "8e837de0-743a-4a2c-9db3-b2e678c48729");
+        }};
+        stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtRoomSchedules, courtCentreId.toString());
+        listCourtHearingSteps.verifyHearingDayCourtScheduledUpdated(courtRoomSchedules.values().toArray(new String[0]));
+    }
+
     private Matcher[] getAllocatedMatchers(final com.jayway.jsonpath.JsonPath hearingIdFilter) {
         return new Matcher[]{withJsonPath(hearingIdFilter),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].hearingDate", hasItem(startDate.toString())),
@@ -309,7 +336,7 @@ public class HearingDaysIT extends AbstractIT {
                 .build())).build();
     }
 
-    private JsonNode populateNonDefaultDays(final UUID otherCourtCentreId, final UUID otherCourtRoomId, final JsonObject updateHearingJsonObject) throws IOException {
+    private JsonNode populateNonDefaultDays(final UUID otherCourtCentreId, final UUID otherCourtRoomId, final JsonObject updateHearingJsonObject, final String courtScheduleId) throws IOException {
         final JsonNode hearingNode = convertToNode(updateHearingJsonObject);
         ((ObjectNode) hearingNode).putArray("nonDefaultDays").add(convertToNode(createObjectBuilder()
                         .add("duration", defaultDuration)
@@ -320,7 +347,7 @@ public class HearingDaysIT extends AbstractIT {
                         .add("courtRoomId", 1234)
                         .add("session", "AM")
                         .add("oucode", "B01BLYO")
-                        .add("courtScheduleId", randomUUID().toString())
+                        .add("courtScheduleId", courtScheduleId)
                         .build()))
                 .add(convertToNode(createObjectBuilder()
                         .add("duration", defaultDuration)
@@ -331,7 +358,7 @@ public class HearingDaysIT extends AbstractIT {
                         .add("courtRoomId", 4456)
                         .add("session", "AM")
                         .add("oucode", "B01BH8U")
-                        .add("courtScheduleId", randomUUID().toString())
+                        .add("courtScheduleId", courtScheduleId)
                         .build()));
         return hearingNode;
     }
@@ -375,7 +402,7 @@ public class HearingDaysIT extends AbstractIT {
                     put("updatedCourtRoomId", otherCourtRoomId.toString());
                 }};
 
-            default: return Collections.emptyMap();
+            default: return emptyMap();
         }
     }
 }

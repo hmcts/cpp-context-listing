@@ -46,6 +46,7 @@ import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMA
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_CASE_EJECTED;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_CASE_OR_APPLICATION_EJECTED;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS;
+import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_UPDATE_HEARING_DAY_COURT_SCHEDULE;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_UPDATE_CASE_DEFENDANT_DETAILS;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_UPDATE_CASE_DEFENDANT_OFFENCES;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_UPDATE_COURT_APPLICATION;
@@ -148,6 +149,7 @@ import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFact
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.event.processor.azure.builder.SlotDetailBuilder;
+import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
 import uk.gov.moj.cpp.listing.event.processor.command.AddCourtApplicationToHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.AddDefendantsForCourtProceedingsCommand;
 import uk.gov.moj.cpp.listing.event.processor.command.AddDefendantsForCourtProceedingsCommandCollectionConverter;
@@ -186,6 +188,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import javax.json.Json;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
@@ -744,6 +747,53 @@ public class ListingEventProcessorTest {
         assertThat(jsonEnvelope.payloadAsJsonObject().getBoolean("sendNotificationToParties"), is(true));
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CHANGES_SAVED));
 
+    }
+
+    @Test
+    public void shouldUpdateCourtScheduleFromAllocatedSlots() {
+        final JsonEnvelope event = hearingAllocatedEvent();
+        final UUID hearingId = randomUUID();
+        final HearingAllocatedForListingV2 hearingAllocatedForListingV2 = new HearingAllocatedForListingV2.Builder()
+                .withHearingId(hearingId)
+                .withUpdateSlot(false)
+                .withHearingDays(hearingDays)
+                .withHasAdjournmentDate(false)
+                .withSendNotificationToParties(true)
+                .build();
+        given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListingV2.class)).willReturn(hearingAllocatedForListingV2);
+
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN);
+        given(hearingConfirmedFactory.createV2(hearingAllocatedForListingV2, event)).willReturn(hearingConfirmed);
+
+        final ObjectToJsonValueConverter jsonValueConverter =  new JsonObjectConvertersFactory().objectToJsonValueConverter();
+        final JsonValue hearingConfirmedJson = jsonValueConverter.convert(hearingConfirmed);
+        given(objectToJsonValueConverter.convert(any())).willReturn(hearingConfirmedJson);
+        when(stagingHmiService.isHmiListingEnabled(OU_CODE)).thenReturn(false);
+
+        final String courtScheduleId = randomUUID().toString();
+        final String hearingDay = LocalDate.now().toString();
+        SlotDetail slotDetail = new SlotDetail("ouCode",
+                "ADULT",
+                1,
+                hearingDay,
+                "session",
+                randomUUID().toString(),
+                30,
+                courtScheduleId,
+                randomUUID().toString(), "09:00:00");
+        when(slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays)).thenReturn(Optional.of(List.of(slotDetail)));
+        listingEventProcessor.handleHearingAllocatedForListingV2Message(event);
+
+        verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
+        verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
+        verify(sender, times(3)).send(senderJsonEnvelopeCaptor.capture());
+        final JsonEnvelope jsonEnvelope = senderJsonEnvelopeCaptor.getAllValues().get(0);
+        assertThat( jsonEnvelope.metadata().name(), is(COMMAND_UPDATE_HEARING_DAY_COURT_SCHEDULE));
+        final JsonObject commandJsonObj = jsonEnvelope.payloadAsJsonObject();
+        assertThat(commandJsonObj.getString("hearingId"), is(hearingId.toString()));
+        final JsonArray hearingDays = commandJsonObj.getJsonArray("hearingDayCourtSchedules");
+        assertThat(hearingDays.getJsonObject(0).getString("hearingDate"), is(hearingDay));
+        assertThat(hearingDays.getJsonObject(0).getString("courtScheduleId"), is(courtScheduleId));
     }
 
     @Test

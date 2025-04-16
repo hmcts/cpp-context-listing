@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/hearing-day-court-schedule.json",
+  "type": "object",
+  "properties": {
+    "hearingDate":{
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/localDate"
+    },
+    "courtScheduleId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    }
+  },
+  "required": [
+    "hearingDate",
+    "courtScheduleId"
+  ],
+  "additionalProperties": false
+}

@@ -65,6 +65,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtLis
 import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.dto.LinkedApplicationsSummary;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
+import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
@@ -150,9 +151,6 @@ public class HearingQueryViewTest {
     private static final String CASE_ID_QUERY_PARAMETER  = "caseId";
     private static final String APPLICATION_ID_QUERY_PARAMETER  = "applicationId";
 
-    @Mock
-    private PaginationParameter paginationParameter;
-
     @Spy
     private Enveloper enveloper = createEnveloper();
     @Mock
@@ -176,6 +174,11 @@ public class HearingQueryViewTest {
     @Mock
     private CaseByDefendantRepository caseByDefendantRepository;
 
+    @Spy
+    private PaginationParameterFactory paginationParameterFactory;
+
+    private PaginationParameter paginationParameter;
+
     @InjectMocks
     private HearingQueryView hearingsQueryView;
     @Spy
@@ -188,7 +191,8 @@ public class HearingQueryViewTest {
         FieldUtils.writeField(this.listToJsonArrayConverter, "mapper", objectMapper, true);
         FieldUtils.writeField(this.listToJsonArrayConverter, "stringToJsonObjectConverter", stringToJsonObjectConverter, true);
         FieldUtils.writeField(this.hearingsQueryView, "listToJsonArrayConverter", listToJsonArrayConverter, true);
-        paginationParameter = new PaginationParameter(50, 1, 0);
+        final JsonObject paginationParametersAsJson = createObjectBuilder().add("pageSize", 50).add("pageNumber", 1).add("offset", 0).build();
+        paginationParameter = paginationParameterFactory.newPaginationParameter(paginationParametersAsJson);
     }
 
     @Test
