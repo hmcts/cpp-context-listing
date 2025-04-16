@@ -519,7 +519,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                 withJsonPath(hearingIdFilter + "startDate", hasItem(hearingData.getHearingStartDate().toString())),
                 withJsonPath(hearingIdFilter + "hearingLanguage", hasItem("ENGLISH"))
         });
-        System.out.println("returned::" + s);
+
     }
 
     public void verifyQueryAPIFindCaseByPersonDefendantAndHearingDate() {
@@ -2250,6 +2250,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         final JsonPath jsonResponse = retrieveMessage(privateEventMessageConsumerRequestedHearingFromStagingHmi);
         assertThat(((ArrayList) ((Map) jsonResponse.get("hearing")).get("listedCases")).size(), is(2));
     }
+
 
     public void verifyHearingForCourtSchedulerCourtSessionAndBusinessType(final String jurisdictionType, final String courtSession, final String businessType, final boolean allocated, final Matcher... matchers) {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),

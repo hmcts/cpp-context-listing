@@ -52,8 +52,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.hamcrest.CoreMatchers;
-import org.hamcrest.Matchers;
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -259,6 +257,7 @@ public class RangeSearchQueryTest {
         final JsonEnvelope results = rangeSearchQuery.rangeSearchHearings(query);
 
         assertEquals(2, results.payloadAsJsonObject().getJsonArray("hearings").size());
+        assertEquals(2, results.payloadAsJsonObject().getInt("results"));
         assertEquals("2020-09-03", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("startDate"));
         assertEquals("listing.search.hearings", results.metadata().name());
     }
@@ -344,6 +343,7 @@ public class RangeSearchQueryTest {
         final JsonEnvelope results = rangeSearchQuery.rangeSearchHearings(query);
 
         assertEquals(2, results.payloadAsJsonObject().getJsonArray("hearings").size());
+        assertEquals(2, results.payloadAsJsonObject().getInt("results"));
         assertEquals("2020-09-03", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("startDate"));
         assertEquals("listing.search.hearings", results.metadata().name());
         verify(hearingRepository).findHearings(
@@ -390,6 +390,7 @@ public class RangeSearchQueryTest {
         final JsonEnvelope results = rangeSearchQuery.rangeSearchHearings(query);
 
         assertEquals(2, results.payloadAsJsonObject().getJsonArray("hearings").size());
+        assertEquals(2, results.payloadAsJsonObject().getInt("results"));
         assertEquals("2019-10-13", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("weekCommencingStartDate"));
         assertEquals("listing.search.hearings", results.metadata().name());
     }
@@ -733,11 +734,11 @@ public class RangeSearchQueryTest {
                 "\t\t}]\n" +
                 "\t}";
         final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonStringForAllocated));
-        hearing1.setTotalCount(1L);
+        hearing1.setTotalCount(2L);
         hearing1.setAllocated(true);
         final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonStringForUnallocated));
         hearing2.setAllocated(false);
-        hearing2.setTotalCount(1L);
+        hearing2.setTotalCount(2L);
         return newArrayList(hearing1, hearing2);
 
     }

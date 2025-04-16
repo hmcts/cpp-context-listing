@@ -184,6 +184,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "(h.end_date between ?7 and ?8 ) or " +
             "((h.start_date <= ?7 ) and (h.end_date >= ?8 ) )  " +
             ") " +
+            " group by  h.id " +
             " order by h.id, h.court_centre_id ASC OFFSET (?9) ROWS FETCH NEXT (?10) ROWS ONLY", isNative = true)
     public List<Hearing> findHearings(final boolean allocated,
                                       final UUID courtCentreId,
@@ -253,6 +254,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "((h.start_date <= ?7 ) and (h.end_date >= ?8 ) )  " +
             ") " +
             "and h.is_possible_disqualification = ?9 " +
+            " group by  h.id " +
             " order by h.id, h.court_centre_id ASC OFFSET (?10) ROWS FETCH NEXT (?11) ROWS ONLY", isNative = true)
     public abstract List<Hearing> findHearings(final String allocated,
                                                final String courtCentreId,
@@ -309,7 +311,9 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "(h.start_date between ?3 and ?4) or " +
             "(h.end_date between ?3 and ?4) or " +
             "((h.start_date <= ?3) and (h.end_date >= ?4)) " +
-            ") order by h.id, h.court_centre_id ASC", isNative = true)
+            ") " +
+            " group by  h.id " +
+            "order by h.id, h.court_centre_id ASC", isNative = true)
     public abstract List<Hearing> findHearingsForCotr(final Set<String> hearingTypeIds, final String courtCentreId, final LocalDate startDate, final LocalDate endDate);
 
     /**
@@ -688,6 +692,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "  and (lc.id is not null or ca.id is not null) " +
             "  and (lc.is_ejected is null or lc.is_ejected =false) " +
             "  and (ca.is_ejected is null or ca.is_ejected =false) " +
+            " group by  h.id " +
             " order by h.id, h.court_centre_id ASC OFFSET (?3) ROWS FETCH NEXT (?4) ROWS ONLY"
             , isNative = true)
     public abstract List<Hearing> findHearings(String caseUrn, String typeOfList, Integer offSet, Integer pageSize);
@@ -890,6 +895,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "  and (lc.id is not null or ca.id is not null) " +
             "  and (lc.is_ejected is null or lc.is_ejected =false) " +
             "  and (ca.is_ejected is null or ca.is_ejected =false) " +
+            " group by  h.id " +
             " order by h.id, h.court_centre_id ASC OFFSET (?4) ROWS FETCH NEXT (?5) ROWS ONLY"
             , isNative = true)
     public abstract List<Hearing> findHearings(String caseUrn, String typeOfList, Set<String> courtCentreIds, Integer offSet, Integer pageSize);

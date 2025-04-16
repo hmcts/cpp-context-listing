@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
@@ -99,6 +100,9 @@ public class HearingMarkedAsDuplicateEventListener {
             LOGGER.debug("listing.events.offences-removed-from-hearing. hearingId: {} ", hearingId);
         }
 
+        if(isNull(hearingRepository.findBy(hearingId))){
+            return;
+        }
         using(hearingRepository)
                 .find(hearingId)
                 .put("allocated", false)
@@ -142,7 +146,9 @@ public class HearingMarkedAsDuplicateEventListener {
 
         final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
         };
-
+        if(isNull(hearingRepository.findBy(hearingId))){
+            return;
+        }
         using(hearingRepository)
                 .find(hearingId)
                 .putSubList("listedCases", typeRef, getListedCaseWithRemoveDeletedOffencesFunction(offenceIds))

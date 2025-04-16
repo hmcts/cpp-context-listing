@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
@@ -205,12 +206,14 @@ public class HearingEventListener {
             return;
         }
 
-        jsonEntityFinder.find(hearingId)
-                .put(FIELD_IS_VACATED_TRIAL, nonNull(hearingTrialVacated.getVacatedTrialReasonId()) ? VACATED : NON_VACATED)
-                .put(FIELD_VACATE_TRIAL_REASON, hearingTrialVacated.getVacatedTrialReasonId() == null ? "" : hearingTrialVacated.getVacatedTrialReasonId().toString())
-                .save();
+        if (nonNull(hearingRepository.findBy(hearingId))) {
+            jsonEntityFinder.find(hearingId)
+                    .put(FIELD_IS_VACATED_TRIAL, nonNull(hearingTrialVacated.getVacatedTrialReasonId()) ? VACATED : NON_VACATED)
+                    .put(FIELD_VACATE_TRIAL_REASON, hearingTrialVacated.getVacatedTrialReasonId() == null ? "" : hearingTrialVacated.getVacatedTrialReasonId().toString())
+                    .save();
 
-        hearingSearchSyncService.sync(hearingId);
+            hearingSearchSyncService.sync(hearingId);
+        }
     }
 
     @Handles("listing.events.hearing-rescheduled")
@@ -269,7 +272,9 @@ public class HearingEventListener {
     private void saveHearing(final UUID hearingId, final ProsecutionCase prosecutionCase) {
         final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
         };
-
+        if(isNull(hearingRepository.findBy(hearingId))){
+            return;
+        }
         using(hearingRepository)
                 .find(hearingId)
                 .putSubList(LISTED_CASES_FIELD, typeRef, getUpdatedListedCaseWithDefendantProceedingsFunction(prosecutionCase))

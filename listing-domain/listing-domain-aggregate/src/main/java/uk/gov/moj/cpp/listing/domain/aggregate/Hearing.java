@@ -1401,7 +1401,7 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> deleteHearing(final UUID seedingHearingId, final UUID hearingId) {
-        if (deleted) {
+        if (deleted || duplicate) {
             return Stream.empty();
         }
 
@@ -1461,7 +1461,7 @@ public class Hearing implements Aggregate {
 
     public Stream<Object> removeSelectedOffencesFromExistingHearing(final UUID hearingId, final List<UUID> offenceIds, final String source) {
 
-        if (deleted) {
+        if (deleted || duplicate) {
             return Stream.empty();
         }
         final List<UUID> existingOffenceIds = prosecutionCaseDefendantOffenceIds
@@ -1910,7 +1910,6 @@ public class Hearing implements Aggregate {
                     .withStatus("Success")
                     .build()));
     }
-
 
     public Stream<Object> hearingsUpdateCompleted(final Set<UUID> failedHearingIds) {
         final List<UUID> failedIdList = new ArrayList<>(failedHearingIds);

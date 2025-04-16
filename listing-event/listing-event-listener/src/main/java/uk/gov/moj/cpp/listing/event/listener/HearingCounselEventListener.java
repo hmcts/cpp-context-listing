@@ -80,6 +80,9 @@ public class HearingCounselEventListener {
 
     private void removeCounselAndSave(final UUID hearingId, final String payload, final CounselType counselType) throws IOException {
         final Hearing hearing = hearingRepository.findBy(hearingId);
+        if(isNull(hearing)){
+            return;
+        }
         final String counselNodeName = counselType.name().toLowerCase() + "Counsels";
         if (isNull(hearing.getProperties().get(counselNodeName))) {
             return;

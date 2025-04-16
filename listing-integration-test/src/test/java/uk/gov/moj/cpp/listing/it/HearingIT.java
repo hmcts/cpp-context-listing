@@ -602,7 +602,7 @@ public class HearingIT extends AbstractIT {
 
 
     @Test
-    void shouldRaisePublicEventJudiciaryChangedForHearingStatus() {
+    public void shouldRaisePublicEventJudiciaryChangedForHearingStatus() {
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();

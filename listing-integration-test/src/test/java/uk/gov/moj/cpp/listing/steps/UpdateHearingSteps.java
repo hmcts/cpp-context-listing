@@ -38,6 +38,9 @@ import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearing
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocationWithNonDefaultDays;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
@@ -50,6 +53,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreHmiListingEnabled;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreHmiListingEnabledWithoutCourtRoomSelection;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentres;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentres;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentres;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtWithHmiListingEnabledCentreById;
@@ -158,7 +162,6 @@ public class UpdateHearingSteps extends AbstractIT {
     public static final String PUBLIC_LISTING_HEARING_CHANGES_SAVED = "public.listing.hearing-changes-saved";
     private static final String PUBLIC_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING = "public.listing.hearing-days-changed-for-hearing";
     private static final String EVENT_SELECTED_PUBLIC_JUDICIARY_CHANGED_FOR_HEARING_STATUS = "public.listing.judiciary-changed-for-hearings-status";
-
     private static final String PUBLIC_LISTING_HEARING_UPDATE_COMPLETED = "public.listing.hearings-update-completed";
 
     public static final String FIELD_WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
@@ -629,6 +632,7 @@ public class UpdateHearingSteps extends AbstractIT {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
+
     public void whenMultiHearingsUpdatedForListing(final UpdatedHearingData updatedHearingDataForUnallocation1) {
         final CourtCentreData courtCenter1 = new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court");
         final CourtCentreData courtCenter2 = new CourtCentreData(updatedHearingDataForUnallocation1.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court");
@@ -653,6 +657,7 @@ public class UpdateHearingSteps extends AbstractIT {
 
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
+
     public void whenHearingIsUpdatedForListingHmiEnabled() {
         stubGetReferenceDataCourtCentreHmiListingEnabled(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court"));
         stubGetReferenceDataCourtWithHmiListingEnabledCentreById(updatedHearingData.getCourtCentreId());
@@ -820,17 +825,18 @@ public class UpdateHearingSteps extends AbstractIT {
         assertThat(jsonResponse.get("hearingDays[0].courtCentreId"), is(updatedHearingData.getCourtCentreId().toString()));
     }
 
+    public void verifyPublicEventHearingConfirmed_hasNoJudiciary() {
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingConfirmed);
+        assertThat(jsonResponse.get("confirmedHearing.id"), is(updatedHearingData.getHearingId().toString()));
+        assertNull(jsonResponse.get("confirmedHearing.judiciary"));
+    }
+
     public void verifyPublicEventHearingsUpdateCompleted() {
         final JsonPath jsonResponse = retrieveMessage(publicEventHearingsUpdateCompleted);
 
         assertThat(jsonResponse.getString("failedHearingIds").split(",").length, is(2));
     }
 
-    public void verifyPublicEventHearingConfirmed_hasNoJudiciary() {
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingConfirmed);
-        assertThat(jsonResponse.get("confirmedHearing.id"), is(updatedHearingData.getHearingId().toString()));
-        assertNull(jsonResponse.get("confirmedHearing.judiciary"));
-    }
 
     public void verifyPublicEventHearingUpdated() {
         final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingUpdated);

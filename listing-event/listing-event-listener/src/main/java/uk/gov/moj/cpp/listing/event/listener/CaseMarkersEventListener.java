@@ -15,6 +15,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -43,12 +44,14 @@ public class CaseMarkersEventListener {
         final UUID prosecutionCaseId = payload.getCaseId();
         final List<Marker> caseMarkers = payload.getCaseMarkers();
 
-        using(hearingRepository)
-                .find(hearingId)
-                .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getCaseMarkersAddFunction(prosecutionCaseId, caseMarkers))
-                .save();
+        if(Objects.nonNull(hearingRepository.findBy(hearingId))) {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getCaseMarkersAddFunction(prosecutionCaseId, caseMarkers))
+                    .save();
 
-        hearingSearchSyncService.sync(hearingId);
+            hearingSearchSyncService.sync(hearingId);
+        }
     }
 
     private Function<List<ListedCase>, List<ListedCase>> getCaseMarkersAddFunction(final UUID caseId, final List<Marker> caseMarkers) {

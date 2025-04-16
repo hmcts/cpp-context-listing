@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.listing.events.Marker.marker;
@@ -90,14 +91,14 @@ public class LinkOrUnlinkCasesEventListenerTest {
         final List<ListedCase> testCases = createListedCases();
         final String testCasesString = mapper.writeValueAsString(testCases);
         testCasesProperties = mapper.readTree(testCasesString);
-
-        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
-        when(hearing.getProperties()).thenReturn(properties);
-        when(hearingRepository.findBy(any())).thenReturn(hearing);
     }
 
     @Test
     public void shouldUpdateLinkedCases() throws Exception {
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+        when(hearing.getProperties()).thenReturn(properties);
+        when(hearingRepository.findBy(any())).thenReturn(hearing);
+
         final LinkedCasesUpdated event = createEvent("LINK");
         when(envelope.payload()).thenReturn(event);
 
@@ -123,6 +124,10 @@ public class LinkOrUnlinkCasesEventListenerTest {
 
     @Test
     public void shouldUpdateUnlinkedCases() throws Exception {
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+        when(hearing.getProperties()).thenReturn(properties);
+        when(hearingRepository.findBy(any())).thenReturn(hearing);
+
         final LinkedCasesUpdated event = createEvent("UNLINK");
         when(envelope.payload()).thenReturn(event);
 
@@ -138,6 +143,22 @@ public class LinkOrUnlinkCasesEventListenerTest {
         assertThat(linkedCasesNode.size(), equalTo(1));
         assertThat(linkedCasesNode.get(0).get("caseId").textValue(), equalTo(CASE_LINKED2.toString()));
         assertThat(linkedCasesNode.get(0).get("caseUrn").textValue(), equalTo(CASE_LINKED_URN2));
+    }
+
+    @Test
+    public void shouldUpdateUnlinkedCasesIfThereIsNoHearing() throws Exception {
+
+
+        final LinkedCasesUpdated event = createEvent("UNLINK");
+        when(envelope.payload()).thenReturn(event);
+        when(hearingRepository.findBy(any())).thenReturn(null);
+
+        linkOrUnlinkCasesEventListener.handleLinkedCasesUpdated(envelope);
+
+        verify(properties, never()).replace(any(), argumentCaptor.capture());
+        verify(hearingRepository, never()).save(any());
+        verify(hearingSearchSyncService, never()).sync(any());
+
     }
 
     private LinkedCasesUpdated createEvent(final String linkActionType){

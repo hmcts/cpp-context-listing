@@ -97,6 +97,7 @@ public class HearingJdbcRepository {
                 "(h.end_date between ? and ? ) or " +
                 "(h.start_date <=  ? and h.end_date >=  ?)  " +
                 ") " +
+                " group by  h.id " +
                 " order by h.start_date, h.week_commencing_start_date, h.court_centre_id, h.id ) as distinct_hearings OFFSET (?) ROWS FETCH NEXT (?) ROWS ONLY";
 
         try (final Connection viewstoreConnection = dataSource.getConnection(); final PreparedStatement ps = viewstoreConnection.prepareStatement(query)) {
