@@ -207,7 +207,7 @@ public class HearingIT extends AbstractIT {
     }
 
     @Test
-    void updateMultiHearingsWithAllocationAndRaisesPublicEventWithFailures() {
+    void shouldUpdateMultipleHearingsWithAllocationAndRaisesPublicEventWithFailures() {
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();

@@ -36,7 +36,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -280,7 +279,7 @@ public class HearingDaysIT extends AbstractIT {
     }
 
     @Test
-    public void testHearingDaysCorrectedWithCourtSchedule()  {
+    public void shouldUpdateHearingDaysWithCourtSchedule()  {
         courtCentreId = randomUUID();
         final HearingsData hearingsData = HearingsData.singleHearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData) ;
