@@ -3,7 +3,7 @@
     <parent>
         <artifactId>listing-viewstore</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <version>17.0.47-cct-1981-release-SNAPSHOT</version>
+        <version>17.0.65-cct-1981-release-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
