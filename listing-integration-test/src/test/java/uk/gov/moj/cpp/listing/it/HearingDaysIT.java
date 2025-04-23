@@ -278,21 +278,6 @@ public class HearingDaysIT extends AbstractIT {
         assertThat(message.get("hearingDays[0].listingSequence"), is(0));
     }
 
-    @Test
-    public void shouldUpdateHearingDaysWithCourtSchedule()  {
-        courtCentreId = randomUUID();
-        final HearingsData hearingsData = HearingsData.singleHearingsDataWithAllocationDataAndJudiciary();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData) ;
-        listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-        final Map<String, String> courtRoomSchedules = new LinkedHashMap<>() {{
-            put("2020-05-21", "8e837de0-743a-4a2c-9db3-b2e678c48729");
-            put(LocalDate.now().toString(), "8e837de0-743a-4a2c-9db3-b2e678c48729");
-        }};
-        stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtRoomSchedules, courtCentreId.toString());
-        listCourtHearingSteps.verifyHearingDayCourtScheduledUpdated(courtRoomSchedules.values().toArray(new String[0]));
-    }
-
     private Matcher[] getAllocatedMatchers(final com.jayway.jsonpath.JsonPath hearingIdFilter) {
         return new Matcher[]{withJsonPath(hearingIdFilter),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].hearingDate", hasItem(startDate.toString())),

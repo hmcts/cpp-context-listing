@@ -9,7 +9,6 @@ import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static uk.gov.justice.listing.events.PublicListingNewDefendantAddedForCourtProceedings.publicListingNewDefendantAddedForCourtProceedings;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
@@ -105,7 +104,6 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
 @SuppressWarnings("squid:S2629")
@@ -194,9 +192,6 @@ public class ListingEventProcessor {
     private static final String COMMAND_REMOVE_PARTIALLY_MERGED_OFFENCES = "listing.command.remove-partially-merged-offences-from-original-hearing";
     private static final String APPLICATION_ID = "applicationId";
     private static final String HEARING_ID = "hearingId";
-    private static final String HEARING_DATE = "hearingDate";
-    private static final String COURT_SCHEDULE_ID = "courtScheduleId";
-    private static final String HEARING_DAY_COURT_SCHEDULES = "hearingDayCourtSchedules";
     private static final String HEARING_ID_TO_MARK = "hearingIdToMarkAsDeleted";
     private static final String IS_VACATED = "isVacated";
     private static final String ALLOCATED = "allocated";
@@ -458,58 +453,12 @@ public class ListingEventProcessor {
 
         logger.debug("HearingConfirmed confirmedHearing used for slot update: {}", hearingConfirmed.getConfirmedHearing());
 
-        final Optional<List<SlotDetail>> slotDetails =
-                updateSlotAndSendChangeJudiciaryForHearingsIfJudiciariesPresent(
-                        envelope,
-                        hearingConfirmed,
-                        isSlotUpdated,
-                        isForAdjournmentHearing,
-                        hearingDays,
-                        hearingAllocatedForListing.getJurisdictionType(),
-                        hearingAllocatedForListing.getJudiciary());
-        if (slotDetails.isPresent() && !slotDetails.get().isEmpty()) {
-            updateHearingDaysFromSlot(hearingId, hearingDays, slotDetails.get(), envelope);
-        }
+        updateSlotAndSendChangeJudiciaryForHearingsIfJudiciariesPresent(envelope, hearingConfirmed, isSlotUpdated, isForAdjournmentHearing, hearingDays, hearingAllocatedForListing.getJurisdictionType(), hearingAllocatedForListing.getJudiciary());
 
         publishHearingConfirmedPublicEvent(envelope, hearingConfirmed);
         sendChangeNextHearingDayIfHearingIsSeeded(envelope, prosecutionCaseDefendantOffenceIds, hearingId);
         publishHearingChangesSavedPublicEvent(envelope, hearingAllocatedForListing.getHearingId());
 
-    }
-
-    private void updateHearingDaysFromSlot(UUID hearingId,
-                                           List<HearingDay> hearingDays,
-                                           List<SlotDetail> slotDetails, JsonEnvelope envelope) {
-        final JsonArrayBuilder hearingDaysJsonArrBuilder = createArrayBuilder();
-        hearingDays.forEach(hearingDay -> {
-            if (isNull(hearingDay.getCourtScheduleId())) {
-                final SlotDetail hearingDaySlot = findHearingSlotDetail(slotDetails, hearingDay);
-                if (nonNull(hearingDaySlot) && isNotBlank(hearingDaySlot.getCourtScheduleId())) {
-                    hearingDaysJsonArrBuilder.add(
-                            createObjectBuilder()
-                                    .add(HEARING_DATE, hearingDay.getHearingDate().toString())
-                                    .add(COURT_SCHEDULE_ID, hearingDaySlot.getCourtScheduleId())
-                                    .build());
-                }
-            }
-        });
-        final JsonArray hearingDaysJsonArr = hearingDaysJsonArrBuilder.build();
-        if (!hearingDaysJsonArr.isEmpty()) {
-            final JsonObjectBuilder commandJsonObjBuilder = createObjectBuilder();
-            commandJsonObjBuilder.add(HEARING_ID, hearingId.toString())
-                                 .add(HEARING_DAY_COURT_SCHEDULES, hearingDaysJsonArr);
-            sender.send(envelopeFrom(
-                    metadataFrom(envelope.metadata()).withName(COMMAND_UPDATE_HEARING_DAY_COURT_SCHEDULE),
-                    commandJsonObjBuilder.build()));
-        }
-    }
-
-    private static SlotDetail findHearingSlotDetail(final List<SlotDetail> slotDetails, final HearingDay hearingDay) {
-        final Optional<SlotDetail> hearingDaySlotOpt =
-                slotDetails.stream()
-                           .filter(sd -> StringUtils.equals(sd.getSessionDate(), hearingDay.getHearingDate().toString()))
-                           .findFirst();
-        return hearingDaySlotOpt.orElse(null);
     }
 
     @Handles(PRIVATE_EVENT_ALLOCATED_HEARING_UPDATED_FOR_LISTING)
