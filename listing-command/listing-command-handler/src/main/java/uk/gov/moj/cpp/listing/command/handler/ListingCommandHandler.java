@@ -575,7 +575,7 @@ public class ListingCommandHandler {
 
         final uk.gov.justice.listing.events.Hearing actualStoredHearing = SerializationUtils.clone(storedHearing);
 
-        final boolean hasVideoLink = nonNull(updateHearingForListing.getHasVideoLink());
+        final boolean hasVideoLink = nonNull(updateHearingForListing.getHasVideoLink()) ? updateHearingForListing.getHasVideoLink() : false;
         final String publicListNote = updateHearingForListing.getPublicListNote();
 
         final List<NonDefaultDay> nonDefaultDays = generateNewNonDefaultDays(command, updateHearingForListing, nonSittingDays, endDate, startDate,

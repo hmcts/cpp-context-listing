@@ -44,7 +44,7 @@ public class ReferenceDataCache {
 
     private Map<UUID, HearingType> hearingTypesMapCache = new ConcurrentHashMap<>() ;
 
-    private Map<UUID, List<JsonObject>> cpCourtRoomCache = new HashMap<>();
+    private Map<UUID, List<JsonObject>> cpCourtRoomCache = new ConcurrentHashMap<>();
 
     private Map<String, OrganisationUnit> organisationUnitMapCache = new HashMap<>();
 
