@@ -1410,7 +1410,7 @@ public class Hearing implements Aggregate {
                     .filter(offence -> isNotSeededOffenceBySeedId(seedingHearingId, offence))
                     .findFirst();
 
-            hasMultipleCase = currentHearingEventState.getListedCases().stream().map(c->c.getId()).collect(Collectors.toSet()).size() > 1;
+            hasMultipleCase = ofNullable(currentHearingEventState.getListedCases()).orElse(emptyList()).stream().map(c->c.getId()).collect(Collectors.toSet()).size() > 1;
         }
 
 
@@ -2493,7 +2493,7 @@ public class Hearing implements Aggregate {
 
     private void onStartDateRemovedForHearing(final StartDateRemovedForHearing event) {
         this.startDate = null;
-        final boolean unscheduled = Optional.ofNullable(event.getUnscheduled()).orElse(false);
+        final boolean unscheduled = ofNullable(event.getUnscheduled()).orElse(false);
         this.currentHearingEventState = uk.gov.justice.listing.events.Hearing.hearing().withValuesFrom(this.currentHearingEventState)
                 .withUnscheduled(unscheduled)
                 .build();
