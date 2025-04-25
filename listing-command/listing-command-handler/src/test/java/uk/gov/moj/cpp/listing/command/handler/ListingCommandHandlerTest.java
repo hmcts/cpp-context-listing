@@ -975,6 +975,7 @@ public class ListingCommandHandlerTest {
         verify(hearing, times(2)).assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS1, multiDayNonDefaultDay,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre);
         verify(hearing, times(2)).removeWeekCommencingDates(HEARING_ID_1);
+        verify(eventSource, times(3)).getStreamById(HEARING_ID_1);
     }
 
     @Test

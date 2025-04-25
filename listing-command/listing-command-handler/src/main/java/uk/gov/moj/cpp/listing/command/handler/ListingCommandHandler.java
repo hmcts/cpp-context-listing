@@ -536,26 +536,28 @@ public class ListingCommandHandler {
     @Handles("listing.command.update-hearings-for-listing-enriched")
     public void updateHearingsForListing(final JsonEnvelope command) throws EventStreamException {
         LOGGER.info("listing.command.handler.update-hearings-for-listing-enriched' received with payload {}", command.toObfuscatedDebugString());
-        final Set<UUID> failedHearingIds = new LinkedHashSet<>();
-        command.payloadAsJsonObject().getJsonArray("updateHearingsForListing").forEach(
-                enrichedHearingJsonObj -> {
-                    final UpdateHearingForListingEnriched updateHearingForListingEnriched =
-                            jsonObjectConverter.convert((JsonObject) enrichedHearingJsonObj, UpdateHearingForListingEnriched.class);
-                    try {
-                        updateHearingForListingEnriched(command, updateHearingForListingEnriched);
-                    } catch (Exception e) {
-                        final UUID hearingId = updateHearingForListingEnriched.getUpdateHearingForListing().getHearingId();
-                        failedHearingIds.add(hearingId);
-                        String msg = format("Failed to update hearingId=%s", hearingId);
-                        LOGGER.error(msg, e);
-                    }
-                });
-
-        final UUID streamId = randomUUID();
-        final EventStream eventStream = eventSource.getStreamById(streamId);
-        final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
-        final Stream<Object> events = hearingAggregate.hearingsUpdateCompleted(failedHearingIds);
-        appendEventsToStream(command, eventStream, events);
+        final JsonArray updateHearingsForListingJsonArr = command.payloadAsJsonObject().getJsonArray("updateHearingsForListing");
+        if (!updateHearingsForListingJsonArr.isEmpty()) {
+            final Set<UUID> failedHearingIds = new LinkedHashSet<>();
+            UUID lastHearingId = null;
+            for (JsonValue enrichedHearingJsonVal : updateHearingsForListingJsonArr) {
+                final UpdateHearingForListingEnriched currUpdateHearingForListingEnriched =
+                        jsonObjectConverter.convert((JsonObject) enrichedHearingJsonVal, UpdateHearingForListingEnriched.class);
+                lastHearingId = currUpdateHearingForListingEnriched.getUpdateHearingForListing().getHearingId();
+                try {
+                    updateHearingForListingEnriched(command, currUpdateHearingForListingEnriched);
+                } catch (Exception e) {
+                    final UUID hearingId = currUpdateHearingForListingEnriched.getUpdateHearingForListing().getHearingId();
+                    failedHearingIds.add(hearingId);
+                    String msg = format("Failed to update hearingId=%s", hearingId);
+                    LOGGER.error(msg, e);
+                }
+            }
+            final EventStream eventStream = eventSource.getStreamById(lastHearingId);
+            final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
+            final Stream<Object> events = hearingAggregate.hearingsUpdateCompleted(failedHearingIds);
+            appendEventsToStream(command, eventStream, events);
+        }
     }
 
     @SuppressWarnings({"squid:S3776"})
