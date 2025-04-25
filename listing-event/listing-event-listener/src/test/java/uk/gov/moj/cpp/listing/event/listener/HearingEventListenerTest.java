@@ -9,8 +9,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -137,6 +136,7 @@ public class HearingEventListenerTest {
         given(envelope.payload()).willReturn(hearingAllocatedV2);
         given(hearingAllocatedV2.getHearingId()).willReturn(HEARING_ID);
         given(hearingAllocatedV2.getCourtRoomId()).willReturn(COURT_ROOM_ID);
+        given(hearingAllocatedV2.getSendNotificationToParties()).willReturn(Boolean.TRUE);
 
         when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
         when(hearing.getProperties()).thenReturn(properties);
@@ -145,6 +145,27 @@ public class HearingEventListenerTest {
 
         verify(properties).put(eq("allocated"), eq(true));
         verify(properties).put(eq("courtRoomId"), eq(COURT_ROOM_ID.toString()));
+        verify(properties).put(eq("sendNotificationToParties"), eq(true));
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldAllocateHearingForListingV2WhenSendNotificationToPartiesIsNull() {
+        final Envelope<HearingAllocatedForListingV2> envelope = (Envelope<HearingAllocatedForListingV2>) mock(Envelope.class);
+
+        given(envelope.payload()).willReturn(hearingAllocatedV2);
+        given(hearingAllocatedV2.getHearingId()).willReturn(HEARING_ID);
+        given(hearingAllocatedV2.getCourtRoomId()).willReturn(COURT_ROOM_ID);
+        given(hearingAllocatedV2.getSendNotificationToParties()).willReturn(null);
+
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+
+        hearingEventListener.hearingAllocatedV2(envelope);
+
+        verify(properties).put(eq("allocated"), eq(true));
+        verify(properties).put(eq("courtRoomId"), eq(COURT_ROOM_ID.toString()));
+
         verify(hearingRepository).save(hearing);
     }
 
