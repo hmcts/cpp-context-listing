@@ -387,6 +387,7 @@ public class ListingCommandHandlerTest {
     private static final String HEARING_DATE_1 = "2012-12-11";
     private static final String HEARING_DATE_2 = "2012-12-12";
     private static final Boolean HAS_VIDEO_LINK = true;
+    private static final Boolean HAS_NO_VIDEO_LINK = false;
     private static final String PUBLIC_LIST_NOTE = "Public List Note";
     private static final UUID COURT_APPLICATION_ID = randomUUID();
     private static final String COURT_APPLICATION_TYPE = STRING.next();
@@ -1171,7 +1172,7 @@ public class ListingCommandHandlerTest {
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre);
         verify(hearing).removeWeekCommencingDates(HEARING_ID_1);
         verify(hearing).assignPublicListNote(PUBLIC_LIST_NOTE, HEARING_ID_1);
-        verify(hearing).assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1);
+        verify(hearing).assignVideoLink(HAS_NO_VIDEO_LINK, HEARING_ID_1);
         verify(courtCentreFactory).getOrganisationUnit(COURT_CENTRE_ID, commandEnvelope);
         verify(courtSchedulerServiceAdapter).getJudicialRoles(anyString(), anyString(), any(), anyString());
         verify(hearing, never()).raiseUpdateHearingInStagingHmi(any(Optional.class));
@@ -1245,7 +1246,7 @@ public class ListingCommandHandlerTest {
         when(hearing.removeWeekCommencingDates(HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.getCurrentHearingEventState()).thenReturn(getSampleStoredHearing());
         when(hearing.assignPublicListNote(PUBLIC_LIST_NOTE, HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignVideoLink(HAS_NO_VIDEO_LINK, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hmiService.isHmiEnabled(any())).thenReturn(true);
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
@@ -1263,7 +1264,7 @@ public class ListingCommandHandlerTest {
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre);
         verify(hearing).removeWeekCommencingDates(HEARING_ID_1);
         verify(hearing).assignPublicListNote(PUBLIC_LIST_NOTE, HEARING_ID_1);
-        verify(hearing).assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1);
+        verify(hearing).assignVideoLink(HAS_NO_VIDEO_LINK, HEARING_ID_1);
         verify(courtCentreFactory).getOrganisationUnit(COURT_CENTRE_ID, commandEnvelope);
         verify(hearing).raiseUpdateHearingInStagingHmi(any(Optional.class));
         verify(courtSchedulerServiceAdapter, never()).getPanelInfo(any(Optional.class), any(LocalDate.class), any(LocalDate.class), any(UUID.class), anyString());
@@ -3239,7 +3240,7 @@ public class ListingCommandHandlerTest {
                 .replace("DEFAULT_START_TIME", DEFAULT_START_TIME)
                 .replace("JURISDICTION_TYPE", JurisdictionType.MAGISTRATES.toString())
                 .replace("AUTHORITY_ID", AUTHORITY_ID.toString())
-                .replace("\"HAS_VIDEO_LINK\"", HAS_VIDEO_LINK.toString())
+                .replace("\"HAS_VIDEO_LINK\"", HAS_NO_VIDEO_LINK.toString())
                 .replace("PUBLIC_LIST_NOTE", PUBLIC_LIST_NOTE)
                 .replace("SLOT_SESSION", SLOT_SESSION)
                 .replace("SESSION_1", SLOT_SESSION_PM)

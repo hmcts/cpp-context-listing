@@ -53,6 +53,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.gov.moj.cpp.listing.persistence.repository.JsonNodeUpdater;
 
 @SuppressWarnings({"squid:S3655", "squid:S1067"})
 @ServiceComponent(Component.EVENT_LISTENER)
@@ -67,6 +68,7 @@ public class HearingEventListener {
     private static final String FIELD_IS_VACATED_TRIAL = "isVacatedTrial";
     private static final String FIELD_ALLOCATED = "allocated";
     private static final String FIELD_COURT_ROOM_ID = "courtRoomId";
+    public static final String SEND_NOTIFICATION_TO_PARTIES = "sendNotificationToParties";
     private final JsonEntityFinder jsonEntityFinder;
     private final HearingRepository hearingRepository;
     private final ObjectMapper mapper;
@@ -132,7 +134,19 @@ public class HearingEventListener {
     public void hearingAllocatedV2(final Envelope<HearingAllocatedForListingV2> event) {
         final HearingAllocatedForListingV2 hearingAllocatedForListing = event.payload();
         final UUID hearingId = hearingAllocatedForListing.getHearingId();
-        jsonEntityFinder.find(hearingId).put(FIELD_ALLOCATED, ALLOCATED).put(FIELD_COURT_ROOM_ID,hearingAllocatedForListing.getCourtRoomId()).remove("unscheduled").save();
+        final Boolean notifyParties = hearingAllocatedForListing.getSendNotificationToParties();
+
+        JsonNodeUpdater builder = jsonEntityFinder.find(hearingId)
+                .put(FIELD_ALLOCATED, ALLOCATED)
+                .put(FIELD_COURT_ROOM_ID, hearingAllocatedForListing.getCourtRoomId())
+                .remove("unscheduled");
+        if (notifyParties != null) {
+            builder.put(SEND_NOTIFICATION_TO_PARTIES, notifyParties);
+        }
+
+        builder.save();
+
+
         LOGGER.info("'listing.events.hearing-allocated-for-listing-v2' received hearingId {}", hearingId);
         hearingSearchSyncService.sync(hearingId);
     }

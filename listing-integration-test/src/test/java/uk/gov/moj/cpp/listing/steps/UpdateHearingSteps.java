@@ -35,14 +35,6 @@ import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderF
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
-import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
-import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
-import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
-import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
-import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
-import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
-import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
-import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocationWithNonDefaultDays;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
@@ -53,8 +45,6 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreHmiListingEnabled;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreHmiListingEnabledWithoutCourtRoomSelection;
-import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentres;
-import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentres;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentres;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtWithHmiListingEnabledCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
@@ -831,16 +821,15 @@ public class UpdateHearingSteps extends AbstractIT {
         assertNull(jsonResponse.get("confirmedHearing.judiciary"));
     }
 
+    public void verifyPublicEventHearingUpdated() {
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingUpdated);
+        verifyHearingPublicDetails(jsonResponse, "updatedHearing");
+    }
+
     public void verifyPublicEventHearingsUpdateCompleted() {
         final JsonPath jsonResponse = retrieveMessage(publicEventHearingsUpdateCompleted);
 
         assertThat(jsonResponse.getString("failedHearingIds").split(",").length, is(2));
-    }
-
-
-    public void verifyPublicEventHearingUpdated() {
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingUpdated);
-        verifyHearingPublicDetails(jsonResponse, "updatedHearing");
     }
 
     public void verifyHearingRequestedForListingInPublicMQ() {
