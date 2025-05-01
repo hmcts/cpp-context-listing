@@ -131,13 +131,7 @@ public class HearingQueryView {
     private static final String RETURN_ALL_HEARINGS = "returnAllHearings";
     private static final String PROSECUTION_CASES = "prosecutionCases";
     private static final String URN = "urn";
-    private static final String BUSINESS_TYPE = "businessType";
-    private static final String COURT_SESSION = "courtSession";
-    private static final String HEARING_IDS_SEARCH_PARAM = "hearingIds";
-    private static final String COURT_CALENDAR_HEARINGS = "listing.search.hearings.court-calendar-hearings";
 
-//    private static final String PAGE_SIZE = "pageSize";
-//    private static final String PAGE_NUMBER = "pageNumber";
 
     @Inject
     private HearingRepository repository;
@@ -740,13 +734,4 @@ public class HearingQueryView {
         return listedCases;
     }
 
-    @Handles(COURT_CALENDAR_HEARINGS)
-    public JsonEnvelope searchCCHearings(final JsonEnvelope envelope) {
-        final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder();
-        final JsonArrayBuilder jsonArrayBuilder = createArrayBuilder();
-//        <<To-do>>
-        return JsonEnvelope.envelopeFrom(
-                envelope.metadata(),
-                jsonObjectBuilder.build());
-    }
 }
