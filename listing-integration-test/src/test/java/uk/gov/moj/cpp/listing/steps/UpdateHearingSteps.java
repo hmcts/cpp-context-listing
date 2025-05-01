@@ -622,7 +622,6 @@ public class UpdateHearingSteps extends AbstractIT {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
-
     public void whenMultiHearingsUpdatedForListing(final UpdatedHearingData updatedHearingDataForUnallocation1) {
         final CourtCentreData courtCenter1 = new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court");
         final CourtCentreData courtCenter2 = new CourtCentreData(updatedHearingDataForUnallocation1.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court");
