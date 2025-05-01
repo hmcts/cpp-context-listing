@@ -6,7 +6,11 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static java.util.Arrays.stream;
 import static java.util.UUID.randomUUID;
+import static javax.json.Json.createArrayBuilder;
+import static javax.json.Json.createObjectBuilder;
+import static javax.json.Json.createReader;
 import static org.apache.http.HttpStatus.SC_OK;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 
@@ -14,7 +18,13 @@ import uk.gov.justice.service.wiremock.testutil.InternalEndpointMockUtils;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 
 import java.time.LocalTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
 
 
 public class ReferenceDataStub {
@@ -92,6 +102,25 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE)
                         .withBody(payload)));
+    }
+
+    public static void stubGetReferenceDataCourtCentres(CourtCentreData... courtCenters) {
+        stubPingForReferenceDataService();
+        final JsonArrayBuilder jsonArrBuilder = createArrayBuilder();
+        stream(courtCenters).toList().forEach( cc -> {
+                    String payload = getPayload("stub-data/referencedata.query.courtroom.json")
+                            .replace("COURT_CENTRE_ID", cc.getCourtCentreId().toString())
+                            .replace("DEFAULT_START_TIME", cc.getDefaultStartTime().toString())
+                            .replace("DEFAULT_DURATION_HOURS_MINS", cc.getDefaultDurationHoursMins())
+                            .replace("COURT_ROOM_ID", cc.getCourtRoomId() != null ? cc.getCourtRoomId().toString() : randomUUID().toString());
+                    jsonArrBuilder.add(createReader(new java.io.StringReader(payload)).readObject());
+                });
+        final JsonObject rootJsonObj = createObjectBuilder().add("organisationunits", jsonArrBuilder.build()).build();
+        stubFor(get(urlPathMatching(REFERENCE_DATA_GET_COURTROOM_URL))
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader("Content-Type", REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE)
+                        .withBody(rootJsonObj.toString())));
     }
 
     public static void stubGetReferenceDataCourtCentreHmiListingEnabledWithoutCourtRoomSelection(final CourtCentreData courtReferenceData) {

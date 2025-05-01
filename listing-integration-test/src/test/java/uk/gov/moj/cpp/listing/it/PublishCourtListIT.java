@@ -65,7 +65,6 @@ public class PublishCourtListIT extends AbstractIT {
         viewStoreCleaner.cleanViewStoreTables();
     }
 
-    @Disabled("flaky test, failing in pipeline, but passing locally")
     @Test
     public void shouldPublishCourtListWithNoHearings() throws Exception {
 
@@ -88,7 +87,7 @@ public class PublishCourtListIT extends AbstractIT {
         final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(null, publishCourtListCommandPayload);
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
-        publishCourtListSteps.verifyCourtListPublishStatus("COURT_LIST_REQUESTED", "true");
+        publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "true");
         publishCourtListSteps.verifySentPublishedCourtListHasNoHearings();
     }
 

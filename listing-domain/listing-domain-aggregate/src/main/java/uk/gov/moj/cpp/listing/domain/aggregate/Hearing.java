@@ -89,6 +89,8 @@ import uk.gov.justice.listing.events.EndDateRemovedFromHearing;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
 import uk.gov.justice.listing.events.HearingChangesSaved;
+import uk.gov.justice.listing.events.HearingDayCourtSchedule;
+import uk.gov.justice.listing.events.HearingDayCourtScheduleUpdated;
 import uk.gov.justice.listing.events.HearingDaysCancelled;
 import uk.gov.justice.listing.events.HearingDaysChangedForHearing;
 import uk.gov.justice.listing.events.HearingDaysSequenced;
@@ -105,6 +107,7 @@ import uk.gov.justice.listing.events.HearingRequestedForListing;
 import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
+import uk.gov.justice.listing.events.HearingsUpdateCompleted;
 import uk.gov.justice.listing.events.JudicialRoleType;
 import uk.gov.justice.listing.events.JudiciaryAssignedToHearing;
 import uk.gov.justice.listing.events.JudiciaryChangedForHearing;
@@ -309,6 +312,7 @@ public class Hearing implements Aggregate {
                 when(AllocatedHearingExtendedForListingV2.class).apply(this::onAllocatedHearingExtendedForListingV2),
                 when(AllocatedHearingExtendedForListing.class).apply(this::onAllocatedHearingExtendedForListing),
                 when(CaseRemovedFromGroupCases.class).apply(this::onCaseRemovedFromGroupCases),
+                when(HearingsUpdateCompleted.class).apply(this::onHearingsUpdateCompleted),
                 otherwiseDoNothing());
     }
 
@@ -1907,6 +1911,13 @@ public class Hearing implements Aggregate {
                     .build()));
     }
 
+    public Stream<Object> hearingsUpdateCompleted(final Set<UUID> failedHearingIds) {
+        final List<UUID> failedIdList = new ArrayList<>(failedHearingIds);
+        return apply(Stream.of(HearingsUpdateCompleted
+                .hearingsUpdateCompleted()
+                .withFailedHearingIds(failedIdList).build()));
+    }
+
     private Stream<Object> onUnallocationEvents(final Optional<String> source) {
         final Stream<Object> appliedBusinessRuleEvents = apply(onUnallocationBusinessRules());
         final HearingUnallocatedForListing unallocateEvent = hearingUnallocatedForListingEvent(source);
@@ -2183,7 +2194,7 @@ public class Hearing implements Aggregate {
                 pcDefendantOffenceIds.getDefendants().stream()
                         .filter(defendantOffenceIds -> defendantOffenceIds.getId().equals(defendantId))
                         .findFirst()
-        ).get();
+        ).orElse(empty());
     }
 
     private void onNewDefendantAddedForCourtProceedings(final NewDefendantAddedForCourtProceedings event) {
@@ -2599,6 +2610,10 @@ public class Hearing implements Aggregate {
     }
 
     private void onAllocatedHearingUpdatedForListingV2(final AllocatedHearingUpdatedForListingV2 event) {
+        // Do nothing
+    }
+
+    private void onHearingsUpdateCompleted(final HearingsUpdateCompleted event) {
         // Do nothing
     }
 
@@ -3063,6 +3078,14 @@ public class Hearing implements Aggregate {
         return apply(Stream.of(HearingDaysWithoutCourtCentreCorrected.hearingDaysWithoutCourtCentreCorrected()
                 .withId(hearingId)
                 .withHearingDays(hearingDays)
+                .build()));
+    }
+
+    public Stream<Object> raiseHearingDayCourtSchedulesUpdated(UUID hearingId,
+                                                               List<HearingDayCourtSchedule> hearingDayCourtSchedules) {
+        return apply(Stream.of(HearingDayCourtScheduleUpdated.hearingDayCourtScheduleUpdated()
+                .withHearingId(hearingId)
+                .withHearingDayCourtSchedules(hearingDayCourtSchedules)
                 .build()));
     }
 

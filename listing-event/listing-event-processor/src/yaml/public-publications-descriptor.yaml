@@ -86,6 +86,9 @@ subscriptions_descriptor:
         - name: public.listing.hearing-days-sequenced
           schema_uri: http://justice.gov.uk/listing/courts/public.listing.hearing-days-sequenced.json
 
+        - name: public.listing.hearings-update-completed
+          schema_uri: http://justice.gov.uk/listing/courts/public.listing.hearings-update-completed.json
+
         - name: public.listing.hearing-listed
           schema_uri: http://justice.gov.uk/listing/courts/public.listing.hearing-listed.json
 

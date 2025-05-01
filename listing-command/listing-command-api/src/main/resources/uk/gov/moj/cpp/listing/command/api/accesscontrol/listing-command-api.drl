@@ -77,6 +77,15 @@ rule "Command - API - Action - listing.command.update-hearing-for-listing"
     $outcome.setSuccess(true);
 end
 
+rule "Command - API - Action - listing.command.update-hearings-for-listing"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.update-hearings-for-listing");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
 rule "Command - API - Action - listing.command.vacate-trial"
   when
     $outcome: Outcome();
@@ -179,6 +188,15 @@ rule "Command - API - Action - listing.correct-hearing-days-without-court-centre
   when
     $outcome: Outcome();
     $action: Action(name == "listing.correct-hearing-days-without-court-centre");
+    eval(userAndGroupProvider.isSystemUser($action))
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.update-hearing-day-court-schedule"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.update-hearing-day-court-schedule");
     eval(userAndGroupProvider.isSystemUser($action))
   then
     $outcome.setSuccess(true);

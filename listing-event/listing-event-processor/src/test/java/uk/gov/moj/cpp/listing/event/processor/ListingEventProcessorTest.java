@@ -46,6 +46,7 @@ import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMA
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_CASE_EJECTED;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_CASE_OR_APPLICATION_EJECTED;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS;
+import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_UPDATE_HEARING_DAY_COURT_SCHEDULE;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_UPDATE_CASE_DEFENDANT_DETAILS;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_UPDATE_CASE_DEFENDANT_OFFENCES;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_UPDATE_COURT_APPLICATION;
@@ -148,6 +149,7 @@ import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFact
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.event.processor.azure.builder.SlotDetailBuilder;
+import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
 import uk.gov.moj.cpp.listing.event.processor.command.AddCourtApplicationToHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.AddDefendantsForCourtProceedingsCommand;
 import uk.gov.moj.cpp.listing.event.processor.command.AddDefendantsForCourtProceedingsCommandCollectionConverter;

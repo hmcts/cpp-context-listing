@@ -35,7 +35,7 @@ protocols: [ HTTP, HTTPS ]
       (mapping):
         requestType: application/vnd.listing.command.change-judiciary-for-hearings+json
         name: listing.command.change-judiciary-for-hearings
-        (mapping):
+      (mapping):
         requestType: application/vnd.listing.command.restrict-court-list+json
         name: listing.command.restrict-court-list
       ...
@@ -51,6 +51,23 @@ protocols: [ HTTP, HTTPS ]
       202:
         description: Request accepted
 
+/hearings/update-hearings:
+  post:
+    description: |
+      Update multiple hearings in a batch and raise a single public event
+      ...
+      (mapping):
+        requestType: application/vnd.listing.command.update-hearings-for-listing+json
+        name: listing.command.update-hearings-for-listing      
+      ...
+    body:
+      application/vnd.listing.command.update-hearings-for-listing+json:
+        example: !include json/listing.command.update-hearings-for-listing.json
+        schema: !include json/schema/listing.command.update-hearings-for-listing.json
+
+    responses:
+      202:
+        description: Request accepted
 
 
 /hearings/{hearingId}:
@@ -268,6 +285,23 @@ protocols: [ HTTP, HTTPS ]
         202:
           description: Request accepted
 
+/update-hearing-days-court-schedule:
+   post:
+      description: |
+        Update Hearing Day Court Schedule ID if and only if it's not already present
+        ...
+        (mapping):
+          requestType: application/vnd.listing.update-hearing-day-court-schedule+json
+          name: listing.update-hearing-day-court-schedule
+        ...
+      body:
+        application/vnd.listing.update-hearing-day-court-schedule+json:
+            schema: !include json/schema/listing.update-hearing-day-court-schedule.json
+            example: !include json/listing.update-hearing-day-court-schedule.json
+
+      responses:
+        202:
+          description: Request accepted
 
 /delete-hearing/{hearingId}:
     post:

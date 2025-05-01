@@ -147,7 +147,6 @@ public class ListNextHearingSteps extends AbstractIT {
         publicMessageConsumerHearingAddedToCase =publicEvents.createPublicConsumer("public.listing.hearing-added-to-case");
         publicMessageConsumerOffencesMovedToHearing = publicEvents.createPublicConsumer("public.listing.offences-moved-to-next-hearing");
         publicEventAdhocCreated =  publicEvents.createPublicProducer();
-
     }
 
     public void whenNextHearingSubmittedForListing(final HearingsData hearingsData) {

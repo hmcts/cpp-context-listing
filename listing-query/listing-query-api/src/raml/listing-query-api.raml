@@ -184,6 +184,10 @@ protocols: [ HTTP, HTTPS ]
           description: Number of records to be displayed per page
           type: integer
           required: false
+        useMaxPageSize:
+          description: WARNING use only if you know what you are doing. This is a flag to specify that we want to load all possible hearings from the backend during pagination. The listing.query.rangeSearch.maxPageSize is a JNDI variable that control the value. The default value is 4000.
+          type: boolean
+          required: false
         pageNumber:
           description: currentPageNumber details
           type: integer

@@ -197,6 +197,9 @@ subscriptions_descriptor:
         - name: listing.events.judiciary-changed-for-hearings-status
           schema_uri: http://justice.gov.uk/listing/events/listing.events.judiciary-changed-for-hearings-status.json
 
+        - name: listing.events.hearings-update-completed
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearings-update-completed.json
+
       event_source_name: listing
 
     - name: public event subscription

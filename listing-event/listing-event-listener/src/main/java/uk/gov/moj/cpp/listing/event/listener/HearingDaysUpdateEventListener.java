@@ -1,10 +1,12 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 import static utils.HearingDayUtil.getNotCancelledHearingDays;
 
 import uk.gov.justice.listing.events.HearingDay;
+import uk.gov.justice.listing.events.HearingDayCourtScheduleUpdated;
 import uk.gov.justice.listing.events.HearingDaysWithoutCourtCentreCorrected;
 import uk.gov.justice.listing.events.NonDefaultDay;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
@@ -17,8 +19,11 @@ import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.io.StringReader;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -31,7 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
 
 @ServiceComponent(Component.EVENT_LISTENER)
-public class HearingDaysCorrectedEventListener {
+public class HearingDaysUpdateEventListener {
 
     private static final String HEARING_DAYS = "hearingDays";
     private static final String NON_DEFAULT_DAYS = "nonDefaultDays";
@@ -57,11 +62,7 @@ public class HearingDaysCorrectedEventListener {
         final UUID courtRoomId = hearingDays.get(0).getCourtRoomId();
         List<NonDefaultDay> nonDefaultDays = new ArrayList<>();
 
-        final Hearing dbHearingEntity = hearingRepository.findBy(hearingId);
-
-        final JsonObject dbHearingJsonObject = jsonFromString(objectMapper.writeValueAsString(dbHearingEntity.getProperties()));
-
-        final uk.gov.justice.listing.events.Hearing dbHearing = jsonObjectToObjectConverter.convert(dbHearingJsonObject, uk.gov.justice.listing.events.Hearing.class);
+        final uk.gov.justice.listing.events.Hearing dbHearing = findHearingBy(hearingId);
 
         correctHearingDaysWithoutCourtCentre(courtCentreId, courtRoomId, dbHearing);
 
@@ -80,6 +81,70 @@ public class HearingDaysCorrectedEventListener {
                 .save();
 
         hearingSearchSyncService.sync(hearingId);
+    }
+
+    @Handles("listing.events.hearing-day-court-schedule-updated")
+    public void hearingDayCourtScheduleUpdated(Envelope<HearingDayCourtScheduleUpdated> event) throws JsonProcessingException {
+        final HearingDayCourtScheduleUpdated hearingDaysEvent = event.payload();
+        final UUID hearingId = hearingDaysEvent.getHearingId();
+        final uk.gov.justice.listing.events.Hearing existingHearing = findHearingBy(hearingId);
+        final Map<LocalDate, UUID> scheduledHearingDateMap = new HashMap<>();
+        hearingDaysEvent.getHearingDayCourtSchedules().forEach(
+                hd -> scheduledHearingDateMap.put(hd.getHearingDate(), hd.getCourtScheduleId()));
+
+        updateHearingDays(existingHearing, scheduledHearingDateMap);
+        updateNonDefaultDays(existingHearing, scheduledHearingDateMap);
+
+        using(hearingRepository)
+                .find(hearingId)
+                .remove(HEARING_DAYS)
+                .remove(NON_DEFAULT_DAYS)
+                .putObjectList(HEARING_DAYS, getNotCancelledHearingDays(existingHearing.getHearingDays()))
+                .putObjectList(NON_DEFAULT_DAYS, nonNull(existingHearing.getNonDefaultDays()) ? existingHearing.getNonDefaultDays() : emptyList())
+                .save();
+        hearingSearchSyncService.sync(hearingId);
+    }
+
+    private void updateNonDefaultDays(uk.gov.justice.listing.events.Hearing existingHearing,
+                                      Map<LocalDate, UUID> scheduledHearingDateMap) {
+        if (nonNull(existingHearing.getNonDefaultDays())) {
+            existingHearing.getNonDefaultDays().replaceAll(nd -> {
+                UUID scheduleId = scheduledHearingDateMap.get(nd.getStartTime().toLocalDate());
+                if (nd.getCourtScheduleId() == null && scheduleId != null) {
+                    return NonDefaultDay.nonDefaultDay()
+                            .withValuesFrom(nd)
+                            .withCourtScheduleId(scheduleId.toString())
+                            .build();
+                }
+                return nd;
+            });
+        }
+    }
+
+    private void updateHearingDays(uk.gov.justice.listing.events.Hearing existingHearing,
+                                   Map<LocalDate, UUID> scheduledHearingDateMap) {
+        if (nonNull(existingHearing.getHearingDays())) {
+            existingHearing.getHearingDays().replaceAll(hd -> {
+                UUID scheduleId = scheduledHearingDateMap.get(hd.getHearingDate());
+                if (hd.getCourtScheduleId() == null && scheduleId != null) {
+                    return HearingDay.hearingDay()
+                            .withValuesFrom(hd)
+                            .withCourtScheduleId(scheduleId)
+                            .build();
+                }
+                return hd;
+            });
+        }
+    }
+
+    private uk.gov.justice.listing.events.Hearing findHearingBy(final UUID hearingId) throws JsonProcessingException {
+        final Hearing existingHearingEntity = hearingRepository.findBy(hearingId);
+        final JsonObject existingHearingJsonObject =
+                jsonFromString(objectMapper.writeValueAsString(existingHearingEntity.getProperties()));
+        final uk.gov.justice.listing.events.Hearing existingHearing =
+                jsonObjectToObjectConverter.convert(existingHearingJsonObject, uk.gov.justice.listing.events.Hearing.class);
+
+        return existingHearing;
     }
 
     private void correctHearingDaysWithoutCourtCentre(final UUID courtCentreId, final UUID courtRoomId, final uk.gov.justice.listing.events.Hearing dbHearing) {

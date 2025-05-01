@@ -15,6 +15,7 @@ import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.JsonObjects;
 import uk.gov.moj.cpp.listing.common.hmi.OrganisationUnitHMICache;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
@@ -31,6 +32,7 @@ import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.dto.LinkedCase;
 import uk.gov.moj.cpp.listing.query.view.dto.ListedCase;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
+import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory;
 import uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
@@ -89,7 +91,6 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonObjects.getString;
 import static uk.gov.justice.services.messaging.JsonObjects.toJsonArray;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.valueFor;
-import static uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory.newPaginationParameter;
 import static uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria.MATCHED_DEFENDANTS;
 
 
@@ -131,6 +132,7 @@ public class HearingQueryView {
     private static final String PROSECUTION_CASES = "prosecutionCases";
     private static final String URN = "urn";
 
+
     @Inject
     private HearingRepository repository;
 
@@ -169,6 +171,12 @@ public class HearingQueryView {
 
     @Inject
     private CaseByDefendantRepository caseByDefendantRepository;
+
+    @Inject
+    private StringToJsonObjectConverter stringToJsonObjectConverter;
+
+    @Inject
+    private PaginationParameterFactory paginationParameterFactory;
 
     public static final String TYPE = "type";
 
@@ -241,7 +249,7 @@ public class HearingQueryView {
         final String typeOfListQueryParam = query.payloadAsJsonObject().getString(TYPE_OF_LIST, null);
         final String caseUrnQueryParam = query.payloadAsJsonObject().getString(CASE_URN, null);
         final String courtCentreIdQueryParam = query.payloadAsJsonObject().getString(COURT_CENTRE_IDS, null);
-        final PaginationParameter paginationParameter = newPaginationParameter(query.payloadAsJsonObject());
+        final PaginationParameter paginationParameter = paginationParameterFactory.newPaginationParameter(query.payloadAsJsonObject());
 
         LOGGER.info("listing.unscheduled.search.hearings Query params -  " +
                         "caseUrn: {}, " +
@@ -725,4 +733,5 @@ public class HearingQueryView {
         }
         return listedCases;
     }
+
 }

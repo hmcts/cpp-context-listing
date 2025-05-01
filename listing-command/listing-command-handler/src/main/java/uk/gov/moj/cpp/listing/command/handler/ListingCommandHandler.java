@@ -30,7 +30,6 @@ import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.getNextWorkin
 import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
 import static uk.gov.moj.cpp.listing.domain.utils.HmiConstants.SOURCE_HMI;
 
-import org.apache.commons.lang3.SerializationUtils;
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingListingNeeds;
@@ -93,6 +92,7 @@ import uk.gov.justice.listing.event.HearingCounselModified;
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishedCourtListStored;
+import uk.gov.justice.listing.events.HearingDayCourtSchedule;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
@@ -168,10 +168,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -186,6 +188,7 @@ import javax.ws.rs.core.Response;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -199,6 +202,7 @@ public class ListingCommandHandler {
     private static final String SUMMONS_REJECTED_RESULT_TYPE_ID = "d8837a45-8281-49b3-8349-49b423193148";
 
     public static final String HEARING_ID = "hearingId";
+    private static final String HEARING_DAY_COURT_SCHEDULES = "hearingDayCourtSchedules";
     private static final String PROSECUTION_CASE = "prosecutionCase";
     private static final ZoneId UTC = ZoneId.of("UTC");
     public static final int PAGE_NUMBER_FOR_SINGLE_SLOT = 1;
@@ -523,10 +527,42 @@ public class ListingCommandHandler {
     @SuppressWarnings({"squid:S3776", "squid:S106"})
     @Handles("listing.command.update-hearing-for-listing-enriched")
     public void updateHearingForListing(final JsonEnvelope command) throws EventStreamException {
-
         LOGGER.info("'listing.command.handler.update-hearing-for-listing-enriched' received with payload {}", command.toObfuscatedDebugString());
+        final UpdateHearingForListingEnriched enrichedUpdateHearingForListing = jsonObjectConverter.convert(command.payloadAsJsonObject(), UpdateHearingForListingEnriched.class);
+        updateHearingForListingEnriched(command, enrichedUpdateHearingForListing);
+    }
 
-        final UpdateHearingForListingEnriched updateHearingForListingEnriched = jsonObjectConverter.convert(command.payloadAsJsonObject(), UpdateHearingForListingEnriched.class);
+    @SuppressWarnings({"squid:S3776", "squid:S106"})
+    @Handles("listing.command.update-hearings-for-listing-enriched")
+    public void updateHearingsForListing(final JsonEnvelope command) throws EventStreamException {
+        LOGGER.info("listing.command.handler.update-hearings-for-listing-enriched' received with payload {}", command.toObfuscatedDebugString());
+        final JsonArray updateHearingsForListingJsonArr = command.payloadAsJsonObject().getJsonArray("updateHearingsForListing");
+        if (!updateHearingsForListingJsonArr.isEmpty()) {
+            final Set<UUID> failedHearingIds = new LinkedHashSet<>();
+            UUID lastHearingId = null;
+            for (JsonValue enrichedHearingJsonVal : updateHearingsForListingJsonArr) {
+                final UpdateHearingForListingEnriched currUpdateHearingForListingEnriched =
+                        jsonObjectConverter.convert((JsonObject) enrichedHearingJsonVal, UpdateHearingForListingEnriched.class);
+                lastHearingId = currUpdateHearingForListingEnriched.getUpdateHearingForListing().getHearingId();
+                try {
+                    updateHearingForListingEnriched(command, currUpdateHearingForListingEnriched);
+                } catch (Exception e) {
+                    final UUID hearingId = currUpdateHearingForListingEnriched.getUpdateHearingForListing().getHearingId();
+                    failedHearingIds.add(hearingId);
+                    String msg = format("Failed to update hearingId=%s", hearingId);
+                    LOGGER.error(msg, e);
+                }
+            }
+            final EventStream eventStream = eventSource.getStreamById(lastHearingId);
+            final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
+            final Stream<Object> events = hearingAggregate.hearingsUpdateCompleted(failedHearingIds);
+            appendEventsToStream(command, eventStream, events);
+        }
+    }
+
+    @SuppressWarnings({"squid:S3776"})
+    public void updateHearingForListingEnriched(final JsonEnvelope command,
+                                                final UpdateHearingForListingEnriched updateHearingForListingEnriched) throws EventStreamException {
         UpdateHearingForListing updateHearingForListing = updateHearingForListingEnriched.getUpdateHearingForListing();
         final Optional<String> source = ofNullable(updateHearingForListing.getSource());
         final Boolean sendNotificationToParties = updateHearingForListing.getSendNotificationToParties();
@@ -578,8 +614,11 @@ public class ListingCommandHandler {
         final boolean hasVideoLink = nonNull(updateHearingForListing.getHasVideoLink()) ? updateHearingForListing.getHasVideoLink() : false;
         final String publicListNote = updateHearingForListing.getPublicListNote();
 
-        final List<NonDefaultDay> nonDefaultDays = generateNewNonDefaultDays(command, updateHearingForListing, nonSittingDays, endDate, startDate,
+        // these newly generated should only be used for generating new hearingDays but not to be set on events sent to viewstore
+        NewlyGeneratedNonDefaultDaysWrapper newNonDefaultDays = generateNewNonDefaultDays(command, updateHearingForListing, nonSittingDays, endDate, startDate,
                 defaultDuration, jurisdictionType);
+        final List<NonDefaultDay> nonDefaultDaysGeneratedAndFromUi = newNonDefaultDays.nonDefaultDaysGeneratedAndFromUi;
+        final List<NonDefaultDay> nonDefaultDaysFromUi = newNonDefaultDays.nonDefaultDaysFromUi;
 
         final CourtCentre defaultCourtCentre = CourtCentre.courtCentre()
                 .withId(courtCentreId)
@@ -588,8 +627,8 @@ public class ListingCommandHandler {
         final Map<UUID, Map<UUID, List<UUID>>> persistedUnallocatedHearingCasesMap = new HashMap<>();
         final Map<UUID, Map<UUID, List<UUID>>> unallocatedHearingRequestCaseMap = new HashMap<>();
         final List<ProsecutionCases> prosecutionCases = updateHearingForListingEnriched.getProsecutionCases();
-        final HearingUpdateOperationType operationType = extendHearingUtils.getOperationType(hearingId, storedHearing, prosecutionCases, unallocatedHearingRequestCaseMap, persistedUnallocatedHearingCasesMap, nonDefaultDays, courtRoomId, weekCommencingStartDate);
-        final Optional<String> splitHearing = StringUtils.isNotEmpty(updateHearingForListingEnriched.getUpdateHearingForListing().getSplitHearing()) ? Optional.of( updateHearingForListingEnriched.getUpdateHearingForListing().getSplitHearing()) : Optional.empty();
+        final HearingUpdateOperationType operationType = extendHearingUtils.getOperationType(hearingId, storedHearing, prosecutionCases, unallocatedHearingRequestCaseMap, persistedUnallocatedHearingCasesMap, nonDefaultDaysGeneratedAndFromUi, courtRoomId, weekCommencingStartDate);
+        final Optional<String> splitHearing = StringUtils.isNotEmpty(updateHearingForListingEnriched.getUpdateHearingForListing().getSplitHearing()) ? Optional.of(updateHearingForListingEnriched.getUpdateHearingForListing().getSplitHearing()) : Optional.empty();
 
         LOGGER.info("HearingUpdateOperationType for hearing id: {}  is {} splitHearing is {} ", updateHearingForListing.getHearingId(), operationType, splitHearing);
 
@@ -610,7 +649,7 @@ public class ListingCommandHandler {
                 return Stream.of(hearingPartiallyEvents).flatMap(i -> i);
             }
 
-            final Boolean isNotificationRelatedAllocatedFieldsUpdated = hearing.isNotificationRelatedAllocatedFieldsUpdated(nonDefaultDays);
+            final Boolean isNotificationRelatedAllocatedFieldsUpdated = hearing.isNotificationRelatedAllocatedFieldsUpdated(nonDefaultDaysGeneratedAndFromUi);
 
             final Stream<Object> typeEvents = hearing.changeType(type, hearingId);
             final Stream<Object> jurisdictionTypeEvents = hearing.changeJurisdictionType(jurisdictionType, hearingId);
@@ -622,7 +661,7 @@ public class ListingCommandHandler {
                     hearing.changeEndDate(endDate, hearingId) : hearing.removeEndDate(hearingId);
 
 
-            final Stream<Object> nonDefaultDaysEvents = hearing.assignNonDefaultDays(nonDefaultDays, hearingId);
+            final Stream<Object> nonDefaultDaysEvents = hearing.assignNonDefaultDays(nonDefaultDaysFromUi, hearingId);
 
             final Stream<Object> nonSittingDaysEvents = hearing.assignNonSittingDays(nonSittingDays, hearingId);
             final Stream<Object> courtCentreEvents = hearing.changeCourtCentre(courtCentreId, hearingId);
@@ -631,8 +670,9 @@ public class ListingCommandHandler {
             final JsonObject organisationUnitJsonObject = courtCentreFactory.getOrganisationUnit(courtCentreId, command);
             final String ouCode = organisationUnitJsonObject.getString(OUCODE);
             final boolean hmiEnabled = hmiService.isHmiEnabled(ouCode);
-            if (JurisdictionType.MAGISTRATES.equals(jurisdictionType) && !hmiEnabled) {
-                setJudiciaryFromRotaSLIfJudiciaryIsEmptyAndMagistrates(judiciary, courtRoomId, nonDefaultDays, ouCode);
+
+            if (JurisdictionType.MAGISTRATES.equals(jurisdictionType) && !hmiEnabled && courtRoomId != null) {
+                setJudiciaryFromRotaSLIfJudiciaryIsEmptyAndMagistrates(judiciary, courtRoomId, nonDefaultDaysGeneratedAndFromUi, ouCode);
                 panel = courtSchedulerServiceAdapter.getPanelInfo(panelFromCommand, startDate, endDate, courtRoomId, ouCode);
             }
 
@@ -644,7 +684,7 @@ public class ListingCommandHandler {
 
 
             final Stream<Object> hearingDayEvents =
-                    hearing.assignHearingDays(startDate, endDate, nonSittingDays, nonDefaultDays, defaultStartTime, defaultDuration, hearingId, defaultCourtCentre);
+                    hearing.assignHearingDays(startDate, endDate, nonSittingDays, nonDefaultDaysGeneratedAndFromUi, defaultStartTime, defaultDuration, hearingId, defaultCourtCentre);
 
             final Stream<Object> weekCommencingDateEvents = weekCommencingStartDate != null && weekCommencingEndDate != null ?
                     hearing.changeWeekCommencingDate(weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingId) : hearing.removeWeekCommencingDates(hearingId);
@@ -690,7 +730,7 @@ public class ListingCommandHandler {
                         weekCommencingStartDate,
                         weekCommencingDurationInWeeks,
                         judiciaryInfoByUpdate,
-                        nonDefaultDays);
+                        nonDefaultDaysGeneratedAndFromUi);
                 return Stream.of(hearingListedEvent).flatMap(i -> i);
             });
         }
@@ -732,14 +772,14 @@ public class ListingCommandHandler {
         return isNotEmpty(judiciary) ? hearing.assignJudiciary(judiciary, hearingId) : hearing.removeJudiciary(hearingId);
     }
 
-    private List<NonDefaultDay> generateNewNonDefaultDays(final JsonEnvelope command, final UpdateHearingForListing updateHearingForListing,
-                                                          final List<LocalDate> nonSittingDays, final LocalDate endDate, final LocalDate startDate,
-                                                          final Integer defaultDuration, final JurisdictionType jurisdictionType) {
+    private NewlyGeneratedNonDefaultDaysWrapper generateNewNonDefaultDays(final JsonEnvelope command, final UpdateHearingForListing updateHearingForListing,
+                                                                              final List<LocalDate> nonSittingDays, final LocalDate endDate, final LocalDate startDate,
+                                                                              final Integer defaultDuration, final JurisdictionType jurisdictionType) {
 
         final List<NonDefaultDay> domainNonDefaultDays = convertNonDefaultDaysToDomain(updateHearingForListing.getNonDefaultDays());
 
         if (startDate == null || endDate == null) {
-            return domainNonDefaultDays;
+            return new NewlyGeneratedNonDefaultDaysWrapper(domainNonDefaultDays, domainNonDefaultDays);
         }
 
         final List<NonDefaultDay> filteredNonDefaultDays = domainNonDefaultDays.stream()
@@ -749,6 +789,7 @@ public class ListingCommandHandler {
 
         final Optional<SelectedCourtCentre> selectedCourtCentre = ofNullable(updateHearingForListing.getSelectedCourtCentre());
         final Optional<UUID> optionalCourtRoomId = ofNullable(getCourtRoomId(updateHearingForListing));
+        List<NonDefaultDay> fromUi = new ArrayList<>(filteredNonDefaultDays);
         if (JurisdictionType.MAGISTRATES.equals(jurisdictionType) && selectedCourtCentre.isPresent() && !filteredNonDefaultDays.isEmpty()) {
             final Map<UUID, JsonObject> organisationUnitMap = new HashMap<>();
             final UUID selectedCourtCentreId = selectedCourtCentre.get().getId();
@@ -758,16 +799,17 @@ public class ListingCommandHandler {
             populateNonDefaultDaysDetails(command, filteredNonDefaultDays, selectedCourtCentreId, of(selectedCourtRoomId), organisationUnitMap);
 
             // Create missing nonDefaultDays and populate details for updating slots
-            calculateNonDefaultDays(command, nonSittingDays,  startDate, endDate, defaultDuration, filteredNonDefaultDays, organisationUnitMap, selectedCourtCentreId.toString(), of(selectedCourtRoomId.toString()), jurisdictionType);
+            fromUi = calculateNonDefaultDays(command, nonSittingDays,  startDate, endDate, defaultDuration, filteredNonDefaultDays, organisationUnitMap, selectedCourtCentreId.toString(), of(selectedCourtRoomId.toString()), jurisdictionType);
 
         } else if (isCrown(jurisdictionType)) {
             final Map<UUID, JsonObject> organisationUnitMap = new HashMap<>();
             final UUID courtCentreId = getCourtCentreId(updateHearingForListing);
             populateNonDefaultDaysDetails(command, filteredNonDefaultDays, courtCentreId, optionalCourtRoomId, organisationUnitMap);
             organisationUnitMap.computeIfAbsent(courtCentreId, k -> courtCentreFactory.getOrganisationUnit(courtCentreId, command));
-            calculateNonDefaultDays(command, nonSittingDays, startDate, endDate, defaultDuration, filteredNonDefaultDays, organisationUnitMap, courtCentreId.toString(), optionalCourtRoomId.map(UUID::toString), jurisdictionType);
+            fromUi = calculateNonDefaultDays(command, nonSittingDays, startDate, endDate, defaultDuration, filteredNonDefaultDays, organisationUnitMap, courtCentreId.toString(), optionalCourtRoomId.map(UUID::toString), jurisdictionType);
         }
-        return filteredNonDefaultDays;
+
+        return new NewlyGeneratedNonDefaultDaysWrapper(fromUi, filteredNonDefaultDays);
     }
 
     private static boolean isCrown(final JurisdictionType jurisdictionType) {
@@ -790,7 +832,8 @@ public class ListingCommandHandler {
         });
     }
 
-    public void calculateNonDefaultDays(final JsonEnvelope command, final List<LocalDate> nonSittingDays,  final LocalDate startDate,final LocalDate endDate, final Integer defaultDuration,
+    @SuppressWarnings({"squid:S107"})
+    public List<NonDefaultDay> calculateNonDefaultDays(final JsonEnvelope command, final List<LocalDate> nonSittingDays,  final LocalDate startDate,final LocalDate endDate, final Integer defaultDuration,
                                         final List<NonDefaultDay> filteredNonDefaultDays, final Map<UUID, JsonObject> organisationUnitMap, final String courtCentreId, final Optional<String> courtRoomId,
                                         final JurisdictionType jurisdictionType) {
         final List<LocalDate> nonDefaultDates = filteredNonDefaultDays.stream().map(NonDefaultDay::getStartTime).map(ZonedDateTime::toLocalDate).toList();
@@ -808,6 +851,8 @@ public class ListingCommandHandler {
                     build());
         }
 
+        List<NonDefaultDay> fromUi = new ArrayList<>(filteredNonDefaultDays);
+
         IntStream.rangeClosed(0, (int) numOfDaysBetween)
                 .mapToObj(startDate::plusDays)
                 .filter(d -> !nonDefaultDates.contains(d) && !nonSittingDays.contains(d))
@@ -821,6 +866,8 @@ public class ListingCommandHandler {
                     final NonDefaultDay nonDefaultDay = getNonDefaultDay(of(nonDefaultDayDuration), courtCentreId, courtRoomId, courtCentreObj, hearingStartTime);
                     filteredNonDefaultDays.add(nonDefaultDay);
                 });
+
+        return fromUi;
     }
 
     private NonDefaultDay getNonDefaultDay(final Optional<Integer> defaultDuration, final String courtCentreId, final Optional<String> courtRoomId,
@@ -1692,6 +1739,21 @@ public class ListingCommandHandler {
         });
     }
 
+    @Handles("listing.command.update-hearing-day-court-schedule")
+    public void updateHearingDayCourtSchedule(final JsonEnvelope commandEnvelope) throws EventStreamException {
+        final JsonObject payload = commandEnvelope.payloadAsJsonObject();
+        final UUID hearingId = fromString(payload.getString(HEARING_ID));
+        final List<HearingDayCourtSchedule> hearingDayCourtSchedules = new ArrayList<>();
+        payload.getJsonArray(HEARING_DAY_COURT_SCHEDULES)
+               .getValuesAs(JsonObject.class)
+               .stream()
+               .forEach(hearingDayCourtSchedule -> hearingDayCourtSchedules.add(
+                       jsonObjectConverter.convert(hearingDayCourtSchedule, HearingDayCourtSchedule.class)));
+        updateHearingEventStream(commandEnvelope,
+                                 hearingId,
+                                 hearing -> hearing.raiseHearingDayCourtSchedulesUpdated(hearingId, hearingDayCourtSchedules));
+    }
+
     @Handles("listing.command.update-cps-prosecutor-with-associated-hearings")
     public void updateProsecutorForAssociatedHearings(final JsonEnvelope envelope) throws EventStreamException {
         if (LOGGER.isDebugEnabled()) {
@@ -2012,4 +2074,6 @@ public class ListingCommandHandler {
 
         return builder.build();
     }
+
+    record NewlyGeneratedNonDefaultDaysWrapper(List<NonDefaultDay> nonDefaultDaysFromUi, List<NonDefaultDay> nonDefaultDaysGeneratedAndFromUi) { }
 }

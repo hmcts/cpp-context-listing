@@ -58,7 +58,6 @@ public class HearingQueryApi {
     private static final String IS_CIVIL = "isCivil";
     private static final String IS_GROUP_MEMBER = "isGroupMember";
 
-
     @Inject
     private HearingQueryView hearingQueryView;
 
@@ -262,4 +261,5 @@ public class HearingQueryApi {
         }
         return courtListType.getTemplateName();
     }
+
 }

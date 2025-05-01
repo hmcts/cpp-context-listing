@@ -13,6 +13,7 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
@@ -113,14 +114,10 @@ public class PublishCourtListSteps extends CommonHearingSteps {
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(
-                                withJsonPath("$.publishCourtListStatuses[0].courtCentreId",
-                                        equalTo(courtCentreId)),
-                                withJsonPath("$.publishCourtListStatuses[0].publishCourtListType",
-                                        equalTo(courtListType)),
-                                withJsonPath("$.publishCourtListStatuses[0].lastUpdated",
-                                        is(notNullValue())),
-                                withJsonPath("$.publishCourtListStatuses[0].publishStatus",
-                                        equalTo(expectedPublishStatus))
+                                withJsonPath("$.publishCourtListStatuses[*].courtCentreId", hasItem(courtCentreId)),
+                                withJsonPath("$.publishCourtListStatuses[*].publishCourtListType", hasItem(courtListType)),
+                                withJsonPath("$.publishCourtListStatuses[*].lastUpdated", hasItem(notNullValue())),
+                                withJsonPath("$.publishCourtListStatuses[*].publishStatus", hasItem(expectedPublishStatus))
                         )));
 
         jsonFromString(response.getPayload());

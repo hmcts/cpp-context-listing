@@ -1,10 +1,12 @@
 package uk.gov.moj.cpp.listing.persistence.repository;
 
 import org.apache.deltaspike.data.api.*;
+
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.HearingJdbcRepository;
 
 import javax.inject.Inject;
+
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.List;
