@@ -83,7 +83,6 @@ public class ExtendHearingForHearingListener {
         if (Objects.isNull(hearingToBeDeleted)) {
             LOGGER.error("Hearing with id {} is not found. It could be deleted before the fix for DD-14484. " +
                     "Please re-run the DLQ events if you see this message when doing a replay/catch up.", hearingIdToBeDeleted);
-            throw new EntityNotFoundException("Failed to delete hearing " + hearingIdToBeDeleted);
         } else {
             hearingRepository.remove(hearingToBeDeleted);
             LOGGER.info("Hearing with id {} has been deleted ", hearingIdToBeDeleted);

@@ -19,6 +19,14 @@ public class EventToDomainConverter {
                 .build();
     }
 
+    public static  uk.gov.moj.cpp.listing.domain.OffenceIds buildOffenceIdsForNewOffence(final uk.gov.justice.listing.events.Offence offence){
+        return uk.gov.moj.cpp.listing.domain.OffenceIds.offenceIds()
+                .withId(offence.getId())
+                .withSeedingHearing(buildSeedingHearing(offence.getSeedingHearing()))
+                .withIsNewOffence(true)
+                .build();
+    }
+
     private static SeedingHearing buildSeedingHearing(final uk.gov.justice.listing.events.SeedingHearing seedingHearing) {
         if(null != seedingHearing) {
             return SeedingHearing.seedingHearing()

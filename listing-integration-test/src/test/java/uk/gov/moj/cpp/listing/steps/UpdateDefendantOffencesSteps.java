@@ -142,9 +142,10 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
         publishCaseDefendantOffencesUpdated(offencesForDefendantUpdated);
     }
 
-    public void whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly() {
+    public OffencesForDefendantUpdated whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly() {
         OffencesForDefendantUpdated offencesForDefendantUpdated = getOffencesForDefendantAddedOnly(caseId, defendantData.getDefendantId());
         publishCaseDefendantOffencesUpdated(offencesForDefendantUpdated);
+        return offencesForDefendantUpdated;
     }
 
     public void whenCaseDefendantOffencesUpdatedPublicEventIsPublishedDeletedOnly() {

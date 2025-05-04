@@ -301,7 +301,7 @@ public class ListNextHearingCommandHandler {
         final UUID hearingId = removeSelectedOffencesFromExistingHearing.getHearingId();
 
         updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
-            final Stream<Object> events = hearing.removeSelectedOffencesFromExistingHearing(hearingId, removeSelectedOffencesFromExistingHearing.getOffenceIds(), Hearing.SOURCE_HEARING);
+            final Stream<Object> events = hearing.removeSelectedOffencesFromExistingHearing(hearingId, removeSelectedOffencesFromExistingHearing.getOffenceIds(), Hearing.SOURCE_HEARING, false);
             final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
             return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(events) : events;
         });

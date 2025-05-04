@@ -113,4 +113,7 @@ subscriptions_descriptor:
         - name: public.listing.judiciary-changed-for-hearings-status
           schema_uri: http://justice.gov.uk/listing/courts/public.listing.judiciary-changed-for-hearings-status.json
 
+        - name: public.listing.create-next-hearing-requested
+          schema_uri: http://justice.gov.uk/listing/events/public.listing.create-next-hearing-requested.json
+
       event_source_name: public.event.source

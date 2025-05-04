@@ -178,6 +178,27 @@ public class ExtendHearingForHearingListenerTest {
         verify(hearingRepository).remove(hearingEntity);
     }
 
+    @Test
+    public void shouldHearingBeDeletedWhenThereIsNoHearing() {
+        final Envelope<HearingDeleted> envelope = (Envelope<HearingDeleted>) mock(Envelope.class);
+
+        hearingDeleted = HearingDeleted.hearingDeleted()
+                .withHearingIdToBeDeleted(HEARING_ID)
+                .build();
+
+        hearingEntity = uk.gov.moj.cpp.listing.persistence.entity.Hearing.builder()
+                .withId(hearingDeleted.getHearingIdToBeDeleted()).build();
+
+        given(envelope.payload()).willReturn(hearingDeleted);
+
+        doReturn(null).when(hearingRepository).findBy(hearingDeleted.getHearingIdToBeDeleted());
+
+        extendHearingForHearingListener.hearingDeleted(envelope);
+
+        verify(hearingRepository).findBy(hearingDeleted.getHearingIdToBeDeleted());
+        verify(hearingRepository, never()).remove(any());
+    }
+
 
     @Test
     public void shouldHearingBeUpdatedPartially() throws IOException {

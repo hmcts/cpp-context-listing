@@ -192,6 +192,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -203,7 +204,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = 5817594778865191003L;
+    private static final long serialVersionUID = 5817594778865191004L;
 
     private static final String SUMMONS_APPROVED_RESULT_TYPE_ID = "0f44eeb9-2c81-430d-9a60-bbdaf8c4a093";
     private static final String SUMMONS_REJECTED_RESULT_TYPE_ID = "d8837a45-8281-49b3-8349-49b423193148";
@@ -1406,19 +1407,27 @@ public class Hearing implements Aggregate {
         }
 
         Optional<uk.gov.moj.cpp.listing.domain.OffenceIds> offenceIdsSeededByOtherHearings = Optional.empty();
+        Optional<uk.gov.moj.cpp.listing.domain.OffenceIds> offenceIdsExtendedByOtherHearings = Optional.empty();
         boolean hasMultipleCase = false;
-        if (!isNull(prosecutionCaseDefendantOffenceIds)) {
+        if (nonNull(prosecutionCaseDefendantOffenceIds)) {
             offenceIdsSeededByOtherHearings = prosecutionCaseDefendantOffenceIds.stream().flatMap(pc -> pc.getDefendants().stream())
                     .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
                     .filter(offence -> nonNull(offence.getSeedingHearing()))
                     .filter(offence -> isNotSeededOffenceBySeedId(seedingHearingId, offence))
                     .findFirst();
 
+            offenceIdsExtendedByOtherHearings = prosecutionCaseDefendantOffenceIds.stream().flatMap(pc -> pc.getDefendants().stream())
+                    .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
+                    .filter(offence -> isNull(offence.getSeedingHearing())) // The offence was not added by another resulted hearing
+                    .filter(offence -> !ofNullable(offence.getIsNewOffence()).orElse(false)) // The offence was not added because it was added the case.
+                    .findFirst(); // So the offence was added by extended hearing.
+
             hasMultipleCase = ofNullable(currentHearingEventState.getListedCases()).orElse(emptyList()).stream().map(c->c.getId()).collect(Collectors.toSet()).size() > 1;
         }
 
 
-        if (offenceIdsSeededByOtherHearings.isPresent() &&  hasMultipleCase) {
+        if ((offenceIdsSeededByOtherHearings.isPresent() &&  hasMultipleCase) || offenceIdsExtendedByOtherHearings.isPresent()) {
+            // We need to remove Offences which are belongs only this seeded hearings and leave other offences in this hearing, if This hearing seeded or extended from another hearings.
             return getOffencesRemovedFromHearingStream(seedingHearingId, hearingId);
         } else {
             final List<UUID> caseIds = prosecutionCaseDefendants.keySet().stream().collect(toList());
@@ -1447,19 +1456,15 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> removeOffencesFromExistingHearing(final UUID seedingHearingId, final UUID hearingId) {
+        // when amend and reshare first hearing, if existing next hearing has new offences , we need to remove them as well.
+        final List<UUID> offenceIds = getOffencesFromSeededHearingAndNew(seedingHearingId);
 
-        final List<UUID> offenceIds = prosecutionCaseDefendantOffenceIds
-                .stream().flatMap(pc -> pc.getDefendants().stream())
-                .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
-                .filter(offence -> isSeededOffenceBySeedId(seedingHearingId, offence))
-                .map(OffenceIds::getId)
-                .collect(toList());
-
-        return removeSelectedOffencesFromExistingHearing(hearingId, offenceIds, SOURCE_LISTING);
+        return removeSelectedOffencesFromExistingHearing(hearingId, offenceIds, SOURCE_LISTING, true);
 
     }
 
-    public Stream<Object> removeSelectedOffencesFromExistingHearing(final UUID hearingId, final List<UUID> offenceIds, final String source) {
+    //isResultFlow -> These event uses for multiple purposes, we need to know it is raised by amend-reshare flow.
+    public Stream<Object> removeSelectedOffencesFromExistingHearing(final UUID hearingId, final List<UUID> offenceIds, final String source, final Boolean isResultFlow ) {
 
         if (deleted || duplicate) {
             return Stream.empty();
@@ -1483,11 +1488,13 @@ public class Hearing implements Aggregate {
                         .withHearingId(hearingId)
                         .withOffenceIds(offenceIds)
                         .withSourceContext(source)
+                        .withIsResultFlow(isResultFlow)
                         .build());
             } else {
                 eventStreamBuilder.add(OffencesRemovedFromExistingUnallocatedHearing.offencesRemovedFromExistingUnallocatedHearing()
                         .withHearingId(hearingId)
                         .withOffenceIds(offenceIds)
+                        .withIsResultFlow(isResultFlow)
                         .build());
             }
         }
@@ -2162,8 +2169,8 @@ public class Hearing implements Aggregate {
         final UUID defendantId = offenceAdded.getDefendantId();
 
         final Optional<DefendantOffenceIds> defendantOffences = getDefendantOffenceIds(caseId, defendantId);
-
-        defendantOffences.ifPresent(defendantOffenceIds -> defendantOffenceIds.getOffences().add(EventToDomainConverter.buildOffenceIds(offence)));
+        // the offence was added to case so it is added all future hearings as well. I need to know this offence is a new offence, not seeded or extended from another hearings.
+        defendantOffences.ifPresent(defendantOffenceIds -> defendantOffenceIds.getOffences().add(EventToDomainConverter.buildOffenceIdsForNewOffence(offence)));
 
         updateCurrentHearingEventStateWithOffence(offenceAdded.getCaseId(), offenceAdded.getDefendantId(), null, offenceAdded.getOffence());
     }
@@ -2681,7 +2688,6 @@ public class Hearing implements Aggregate {
     }
 
     private void onOffencesRemovedFromHearing(final OffencesRemovedFromHearing event) {
-        updateAllocated(FALSE);
         removeSeededOffences(event);
     }
 
@@ -3140,18 +3146,19 @@ public class Hearing implements Aggregate {
                 .map(ProsecutionCaseDefendantOffenceIds::getId)
                 .collect(toList());
 
+        final List<UUID> caseIdsExtendedByOtherHearings  = prosecutionCaseDefendantOffenceIds.stream()
+                    .filter(pc -> pc.getDefendants().stream()
+                            .flatMap(d -> d.getOffences().stream())
+                            .anyMatch(offence -> !ofNullable(offence.getIsNewOffence()).orElse(false) && isNull(offence.getSeedingHearing())))
+                    .map(ProsecutionCaseDefendantOffenceIds::getId)
+                    .collect(toList());
+
         final List<UUID> caseIdsSeededBySeedingHearingId = prosecutionCaseDefendantOffenceIds.stream()
-                .filter(pc -> !caseIdsSeededByOnlyOtherHearings.contains(pc.getId()))
+                .filter(pc -> !caseIdsSeededByOnlyOtherHearings.contains(pc.getId()) && !caseIdsExtendedByOtherHearings.contains(pc.getId()))
                 .map(ProsecutionCaseDefendantOffenceIds::getId)
                 .collect(toList());
 
-        final List<UUID> offencesSeededBySeedingHearing = prosecutionCaseDefendantOffenceIds.stream()
-                .filter(c-> caseIdsSeededBySeedingHearingId.contains(c.getId()))
-                .flatMap(pc -> pc.getDefendants().stream())
-                .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
-                .filter(offenceIds -> isNull(offenceIds.getSeedingHearing()) || offenceIds.getSeedingHearing().getSeedingHearingId().equals(seedingHearingId))
-                .map(OffenceIds::getId)
-                .collect(toList());
+        final List<UUID> offencesSeededBySeedingHearing = getOffencesFromSeededHearingAndNew(seedingHearingId);
 
         final Stream.Builder<Object> eventStreamBuilder = Stream.builder();
 
@@ -3159,7 +3166,7 @@ public class Hearing implements Aggregate {
                 .withHearingId(hearingId)
                 .withSeedingHearingId(seedingHearingId)
                 .withCaseIdsSeededByOnlySeedingHearingId(caseIdsSeededBySeedingHearingId)
-                .withUnallocated(isAllocated())
+                .withUnallocated(!isAllocated())
                 .withSeededOffences(offencesSeededBySeedingHearing)
                 .build());
 
@@ -3169,6 +3176,26 @@ public class Hearing implements Aggregate {
         }
 
         return apply(eventStreamBuilder.build());
+    }
+
+    // If a new offence has been added to hearing we need to remove them with seeded offences.
+    private List<UUID> getOffencesFromSeededHearingAndNew(final UUID seedingHearingId) {
+        final List<UUID> caseIdsSeededBySeededHearing = prosecutionCaseDefendantOffenceIds.stream()
+                .filter(pc -> pc.getDefendants().stream()
+                        .flatMap(d -> d.getOffences().stream())
+                        .filter(offence -> nonNull(offence.getSeedingHearing()))
+                        .anyMatch(offence -> isSeededOffenceBySeedId(seedingHearingId, offence)))
+                .map(ProsecutionCaseDefendantOffenceIds::getId)
+                .collect(toList());
+
+        final List<UUID> offencesSeededBySeedingHearing = prosecutionCaseDefendantOffenceIds.stream()
+                .filter(pc -> caseIdsSeededBySeededHearing.contains(pc.getId()))
+                .flatMap(pc -> pc.getDefendants().stream())
+                .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
+                .filter(offenceIds -> ofNullable(offenceIds.getIsNewOffence()).orElse(false) || isSeededOffenceBySeedId(seedingHearingId, offenceIds)) // We need to remove the offence resulted by the seeded hearing and the offence was added because the offence added to the case.
+                .map(OffenceIds::getId)
+                .collect(toList());
+        return offencesSeededBySeedingHearing;
     }
 
     private boolean isNotSeededOffenceBySeedId(final UUID seedingHearingId, final uk.gov.moj.cpp.listing.domain.OffenceIds offence) {
@@ -3462,6 +3489,11 @@ public class Hearing implements Aggregate {
                         .build();
         cases.removeIf(lc -> lc.getId().equals(caseId));
         cases.add(updatedCase);
+    }
+
+    @VisibleForTesting
+    public List<ProsecutionCaseDefendantOffenceIds> getProsecutionCaseDefendantOffenceIds() {
+        return prosecutionCaseDefendantOffenceIds;
     }
 
 }

@@ -35,6 +35,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsData(hearings));
     }
 
+    public static HearingsData nextAllocatedHearingsData(final List<HearingData> hearings) {
+        return new HearingsData(List.of(HearingsDataFactory.allocatedHearingsData(hearings)));
+    }
+
     public static HearingsData hearingsData(final String jurisdictionType) {
         return new HearingsData(HearingsDataFactory.hearingsData(jurisdictionType));
     }
