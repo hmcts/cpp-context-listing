@@ -38,9 +38,7 @@ protocols: [ HTTP, HTTPS ]
       (mapping):
         requestType: application/vnd.listing.command.restrict-court-list+json
         name: listing.command.restrict-court-list
-        (mapping):
-        requestType: application/vnd.listing.delete-previous-hearings-and-create-next-hearing+json
-        name: listing.delete-previous-hearings-and-create-next-hearing
+        
       ...
     body:
       application/vnd.listing.command.change-judiciary-for-hearings+json:
@@ -49,9 +47,7 @@ protocols: [ HTTP, HTTPS ]
       application/vnd.listing.command.restrict-court-list+json:
         schema: !include json/schema/listing.command.restrict-court-list.json
         example: !include json/listing.command.restrict-court-list.json
-      application/vnd.listing.delete-previous-hearings-and-create-next-hearing+json:
-        schema: !include json/schema/listing.delete-previous-hearings-and-create-next-hearing.json
-        example: !include json/listing.delete-previous-hearings-and-create-next-hearing.json
+
 
     responses:
       202:

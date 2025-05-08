@@ -41,7 +41,7 @@ import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
 public class SeedHearingAggregate implements Aggregate {
 
 
-    private static final long serialVersionUID = 6;
+    private static final long serialVersionUID = 5;
     private Map<String, Set<UUID>> seededHearingIdsMapForHearingDay = new HashMap<>();
     private Map<String, Set<UUID>> existingHearingIdsMapForHearingDay = new HashMap<>();
 
@@ -58,7 +58,6 @@ public class SeedHearingAggregate implements Aggregate {
                 when(UpdateExistingHearingRequested.class).apply(this::onUpdateExistingHearingRequested),
                 when(UnscheduledNextHearingRequested.class).apply(this::onUnscheduledNextHearingRequested),
                 when(NextHearingReplaced.class).apply(this::onNextHearingReplaced),
-                when(CreateNextHearingRequested.class).apply(this::onCreateNextHearingRequested),
                 otherwiseDoNothing());
     }
 
@@ -67,9 +66,7 @@ public class SeedHearingAggregate implements Aggregate {
 
     }
 
-    private void onCreateNextHearingRequested(CreateNextHearingRequested createNextHearingRequested) {
-        previousHearingIds.clear();
-    }
+
 
     public Stream<Object> requestNextHearings(final List<HearingListingNeeds> hearingListingNeeds, final String hearingDay, final List<CourtCentreDefaults> courtCentreDefaults, final Optional<String> adjournedFromDate, final List<UUID> shadowListedOffences) {
         Stream<Object> events = empty();
@@ -165,22 +162,7 @@ public class SeedHearingAggregate implements Aggregate {
         return apply(events);
     }
 
-    public Stream<Object> deletePreviousHearingsAndCreateNextHearing(final UUID seedingHearingId, final String hearingDay, final CreateNextHearing createNextHearing)  {
-        Stream<Object> events = empty();
 
-        final List<DeleteNextHearingRequested> deleteNextHearingRequestedList = createDeleteNextHearingEventsForAllPreviouslySeededNextHearings(seedingHearingId, hearingDay);
-        final List<RemoveOffencesFromExistingHearingRequested> removeOffencesFromExistingHearingRequestedList =
-                createRemoveOffencesEventForAllExistingHearings(seedingHearingId, hearingDay);
-
-        for (final DeleteNextHearingRequested deleteNextHearingRequested : deleteNextHearingRequestedList) {
-            events = concat(events, Stream.of(deleteNextHearingRequested));
-        }
-        for (final RemoveOffencesFromExistingHearingRequested removeOffencesFromExistingHearingRequested : removeOffencesFromExistingHearingRequestedList) {
-            events = concat(events, Stream.of(removeOffencesFromExistingHearingRequested));
-        }
-
-        return concat(events, Stream.of(CreateNextHearingRequested.createNextHearingRequested().withCreateNextHearing(createNextHearing).build()));
-    }
 
     private List<CourtCentreDetails> convertCourtCentreDetails(final List<CourtCentreDefaults> courtCentreDefaults) {
         return CollectionUtils.isNotEmpty(courtCentreDefaults) ?
