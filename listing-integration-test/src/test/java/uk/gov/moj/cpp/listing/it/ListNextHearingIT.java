@@ -86,29 +86,7 @@ public class ListNextHearingIT extends AbstractIT {
         listNextHearingSteps2.verifyPublicOffencesMovedToHearingInActiveMQ(nextHearings, oldNextHearings, firstHearings.getHearingData().get(0).getId());
     }
 
-    @Test
-    public void shouldDeletePreviousHearingsAndCreateNextHearingRequested() {
 
-        final HearingsData oldNextHearings = HearingsData.hearingsData();
-        final HearingsData nextHearings = HearingsData.hearingsData();
-
-        final HearingsData firstHearings = HearingsData.hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
-        listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-
-        final ListNextHearingSteps listNextHearingSteps1 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
-        listNextHearingSteps1.whenNextHearingSubmittedForListing(oldNextHearings);
-        listNextHearingSteps1.verifyHearingListedFromAPI(oldNextHearings);
-
-        final ListNextHearingSteps listNextHearingSteps2 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
-        listNextHearingSteps2.whenDeletePreviousHearingAndCreateNextHearingForListing(nextHearings);
-        listNextHearingSteps2.verifyOldHearingDeleted(oldNextHearings);
-        listNextHearingSteps2.verifyPublicUnallocatedOldHearingDeletedInPublicMQ(oldNextHearings);
-
-        listNextHearingSteps2.whenNextHearingSubmittedForListing(nextHearings);
-        listNextHearingSteps2.verifyHearingListedFromAPI(nextHearings);
-    }
 
     @Test
     public void shouldDeleteOldScheduledNextHearingsAndScheduledNextHearings() {

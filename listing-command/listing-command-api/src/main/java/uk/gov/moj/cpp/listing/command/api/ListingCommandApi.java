@@ -75,7 +75,6 @@ public class ListingCommandApi {
     private static final String LISTING_COMMAND_DELETE_NEXT_HEARINGS = "listing.command.delete-next-hearings";
     private static final String LISTING_COMMAND_DELETE_HEARING = "listing.command.delete-hearing";
     private static final String LISTING_COMMAND_UPDATE_HEARING_DAY_COURT_SCHEDULE = "listing.command.update-hearing-day-court-schedule";
-    private static final String LISTING_COMMAND_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING = "listing.command.delete-previous-hearings-and-create-next-hearing";
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandApi.class);
@@ -218,15 +217,6 @@ public class ListingCommandApi {
                         .add("seedingHearing", payload.getJsonObject("seedingHearing"))
                         .build()
         ));
-    }
-
-    @Handles("listing.delete-previous-hearings-and-create-next-hearing")
-    public void handleDeletePreviousHearingsAndCreateNextHearing(final JsonEnvelope envelope) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("'listing.delete-previous-hearings-and-create-next-hearing' received with payload {}", envelope.toObfuscatedDebugString());
-        }
-        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING),
-                envelope.payload()));
     }
 
     @Handles("listing.command.update-hearing-for-listing")
