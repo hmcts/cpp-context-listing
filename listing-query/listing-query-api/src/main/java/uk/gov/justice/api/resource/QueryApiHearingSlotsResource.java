@@ -17,6 +17,7 @@ public interface QueryApiHearingSlotsResource {
     String COURT_ROOM_NUMBER = "courtRoomNumber";
     String BUSINESS_TYPE = "businessType";
     String COURT_SESSION = "courtSession";
+    String IS_SLOT_BASED = "isSlotBased";
     String PAGE_SIZE = "pageSize";
     String PAGE_NUMBER = "pageNumber";
 
@@ -31,6 +32,7 @@ public interface QueryApiHearingSlotsResource {
                              @QueryParam(COURT_ROOM_NUMBER) String courtRoomNumber,
                              @QueryParam(BUSINESS_TYPE) String businessType,
                              @QueryParam(COURT_SESSION) String courtSession,
+                             @QueryParam(IS_SLOT_BASED) Boolean isSlotBased,
                              @QueryParam(PAGE_SIZE) String pageSize,
                              @QueryParam(PAGE_NUMBER) String pageNumber);
 }

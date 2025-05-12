@@ -49,10 +49,11 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                                     final String courtRoomNumber,
                                     final String businessType,
                                     final String courtSession,
+                                    final Boolean isSlotBased,
                                     final String pageSize,
                                     final String pageNumber) {
 
-        final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, oucodeL2Code, ouCode, courtRoomId, courtRoomNumber, businessType, courtSession, pageSize, pageNumber);
+        final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, oucodeL2Code, ouCode, courtRoomId, courtRoomNumber, businessType, courtSession, isSlotBased, pageSize, pageNumber);
         final Response response = courtSchedulerServiceAdapter.hearingSlotsSearch(params);
         if(response.getStatusInfo().getStatusCode() != HttpStatus.SC_OK ){
             return response;
@@ -80,6 +81,7 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                                                final String courtRoomNumber,
                                                final String businessType,
                                                final String courtSession,
+                                               final Boolean isSlotBased,
                                                final String pageSize,
                                                final String pageNumber) {
         final Map<String, String> params = new HashMap<>();
@@ -92,6 +94,9 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
         params.put(COURT_ROOM_NUMBER, courtRoomNumber);
         params.put(BUSINESS_TYPE, businessType);
         params.put(COURT_SESSION, courtSession);
+        if(isSlotBased != null) {
+            params.put(IS_SLOT_BASED, String.valueOf(isSlotBased));
+        }
         params.put(PAGE_SIZE, pageSize);
         params.put(PAGE_NUMBER, pageNumber);
 
