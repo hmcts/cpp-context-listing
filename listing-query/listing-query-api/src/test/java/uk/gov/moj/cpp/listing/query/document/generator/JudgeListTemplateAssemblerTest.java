@@ -101,7 +101,7 @@ public class JudgeListTemplateAssemblerTest {
 
 
     @Test
-    public void shouldReturnOneSittingHearingWhenOneHearingExistForGivenCourtRoomAndHearingDate() {
+    void shouldReturnOneSittingHearingWhenOneHearingExistForGivenCourtRoomAndHearingDate() {
 
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
@@ -117,7 +117,7 @@ public class JudgeListTemplateAssemblerTest {
 
 
     @Test
-    public void shouldReturnOneSittingWithMultipleHearingWhenMultipleHearingExistForGivenCourtRoomAndHearingDateAndSortByHearingTimeForOneJudgeAndHearingSortByStartTime() {
+    void shouldReturnOneSittingWithMultipleHearingWhenMultipleHearingExistForGivenCourtRoomAndHearingDateAndSortByHearingTimeForOneJudgeAndHearingSortByStartTime() {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
@@ -133,7 +133,7 @@ public class JudgeListTemplateAssemblerTest {
 
 
     @Test
-    public void shouldReturnTwoSittingWitheHearingWhenHearingExistForDifferentJudiciariesGivenCourtRoomAndHearingDateAndSortByHearingTimeAndSittingTime() {
+    void shouldReturnTwoSittingWitheHearingWhenHearingExistForDifferentJudiciariesGivenCourtRoomAndHearingDateAndSortByHearingTimeAndSittingTime() {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
@@ -151,7 +151,7 @@ public class JudgeListTemplateAssemblerTest {
 
 
     @Test
-    public void shouldReturnTThreeSittingWitheHearingWhenHearingExistForDifferentJudiciariesGivenCourtRoomAndOneHearingNoJudiciaryAllocatedHearingDateAndSortByHearingTimeAndSittingTime() {
+    void shouldReturnTThreeSittingWitheHearingWhenHearingExistForDifferentJudiciariesGivenCourtRoomAndOneHearingNoJudiciaryAllocatedHearingDateAndSortByHearingTimeAndSittingTime() {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
@@ -169,7 +169,7 @@ public class JudgeListTemplateAssemblerTest {
 
 
     @Test
-    public void shouldReturnTThreeSittingWitheHearingWhenHearingExistForDifferentJudiciariesGivenCourtRoomAndMultiHearingNoJudiciaryAllocatedHearingDateAndSortByHearingTimeAndSittingTime() {
+    void shouldReturnTThreeSittingWitheHearingWhenHearingExistForDifferentJudiciariesGivenCourtRoomAndMultiHearingNoJudiciaryAllocatedHearingDateAndSortByHearingTimeAndSittingTime() {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
@@ -187,7 +187,7 @@ public class JudgeListTemplateAssemblerTest {
 
 
     @Test
-    public void shouldReturnOneSittingHearingWhenOneHearingExistForGivenCourtRoomAndHearingDateWithJudiciariesSorting() {
+    void shouldReturnOneSittingHearingWhenOneHearingExistForGivenCourtRoomAndHearingDateWithJudiciariesSorting() {
 
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
@@ -206,7 +206,7 @@ public class JudgeListTemplateAssemblerTest {
     }
 
     @Test
-    public void shouldReturnSittingWithMultiHearingsForMultiCases() {
+    void shouldReturnSittingWithMultiHearingsForMultiCases() {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
@@ -224,7 +224,7 @@ public class JudgeListTemplateAssemblerTest {
 
 
     @Test
-    public void shouldReturnSittingWithMultiHearingsForMultiCasesWithCounsels() {
+    void shouldReturnSittingWithMultiHearingsForMultiCasesWithCounsels() {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
@@ -234,14 +234,14 @@ public class JudgeListTemplateAssemblerTest {
                         generateJudiciary(JUDICIARY2_ID, "Mary", "Her Majesty Honour", "Judge", "Mr")
                 );
 
-        Optional<JsonObject> judgeList = assembler.assemble(buildRequestEnvelope(buildHearingDataForDifferentJudgeListAndMultiCasesWithCounsels()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.JUDGE, START_DATE);
+        Optional<JsonObject> judgeList = assembler.assemble(buildRequestEnvelope(buildHearingDataForDifferentJudgeListAndMultiCasesWithCounsels("stubbed.multiCases.multipleHearings.counsels.ListScenario.json")), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.JUDGE, START_DATE);
         final JsonObject expectedList = returnAsJsonObject("expected/list.of.judgesList.for.multiple.cases.in.hearing.with.counsels.json");
         assertThat(judgeList.isPresent(), is(true));
         assertThat(judgeList.get(), equalTo(expectedList));
     }
 
     @Test
-    public void shouldReturnSittingWithHearingsAndIgnoreApplications() {
+    void shouldReturnSittingWithHearingsAndIgnoreApplications() {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
@@ -257,9 +257,25 @@ public class JudgeListTemplateAssemblerTest {
         assertThat(judgeList.get(), equalTo(expectedList));
     }
 
+    @Test
+    void shouldReturnSittingWithHearingsWithOnlyCounselsWithAttendanceDaysSni6942() {
+
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails());
+        when(referenceDataCache.getJudiciariesMapCache(any(UUID.class)))
+                .thenReturn(
+                        generateJudiciary(JUDICIARY_ID, "Sarah", "Her Majesty", "Court Judge", "Mr"),
+                        generateJudiciary(JUDICIARY2_ID, "Mary", "Her Majesty Honour", "Judge", "Mr")
+                );
+
+        Optional<JsonObject> judgeList = assembler.assemble(buildRequestEnvelope(buildHearingDataForDifferentJudgeListAndMultiCasesWithCounsels("stubbed.multiDayHearings.counsels.ListScenario-sni6942.json")), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.JUDGE, START_DATE);
+        final JsonObject expectedList = returnAsJsonObject("expected/list.of.judgesList.for.multiday.hearing.with.counsels.json");
+        assertThat(judgeList.isPresent(), is(true));
+        assertThat(judgeList.get(), equalTo(expectedList));
+    }
 
     @Test
-    public void shouldReturnNoSittingWithHearingsHasOnlyApplications() {
+    void shouldReturnNoSittingWithHearingsHasOnlyApplications() {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
@@ -271,7 +287,7 @@ public class JudgeListTemplateAssemblerTest {
     }
 
     @Test
-    public void shouldReturnNoSittingWithHearingsHasLinkecApplications() {
+    void shouldReturnNoSittingWithHearingsHasLinkecApplications() {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
@@ -289,7 +305,7 @@ public class JudgeListTemplateAssemblerTest {
 
 
     @Test
-    public void shouldReturnOnlySameDayHearingSittingForAMultiDayHearing() {
+    void shouldReturnOnlySameDayHearingSittingForAMultiDayHearing() {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
@@ -302,7 +318,7 @@ public class JudgeListTemplateAssemblerTest {
 
 
     @Test
-    public void shouldReturnOneSittingHearingWhenOneHearingExistForGivenCourtRoomAndHearingDateForLegalEntityDefendant() {
+    void shouldReturnOneSittingHearingWhenOneHearingExistForGivenCourtRoomAndHearingDateForLegalEntityDefendant() {
 
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
@@ -317,7 +333,7 @@ public class JudgeListTemplateAssemblerTest {
     }
 
     @Test
-    public void shouldReturnOneSittingWithMultipleHearingWhenMultipleHearingExistForGivenCourtRoomAndHearingDateAndSortByHearingTimeForOneJudgeAndHearingSortByStartTimeReverseList() {
+    void shouldReturnOneSittingWithMultipleHearingWhenMultipleHearingExistForGivenCourtRoomAndHearingDateAndSortByHearingTimeForOneJudgeAndHearingSortByStartTimeReverseList() {
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
         when(referenceDataCache.getJudiciariesMapCache(eq(JUDICIARY_ID)))
@@ -472,8 +488,8 @@ public class JudgeListTemplateAssemblerTest {
     }
 
 
-    private JsonObject buildHearingDataForDifferentJudgeListAndMultiCasesWithCounsels() {
-        String jsonString = FileUtil.getPayload("stubbed.multiCases.multipleHearings.counsels.ListScenario.json")
+    private JsonObject buildHearingDataForDifferentJudgeListAndMultiCasesWithCounsels(final String payload) {
+        String jsonString = FileUtil.getPayload(payload)
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
                 .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
                 .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"")
@@ -487,7 +503,6 @@ public class JudgeListTemplateAssemblerTest {
             return jsonReader.readObject();
         }
     }
-
 
     private JsonObject buildHearingDataForListedCasesAndApplications() {
         String jsonString = FileUtil.getPayload("stubbed.multiCases.multipleHearings.application.ListScenario.json")

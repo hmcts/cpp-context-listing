@@ -58,6 +58,7 @@ public class JudgeListTemplateAssembler {
     private static final String CASE_IDENTIFIER = "caseIdentifier";
     private static final String CASE_REFERENCE = "caseReference";
     public static final String LISTED_CASES = "listedCases";
+    private static final String ATTENDANCE_DAYS = "attendanceDays";
     private static final String FIRST_NAME = "firstName";
     private static final String LAST_NAME = "lastName";
     private static final String ORGANISATION_NAME = "organisationName";
@@ -130,10 +131,10 @@ public class JudgeListTemplateAssembler {
 
             if (sitting.isPresent()) {
 
-                buildUpdatedSitting(sittings, sitting.get(), flatHearing);
+                buildUpdatedSitting(sittings, sitting.get(), flatHearing, startDate);
             } else {
 
-                buildNewSitting(sittings, flatHearing);
+                buildNewSitting(sittings, flatHearing, startDate);
             }
         }
 
@@ -142,8 +143,8 @@ public class JudgeListTemplateAssembler {
         return of(objectToJsonObjectConverter.convert(createJudgeList(courtCentreDetails, courtRoomId, sittingsSorter.sort(sittings), startDate)));
     }
 
-    private void buildUpdatedSitting(final List<Sitting> sittings, final Sitting sitting, final FlatHearing flatHearing) {
-        final List<SittingHearing> sittingHearings = buildSittingHearingDetails(flatHearing);
+    private void buildUpdatedSitting(final List<Sitting> sittings, final Sitting sitting, final FlatHearing flatHearing, final String startDate) {
+        final List<SittingHearing> sittingHearings = buildSittingHearingDetails(flatHearing, startDate);
         if (!isEmpty(sittingHearings)) {
             sittingHearings.addAll(sitting.getHearings());
             final Sitting.Builder sittingBuilder = Sitting.sitting();
@@ -165,8 +166,8 @@ public class JudgeListTemplateAssembler {
         return times.get(times.size() - 1).format(timeFormatter);
     }
 
-    private void buildNewSitting(final List<Sitting> sittings, final FlatHearing flatHearing) {
-        final List<SittingHearing> sittingHearings = buildSittingHearingDetails(flatHearing);
+    private void buildNewSitting(final List<Sitting> sittings, final FlatHearing flatHearing, final String startDate) {
+        final List<SittingHearing> sittingHearings = buildSittingHearingDetails(flatHearing, startDate);
         if (!isEmpty(sittingHearings)) {
             final Sitting.Builder sittingBuilder = Sitting.sitting();
             sittingBuilder.withHearings(sittingHearings);
@@ -178,7 +179,7 @@ public class JudgeListTemplateAssembler {
         }
     }
 
-    private List<SittingHearing> buildSittingHearingDetails(final FlatHearing flatHearing) {
+    private List<SittingHearing> buildSittingHearingDetails(final FlatHearing flatHearing, final String startDate) {
         final JsonObject hearingJson = flatHearing.getCaseHearings();
         final HearingDay hearingDay = buildHearingDay(flatHearing);
         if (isCaseHearing(hearingJson)) {
@@ -195,13 +196,13 @@ public class JudgeListTemplateAssembler {
 
                         if (hearingJson.containsKey(DEFENCE_COUNSELS)) {
                             final List<Counsel> defenseCounsels = defendantJson.getValuesAs(JsonObject.class).stream()
-                                    .map(defendant -> extractCounsels(hearingJson.getJsonArray(DEFENCE_COUNSELS), defendant.getString(ID), DEFENDANTS))
+                                    .map(defendant -> extractCounsels(hearingJson.getJsonArray(DEFENCE_COUNSELS), defendant.getString(ID), DEFENDANTS, startDate))
                                     .collect(toList()).stream().flatMap(List::stream).collect(toList());
                             sittingHearingBuilder.withDefenceCounsels(defenseCounsels);
 
                         }
                         if (hearingJson.containsKey(PROSECUTION_COUNSELS)) {
-                            final List<Counsel> prosecutionCounsel = extractCounsels(hearingJson.getJsonArray(PROSECUTION_COUNSELS), caseDetails.getString(ID), PROSECUTION_CASES);
+                            final List<Counsel> prosecutionCounsel = extractCounsels(hearingJson.getJsonArray(PROSECUTION_COUNSELS), caseDetails.getString(ID), PROSECUTION_CASES, startDate);
                             sittingHearingBuilder.withProsecutionCounsels(prosecutionCounsel);
                         }
 
@@ -245,10 +246,11 @@ public class JudgeListTemplateAssembler {
                 .collect(toList());
     }
 
-    private List<Counsel> extractCounsels(final JsonArray requestCounsels, final String id, final String type) {
+    private List<Counsel> extractCounsels(final JsonArray requestCounsels, final String id, final String type, final String startDate) {
         final List<Counsel> counsels = new ArrayList<>();
         for (final JsonObject requestCounsel : requestCounsels.getValuesAs(JsonObject.class)) {
-            if (requestCounsel.getJsonArray(type).getValuesAs(JsonValue.class).stream().anyMatch(c -> id.equals(((JsonString) c).getString()))) {
+            if (idMatches(requestCounsel, type, id)
+                    && attendanceDaysMatches(requestCounsel, startDate)) {
                 counsels.add(Counsel.counsel()
                         .withFirstName(extractName(requestCounsel, FIRST_NAME))
                         .withMiddleName(extractName(requestCounsel, MIDDLE_NAME))
@@ -258,6 +260,22 @@ public class JudgeListTemplateAssembler {
             }
         }
         return counsels;
+    }
+    
+    private boolean idMatches(final JsonObject requestCounsel, final String jsonNode, final String id) {
+        return arrayContains(requestCounsel, jsonNode, id);
+    }
+
+    private boolean attendanceDaysMatches(final JsonObject requestCounsel, final String startDate) {
+        return arrayContains(requestCounsel, ATTENDANCE_DAYS, startDate);
+    }
+
+    private boolean arrayContains(final JsonObject requestCounsel, final String jsonNode, final String filter) {
+        return requestCounsel.getJsonArray(jsonNode)
+                .getValuesAs(JsonValue.class).stream()
+                .filter(JsonString.class::isInstance)
+                .map(JsonString.class::cast)
+                .anyMatch(value -> filter.equals(value.getString()));
     }
 
     @SuppressWarnings("PMD.NullAssignment")
