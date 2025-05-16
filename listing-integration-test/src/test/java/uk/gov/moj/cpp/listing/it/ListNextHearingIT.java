@@ -27,7 +27,6 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceData;
 
-import java.time.LocalDate;
 import java.util.UUID;
 
 import org.hamcrest.Matcher;

@@ -56,6 +56,7 @@ import uk.gov.moj.cpp.listing.persistence.entity.ListedCases;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.entity.query.CaseByDefendant;
 import uk.gov.moj.cpp.listing.persistence.repository.CaseByDefendantRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.CourtApplicationRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusResult;
@@ -155,6 +156,8 @@ public class HearingQueryViewTest {
     private Enveloper enveloper = createEnveloper();
     @Mock
     private HearingRepository hearingRepository;
+    @Mock
+    private CourtApplicationRepository courtApplicationRepository;
     @Mock
     private CourtListPublishStatusJdbcRepository courtListRepository;
     @Mock
@@ -460,6 +463,7 @@ public class HearingQueryViewTest {
         when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
                 .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
 
+        when(courtApplicationRepository.findByParentApplicationId(applicationId)).thenReturn(List.of());
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
                 createObjectBuilder()
@@ -473,6 +477,54 @@ public class HearingQueryViewTest {
                 payloadIsJson(allOf(
                         withJsonPath("$.hearings[0].startDate", equalTo("2020-09-03")),
                         withJsonPath("$.hearings[0].courtRoomId", equalTo("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18")))
+                ))
+        ));
+    }
+
+    @Test
+    public void shouldSearchAllocatedAndUnallocatedHearingsByParentAndChildApplicationId() {
+
+        final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
+
+        final UUID applicationId = UUID.randomUUID();
+        final UUID childApplicationId = UUID.randomUUID();
+        final UUID childApplicationId1 = UUID.randomUUID();
+
+        final List<Hearing> childHearingsJson = childHearingsJson(ALLOCATEDSTR);
+        final List<Hearing> allHearings = hearingsJson;
+        allHearings.addAll(childHearingsJson);
+
+
+        when(hearingRepository.findAllocatedAndUnallocatedHearingsByCaseId(null, applicationId.toString())).thenReturn(hearingsJson);
+
+        List<CourtApplications> list = new ArrayList<CourtApplications>();
+        list.add(new CourtApplications(randomUUID(), childApplicationId, null,
+                "appType", applicationId, "appRef", "appParticulars", false));
+        list.add(new CourtApplications(randomUUID(), childApplicationId1, null,
+                "appType", applicationId, "appRef", "appParticulars", false));
+
+        when(courtApplicationRepository.findByParentApplicationId(applicationId)).thenReturn(list);
+
+        when(hearingRepository.findAllocatedAndUnallocatedHearingsByCaseId(null, childApplicationId.toString())).thenReturn(childHearingsJson);
+        when(hearingRepository.findAllocatedAndUnallocatedHearingsByCaseId(null, childApplicationId1.toString())).thenReturn(childHearingsJson);
+        when(hearingJsonListConverterFilterEjectCases.convert(allHearings))
+                .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(allHearings));
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(APPLICATION_ID_QUERY_PARAMETER, applicationId.toString())
+                        .build());
+
+        final JsonEnvelope results = hearingsQueryView.searchAllocatedAndUnallocatedHearings(query);
+
+        assertThat(results, is(jsonEnvelope(metadata().withName("listing.search.hearings"),
+                payloadIsJson(allOf(
+                        withJsonPath("$.hearings[0].startDate", equalTo("2020-09-03")),
+                        withJsonPath("$.hearings[0].courtRoomId", equalTo("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18")),
+                        withJsonPath("$.hearings[2].startDate", equalTo("2020-10-10")),
+                        withJsonPath("$.hearings[2].courtRoomId", equalTo("42481915-4d98-437b-a5dd-ace41e2ab0ea"))
+                        )
                 ))
         ));
     }
@@ -769,15 +821,16 @@ public class HearingQueryViewTest {
         final ObjectMapper objectMapper = new ObjectMapper();
         hearingsJson.get(0).setProperties(objectMapper.readTree("{\"type\":{\"description\":\"Review\"}}"));
 
+        final UUID applicationId = UUID.randomUUID();
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
                 createObjectBuilder()
                         .add("caseId", "be7866d6-cecb-407c-83dc-34864f7b4ff6")
-                        .add("applicationId", "applicationId")
+                        .add("applicationId", applicationId.toString())
                         .build());
 
         when(hearingRepository.findAllocatedAndUnallocatedHearingsByCaseId(
-                "be7866d6-cecb-407c-83dc-34864f7b4ff6", "applicationId"))
+                "be7866d6-cecb-407c-83dc-34864f7b4ff6", applicationId.toString()))
                 .thenReturn(hearingsJson);
 
         when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
@@ -790,7 +843,7 @@ public class HearingQueryViewTest {
         final JsonEnvelope results = hearingsQueryView.searchAllocatedAndUnallocatedHearings(query);
 
 
-        verify(hearingRepository).findAllocatedAndUnallocatedHearingsByCaseId(eq("be7866d6-cecb-407c-83dc-34864f7b4ff6"), eq("applicationId"));
+        verify(hearingRepository).findAllocatedAndUnallocatedHearingsByCaseId(eq("be7866d6-cecb-407c-83dc-34864f7b4ff6"), eq(applicationId.toString()));
         verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
         assertEquals(1, ((JsonObject) results.payload()).getJsonArray("hearings").size());
     }
@@ -1312,6 +1365,14 @@ public class HearingQueryViewTest {
 
     private List<Hearing> singleHearingsJson(String allocated) {
         final String testJsonString = "{ \"allocated\":\"" + allocated + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\"," +
+                " \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
+        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        hearing1.setTotalCount(Long.valueOf(2));
+        return newArrayList(hearing1);
+    }
+
+    private List<Hearing> childHearingsJson(String allocated) {
+        final String testJsonString = "{ \"allocated\":\"" + allocated + "\", \"startDate\": \"2020-10-10\", \"courtRoomId\": \"42481915-4d98-437b-a5dd-ace41e2ab0ea\"," +
                 " \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
         final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
         hearing1.setTotalCount(Long.valueOf(2));
