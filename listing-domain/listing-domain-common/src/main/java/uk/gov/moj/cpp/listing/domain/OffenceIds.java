@@ -12,9 +12,14 @@ public class OffenceIds implements Serializable {
 
     private final SeedingHearing seedingHearing;
 
-    public OffenceIds(final UUID id, final SeedingHearing seedingHearing ) {
+    // The offence added the case after this hearing created so it was added into this hearing as well.
+    private Boolean isNewOffence;
+
+
+    public OffenceIds(final UUID id, final SeedingHearing seedingHearing, final Boolean isNewOffence) {
         this.id = id;
         this.seedingHearing = seedingHearing;
+        this.isNewOffence = isNewOffence;
     }
 
     public UUID getId() {
@@ -23,6 +28,14 @@ public class OffenceIds implements Serializable {
 
     public SeedingHearing getSeedingHearing() {
         return seedingHearing;
+    }
+
+    public Boolean getIsNewOffence() {
+        return isNewOffence;
+    }
+
+    public void setIsNewOffence(final Boolean isNewOffence) {
+        this.isNewOffence = isNewOffence;
     }
 
     public static Builder offenceIds() {
@@ -39,7 +52,8 @@ public class OffenceIds implements Serializable {
         }
         final OffenceIds offence = (OffenceIds) o;
         return  Objects.equals(id, offence.id) &&
-                Objects.equals(seedingHearing, offence.seedingHearing);
+                Objects.equals(seedingHearing, offence.seedingHearing) &&
+                Objects.equals(isNewOffence, offence.isNewOffence);
     }
 
     @Override
@@ -61,6 +75,15 @@ public class OffenceIds implements Serializable {
 
         private SeedingHearing seedingHearing;
 
+        private Boolean isNewOffence;
+
+        public Builder withValues(final OffenceIds offenceIds){
+            this.id = offenceIds.getId();
+            this.seedingHearing = offenceIds.getSeedingHearing();
+            this.isNewOffence = offenceIds.getIsNewOffence();
+            return this;
+        }
+
         public Builder withId(final UUID id) {
             this.id = id;
             return this;
@@ -71,8 +94,13 @@ public class OffenceIds implements Serializable {
             return this;
         }
 
+        public Builder withIsNewOffence(final Boolean isNewOffence) {
+            this.isNewOffence = isNewOffence;
+            return this;
+        }
+
         public OffenceIds build() {
-            return new OffenceIds(id, seedingHearing);
+            return new OffenceIds(id, seedingHearing, isNewOffence);
         }
     }
 }

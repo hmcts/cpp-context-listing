@@ -5,6 +5,7 @@ import static java.util.Collections.singletonList;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -171,6 +172,60 @@ public class CaseMarkersEventListenerTest {
         MatcherAssert.assertThat(caseMarkers2.get("markerTypeCode").toString(), equalTo("\"" + CASE_MARKER_CODE_2 + "\""));
         MatcherAssert.assertThat(caseMarkers2.get("markerTypeDescription").toString(), equalTo("\"" + CASE_MARKER_DESCRIPTION_2 + "\""));
         MatcherAssert.assertThat(caseMarkers2.get("markerTypeid").toString(), equalTo("\"" + CASE_MARKER_TYPE_ID_2.toString() + "\""));
+        verify(hearingRepository).save(hearing);
+
+        MatcherAssert.assertThat(newListedCase.get("id").textValue() , equalTo(testCases.get(0).getId().toString()));
+        MatcherAssert.assertThat(newListedCase.get("caseIdentifier").get("caseReference").textValue() , equalTo(testCases.get(0).getCaseIdentifier().getCaseReference().toString()));
+        MatcherAssert.assertThat(newListedCase.get("shadowListed").asBoolean() , equalTo(testCases.get(0).getShadowListed()));
+    }
+
+
+    @Test
+    public void shouldHandleCaseMarkerToBeUpdatedWhenCaseIsNotThere() throws Exception {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final List<ListedCase> testCases = createListedCases();
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+
+        final Marker marker1 = marker()
+                .withId(CASE_MARKER_ID_1)
+                .withMarkerTypeid(CASE_MARKER_TYPE_ID_1)
+                .withMarkerTypeDescription(CASE_MARKER_DESCRIPTION_1)
+                .withMarkerTypeCode(CASE_MARKER_CODE_1)
+                .build();
+        final Marker marker2 = marker()
+                .withId(CASE_MARKER_ID_2)
+                .withMarkerTypeid(CASE_MARKER_TYPE_ID_2)
+                .withMarkerTypeDescription(CASE_MARKER_DESCRIPTION_2)
+                .withMarkerTypeCode(CASE_MARKER_CODE_2)
+                .build();
+
+        final NewCaseMarkerUpdated caseMarkersToBeUpdated = NewCaseMarkerUpdated.newCaseMarkerUpdated()
+                .withHearingId(HEARING_ID)
+                .withCaseId(randomUUID())
+                .withCaseMarkers(Arrays.asList(marker1, marker2))
+                .build();
+
+        given(caseMarkersToBeUpdatedEnvelope.payload()).willReturn(caseMarkersToBeUpdated);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptur =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        caseMarkersEventListener.handleCaseMarkersUpdated(caseMarkersToBeUpdatedEnvelope);
+
+        verify(properties).replace(any(), objectNodeCaptur.capture());
+        final JsonNode newListedCase = objectNodeCaptur.getValue().get(0);
+        final int markersSize = newListedCase.get("markers").size();
+        MatcherAssert.assertThat(markersSize, equalTo(1));
+        final JsonNode caseMarkers1 = objectNodeCaptur.getValue().get(0).get("markers").get(0);
+        final JsonNode caseMarkers2 = objectNodeCaptur.getValue().get(0).get("markers").get(1);
+        MatcherAssert.assertThat(caseMarkers1.get("markerTypeCode").toString(), equalTo("\"" + testCases.get(0).getMarkers().get(0).getMarkerTypeCode() + "\""));
+        MatcherAssert.assertThat(caseMarkers1.get("markerTypeDescription").toString(), equalTo("\"" + testCases.get(0).getMarkers().get(0).getMarkerTypeDescription() + "\""));
+        MatcherAssert.assertThat(caseMarkers1.get("markerTypeid").toString(), equalTo("\"" + testCases.get(0).getMarkers().get(0).getMarkerTypeid().toString() + "\""));
+        MatcherAssert.assertThat(caseMarkers2, nullValue());
         verify(hearingRepository).save(hearing);
 
         MatcherAssert.assertThat(newListedCase.get("id").textValue() , equalTo(testCases.get(0).getId().toString()));

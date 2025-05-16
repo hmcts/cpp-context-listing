@@ -9,15 +9,14 @@ import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
-import uk.gov.justice.core.courts.HearingListingNeeds;
-import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
+import uk.gov.justice.core.courts.*;
 import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.core.courts.JudicialRoleType;
-import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.listing.events.DeleteNextHearingRequested;
 import uk.gov.justice.listing.events.NextHearingReplaced;
 import uk.gov.justice.listing.events.NextHearingRequested;
+import uk.gov.justice.listing.events.RemoveOffencesFromExistingHearingRequested;
 import uk.gov.justice.listing.events.UnscheduledNextHearingRequested;
 import uk.gov.justice.listing.events.UpdateExistingHearingRequested;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
@@ -101,6 +100,8 @@ public class SeedHearingAggregateTest {
         assertThat(Arrays.asList(hearingDeleted1.getHearingId(), hearingDeleted2.getHearingId()).containsAll(Arrays.asList(hearingId1, hearingId2)), is(true));
 
     }
+
+
 
     @Test
     public void shouldRaiseExistingIdWhenUpdateExistingHearingRequested() {
@@ -321,6 +322,53 @@ public class SeedHearingAggregateTest {
         assertThat(nextHearing4Replaced.getSeedingHearingId(), is(seedingHearingId));
         assertThat(nextHearing4Replaced.getOldHearingIds().size(), is(2));
         assertThat(nextHearing4Replaced.getOldHearingIds(), hasItems(newHearingId1, newHearingId2));
+    }
+
+    @Test
+    public void shouldNextHearingReplacedWhenExistingHearingAmended(){
+        final UUID seedingHearingId = randomUUID();
+        final UUID existingHearingId = randomUUID();
+        final HearingListingNeeds firstHearingListingNeeds =buildHearingListingNeeds(existingHearingId);
+        final String adjournedFromDate = "2021-01-01";
+        final String hearingDay = "2021-01-26";
+        final List<UUID> shadowListedOffences = Arrays.asList(randomUUID());
+        final List<CourtCentreDefaults> courtCentreDefaults = Arrays.asList(CourtCentreDefaults.courtCentreDefaults()
+                .withCourtCentreId(randomUUID())
+                .build());
+
+        final Stream<Object> stream = seedHearingAggregate.requestUpdateExistingHearing(seedingHearingId, existingHearingId, hearingDay, firstHearingListingNeeds.getProsecutionCases(), shadowListedOffences);
+
+        List<Object> nextHearingRequestedList = stream.collect(Collectors.toList());
+
+        assertThat(nextHearingRequestedList.size(), is(1));
+        UpdateExistingHearingRequested updateExistingHearingRequested = (UpdateExistingHearingRequested) nextHearingRequestedList.get(0);
+        assertThat(updateExistingHearingRequested.getHearingId(), is(existingHearingId));
+
+        //SeedingHearing Amended so delete offences
+        final Stream<Object> stream2 = seedHearingAggregate.deleteNextHearings(seedingHearingId, hearingDay);
+
+        List<Object> deleteNextHearingRequestedList = stream2.collect(Collectors.toList());
+
+        assertThat(deleteNextHearingRequestedList.size(), is(1));
+
+        RemoveOffencesFromExistingHearingRequested removeOffencesFromExistingHearingRequested = (RemoveOffencesFromExistingHearingRequested) deleteNextHearingRequestedList.get(0);
+        assertThat(removeOffencesFromExistingHearingRequested.getHearingId(), is(existingHearingId));
+
+        // and create a new Next hearings
+        final UUID newHearingId1 = randomUUID();
+        final List<HearingListingNeeds> secondHearingListingNeedsList = singletonList(buildHearingListingNeeds(newHearingId1));
+        final Stream<Object> stream3 = seedHearingAggregate.requestNextHearings(secondHearingListingNeedsList, hearingDay, courtCentreDefaults, of(adjournedFromDate), shadowListedOffences);
+
+        List<Object> newNextHearingRequestedList = stream3.collect(Collectors.toList());
+        assertThat(newNextHearingRequestedList.size(), is(2));
+        NextHearingRequested nextHearing1Requested = (NextHearingRequested) newNextHearingRequestedList.get(0);
+        assertThat(nextHearing1Requested.getHearing().getId(), is(newHearingId1));
+
+        // replaced events to old existing hearings to new hearings
+        final NextHearingReplaced nextHearing1Replaced = (NextHearingReplaced) newNextHearingRequestedList.get(1);
+        assertThat(nextHearing1Replaced.getNewHearingId(), is(newHearingId1));
+        assertThat(nextHearing1Replaced.getSeedingHearingId(), is(seedingHearingId));
+        assertThat(nextHearing1Replaced.getOldHearingIds(), hasItems(existingHearingId));
     }
 
     private HearingListingNeeds buildHearingListingNeeds(final UUID hearingId) {

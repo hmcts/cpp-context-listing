@@ -167,6 +167,56 @@ public class DefendantOffencesEventListenerTest {
     }
 
     @Test
+    public void shouldHandleOffenceUpdatedAndPersistSimpleOffenceWhenCaseIsNotInDB() throws Exception {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final List<ListedCase> testCases = createListedCases();
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+
+        final OffenceUpdated hearingData = OffenceUpdated.offenceUpdated()
+                .withHearingId(HEARING_ID)
+                .withCaseId(randomUUID())
+                .withDefendantId(DEFENDANT_ID)
+                .withOffence(Offence.offence()
+                        .withStartDate(LocalDates.to(LocalDate.now()))
+                        .withOffenceCode(EXPECTED_OFFENCE_CODE)
+                        .withId(OFFENCE_ID)
+                        .withEndDate(LocalDates.to(LocalDate.now()))
+                        .withStatementOfOffence(StatementOfOffence.statementOfOffence()
+                                .withTitle(STRING.next())
+                                .withWelshTitle(STRING.next())
+                                .withLegislation(STRING.next())
+                                .build())
+                        .build())
+                .build();
+
+        given(offenceUpdatedEnvelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptur =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        defendantOffencesEventListener.offenceUpdated(offenceUpdatedEnvelope);
+
+        verify(properties).replace(any(), objectNodeCaptur.capture());
+        final JsonNode newListedCase = objectNodeCaptur.getValue().get(0);
+        final ListedCase testListedCase = testCases.get(0);
+        String expectedOffenceCode = newListedCase.get("defendants").get(0).get("offences")
+                .get(0).get("offenceCode").toString();
+
+        int numberOffence = newListedCase.get("defendants").get(0).get("offences").size();
+        assertThat(numberOffence, equalTo(1));
+        assertThat(expectedOffenceCode, equalTo("\"" + testCases.get(0).getDefendants().get(0).getOffences().get(0).getOffenceCode() + "\""));
+
+        assertThat(newListedCase.get("shadowListed").asBoolean(), equalTo(testListedCase.getShadowListed()));
+        assertThat(newListedCase.get("defendants").get(0).get("offences").get(0).get("shadowListed").asBoolean(),
+                equalTo(testListedCase.getDefendants().get(0).getOffences().get(0).getShadowListed()));
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
     public void shouldHandleOffenceUpdatedWhenDefendantIsNotInListedCasedDb() throws Exception {
         final ObjectMapper objectMapper = new ObjectMapper();
         final List<ListedCase> testCases = createListedCases();
@@ -286,6 +336,51 @@ public class DefendantOffencesEventListenerTest {
     }
 
     @Test
+    public void shouldHandleOffenceAddedWhenCaseIsNotInDB() throws Exception {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final List<ListedCase> testCases = createListedCases();
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+
+        final OffenceAdded hearingData = OffenceAdded.offenceAdded()
+                .withHearingId(HEARING_ID)
+                .withCaseId(randomUUID())
+                .withDefendantId(DEFENDANT_ID)
+                .withOffence(Offence.offence()
+                        .withStartDate(LocalDates.to(LocalDate.now()))
+                        .withOffenceCode(EXPECTED_OFFENCE_CODE)
+                        .withId(randomUUID())
+                        .withShadowListed(null)
+                        .withStatementOfOffence(StatementOfOffence.statementOfOffence()
+                                .withTitle(STRING.next())
+                                .withWelshTitle(STRING.next())
+                                .withLegislation(STRING.next())
+                                .build())
+                        .build())
+                .build();
+
+        given(offenceAddedEnvelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptur =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        defendantOffencesEventListener.offenceAdded(offenceAddedEnvelope);
+
+        verify(properties).replace(any(), objectNodeCaptur.capture());
+        String expectedOffenceCode = objectNodeCaptur.getValue().get(0).get("defendants").get(0).get("offences")
+                .get(0).get("offenceCode").toString();
+
+        int numberOffence = objectNodeCaptur.getValue().get(0).get("defendants").get(0).get("offences").size();
+        assertThat(numberOffence, equalTo(1));
+        assertThat(expectedOffenceCode, equalTo("\"" + testCases.get(0).getDefendants().get(0).getOffences().get(0).getOffenceCode()+ "\""));
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
     public void shouldHandleOffenceAddedWhenDefendantIsNotInListedCasedDb() throws Exception {
         final ObjectMapper objectMapper = new ObjectMapper();
         final List<ListedCase> testCases = createListedCases();
@@ -350,6 +445,37 @@ public class DefendantOffencesEventListenerTest {
 
         int numberOffence = objectNodeCaptur.getValue().get(0).get("defendants").get(0).get("offences").size();
         assertThat(numberOffence, equalTo(0));
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldHandleOffenceDeleteAndDeleteSimpleOffenceWhenCaseIsNotThere() throws Exception {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final OffenceDeleted offenceDeleted =  new OffenceDeleted.Builder()
+                .withHearingId(HEARING_ID)
+                .withCaseId(randomUUID())
+                .withOffenceId(OFFENCE_ID)
+                .withDefendantId(DEFENDANT_ID)
+                .build();
+        final List<ListedCase> testCases = createListedCases();
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+
+        given(offenceDeletedEnvelope.payload()).willReturn(offenceDeleted);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptur =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        defendantOffencesEventListener.offenceDeleted(offenceDeletedEnvelope);
+
+        verify(properties).replace(any(), objectNodeCaptur.capture());
+
+        int numberOffence = objectNodeCaptur.getValue().get(0).get("defendants").get(0).get("offences").size();
+        assertThat(numberOffence, equalTo(1));
         verify(hearingRepository).save(hearing);
     }
 

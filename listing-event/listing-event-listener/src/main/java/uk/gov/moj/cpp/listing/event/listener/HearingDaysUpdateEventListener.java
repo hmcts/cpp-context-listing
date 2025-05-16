@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -34,6 +35,7 @@ import javax.json.JsonReader;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class HearingDaysUpdateEventListener {
@@ -126,7 +128,8 @@ public class HearingDaysUpdateEventListener {
         if (nonNull(existingHearing.getHearingDays())) {
             existingHearing.getHearingDays().replaceAll(hd -> {
                 UUID scheduleId = scheduledHearingDateMap.get(hd.getHearingDate());
-                if (hd.getCourtScheduleId() == null && scheduleId != null) {
+                if (!StringUtils.equals(Objects.toString(hd.getCourtScheduleId(), null),
+                                        Objects.toString(scheduleId, null))) {
                     return HearingDay.hearingDay()
                             .withValuesFrom(hd)
                             .withCourtScheduleId(scheduleId)

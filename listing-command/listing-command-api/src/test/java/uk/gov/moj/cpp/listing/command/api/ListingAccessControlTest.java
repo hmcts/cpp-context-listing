@@ -96,6 +96,8 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
         assertFailureOutcome(results);
     }
 
+
+
     @Test
     public void shouldAllowAuthorisedUserToUpdateHearingForListing() {
         final Action action = createActionFor(ACTION_UPDATE_HEARING_FOR_LISTING);

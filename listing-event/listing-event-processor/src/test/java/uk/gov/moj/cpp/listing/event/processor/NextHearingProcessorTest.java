@@ -11,7 +11,6 @@ import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
-import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
@@ -252,7 +251,7 @@ public class NextHearingProcessorTest {
     }
 
     @Test
-    public void shouldHandleHearingUnallocatedForListing() {
+    public void shouldHandleHearingAllocatedForListing() {
         final UUID hearingId = randomUUID();
         final UUID seedingHearingId = randomUUID();
         final UUID caseId = randomUUID();
@@ -263,6 +262,7 @@ public class NextHearingProcessorTest {
                 .withCaseIdsSeededByOnlySeedingHearingId(asList(caseId))
                 .withSeedingHearingId(seedingHearingId)
                 .withSeededOffences(asList(offenceId))
+                .withUnallocated(false)
                 .build();
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.offences-removed-from-hearing"),
                 objectToJsonObjectConverter.convert(offencesRemovedFromHearing));
@@ -276,7 +276,7 @@ public class NextHearingProcessorTest {
 
         final JsonEnvelope publishedPublicEvent = publishedStreams.get(0);
         final JsonObject eventObject = publishedPublicEvent.payloadAsJsonObject();
-        assertThat(publishedPublicEvent.metadata().name(), is("public.events.listing.offences-removed-from-unallocated-hearing"));
+        assertThat(publishedPublicEvent.metadata().name(), is("public.events.listing.offences-removed-from-existing-allocated-hearing"));
         assertThat(eventObject.getString("hearingId"), is(hearingId.toString()));
         assertThat(eventObject.getJsonArray("offenceIds").size(), is(1));
 
@@ -312,7 +312,7 @@ public class NextHearingProcessorTest {
 
         final JsonEnvelope publishedPublicEvent = publishedStreams.get(0);
         final JsonObject eventObject = publishedPublicEvent.payloadAsJsonObject();
-        assertThat(publishedPublicEvent.metadata().name(), is("public.events.listing.hearing-unallocated"));
+        assertThat(publishedPublicEvent.metadata().name(), is("public.events.listing.offences-removed-from-unallocated-hearing"));
         assertThat(eventObject.getString("hearingId"), is(hearingId.toString()));
         assertThat(eventObject.getJsonArray("offenceIds").size(), is(1));
 

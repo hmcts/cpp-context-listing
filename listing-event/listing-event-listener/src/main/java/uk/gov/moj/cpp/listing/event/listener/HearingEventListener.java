@@ -338,7 +338,10 @@ public class HearingEventListener {
                                                                                final CaseIdentifier caseIdentifier,
                                                                                final List<ListedCase> cases) {
         final List<ListedCase> listedCases = new ArrayList<>(cases);
-        final ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(prosecutionCaseID));
+        final ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(prosecutionCaseID), null);
+        if(isNull(listedCase)){
+            return listedCases;
+        }
         final Prosecutor prosecutor = Prosecutor.prosecutor()
                 .withProsecutorCode(caseIdentifier.getAuthorityCode())
                 .withProsecutorId(caseIdentifier.getAuthorityId()).build();

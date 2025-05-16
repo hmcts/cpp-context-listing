@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.steps;
 
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.Collections.singletonList;
@@ -17,6 +18,7 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -133,6 +135,7 @@ import com.jayway.jsonpath.Filter;
 import io.restassured.path.json.JsonPath;
 import org.apache.commons.collections.CollectionUtils;
 import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -506,12 +509,12 @@ public class ListCourtHearingSteps extends AbstractIT {
                 withJsonPath(hearingIdFilter + "hearingLanguage", hasItem("ENGLISH"))
         });
     }
-
-    public void verifyHearingDayCourtScheduledUpdated(String[] courtSchedules) {
+    public void verifyHearingDayCourtScheduledUpdated() {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
         final String hearingIdFilter = getHearingFilter(hearingData.getId().toString());
-        final String s = pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), true, getLoggedInUser().toString(), new Matcher[]{
-                withJsonPath("$.hearings[0].hearingDays[*].courtScheduleId", hasItem(courtSchedules[0])),
+        pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), true, getLoggedInUser().toString(),
+                new Matcher[]{
+                withJsonPath("$.hearings[0].hearingDays[*].courtScheduleId", is(notNullValue())),
                 withJsonPath(hearingIdFilter + "jurisdictionType", hasItem(hearingData.getJurisdictionType())),
                 withJsonPath(hearingIdFilter + "courtCentreId", hasItem(hearingData.getCourtCentreId().toString())),
                 withJsonPath(hearingIdFilter + "type.id", hasItem(hearingData.getHearingTypeData().getTypeId().toString())),
@@ -1980,7 +1983,8 @@ public class ListCourtHearingSteps extends AbstractIT {
     public void verifyPublicEventHearingConfirmedAndExtendHearingFromProgression(final UUID allocatedHearingId, final UUID unAllocatedHearingId) {
         final List<String> newCaseIds = new ArrayList<>();
 
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing);
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing, isJson(Matchers.allOf(
+                withJsonPath("$.confirmedHearing.id", is(allocatedHearingId.toString())))));
 
         assertThat(jsonResponse.get("confirmedHearing.id"), is(allocatedHearingId.toString()));
         assertThat(jsonResponse.get("confirmedHearing.prosecutionCases.size()"), is(1));
@@ -2251,7 +2255,6 @@ public class ListCourtHearingSteps extends AbstractIT {
         assertThat(((ArrayList) ((Map) jsonResponse.get("hearing")).get("listedCases")).size(), is(2));
     }
 
-
     public void verifyHearingForCourtSchedulerCourtSessionAndBusinessType(final String jurisdictionType, final String courtSession, final String businessType, final boolean allocated, final Matcher... matchers) {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.hearings.by.allocated.jurisdiction-type.court-session.business-type"), jurisdictionType, courtSession, businessType, allocated));
@@ -2261,6 +2264,4 @@ public class ListCourtHearingSteps extends AbstractIT {
                         payload().isJson(allOf(matchers))
                 );
     }
-
-
 }

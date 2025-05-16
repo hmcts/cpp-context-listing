@@ -94,8 +94,7 @@ public class HearingMarkedAsDuplicateEventListener {
         final List<UUID> seedCaseIds = event.payload().getCaseIdsSeededByOnlySeedingHearingId();
         final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
         };
-        final TypeReference<List<HearingDay>> typeHearingDayRef = new TypeReference<List<HearingDay>>() {
-        };
+
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("listing.events.offences-removed-from-hearing. hearingId: {} ", hearingId);
         }
@@ -105,9 +104,6 @@ public class HearingMarkedAsDuplicateEventListener {
         }
         using(hearingRepository)
                 .find(hearingId)
-                .put("allocated", false)
-                .remove("courtRoomId")
-                .putSubList("hearingDays", typeHearingDayRef, getHearingDaysWithRemoveCourtRoomIdFunction())
                 .putSubList("listedCases", typeRef, getListedCaseWithRemoveDeletedOffencesFunction(seedingHearingId, seedCaseIds))
                 .save();
         hearingSearchSyncService.sync(hearingId);

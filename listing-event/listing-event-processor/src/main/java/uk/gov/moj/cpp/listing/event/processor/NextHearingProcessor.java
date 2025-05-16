@@ -177,9 +177,14 @@ public class NextHearingProcessor {
         final List<UUID> seededOffences = event.getSeededOffences();
 
         if (nonNull(event.getUnallocated()) && event.getUnallocated()) {
-            publishPublicHearingUnallocated(envelope, hearingId, seededOffences);
-        } else {
             publishPublicOffencesRemovedFromUnallocatedHearing(envelope, hearingId, seededOffences);
+        } else {
+            final JsonObjectBuilder payloadBuilder = createObjectBuilder();
+            payloadBuilder.add("hearingId", hearingId.toString() );
+            payloadBuilder.add("offenceIds", envelope.payloadAsJsonObject().getJsonArray("seededOffences"));
+            // This public event uses for multiple purpose, we need to know it is raised by amend-reshare flow.
+            payloadBuilder.add("isResultFlow", true);
+            sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING), payloadBuilder.build()));
         }
 
         if (isNotEmpty(event.getCaseIdsSeededByOnlySeedingHearingId())) {

@@ -85,6 +85,7 @@ public class DefaultQueryApiHearingSlotsResourceTest {
                 "1234",
                 "BYS",
                 "AM",
+                null,
                 "20",
                 "1");
 
@@ -112,6 +113,7 @@ public class DefaultQueryApiHearingSlotsResourceTest {
                 "1234",
                 "BYS",
                 "AM",
+                null,
                 "20",
                 "1");
 

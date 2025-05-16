@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.of;
 import static uk.gov.moj.cpp.listing.event.util.ReportingRestrictionHelper.dedupAllReportingRestrictions;
@@ -112,7 +113,10 @@ public class DefendantOffencesEventListener {
     }
 
     private List<ListedCase> getUpdatedListedCase(UUID caseId, UUID defendantId, Offence updatedOffence, List<ListedCase> listedCases) {
-        ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(caseId));
+        ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(caseId), null);
+        if(isNull(listedCase)){
+            return listedCases;
+        }
         List<Defendant> defendants = listedCase.getDefendants();
         final Optional<Defendant> optionalDefendant = defendants.stream().filter(defendant -> defendant.getId().equals(defendantId)).findFirst();
         if (optionalDefendant.isPresent()) {
@@ -124,7 +128,10 @@ public class DefendantOffencesEventListener {
     }
 
     private List<ListedCase> getAddedListedCase(UUID caseId, UUID defendantId, Offence updatedOffence, List<ListedCase> listedCases) {
-        ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(caseId));
+        ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(caseId), null);
+        if(isNull(listedCase)){
+            return listedCases;
+        }
         List<Defendant> defendants = listedCase.getDefendants();
 
         final Optional<Defendant> optionalDefendant = defendants.stream().filter(defendant -> defendant.getId().equals(defendantId)).findFirst();
@@ -141,7 +148,10 @@ public class DefendantOffencesEventListener {
     }
 
     private List<ListedCase> getDeletedListedCase(UUID caseId, UUID defendantId, UUID offenceId, List<ListedCase> listedCases) {
-        ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(caseId));
+        ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(caseId), null);
+        if(isNull(listedCase)){
+            return listedCases;
+        }
         List<Defendant> defendants = listedCase.getDefendants();
         Defendant originalDefendant = Iterables.find(defendants, defendant -> defendant.getId().equals(defendantId));
 

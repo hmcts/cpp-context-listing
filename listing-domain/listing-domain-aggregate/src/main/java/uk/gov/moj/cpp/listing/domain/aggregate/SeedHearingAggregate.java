@@ -5,13 +5,7 @@ import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.domain.aggregate.Aggregate;
-import uk.gov.justice.listing.events.CourtCentreDetails;
-import uk.gov.justice.listing.events.DeleteNextHearingRequested;
-import uk.gov.justice.listing.events.NextHearingReplaced;
-import uk.gov.justice.listing.events.NextHearingRequested;
-import uk.gov.justice.listing.events.RemoveOffencesFromExistingHearingRequested;
-import uk.gov.justice.listing.events.UnscheduledNextHearingRequested;
-import uk.gov.justice.listing.events.UpdateExistingHearingRequested;
+import uk.gov.justice.listing.events.*;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 
 import java.util.HashMap;
@@ -71,6 +65,8 @@ public class SeedHearingAggregate implements Aggregate {
         currentHearingIds.add(nextHearingReplaced.getNewHearingId());
 
     }
+
+
 
     public Stream<Object> requestNextHearings(final List<HearingListingNeeds> hearingListingNeeds, final String hearingDay, final List<CourtCentreDefaults> courtCentreDefaults, final Optional<String> adjournedFromDate, final List<UUID> shadowListedOffences) {
         Stream<Object> events = empty();
@@ -166,6 +162,8 @@ public class SeedHearingAggregate implements Aggregate {
         return apply(events);
     }
 
+
+
     private List<CourtCentreDetails> convertCourtCentreDetails(final List<CourtCentreDefaults> courtCentreDefaults) {
         return CollectionUtils.isNotEmpty(courtCentreDefaults) ?
                 courtCentreDefaults.stream()
@@ -224,6 +222,7 @@ public class SeedHearingAggregate implements Aggregate {
 
     private void onDeleteNextHearingRequested(final DeleteNextHearingRequested deleteNextHearingRequested) {
         seededHearingIdsMapForHearingDay.remove(deleteNextHearingRequested.getHearingDay());
+        // keep them for move new offences from old next hearing to new next hearing.
         seedingHearingId = deleteNextHearingRequested.getSeedingHearingId();
         if(currentHearingIds.contains(deleteNextHearingRequested.getHearingId())){
             previousHearingIds.clear();
@@ -234,6 +233,13 @@ public class SeedHearingAggregate implements Aggregate {
 
     private void onRemoveOffencesFromExistingHearingRequested(final RemoveOffencesFromExistingHearingRequested removeOffencesFromExistingHearingRequested) {
         existingHearingIdsMapForHearingDay.remove(removeOffencesFromExistingHearingRequested.getHearingId());
+        // keep them for move new offences from old next hearing to new next hearing.
+        seedingHearingId = removeOffencesFromExistingHearingRequested.getSeedingHearingId();
+        if(currentHearingIds.contains(removeOffencesFromExistingHearingRequested.getHearingId())){
+            previousHearingIds.clear();
+            currentHearingIds.clear();
+        }
+        previousHearingIds.add(removeOffencesFromExistingHearingRequested.getHearingId());
     }
 
     private void onUnscheduledNextHearingRequested(final UnscheduledNextHearingRequested unscheduledNextHearingRequested) {

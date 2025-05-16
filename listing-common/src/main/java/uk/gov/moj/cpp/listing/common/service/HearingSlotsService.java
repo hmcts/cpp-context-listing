@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.common.service;
 
 import static java.lang.String.format;
+import static javax.json.Json.createObjectBuilder;
+import static javax.json.Json.createReader;
 import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 
@@ -10,6 +12,7 @@ import uk.gov.justice.services.core.dispatcher.SystemUserProvider;
 import uk.gov.moj.cpp.listing.domain.exception.DataValidationException;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Map;
@@ -18,6 +21,8 @@ import java.util.UUID;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,8 +43,15 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings({"squid:S1312", "squid:S2629", "squid:S6813"})
 @ApplicationScoped
 public class HearingSlotsService {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(HearingSlotsService.class);
+
+    public static final String HEARING_DATE = "hearingDate";
+    public static final String COURT_SCHEDULE_ID = "courtScheduleId";
+    public static final String STATUS = "status";
+    public static final String SCHEDULES = "schedules";
+    public static final String FAILURE = "failure";
+    public static final String SUCCESS = "success";
+
     private static final String HEARING_RESOURCE = "/hearingslots";
     private static final String COURTSCHEDULER_UPDATE_HEARING_SLOTS = "application/vnd.courtscheduler.update.hearing.slots+json";
     private static final String COURTSCHEDULER_GET_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.get.hearing.slots+json";
@@ -47,6 +59,7 @@ public class HearingSlotsService {
     private static final String COUTRT_SCHEDULER_HEARING_IDS = "application/vnd.courtscheduler.get.hearing.ids+json";
 
     private static final String CJS_CPP_UID = "CJSCPPUID";
+
     @Inject
     @Value(key = "courtscheduler.base.url", defaultValue = "http://localhost:8080/listingcourtscheduler-api/rest/courtscheduler")
     private String baseUri;
@@ -61,11 +74,12 @@ public class HearingSlotsService {
         return query(HEARING_RESOURCE, COURTSCHEDULER_GET_HEARING_SLOTS_TYPE, params);
     }
 
-    public void update(final Object payload) {
+    public JsonObject update(final Object payload) {
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("Update HearingSlots slots in CourtScheduler S & L with slot details '{}'", payload);
         }
 
+        final JsonObjectBuilder respJsonObjBuilder = createObjectBuilder();
         try {
             final HttpPut httpPut = new HttpPut(new URL(baseUri + HEARING_RESOURCE).toString());
             httpPut.addHeader(CONTENT_TYPE, COURTSCHEDULER_UPDATE_HEARING_SLOTS);
@@ -75,19 +89,26 @@ public class HearingSlotsService {
             httpPut.setEntity(requestEntity);
 
             final HttpResponse httpResponse = execute(httpPut);
-
             if (isOkay(httpResponse)) {
                 if (LOGGER.isInfoEnabled()) {
                     LOGGER.info("Update HearingSlots successfully");
                 }
+                final String responseBody = EntityUtils.toString(httpResponse.getEntity());
+                final JsonObject respJsonObj = createReader(new StringReader(responseBody)).readObject();
+                respJsonObjBuilder.add(STATUS, SUCCESS);
+                respJsonObjBuilder.add(SCHEDULES, respJsonObj.getJsonArray(SCHEDULES));
             } else {
-                LOGGER.error(format("Update HearingSlots failed with statud code : %s andresponse message: %s",
+                LOGGER.error(format("Update HearingSlots failed with status code : %s andresponse message: %s",
                         httpResponse.getStatusLine().getStatusCode(),
                         EntityUtils.toString(httpResponse.getEntity())));
+                respJsonObjBuilder.add(STATUS, FAILURE);
             }
         } catch (IOException ex) {
             LOGGER.error("Exception thrown on trying to Update Hearing Slots", ex);
+            respJsonObjBuilder.add(STATUS, FAILURE);
         }
+
+        return respJsonObjBuilder.build();
     }
 
     public void delete(final UUID hearingId) {

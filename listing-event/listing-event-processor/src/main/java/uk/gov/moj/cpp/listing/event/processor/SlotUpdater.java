@@ -3,6 +3,11 @@ package uk.gov.moj.cpp.listing.event.processor;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.lang3.BooleanUtils.isTrue;
 import static uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
+import static uk.gov.moj.cpp.listing.common.service.HearingSlotsService.COURT_SCHEDULE_ID;
+import static uk.gov.moj.cpp.listing.common.service.HearingSlotsService.HEARING_DATE;
+import static uk.gov.moj.cpp.listing.common.service.HearingSlotsService.SCHEDULES;
+import static uk.gov.moj.cpp.listing.common.service.HearingSlotsService.STATUS;
+import static uk.gov.moj.cpp.listing.common.service.HearingSlotsService.SUCCESS;
 
 import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.listing.events.HearingDay;
@@ -15,9 +20,11 @@ import java.util.List;
 import java.util.Optional;
 
 import javax.inject.Inject;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +66,18 @@ public class SlotUpdater {
                         .add("hearingSlots", SlotsToJsonStringConverter.buildJsonArrayBuilder(slotDetails).build())
                         .build();
                 LOGGER.info("Calling Azure update slot service with following request {}", updateSlotsPayload);
-                hearingSlotsService.update(updateSlotsPayload);
+                final JsonObject slotUpdateRespJsonObj = hearingSlotsService.update(updateSlotsPayload);
+                if (StringUtils.equals(slotUpdateRespJsonObj.getString(STATUS), SUCCESS)) {
+                    final JsonArray hearingDaySchedulesJsonArr = slotUpdateRespJsonObj.getJsonArray(SCHEDULES);
+                    hearingDaySchedulesJsonArr.forEach(item -> {
+                        final JsonObject hearingDayScheduleJsonObj = item.asJsonObject();
+                        final Optional<SlotDetail> matchedSlotSchedule =
+                                slotDetails.stream()
+                                           .filter(slot -> StringUtils.equals(slot.getSessionDate(), hearingDayScheduleJsonObj.getString(HEARING_DATE)))
+                                           .findFirst();
+                        matchedSlotSchedule.ifPresent(slot -> slot.setCourtScheduleId(hearingDayScheduleJsonObj.getString(COURT_SCHEDULE_ID)));
+                    });
+                }
             }
             return Optional.of(slotDetails);
         } else {

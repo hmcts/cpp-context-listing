@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.steps;
 
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
@@ -50,6 +51,7 @@ public class RemoveOffencesFromHearingSteps extends AbstractIT {
     public void verifyPublicListingOffencesRemovedFromAllocatedHearing() {
         final JsonPath jsonResponse = retrieveMessage(publicSelectedOffenceRemovedFromHearing);
         assertThat(jsonResponse.get("hearingId"), is(hearingId));
+        assertThat(jsonResponse.get("isResultFlow"), is(false));
     }
 
 }

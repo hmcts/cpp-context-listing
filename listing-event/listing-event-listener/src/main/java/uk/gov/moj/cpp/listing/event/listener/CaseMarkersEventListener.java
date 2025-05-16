@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static com.google.common.collect.Iterables.find;
+import static java.util.Objects.isNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.events.ListedCase;
@@ -62,7 +63,10 @@ public class CaseMarkersEventListener {
                                                   final List<Marker> updatedCaseMarkers,
                                                   final List<ListedCase> cases) {
         final List<ListedCase> listedCases = new ArrayList<>(cases);
-        final ListedCase listedCase = find(listedCases, caze -> caze.getId().equals(caseId));
+        final ListedCase listedCase = find(listedCases, caze -> caze.getId().equals(caseId), null);
+        if(isNull(listedCase)){
+            return listedCases;
+        }
         final List<Marker> markers = listedCase.getMarkers();
         if(null != markers) {
             markers.clear();

@@ -5,7 +5,6 @@ import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -146,7 +145,7 @@ public class HearingMarkedAsDuplicateEventListenerTest {
     }
 
     @Test
-    public void shouldUnallocatedHearingAndRemoveOffences() throws JsonProcessingException {
+    public void shouldRemoveOffences() throws JsonProcessingException {
         final UUID seedingHearingId = randomUUID();
         final UUID hearingId = randomUUID();
         final UUID case1Id = randomUUID();
@@ -213,13 +212,10 @@ public class HearingMarkedAsDuplicateEventListenerTest {
 
         final Hearing savedHearing = argumentCaptor.getValue();
 
-        assertThat(savedHearing.getProperties().get("allocated").asBoolean(), is(false));
-        assertThat(savedHearing.getProperties().get("courtRoomId"), nullValue());
         assertThat(savedHearing.getProperties().get("listedCases").size(), is(1));
         assertThat(savedHearing.getProperties().get("listedCases").get(0).get("id").asText(), is(case2Id.toString()));
         assertThat(savedHearing.getProperties().get("listedCases").get(0).get("defendants").get(0).get("offences").size(), is(1));
         assertThat(savedHearing.getProperties().get("listedCases").get(0).get("defendants").get(0).get("offences").get(0).get("id").asText(), is(offence3Id.toString()));
-        assertThat(savedHearing.getProperties().get("hearingDays").get(0).get("courtRoomId"), nullValue());
         assertThat(savedHearing.getProperties().get("hearingDays").get(0).get("courtCentreId").asText(), is(courtCentreId.toString()));
 
     }

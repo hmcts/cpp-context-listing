@@ -532,4 +532,37 @@ public class HearingEventListenerTest {
         final JsonNode expectedCasesProperties = objectMapper.readTree(expectedCases1);
         assertThat(actualValue, CoreMatchers.equalTo(expectedCasesProperties));
     }
+
+    @Test
+    public void shouldHandleCaseIdentifierProceedingsConcludedWhenCaseIsNotThere() throws Exception {
+        final String testCases1 = getStringFromResource("defendant-proceedings-concluded-with-prosecutor.json");
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final JsonNode testCasesProperties = objectMapper.readTree(testCases1);
+        final Envelope<CaseIdentifierUpdated> envelope = (Envelope<CaseIdentifierUpdated>) mock(Envelope.class);
+
+        final CaseIdentifierUpdated updateCaseIdentifier = CaseIdentifierUpdated.caseIdentifierUpdated()
+                .withProsecutionCaseId(randomUUID())
+                .withHearingId(HEARING_ID)
+                .withProsecutionAuthorityCode("btx4uyUfIb")
+                .withProsecutionAuthorityId(fromString("f0ddeecf-fda8-46f8-a293-c1813e58b479"))
+                .build();
+
+        given(envelope.payload()).willReturn(updateCaseIdentifier);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        hearingEventListener.updateCaseIdentifier(envelope);
+        verify(properties).replace(any(), objectNodeCaptor.capture());
+        verify(hearingRepository).save(hearing);
+        ArrayNode actualValue = objectNodeCaptor.getValue();
+
+        final String expectedCases1 = testCases1.replace("btx4uyUfIa", "btx4uyUfIb")
+                .replace("f0ddeecf-fda8-46f8-a293-c1813e58b478", "f0ddeecf-fda8-46f8-a293-c1813e58b479");
+        final JsonNode expectedCasesProperties = objectMapper.readTree(expectedCases1);
+        assertThat(actualValue, CoreMatchers.equalTo(expectedCasesProperties));
+    }
 }

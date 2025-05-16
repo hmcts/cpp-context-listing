@@ -17,7 +17,6 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClientProvider.newPublicJmsMessageConsumerClientProvider;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
@@ -276,6 +275,24 @@ public class HearingDaysIT extends AbstractIT {
         assertThat(message.get("hearingDays[0].courtRoomId"), is(courtRoomId.toString()));
         assertThat(message.get("hearingDays[0].listedDurationMinutes"), is(defaultDuration));
         assertThat(message.get("hearingDays[0].listingSequence"), is(0));
+    }
+
+    @Test
+    public void testHearingDaysCorrectedWithCourtSchedule()  {
+        courtCentreId = randomUUID();
+        final HearingsData hearingsData = HearingsData.singleHearingsDataWithAllocationDataAndJudiciary();
+        final String courtRoomId1 = hearingsData.getHearingData().get(0).getCourtRoomId().toString();
+        final String courtCentreId = hearingsData.getHearingData().get(0).getCourtCentreId().toString();
+        final Map<String, String> courtRoomSchedules = new LinkedHashMap<>() {{
+            put("2025-02-11", courtRoomId1);
+            put("2025-03-10", courtRoomId1);
+            put("2025-09-16", courtRoomId1);
+        }};
+        stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtRoomSchedules, courtCentreId);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData) ;
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        listCourtHearingSteps.verifyHearingDayCourtScheduledUpdated();
     }
 
     private Matcher[] getAllocatedMatchers(final com.jayway.jsonpath.JsonPath hearingIdFilter) {

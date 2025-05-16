@@ -18,6 +18,9 @@
     },
     "sourceContext" : {
       "type": "string"
+    },
+    "isResultFlow": {
+      "type": "boolean"
     }
   },
   "required": [
