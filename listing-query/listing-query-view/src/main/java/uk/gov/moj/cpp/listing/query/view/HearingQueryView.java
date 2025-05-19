@@ -15,14 +15,16 @@ import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.justice.services.messaging.JsonObjects;
+
 import uk.gov.moj.cpp.listing.common.hmi.OrganisationUnitHMICache;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
+import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.entity.query.CaseByDefendant;
 import uk.gov.moj.cpp.listing.persistence.repository.CaseByDefendantRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.CourtApplicationRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
@@ -38,6 +40,7 @@ import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterE
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
 import uk.gov.moj.cpp.listing.query.view.service.JsonNodeReader;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
+import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
 import javax.inject.Inject;
 import javax.json.Json;
@@ -81,6 +84,7 @@ import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toSet;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.contains;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
@@ -137,6 +141,9 @@ public class HearingQueryView {
     private HearingRepository repository;
 
     @Inject
+    private CourtApplicationRepository courtApplicationRepository;
+
+    @Inject
     private PublishedCourtListRepository publishedCourtListRepository;
 
     @Inject
@@ -168,7 +175,6 @@ public class HearingQueryView {
 
     @Inject
     private JsonObjectToObjectConverter jsonObjectToObjectConverter;
-
     @Inject
     private CaseByDefendantRepository caseByDefendantRepository;
 
@@ -312,8 +318,18 @@ public class HearingQueryView {
                             .add(HEARINGS, Json.createArrayBuilder().build())
             );
         }
-        if(nonNull(applicationIdQueryParam)) {
+        if (nonNull(applicationIdQueryParam)) {
             hearings = repository.findAllocatedAndUnallocatedHearingsByCaseId(caseIdQueryParam, applicationIdQueryParam);
+            final List<CourtApplications> childApplications = courtApplicationRepository.findByParentApplicationId(UUID.fromString(applicationIdQueryParam));
+            if (isNotEmpty(childApplications)) {
+                final Set<UUID> hearingIds = hearings.stream().map(Hearing::getId).collect(toSet());
+                hearings.addAll(childApplications
+                        .stream()
+                        .map(childApplication -> repository.findAllocatedAndUnallocatedHearingsByCaseId(caseIdQueryParam, childApplication.getApplicationId().toString()))
+                        .flatMap(Collection::stream)
+                        .filter(e -> hearingIds.add(e.getId()))
+                        .toList());
+            }
         } else {
             hearings = repository.findAllocatedAndUnallocatedHearingsByCaseId(caseIdQueryParam);
         }

@@ -58,7 +58,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ServiceComponent(COMMAND_API)
-@SuppressWarnings("squid:S2629")
+@SuppressWarnings({"squid:S2629", "java:S6204"})
 public class ListingCommandApi {
 
     private static final String LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED = "listing.command.update-hearing-for-listing-enriched";
