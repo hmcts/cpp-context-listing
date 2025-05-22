@@ -24,7 +24,6 @@
 
     <dependencies />
 
-
     <profiles>
         <profile>
             <id>listing-performance-test</id>

@@ -257,13 +257,13 @@ public class JudgeListTemplateAssemblerTest {
         assertThat(judgeList.get(), equalTo(expectedList));
     }
 
+    @SuppressWarnings("all")
     @Test
     void shouldReturnSittingWithHearingsWithOnlyCounselsWithAttendanceDaysSni6942() {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
-        when(referenceDataCache.getJudiciariesMapCache(any(UUID.class)))
-                .thenReturn(
+        when(referenceDataCache.getJudiciariesMapCache(any(UUID.class))).thenReturn(
                         generateJudiciary(JUDICIARY_ID, "Sarah", "Her Majesty", "Court Judge", "Mr"),
                         generateJudiciary(JUDICIARY2_ID, "Mary", "Her Majesty Honour", "Judge", "Mr")
                 );
