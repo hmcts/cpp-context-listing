@@ -130,6 +130,7 @@ public class ListNextHearingSteps extends AbstractIT {
     private static final String LISTING_API_UPDATE_RELATED_HEARING = "listing.update-related-hearing";
     private static final String MEDIA_TYPE_LIST_NEXT_HEARINGS = "application/vnd.listing.next-hearings-v2+json";
     private static final String MEDIA_TYPE_DELETE_NEXT_HEARINGS = "application/vnd.listing.delete-next-hearings+json";
+    private static final String MEDIA_TYPE_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING = "application/vnd.listing.delete-previous-hearings-and-create-next-hearing+json";
     private static final String MEDIA_TYPE_UNSCHEDULED_NEXT_HEARINGS = "application/vnd.listing.list-unscheduled-next-hearings+json";
     private static final String MEDIA_TYPE_UPDATE_RELATED_HEARING = "application/vnd.listing.related-hearing+json";
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
@@ -138,9 +139,12 @@ public class ListNextHearingSteps extends AbstractIT {
     private static final String PUBLIC_EVENT_SELECTED_UNALLOCATED_HEARING_DELETED = "public.events.listing.unallocated-hearing-deleted";
     private static final String PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_HEARING = "public.events.listing.offences-removed-from-existing-unallocated-hearing";
     private static final String PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING = "public.events.listing.offences-removed-from-existing-allocated-hearing";
+    private static final String LISTING_API_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING = "listing.delete-previous-hearings-and-create-new-hearing";
 
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
+
+
 
 
     private final JmsMessageConsumerClient privateMessageConsumerUpdateRelatedHearingRequested;
@@ -180,6 +184,11 @@ public class ListNextHearingSteps extends AbstractIT {
 
     public void whenDeleteNextHearingSubmittedForListing() {
         final Response response = getResponseDeleteNextHearingsSubmittedForListing();
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    public void whenDeletePreviousHearingAndCreateNextHearingForListing(final HearingsData nextHearingData) {
+        final Response response = getResponseDeletePreviousHearingAndCreateNextHearingForListing(nextHearingData);
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
@@ -269,7 +278,26 @@ public class ListNextHearingSteps extends AbstractIT {
                 request, getLoggedInHeader());
     }
 
+    public Response getResponseDeletePreviousHearingAndCreateNextHearingForListing(final HearingsData nextHearingData) {
+        final String deletePreviousHearingsAndCreateNextHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_API_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING)));
+        final String eventPayloadString = getPayload("listing.delete-previous-hearings-and-create-next-hearing.json")
 
+                .replaceAll("SEEDING_HEARING_ID",firstHearing.getId().toString())
+                .replaceAll("HEARING_ID_TO_DELETE", firstHearing.getId().toString())
+                .replaceAll("HEARING_ID", nextHearingData.getHearingData().get(0).getId().toString())
+                .replaceAll("SITTING_DAY_1", firstHearing.getHearingStartDate().toString())
+                .replaceAll("SITTING_DAY_2", firstHearing.getHearingStartDate().plusDays(10).toString());
+
+        JsonObject deletePreviousHearingsAndCreateNextHearingDataObject = new StringToJsonObjectConverter().convert(eventPayloadString);
+        request = deletePreviousHearingsAndCreateNextHearingDataObject.toString();
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\tHeader = {}\n\n", deletePreviousHearingsAndCreateNextHearingUrl, MEDIA_TYPE_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING, request, getLoggedInHeader());
+
+        return restClient.postCommand(deletePreviousHearingsAndCreateNextHearingUrl, MEDIA_TYPE_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING,
+                request, getLoggedInHeader());
+
+
+    }
 
     private Response getResponseUnscheduleNextHearingsSubmittedForListing(final HearingsData hearingsData) {
 

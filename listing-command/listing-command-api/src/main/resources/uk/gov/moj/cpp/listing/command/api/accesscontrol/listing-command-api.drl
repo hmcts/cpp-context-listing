@@ -220,5 +220,13 @@ rule "Command - API - Action - listing.command.delete-hearing"
     $outcome.setSuccess(true);
 end
 
-
+rule "Command - API - Action - listing.delete-previous-hearings-and-create-next-hearing"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.delete-previous-hearings-and-create-next-hearing");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.LEGAL_ADVISERS,
+        RuleConstants.COURT_CLERKS, RuleConstants.SYSTEM_USERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
 

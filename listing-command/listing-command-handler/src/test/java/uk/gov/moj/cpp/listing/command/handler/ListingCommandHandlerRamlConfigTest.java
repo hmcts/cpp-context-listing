@@ -35,7 +35,9 @@ public class ListingCommandHandlerRamlConfigTest {
                 ListNextHearingCommandHandler.class,
                 RemoveCaseFromGroupCasesCommandHandler.class,
                 UpdateExistingHearingCommandHandler.class,
-                DeleteCourtApplicationHandler.class);
+                DeleteCourtApplicationHandler.class,
+                DeletePreviousHearingsAndCreateNextHearingHandler.class,
+                HearingResultedCommandHandler.class);
     }
 
     @Test

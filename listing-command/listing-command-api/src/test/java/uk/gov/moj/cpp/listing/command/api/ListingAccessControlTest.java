@@ -45,6 +45,7 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     private static final String ACTION_DELETE_LISTING_NOTE = "listing.command.delete-listing-note";
     private static final String ACTION_MARK_UNALLOCATED_HEARING_AS_DUPLICATE = "listing.mark-unallocated-hearing-as-duplicate";
     private static final String ACTION_DELETE_HEARING = "listing.command.delete-hearing";
+    private static final String ACTION_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING = "listing.delete-previous-hearings-and-create-next-hearing";
 
 
 
@@ -97,6 +98,23 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     }
 
 
+
+    @Test
+    public void shouldNotAllowUnauthorisedUserToDeletePreviousHearingAndCreateNextHearing() {
+        final Action action = createActionFor(ACTION_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING);
+        final ExecutionResults results = executeRulesWith(action);
+        assertFailureOutcome(results);
+    }
+
+    @Test
+    public void shouldAllowAuthorisedUserToDeletePreviousHearingAndCreateNextHearing() {
+        final Action action = createActionFor(ACTION_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
+                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, LEGAL_ADVISERS, COURT_CLERKS, SYSTEM_USERS, COURT_ASSOCIATE))
+                .willReturn(true);
+        final ExecutionResults results = executeRulesWith(action);
+        assertSuccessfulOutcome(results);
+    }
 
     @Test
     public void shouldAllowAuthorisedUserToUpdateHearingForListing() {

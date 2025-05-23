@@ -60,95 +60,8 @@ import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.justice.listing.event.CourtApplicationHearingDeleted;
-import uk.gov.justice.listing.events.AddedCasesForHearing;
-import uk.gov.justice.listing.events.AllocatedHearingDeleted;
-import uk.gov.justice.listing.events.AllocatedHearingExtendedForListing;
-import uk.gov.justice.listing.events.AllocatedHearingExtendedForListingV2;
-import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
-import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListingV2;
-import uk.gov.justice.listing.events.ApplicationEjected;
-import uk.gov.justice.listing.events.CaseEjected;
-import uk.gov.justice.listing.events.CaseIdentifier;
-import uk.gov.justice.listing.events.CaseIdentifierUpdated;
-import uk.gov.justice.listing.events.CaseRemovedFromGroupCases;
-import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
-import uk.gov.justice.listing.events.CasesAddedToHearing;
-import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
-import uk.gov.justice.listing.events.CourtApplicationUpdatedForHearing;
-import uk.gov.justice.listing.events.CourtCentreChangedForHearing;
-import uk.gov.justice.listing.events.CourtCentreDetails;
-import uk.gov.justice.listing.events.CourtListRestricted;
-import uk.gov.justice.listing.events.CourtRoomAssignedToHearing;
-import uk.gov.justice.listing.events.CourtRoomChangedForHearing;
-import uk.gov.justice.listing.events.CourtRoomRemovedFromHearing;
-import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdatedV2;
-import uk.gov.justice.listing.events.DefendantLegalaidStatusUpdatedForHearing;
-import uk.gov.justice.listing.events.DeletedHearingInStagingHmi;
-import uk.gov.justice.listing.events.EndDateChangedForHearing;
-import uk.gov.justice.listing.events.EndDateRemovedFromHearing;
-import uk.gov.justice.listing.events.HearingAllocatedForListing;
-import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
-import uk.gov.justice.listing.events.HearingChangesSaved;
-import uk.gov.justice.listing.events.HearingDayCourtSchedule;
-import uk.gov.justice.listing.events.HearingDayCourtScheduleUpdated;
-import uk.gov.justice.listing.events.HearingDaysCancelled;
-import uk.gov.justice.listing.events.HearingDaysChangedForHearing;
-import uk.gov.justice.listing.events.HearingDaysSequenced;
-import uk.gov.justice.listing.events.HearingDaysWithoutCourtCentreCorrected;
-import uk.gov.justice.listing.events.HearingDeleted;
-import uk.gov.justice.listing.events.HearingLanguageChangedForHearing;
-import uk.gov.justice.listing.events.HearingListed;
-import uk.gov.justice.listing.events.HearingListedCaseUpdated;
-import uk.gov.justice.listing.events.HearingMarkedAsDeleted;
-import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
-import uk.gov.justice.listing.events.HearingMarkedForPartialUpdate;
-import uk.gov.justice.listing.events.HearingPartiallyUpdated;
-import uk.gov.justice.listing.events.HearingRequestedForListing;
-import uk.gov.justice.listing.events.HearingRescheduled;
-import uk.gov.justice.listing.events.HearingTrialVacated;
-import uk.gov.justice.listing.events.HearingUnallocatedForListing;
-import uk.gov.justice.listing.events.HearingsUpdateCompleted;
-import uk.gov.justice.listing.events.JudicialRoleType;
-import uk.gov.justice.listing.events.JudiciaryAssignedToHearing;
-import uk.gov.justice.listing.events.JudiciaryChangedForHearing;
-import uk.gov.justice.listing.events.JudiciaryChangedForHearingsStatus;
-import uk.gov.justice.listing.events.JudiciaryRemovedFromHearing;
-import uk.gov.justice.listing.events.JurisdictionChangedForHearing;
-import uk.gov.justice.listing.events.LinkedCasesUpdated;
-import uk.gov.justice.listing.events.NewCaseMarkerUpdated;
-import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
-import uk.gov.justice.listing.events.NewDefendantDetailsUpdated;
-import uk.gov.justice.listing.events.NextHearingDayChanged;
-import uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing;
-import uk.gov.justice.listing.events.NonDefaultDaysChangedForHearing;
-import uk.gov.justice.listing.events.NonSittingDaysAssignedToHearing;
-import uk.gov.justice.listing.events.NonSittingDaysChangedForHearing;
+import uk.gov.justice.listing.events.*;
 import uk.gov.justice.listing.events.Offence;
-import uk.gov.justice.listing.events.OffenceAdded;
-import uk.gov.justice.listing.events.OffenceDeleted;
-import uk.gov.justice.listing.events.OffenceUpdated;
-import uk.gov.justice.listing.events.OffencesRemovedFromExistingAllocatedHearing;
-import uk.gov.justice.listing.events.OffencesRemovedFromExistingUnallocatedHearing;
-import uk.gov.justice.listing.events.OffencesRemovedFromHearing;
-import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIdsV2;
-import uk.gov.justice.listing.events.ProsecutionCases;
-import uk.gov.justice.listing.events.PublicListNoteChangedForHearing;
-import uk.gov.justice.listing.events.PublicListNoteRemovedFromHearing;
-import uk.gov.justice.listing.events.RequestedHearingFromStagingHmi;
-import uk.gov.justice.listing.events.SequencesResetOnHearingDays;
-import uk.gov.justice.listing.events.StartDateChangedForHearing;
-import uk.gov.justice.listing.events.StartDateRemovedForHearing;
-import uk.gov.justice.listing.events.TypeChangedForHearing;
-import uk.gov.justice.listing.events.TypeOfList;
-import uk.gov.justice.listing.events.UnallocatedHearingDeleted;
-import uk.gov.justice.listing.events.UpdatedHearingInStagingHmi;
-import uk.gov.justice.listing.events.UpdatedHmiFieldsForHearing;
-import uk.gov.justice.listing.events.VideoLinkChangedForHearing;
-import uk.gov.justice.listing.events.VideoLinkDetailsAssignedForHearing;
-import uk.gov.justice.listing.events.VideoLinkDetailsChangedForHearing;
-import uk.gov.justice.listing.events.VideoLinkDetailsRemovedForHearing;
-import uk.gov.justice.listing.events.WeekCommencingDateChangedForHearing;
-import uk.gov.justice.listing.events.WeekCommencingDateRemovedForHearing;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
@@ -238,6 +151,7 @@ public class Hearing implements Aggregate {
     private String publicListNote;
     private boolean duplicate;
     private boolean deleted;
+    private boolean resulted = false;
     private Map<UUID, List<UUID>> prosecutionCaseDefendants = new HashMap<>();
     private Map<UUID, List<UUID>> applicationOffenceIds = new HashMap<>();
     private uk.gov.justice.listing.events.Hearing currentHearingEventState;
@@ -315,6 +229,7 @@ public class Hearing implements Aggregate {
                 when(AllocatedHearingExtendedForListing.class).apply(this::onAllocatedHearingExtendedForListing),
                 when(CaseRemovedFromGroupCases.class).apply(this::onCaseRemovedFromGroupCases),
                 when(HearingsUpdateCompleted.class).apply(this::onHearingsUpdateCompleted),
+                when(HearingResultStatusUpdated.class).apply(this :: onHearingResultStatusUpdated),
                 otherwiseDoNothing());
     }
 
@@ -1317,7 +1232,7 @@ public class Hearing implements Aggregate {
 
     public Stream<Object> markHearingAsDeleted(final UUID hearingId) {
 
-        if (this.deleted) {
+        if (this.deleted || this.resulted) {
             return Stream.empty();
         }
 
@@ -1327,7 +1242,7 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> updateUnallocatedHearingPartially(final UUID hearingToBeUpdated, final List<ProsecutionCases> caseList, final Optional<String> splitHearing) {
-        if (this.duplicate || this.deleted) {
+        if (this.duplicate || this.deleted || this.resulted) {
             return Stream.empty();
         }
 
@@ -1403,7 +1318,7 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> deleteHearing(final UUID seedingHearingId, final UUID hearingId) {
-        if (deleted || duplicate) {
+        if (deleted || duplicate || resulted) {
             return Stream.empty();
         }
 
@@ -1467,7 +1382,7 @@ public class Hearing implements Aggregate {
     //isResultFlow -> These event uses for multiple purposes, we need to know it is raised by amend-reshare flow.
     public Stream<Object> removeSelectedOffencesFromExistingHearing(final UUID hearingId, final List<UUID> offenceIds, final String source, final Boolean isResultFlow ) {
 
-        if (deleted || duplicate) {
+        if (deleted || duplicate || resulted) {
             return Stream.empty();
         }
         final List<UUID> existingOffenceIds = prosecutionCaseDefendantOffenceIds
@@ -2625,6 +2540,8 @@ public class Hearing implements Aggregate {
         // Do nothing
     }
 
+
+
     private void onAllocatedHearingExtendedForListingV2(final AllocatedHearingExtendedForListingV2 event) {
         // Do nothing
     }
@@ -3003,6 +2920,10 @@ public class Hearing implements Aggregate {
         }
     }
 
+    private void onHearingResultStatusUpdated(final HearingResultStatusUpdated event) {
+        this.resulted = true;
+    }
+
     private void onHearingListedCaseUpdated(final HearingListedCaseUpdated event) {
         LOGGER.info("onHearingListedCaseUpdated() event:{}", event);
         final uk.gov.justice.listing.events.Hearing hearing = event.getHearing();
@@ -3135,6 +3056,8 @@ public class Hearing implements Aggregate {
                 .build()));
     }
 
+
+
     public Stream<Object> changeNextHearingDate(final UUID hearingId) {
         Stream<Object> events = Stream.empty();
         if (nonNull(hearingDays)) {
@@ -3159,6 +3082,13 @@ public class Hearing implements Aggregate {
 
     public Stream<Object> deleteCourtApplicationHearing(final UUID hearingId) {
         return apply(Stream.of(CourtApplicationHearingDeleted.courtApplicationHearingDeleted()
+                .withHearingId(hearingId)
+                .build()
+        ));
+    }
+
+    public Stream<Object> setHearingResultStatus(final UUID hearingId) {
+        return apply(Stream.of(HearingResultStatusUpdated.hearingResultStatusUpdated()
                 .withHearingId(hearingId)
                 .build()
         ));

@@ -649,6 +649,62 @@ public class HearingAggregateTest {
 
     }
 
+
+    @Test
+    public void shouldNotRaiseAnyEventsAsHearingIsResulted() {
+        final UUID case1Id = randomUUID();
+        final UUID case2Id = randomUUID();
+        final UUID defendant1Id = randomUUID();
+        final UUID defendant2Id = randomUUID();
+        final UUID offence1Id = randomUUID();
+        final UUID offence2Id = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withListedCases(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case1Id)
+                                        .withDefendants(asList(Defendant.defendant()
+                                                .withId(defendant1Id)
+                                                .withOffences(asList(Offence.offence()
+                                                        .withId(offence1Id)
+                                                        .withSeedingHearing(SeedingHearing.seedingHearing()
+                                                                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                                                                .withSeedingHearingId(seedingHearingId)
+                                                                .build())
+                                                        .build()))
+                                                .build()))
+                                        .build(),
+                                uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case2Id)
+                                        .withDefendants(asList(Defendant.defendant()
+                                                .withId(defendant2Id)
+                                                .withOffences(asList(Offence.offence()
+                                                        .withId(offence2Id)
+                                                        .withSeedingHearing(SeedingHearing.seedingHearing()
+                                                                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                                                                .withSeedingHearingId(seedingHearingId)
+                                                                .build())
+                                                        .build()))
+                                                .build()))
+                                        .build()))
+                        .build())
+                .build());
+
+        hearing.apply(HearingResultStatusUpdated.hearingResultStatusUpdated().withHearingId(hearingId)
+                .build());
+
+        final Stream<Object> events = hearing.deleteHearing(seedingHearingId, hearingId);
+        final List<Object> eventsList = events.collect(Collectors.toList());
+        assertThat(eventsList.size(), is(0));
+
+    }
+
     @Test
     public void shouldCreateAllocatedHearingDeletedWithoutFreeingSlotsOfNonMagistratesJurisdiction() {
         final UUID case1Id = randomUUID();
@@ -1505,6 +1561,53 @@ public class HearingAggregateTest {
                 .build());
 
         hearing.apply(HearingDeleted.hearingDeleted().withHearingIdToBeDeleted(hearingId).build());
+
+        final Stream<Object> listedHearing = hearing.markHearingAsDeleted(hearingId);
+
+        assertThat(listedHearing.count(), is(0L));
+
+
+    }
+
+    @Test
+    public void shouldNotBeAbleToMarkHearingAsDeletedIfHearingResulted() {
+
+        final UUID case1Id = randomUUID();
+        final UUID case1Defendant1Id = randomUUID();
+        final UUID case1Defendant1Offence1Id = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+
+
+        final SeedingHearing seedingHearing = SeedingHearing.seedingHearing()
+                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                .withSeedingHearingId(seedingHearingId)
+                .build();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(new ArrayList<>(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(case1Id)
+                                .withDefendants(asList(Defendant.defendant()
+                                        .withId(case1Defendant1Id)
+                                        .withOffences(asList(Offence.offence()
+                                                .withId(case1Defendant1Offence1Id)
+                                                .withSeedingHearing(seedingHearing)
+                                                .build()))
+                                        .build()))
+                                .build())))
+                        .build())
+                .build());
+
+        hearing.apply(HearingResultStatusUpdated.hearingResultStatusUpdated().withHearingId(hearingId).build());
 
         final Stream<Object> listedHearing = hearing.markHearingAsDeleted(hearingId);
 
