@@ -189,6 +189,20 @@ public class HearingDay implements Serializable {
             return this;
         }
 
+        public HearingDay.Builder withValuesFrom(HearingDay hearingDay) {
+            this.courtCentreId = hearingDay.getCourtCentreId();
+            this.courtRoomId = hearingDay.getCourtRoomId();
+            this.courtScheduleId = hearingDay.getCourtScheduleId();
+            this.durationMinutes = hearingDay.getDurationMinutes();
+            this.endTime = hearingDay.getEndTime();
+            this.hearingDate = hearingDay.getHearingDate();
+            this.isCancelled = hearingDay.isCancelled();
+            this.sequence = hearingDay.getSequence();
+            this.startTime = hearingDay.getStartTime();
+
+            return this;
+        }
+
         public HearingDay build() {
             return new HearingDay(durationMinutes, endTime, hearingDate, sequence, startTime, courtScheduleId, isCancelled, courtCentreId, courtRoomId);
         }

@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -35,7 +34,6 @@ import javax.json.JsonReader;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class HearingDaysUpdateEventListener {
@@ -111,11 +109,11 @@ public class HearingDaysUpdateEventListener {
                                       Map<LocalDate, UUID> scheduledHearingDateMap) {
         if (nonNull(existingHearing.getNonDefaultDays())) {
             existingHearing.getNonDefaultDays().replaceAll(nd -> {
-                UUID scheduleId = scheduledHearingDateMap.get(nd.getStartTime().toLocalDate());
-                if (nd.getCourtScheduleId() == null && scheduleId != null) {
+                UUID scheduleIdFromCourtScheduler = scheduledHearingDateMap.get(nd.getStartTime().toLocalDate());
+                if (scheduleIdFromCourtScheduler != null && !scheduleIdFromCourtScheduler.toString().equals(nd.getCourtScheduleId())) {
                     return NonDefaultDay.nonDefaultDay()
                             .withValuesFrom(nd)
-                            .withCourtScheduleId(scheduleId.toString())
+                            .withCourtScheduleId(scheduleIdFromCourtScheduler.toString())
                             .build();
                 }
                 return nd;
@@ -127,12 +125,11 @@ public class HearingDaysUpdateEventListener {
                                    Map<LocalDate, UUID> scheduledHearingDateMap) {
         if (nonNull(existingHearing.getHearingDays())) {
             existingHearing.getHearingDays().replaceAll(hd -> {
-                UUID scheduleId = scheduledHearingDateMap.get(hd.getHearingDate());
-                if (!StringUtils.equals(Objects.toString(hd.getCourtScheduleId(), null),
-                                        Objects.toString(scheduleId, null))) {
+                UUID scheduleIdFromCourtScheduler = scheduledHearingDateMap.get(hd.getHearingDate());
+                if (scheduleIdFromCourtScheduler != null && !scheduleIdFromCourtScheduler.equals(hd.getCourtScheduleId())) {
                     return HearingDay.hearingDay()
                             .withValuesFrom(hd)
-                            .withCourtScheduleId(scheduleId)
+                            .withCourtScheduleId(scheduleIdFromCourtScheduler)
                             .build();
                 }
                 return hd;

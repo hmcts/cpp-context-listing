@@ -4075,6 +4075,24 @@ public class ListingCommandHandlerTest {
 
     }
 
+    @Test
+    void shouldHandleUpdateHearingDaysWithoutCourtSchedule() throws EventStreamException, IOException {
+        final String hearingId = randomUUID().toString();
+        final String hearingDaysUpdatedJson = "[{\"durationMinutes\":15,\"endTime\":\"2020-09-24T13:15:00.000Z\",\"hearingDate\":\"2020-09-24\",\"sequence\":0,\"startTime\":\"2020-09-24T13:00:00.000Z\",\"courtRoomId\":\"b4562684-9209-3ec4-a544-7f80dabd94d8\",\"courtCentreId\":\"f8254db1-1683-483e-afb3-b87fde5a0a26\"}]";
+
+        final JsonObject payloadToBeCorrected = createObjectBuilder()
+                .add("hearingId", hearingId)
+                .add("hearingDayCourtSchedules", objectMapper.readValue(hearingDaysUpdatedJson, JsonArray.class)).build();
+
+        final JsonEnvelope commandEnvelope = envelopeFrom(metadataWithRandomUUID("listing.command.update-hearing-day-court-schedule"), payloadToBeCorrected);
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
+
+        listingCommandHandler.updateHearingDayCourtSchedule(commandEnvelope);
+
+        verify(hearing).raiseHearingDayCourtSchedulesUpdated(any(), any());
+    }
+
     private void shouldRequestPublicationOfACourtListForAllCrownCourtsAsExpected(final LocalDate dayOfRequest, final LocalDate expectedListingDate) {
 
         fixClock(dayOfRequest.atStartOfDay().toInstant(ZoneOffset.UTC));

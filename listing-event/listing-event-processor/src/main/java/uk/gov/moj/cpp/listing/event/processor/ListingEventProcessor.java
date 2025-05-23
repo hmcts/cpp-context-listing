@@ -225,7 +225,6 @@ public class ListingEventProcessor {
     private static final String PRIVATE_EVENT_HEARING_MARKED_FOR_PARTIAL_UPDATE = "listing.events.hearing-marked-for-partial-update";
     private static final String PRIVATE_EVENTS_HEARING_ADDED_TO_CASE = "listing.events.hearing-added-to-case";
     static final String COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS = "listing.command.change-judiciary-for-hearings";
-    static final String COMMAND_UPDATE_COURTSCHEDULE_FOR_HEARING_DAY = "listing.command.update-hearing-day-court-schedule";
     public static final String PUBLIC_HEARING_OFFENCES_REMOVED_FROM_EXISTING_HEARING = "public.hearing.selected-offences-removed-from-existing-hearing";
     private static final String COURT_CENTRE_ID_FIELD = "courtCentreId";
     private static final String PRIVATE_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING = "listing.events.hearing-days-changed-for-hearing";
@@ -490,9 +489,8 @@ public class ListingEventProcessor {
         final JsonArrayBuilder hearingDaysJsonArrBuilder = createArrayBuilder();
         hearingDays.forEach(hearingDay -> {
             final SlotDetail slotDetail = findHearingSlotDetail(slotDetails, hearingDay);
-            if (nonNull(slotDetail)
-                    && !StringUtils.equals(Objects.toString(hearingDay.getCourtScheduleId(), null),
-                                           slotDetail.getCourtScheduleId())) {
+            if (slotDetail != null && slotDetail.getCourtScheduleId() != null
+                    && !slotDetail.getCourtScheduleId().equals(Objects.toString(hearingDay.getCourtScheduleId()))) {
                 hearingDaysJsonArrBuilder.add(createObjectBuilder()
                                 .add(HEARING_DATE, hearingDay.getHearingDate().toString())
                                 .add(COURT_SCHEDULE_ID, slotDetail.getCourtScheduleId())

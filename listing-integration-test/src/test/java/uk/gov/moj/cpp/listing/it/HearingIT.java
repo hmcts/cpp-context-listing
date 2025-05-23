@@ -34,8 +34,10 @@ import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROW
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubUpdateAvailableHearingSlotsService;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubUpdateHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoom;
 
@@ -56,7 +58,9 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -416,6 +420,27 @@ public class HearingIT extends AbstractIT {
         verifyJudiciaryAssignedToAllocatedHearingFromAPI(updatedHearingDataForAllocation.getHearingId(), judicialRoleDataList);
         updateHearingSteps.verifyHearingDaysWhenQueryingFromAPI();
         updateHearingSteps.verifyPublicEventHearingChangesSaved();
+    }
+
+    @Test
+    void shouldAllocatingHearingForMagsWithoutCourtScheduleIdAndAutomaticallyUpdateMissingCourtScheduleId() throws IOException {
+        final UUID courtCentreId = randomUUID();
+        final UUID courtScheduleId1 = UUID.fromString("d4b9299c-c6c6-3747-8dac-01ca82239c27");
+        final String hearingDate = LocalDate.now().plusDays(3).toString();
+        stubGetReferenceDataCourtCentreById(courtCentreId);
+        stubUpdateHearingSlots(hearingDate, courtScheduleId1);
+
+        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, MAGISTRATES_JURISDICTION);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        final Map<String, String> courtRoomSchedules = new LinkedHashMap<String, String>() {{
+            put(hearingDate, courtScheduleId1.toString());
+        }};
+
+        listCourtHearingSteps.verifyHearingListedWithHearingDaysCourtSchedule(ALLOCATED, courtRoomSchedules.keySet().toArray(String[]::new), courtRoomSchedules.values().toArray(String[]::new));
+
     }
 
     @Test
