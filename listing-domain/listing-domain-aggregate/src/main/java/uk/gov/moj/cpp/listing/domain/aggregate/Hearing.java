@@ -262,6 +262,7 @@ public class Hearing implements Aggregate {
                 when(NonDefaultDaysChangedForHearing.class).apply(this::onNonDefaultDaysChangedForHearing),
                 when(NonDefaultDaysAssignedToHearing.class).apply(this::onNonDefaultDaysAssignedToHearing),
                 when(HearingDaysChangedForHearing.class).apply(this::onHearingDaysChangedForHearing),
+                when(HearingDayCourtScheduleUpdated.class).apply(this::onHearingDayCourtScheduleUpdated),
                 when(HearingDaysCancelled.class).apply(this::onHearingDaysCancelledForHearing),
                 when(JurisdictionChangedForHearing.class).apply(this::onJurisdictionChangedForHearing),
                 when(JudiciaryAssignedToHearing.class).apply(this::onJudiciaryAssignedToHearing),
@@ -1913,9 +1914,9 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> judiciaryChangedForHearingsStatus() {
-            return apply(Stream.of(JudiciaryChangedForHearingsStatus.judiciaryChangedForHearingsStatus()
-                    .withStatus("Success")
-                    .build()));
+        return apply(Stream.of(JudiciaryChangedForHearingsStatus.judiciaryChangedForHearingsStatus()
+                .withStatus("Success")
+                .build()));
     }
 
     public Stream<Object> hearingsUpdateCompleted(final Set<UUID> failedHearingIds) {
@@ -2905,6 +2906,45 @@ public class Hearing implements Aggregate {
             correctNonDefaultDaysWithoutCourtCentre(ofNullable(centreId), ofNullable(roomId));
         }
 
+    }
+
+    private void onHearingDayCourtScheduleUpdated(final HearingDayCourtScheduleUpdated hearingDayCourtScheduleUpdated) {
+        final List<HearingDayCourtSchedule> hearingDayCourtSchedules = hearingDayCourtScheduleUpdated.getHearingDayCourtSchedules();
+
+        if (isEmpty(hearingDayCourtSchedules) || isEmpty(hearingDays)) {
+            return;
+        }
+
+        final Map<LocalDate, UUID> scheduledHearingDateMap = new HashMap<>();
+        hearingDayCourtSchedules.forEach(
+                hd -> scheduledHearingDateMap.put(hd.getHearingDate(), hd.getCourtScheduleId()));
+
+        if (isNotEmpty(hearingDays)) {
+            hearingDays.replaceAll(hd -> {
+               final UUID scheduleIdFromCourtScheduler = scheduledHearingDateMap.get(hd.getHearingDate());
+                if (scheduleIdFromCourtScheduler != null && !scheduleIdFromCourtScheduler.equals(hd.getCourtScheduleId())) {
+                    return HearingDay.hearingDay()
+                            .withValuesFrom(hd)
+                            .withCourtScheduleId(scheduleIdFromCourtScheduler)
+                            .build();
+                }
+                return hd;
+            });
+        }
+
+        if (isNotEmpty(nonDefaultDays)) {
+            nonDefaultDays.replaceAll(nd -> {
+                final UUID scheduleIdFromCourtScheduler = scheduledHearingDateMap.get(nd.getStartTime().toLocalDate());
+                if (scheduleIdFromCourtScheduler != null
+                        && !scheduleIdFromCourtScheduler.toString().equals(nd.getCourtScheduleId().orElse(null))) {
+                    return NonDefaultDay.nonDefaultDay()
+                            .withValuesFrom(nd)
+                            .withCourtScheduleId(Optional.of(scheduleIdFromCourtScheduler.toString()))
+                            .build();
+                }
+                return nd;
+            });
+        }
     }
 
     private void correctHearingDaysWithoutCourtCentre(final Optional<UUID> centreId, final Optional<UUID> roomId) {

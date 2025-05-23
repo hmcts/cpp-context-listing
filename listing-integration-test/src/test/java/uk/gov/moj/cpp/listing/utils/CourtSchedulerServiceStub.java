@@ -10,6 +10,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.put;
+import static com.github.tomakehurst.wiremock.client.WireMock.recordSpec;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
@@ -32,10 +34,12 @@ import uk.gov.justice.service.wiremock.testutil.InternalEndpointMockUtils;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.json.JsonObject;
 
 import com.github.tomakehurst.wiremock.client.VerificationException;
+import com.github.tomakehurst.wiremock.matching.AnythingPattern;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 
 public class CourtSchedulerServiceStub {
@@ -48,9 +52,11 @@ public class CourtSchedulerServiceStub {
     private static final String HEARING_SLOTS = "/hearingslots";
     private static final String ORGANISATION_UNIT = "/organisationUnitHMIStatus";
     private static final String COURTSCHEDULER_GET_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.get.hearing.slots+json";
+    private static final String COURTSCHEDULER_PUT_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.update.hearing.slots+json";
     public static final String COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE = "application/vnd.courtscheduler.get.provisional.booking+json";
     public static final String ROTASL_GET_HEARING_SLOTS_RESPONSE_JSON_WITH_JUDICIARIES = "stub-data/rotasl.get.hearing.slots.with-judiciaries.json";
     public static final String LISTING_SEARCH_HEARING_SLOTS_JSON = "stub-data/listing.search.hearing.slots.json";
+    public static final String LISTING_UPDATE_HEARING_SLOTS_JSON = "stub-data/listing.update.slots.json";
     public static final String LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON = "stub-data/listing.search.hearing.slots.empty.json";
     public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON = "stub-data/provisionalBookingSampleDataSingleCourtScheduleCountBased.json";
     public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_JSON = "stub-data/provisionalBookingSampleDataMultipleCourtSchedulesCountBased.json";
@@ -104,6 +110,21 @@ public class CourtSchedulerServiceStub {
                 .withHeader("Accept", containing(COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(LISTING_SEARCH_HEARING_SLOTS_JSON))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    public static void stubUpdateHearingSlots(final String hearingDate, final UUID courtScheduleId1) {
+
+        String payload = getPayload(LISTING_UPDATE_HEARING_SLOTS_JSON).
+                replace("HEARING_DATE_1", hearingDate).
+                replace("COURT_SCHEDULE_ID_1", courtScheduleId1.toString());
+
+        stubFor(put(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
+                .withHeader("content-type", containing(COURTSCHEDULER_PUT_HEARING_SLOTS_TYPE))
+                .withRequestBody(new AnythingPattern())
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }

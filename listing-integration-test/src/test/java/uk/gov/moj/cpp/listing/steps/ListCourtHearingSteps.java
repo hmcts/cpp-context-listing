@@ -10,6 +10,8 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
+import static javax.json.Json.createArrayBuilder;
+import static javax.json.Json.createObjectBuilder;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.apache.http.HttpStatus.SC_FORBIDDEN;
@@ -18,6 +20,7 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -122,7 +125,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -144,7 +146,6 @@ public class ListCourtHearingSteps extends AbstractIT {
 
     private static final String LISTING_COMMAND_LIST_COURT_HEARING = "listing.command.list-court-hearing";
     private static final String LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING = "listing.command.extend-hearing-for-hearing";
-
     private static final String MEDIA_TYPE_LIST_COURT_HEARING = "application/vnd.listing.command.list-court-hearing+json";
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
     private static final String MEDIA_TYPE_SEARCH_HEARING_JSON = "application/vnd.listing.search.hearing+json";
@@ -265,6 +266,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         final Response response = getResponseCaseSubmittedForListing(false);
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
+
 
     public void whenCaseIsSubmittedForListingHmiEnabled() {
         final Response response = getResponseCaseSubmittedForListingHmiEnabled(false);
@@ -508,20 +510,19 @@ public class ListCourtHearingSteps extends AbstractIT {
                 withJsonPath(hearingIdFilter + "hearingLanguage", hasItem("ENGLISH"))
         });
     }
-
-    public void verifyHearingDayCourtScheduledUpdated(String[] courtSchedules) {
+    public void verifyHearingDayCourtScheduledUpdated() {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
         final String hearingIdFilter = getHearingFilter(hearingData.getId().toString());
-        final String s = pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), true, getLoggedInUser().toString(), new Matcher[]{
-                withJsonPath("$.hearings[0].hearingDays[*].courtScheduleId", hasItem(courtSchedules[0])),
-                withJsonPath(hearingIdFilter + "jurisdictionType", hasItem(hearingData.getJurisdictionType())),
-                withJsonPath(hearingIdFilter + "courtCentreId", hasItem(hearingData.getCourtCentreId().toString())),
-                withJsonPath(hearingIdFilter + "type.id", hasItem(hearingData.getHearingTypeData().getTypeId().toString())),
-                withJsonPath(hearingIdFilter + "type.description", hasItem(hearingData.getHearingTypeData().getTypeDescription())),
-                withJsonPath(hearingIdFilter + "startDate", hasItem(hearingData.getHearingStartDate().toString())),
-                withJsonPath(hearingIdFilter + "hearingLanguage", hasItem("ENGLISH"))
-        });
-
+        pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), true, getLoggedInUser().toString(),
+                new Matcher[]{
+                        withJsonPath("$.hearings[0].hearingDays[*].courtScheduleId", is(notNullValue())),
+                        withJsonPath(hearingIdFilter + "jurisdictionType", hasItem(hearingData.getJurisdictionType())),
+                        withJsonPath(hearingIdFilter + "courtCentreId", hasItem(hearingData.getCourtCentreId().toString())),
+                        withJsonPath(hearingIdFilter + "type.id", hasItem(hearingData.getHearingTypeData().getTypeId().toString())),
+                        withJsonPath(hearingIdFilter + "type.description", hasItem(hearingData.getHearingTypeData().getTypeDescription())),
+                        withJsonPath(hearingIdFilter + "startDate", hasItem(hearingData.getHearingStartDate().toString())),
+                        withJsonPath(hearingIdFilter + "hearingLanguage", hasItem("ENGLISH"))
+                });
     }
 
     public void verifyQueryAPIFindCaseByPersonDefendantAndHearingDate() {
@@ -702,6 +703,30 @@ public class ListCourtHearingSteps extends AbstractIT {
             return allOf(noteMatchers.toArray(new Matcher[noteMatchers.size()]));
         }
     }
+
+    public void verifyHearingListedWithHearingDaysCourtSchedule(final boolean isAllocated, final String[] courtScheduleSlots, final String[] courtRoomIds) {
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+
+        pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[0].id",
+                        equalTo(hearingData.getId().toString())),
+                withJsonPath("$.hearings[0].jurisdictionType",
+                        equalTo(hearingData.getJurisdictionType())),
+                withJsonPath("$.hearings[0].courtCentreId",
+                        equalTo(hearingData.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[0].courtRoomId",
+                        equalTo(hearingData.getCourtRoomId().toString())),
+                withJsonPath("$.hearings[0].type.id",
+                        equalTo(hearingData.getHearingTypeData().getTypeId().toString())),
+                withJsonPath("$.hearings[0].startDate",
+                        equalTo(hearingData.getHearingStartDate().toString())),
+                withJsonPath("$.hearings[0].hearingDays[1].hearingDate",
+                        equalTo(courtScheduleSlots[0])),
+                withJsonPath("$.hearings[0].hearingDays[1].courtScheduleId",
+                        equalTo(courtRoomIds[0]))
+        });
+    }
+
 
     public void verifyHearingListedWithHearingDays(final boolean isAllocated, final String[] courtScheduleSlots, final String[] courtRoomIds) {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
@@ -2115,13 +2140,13 @@ public class ListCourtHearingSteps extends AbstractIT {
         final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
                 (readConfig().getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
 
-        final JsonObjectBuilder listCourtHearingPayload = Json.createObjectBuilder().add("hearings", Json.createArrayBuilder().add(listCourtHearingJsonObject));
+        final JsonObjectBuilder listCourtHearingPayload = createObjectBuilder().add("hearings", createArrayBuilder().add(listCourtHearingJsonObject));
         if (adjournedFromDate.isPresent()) {
             listCourtHearingPayload.add("adjournedFromDate", adjournedFromDate.get().toString());
         }
 
         if (shadowListedOffences.isPresent()) {
-            final JsonArrayBuilder offenceIdBuilder = Json.createArrayBuilder();
+            final JsonArrayBuilder offenceIdBuilder = createArrayBuilder();
             shadowListedOffences.get().stream().forEach(offenceId -> offenceIdBuilder.add(offenceId.toString()));
             listCourtHearingPayload.add("shadowListedOffences", offenceIdBuilder);
         }

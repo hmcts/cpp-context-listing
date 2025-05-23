@@ -1,11 +1,12 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
+import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUIDAndName;
@@ -35,11 +36,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
-import javax.ws.rs.core.Response;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -88,6 +90,7 @@ public class SlotUpdaterTest {
         final List<SlotDetail> sampleSlotDetails = Collections.singletonList(SlotDetailBuilder.slotDetail()
                 .withDuration(60).withHearingStartTime(new Date().toString())
                 .withSessionDate(LocalDate.now().toString())
+                .withCourtScheduleId("CourtSchedule-1")
                 .withSession("AM")
                 .withCourtRoomId(2330)
                 .withOuCode("B01LY00")
@@ -101,12 +104,24 @@ public class SlotUpdaterTest {
         given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), false, hearingDays))
                 .willReturn(sampleSlotDetails);
 
-        final Response response = mock(Response.class);
-        doNothing().when(hearingSlotsService).update(slotDetailsPayload);
+        JsonObjectBuilder slotUpdateRespJsonObjBuilder = createObjectBuilder();
+        JsonArrayBuilder schedulesArrJsonBuilder = createArrayBuilder();
+        slotUpdateRespJsonObjBuilder.add("status", "success");
+        sampleSlotDetails.forEach(slotDetail -> {
+            JsonObjectBuilder hearingDayScheduleJsonObjBuilder = createObjectBuilder();
+            hearingDayScheduleJsonObjBuilder.add("hearingDate", slotDetail.getSessionDate());
+            hearingDayScheduleJsonObjBuilder.add("courtScheduleId", slotDetail.getCourtScheduleId());
+            schedulesArrJsonBuilder.add(hearingDayScheduleJsonObjBuilder.build());
+        });
+        slotUpdateRespJsonObjBuilder.add("schedules", schedulesArrJsonBuilder.build());
+        when(hearingSlotsService.update(slotDetailsPayload)).thenReturn(slotUpdateRespJsonObjBuilder.build());
 
-        slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
+        Optional<List<SlotDetail>> slotDetails = slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
 
         verify(hearingSlotsService).update(slotDetailsPayload);
+        assertEquals(1, slotDetails.get().size());
+        assertEquals(LocalDate.now().toString(), slotDetails.get().get(0).getSessionDate());
+        assertEquals("CourtSchedule-1", slotDetails.get().get(0).getCourtScheduleId());
     }
 
     @Test
@@ -149,6 +164,7 @@ public class SlotUpdaterTest {
         final List<SlotDetail> sampleSlotDetails = Collections.singletonList(SlotDetailBuilder.slotDetail()
                 .withDuration(60).withHearingStartTime(new Date().toString())
                 .withSessionDate(LocalDate.now().toString())
+                .withCourtScheduleId("CourtSchedule-1")
                 .withSession("AM")
                 .withCourtRoomId(2330)
                 .withOuCode("B01LY00")
@@ -162,12 +178,24 @@ public class SlotUpdaterTest {
         given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingUpdated.getUpdatedHearing(), false, hearingDays))
                 .willReturn(sampleSlotDetails);
 
-        final Response response = mock(Response.class);
-        doNothing().when(hearingSlotsService).update(slotDetailsPayload);
+        JsonObjectBuilder slotUpdateRespJsonObjBuilder = createObjectBuilder();
+        JsonArrayBuilder schedulesArrJsonBuilder = createArrayBuilder();
+        slotUpdateRespJsonObjBuilder.add("status", "success");
+        sampleSlotDetails.forEach(slotDetail -> {
+            JsonObjectBuilder hearingDayScheduleJsonObjBuilder = createObjectBuilder();
+            hearingDayScheduleJsonObjBuilder.add("hearingDate", slotDetail.getSessionDate());
+            hearingDayScheduleJsonObjBuilder.add("courtScheduleId", slotDetail.getCourtScheduleId());
+            schedulesArrJsonBuilder.add(hearingDayScheduleJsonObjBuilder.build());
+        });
+        slotUpdateRespJsonObjBuilder.add("schedules", schedulesArrJsonBuilder.build());
+        when(hearingSlotsService.update(slotDetailsPayload)).thenReturn(slotUpdateRespJsonObjBuilder.build());
 
         slotUpdater.updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
 
         verify(hearingSlotsService).update(slotDetailsPayload);
+        assertEquals(1, sampleSlotDetails.size());
+        assertEquals(LocalDate.now().toString(), sampleSlotDetails.get(0).getSessionDate());
+        assertEquals("CourtSchedule-1", sampleSlotDetails.get(0).getCourtScheduleId());
     }
 
     @Test

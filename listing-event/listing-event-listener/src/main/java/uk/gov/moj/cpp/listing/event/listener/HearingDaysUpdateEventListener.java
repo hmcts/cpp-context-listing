@@ -109,11 +109,11 @@ public class HearingDaysUpdateEventListener {
                                       Map<LocalDate, UUID> scheduledHearingDateMap) {
         if (nonNull(existingHearing.getNonDefaultDays())) {
             existingHearing.getNonDefaultDays().replaceAll(nd -> {
-                UUID scheduleId = scheduledHearingDateMap.get(nd.getStartTime().toLocalDate());
-                if (nd.getCourtScheduleId() == null && scheduleId != null) {
+                UUID scheduleIdFromCourtScheduler = scheduledHearingDateMap.get(nd.getStartTime().toLocalDate());
+                if (scheduleIdFromCourtScheduler != null && !scheduleIdFromCourtScheduler.toString().equals(nd.getCourtScheduleId())) {
                     return NonDefaultDay.nonDefaultDay()
                             .withValuesFrom(nd)
-                            .withCourtScheduleId(scheduleId.toString())
+                            .withCourtScheduleId(scheduleIdFromCourtScheduler.toString())
                             .build();
                 }
                 return nd;
@@ -125,11 +125,11 @@ public class HearingDaysUpdateEventListener {
                                    Map<LocalDate, UUID> scheduledHearingDateMap) {
         if (nonNull(existingHearing.getHearingDays())) {
             existingHearing.getHearingDays().replaceAll(hd -> {
-                UUID scheduleId = scheduledHearingDateMap.get(hd.getHearingDate());
-                if (hd.getCourtScheduleId() == null && scheduleId != null) {
+                UUID scheduleIdFromCourtScheduler = scheduledHearingDateMap.get(hd.getHearingDate());
+                if (scheduleIdFromCourtScheduler != null && !scheduleIdFromCourtScheduler.equals(hd.getCourtScheduleId())) {
                     return HearingDay.hearingDay()
                             .withValuesFrom(hd)
-                            .withCourtScheduleId(scheduleId)
+                            .withCourtScheduleId(scheduleIdFromCourtScheduler)
                             .build();
                 }
                 return hd;

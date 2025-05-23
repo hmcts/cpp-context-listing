@@ -93,6 +93,7 @@ import uk.gov.moj.cpp.listing.event.processor.util.JudicialRoleDomainToEventConv
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -104,6 +105,8 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
 @SuppressWarnings("squid:S2629")
@@ -192,6 +195,9 @@ public class ListingEventProcessor {
     private static final String COMMAND_REMOVE_PARTIALLY_MERGED_OFFENCES = "listing.command.remove-partially-merged-offences-from-original-hearing";
     private static final String APPLICATION_ID = "applicationId";
     private static final String HEARING_ID = "hearingId";
+    private static final String HEARING_DATE = "hearingDate";
+    private static final String COURT_SCHEDULE_ID = "courtScheduleId";
+    private static final String HEARING_DAY_COURT_SCHEDULES = "hearingDayCourtSchedules";
     private static final String HEARING_ID_TO_MARK = "hearingIdToMarkAsDeleted";
     private static final String IS_VACATED = "isVacated";
     private static final String ALLOCATED = "allocated";
@@ -431,7 +437,14 @@ public class ListingEventProcessor {
 
         logger.debug("HearingConfirmed confirmedHearing used for slot update: {}", hearingConfirmed.getConfirmedHearing());
 
-        updateSlotAndSendChangeJudiciaryForHearingsIfJudiciariesPresent(envelope, hearingConfirmed, isSlotUpdated, isForAdjournmentHearing, hearingDays, hearingAllocatedForListing.getJurisdictionType(), hearingAllocatedForListing.getJudiciary());
+        updateSlotAndSendChangeJudiciaryForHearingsIfJudiciariesPresent(
+                envelope,
+                hearingConfirmed.getConfirmedHearing(),
+                isSlotUpdated,
+                isForAdjournmentHearing,
+                hearingDays,
+                hearingAllocatedForListing.getJurisdictionType(),
+                hearingAllocatedForListing.getJudiciary());
 
         publishHearingConfirmedPublicEvent(envelope, hearingConfirmed);
         publishHearingChangesSavedPublicEvent(envelope, hearingAllocatedForListing.getHearingId());
@@ -453,12 +466,57 @@ public class ListingEventProcessor {
 
         logger.debug("HearingConfirmed confirmedHearing used for slot update: {}", hearingConfirmed.getConfirmedHearing());
 
-        updateSlotAndSendChangeJudiciaryForHearingsIfJudiciariesPresent(envelope, hearingConfirmed, isSlotUpdated, isForAdjournmentHearing, hearingDays, hearingAllocatedForListing.getJurisdictionType(), hearingAllocatedForListing.getJudiciary());
+        updateSlotAndSendChangeJudiciaryForHearingsIfJudiciariesPresent(
+                envelope,
+                hearingConfirmed.getConfirmedHearing(),
+                isSlotUpdated,
+                isForAdjournmentHearing,
+                hearingDays,
+                hearingAllocatedForListing.getJurisdictionType(),
+                hearingAllocatedForListing.getJudiciary());
 
         publishHearingConfirmedPublicEvent(envelope, hearingConfirmed);
         sendChangeNextHearingDayIfHearingIsSeeded(envelope, prosecutionCaseDefendantOffenceIds, hearingId);
         publishHearingChangesSavedPublicEvent(envelope, hearingAllocatedForListing.getHearingId());
 
+    }
+
+    private void updateHearingDaysFromSlot(UUID hearingId,
+                                           List<HearingDay> hearingDays,
+                                           List<SlotDetail> slotDetails,
+                                           JsonEnvelope envelope) {
+        logger.info("About to updateHearingDaysFromSlot");
+        final JsonArrayBuilder hearingDaysJsonArrBuilder = createArrayBuilder();
+        hearingDays.forEach(hearingDay -> {
+            final SlotDetail slotDetail = findHearingSlotDetail(slotDetails, hearingDay);
+            if (slotDetail != null && slotDetail.getCourtScheduleId() != null
+                    && !slotDetail.getCourtScheduleId().equals(Objects.toString(hearingDay.getCourtScheduleId()))) {
+                hearingDaysJsonArrBuilder.add(createObjectBuilder()
+                                .add(HEARING_DATE, hearingDay.getHearingDate().toString())
+                                .add(COURT_SCHEDULE_ID, slotDetail.getCourtScheduleId())
+                                .build());
+            }
+        });
+        final JsonArray hearingDaysJsonArr = hearingDaysJsonArrBuilder.build();
+        if (!hearingDaysJsonArr.isEmpty()) {
+            final JsonObjectBuilder commandJsonObjBuilder = createObjectBuilder();
+            commandJsonObjBuilder.add(HEARING_ID, hearingId.toString())
+                                 .add(HEARING_DAY_COURT_SCHEDULES, hearingDaysJsonArr);
+
+            logger.info("About to call command endpoint {}", COMMAND_UPDATE_HEARING_DAY_COURT_SCHEDULE);
+
+            sender.send(envelopeFrom(
+                    metadataFrom(envelope.metadata()).withName(COMMAND_UPDATE_HEARING_DAY_COURT_SCHEDULE),
+                    commandJsonObjBuilder.build()));
+        }
+    }
+
+    private static SlotDetail findHearingSlotDetail(final List<SlotDetail> slotDetails, final HearingDay hearingDay) {
+        final Optional<SlotDetail> hearingDaySlotOpt =
+                slotDetails.stream()
+                           .filter(sd -> StringUtils.equals(sd.getSessionDate(), hearingDay.getHearingDate().toString()))
+                           .findFirst();
+        return hearingDaySlotOpt.orElse(null);
     }
 
     @Handles(PRIVATE_EVENT_ALLOCATED_HEARING_UPDATED_FOR_LISTING)
@@ -473,8 +531,7 @@ public class ListingEventProcessor {
 
         logger.debug("HearingUpdated confirmedHearing used for slot update: {}", hearingUpdated.getUpdatedHearing());
 
-        slotUpdater.updateSlot(envelope, hearingUpdated.getUpdatedHearing(), isSlotUpdated, false, hearingDays);
-
+        applyHearingDaySlotChanges(envelope, hearingUpdated.getUpdatedHearing(), isSlotUpdated, false, hearingDays);
         publishHearingUpdatedPublicEvent(envelope, hearingUpdated);
     }
 
@@ -492,10 +549,25 @@ public class ListingEventProcessor {
 
         logger.debug("HearingUpdated confirmedHearing used for slot update: {}", hearingUpdated.getUpdatedHearing());
 
-        slotUpdater.updateSlot(envelope, hearingUpdated.getUpdatedHearing(), isSlotUpdated, false, hearingDays);
-
+        applyHearingDaySlotChanges(envelope, hearingUpdated.getUpdatedHearing(), isSlotUpdated, false, hearingDays);
         publishHearingUpdatedPublicEvent(envelope, hearingUpdated);
         sendChangeNextHearingDayIfHearingIsSeeded(envelope, prosecutionCaseDefendantOffenceIds, hearingId);
+    }
+
+    private Optional<List<SlotDetail>> applyHearingDaySlotChanges(JsonEnvelope envelope,
+                                                                  ConfirmedHearing confirmedHearing,
+                                                                  boolean isSlotUpdated,
+                                                                  boolean isForAdjournmentHearing, List<HearingDay> hearingDays) {
+        final Optional<List<SlotDetail>> optSlotDetails =
+                slotUpdater.updateSlot(envelope,
+                        confirmedHearing,
+                        isSlotUpdated,
+                        isForAdjournmentHearing,
+                        hearingDays);
+        optSlotDetails.filter(CollectionUtils::isNotEmpty)
+                      .ifPresent(slotDetails -> updateHearingDaysFromSlot(confirmedHearing.getId(), hearingDays, slotDetails, envelope));
+
+        return optSlotDetails;
     }
 
     @Handles(PRIVATE_EVENT_RESTRICT_COURT_LIST)
@@ -1310,14 +1382,15 @@ public class ListingEventProcessor {
                 hearingMarkedAsDuplicateForCase));
     }
 
-    private Optional<List<SlotDetail>> updateSlotAndSendChangeJudiciaryForHearingsIfJudiciariesPresent(final JsonEnvelope envelope,
-                                                                                 final HearingConfirmed hearingConfirmed,
-                                                                                 final boolean isSlotUpdated,
-                                                                                 final boolean isForAdjournmentHearing,
-                                                                                 final List<HearingDay> hearingDays,
-                                                                                 final JurisdictionType jurisdictionType,
-                                                                                 final List<JudicialRole> judiciary) {
-        final Optional<List<SlotDetail>> slotDetailsOptional = slotUpdater.updateSlot(envelope, hearingConfirmed.getConfirmedHearing(), isSlotUpdated, isForAdjournmentHearing, hearingDays);
+    private Optional<List<SlotDetail>>
+                updateSlotAndSendChangeJudiciaryForHearingsIfJudiciariesPresent(final JsonEnvelope envelope,
+                                                                                final ConfirmedHearing confirmedHearing,
+                                                                                final boolean isSlotUpdated,
+                                                                                final boolean isForAdjournmentHearing,
+                                                                                final List<HearingDay> hearingDays,
+                                                                                final JurisdictionType jurisdictionType, final List<JudicialRole> judiciary) {
+        final Optional<List<SlotDetail>> slotDetailsOptional =
+                applyHearingDaySlotChanges(envelope, confirmedHearing, isSlotUpdated, isForAdjournmentHearing, hearingDays);
 
         if (JurisdictionType.MAGISTRATES.equals(jurisdictionType) && isEmpty(judiciary)) {
             slotDetailsOptional.ifPresent(slotDetails ->
@@ -1325,12 +1398,12 @@ public class ListingEventProcessor {
                         final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciariesFromRota = courtSchedulerServiceAdapter.getJudicialRoles(slotDetail.getSessionDate(),
                                 slotDetail.getOuCode(),
                                 Optional.of(slotDetail.getSession()),
-                                hearingConfirmed.getConfirmedHearing().getCourtCentre().getRoomId().toString());
+                                confirmedHearing.getCourtCentre().getRoomId().toString());
 
 
                         if (isNotEmpty(judiciariesFromRota)) {
                             sendChangeJudiciaryForHearings(envelope,
-                                    hearingConfirmed.getConfirmedHearing().getId(),
+                                    confirmedHearing.getId(),
                                     JudicialRoleDomainToEventConverter.convertToEvents(judiciariesFromRota));
                         }
                     })
