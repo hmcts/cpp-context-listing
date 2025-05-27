@@ -83,6 +83,7 @@ public class HearingJdbcRepository {
                 "h.type_of_list_id, " +
                 "h.is_possible_disqualification " +
                 "from hearing h " +
+                "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
                 "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
                 "LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
                 "where  " +
@@ -91,7 +92,7 @@ public class HearingJdbcRepository {
                 " and (ca.is_ejected is null or ca.is_ejected =false) " +
                 " and (h.allocated = ?)  " +
                 " and (h.unscheduled is null or h.unscheduled = false) " +
-                getAdditionalWhereClause(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType) +
+                getAdditionalWhereClauseForHearing(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType) +
                 " and ( " +
                 "(h.start_date between ? and ? ) or " +
                 "(h.end_date between ? and ? ) or " +
@@ -252,6 +253,28 @@ public class HearingJdbcRepository {
         final String typeIdWhereClause = "(? is null or h.type_id = ?)  ";
         final String jurisdictionTypeWhereClause = "(? is null or h.jurisdiction_type = ?)  ";
 
+        final List<String> additionalWhereClauses = buildAdditionalWherClauses(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType, courtCentreIdWhereClause, courtRoomIdWhereClause, authorityIdWhereClause, typeIdWhereClause, jurisdictionTypeWhereClause);
+
+        return additionalWhereClauses.isEmpty() ? "" : " and " + String.join(" and", additionalWhereClauses);
+    }
+
+    private static String getAdditionalWhereClauseForHearing(UUID courtCentreId,
+                                                   UUID courtRoomId,
+                                                   UUID authorityCode,
+                                                   UUID hearingTypeId,
+                                                   String jurisdictionType) {
+        final String courtCentreIdWhereClause = "(hd.court_centre_id = ? or h.court_centre_id = ?)  ";
+        final String courtRoomIdWhereClause = "(hd.court_room_id = ? or h.court_room_id = ?)  ";
+        final String authorityIdWhereClause = "(? is null or (lc.authority_id = ? or lc.prosecutor_id = ?))  ";
+        final String typeIdWhereClause = "(? is null or h.type_id = ?)  ";
+        final String jurisdictionTypeWhereClause = "(? is null or h.jurisdiction_type = ?)  ";
+
+        final List<String> additionalWhereClauses = buildAdditionalWherClauses(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType, courtCentreIdWhereClause, courtRoomIdWhereClause, authorityIdWhereClause, typeIdWhereClause, jurisdictionTypeWhereClause);
+
+        return additionalWhereClauses.isEmpty() ? "" : " and " + String.join(" and", additionalWhereClauses);
+    }
+
+    private static List<String> buildAdditionalWherClauses(final UUID courtCentreId, final UUID courtRoomId, final UUID authorityCode, final UUID hearingTypeId, final String jurisdictionType, final String courtCentreIdWhereClause, final String courtRoomIdWhereClause, final String authorityIdWhereClause, final String typeIdWhereClause, final String jurisdictionTypeWhereClause) {
         final List<String> additionalWhereClauses = new ArrayList<>();
 
         if (courtCentreId != null) {
@@ -273,8 +296,7 @@ public class HearingJdbcRepository {
         if (StringUtils.isNotEmpty(jurisdictionType)) {
             additionalWhereClauses.add(jurisdictionTypeWhereClause);
         }
-
-        return additionalWhereClauses.isEmpty() ? "" : " and " + String.join(" and", additionalWhereClauses);
+        return additionalWhereClauses;
     }
 
     protected Hearing entityFrom(ResultSet resultSet) throws SQLException, IOException {
