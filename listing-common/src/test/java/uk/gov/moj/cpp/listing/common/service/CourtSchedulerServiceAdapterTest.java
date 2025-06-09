@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.common.utils.FileUtil.givenPayload;
 
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
@@ -47,6 +48,9 @@ public class CourtSchedulerServiceAdapterTest {
 
     @Spy
     private ObjectToJsonObjectConverter objectToJsonObjectConverter = new JsonObjectConvertersFactory().objectToJsonObjectConverter();
+
+    @Mock
+    private JsonObjectToObjectConverter jsonObjectConverter;
 
     @Test
     public void shouldGetJudicialRoles() {

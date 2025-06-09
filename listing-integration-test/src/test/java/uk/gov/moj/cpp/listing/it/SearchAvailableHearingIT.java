@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.it;
 
 import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
-
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;

@@ -10,7 +10,6 @@ import static uk.gov.moj.cpp.listing.query.view.hearing.JsonArrayCollector.toArr
 
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.time.LocalDate;
@@ -65,11 +64,50 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
     @Override
     public JsonArray convert(final List<Hearing> hearings) {
         return hearings.stream()
-                .map(Hearing::getProperties)
+                .map(this::preprocessPropertiesIfHearingIsFlattened)
                 .map(this::filterEjectCaseAndCourtApplications)
                 .filter(this::casesOrApplicationsExists)
                 .map(hearingJsonNode -> this.jsonFromString(hearingJsonNode.toString()))
                 .collect(toArrayNode());
+    }
+
+    private JsonNode preprocessPropertiesIfHearingIsFlattened(final Hearing h) {
+        if (isNull(h) || isNull(h.getProperties())) {
+            return null;
+        }
+        JsonNode props = h.getProperties();
+        final LocalDate hearingDate = h.getHearingDate();
+        Long hearingDayCount = h.getHearingDayCount();
+        Long position = h.getHearingDayPosition();
+
+        if (hearingDate == null || hearingDayCount == null || hearingDayCount <= 0) {
+            // no flattening needed
+            return props;
+        }
+
+        // from here on, we have a flattened hearing ... so, pre-process fields needed for rendering a flattened hearing
+        ((ObjectNode) h.getProperties()).put("hearingDayCount", hearingDayCount);
+        ((ObjectNode) h.getProperties()).put("hearingDayPosition", position);
+        final JsonNode hd = props.findPath("hearingDays");
+
+        if (!hd.isMissingNode() && hd.isArray()) {
+            final ArrayNode arrayNode = (ArrayNode) hd;
+            int idx = 0;
+            while (idx < arrayNode.size()) {
+                final JsonNode el = arrayNode.get(idx);
+                final JsonNode hhd = el.findPath("hearingDate");
+                if (!hhd.isMissingNode()) {
+                    final String txt = hhd.asText();
+                    if (!hearingDate.toString().equals(txt)) {
+                        arrayNode.remove(idx);//infinite loop???
+                        continue; // not incrementing index as array size is reduced by one
+                    }
+                    idx++;
+                }
+            }
+        }
+
+        return props;
     }
 
     @Override

@@ -197,6 +197,9 @@ subscriptions_descriptor:
         - name: listing.events.judiciary-changed-for-hearings-status
           schema_uri: http://justice.gov.uk/listing/events/listing.events.judiciary-changed-for-hearings-status.json
 
+        - name: listing.events.create-next-hearing-requested
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.create-next-hearing-requested.json
+
         - name: listing.events.hearings-update-completed
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearings-update-completed.json
 
@@ -267,8 +270,12 @@ subscriptions_descriptor:
         - name: public.hearing.selected-offences-removed-from-existing-hearing
           schema_uri: http://justice.gov.uk/hearing/courts/public.hearing.selected-offences-removed-from-existing-hearing.json
 
+        - name: public.events.hearing.hearing-resulted
+          schema_uri: http://justice.gov.uk/hearing/courts/public.events.hearing.hearing-resulted.json
+
         - name: public.staginghmi.hearing-updated-from-hmi
           schema_uri: http://justice.gov.uk/staginghmi/courts/public.staginghmi.hearing-updated-from-hmi.json
+
         - name: public.progression.case-removed-from-group-cases
           schema_uri: http://moj.gov.uk/cpp/progression/events/public.progression.case-removed-from-group-cases.json
 

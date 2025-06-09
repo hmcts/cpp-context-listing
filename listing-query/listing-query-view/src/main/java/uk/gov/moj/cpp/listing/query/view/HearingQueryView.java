@@ -479,6 +479,10 @@ public class HearingQueryView {
         return rangeSearchQuery.rangeSearchHearings(query);
     }
 
+    public JsonEnvelope rangeSearchHearingsForCourtCalendar(final JsonEnvelope query) {
+        return rangeSearchQuery.rangeSearchCourtCalendar(query);
+    }
+
     public JsonEnvelope searchHearingsForCotr(final JsonEnvelope query) {
         return rangeSearchQuery.searchHearingsForCotr(query);
     }

@@ -15,33 +15,37 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static java.lang.String.format;
-
+@SuppressWarnings({"java:S107", "java:S2077"})
 @ApplicationScoped
 public class HearingJdbcRepository {
 
-    private static final String UNALLOCATED_COMMON_SELECT_FROM = "select " +
-            "h.id, h.properties,  " +
-            "h.court_centre_id, " +
-            "h.court_room_id, " +
-            "h.type_id, " +
-            "h.start_date, " +
-            "h.end_date, " +
-            "h.is_vacated_trial, " +
-            "h.jurisdiction_type, " +
-            "h.unscheduled, " +
-            "h.week_commencing_start_date, " +
-            "h.week_commencing_end_date, " +
-            "h.allocated, " +
-            "h.type_of_list_id, " +
-            "count(1) OVER() as totalCount, " +
-            "h.is_possible_disqualification " +
-            "from hearing h " +
-            "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
-            " LEFT JOIN court_applications ca ON ca.hearing_id = h.id ";
+    public static final String NULL_FLAT_HEARING_FIELDS = " null as hearing_day_count, null as hearing_day_position, null as hearing_date ";
+
+    private static final String UNALLOCATED_COMMON_SELECT_FROM = """
+            select 
+            h.id, h.properties,  
+            h.court_centre_id, 
+            h.court_room_id, 
+            h.type_id, 
+            h.start_date, 
+            h.end_date, 
+            h.is_vacated_trial, 
+            h.jurisdiction_type, 
+            h.unscheduled, 
+            h.week_commencing_start_date, 
+            h.week_commencing_end_date, 
+            h.allocated, 
+            h.type_of_list_id, 
+            count(1) OVER() as totalCount, 
+            h.is_possible_disqualification, """ + NULL_FLAT_HEARING_FIELDS + """
+            from hearing h 
+            LEFT JOIN listed_cases lc ON lc.hearing_id = h.id 
+            LEFT JOIN court_applications ca ON ca.hearing_id = h.id 
+            """;
+    public static final String EXCEPTION_WHILE_EXECUTING_QUERY = "Exception while executing query: %s";
 
     @Inject
     private ViewStoreJdbcDataSourceProvider viewStoreJdbcDataSourceProvider;
@@ -81,8 +85,9 @@ public class HearingJdbcRepository {
                 "h.week_commencing_end_date, " +
                 "h.allocated, " +
                 "h.type_of_list_id, " +
-                "h.is_possible_disqualification " +
+                "h.is_possible_disqualification " + NULL_FLAT_HEARING_FIELDS +
                 "from hearing h " +
+                "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
                 "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
                 "LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
                 "where  " +
@@ -91,7 +96,7 @@ public class HearingJdbcRepository {
                 " and (ca.is_ejected is null or ca.is_ejected =false) " +
                 " and (h.allocated = ?)  " +
                 " and (h.unscheduled is null or h.unscheduled = false) " +
-                getAdditionalWhereClause(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType) +
+                getAdditionalWhereClauseForHearing(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType) +
                 " and ( " +
                 "(h.start_date between ? and ? ) or " +
                 "(h.end_date between ? and ? ) or " +
@@ -127,7 +132,7 @@ public class HearingJdbcRepository {
                 }
             }
         } catch (SQLException | IOException e) {
-            throw new HearingJdbcException(format("Exception while executing query: %s", query), e);
+            throw new HearingJdbcException(format(EXCEPTION_WHILE_EXECUTING_QUERY, query), e);
         }
 
         return hearingResults;
@@ -148,25 +153,26 @@ public class HearingJdbcRepository {
             final Integer pageSize) {
         final List<Hearing> hearingResults = new ArrayList<>();
 
-        final String query = UNALLOCATED_COMMON_SELECT_FROM +
-                "where  " +
-                "(h.is_vacated_trial is null or h.is_vacated_trial != true)" +
-                " and (lc.is_ejected is null or lc.is_ejected =false) " +
-                " and (ca.is_ejected is null or ca.is_ejected =false) " +
-                " and h.allocated = ?  " +
-                " and (h.unscheduled is null or h.unscheduled = false)" +
-                getAdditionalWhereClause(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType) +
-                " and ( " +
-                "   ( h.week_commencing_start_date >= ? and h.week_commencing_start_date <= ? ) or " +
-                "   ( h.week_commencing_end_date >= ? and h.week_commencing_end_date <= ? ) or " +
-                "   ( h.start_date >= ? and h.start_date <= ? )  or " +
-                "   ( h.end_date >= ? and h.end_date <= ? ) ) " +
-                "group by h.id, h.properties " +
-                "order by h.start_date," +
-                "h.end_date," +
-                "h.week_commencing_start_date," +
-                "h.week_commencing_end_date" +
-                " ASC OFFSET (?) ROWS FETCH NEXT (?) ROWS ONLY";
+        final String query = UNALLOCATED_COMMON_SELECT_FROM + """
+            where  
+            (h.is_vacated_trial is null or h.is_vacated_trial != true)
+            and (lc.is_ejected is null or lc.is_ejected =false) 
+            and (ca.is_ejected is null or ca.is_ejected =false) 
+            and h.allocated = ?  
+            and (h.unscheduled is null or h.unscheduled = false)
+            """ + getAdditionalWhereClause(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType) + """
+            and ( 
+            ( h.week_commencing_start_date >= ? and h.week_commencing_start_date <= ? ) or 
+            ( h.week_commencing_end_date >= ? and h.week_commencing_end_date <= ? ) or 
+            ( h.start_date >= ? and h.start_date <= ? )  or 
+            ( h.end_date >= ? and h.end_date <= ? ) ) 
+            group by h.id, h.properties 
+            order by h.start_date,
+            h.end_date,
+            h.week_commencing_start_date,
+            h.week_commencing_end_date
+            ASC OFFSET (?) ROWS FETCH NEXT (?) ROWS ONLY
+            """;
 
         try (final Connection viewstoreConnection = dataSource.getConnection();
              final PreparedStatement ps = viewstoreConnection.prepareStatement(query)) {
@@ -200,7 +206,7 @@ public class HearingJdbcRepository {
                 }
             }
         } catch (SQLException | IOException e) {
-            throw new HearingJdbcException(format("Exception while executing query: %s", query), e);
+            throw new HearingJdbcException(format(EXCEPTION_WHILE_EXECUTING_QUERY, query), e);
         }
 
         return hearingResults;
@@ -252,6 +258,28 @@ public class HearingJdbcRepository {
         final String typeIdWhereClause = "(? is null or h.type_id = ?)  ";
         final String jurisdictionTypeWhereClause = "(? is null or h.jurisdiction_type = ?)  ";
 
+        final List<String> additionalWhereClauses = buildAdditionalWherClauses(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType, courtCentreIdWhereClause, courtRoomIdWhereClause, authorityIdWhereClause, typeIdWhereClause, jurisdictionTypeWhereClause);
+
+        return additionalWhereClauses.isEmpty() ? "" : " and " + String.join(" and", additionalWhereClauses);
+    }
+
+    private static String getAdditionalWhereClauseForHearing(UUID courtCentreId,
+                                                   UUID courtRoomId,
+                                                   UUID authorityCode,
+                                                   UUID hearingTypeId,
+                                                   String jurisdictionType) {
+        final String courtCentreIdWhereClause = "(hd.court_centre_id = ? or h.court_centre_id = ?)  ";
+        final String courtRoomIdWhereClause = "(hd.court_room_id = ? or h.court_room_id = ?)  ";
+        final String authorityIdWhereClause = "(? is null or (lc.authority_id = ? or lc.prosecutor_id = ?))  ";
+        final String typeIdWhereClause = "(? is null or h.type_id = ?)  ";
+        final String jurisdictionTypeWhereClause = "(? is null or h.jurisdiction_type = ?)  ";
+
+        final List<String> additionalWhereClauses = buildAdditionalWherClauses(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType, courtCentreIdWhereClause, courtRoomIdWhereClause, authorityIdWhereClause, typeIdWhereClause, jurisdictionTypeWhereClause);
+
+        return additionalWhereClauses.isEmpty() ? "" : " and " + String.join(" and", additionalWhereClauses);
+    }
+
+    private static List<String> buildAdditionalWherClauses(final UUID courtCentreId, final UUID courtRoomId, final UUID authorityCode, final UUID hearingTypeId, final String jurisdictionType, final String courtCentreIdWhereClause, final String courtRoomIdWhereClause, final String authorityIdWhereClause, final String typeIdWhereClause, final String jurisdictionTypeWhereClause) {
         final List<String> additionalWhereClauses = new ArrayList<>();
 
         if (courtCentreId != null) {
@@ -273,8 +301,7 @@ public class HearingJdbcRepository {
         if (StringUtils.isNotEmpty(jurisdictionType)) {
             additionalWhereClauses.add(jurisdictionTypeWhereClause);
         }
-
-        return additionalWhereClauses.isEmpty() ? "" : " and " + String.join(" and", additionalWhereClauses);
+        return additionalWhereClauses;
     }
 
     protected Hearing entityFrom(ResultSet resultSet) throws SQLException, IOException {
@@ -298,6 +325,10 @@ public class HearingJdbcRepository {
         final boolean allocated = resultSet.getBoolean("allocated");
         final UUID typeOfListId = (UUID) resultSet.getObject("type_of_list_id");
         final long totalCount = resultSet.getLong("totalCount");
+        final Long hearingDayCount = resultSet.getLong("hearing_day_count");
+        final Long hearingDayPosition = resultSet.getLong("hearing_day_position");
+        final Date hdd = resultSet.getDate("hearing_date");
+        final LocalDate hearingDate = hdd ==null? null :  hdd.toLocalDate();
         final boolean isPossibleDisqualification = resultSet.getBoolean("is_possible_disqualification");
         final Hearing hearing = new Hearing(id, properties);
         hearing.setCourtCentreId(courtCentreId);
@@ -314,6 +345,86 @@ public class HearingJdbcRepository {
         hearing.setTypeOfListId(typeOfListId);
         hearing.setTotalCount(totalCount);
         hearing.setPossibleDisqualification(isPossibleDisqualification);
+        hearing.setHearingDayCount(hearingDayCount);
+        hearing.setHearingDayPosition(hearingDayPosition);
+        hearing.setHearingDate(hearingDate);
         return hearing;
+    }
+
+    public List<Hearing> findAllocatedHearingsForCourtCalendar(
+                                      final UUID courtCentreId,
+                                      final UUID courtRoomId,
+                                      final UUID authorityCode,
+                                      final UUID hearingTypeId,
+                                      final String jurisdictionType,
+                                      final LocalDate startDate,
+                                      final LocalDate endDate,
+                                      final Integer offSet,
+                                      final Integer pageSize) {
+        final List<Hearing> hearingResults = new ArrayList<>();
+
+        final String query = """
+            select *, count(*) OVER() as totalCount from (select distinct 
+            h.id, h.properties,  
+            h.court_centre_id, 
+            h.court_room_id, 
+            h.type_id, 
+            h.start_date, 
+            h.end_date, 
+            h.is_vacated_trial, 
+            h.jurisdiction_type, 
+            h.unscheduled, 
+            h.week_commencing_start_date, 
+            h.week_commencing_end_date, 
+            h.allocated, 
+            h.type_of_list_id, 
+            h.is_possible_disqualification, 
+            (select count(1) from hearing_days hd2 where hd2.hearing_id =h.id) as hearing_day_count, 
+            (select array_position(ARRAY_AGG(hd3.hearing_date ORDER BY hd3.hearing_date, hd3.start_time, hd3.sequence),hd.hearing_date) from hearing_days hd3 where hd3.hearing_id =h.id ) as hearing_day_position, 
+            hd.hearing_date, crc.courtroom_name, hd.start_time,hd.sequence 
+            from hearing h 
+            LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  
+            LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  
+            LEFT JOIN court_applications ca ON ca.hearing_id = h.id 
+            LEFT JOIN cache_refdata_courtroom crc ON crc.id = hd.court_room_id 
+            where  
+            (h.is_vacated_trial is null or h.is_vacated_trial != true) 
+            and (lc.is_ejected is null or lc.is_ejected =false) 
+            and (ca.is_ejected is null or ca.is_ejected =false) 
+            and (h.allocated = ?)  
+            and (h.unscheduled is null or h.unscheduled = false) 
+            """ + getAdditionalWhereClause(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType) + """
+            and ( hd.hearing_date between ? and ? ) 
+            group by  h.id,hd.hearing_date,crc.courtroom_name,hd.start_time, hd.sequence 
+            order by h.court_centre_id, hd.hearing_date, crc.courtroom_name, hd.start_time,hd.sequence, h.id ) as distinct_hearings OFFSET (?) ROWS FETCH NEXT (?) ROWS ONLY
+            """;
+
+        try (final Connection viewstoreConnection = dataSource.getConnection(); final PreparedStatement ps = viewstoreConnection.prepareStatement(query)) {
+            int indexPointer = 1;
+            ps.setBoolean(indexPointer++, true);
+
+            indexPointer = setConditionalWhereClauseFields(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType, ps, indexPointer);
+
+            final Timestamp weekCommencingStartDateTimestamp = Timestamp.valueOf(startDate.atStartOfDay());
+            final Timestamp weekCommencingEndDateTimestamp = Timestamp.valueOf(endDate.atStartOfDay());
+            ps.setTimestamp(indexPointer++, weekCommencingStartDateTimestamp);
+            ps.setTimestamp(indexPointer++, weekCommencingEndDateTimestamp);
+
+            ps.setInt(indexPointer++, offSet);
+            ps.setInt(indexPointer, pageSize);
+
+
+            try (final ResultSet resultSet = ps.executeQuery()) {
+                while (resultSet.next()) {
+                   Hearing ent = entityFrom(resultSet);
+                    hearingResults.add(ent);
+                }
+            }
+        } catch (SQLException | IOException e) {
+            throw new HearingJdbcException(format(EXCEPTION_WHILE_EXECUTING_QUERY, query), e);
+        }
+
+        return hearingResults;
+
     }
 }

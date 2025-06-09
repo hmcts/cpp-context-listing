@@ -28,6 +28,7 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.common.service.HearingIdsResponse;
+import uk.gov.moj.cpp.listing.common.service.IdResponse;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
@@ -265,8 +266,8 @@ public class RangeSearchQueryTest {
     @Test
     public void searchMagistratesHearings() {
         final List<Hearing> hearings = hearingsJson(ALLOCATEDSTR);
-        final List<UUID> hearingIds = new ArrayList<>();
-        hearings.forEach(hearing -> hearingIds.add(hearing.getId()));
+        final List<IdResponse> hearingIds = new ArrayList<>();
+        hearings.forEach(hearing -> hearingIds.add(new IdResponse(hearing.getId(), UUID.randomUUID(), LocalDate.now(), 1,1)));
 
         final HearingIdsResponse response = new HearingIdsResponse(hearingIds, 2, 1);
 
@@ -279,7 +280,7 @@ public class RangeSearchQueryTest {
                         SEARCH_DATE.toString(),
                         Optional.of(BUSINESS_TYPE), "ADULT,YOUTH", 50, 1)).thenReturn(response);
 
-        when(hearingRepository.findAllCourtSchedulerHearingByIds(hearingIds)).thenReturn(hearings);
+        when(hearingRepository.findAllCourtSchedulerHearingByIds(anyList())).thenReturn(hearings);
 
 
         final JsonEnvelope query = envelopeFrom(
@@ -299,7 +300,7 @@ public class RangeSearchQueryTest {
                         .add(PAGE_NUMBER, "1")
                         .build());
 
-        final JsonEnvelope results = rangeSearchQuery.rangeSearchHearings(query);
+        final JsonEnvelope results = rangeSearchQuery.rangeSearchCourtCalendar(query);
 
         assertThat(results.payloadAsJsonObject().getInt("results"), is(2));
         assertThat(results.payloadAsJsonObject().getJsonArray("hearings").size(), is(2));
