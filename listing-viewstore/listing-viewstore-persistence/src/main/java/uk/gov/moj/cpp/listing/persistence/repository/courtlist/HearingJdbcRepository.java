@@ -85,7 +85,7 @@ public class HearingJdbcRepository {
                 "h.week_commencing_end_date, " +
                 "h.allocated, " +
                 "h.type_of_list_id, " +
-                "h.is_possible_disqualification " + NULL_FLAT_HEARING_FIELDS +
+                "h.is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
                 "from hearing h " +
                 "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
                 "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
