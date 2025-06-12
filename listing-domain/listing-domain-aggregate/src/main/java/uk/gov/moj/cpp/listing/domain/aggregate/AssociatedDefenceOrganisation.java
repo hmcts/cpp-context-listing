@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
-import uk.gov.justice.listing.events.FundingType;
+import uk.gov.justice.core.courts.FundingType;
 
 import java.io.Serializable;
 

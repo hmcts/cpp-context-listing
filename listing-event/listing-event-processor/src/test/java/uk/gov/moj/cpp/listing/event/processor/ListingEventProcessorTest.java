@@ -67,6 +67,7 @@ import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.core.courts.JurisdictionType;
+import uk.gov.justice.core.courts.LaaReference;
 import uk.gov.justice.core.courts.ListDefendantRequest;
 import uk.gov.justice.core.courts.ListHearingRequest;
 import uk.gov.justice.core.courts.Offence;
@@ -127,6 +128,7 @@ import uk.gov.justice.listing.events.PublicListingNewDefendantAddedForCourtProce
 import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.justice.listing.events.TrialVacated;
+import uk.gov.justice.progression.courts.ApplicationOffencesUpdated;
 import uk.gov.justice.progression.courts.CaseLinked;
 import uk.gov.justice.progression.courts.Cases;
 import uk.gov.justice.progression.courts.CourtApplicationChanged;
@@ -341,6 +343,9 @@ public class ListingEventProcessorTest {
     private ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor;
     @Captor
     private ArgumentCaptor<DefaultEnvelope<JsonObject>> senderDefaultEnvelopeCaptor;
+    @Captor
+    private ArgumentCaptor<Envelope<ApplicationOffencesUpdated>> applicationOffencesUpdatedeCaptor;
+
     @Captor
     private ArgumentCaptor<String> stringArgumentCaptor;
     @Mock
@@ -1060,6 +1065,25 @@ public class ListingEventProcessorTest {
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is(PRIVATE_COMMAND_HEARING_VACATE_TRIAL));
     }
+
+    @Test
+    public void shouldHandlePublicApplicationOffenceUpdated() {
+        final ApplicationOffencesUpdated applicationOffencesUpdated = ApplicationOffencesUpdated.applicationOffencesUpdated()
+                .withApplicationId(randomUUID())
+                .withOffenceId(randomUUID())
+                .withSubjectId(randomUUID())
+                .withLaaReference(LaaReference.laaReference().withStatusId(randomUUID()).build())
+                .build();
+        //given
+        final Envelope<ApplicationOffencesUpdated> envelope = Envelope.envelopeFrom(metadataWithRandomUUID("public.progression.application-offences-updated"), applicationOffencesUpdated);
+        //when
+        listingEventProcessor.handleApplicationOffenceUpdated(envelope);
+        //then
+        verify(sender).send(applicationOffencesUpdatedeCaptor.capture());
+        assertThat(applicationOffencesUpdatedeCaptor.getValue().metadata().name(), is("listing.command.update-laa-reference-for-application"));
+        assertThat(applicationOffencesUpdatedeCaptor.getValue().payload(), is(applicationOffencesUpdated));
+    }
+
 
     @Test
     public void shouldHandleHearingRescheduledMessage() {

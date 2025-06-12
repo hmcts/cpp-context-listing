@@ -15,6 +15,7 @@ import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 
+import javax.json.Json;
 import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
 import uk.gov.justice.core.courts.CourtCentre;
@@ -60,6 +61,7 @@ import uk.gov.justice.listing.events.OffencesToBeUpdated;
 import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIdsV2;
 import uk.gov.justice.listing.events.PublicListingNewDefendantAddedForCourtProceedings;
 import uk.gov.justice.listing.events.TrialVacated;
+import uk.gov.justice.progression.courts.ApplicationOffencesUpdated;
 import uk.gov.justice.progression.courts.HearingExtended;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
@@ -67,6 +69,7 @@ import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
@@ -795,6 +798,17 @@ public class ListingEventProcessor {
 
         this.sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PRIVATE_COMMAND_HEARING_VACATE_TRIAL),
                 envelope.payloadAsJsonObject()));
+    }
+
+    @Handles("public.progression.application-offences-updated")
+    public void handleApplicationOffenceUpdated(final Envelope<ApplicationOffencesUpdated> envelope) {
+        if (logger.isInfoEnabled()) {
+            logger.info("public.progression.application-offences-updated event received {}", objectToJsonObjectConverter.convert(envelope.payload()));
+        }
+
+        this.sender.send(Envelope.envelopeFrom(metadataFrom(envelope.metadata()).withName("listing.command.update-laa-reference-for-application"),
+                envelope.payload()));
+
     }
 
     @Handles(LISTING_EVENTS_CASE_RESULTED_DEFENDANT_PROCEEDINGS_UPDATED)
