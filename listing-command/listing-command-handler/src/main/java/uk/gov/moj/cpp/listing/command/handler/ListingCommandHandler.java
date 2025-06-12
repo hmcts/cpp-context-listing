@@ -82,6 +82,7 @@ import uk.gov.justice.listing.courts.UpdateCourtApplicationForHearings;
 import uk.gov.justice.listing.courts.UpdateDefendantsForHearing;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.listing.courts.UpdateHearingToCaseCommand;
+import uk.gov.justice.listing.courts.UpdateLaaReferenceForApplication;
 import uk.gov.justice.listing.courts.UpdateLinkedCaseInHearing;
 import uk.gov.justice.listing.courts.UpdateLinkedCases;
 import uk.gov.justice.listing.courts.UpdateOffencesForHearing;
@@ -1292,6 +1293,19 @@ public class ListingCommandHandler {
         final UUID applicationId = courtApplicationDomain.getId();
         updateApplicationEventStream(commandEnvelope, applicationId, (Application application) ->
                 application.update(courtApplicationDomain));
+    }
+
+    @Handles("listing.command.update-laa-reference-for-application")
+    public void updateLaaReferenceForCourtApplication(final Envelope<UpdateLaaReferenceForApplication> commandEnvelope) throws EventStreamException {
+        final UpdateLaaReferenceForApplication command = commandEnvelope.payload();
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("listing.command.update-laa-reference-for-application received with payload {}", objectToJsonObjectConverter.convert(command));
+        }
+
+        final EventStream eventStream = eventSource.getStreamById(command.getApplicationId());
+        final Application application = aggregateService.get(eventStream, Application.class);
+        final Stream<Object> events = application.updateLaaReference(command.getApplicationId(), command.getSubjectId(), command.getOffenceId(), command.getLaaReference());
+        appendEventsToStream(commandEnvelope, eventStream, events);
     }
 
     @Handles("listing.command.update-case-markers")

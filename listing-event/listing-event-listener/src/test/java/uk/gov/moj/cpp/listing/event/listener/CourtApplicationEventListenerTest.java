@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -14,11 +15,13 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STR
 
 
 import uk.gov.justice.core.courts.Address;
+import uk.gov.justice.core.courts.LaaReference;
 import uk.gov.justice.listing.event.CourtApplicationHearingDeleted;
 import uk.gov.justice.listing.events.ApplicantRespondent;
 import uk.gov.justice.listing.events.CourtApplication;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
 import uk.gov.justice.listing.events.CourtApplicationUpdatedForHearing;
+import uk.gov.justice.listing.events.LaaReferenceForApplicationUpdated;
 import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
@@ -28,7 +31,7 @@ import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -48,6 +51,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class CourtApplicationEventListenerTest {
     private static final UUID OFFENCE_ID = randomUUID();
+    private static final UUID OFFENCE_ID2 = randomUUID();
     private static final String COURT_APPLICATIONS = "courtApplications";
     private static final UUID HEARING_ID = randomUUID();
     private static final UUID ID = randomUUID();
@@ -79,12 +83,14 @@ public class CourtApplicationEventListenerTest {
             .build();
 
     @Spy
-    private ObjectMapper mapper =  new ObjectMapperProducer().objectMapper();
+    private ObjectMapper mapper = new ObjectMapperProducer().objectMapper();
 
     @Mock
     private Envelope<CourtApplicationUpdatedForHearing> courtApplicationUpdatedForHearingEnvelope;
     @Mock
     private Envelope<CourtApplicationAddedForHearing> courtApplicationAddedForHearingsEnvelope;
+    @Mock
+    private Envelope<LaaReferenceForApplicationUpdated> laaReferenceForApplicationUpdatedEnvelope;
 
     @Mock
     private HearingRepository hearingRepository;
@@ -109,9 +115,9 @@ public class CourtApplicationEventListenerTest {
     public void shouldHandleCourtApplicationUpdatedAndPersist() throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         List<uk.gov.justice.listing.events.CourtApplication> testCases = createCourtApplications();
-        String testCasesString =  mapper.writeValueAsString(testCases);
+        String testCasesString = mapper.writeValueAsString(testCases);
         JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
-        Envelope<CourtApplicationUpdatedForHearing>  envelope = (Envelope<CourtApplicationUpdatedForHearing>) mock(Envelope.class);
+        Envelope<CourtApplicationUpdatedForHearing> envelope = (Envelope<CourtApplicationUpdatedForHearing>) mock(Envelope.class);
 
         CourtApplicationUpdatedForHearing hearingData = CourtApplicationUpdatedForHearing.courtApplicationUpdatedForHearing()
                 .withHearingId(HEARING_ID)
@@ -133,7 +139,7 @@ public class CourtApplicationEventListenerTest {
                                 .withIsRespondent(true)
                                 .withAddress(RESPONDENT_ADDRESS)
                                 .build()))
-                        .withOffences(Arrays.asList(Offence.offence().withId(OFFENCE_ID).build()))
+                        .withOffences(asList(Offence.offence().withId(OFFENCE_ID).build()))
                         .build())
                 .build();
 
@@ -153,6 +159,60 @@ public class CourtApplicationEventListenerTest {
         verify(hearingRepository).save(hearing);
         verify(hearingSearchSyncService).sync(HEARING_ID);
     }
+
+
+    @Test
+    public void shouldHandleLaaReferenceUpdate() throws Exception {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final List<uk.gov.justice.listing.events.CourtApplication> testCases = createCourtApplications();
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+
+        final LaaReferenceForApplicationUpdated hearingData = LaaReferenceForApplicationUpdated.laaReferenceForApplicationUpdated()
+                .withApplicationId(ID)
+                .withSubjectId(randomUUID())
+                .withOffenceId(OFFENCE_ID)
+                .withHearingIds(singletonList(HEARING_ID))
+                .withLaaReference(LaaReference.laaReference()
+                        .withEffectiveEndDate(LocalDate.now().toString())
+                        .withApplicationReference("APP-1234")
+                        .withEffectiveStartDate(LocalDate.now().toString())
+                        .withStatusCode("A")
+                        .withStatusDate(LocalDate.now().toString())
+                        .withStatusId(randomUUID())
+                        .withLaaContractNumber("123456")
+                        .build())
+                .build();
+
+        given(laaReferenceForApplicationUpdatedEnvelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(COURT_APPLICATIONS)).willReturn(testCasesProperties);
+
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        courtApplicationEventListener.processLaaReferenceUpdate(laaReferenceForApplicationUpdatedEnvelope);
+
+        verify(properties).replace(any(), objectNodeCaptor.capture());
+
+        JsonNode offence = objectNodeCaptor.getValue().get(0).get("offences").get(0);
+        final JsonNode laaApplnReference = offence.get("laaApplnReference");
+        assertThat(laaApplnReference.get("effectiveEndDate").asText(), equalTo(hearingData.getLaaReference().getEffectiveEndDate()));
+        assertThat(laaApplnReference.get("applicationReference").asText(), equalTo(hearingData.getLaaReference().getApplicationReference()));
+        assertThat(laaApplnReference.get("effectiveStartDate").asText(), equalTo(hearingData.getLaaReference().getEffectiveStartDate()));
+        assertThat(laaApplnReference.get("statusCode").asText(), equalTo(hearingData.getLaaReference().getStatusCode()));
+        assertThat(laaApplnReference.get("statusDate").asText(), equalTo(hearingData.getLaaReference().getStatusDate()));
+        assertThat(laaApplnReference.get("statusId").asText(), equalTo(hearingData.getLaaReference().getStatusId().toString()));
+
+        offence = objectNodeCaptor.getValue().get(0).get("offences").get(1);
+        assertThat(offence.hasNonNull("laaApplnReference"), equalTo(false));
+
+        verify(hearingRepository).save(hearing);
+        verify(hearingSearchSyncService).sync(HEARING_ID);
+    }
+
 
     @Test
     public void shouldAddCourtApplicationForHearing() {
@@ -200,7 +260,7 @@ public class CourtApplicationEventListenerTest {
     public void shouldTestAddCourtApplicationForExistingApplicationInHearing() throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         List<CourtApplication> testCases = createCourtApplications();
-        String testCasesString =  mapper.writeValueAsString(testCases);
+        String testCasesString = mapper.writeValueAsString(testCases);
         JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
         Envelope<CourtApplicationAddedForHearing> envelope = (Envelope<CourtApplicationAddedForHearing>) mock(Envelope.class);
         CourtApplicationAddedForHearing hearingData = CourtApplicationAddedForHearing.courtApplicationAddedForHearing()
@@ -246,7 +306,7 @@ public class CourtApplicationEventListenerTest {
     public void shouldTestManyAddCourtApplicationForHearing() throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         List<CourtApplication> testCases = createCourtApplications();
-        String testCasesString =  mapper.writeValueAsString(testCases);
+        String testCasesString = mapper.writeValueAsString(testCases);
         JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
         Envelope<CourtApplicationAddedForHearing> envelope = (Envelope<CourtApplicationAddedForHearing>) mock(Envelope.class);
         CourtApplicationAddedForHearing hearingData = CourtApplicationAddedForHearing.courtApplicationAddedForHearing()
@@ -316,7 +376,7 @@ public class CourtApplicationEventListenerTest {
         courtApplicationEventListener.courtApplicationAdded(envelope);
         verify(properties, times(2)).replace(any(), objectNodeCaptor.capture());
         validateApplicantAndRespondents(objectNodeCaptor, FIRST_NAME, LAST_NAME);
-        verify(hearingRepository,times(2)).save(hearing);
+        verify(hearingRepository, times(2)).save(hearing);
         verify(hearingSearchSyncService, times(2)).sync(HEARING_ID);
     }
 
@@ -385,6 +445,13 @@ public class CourtApplicationEventListenerTest {
         return singletonList(CourtApplication.courtApplication()
                 .withLinkedCaseIds(singletonList(LINKED_CASE_ID))
                 .withParentApplicationId(LINKED_APPLICATION_ID)
+                .withOffences(asList(
+                        Offence.offence()
+                                .withId(OFFENCE_ID)
+                                .build(),
+                        Offence.offence()
+                                .withId(OFFENCE_ID2)
+                                .build()))
                 .withId(ID)
                 .withApplicationType(APPLICATION_TYPE)
                 .withApplicationParticulars(APPLICATION_PARTICULARS)
@@ -394,7 +461,7 @@ public class CourtApplicationEventListenerTest {
                         .withIsRespondent(false)
                         .withAddress(APPLICANT_ADDRESS)
                         .build())
-                .withRespondents(Arrays.asList(ApplicantRespondent.applicantRespondent()
+                .withRespondents(asList(ApplicantRespondent.applicantRespondent()
                         .withFirstName(FIRST_NAME)
                         .withLastName(LAST_NAME)
                         .withIsRespondent(true)
