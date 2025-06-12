@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.common.service;
 import static java.lang.String.format;
 import static java.util.Optional.empty;
 
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
@@ -21,7 +22,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
-import javax.json.JsonString;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -48,6 +48,8 @@ public class CourtSchedulerServiceAdapter {
     private HearingSlotsService hearingSlotsService;
     @Inject
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
+    @Inject
+    private JsonObjectToObjectConverter jsonObjectConverter;
 
     public List<JudicialRole> getJudicialRoles(final String startDate,
                                                final String ouCode,
@@ -202,12 +204,13 @@ public class CourtSchedulerServiceAdapter {
     HearingIdsResponse getHearingIds(final Response response) {
         final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
 
-        final List<UUID> uuids = responseJson.getJsonArray("hearingIds").stream()
-                .map(JsonString.class::cast)
-                .map(JsonString::getString)
-                .map(UUID::fromString)
-                .collect(Collectors.toList());
+       List<IdResponse> uuids = new ArrayList<>();
+        final JsonArray li = responseJson.getJsonArray("hearingIds");
+        for (int i = 0; i < li.size(); i++) {
+            IdResponse res = jsonObjectConverter.convert(li.getJsonObject(i), IdResponse.class);
+            uuids.add(res);
 
+        }
         final int results = responseJson.getInt("results");
         final int pageCount = responseJson.getInt("pageCount");
 

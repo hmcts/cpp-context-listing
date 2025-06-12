@@ -1047,6 +1047,17 @@ public class UpdateHearingSteps extends AbstractIT {
         pollUntilHearingIsPresent(searchHearingUrl, getLoggedInUser().toString(), hearingData.getId().toString());
     }
 
+    public String verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDateCourtCalendar() {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.hearingscourt.calendar.by.allocated.court-centre-id.start-date.end-date"),
+                        ALLOCATED,
+                        updatedHearingData.getCourtCentreId(),
+                        updatedHearingData.getStartDate(),
+                        updatedHearingData.getEndDate()));
+
+     return pollUntilHearingIsPresent(searchHearingUrl, getLoggedInUser().toString(), hearingData.getId().toString(), "application/vnd.listing.search.hearings.court.calendar+json", 1);
+    }
+
     public void verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndSearchDate() {
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),

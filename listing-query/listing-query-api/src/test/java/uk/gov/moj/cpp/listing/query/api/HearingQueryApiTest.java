@@ -96,6 +96,7 @@ public class HearingQueryApiTest {
             "searchForHearingById",
             "searchHearingSlots",
             "searchUnscheduledHearings");
+    public static final String LISTING_RANGE_SEARCH_HEARINGS_COURT_CALENDAR = "listing.range.search.hearings.court.calendar";
 
     private Map<String, String> apiMethodsToHandlerNames;
 
@@ -137,6 +138,7 @@ public class HearingQueryApiTest {
                 .filter(line -> line.contains(LISTING_SEARCH)
                         || line.contains(LISTING_AVAILABLE_HEARING_SEARCH)
                         || line.contains(LISTING_RANGE_SEARCH)
+                        || line.contains(LISTING_RANGE_SEARCH_HEARINGS_COURT_CALENDAR)
                         || line.contains(LISTING_COURT_LIST_PUBLISH_STATUS)
                         || line.contains(LISTING_SEARCH_HEARING)
                         || line.contains(LISTING_UNSCHEDULED_SEARCH_HEARING)

@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.persistence.repository;
 
+import static uk.gov.moj.cpp.listing.persistence.repository.courtlist.HearingJdbcRepository.NULL_FLAT_HEARING_FIELDS;
+
 import org.apache.deltaspike.data.api.*;
 
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
@@ -54,7 +56,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.allocated, " +
             "h.type_of_list_id, " +
             "count(1) OVER() as totalCount, " +
-            "h.is_possible_disqualification " +
+            "h.is_possible_disqualification ,  " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
             " LEFT JOIN court_applications ca ON ca.hearing_id = h.id ";
@@ -110,7 +112,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.properties->>'allocated' as allocated, " +
             "h.type_of_list_id, " +
             "1 as totalCount, " +
-            "h.is_possible_disqualification " +
+            "h.is_possible_disqualification , " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h INNER JOIN hearing_days hd on hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
             "where  " +
@@ -163,7 +165,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.allocated, " +
             "h.type_of_list_id, " +
             "count(*) OVER() as totalCount, " +
-            "h.is_possible_disqualification " +
+            "h.is_possible_disqualification , " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
             "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
@@ -231,7 +233,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.allocated, " +
             "h.type_of_list_id, " +
             "count(*) OVER() as totalCount, " +
-            "h.is_possible_disqualification " +
+            "h.is_possible_disqualification , " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
             "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
@@ -294,7 +296,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.allocated, " +
             "h.type_of_list_id, " +
             "count(*) OVER() as totalCount, " +
-            "h.is_possible_disqualification " +
+            "h.is_possible_disqualification , " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
             "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
@@ -344,7 +346,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.properties ->>'allocated' as allocated, " +
             "h.type_of_list_id, " +
             "1 as totalCount, " +
-            "h.is_possible_disqualification " +
+            "h.is_possible_disqualification , " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
             "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
@@ -402,7 +404,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.allocated, " +
             "h.type_of_list_id, " +
             "count(*) OVER() as totalCount, " +
-            "h.is_possible_disqualification " +
+            "h.is_possible_disqualification , " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
             "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
@@ -441,7 +443,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.allocated, " +
             "h.type_of_list_id, " +
             "count(*) OVER() as totalCount, " +
-            "h.is_possible_disqualification " +
+            "h.is_possible_disqualification , " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
             "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
@@ -599,7 +601,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "null as allocated, " +
             "null as type_of_list_id, " +
             "null as totalCount, " +
-            "null as is_possible_disqualification, " +
+            "null as is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS + ", " +
             "(select row_to_json(combinedJudiciaryAndHearings) as properties from " +
             "   (select * from " +
             "       (select json_agg(uniqueJudiciary) as judiciary from " +
@@ -650,7 +652,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "null as allocated, " +
             "null as type_of_list_id, " +
             "null as totalCount, " +
-            "null as is_possible_disqualification, " +
+            "null as is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS + ", " +
             "(select jsonb_agg(hrngByCourtCentreId) as \"properties\" from " +
             "(select h.hearingDate as \"hearingDate\", " +
             "(select jsonb_agg(hearings) as \"hearingsByHearingDate\" from " +
@@ -677,7 +679,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.allocated, " +
             "h.type_of_list_id, " +
             "count(*) OVER() as totalCount, " +
-            "h.is_possible_disqualification" +
+            "h.is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
             " from hearing h " +
             " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
             " LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
@@ -726,7 +728,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.allocated, " +
             "h.type_of_list_id, " +
             "1 as totalCount, " +
-            "h.is_possible_disqualification " +
+            "h.is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
             "where " +
             "h.allocated = :allocated " +
@@ -794,7 +796,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.allocated, " +
             "h.type_of_list_id, " +
             "1 as totalCount, " +
-            "h.is_possible_disqualification " +
+            "h.is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
             "where (h.unscheduled is null or h.unscheduled = false) " +
             "and (h.jurisdiction_type in (:jurisdictionTypes)) " +
@@ -848,7 +850,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.allocated, " +
             "h.type_of_list_id, " +
             "1 as totalCount, " +
-            "h.is_possible_disqualification " +
+            "h.is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
             " from hearing h " +
             " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
             " LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
@@ -879,7 +881,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.allocated, " +
             "h.type_of_list_id, " +
             "count(*) OVER() as totalCount, " +
-            "h.is_possible_disqualification" +
+            "h.is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
             " from hearing h" +
             " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
             " LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
@@ -918,7 +920,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "null as allocated, " +
             "null as type_of_list_id, " +
             "null as totalCount, " +
-            "null as is_possible_disqualification " +
+            "null as is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
             " from ( " +
             " select distinct h.id as id, h.properties as properties, h.start_date as startDate, h.end_date as endDate " +
             " from hearing h " +
@@ -950,7 +952,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "null as allocated, " +
             "null as type_of_list_id, " +
             "null as totalCount, " +
-            "null as is_possible_disqualification " +
+            "null as is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
             " from ( " +
             " select distinct h.id as id, h.properties as properties, h.start_date as startDate, h.end_date as endDate " +
             " from hearing h " +
@@ -964,14 +966,26 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             , isNative = true)
     public abstract List<Hearing> findAllocatedAndUnallocatedHearingsByCaseId(String caseId, String applicationId);
 
-    @Query(value = "select *, 1 as totalCount from hearing where id = cast(cast(?1 as varchar) as uuid)", isNative = true, singleResult = SingleResultType.ANY)
+    @Query(value = "select *, 1 as totalCount , " + NULL_FLAT_HEARING_FIELDS + " from hearing where id = cast(cast(?1 as varchar) as uuid)", isNative = true, singleResult = SingleResultType.ANY)
     abstract Hearing findByHearingId(final String hearingId);
 
     public Hearing findBy(final UUID hearingId) {
         return findByHearingId(hearingId.toString());
     }
 
-    @Query(value = "select h.*, 0 as totalCount FROM hearing h where h.id in (:hearingIds)", isNative = true)
+    @Query(value = "select h.*, 0 as totalCount , " + NULL_FLAT_HEARING_FIELDS + " FROM hearing h where h.id in (:hearingIds)", isNative = true)
     public abstract List<Hearing> findAllCourtSchedulerHearingByIds(@QueryParam("hearingIds") final List<UUID> hearingIds);
 
+    public List<Hearing> findAllocatedHearingsForCourtCalendar(final UUID courtCentreId,
+                                      final UUID courtRoomId,
+                                      final UUID authorityCode,
+                                      final UUID hearingTypeId,
+                                      final String jurisdictionType,
+                                      final LocalDate startDate,
+                                      final LocalDate endDate,
+                                      final Integer offSet,
+                                      final Integer pageSize) {
+        return hearingJdbcRepository.findAllocatedHearingsForCourtCalendar(courtCentreId, courtRoomId,
+                authorityCode, hearingTypeId, jurisdictionType, startDate, endDate, offSet, pageSize);
+    }
 }

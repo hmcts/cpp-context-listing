@@ -30,6 +30,16 @@ public class SearchHearingHelper {
 
     }
 
+    public static String pollForHearing(final String url, final String userId, final Matcher[] matchers, final String mediaType) {
+
+        return pollWithDefaults(requestParams(url, mediaType).withHeader(USER_ID, userId).build())
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(matchers))
+                ).getPayload();
+
+    }
+
     public static void pollUntilHearingIsPresent(final String courtCentreId, final boolean allocated, final String userId, final String hearingId) {
 
         pollForHearing(courtCentreId, allocated, userId, new Matcher[]{
@@ -44,6 +54,14 @@ public class SearchHearingHelper {
         });
     }
 
+    public static String pollUntilHearingIsPresent(final String url, final String userId, final String hearingId, final String mediaType, final int size) {
+
+        final String payload = pollForHearing(url, userId, new Matcher[]{
+                withJsonPath(getHearingFilter(hearingId), hasSize(size))
+        }, mediaType);
+
+     return payload;
+    }
     public static String pollForHearing(final String courtCentreId, final boolean allocated, final String userId, final Matcher[] matchers) {
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),

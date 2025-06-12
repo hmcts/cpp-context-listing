@@ -134,6 +134,9 @@ protocols: [ HTTP, HTTPS ]
         (mapping):
             responseType: application/vnd.listing.search.hearings+json
             name: listing.range.search.hearings
+        (mapping):
+            responseType: application/vnd.listing.search.hearings.court.calendar+json
+            name: listing.range.search.hearings.court.calendar
         ...
       queryParameters:
         allocated:
@@ -211,6 +214,9 @@ protocols: [ HTTP, HTTPS ]
                   application/vnd.listing.search.hearings+json:
                     example:  !include json/listing.search.hearings.json
                     schema:  !include  json/schema/listing.search.hearings.json
+                  application/vnd.listing.search.hearings.court.calendar+json:
+                    example: !include json/listing.search.hearings.json
+                    schema: !include  json/schema/listing.search.hearings.json
 
 /hearings/{id}:
   uriParameters:
@@ -562,3 +568,19 @@ protocols: [ HTTP, HTTPS ]
                  application/vnd.listing.get.cases-by-organisation-defendant+json:
                    example: !include json/listing.search.cases-by-defendant-and-hearingDate.json
                    schema: !include json/schema/listing.search.cases-by-defendant-and-hearingDate.json
+
+/cache-refdata-courtrooms/refresh:
+  get:
+    description: |
+      No payload needed, this will refresh the court room cache from refdata
+      ...
+      (mapping):
+          responseType: application/vnd.listing.get.cache-refdata-courtrooms-refresh+json
+          name: listing.get.cache-refdata-courtrooms-refresh
+      ...
+    responses:
+      200:
+        description: OK
+        body:
+          application/vnd.listing.get.cache-refdata-courtrooms-refresh+json:
+            schema:  !include json/schema/listing.get.cache-refdata-courtrooms-refresh.json

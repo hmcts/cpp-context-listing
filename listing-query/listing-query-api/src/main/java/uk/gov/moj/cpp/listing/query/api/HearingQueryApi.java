@@ -123,6 +123,10 @@ public class HearingQueryApi {
         return hearingQueryView.rangeSearchHearings(query);
     }
 
+    @Handles("listing.range.search.hearings.court.calendar")
+    public JsonEnvelope rangeSearchHearingsForCourtCalendar(final JsonEnvelope query) {
+        return hearingQueryView.rangeSearchHearingsForCourtCalendar(query);
+    }
     @Handles("listing.cotr.search.hearings")
     public JsonEnvelope searchHearingsForCotr(final JsonEnvelope query) {
         return hearingQueryView.searchHearingsForCotr(query);
