@@ -1,16 +1,21 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.Optional.ofNullable;
+import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static uk.gov.moj.cpp.listing.event.util.ReportingRestrictionHelper.dedupAllReportingRestrictions;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
-
 
 import uk.gov.justice.listing.event.CourtApplicationHearingDeleted;
 import uk.gov.justice.listing.events.CourtApplication;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
 import uk.gov.justice.listing.events.CourtApplicationUpdatedForHearing;
+import uk.gov.justice.listing.events.LaaReference;
+import uk.gov.justice.listing.events.LaaReferenceForApplicationUpdated;
+import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -83,6 +88,31 @@ public class CourtApplicationEventListener {
         }
     }
 
+    @Handles("listing.events.laa-reference-for-application-updated")
+    public void processLaaReferenceUpdate(final Envelope<LaaReferenceForApplicationUpdated> event) {
+        final LaaReferenceForApplicationUpdated laaReferenceForApplicationUpdated = event.payload();
+
+        ofNullable(laaReferenceForApplicationUpdated.getHearingIds()).orElse(emptyList())
+                .forEach(hearingId -> updateHearingApplicationWithLaaReference(laaReferenceForApplicationUpdated, hearingId));
+
+    }
+
+    private void updateHearingApplicationWithLaaReference(final LaaReferenceForApplicationUpdated laaReferenceForApplicationUpdated, final UUID hearingId) {
+        final TypeReference<List<CourtApplication>> typeRef = new TypeReference<List<CourtApplication>>() {
+        };
+
+        using(hearingRepository)
+                .find(hearingId)
+                .putSubList(COURT_APPLICATION_FIELD, typeRef, getCourtApplicationsFunctionToUpdateLaaReference(laaReferenceForApplicationUpdated))
+                .save();
+
+        hearingSearchSyncService.sync(hearingId);
+    }
+
+    private Function<List<CourtApplication>, List<CourtApplication>> getCourtApplicationsFunctionToUpdateLaaReference(final LaaReferenceForApplicationUpdated laaReferenceForApplicationUpdated) {
+        return courtApplications -> getUpdatedLaaReferenceCourtApplications(laaReferenceForApplicationUpdated, courtApplications);
+    }
+
     private void filterDuplicateOffencesById(final List<uk.gov.justice.listing.events.Offence> offences) {
         if (isNull(offences) || offences.isEmpty()) {
             return;
@@ -138,5 +168,54 @@ public class CourtApplicationEventListener {
             courtApplications.add(updateCourtApplication);
         }
         return courtApplications;
+    }
+
+    private List<CourtApplication> getUpdatedLaaReferenceCourtApplications(final LaaReferenceForApplicationUpdated laaReferenceForApplicationUpdated, final List<CourtApplication> courtApplications) {
+
+        final Optional<CourtApplication> origCourtApplicationOptional = courtApplications.stream().filter(ca -> ca.getId().equals(laaReferenceForApplicationUpdated.getApplicationId())).findFirst();
+        if (origCourtApplicationOptional.isPresent()) {
+            final CourtApplication origCourtApplication = origCourtApplicationOptional.get();
+            final CourtApplication newCourtApplication = CourtApplication.courtApplication()
+                    .withValuesFrom(origCourtApplication)
+                    .withOffences(getUpdatedOffenceWithLaaReference(origCourtApplication.getOffences(), laaReferenceForApplicationUpdated))
+                    .build();
+
+            courtApplications.replaceAll(courtApplication -> courtApplication.getId()
+                    .equals(newCourtApplication.getId()) ? newCourtApplication : courtApplication);
+
+        }
+        return courtApplications;
+
+    }
+
+    private List<Offence> getUpdatedOffenceWithLaaReference(final List<Offence> offences, final LaaReferenceForApplicationUpdated laaReferenceForApplicationUpdated) {
+        if (isEmpty(offences)) {
+            return offences;
+        }
+        return offences.stream().map(offence -> {
+                    if (offence.getId().equals(laaReferenceForApplicationUpdated.getOffenceId())) {
+                        return Offence.offence()
+                                .withValuesFrom(offence)
+                                .withLaaApplnReference(buildLaaReference(laaReferenceForApplicationUpdated.getLaaReference()))
+                                .build();
+                    }
+                    return offence;
+                }
+        ).toList();
+    }
+
+    private LaaReference buildLaaReference(final uk.gov.justice.core.courts.LaaReference laaReference) {
+        if (isNull(laaReference)) {
+            return null;
+        }
+        return LaaReference.laaReference()
+                .withEffectiveEndDate(laaReference.getEffectiveEndDate())
+                .withApplicationReference(laaReference.getApplicationReference())
+                .withEffectiveStartDate(laaReference.getEffectiveStartDate())
+                .withStatusCode(laaReference.getStatusCode())
+                .withStatusId(laaReference.getStatusId())
+                .withStatusDate(laaReference.getStatusDate())
+                .withStatusDescription(laaReference.getStatusDescription())
+                .build();
     }
 }

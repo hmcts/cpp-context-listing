@@ -8,8 +8,8 @@ import uk.gov.justice.core.courts.AssociatedDefenceOrganisation;
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.DefenceOrganisation;
 import uk.gov.justice.core.courts.DefendantAlias;
+import uk.gov.justice.core.courts.FundingType;
 import uk.gov.justice.core.courts.Organisation;
-import uk.gov.justice.listing.courts.FundingType;
 
 import java.util.List;
 import java.util.Optional;

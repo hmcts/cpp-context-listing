@@ -240,6 +240,9 @@ subscriptions_descriptor:
         - name: public.progression.case-linked
           schema_uri: http://justice.gov.uk/progression/courts/case-linked.json
 
+        - name: public.progression.application-offences-updated
+          schema_uri: http://justice.gov.uk/progression/courts/public.progression.application-offences-updated.json
+
         - name: public.hearing.hearing-days-cancelled
           schema_uri: http://justice.gov.uk/hearing/courts/hearing-days-cancelled.json
 
