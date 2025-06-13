@@ -74,6 +74,7 @@ import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuratio
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.Gender;
 import uk.gov.justice.core.courts.JudicialResult;
+import uk.gov.justice.core.courts.LaaReference;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.justice.listing.commands.RecordCourtListProduced;
@@ -86,6 +87,7 @@ import uk.gov.justice.listing.courts.ListCourtHearingEnriched;
 import uk.gov.justice.listing.courts.SequenceHearings;
 import uk.gov.justice.listing.courts.UpdateCourtApplicationForHearings;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
+import uk.gov.justice.listing.courts.UpdateLaaReferenceForApplication;
 import uk.gov.justice.listing.courts.UpdateLinkedCaseInHearing;
 import uk.gov.justice.listing.courts.UpdateLinkedCases;
 import uk.gov.justice.listing.event.CourtListExportRequested;
@@ -2703,6 +2705,27 @@ public class ListingCommandHandlerTest {
         assertThat(hearingDays.get(2).getDurationMinutes(), is(20));
         assertThat(ZonedDateTimes.toString(hearingDays.get(2).getStartTime()), is("2020-08-20T02:22:12.381Z"));
         assertThat(hearingDays.get(2).getIsCancelled(), is(true));
+    }
+
+
+    @Test
+    public void shouldUpdateLaaReferenceForCourtApplication() throws Exception {
+        final Metadata metadata = metadataBuilder().withName("listing.command.update-laa-reference-for-application").withId(randomUUID()).build();
+        final UpdateLaaReferenceForApplication updateLaaReferenceForApplication = UpdateLaaReferenceForApplication.updateLaaReferenceForApplication()
+                .withApplicationId(randomUUID())
+                .withOffenceId(randomUUID())
+                .withSubjectId(randomUUID())
+                .withLaaReference(LaaReference.laaReference()
+                        .withStatusId(randomUUID())
+                        .build())
+                .build();
+
+        final Envelope<UpdateLaaReferenceForApplication> envelope = envelopeFrom(metadata, updateLaaReferenceForApplication);
+
+        when(anApplication.updateLaaReference(updateLaaReferenceForApplication.getApplicationId(), updateLaaReferenceForApplication.getSubjectId(), updateLaaReferenceForApplication.getOffenceId(), updateLaaReferenceForApplication.getLaaReference())).thenReturn(mock(Stream.class));
+
+        listingCommandHandler.updateLaaReferenceForCourtApplication(envelope);
+        verify(anApplication).updateLaaReference(updateLaaReferenceForApplication.getApplicationId(), updateLaaReferenceForApplication.getSubjectId(), updateLaaReferenceForApplication.getOffenceId(), updateLaaReferenceForApplication.getLaaReference());
     }
 
     @Test

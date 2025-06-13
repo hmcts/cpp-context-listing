@@ -4,10 +4,10 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.core.Is.is;
 
+import uk.gov.justice.core.courts.FundingType;
 import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.Defendant;
-import uk.gov.justice.listing.events.FundingType;
 import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.moj.cpp.listing.domain.Prosecutor;

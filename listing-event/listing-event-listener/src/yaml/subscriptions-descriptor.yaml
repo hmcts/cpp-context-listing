@@ -98,6 +98,9 @@ subscriptions_descriptor:
         - name: listing.events.court-application-updated-for-hearing
           schema_uri: http://justice.gov.uk/listing/events/listing.events.court-application-updated-for-hearing.json
 
+        - name: listing.events.laa-reference-for-application-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.laa-reference-for-application-updated.json
+
         - name: listing.events.court-application-added-for-hearing
           schema_uri: http://justice.gov.uk/listing/events/listing.events.court-application-added-for-hearing.json
 
