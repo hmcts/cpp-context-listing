@@ -38,7 +38,6 @@
 
         <jaxb2-namespace-prefix.version>1.3</jaxb2-namespace-prefix.version>
         <hibernate-types-43.version>2.2.2</hibernate-types-43.version>
-
         <com.sun.xml.bind.jaxb.version>2.2.11</com.sun.xml.bind.jaxb.version>   <!-- Version property added to common-bom:2.2.1. Replace with com.sun.xml.bind.jaxb.version after upgrade to Framework 6 -->
         <slf4j-log4j12.version>1.7.10</slf4j-log4j12.version>
         <postgresql.version>42.1.4</postgresql.version>
