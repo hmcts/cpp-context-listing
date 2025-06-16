@@ -2,15 +2,14 @@ package uk.gov.moj.cpp.listing.common.service;
 
 import java.util.List;
 import java.util.StringJoiner;
-import java.util.UUID;
 
 public class HearingIdsResponse{
 
     private final long pageCount;
-    private final List<UUID> uuids;
+    private final List<IdResponse> uuids;
     private final long results;
 
-    public HearingIdsResponse(final List<UUID> uuids, final long results, final long pageCount) {
+    public HearingIdsResponse(final List<IdResponse> uuids, final long results, final long pageCount) {
         this.uuids = uuids;
         this.results = results;
         this.pageCount = pageCount;
@@ -20,7 +19,7 @@ public class HearingIdsResponse{
         return pageCount;
     }
 
-    public List<UUID> getUuids() {
+    public List<IdResponse> getUuids() {
         return uuids;
     }
 
