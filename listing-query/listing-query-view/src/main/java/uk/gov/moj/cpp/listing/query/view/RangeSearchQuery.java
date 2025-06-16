@@ -18,11 +18,14 @@ import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.common.service.HearingIdsResponse;
+import uk.gov.moj.cpp.listing.common.service.IdResponse;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
+import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory;
+import uk.gov.moj.cpp.listing.query.view.dto.RangeSearchQueryParams;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
@@ -100,68 +103,32 @@ public class RangeSearchQuery {
 
 
     public JsonEnvelope rangeSearchHearings(final JsonEnvelope query) {
-        final boolean allocated = query.payloadAsJsonObject().getBoolean(ALLOCATED_QUERY_PARAMETER, false);
-        final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
-        final String courtRoomId = query.payloadAsJsonObject().getString(COURT_ROOM_ID, null);
-        final String authorityId = query.payloadAsJsonObject().getString(AUTHORITY_ID, null);
-        final String hearingTypeId = query.payloadAsJsonObject().getString(HEARING_TYPE, null);
-        final String jurisdictionType = query.payloadAsJsonObject().getString(JURISDICTION_TYPE, null);
-        final String ouCode = query.payloadAsJsonObject().getString(OU_CODE, null);
-        final String startDate = query.payloadAsJsonObject().getString(START_DATE, EARLIEST_SEARCH_DATE);
-        final String endDate = query.payloadAsJsonObject().getString(END_DATE, LATEST_SEARCH_DATE);
-        String weekCommencingStartDate = trimToEmpty(query.payloadAsJsonObject().getString(WEEK_COMMENCING_START_DATE, null));
-        final String weekCommencingEndDate = trimToEmpty(query.payloadAsJsonObject().getString(WEEK_COMMENCING_END_DATE, null));
-        final PaginationParameter paginationParameter = paginationParameterFactory.newPaginationParameter(query.payloadAsJsonObject());
-        final boolean noPagination = query.payloadAsJsonObject().getBoolean("noPagination", false);
-        Optional<String> businessType = Optional.ofNullable(query.payloadAsJsonObject().getString("businessType", null));
-        Optional<String> courtSessionOptional = extractCourtSession(query);
+        RangeSearchQueryParams params = rangeQueryParams(query);
 
-        if (!weekCommencingStartDate.isEmpty() && !LocalDate.parse(weekCommencingStartDate).getDayOfWeek().equals(DayOfWeek.MONDAY)) {
-            weekCommencingStartDate = LocalDate.parse(weekCommencingStartDate).minusDays(1).toString();
-            logger.info("WeekCommencingStartDate is not Monday, hence its being adjusted to previous day [{}]  ", weekCommencingStartDate);
+        if (!params.weekCommencingStartDate().isEmpty() && !LocalDate.parse(params.weekCommencingStartDate()).getDayOfWeek().equals(DayOfWeek.MONDAY)) {
+            final String dayBeforeString = parse(params.weekCommencingStartDate()).minusDays(1).toString();
+            params = params.withWeekCommencingStartDate(dayBeforeString);
+            logger.info("WeekCommencingStartDate is not Monday, hence its being adjusted to previous day [{}]  ", dayBeforeString);
         }
 
-        Optional<Boolean> possibleDisqualificationOpt = Optional.empty();
-        if (nonNull(query.payloadAsJsonObject().get(POSSIBLE_DISQUALIFICATION_QUERY_PARAMETER))) {
-            possibleDisqualificationOpt = Optional.of(query.payloadAsJsonObject().getBoolean(POSSIBLE_DISQUALIFICATION_QUERY_PARAMETER));
-        }
+        if (params.courtSessionOptional().isPresent() || params.businessType().isPresent()) {
 
-        logger.info("Query params -  " +
-                        "allocated: {}, " +
-                        "courtCentreId: {}, " +
-                        "ouCode: {}, " +
-                        "courtRoomId: {}, " +
-                        "authorityId: {}, " +
-                        "hearingTypeId: {}, " +
-                        "jurisdictionType: {}, " +
-                        "startDate: {}, " +
-                        "endDate: {}, " +
-                        "weekCommencingStartDate: {}, " +
-                        "weekCommencingEndDate: {}, " +
-                        "noPagination : {}, " +
-                        "possibleDisqualification : {}, " +
-                        "businessType : {}, " +
-                        "courtSessionOptional : {}, ",
-                allocated, courtCentreId, ouCode, courtRoomId, authorityId, hearingTypeId, jurisdictionType, startDate, endDate, weekCommencingStartDate, weekCommencingEndDate, noPagination, possibleDisqualificationOpt, businessType, courtSessionOptional);
-
-        if (courtSessionOptional.isPresent() || businessType.isPresent()) {
-
-            if(isMags(jurisdictionType) && allocated && ouCode != null ) {
-                return getCourtSchedulerHearings(query, allocated, ouCode, courtSessionOptional, courtRoomId, startDate, endDate, businessType, PANEL_ADULT_YOUTH, paginationParameter);
+            if(isMags(params.jurisdictionType()) && params.allocated() && params.ouCode() != null ) {
+                return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.businessType(), PANEL_ADULT_YOUTH, params.paginationParameter());
             }
 
             throw new BadRequestException("courtSession or businessType are only relevant to allocated MAGs with ouCode");
         }
 
 
-        final List<Hearing> hearings = !weekCommencingStartDate.isEmpty()
-                ? findHearingsByWeekCommencingRange(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, possibleDisqualificationOpt, paginationParameter.getOffSet(), paginationParameter.getPageSize(), noPagination)
-                : findHearings(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, startDate, endDate, paginationParameter.getOffSet(), paginationParameter.getPageSize(), noPagination);
+        final List<Hearing> hearings = !params.weekCommencingStartDate().isEmpty()
+                ? findHearingsByWeekCommencingRange(params.allocated(), params.courtCentreId(), params.courtRoomId(), params.authorityId(), params.hearingTypeId(), params.jurisdictionType(), params.weekCommencingStartDate(), params.weekCommencingEndDate(), params.possibleDisqualificationOpt(), params.paginationParameter().getOffSet(), params.paginationParameter().getPageSize(), params.noPagination())
+                : findHearings(params.allocated(), params.courtCentreId(), params.courtRoomId(), params.authorityId(), params.hearingTypeId(), params.jurisdictionType(), params.startDate(), params.endDate(), params.paginationParameter().getOffSet(), params.paginationParameter().getPageSize(), params.noPagination());
 
 
         final Long totalCount = !(hearings.isEmpty()) ? hearings.get(0).getTotalCount() : 0;
 
-        return buildHearingsResponse(query, allocated, courtRoomId, startDate, hearings, totalCount, paginationParameter);
+        return buildHearingsResponse(query, params.allocated(), params.courtRoomId(), params.startDate(), hearings, totalCount, params.paginationParameter());
     }
 
 
@@ -335,16 +302,22 @@ public class RangeSearchQuery {
     }
 
 
-    private List<Hearing> enrichAllCourtSchedulerHearingIdsIntoHearings(final List<UUID> hearingIds) {
+    private List<Hearing> enrichAllCourtSchedulerHearingIdsIntoHearings(final List<IdResponse> hearingIds) {
 
-        final List<Hearing> hearings = repository.findAllCourtSchedulerHearingByIds(hearingIds);
+        final List<Hearing> hearings = repository.findAllCourtSchedulerHearingByIds(hearingIds.stream().map(a->a.hearingId()).toList());
         final HashMap<UUID, Hearing> hearingMap = new HashMap<>();
         hearings.forEach(h -> hearingMap.put(h.getId(), h));
 
         List<Hearing> sortedHearing = new ArrayList<>();
         hearingIds.forEach(id -> {
-            final Hearing fromMap = hearingMap.get(id);
+            final Hearing fromMap = hearingMap.get(id.hearingId());
+
             if(fromMap !=null){
+
+                fromMap.setHearingDate(id.hearingDate());
+                fromMap.setHearingDayCount(id.hearingDayCount());
+                fromMap.setHearingDayPosition(id.hearingDayPosition());
+
                 sortedHearing.add(fromMap);
             }
         });
@@ -363,4 +336,73 @@ public class RangeSearchQuery {
         }
         return Optional.ofNullable(courtSession);
     }
+
+
+    public JsonEnvelope rangeSearchCourtCalendar(final JsonEnvelope query) {
+        final RangeSearchQueryParams params = rangeQueryParams(query);
+
+        if (params.courtSessionOptional().isPresent() || params.businessType().isPresent()) {
+
+            if(isMags(params.jurisdictionType()) && params.allocated() && params.ouCode() != null ) {
+                return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.businessType(), PANEL_ADULT_YOUTH, params.paginationParameter());
+            }
+
+            throw new BadRequestException("courtSession or businessType are only relevant to allocated MAGs with ouCode");
+        }
+
+        List<Hearing> hearings ;
+
+        if(!params.weekCommencingStartDate().isEmpty()){
+            hearings = findHearingsByWeekCommencingRange(params.allocated(), params.courtCentreId(), params.courtRoomId(), params.authorityId(), params.hearingTypeId(), params.jurisdictionType(), params.weekCommencingStartDate(), params.weekCommencingEndDate(), params.possibleDisqualificationOpt(), params.paginationParameter().getOffSet(), params.paginationParameter().getPageSize(), params.noPagination());
+        } else if(params.allocated()){
+            hearings = findAllocatedHearingsForCourtCalendar(params.courtCentreId(), params.courtRoomId(), params.authorityId(), params.hearingTypeId(), params.jurisdictionType(), params.startDate(), params.endDate(), params.paginationParameter().getOffSet(), params.paginationParameter().getPageSize());
+        } else {
+            hearings = findHearings(params.allocated(), params.courtCentreId(), params.courtRoomId(), params.authorityId(), params.hearingTypeId(), params.jurisdictionType(), params.startDate(), params.endDate(), params.paginationParameter().getOffSet(), params.paginationParameter().getPageSize(), params.noPagination());
+        }
+
+        final Long totalCount = !(hearings.isEmpty()) ? hearings.get(0).getTotalCount() : 0;
+
+        return buildHearingsResponse(query, params.allocated(), params.courtRoomId(), params.startDate(), hearings, totalCount, params.paginationParameter());
+    }
+
+    private RangeSearchQueryParams rangeQueryParams(final JsonEnvelope query) {
+        final boolean allocated = query.payloadAsJsonObject().getBoolean(ALLOCATED_QUERY_PARAMETER, false);
+        final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
+        final String courtRoomId = query.payloadAsJsonObject().getString(COURT_ROOM_ID, null);
+        final String authorityId = query.payloadAsJsonObject().getString(AUTHORITY_ID, null);
+        final String hearingTypeId = query.payloadAsJsonObject().getString(HEARING_TYPE, null);
+        final String jurisdictionType = query.payloadAsJsonObject().getString(JURISDICTION_TYPE, null);
+        final String ouCode = query.payloadAsJsonObject().getString(OU_CODE, null);
+        final String startDate = query.payloadAsJsonObject().getString(START_DATE, EARLIEST_SEARCH_DATE);
+        final String endDate = query.payloadAsJsonObject().getString(END_DATE, LATEST_SEARCH_DATE);
+        String weekCommencingStartDate = trimToEmpty(query.payloadAsJsonObject().getString(WEEK_COMMENCING_START_DATE, null));
+        final String weekCommencingEndDate = trimToEmpty(query.payloadAsJsonObject().getString(WEEK_COMMENCING_END_DATE, null));
+        final PaginationParameter paginationParameter = paginationParameterFactory.newPaginationParameter(query.payloadAsJsonObject());
+        final boolean noPagination = query.payloadAsJsonObject().getBoolean("noPagination", false);
+        Optional<String> businessType = Optional.ofNullable(query.payloadAsJsonObject().getString("businessType", null));
+        Optional<String> courtSessionOptional = extractCourtSession(query);
+        Optional<Boolean> possibleDisqualificationOpt = Optional.empty();
+        if (nonNull(query.payloadAsJsonObject().get(POSSIBLE_DISQUALIFICATION_QUERY_PARAMETER))) {
+            possibleDisqualificationOpt = Optional.of(query.payloadAsJsonObject().getBoolean(POSSIBLE_DISQUALIFICATION_QUERY_PARAMETER));
+        }
+        RangeSearchQueryParams params = new RangeSearchQueryParams(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, ouCode, startDate, endDate, weekCommencingStartDate, weekCommencingEndDate, paginationParameter, noPagination, businessType, courtSessionOptional, possibleDisqualificationOpt);
+
+        logger.info("Query params: {} ", params);
+
+        return params;
+    }
+
+    private List<Hearing> findAllocatedHearingsForCourtCalendar(final String courtCentreId, final String courtRoomId, final String authorityId,
+                                       final String hearingTypeId, final String jurisdictionType, final String startDate, final String endDate,
+                                       final Integer offSet, final Integer pageSize) {
+
+            return repository.findAllocatedHearingsForCourtCalendar(
+                    getUUID(courtCentreId),
+                    getUUID(courtRoomId),
+                    getUUID(authorityId),
+                    getUUID(hearingTypeId),
+                    ofNullable(jurisdictionType).orElse(null),
+                    parse(startDate),
+                    parse(endDate), offSet, pageSize);
+   }
 }

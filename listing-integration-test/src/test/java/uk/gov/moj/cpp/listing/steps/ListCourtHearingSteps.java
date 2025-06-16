@@ -39,6 +39,7 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INT
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByOrganisationDefendant;
 import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByPersonDefendant;
@@ -1076,6 +1077,17 @@ public class ListCourtHearingSteps extends AbstractIT {
 
         verifyHearingDetails(caseAndDefendantData, masterDefendantId, searchHearingUrl2);
 
+    }
+
+    public String verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDateCourtCalendar() {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.hearingscourt.calendar.by.allocated.court-centre-id.start-date.end-date"),
+                        ALLOCATED,
+                        hearingsData.getHearingData().get(0).getCourtCentreId(),
+                        LocalDate.parse("2020-01-01"),
+                        hearingsData.getHearingData().get(0).getHearingEndDate()));
+
+       return  pollUntilHearingIsPresent(searchHearingUrl, getLoggedInUser().toString(), hearingsData.getHearingData().get(0).getId().toString(), "application/vnd.listing.search.hearings.court.calendar+json", 2);
     }
 
     private void verifyHearingDetails(final CaseAndDefendantData caseAndDefendantData, final UUID masterDefendantId, final String searchHearingUrl) {

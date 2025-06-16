@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/query/listing.get.cache-refdata-courtrooms-refresh.json",
+  "description": "Schema for tracking changes with timestamp and counters",
+  "type": "object",
+  "properties": {
+    "timestamp": {
+      "description": "The timestamp of when the record was created or modified",
+      "type": "string",
+      "format": "date-time"
+    },
+    "count": {
+      "description": "Count of items added",
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": ["timestamp", "count"],
+  "additionalProperties": false
+}

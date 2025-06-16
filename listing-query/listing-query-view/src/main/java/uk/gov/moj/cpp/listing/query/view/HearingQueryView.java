@@ -15,7 +15,7 @@ import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.justice.services.messaging.JsonObjects;
+
 import uk.gov.moj.cpp.listing.common.hmi.OrganisationUnitHMICache;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
@@ -477,6 +477,10 @@ public class HearingQueryView {
     @Handles("listing.range.search.hearings")
     public JsonEnvelope rangeSearchHearings(final JsonEnvelope query) {
         return rangeSearchQuery.rangeSearchHearings(query);
+    }
+
+    public JsonEnvelope rangeSearchHearingsForCourtCalendar(final JsonEnvelope query) {
+        return rangeSearchQuery.rangeSearchCourtCalendar(query);
     }
 
     public JsonEnvelope searchHearingsForCotr(final JsonEnvelope query) {

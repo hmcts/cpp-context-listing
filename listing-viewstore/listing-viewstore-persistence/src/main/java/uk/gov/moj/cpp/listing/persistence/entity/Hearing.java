@@ -99,6 +99,18 @@ public class Hearing implements JsonEntity {
     @Column(name = "is_possible_disqualification")
     private Boolean isPossibleDisqualification;
 
+    /** flattened hearing-days virtual col: number of hearing days in for the parent hearingId**/
+    @Column(name = "hearing_day_count", updatable = false, insertable = false)
+    private Long hearingDayCount;
+
+    /** flattened hearing-days virtual col: position of the current hearing-day in the list of hearingDays belonging to this hearingId **/
+    @Column(name = "hearing_day_position",updatable = false, insertable = false)
+    private Long hearingDayPosition;
+
+    /** flattened hearing virtual col: The date matching this current flat-hearing. **/
+    @Column(name = "hearing_date",updatable = false, insertable = false)
+    private LocalDate hearingDate;
+
     public Hearing() {
         // for JPA
 
@@ -127,7 +139,10 @@ public class Hearing implements JsonEntity {
                    final Set<CourtApplications> courtApplications,
                    final UUID typeOfListId,
                    final JsonNode properties,
-                   final Boolean isPossibleDisqualification) {
+                   final Boolean isPossibleDisqualification,
+                   final Long hearingDayCount,
+                   final Long hearingDayPosition,
+                   final LocalDate hearingDate) {
         this.id = id;
         this.courtCentreId = courtCentreId;
         this.courtRoomId = courtRoomId;
@@ -146,6 +161,9 @@ public class Hearing implements JsonEntity {
         this.typeOfListId = typeOfListId;
         this.properties = properties;
         this.isPossibleDisqualification = isPossibleDisqualification;
+        this.hearingDayCount = hearingDayCount;
+        this.hearingDayPosition = hearingDayPosition;
+        this.hearingDate = hearingDate;
     }
 
     public static HearingBuilder builder() {
@@ -250,6 +268,30 @@ public class Hearing implements JsonEntity {
 
     public Set<HearingDays> getHearingDays() {
         return hearingDays;
+    }
+
+    public Long getHearingDayCount() {
+        return hearingDayCount;
+    }
+
+    public void setHearingDayCount(final Long hearingDayCount) {
+        this.hearingDayCount = hearingDayCount;
+    }
+
+    public Long getHearingDayPosition() {
+        return hearingDayPosition;
+    }
+
+    public void setHearingDayPosition(final Long hearingDayPosition) {
+        this.hearingDayPosition = hearingDayPosition;
+    }
+
+    public LocalDate getHearingDate() {
+        return hearingDate;
+    }
+
+    public void setHearingDate(final LocalDate hearingDate) {
+        this.hearingDate = hearingDate;
     }
 
     public void setHearingDays(final Set<HearingDays> hearingDays) {
@@ -368,6 +410,9 @@ public class Hearing implements JsonEntity {
         private UUID typeOfListId;
         private JsonNode properties;
         private Boolean isPossibleDisqualification;
+        private Long hearingDayCount;
+        private Long hearingDayPosition;
+        private LocalDate hearingDate;
 
         private HearingBuilder() {
         }
@@ -478,10 +523,25 @@ public class Hearing implements JsonEntity {
             return this;
         }
 
+        public HearingBuilder withHearingDayCount(Long hearingDayCount) {
+            this.hearingDayCount = hearingDayCount;
+            return this;
+        }
+
+        public HearingBuilder withHearingDayPosition(Long hearingDayPosition) {
+            this.hearingDayPosition = hearingDayPosition;
+            return this;
+        }
+
+        public HearingBuilder withHearingDate(LocalDate hearingDate) {
+            this.hearingDate = hearingDate;
+            return this;
+        }
+
         public Hearing build() {
             return new Hearing(id, courtCentreId, courtRoomId, isVacatedTrial, unscheduled, typeId, jurisdictionType,
                     weekCommencingStartDate, weekCommencingEndDate, startDate, endDate, hearingDays, listedCases, allocated,
-                    courtApplications, typeOfListId, properties, isPossibleDisqualification);
+                    courtApplications, typeOfListId, properties, isPossibleDisqualification, hearingDayCount, hearingDayPosition, hearingDate);
         }
     }
 }
