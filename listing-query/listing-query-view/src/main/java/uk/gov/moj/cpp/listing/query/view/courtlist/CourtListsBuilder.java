@@ -27,51 +27,27 @@ public class CourtListsBuilder {
     private final Map<String, List<FlatHearing>> crestCourtSiteCodeHearingsMap = new ConcurrentHashMap<>();
     private final Map<String, List<Sitting>> crestCourtSiteCodeSittingsMap = new ConcurrentHashMap<>();
 
+    private final ThreadLocalCommonXhibitReferenceDataService threadLocalCommonXhibitReferenceDataService = new ThreadLocalCommonXhibitReferenceDataService();
 
-    private final ThreadLocalCommonXhibitReferenceDataService threadLocalCommonXhibitReferenceDataService = new  ThreadLocalCommonXhibitReferenceDataService();
-
-    private final ThreadLocal<UUID> courtCentreId = ThreadLocal.withInitial(() -> null);
-
-
-
-    private CourtListsBuilder(final UUID courtCentreId, final CommonXhibitReferenceDataService commonXhibitReferenceDataService) {
-        this.courtCentreId.set(courtCentreId);
+    private CourtListsBuilder(final CommonXhibitReferenceDataService commonXhibitReferenceDataService) {
         this.threadLocalCommonXhibitReferenceDataService.set(commonXhibitReferenceDataService);
     }
 
-    public static CourtListsBuilder forCourtCentre(final UUID courtCentreId,
-                                                   final CommonXhibitReferenceDataService commonXhibitReferenceDataService) {
-
-        return new CourtListsBuilder(courtCentreId, commonXhibitReferenceDataService);
+    public static CourtListsBuilder forCourtCentre(final CommonXhibitReferenceDataService commonXhibitReferenceDataService) {
+        return new CourtListsBuilder(commonXhibitReferenceDataService);
     }
 
-    public void setCourtCentreId(UUID courtCentreId) {
-        this.courtCentreId.set(courtCentreId);
-    }
-
-    public UUID getCourtCentreId() {
-        final UUID id = this.courtCentreId.get();
-        if (id == null) {
-            throw new IllegalStateException("courtCentreId is not set for the current thread.");
-        }
-        return id;
-    }
-
-    public CourtListsBuilder prepareEmptyCourtSiteHearings() {
-
-        threadLocalCommonXhibitReferenceDataService.get().getCrestCourtSitesForCrownCourtCentre(getCourtCentreId())
+    public CourtListsBuilder prepareEmptyCourtSiteHearings(final UUID courtCentreId) {
+        threadLocalCommonXhibitReferenceDataService.get().getCrestCourtSitesForCrownCourtCentre(courtCentreId)
                 .forEach(courtSite -> crestCourtSiteCodeHearingsMap.put(courtSite.getString(CREST_COURT_SITE_CODE),
                         new ArrayList<>()));
 
         return this;
     }
 
-    public CourtListsBuilder assignHearingsToCourtSitesUsingCourtRoom(final List<FlatHearing> flatHearings) {
-
+    public CourtListsBuilder assignHearingsToCourtSitesUsingCourtRoom(final UUID courtCentreId, final List<FlatHearing> flatHearings) {
         for (final FlatHearing flatHearing : flatHearings) {
-
-            final String crestCourtSiteCode = getCrestCourtSiteCodeForCourtRoom(flatHearing.getCourtRoomId());
-
+            final String crestCourtSiteCode = getCrestCourtSiteCodeForCourtRoom(courtCentreId, flatHearing.getCourtRoomId());
             crestCourtSiteCodeHearingsMap.get(crestCourtSiteCode).add(flatHearing);
         }
 
@@ -79,32 +55,23 @@ public class CourtListsBuilder {
     }
 
     public CourtListsBuilder groupFlatHearingsIntoSittings(final LocalDate startDate, final String endDate) {
-
         for (final Map.Entry<String, List<FlatHearing>> entry : crestCourtSiteCodeHearingsMap.entrySet()) {
-
             final String crestCourtSiteCode = entry.getKey();
-
             final List<FlatHearing> courtSiteFlatHearings = entry.getValue();
-
             final List<Sitting> courtSiteSittings = SittingsPojoBuilder.assignFlatHearingsToSittings(courtSiteFlatHearings, startDate, endDate);
-
             crestCourtSiteCodeSittingsMap.put(crestCourtSiteCode, courtSiteSittings);
         }
 
         return this;
     }
 
-    public JsonArray buildCourtListsArray() {
-
+    public JsonArray buildCourtListsArray(final UUID courtCentreId) {
         final JsonArrayBuilder courtListArray = Json.createArrayBuilder();
 
         for (final Map.Entry<String, List<Sitting>> entry : crestCourtSiteCodeSittingsMap.entrySet()) {
-
             final String crestCourtSiteCode = entry.getKey();
             final List<Sitting> sittings = entry.getValue();
-
-            final JsonObject crestCourtSiteJson = getCrestCourtSiteJson(crestCourtSiteCode);
-
+            final JsonObject crestCourtSiteJson = getCrestCourtSiteJson(courtCentreId, crestCourtSiteCode);
             courtListArray.add(courtSiteCourtList(crestCourtSiteJson, sittings));
         }
 
@@ -114,15 +81,25 @@ public class CourtListsBuilder {
     @PreDestroy
     public void unload() {
         threadLocalCommonXhibitReferenceDataService.unload();
-        courtCentreId.remove();
     }
 
-    private JsonObject getCrestCourtSiteJson(final String crestCourtSiteCode) {
-
-        return threadLocalCommonXhibitReferenceDataService.get().getCrestCourtSitesForCrownCourtCentre(getCourtCentreId())
+    private JsonObject getCrestCourtSiteJson(final UUID courtCentreId, final String crestCourtSiteCode) {
+        return threadLocalCommonXhibitReferenceDataService.get().getCrestCourtSitesForCrownCourtCentre(courtCentreId)
                 .stream().filter(courtSite -> crestCourtSiteCode.equals(courtSite.getString(CREST_COURT_SITE_CODE)))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Cannot find site"));
+    }
+
+    private String getCrestCourtSiteCodeForCourtRoom(final UUID courtCentreId, final Optional<UUID> courtRoomUUID) {
+        if (!courtRoomUUID.isPresent()) {
+            return threadLocalCommonXhibitReferenceDataService.get().getDefaultCrestCourtSiteCode(courtCentreId);
+        }
+
+        final Optional<CourtRoomMapping> courtRoomMapping = threadLocalCommonXhibitReferenceDataService.get()
+                .getCourtRoom(courtCentreId, courtRoomUUID.get());
+
+        return courtRoomMapping.isPresent() ? courtRoomMapping.get().getCrestCourtSiteCode()
+                : threadLocalCommonXhibitReferenceDataService.get().getDefaultCrestCourtSiteCode(courtCentreId);
     }
 
     private JsonObject courtSiteCourtList(final JsonObject crestCourtSiteJson, final List<Sitting> sittings) {
@@ -133,16 +110,4 @@ public class CourtListsBuilder {
                 .build();
     }
 
-    private String getCrestCourtSiteCodeForCourtRoom(final Optional<UUID> courtRoomUUID) {
-
-        if (!courtRoomUUID.isPresent()) {
-            return threadLocalCommonXhibitReferenceDataService.get().getDefaultCrestCourtSiteCode(getCourtCentreId());
-        }
-
-        final Optional<CourtRoomMapping> courtRoomMapping =threadLocalCommonXhibitReferenceDataService.get().getCourtRoom(getCourtCentreId(),
-                courtRoomUUID.get());
-
-        return courtRoomMapping.isPresent() ? courtRoomMapping.get().getCrestCourtSiteCode()
-                : threadLocalCommonXhibitReferenceDataService.get().getDefaultCrestCourtSiteCode(getCourtCentreId());
-    }
 }

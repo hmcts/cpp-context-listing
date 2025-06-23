@@ -2,6 +2,8 @@ package uk.gov.moj.cpp.listing.common.xhibit;
 
 import static java.lang.String.format;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.moj.cpp.listing.common.xhibit.exception.InvalidReferenceDataException;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtMapping;
@@ -16,6 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -30,8 +34,13 @@ public class CommonXhibitReferenceDataService {
     private static final String DEFAULT_CREST_COURT_SITE_CODE = "A";
     private static final String CREST_COURT_SITE_ID = "crestCourtSiteId";
 
+    private final ConcurrentMap<String, List<JsonObject>> crestCourtSitesCache = new ConcurrentHashMap<>();
+
+
     private final XhibitReferenceDataValidator xhibitReferenceDataValidator = new XhibitReferenceDataValidator();
     private static final String COURT_DETAILS_NOT_FOUND = "Cannot find court details with courtCentre %s";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CommonXhibitReferenceDataService.class);
 
     @Inject
     private ReferenceDataCache referenceDataCache;
@@ -61,14 +70,14 @@ public class CommonXhibitReferenceDataService {
                 .collect(Collectors.toList())).orElseGet(ImmutableList::of);
     }
 
-    public String getDefaultCrestCourtSiteCode(final UUID courtCentreId) {
-
-        return getCrestCourtSitesForCrownCourtCentre(courtCentreId)
-                .stream()
-                .map(courtSite -> courtSite.getString(CREST_COURT_SITE_CODE))
-                .sorted()
-                .findFirst().orElse(DEFAULT_CREST_COURT_SITE_CODE);
+    public String getDefaultCrestCourtSiteCode(UUID courtCentreId) {
+        List<JsonObject> courtSites = getCrestCourtSitesForCrownCourtCentre(courtCentreId);
+        if (courtSites.isEmpty()) {
+            throw new IllegalStateException("No court sites found for courtCentreId: " + courtCentreId);
+        }
+        return courtSites.get(0).getString(CREST_COURT_SITE_CODE);
     }
+
 
     public CourtLocation getCrownCourtDetails(final UUID courtCentreId) {
 
@@ -92,17 +101,11 @@ public class CommonXhibitReferenceDataService {
         return createMagsCourtLocation(court);
     }
 
-    public List<JsonObject> getCrestCourtSitesForCrownCourtCentre(final UUID courtCentreId) {
-        final List<JsonObject> crownCourtMappingJsonObjectList = new ArrayList<>();
-
-        final Optional<List<CourtMapping>> cownCourtMappingList = referenceDataCache.getCrownCourtMappingsMapCache(courtCentreId);
-
-        cownCourtMappingList.ifPresent(courtMappings -> courtMappings.forEach(courtMapping ->
-                crownCourtMappingJsonObjectList.add(objectToJsonObjectConverter.convert(courtMapping)))
-        );
-
-        return crownCourtMappingJsonObjectList;
+    public List<JsonObject> getCrestCourtSitesForCrownCourtCentre(UUID courtCentreId) {
+        return crestCourtSitesCache.computeIfAbsent(courtCentreId.toString(), id -> fetchCrestCourtSitesFromDatabase(courtCentreId));
     }
+
+
 
     public Optional<CourtRoomMapping> getCourtRoom(final UUID courtCentreId, final UUID courtRoomUUID) {
         final JsonObject cpCourtRoom = getCpCourtRoom(courtCentreId, courtRoomUUID);
@@ -150,12 +153,27 @@ public class CommonXhibitReferenceDataService {
         return organisationUnit.getId();
     }
 
+    private List<JsonObject> fetchCrestCourtSitesFromDatabase(UUID courtCentreId) {
+        final List<JsonObject> crownCourtMappingJsonObjectList = new ArrayList<>();
+
+        final Optional<List<CourtMapping>> cownCourtMappingList = referenceDataCache.getCrownCourtMappingsMapCache(courtCentreId);
+
+        cownCourtMappingList.ifPresent(courtMappings -> courtMappings.forEach(courtMapping ->
+                crownCourtMappingJsonObjectList.add(objectToJsonObjectConverter.convert(courtMapping)))
+        );
+
+        return crownCourtMappingJsonObjectList;
+    }
+
     private JsonObject getCpCourtRoom(final UUID courtCentreId, final UUID courtRoomUUID) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("'Getting CPS court room for court Center Id {}", courtCentreId.toString());
+        }
         return referenceDataCache.getCpCourtRoomCache(courtCentreId)
                 .stream()
                 .filter(cpCourtRoom -> UUID.fromString(cpCourtRoom.getString("id")).equals(courtRoomUUID))
                 .findFirst()
-                .orElseThrow(() -> new InvalidReferenceDataException("Cannot find court room uuid " + courtRoomUUID));
+                .orElseThrow(() -> new InvalidReferenceDataException("Cannot find court room uuid : " +courtRoomUUID + " for Court Center Id : " + courtCentreId));
     }
 
     public Optional<CourtRoomMappingsList> getCourtRoomMappingsList(final UUID courtCentreId) {

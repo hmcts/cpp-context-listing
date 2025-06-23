@@ -22,11 +22,11 @@ public class RangeSearchConverter {
 
         final List<FlatHearing> flatHearings = FlatHearingsConverter.generateFlatHearingList(rangeSearchResponsePayload.getJsonArray("hearings"));
 
-        final JsonArray courtLists = CourtListsBuilder.forCourtCentre(courtCentreId, commonXhibitReferenceDataService)
-                .prepareEmptyCourtSiteHearings()
-                .assignHearingsToCourtSitesUsingCourtRoom(flatHearings)
+        final JsonArray courtLists = CourtListsBuilder.forCourtCentre(commonXhibitReferenceDataService)
+                .prepareEmptyCourtSiteHearings(courtCentreId)
+                .assignHearingsToCourtSitesUsingCourtRoom(courtCentreId,flatHearings)
                 .groupFlatHearingsIntoSittings(startDate, endDate)
-                .buildCourtListsArray();
+                .buildCourtListsArray(courtCentreId);
 
         return createObjectBuilder()
                 .add("courtCentreId", courtCentreId.toString())

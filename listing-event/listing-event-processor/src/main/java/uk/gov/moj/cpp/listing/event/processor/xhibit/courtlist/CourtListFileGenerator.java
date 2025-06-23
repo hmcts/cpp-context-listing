@@ -43,16 +43,18 @@ public class CourtListFileGenerator {
 
         final List<UUID> courtCentreIds = commonXhibitReferenceDataService.getCrownCourtCentreIdsForCrestId(crownCourtCrestId);
 
+        // Use thread-safe local variables
         final List<JsonObject> publishedCourtListsJson = courtCentreIds.stream()
                 .filter(courtCentreId -> !courtCentreId.equals(requestParameters.getCourtCentreId()))
                 .map(courtCentreId ->
                         getCourtLists(envelope, requestParameters, courtCentreId)
                 )
                 .flatMap(Collection::stream)
-                .collect(Collectors.toList());
+                .collect(Collectors.toUnmodifiableList()); // Immutable list
 
         final List<JsonObject> courtCentreCourtLists = courtListJson.getJsonArray("courtLists").getValuesAs(JsonObject.class);
 
+        // Ensure mapperFactory and xmlUtils are thread-safe
         final AbstractCourtListMapper mapper = mapperFactory.createCourtListMapper(context, union(courtCentreCourtLists, publishedCourtListsJson));
 
         return xmlUtils.convertToXml(mapper.generate());
