@@ -23,6 +23,7 @@ public class RuleConstants {
     public static final String DEFENCE_LAWYER = "Defence Lawyers";
     public static final String CHAMBERS_CLERK = "Chambers Clerk";
     public static final String CHAMBERS_ADMIN = "Chambers Admin";
+    public static final String OPERATIONAL_DELIVERY_ADMIN = "Operational Delivery Admin";
     public static final String ADVOCATES = "Advocates";
     public static final String NON_CPS_PROSECUTOR_GROUP = "Non CPS Prosecutors";
 

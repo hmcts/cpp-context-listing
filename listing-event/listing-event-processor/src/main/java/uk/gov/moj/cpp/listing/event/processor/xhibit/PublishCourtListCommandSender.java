@@ -268,6 +268,10 @@ public class PublishCourtListCommandSender {
 
     private void getCaseIdForEachHearingAndMapByDefendantsInHearing(final JsonArray hearings, final Map<UUID, UUID> caseIdByDefendantId, final JsonEnvelope envelope) {
         hearings.getValuesAs(JsonObject.class).forEach(hearing -> {
+            if(!hearing.containsKey("caseIdentifier")) {
+                LOGGER.warn("Hearing does not contain caseIdentifier: {}", hearing);
+                return;
+            }
             final String caseUrn = hearing.getJsonObject("caseIdentifier").getString("caseReference");
             final Optional<JsonObject> caseIdJsonObject = progressionService.caseExistsByCaseUrn(envelope, caseUrn);
             if (caseIdJsonObject.isPresent()) {
