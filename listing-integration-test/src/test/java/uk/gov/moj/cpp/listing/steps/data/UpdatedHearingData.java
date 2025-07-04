@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.steps.data;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
@@ -305,10 +304,9 @@ public class UpdatedHearingData {
     }
 
     public static UpdatedHearingData updatedHearingData(final HearingData hearingData) {
-        return updatedHearingData(hearingData, LocalDate.now().plusDays(21));
-    }
 
-    public static UpdatedHearingData updatedHearingData(final HearingData hearingData, final LocalDate startDate) {
+        //changed values
+        final LocalDate startDate = LocalDate.now().plusDays(21);
         final LocalTime startTime = LocalTime.of(10, 0);
         final String endDate = startDate.toString();
         final UUID courtRoomId = randomUUID();
@@ -316,15 +314,7 @@ public class UpdatedHearingData {
         final List<JudicialRoleData> judiciary = singletonList(new JudicialRoleData(of(true), of(false), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "CIRCUIT_JUDGE")));
 
         final ZonedDateTime startTimeWithZone = ZonedDateTime.of(startDate, startTime, UTC);
-        final List<NonDefaultDayData> nonDefaultDays = singletonList(
-                new NonDefaultDayData(startTimeWithZone.format(DATE_TIME_FORMAT),
-                                      of(DURATION),
-                                      empty(),
-                                      of(2),
-                                      empty(),
-                                      empty(),
-                                      of(courtCentreId).map(UUID::toString),
-                                      of(courtRoomId).map(UUID::toString)));
+        final List<NonDefaultDayData> nonDefaultDays = singletonList(new NonDefaultDayData(startTimeWithZone.format(DATE_TIME_FORMAT), of(DURATION), of(courtCentreId).map(UUID::toString), of(courtRoomId).map(UUID::toString)));
         return new UpdatedHearingData(hearingData.getId(), courtCentreId, hearingData.getName(), courtRoomId, SENTENCE_HEARING_TYPE,
                 startDate.toString(), endDate, nonDefaultDays,
                 Collections.emptyList(), HEARING_LANGUAGE_WELSH, judiciary, hearingData.getJurisdictionType(), null, null, null, hearingData.getHasVideoLink(), hearingData.getPublicListNote(), false, null, null);

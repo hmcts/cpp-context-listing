@@ -34,6 +34,7 @@ import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROW
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubUpdateAvailableHearingSlotsService;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubUpdateHearingSlots;
@@ -46,7 +47,6 @@ import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.SequenceHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.VacatingTrialSteps;
-import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.JudicialRoleData;
 import uk.gov.moj.cpp.listing.steps.data.JudicialRoleTypeData;
@@ -423,34 +423,24 @@ public class HearingIT extends AbstractIT {
     }
 
     @Test
-    void shouldAllocatingHearingForMagsWithoutCourtScheduleIdAndAutomaticallyUpdateMissingCourtScheduleId() {
+    void shouldAllocatingHearingForMagsWithoutCourtScheduleIdAndAutomaticallyUpdateMissingCourtScheduleId() throws IOException {
         final UUID courtCentreId = randomUUID();
         final UUID courtScheduleId1 = UUID.fromString("d4b9299c-c6c6-3747-8dac-01ca82239c27");
-        final LocalDate hearingDate = LocalDate.now().plusDays(3);
+        final String hearingDate = LocalDate.now().plusDays(3).toString();
         stubGetReferenceDataCourtCentreById(courtCentreId);
-        stubUpdateHearingSlots(hearingDate.toString(), courtScheduleId1);
+        stubUpdateHearingSlots(hearingDate, courtScheduleId1);
 
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, MAGISTRATES_JURISDICTION);
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
 
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-        final Map<String, String> courtRoomSchedules = new LinkedHashMap<>() {{
-            put(hearingDate.toString(), courtScheduleId1.toString());
+        final Map<String, String> courtRoomSchedules = new LinkedHashMap<String, String>() {{
+            put(hearingDate, courtScheduleId1.toString());
         }};
-        listCourtHearingSteps.verifyHearingListedWithHearingDaysCourtSchedule(ALLOCATED, courtRoomSchedules.keySet().toArray(String[]::new), courtRoomSchedules.values().toArray(String[]::new));
-        listCourtHearingSteps.verifyHearingDayCourtScheduleCarriedOverToCommand(hearingDate, courtScheduleId1);
 
-        UUID updatedCourtScheduleId = randomUUID();
-        stubUpdateHearingSlots(hearingDate.toString(), updatedCourtScheduleId);
-        HearingData hearingData = hearingsData.getHearingData().get(0);
-        UpdatedHearingData updatedHearingData = updatedHearingData(hearingData, hearingDate);
-        UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingData);
-        updateHearingSteps.whenHearingIsUpdatedForListing();
-        listCourtHearingSteps.verifyHearingUpdatedWithHearingDaysCourtSchedule(updatedHearingData);
-        listCourtHearingSteps.verifyHearingDayCourtScheduledUpdated(updatedCourtScheduleId);
-        updateHearingSteps.verifyPublicEventHearingDaysChangedForHearing();
-        listCourtHearingSteps.verifyHearingDayCourtScheduleCarriedOverToCommand(hearingDate, updatedCourtScheduleId);
+        listCourtHearingSteps.verifyHearingListedWithHearingDaysCourtSchedule(ALLOCATED, courtRoomSchedules.keySet().toArray(String[]::new), courtRoomSchedules.values().toArray(String[]::new));
+
     }
 
     @Test

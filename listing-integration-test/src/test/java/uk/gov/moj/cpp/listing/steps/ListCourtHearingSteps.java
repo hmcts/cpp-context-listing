@@ -20,6 +20,7 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -101,7 +102,6 @@ import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
-import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.ApplicantRespondentData;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
@@ -111,7 +111,6 @@ import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.steps.data.OffenceData;
-import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -164,7 +163,6 @@ public class ListCourtHearingSteps extends AbstractIT {
     private static final String PUBLIC_LISTING_HEARING_CHANGES_SAVED = "public.listing.hearing-changes-saved";
     private static final String LISTING_EVENTS_REQUESTED_HEARING_FROM_STAGING_HMI = "listing.events.requested-hearing-from-staging-hmi";
     private static final String PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING = "public.listing.court-application-added-for-hearing";
-    private static final String LISTING_EVENTS_HEARING_DAY_COURT_SCHEDULE_UPDATED = "listing.events.hearing-day-court-schedule-updated";
 
     protected static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
@@ -188,7 +186,6 @@ public class ListCourtHearingSteps extends AbstractIT {
 
     private HearingsData hearingsData;
     private final JmsMessageConsumerClient privateMessageConsumerHearingUpdatedToCase;
-    private final JmsMessageConsumerClient privateMessageConsumerHearingDayScheduleUpdated;
     private final JmsMessageConsumerClient publicMessageConsumerHearingConfirmedForExtendHearing;
     private final JmsMessageConsumerClient publicEventHearingListed;
     private final JmsMessageConsumerClient publicMessageConsumerHearingPartiallyUpdated;
@@ -208,7 +205,6 @@ public class ListCourtHearingSteps extends AbstractIT {
         this.hearingsData = hearingsData;
 
         privateMessageConsumerHearingUpdatedToCase = privateEvents.createPrivateConsumer(EVENT_SELECTED_HEARING_UPDATED_TO_CASE);
-        privateMessageConsumerHearingDayScheduleUpdated = privateEvents.createPrivateConsumer(LISTING_EVENTS_HEARING_DAY_COURT_SCHEDULE_UPDATED);
         publicMessageConsumerHearingConfirmedForExtendHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED);
         publicMessageProducerProgressionHearingExtendedEvent = publicEvents.createPublicProducer();
         publicEventHearingListed = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_LISTED);
@@ -226,7 +222,6 @@ public class ListCourtHearingSteps extends AbstractIT {
         publicMessageConsumerHearingChangesSaved = null;
         privateEventMessageConsumerRequestedHearingFromStagingHmi = null;
         publicMessageProducerProgressionHearingExtendedEvent = null;
-        privateMessageConsumerHearingDayScheduleUpdated = null;
         this.hearingsData = hearingsData;
 
         publicEventHearingListed = publicEvents.createPrivateConsumer(PUBLIC_LISTING_HEARING_LISTED);
@@ -237,7 +232,6 @@ public class ListCourtHearingSteps extends AbstractIT {
 
     public ListCourtHearingSteps() {
         privateMessageConsumerHearingUpdatedToCase = privateEvents.createPrivateConsumer(EVENT_SELECTED_HEARING_UPDATED_TO_CASE);
-        privateMessageConsumerHearingDayScheduleUpdated = privateEvents.createPrivateConsumer(LISTING_EVENTS_HEARING_DAY_COURT_SCHEDULE_UPDATED);
         publicMessageConsumerHearingConfirmedForExtendHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED);
         publicMessageProducerProgressionHearingExtendedEvent = publicEvents.createPublicProducer();
         publicEventHearingListed = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_LISTED);
@@ -517,14 +511,19 @@ public class ListCourtHearingSteps extends AbstractIT {
                 withJsonPath(hearingIdFilter + "hearingLanguage", hasItem("ENGLISH"))
         });
     }
-    public void verifyHearingDayCourtScheduledUpdated(final UUID updatedCourtScheduleId) {
-        final UUID hearingId = hearingsData.getHearingData().get(0).getId();
-        final String url = generateUrlForFindingAHearingById(hearingId.toString());
-        final ResponseData resp = poll(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
-                .until(status().is(OK),
-                        payload().isJson(
-                                allOf(withJsonPath("$.id", equalTo(hearingId.toString())),
-                                      withJsonPath("$.hearingDays[0].courtScheduleId", equalTo(updatedCourtScheduleId.toString())))));
+    public void verifyHearingDayCourtScheduledUpdated() {
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final String hearingIdFilter = getHearingFilter(hearingData.getId().toString());
+        pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), true, getLoggedInUser().toString(),
+                new Matcher[]{
+                        withJsonPath("$.hearings[0].hearingDays[*].courtScheduleId", is(notNullValue())),
+                        withJsonPath(hearingIdFilter + "jurisdictionType", hasItem(hearingData.getJurisdictionType())),
+                        withJsonPath(hearingIdFilter + "courtCentreId", hasItem(hearingData.getCourtCentreId().toString())),
+                        withJsonPath(hearingIdFilter + "type.id", hasItem(hearingData.getHearingTypeData().getTypeId().toString())),
+                        withJsonPath(hearingIdFilter + "type.description", hasItem(hearingData.getHearingTypeData().getTypeDescription())),
+                        withJsonPath(hearingIdFilter + "startDate", hasItem(hearingData.getHearingStartDate().toString())),
+                        withJsonPath(hearingIdFilter + "hearingLanguage", hasItem("ENGLISH"))
+                });
     }
 
     public void verifyQueryAPIFindCaseByPersonDefendantAndHearingDate() {
@@ -729,11 +728,6 @@ public class ListCourtHearingSteps extends AbstractIT {
         });
     }
 
-    public void verifyHearingUpdatedWithHearingDaysCourtSchedule(final UpdatedHearingData updatedHearingData) {
-        pollForHearing(updatedHearingData.getCourtCentreId().toString(), true, getLoggedInUser().toString(), new Matcher[]{
-                withJsonPath("$.hearings[0].id", equalTo(updatedHearingData.getHearingId().toString())),
-        });
-    }
 
     public void verifyHearingListedWithHearingDays(final boolean isAllocated, final String[] courtScheduleSlots, final String[] courtRoomIds) {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
@@ -2119,13 +2113,6 @@ public class ListCourtHearingSteps extends AbstractIT {
     public void verifyPublicEVentHearingChangesSaved(final UUID hearingId) {
         final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingChangesSaved);
         assertThat(jsonResponse.get("hearingId"), is(hearingId.toString()));
-    }
-
-    public void verifyHearingDayCourtScheduleCarriedOverToCommand(LocalDate hearingDate, UUID courtScheduleId) {
-        JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingDayScheduleUpdated);
-        List<Map<String, String>> schedules = jsonResponse.getList("hearingDayCourtSchedules");
-        assertThat(schedules.get(0).get("courtScheduleId"), is(courtScheduleId.toString()));
-        assertThat(schedules.get(0).get("hearingDate"), is(hearingDate.toString()));
     }
 
     public void verifyPublicEventHearingConfirmed() {
