@@ -50,7 +50,6 @@ import static uk.gov.moj.cpp.listing.domain.aggregate.HearingDaysCalculator.calc
 import static uk.gov.moj.cpp.listing.domain.aggregate.NewDomainToEventConverter.updateEventDefendant;
 import static uk.gov.moj.cpp.listing.domain.event.CourtToEventConverter.buildListedCase;
 import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
-import static uk.gov.moj.cpp.listing.domain.utils.HmiConstants.SOURCE_HMI;
 
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.CourtHearingRequest;
@@ -223,7 +222,6 @@ public class Hearing implements Aggregate {
                 when(CaseIdentifierUpdated.class).apply(this::onCaseIdentifierUpdated),
                 when(HearingPartiallyUpdated.class).apply(this::onHearingPartiallyUpdated),
                 when(NewCaseMarkerUpdated.class).apply(this::onNewCaseMarkerUpdated),
-                when(UpdatedHmiFieldsForHearing.class).apply(this::onUpdatedHmiFieldsForHearing),
                 when(DefendantCourtProceedingsUpdatedV2.class).apply(this::onDefendantCourtProceedingsUpdatedV2),
                 when(AllocatedHearingExtendedForListingV2.class).apply(this::onAllocatedHearingExtendedForListingV2),
                 when(AllocatedHearingExtendedForListing.class).apply(this::onAllocatedHearingExtendedForListing),
@@ -251,14 +249,6 @@ public class Hearing implements Aggregate {
                 .anyMatch(judicialResult -> judicialResult.getJudicialResultTypeId().equals(UUID.fromString(SUMMONS_REJECTED_RESULT_TYPE_ID)))) {
             isSummonsApprovedExists = false;
         }
-    }
-
-    private void onUpdatedHmiFieldsForHearing(final UpdatedHmiFieldsForHearing updatedHmiFieldsForHearing) {
-        this.currentHearingEventState = uk.gov.justice.listing.events.Hearing.hearing().withValuesFrom(this.currentHearingEventState)
-                .withBookingType(updatedHmiFieldsForHearing.getBookingType())
-                .withPriority(updatedHmiFieldsForHearing.getPriority())
-                .withSpecialRequirements(updatedHmiFieldsForHearing.getSpecialRequirements())
-                .build();
     }
 
     private void onNewCaseMarkerUpdated(final NewCaseMarkerUpdated newCaseMarkerUpdated) {
@@ -326,20 +316,6 @@ public class Hearing implements Aggregate {
     private void handleOffencesRemovedFromExistingAllocatedHearing(final OffencesRemovedFromExistingAllocatedHearing offencesRemovedFromExistingAllocatedHearing) {
         removeOffences(offencesRemovedFromExistingAllocatedHearing.getOffenceIds());
     }
-
-    public Stream<Object> updateHmiFields(final UUID hearingId, final String bookingType, final String priority, final List<String> specialRequirements) {
-        if (isNull(bookingType) && isNull(priority) && isEmpty(specialRequirements)) {
-            return Stream.empty();
-        }
-        return apply(Stream.of(UpdatedHmiFieldsForHearing.updatedHmiFieldsForHearing()
-                .withHearingId(hearingId)
-                .withBookingType(bookingType)
-                .withPriority(priority)
-                .withSpecialRequirements(specialRequirements)
-                .build()));
-
-    }
-
 
     @SuppressWarnings({"squid:S00107", "squid:S3776"})
     public Stream<Object> list(final UUID hearingId, final Type type,
@@ -1057,10 +1033,6 @@ public class Hearing implements Aggregate {
         }
     }
 
-    public Stream<Object> sendToHmi() {
-        return raiseRequestHearingFromStagingHmi();
-    }
-
     public Stream<Object> applyAllocationRules(final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds, final Boolean sendNotificationToParties, final Boolean isNotificationRelatedAllocatedFieldsUpdated) {
         return getAllocationEvents(prosecutionCaseDefendantOffenceIds, empty(), sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated, null);
     }
@@ -1703,16 +1675,6 @@ public class Hearing implements Aggregate {
                 .build()));
     }
 
-    public Stream<Object> deleteHearingForHmi() {
-        return apply(Stream.of(DeletedHearingInStagingHmi.deletedHearingInStagingHmi()
-                .withHearingId(currentHearingEventState.getId())
-                .withCourtRoomId(currentHearingEventState.getCourtRoomId())
-                .withCourtCentreId(currentHearingEventState.getCourtCentreId())
-                .withCancellationReasonCode("CNCL")
-                .withCaseAndApplicationIds(getCaseAndApplicationIds(currentHearingEventState))
-                .build()));
-    }
-
     private List<String> getCaseAndApplicationIds(final uk.gov.justice.listing.events.Hearing currentHearingEventState) {
         return Stream.concat(ofNullable(currentHearingEventState.getListedCases()).map(Collection::stream).orElseGet(Stream::empty).map(uk.gov.justice.listing.events.ListedCase::getId),
                         ofNullable(currentHearingEventState.getCourtApplications()).map(Collection::stream).orElseGet(Stream::empty).map(uk.gov.justice.listing.events.CourtApplication::getId))
@@ -1789,43 +1751,8 @@ public class Hearing implements Aggregate {
         return apply(Stream.of(Stream.of(hearingAllocatedForListingEvent(bookingReference, prosecutionCaseDefendantOffenceIds, source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated, isGroupProceedings))).flatMap(i -> i));
     }
 
-    public Stream<Object> raiseUpdateHearingInStagingHmi(final Optional<String> source) {
-
-        if (duplicate || deleted) {
-            return Stream.empty();
-        }
-
-        final Stream.Builder<Object> eventStreamBuilder = Stream.builder();
-        if (nonNull(currentHearingEventState) && source.map(s -> !SOURCE_HMI.equals(s)).orElse(true)) {
-            eventStreamBuilder.add(UpdatedHearingInStagingHmi.updatedHearingInStagingHmi().withHearing(currentHearingEventState).build());
-        }
-        return apply(eventStreamBuilder.build());
-    }
-
-    public Stream<Object> raiseUpdateHearingInStagingHmi(Stream<Object> actualEvents) {
-
-        if (duplicate || deleted) {
-            return Stream.empty();
-        }
-
-        final List<Object> eventList = actualEvents.collect(Collectors.toList());
-        if (eventList.isEmpty()) {
-            return Stream.empty();
-        }
-        final Stream<Object> hmiEvents = raiseUpdateHearingInStagingHmi(Optional.empty());
-        return Stream.of(eventList.stream(), hmiEvents).flatMap(i -> i);
-    }
-
     public boolean isDuplicateOrDeleted() {
        return this.duplicate || this.deleted;
-    }
-
-    public Stream<Object> raiseRequestHearingFromStagingHmi() {
-        final Stream.Builder<Object> eventStreamBuilder = Stream.builder();
-        if (nonNull(currentHearingEventState)) {
-            eventStreamBuilder.add(RequestedHearingFromStagingHmi.requestedHearingFromStagingHmi().withHearing(currentHearingEventState).build());
-        }
-        return apply(eventStreamBuilder.build());
     }
 
     public Stream<Object> judiciaryChangedForHearingsStatus() {

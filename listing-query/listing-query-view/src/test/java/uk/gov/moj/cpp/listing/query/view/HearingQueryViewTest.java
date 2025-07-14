@@ -47,7 +47,6 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory;
-import uk.gov.moj.cpp.listing.common.hmi.OrganisationUnitHMICache;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
@@ -172,8 +171,7 @@ public class HearingQueryViewTest {
     private PublishedCourtListToJsonConverter publishedCourtListToJsonConverter;
     @Mock
     private NotesService notesService;
-    @Mock
-    private OrganisationUnitHMICache organisationUnitHMICache;
+
     @Mock
     private CaseByDefendantRepository caseByDefendantRepository;
 
@@ -790,9 +788,6 @@ public class HearingQueryViewTest {
         courtCentreIdSet.add("6bf56746-cfe8-40bc-a789-3fae393c33ab");
         courtCentreIdSet.add("0110aa28-abf7-4ff4-8848-942814e55787");
 
-        when(organisationUnitHMICache.getNotHmiEnabledCourtCentreIdSet())
-                .thenReturn(courtCentreIdSet);
-
         final Envelope<JsonObject> results = hearingsQueryView.searchUnscheduledHearings(query);
 
         assertThat(envelopeFrom(results.metadata(), results.payload()),
@@ -925,9 +920,6 @@ public class HearingQueryViewTest {
         Set courtCentreIdSet = new HashSet();
         courtCentreIdSet.add("6bf56746-cfe8-40bc-a789-3fae393c33ab");
         courtCentreIdSet.add("0110aa28-abf7-4ff4-8848-942814e55787");
-
-        when(organisationUnitHMICache.getNotHmiEnabledCourtCentreIdSet())
-                .thenReturn(courtCentreIdSet);
 
         final Envelope<JsonObject> results = hearingsQueryView.searchUnscheduledHearings(query);
 

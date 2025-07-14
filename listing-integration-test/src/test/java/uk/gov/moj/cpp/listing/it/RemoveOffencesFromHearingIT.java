@@ -32,7 +32,7 @@ class RemoveOffencesFromHearingIT extends AbstractIT{
         final HearingsData firstHearings = hearingsDataWithAllocationDataAndJudiciary();
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
-        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
 
@@ -55,7 +55,7 @@ class RemoveOffencesFromHearingIT extends AbstractIT{
         final HearingsData firstHearing = singleHearingsDataWithAllocationDataAndJudiciary();
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearing);
-        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         final String existedHearingId = firstHearing.getHearingData().get(0).getId().toString();

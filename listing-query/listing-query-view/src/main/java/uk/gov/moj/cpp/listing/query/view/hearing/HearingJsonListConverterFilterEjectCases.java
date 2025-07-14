@@ -4,11 +4,16 @@ import static java.lang.String.format;
 import static java.time.ZonedDateTime.parse;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.function.Function.identity;
 import static javax.json.Json.createArrayBuilder;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static uk.gov.moj.cpp.listing.common.service.HearingIdsResponse.EMPTY_HEARING_ID_RESPONSE;
 import static uk.gov.moj.cpp.listing.query.view.hearing.JsonArrayCollector.toArrayNode;
 
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.moj.cpp.listing.common.service.HearingIdsResponse;
+import uk.gov.moj.cpp.listing.common.service.IdResponse;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import java.io.IOException;
 import java.io.StringReader;
@@ -20,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.json.Json;
@@ -59,19 +65,32 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String COURT_ROOM_ID = "courtRoomId";
     private static final String SEARCH_DATE = "searchDate";
+    public static final String COURT_SCHEDULE_ID = "courtScheduleId";
     private final ObjectMapper mapper = new ObjectMapperProducer().objectMapper();
 
     @Override
     public JsonArray convert(final List<Hearing> hearings) {
+        return convert(hearings, EMPTY_HEARING_ID_RESPONSE);
+    }
+
+    public JsonArray convert(List<Hearing> hearings, HearingIdsResponse hearingIdsResponse) {
+        final Map<String, IdResponse> idResponseMap =
+                hearingIdsResponse.getUuids()
+                                  .stream()
+                                  .collect(Collectors.toMap(idResp -> generateIdRespKey(idResp.hearingId(), idResp.hearingDate()), identity()));
         return hearings.stream()
-                .map(this::preprocessPropertiesIfHearingIsFlattened)
+                .map(h -> preprocessPropertiesIfHearingIsFlattened(h, idResponseMap))
                 .map(this::filterEjectCaseAndCourtApplications)
                 .filter(this::casesOrApplicationsExists)
                 .map(hearingJsonNode -> this.jsonFromString(hearingJsonNode.toString()))
                 .collect(toArrayNode());
     }
 
-    private JsonNode preprocessPropertiesIfHearingIsFlattened(final Hearing h) {
+    private static String generateIdRespKey(UUID hearingId, LocalDate hearingDate) {
+        return hearingId + "|" + hearingDate;
+    }
+
+    private JsonNode preprocessPropertiesIfHearingIsFlattened(final Hearing h, final Map<String, IdResponse> idResponseMap) {
         if (isNull(h) || isNull(h.getProperties())) {
             return null;
         }
@@ -90,24 +109,44 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
         ((ObjectNode) h.getProperties()).put("hearingDayPosition", position);
         final JsonNode hd = props.findPath("hearingDays");
 
-        if (!hd.isMissingNode() && hd.isArray()) {
-            final ArrayNode arrayNode = (ArrayNode) hd;
-            int idx = 0;
-            while (idx < arrayNode.size()) {
-                final JsonNode el = arrayNode.get(idx);
-                final JsonNode hhd = el.findPath("hearingDate");
-                if (!hhd.isMissingNode()) {
-                    final String txt = hhd.asText();
-                    if (!hearingDate.toString().equals(txt)) {
-                        arrayNode.remove(idx);//infinite loop???
-                        continue; // not incrementing index as array size is reduced by one
-                    }
-                    idx++;
+        if (hd.isMissingNode() || !hd.isArray()) {
+            return props;
+        }
+
+        final ArrayNode arrayNode = (ArrayNode) hd;
+        int idx = 0;
+        while (idx < arrayNode.size()) {
+            final JsonNode el = arrayNode.get(idx);
+            final JsonNode hhd = el.findPath("hearingDate");
+            if (!hhd.isMissingNode()) {
+                final String hearingDateJsonNodeVal = hhd.asText();
+                if (!hearingDate.toString().equals(hearingDateJsonNodeVal)) {
+                    arrayNode.remove(idx);//infinite loop???
+                    continue; // not incrementing index as array size is reduced by one
                 }
+
+                idx++;
+                final ObjectNode elObjNode = (ObjectNode) el;
+                populateCourtScheduleId(h, idResponseMap, elObjNode, hearingDate);
+
             }
         }
 
+
         return props;
+    }
+
+    private static void populateCourtScheduleId(final Hearing hearing,
+                                                final Map<String, IdResponse> idResponseMap,
+                                                final ObjectNode elObjNode, final LocalDate hearingDate) {
+        final String existingCourtScheduleId =
+                elObjNode.get(COURT_SCHEDULE_ID) != null ? elObjNode.get(COURT_SCHEDULE_ID).asText() : "";
+        if (isBlank(existingCourtScheduleId)) {
+            final IdResponse idResponse = idResponseMap.get(generateIdRespKey(hearing.getId(), hearingDate));
+            if (idResponse != null) {
+                elObjNode.put(COURT_SCHEDULE_ID, idResponse.courtScheduleId().toString());
+            }
+        }
     }
 
     @Override
@@ -211,7 +250,7 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
     private HearingDay createHearingDay(final JsonNode hearingDayJson) {
         return new HearingDay.Builder()
                 .withHearingDate(LocalDate.parse(convertJsonNodeToString(hearingDayJson.path("hearingDate"))))
-                .withCourtScheduleId(convertJsonNodeToString(hearingDayJson.path("courtScheduleId")))
+                .withCourtScheduleId(convertJsonNodeToString(hearingDayJson.path(COURT_SCHEDULE_ID)))
                 .withCourtRoomId(convertJsonNodeToString(hearingDayJson.path(COURT_ROOM_ID)))
                 .withCourtCentreId(convertJsonNodeToString(hearingDayJson.path(COURT_CENTRE_ID)))
                 .withStartTime(parse(convertJsonNodeToString(hearingDayJson.path(START_TIME))))

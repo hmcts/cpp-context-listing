@@ -164,15 +164,6 @@ subscriptions_descriptor:
         - name: listing.events.hearing-marked-for-partial-update
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-marked-for-partial-update.json
 
-        - name: listing.events.requested-hearing-from-staging-hmi
-          schema_uri: http://justice.gov.uk/listing/courts/listing.events.requested-hearing-from-staging-hmi.json
-
-        - name: listing.events.updated-hearing-in-staging-hmi
-          schema_uri: http://justice.gov.uk/listing/events/listing.events.updated-hearing-in-staging-hmi.json
-
-        - name: listing.events.deleted-hearing-in-staging-hmi
-          schema_uri: http://justice.gov.uk/listing/events/listing.events.deleted-hearing-in-staging-hmi.json
-
         - name: listing.events.hearing-days-changed-for-hearing
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-days-changed-for-hearing.json
 
@@ -276,9 +267,6 @@ subscriptions_descriptor:
         - name: public.events.hearing.hearing-resulted
           schema_uri: http://justice.gov.uk/hearing/courts/public.events.hearing.hearing-resulted.json
 
-        - name: public.staginghmi.hearing-updated-from-hmi
-          schema_uri: http://justice.gov.uk/staginghmi/courts/public.staginghmi.hearing-updated-from-hmi.json
-
         - name: public.progression.case-removed-from-group-cases
           schema_uri: http://moj.gov.uk/cpp/progression/events/public.progression.case-removed-from-group-cases.json
 
@@ -287,5 +275,11 @@ subscriptions_descriptor:
 
         - name : public.progression.related-hearing-updated-for-adhoc-hearing
           schema_uri: http://justice.gov.uk/listing/courts/public.progression.related-hearing-updated-for-adhoc-hearing.json
+
+        - name: public.referencedata.event.courtroom-added
+          schema_uri: http://cpp.moj.gov.uk/referencedata/event/public.referencedata.event.courtroom-added.json
+
+        - name: public.referencedata.event.courtroom-closed
+          schema_uri: http://cpp.moj.gov.uk/referencedata/event/public.referencedata.event.courtroom-closed.json
 
       event_source_name: public.event.source

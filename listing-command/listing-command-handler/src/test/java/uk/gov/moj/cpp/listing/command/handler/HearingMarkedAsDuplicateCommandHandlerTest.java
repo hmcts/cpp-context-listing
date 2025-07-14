@@ -24,7 +24,6 @@ import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
-import uk.gov.moj.cpp.listing.command.service.HmiService;
 import uk.gov.moj.cpp.listing.command.utils.FileUtil;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
@@ -75,9 +74,6 @@ public class HearingMarkedAsDuplicateCommandHandlerTest {
     private Case caseAggregate;
 
     @Mock
-    private HmiService hmiService;
-
-    @Mock
     private HearingSlotsService hearingSlotsService;
 
     @Spy
@@ -109,16 +105,11 @@ public class HearingMarkedAsDuplicateCommandHandlerTest {
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearingAggregate);
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
         when(hearingAggregate.markHearingAsDuplicate(eq(hearingId), eq(caseIds))).thenReturn(mock(Stream.class));
-        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
         doNothing().when(hearingSlotsService).delete(hearingId);
-        when(hearingAggregate.getCurrentHearingEventState()).thenReturn(uk.gov.justice.listing.events.Hearing.hearing()
-                .withId(hearingId)
-                .withCourtCentreId(UUID.randomUUID()).build());
 
         hearingMarkedAsDuplicateCommandHandler.handleMarkHearingAsDuplicate(commandEnvelope);
 
         verify(hearingAggregate).markHearingAsDuplicate(eq(hearingId), eq(caseIds));
-        verify(hearingAggregate).deleteHearingForHmi();
         verify(hearingSlotsService).delete(eq(hearingId));
     }
 

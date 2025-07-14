@@ -7,6 +7,7 @@ import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -31,6 +32,7 @@ import uk.gov.moj.cpp.listing.common.service.HearingIdsResponse;
 import uk.gov.moj.cpp.listing.common.service.IdResponse;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.entity.HearingDays;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
@@ -46,6 +48,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+
+import javax.json.JsonObject;
+
+import javax.json.JsonObject;
+
+import javax.json.JsonArray;
+import javax.json.JsonObject;
 
 import javax.json.JsonObject;
 
@@ -302,9 +311,14 @@ public class RangeSearchQueryTest {
 
         final JsonEnvelope results = rangeSearchQuery.rangeSearchCourtCalendar(query);
 
-        assertThat(results.payloadAsJsonObject().getInt("results"), is(2));
-        assertThat(results.payloadAsJsonObject().getJsonArray("hearings").size(), is(2));
-        assertThat(results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("startDate"), is("2020-09-03"));
+        final JsonObject payloadJsonObj = results.payloadAsJsonObject();
+        final JsonArray hearingsJsonArr = payloadJsonObj.getJsonArray("hearings");
+
+        assertThat(payloadJsonObj.getInt("results"), is(2));
+        assertThat(hearingsJsonArr.size(), is(2));
+        assertThat(hearingsJsonArr.getJsonObject(0).getString("startDate"), is("2020-09-03"));
+        assertThat(hearingsJsonArr.getJsonObject(0).getJsonArray("hearingDays").getJsonObject(0).getString("courtScheduleId"), is(notNullValue()));
+        assertThat(hearingsJsonArr.getJsonObject(1).getJsonArray("hearingDays").getJsonObject(0).getString("courtScheduleId"), is(notNullValue()));
         assertThat(results.metadata().name(), is("listing.search.hearings"));
     }
 
@@ -693,12 +707,25 @@ public class RangeSearchQueryTest {
     }
 
     private List<Hearing> hearingsJson(String allocated) {
-        final String testJsonString = "{ \"allocated\":\"" + allocated + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
+        String testJsonString = "{ \"allocated\":\"" + allocated + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}], \"hearingDays\" : [{\"hearingDate\": \"HEARING_DATE1\"}, {\"hearingDate\": \"HEARING_DATE2\"}] }";
+        LocalDate today = LocalDate.now();
+        LocalDate tmrw = today.plusDays(1);
+        testJsonString = testJsonString.replace("HEARING_DATE1", today.toString()).replace("HEARING_DATE2", tmrw.toString());
         final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
         hearing1.setAllocated(true);
         hearing1.setTotalCount(Long.valueOf(2));
+        final HearingDays hd1 = new HearingDays();
+        hd1.setHearingDate(today);
+        final HearingDays hd2 = new HearingDays();
+        hd2.setHearingDate(tmrw);
+        hearing1.getHearingDays().add(hd1);
+        hearing1.getHearingDays().add(hd2);
+
         final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
         hearing2.setAllocated(true);
+        hearing2.getHearingDays().add(hd1);
+        hearing2.getHearingDays().add(hd2);
+
         return newArrayList(hearing1, hearing2);
     }
 

@@ -51,27 +51,4 @@ public class HearingAsMarkedIT extends AbstractIT {
                 withJsonPath("$.hearings", emptyCollection())
         });
     }
-
-    @Disabled("will be handled with DD-34779")
-    @Test
-    public void shouldHearingDeletedForHmi() {
-        final UUID courtCentreId = randomUUID();
-        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, CROWN_JURISDICTION);
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
-        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-        listCourtHearingSteps.verifyPrivateEventRequestedHearingFromStagingHmiInActiveMQ();
-
-        HearingData hearingData = hearingsData.getHearingData().get(0);
-        final HearingAsMarkedSteps hearingAsMarkedSteps = new HearingAsMarkedSteps(hearingData);
-        hearingAsMarkedSteps.whenHearingMarkedAsDuplicatePublicEventIsPublished();
-        hearingAsMarkedSteps.verifyHearingMarkedAsDuplicatePublicEventInActiveMQ();
-
-        pollForHearing(hearingData.getCourtCentreId().toString(), false, getLoggedInUser().toString(), new Matcher[]{
-                withJsonPath("$.hearings", emptyCollection())
-        });
-
-        hearingAsMarkedSteps.verifyHmiPublicEventForDeleteHearing();
-    }
-
 }

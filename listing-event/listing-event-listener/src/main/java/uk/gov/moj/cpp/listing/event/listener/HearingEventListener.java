@@ -26,7 +26,6 @@ import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.Prosecutor;
 import uk.gov.justice.listing.events.TrialVacated;
-import uk.gov.justice.listing.events.UpdatedHmiFieldsForHearing;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
@@ -183,20 +182,6 @@ public class HearingEventListener {
                 .save();
 
         hearingSearchSyncService.sync(hearingId);
-    }
-
-    @Handles("listing.events.updated-hmi-fields-for-hearing")
-    public void hmiFieldsUpdated(final Envelope<UpdatedHmiFieldsForHearing> event) {
-        final UpdatedHmiFieldsForHearing updatedHmiFieldsForHearing = event.payload();
-        final UUID hearingId = updatedHmiFieldsForHearing.getHearingId();
-        LOGGER.info("'listing.events.updated-hmi-fields-for-hearing' received hearingId {}", hearingId);
-        final TypeReference<List<String>> typeRefStringList = new TypeReference<List<String>>() {
-        };
-        jsonEntityFinder.find(hearingId)
-                .put("bookingType", updatedHmiFieldsForHearing.getBookingType())
-                .put("priority", updatedHmiFieldsForHearing.getPriority())
-                .putSubList("specialRequirements", typeRefStringList, getSpecialRequirementsFunction(updatedHmiFieldsForHearing.getSpecialRequirements()))
-                .save();
     }
 
     private Function<List<String>, List<String>> getSpecialRequirementsFunction(final List<String> specialRequirements) {

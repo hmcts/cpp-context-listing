@@ -50,7 +50,6 @@ public class CourtSchedulerServiceStub {
 
     private static final String PROVISIONAL_BOOKING = "/provisionalBooking";
     private static final String HEARING_SLOTS = "/hearingslots";
-    private static final String ORGANISATION_UNIT = "/organisationUnitHMIStatus";
     private static final String COURTSCHEDULER_GET_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.get.hearing.slots+json";
     private static final String COURTSCHEDULER_PUT_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.update.hearing.slots+json";
     public static final String COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE = "application/vnd.courtscheduler.get.provisional.booking+json";
@@ -155,18 +154,6 @@ public class CourtSchedulerServiceStub {
                                 .replace("%COURT_ROOM_ID%", courtRoomId))
                         .withHeader("Content-Type", "application/json")
                 ));
-    }
-
-    public static void stubPingForOrganisationUnitHmiSServiceForCache() {
-        InternalEndpointMockUtils.stubPingFor("staginghmi-service");
-
-        String payload = getPayload("stub-data/staginghmi.query.organisation-unit-hmi-status-rota.json");
-
-        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + ORGANISATION_UNIT)))
-                .willReturn(aResponse().withStatus(SC_OK)
-                        .withHeader("CPPID", randomUUID().toString())
-                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
-                        .withBody(payload)));
     }
 
     public static void stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased() {

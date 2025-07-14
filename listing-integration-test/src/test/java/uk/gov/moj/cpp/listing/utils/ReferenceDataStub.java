@@ -26,6 +26,10 @@ import java.util.stream.Collectors;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+
+
 
 public class ReferenceDataStub {
 
@@ -149,21 +153,6 @@ public class ReferenceDataStub {
                         .withBody(payload)));
     }
 
-    public static void stubGetReferenceDataCourtCentreHmiListingEnabled(final CourtCentreData courtReferenceData) {
-        stubPingForReferenceDataService();
-        String payload = getPayload("stub-data/referencedata.query.courtroom.hmi.enabled.json")
-                .replace("COURT_CENTRE_ID", courtReferenceData.getCourtCentreId().toString())
-                .replace("DEFAULT_START_TIME", courtReferenceData.getDefaultStartTime().toString())
-                .replace("DEFAULT_DURATION_HOURS_MINS", courtReferenceData.getDefaultDurationHoursMins())
-                .replace("COURT_ROOM_ID", courtReferenceData.getCourtRoomId() != null ? courtReferenceData.getCourtRoomId().toString() : randomUUID().toString());
-
-        stubFor(get(urlPathMatching(REFERENCE_DATA_COURT_CENTRE_QUERY_URL))
-                .willReturn(aResponse().withStatus(SC_OK)
-                        .withHeader("CPPID", randomUUID().toString())
-                        .withHeader("Content-Type", REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE)
-                        .withBody(payload)));
-    }
-
     public static void stubGetReferenceDataCourtCentreById(final CourtCentreData courtReferenceData) {
         stubPingForReferenceDataService();
 
@@ -203,21 +192,6 @@ public class ReferenceDataStub {
         final String urlPath = String.format(REFERENCE_DATA_ORGANISATION_UNIT_QUERY_URL, courtCentreId.toString());
 
         String payload = getPayload("stub-data/referencedata.query.organisation-unit.json")
-                .replace("COURT_CENTRE_ID", courtCentreId.toString());
-
-        stubFor(get(urlPathMatching(urlPath))
-                .willReturn(aResponse().withStatus(SC_OK)
-                        .withHeader("CPPID", randomUUID().toString())
-                        .withHeader("Content-Type", REFERENCE_DATA_ORGANISATION_UNIT_MEDIA_TYPE)
-                        .withBody(payload)));
-    }
-
-    public static void stubGetReferenceDataCourtWithHmiListingEnabledCentreById(UUID courtCentreId) {
-        InternalEndpointMockUtils.stubPingFor("referencedata-service");
-
-        final String urlPath = String.format(REFERENCE_DATA_ORGANISATION_UNIT_QUERY_URL, courtCentreId.toString());
-
-        String payload = getPayload("stub-data/referencedata.query.organisation-unit-hmi-listing-enabled.json")
                 .replace("COURT_CENTRE_ID", courtCentreId.toString());
 
         stubFor(get(urlPathMatching(urlPath))

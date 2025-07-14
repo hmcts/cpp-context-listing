@@ -14,7 +14,6 @@ import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.command.service.HmiService;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
@@ -47,9 +46,6 @@ public class HearingMarkedAsDuplicateCommandHandler {
     private JsonObjectToObjectConverter jsonObjectConverter;
 
     @Inject
-    private HmiService hmiService;
-
-    @Inject
     private HearingSlotsService hearingSlotsService;
 
     @Handles("listing.command.mark-hearing-as-duplicate")
@@ -65,10 +61,7 @@ public class HearingMarkedAsDuplicateCommandHandler {
         hearingSlotsService.delete(hearingId);
 
         final List<UUID> caseIds = markHearingAsDuplicate.getProsecutionCaseIds();
-        updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
-            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
-            return isHmiEnabled ? Stream.of(hearing.markHearingAsDuplicate(hearingId, caseIds), hearing.deleteHearingForHmi()).flatMap(i->i) : hearing.markHearingAsDuplicate(hearingId, caseIds);
-        });
+        updateHearingEventStream(command, hearingId, (Hearing hearing) -> hearing.markHearingAsDuplicate(hearingId, caseIds));
     }
 
     @Handles("listing.command.mark-unallocated-hearing-as-duplicate")

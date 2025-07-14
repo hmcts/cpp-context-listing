@@ -29,7 +29,6 @@ import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.TrialVacated;
-import uk.gov.justice.listing.events.UpdatedHmiFieldsForHearing;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.domain.HearingDay;
@@ -105,10 +104,6 @@ public class HearingEventListenerTest {
 
     @Mock
     private HearingRescheduled hearingRescheduled;
-
-    @Mock
-    private UpdatedHmiFieldsForHearing updatedHmiFieldsForHearing;
-
 
     @InjectMocks
     private HearingEventListener hearingEventListener;
@@ -469,33 +464,6 @@ public class HearingEventListenerTest {
 
         verify(properties).put(eq("isVacatedTrial"), eq(false));
         verify(properties).put(eq("vacatedTrialReasonId"), eq(""));
-        verify(hearingRepository).save(hearing);
-    }
-
-    @Test
-    public void shouldUpdateHmiFields() {
-        final Envelope<UpdatedHmiFieldsForHearing> envelope = (Envelope<UpdatedHmiFieldsForHearing>) mock(Envelope.class);
-
-        given(envelope.payload()).willReturn(updatedHmiFieldsForHearing);
-        given(updatedHmiFieldsForHearing.getHearingId()).willReturn(HEARING_ID);
-        given(updatedHmiFieldsForHearing.getBookingType()).willReturn("Video");
-        given(updatedHmiFieldsForHearing.getPriority()).willReturn("High");
-        given(updatedHmiFieldsForHearing.getSpecialRequirements()).willReturn(Arrays.asList("RVC", "GSN"));
-
-        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
-        when(hearing.getProperties()).thenReturn(properties);
-
-        final ArgumentCaptor<JsonNode> jsonNodeArgumentCaptor = ArgumentCaptor.forClass(JsonNode.class);
-
-        hearingEventListener.hmiFieldsUpdated(envelope);
-
-        verify(properties).put(eq("bookingType"), eq("Video"));
-        verify(properties).put(eq("priority"), eq("High"));
-        verify(properties).replace(any(), jsonNodeArgumentCaptor.capture());
-        JsonNode actualValue = jsonNodeArgumentCaptor.getValue();
-        assertEquals("RVC", actualValue.get(0).asText());
-        assertEquals("GSN", actualValue.get(1).asText());
-
         verify(hearingRepository).save(hearing);
     }
 

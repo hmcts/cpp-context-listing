@@ -21,7 +21,6 @@ import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
-import uk.gov.moj.cpp.listing.command.service.HmiService;
 import uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
@@ -57,8 +56,6 @@ public class UnscheduledListingCommandHandler {
     private CommandToDomainConverter commandToDomainConverter;
     @Inject
     private HearingTypeFactory hearingTypeFactory;
-    @Inject
-    private HmiService hmiService;
 
     @SuppressWarnings({"squid:S3655", "squid:S1188"})
     @Handles("listing.command.list-unscheduled-court-hearing-enriched")
@@ -125,32 +122,27 @@ public class UnscheduledListingCommandHandler {
         final Optional<Integer> weekCommencingDurationInWeeks = commandToDomainConverter.getWeekCommencingDurationInWeeks(commandHearing);
         final Optional<LocalDate> weekCommencingEndDate = commandToDomainConverter.getWeekCommencingEndDate(weekCommencingStartDate, weekCommencingDurationInWeeks);
 
-        updateHearingEventStream(command, commandHearing.getId(), (Hearing hearing) -> {
-                    final Stream<Object> events = hearing.listUnscheduled(
-                            commandHearing.getId(),
-                            commandToDomainConverter.buildHearingType(commandHearing.getType()),
-                            commandToDomainConverter.mapToListedCases(commandHearing, commandHearing.getProsecutionCases()),
-                            commandHearing.getCourtCentre().getId(),
-                            commandToDomainConverter.getJudicialRoles(commandHearing),
-                            commandHearing.getCourtCentre().getRoomId(),
-                            commandHearing.getListingDirections(),
-                            commandToDomainConverter.getJurisdictionType(commandHearing),
-                            commandHearing.getProsecutorDatesToAvoid(),
-                            commandHearing.getReportingRestrictionReason(),
-                            CommandToDomainConverter.extractStartDate(commandHearing),
-                            nonNull(commandHearing.getEndDate()) ? LocalDate.parse(commandHearing.getEndDate()) : null,
-                            commandToDomainConverter.getCourtCentreDefaults(courtCentres, commandHearing),
-                            commandToDomainConverter.getCourtApplications(commandHearing),
-                            commandToDomainConverter.getCourtApplicationPartyListingNeeds(commandHearing),
-                            hearingTypesIdDurationMap.get(commandHearing.getType().getId().toString()),
-                            weekCommencingStartDate,
-                            weekCommencingEndDate,
-                            weekCommencingDurationInWeeks,
-                            commandToDomainConverter.convertTypeOfList(commandHearing.getTypeOfList()));
-
-            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
-            return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(events) : events;
-        });
+        updateHearingEventStream(command, commandHearing.getId(), (Hearing hearing) -> hearing.listUnscheduled(
+                commandHearing.getId(),
+                commandToDomainConverter.buildHearingType(commandHearing.getType()),
+                commandToDomainConverter.mapToListedCases(commandHearing, commandHearing.getProsecutionCases()),
+                commandHearing.getCourtCentre().getId(),
+                commandToDomainConverter.getJudicialRoles(commandHearing),
+                commandHearing.getCourtCentre().getRoomId(),
+                commandHearing.getListingDirections(),
+                commandToDomainConverter.getJurisdictionType(commandHearing),
+                commandHearing.getProsecutorDatesToAvoid(),
+                commandHearing.getReportingRestrictionReason(),
+                CommandToDomainConverter.extractStartDate(commandHearing),
+                nonNull(commandHearing.getEndDate()) ? LocalDate.parse(commandHearing.getEndDate()) : null,
+                commandToDomainConverter.getCourtCentreDefaults(courtCentres, commandHearing),
+                commandToDomainConverter.getCourtApplications(commandHearing),
+                commandToDomainConverter.getCourtApplicationPartyListingNeeds(commandHearing),
+                hearingTypesIdDurationMap.get(commandHearing.getType().getId().toString()),
+                weekCommencingStartDate,
+                weekCommencingEndDate,
+                weekCommencingDurationInWeeks,
+                commandToDomainConverter.convertTypeOfList(commandHearing.getTypeOfList())));
     }
 
     private void updateHearingEventStream(final JsonEnvelope command, final UUID hearingId,

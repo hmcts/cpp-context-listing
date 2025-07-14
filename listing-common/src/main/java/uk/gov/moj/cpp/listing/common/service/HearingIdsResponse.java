@@ -1,9 +1,13 @@
 package uk.gov.moj.cpp.listing.common.service;
 
+import static java.util.Collections.emptyList;
+
 import java.util.List;
 import java.util.StringJoiner;
 
 public class HearingIdsResponse{
+
+    public static final HearingIdsResponse EMPTY_HEARING_ID_RESPONSE = new HearingIdsResponse(emptyList(), 0L, 0L);
 
     private final long pageCount;
     private final List<IdResponse> uuids;

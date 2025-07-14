@@ -6,6 +6,7 @@ import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static javax.json.Json.createObjectBuilder;
+import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.lang3.BooleanUtils.isFalse;
 import static org.apache.commons.lang3.BooleanUtils.isTrue;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -13,6 +14,8 @@ import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter.PANEL_ADULT_YOUTH;
+import static uk.gov.moj.cpp.listing.common.service.HearingIdsResponse.EMPTY_HEARING_ID_RESPONSE;
+
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -128,7 +131,7 @@ public class RangeSearchQuery {
 
         final Long totalCount = !(hearings.isEmpty()) ? hearings.get(0).getTotalCount() : 0;
 
-        return buildHearingsResponse(query, params.allocated(), params.courtRoomId(), params.startDate(), hearings, totalCount, params.paginationParameter());
+        return buildHearingsResponse(query, params.allocated(), params.courtRoomId(), params.startDate(), hearings, totalCount, EMPTY_HEARING_ID_RESPONSE, params.paginationParameter());
     }
 
 
@@ -150,11 +153,18 @@ public class RangeSearchQuery {
                 createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings)));
     }
 
-    private JsonEnvelope buildHearingsResponse(final JsonEnvelope query, final boolean allocated, final String courtRoomId, final String startDate, final List<Hearing> hearings, final Long totalCount, final PaginationParameter paginationParameter) {
+    private JsonEnvelope buildHearingsResponse(final JsonEnvelope query,
+                                               final boolean allocated,
+                                               final String courtRoomId,
+                                               final String startDate,
+                                               final List<Hearing> hearings,
+                                               final Long totalCount,
+                                               final HearingIdsResponse hearingIdsResponse,
+                                               final PaginationParameter paginationParameter) {
         final List<Notes> notes = notesService.findNotes(allocated, courtRoomId, startDate, hearings);
 
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
-                createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
+                createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings, hearingIdsResponse))
                         .add("notes", listToJsonArrayConverter.convert(notes))
                         .add("results", totalCount)
                         .add("pageCount", toPageCount(totalCount, paginationParameter.getPageSize())));
@@ -294,35 +304,33 @@ public class RangeSearchQuery {
 
 
      private JsonEnvelope getCourtSchedulerHearings(final JsonEnvelope query , final boolean allocated, final String ouCode, final Optional<String> courtSessionOptional, final String courtRoomId, final String startDate, final String endDate, final Optional<String> businessType, final String panel, final PaginationParameter paginationParameter) {
-        final HearingIdsResponse hearingCourtScheduleIds = courtSchedulerServiceAdapter.getCourtSchedulerHearings(ouCode, courtSessionOptional, courtRoomId, startDate, endDate, businessType, panel, paginationParameter.getPageSize(), paginationParameter.getPageNumber());
-        logger.info("CourtScheduler Hearings response : {}", hearingCourtScheduleIds);
-        final List<Hearing> soredtedHearingList = hearingCourtScheduleIds.getUuids()==null || hearingCourtScheduleIds.getUuids().isEmpty()? emptyList(): enrichAllCourtSchedulerHearingIdsIntoHearings(hearingCourtScheduleIds.getUuids());
-        logger.info("getCourtSchedulerHearings found {} hearings", soredtedHearingList.size());
-        return buildHearingsResponse(query, allocated, courtRoomId, startDate,soredtedHearingList, hearingCourtScheduleIds.getResults(), paginationParameter);
+        final HearingIdsResponse hearingIdsResponse = courtSchedulerServiceAdapter.getCourtSchedulerHearings(ouCode, courtSessionOptional, courtRoomId, startDate, endDate, businessType, panel, paginationParameter.getPageSize(), paginationParameter.getPageNumber());
+        logger.info("CourtScheduler Hearings response : {}", hearingIdsResponse);
+        final List<Hearing> enrichedHearingList = isEmpty(hearingIdsResponse.getUuids())
+                ? emptyList() : enrichAllCourtSchedulerHearingIdsIntoHearings(hearingIdsResponse.getUuids());
+        logger.info("getCourtSchedulerHearings found {} hearings", enrichedHearingList.size());
+        return buildHearingsResponse(query, allocated, courtRoomId, startDate, enrichedHearingList, (long) enrichedHearingList.size(), hearingIdsResponse, paginationParameter);
     }
 
 
     private List<Hearing> enrichAllCourtSchedulerHearingIdsIntoHearings(final List<IdResponse> hearingIds) {
 
-        final List<Hearing> hearings = repository.findAllCourtSchedulerHearingByIds(hearingIds.stream().map(a->a.hearingId()).toList());
-        final HashMap<UUID, Hearing> hearingMap = new HashMap<>();
-        hearings.forEach(h -> hearingMap.put(h.getId(), h));
+        final List<Hearing> hearings = repository.findAllCourtSchedulerHearingByIds(hearingIds.stream().map(a -> a.hearingId()).toList());
+        final HashMap<UUID, Hearing> hearingsById = new HashMap<>();
+        hearings.forEach(h -> hearingsById.put(h.getId(), h));
 
-        List<Hearing> sortedHearing = new ArrayList<>();
+        final List<Hearing> enrichedHearings = new ArrayList<>();
         hearingIds.forEach(id -> {
-            final Hearing fromMap = hearingMap.get(id.hearingId());
-
-            if(fromMap !=null){
-
-                fromMap.setHearingDate(id.hearingDate());
-                fromMap.setHearingDayCount(id.hearingDayCount());
-                fromMap.setHearingDayPosition(id.hearingDayPosition());
-
-                sortedHearing.add(fromMap);
+            final Hearing hearing = hearingsById.get(id.hearingId());
+            if (hearing != null) {
+                hearing.setHearingDate(id.hearingDate());
+                hearing.setHearingDayCount(id.hearingDayCount());
+                hearing.setHearingDayPosition(id.hearingDayPosition());
+                enrichedHearings.add(hearing);
             }
         });
 
-        return sortedHearing;
+        return enrichedHearings;
     }
 
     private boolean isMags(final String jurisdictionType) {
@@ -362,7 +370,7 @@ public class RangeSearchQuery {
 
         final Long totalCount = !(hearings.isEmpty()) ? hearings.get(0).getTotalCount() : 0;
 
-        return buildHearingsResponse(query, params.allocated(), params.courtRoomId(), params.startDate(), hearings, totalCount, params.paginationParameter());
+        return buildHearingsResponse(query, params.allocated(), params.courtRoomId(), params.startDate(), hearings, totalCount, EMPTY_HEARING_ID_RESPONSE, params.paginationParameter());
     }
 
     private RangeSearchQueryParams rangeQueryParams(final JsonEnvelope query) {

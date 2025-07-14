@@ -12,7 +12,7 @@ import javax.persistence.Table;
 @SuppressWarnings({"squid:S1948", "pmd:BeanMembersShouldSerialize", "squid:S1067"})
 @Entity
 @Table(name = "cache_refdata_courtroom")
-public class CacheRefdataCourtroom implements Serializable {
+public class CacheRefDataCourtroom implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -23,11 +23,11 @@ public class CacheRefdataCourtroom implements Serializable {
     @Column(name = "courtroom_name")
     private String courtroomName;
 
-    public CacheRefdataCourtroom() {
+    public CacheRefDataCourtroom() {
         // for JPA
     }
 
-    public CacheRefdataCourtroom(final UUID id, final String courtroomName) {
+    public CacheRefDataCourtroom(final UUID id, final String courtroomName) {
         this.id = id;
         this.courtroomName = courtroomName;
     }
@@ -56,7 +56,7 @@ public class CacheRefdataCourtroom implements Serializable {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final CacheRefdataCourtroom that = (CacheRefdataCourtroom) o;
+        final CacheRefDataCourtroom that = (CacheRefDataCourtroom) o;
         return Objects.equals(id, that.id) &&
                 Objects.equals(courtroomName, that.courtroomName);
     }
@@ -87,8 +87,8 @@ public class CacheRefdataCourtroom implements Serializable {
         }
 
 
-        public CacheRefdataCourtroom build() {
-            return new CacheRefdataCourtroom(id, courtroomName);
+        public CacheRefDataCourtroom build() {
+            return new CacheRefDataCourtroom(id, courtroomName);
         }
     }
 }

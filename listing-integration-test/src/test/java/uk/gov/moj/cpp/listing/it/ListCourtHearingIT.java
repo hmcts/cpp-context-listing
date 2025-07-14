@@ -25,7 +25,6 @@ import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.JudicialRoleData;
-import uk.gov.moj.cpp.listing.utils.StagingHmiStub;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -73,7 +72,7 @@ public class ListCourtHearingIT extends AbstractIT {
     @Test
     public void shouldListHearingWithAdjournedDateSingleCountBasedSlotHmiEnabled() {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1));
-        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
     }
 
@@ -100,7 +99,7 @@ public class ListCourtHearingIT extends AbstractIT {
         stubGetProvisionalBookedSlotsMultipleCourtSchedulesCountBased();
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1));
-        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
     }
 
@@ -120,7 +119,7 @@ public class ListCourtHearingIT extends AbstractIT {
         stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased();
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1));
-        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
     }
 
@@ -158,7 +157,7 @@ public class ListCourtHearingIT extends AbstractIT {
         stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtRoomSchedules, courtCentreId);
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtRoomSchedules.keySet().toArray(String[]::new), courtRoomSchedules.values().toArray(String[]::new));
     }
 
@@ -196,7 +195,7 @@ public class ListCourtHearingIT extends AbstractIT {
         stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtRoomSchedules, courtCentreId);
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtRoomSchedules.keySet().toArray(String[]::new), courtRoomSchedules.values().toArray(String[]::new));
     }
 
@@ -223,25 +222,7 @@ public class ListCourtHearingIT extends AbstractIT {
     public void shouldListHearingWithAllocatedDataHmiEnabled() {
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
-        verifyJudiciaryAssignedToAllocatedHearingFromAPI(hearingsData);
-    }
-
-    @Test
-    public void shouldListHearingWithAllocatedWhenCourtroomFoundButNoSessionsAvailablefromHmi() {
-        StagingHmiStub.stubHmiNoSessionsAvailable();
-        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
-        verifyJudiciaryAssignedToAllocatedHearingFromAPI(hearingsData);
-    }
-
-    @Test
-    public void shouldListHearingAllocatedWithJudiciaryInfoWhenCourtroomFoundAndSessionsAvailablefromHmi() {
-        StagingHmiStub.stubHmiMagsSession();
-        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
         verifyJudiciaryAssignedToAllocatedHearingFromAPI(hearingsData);
     }
 
@@ -291,7 +272,7 @@ public class ListCourtHearingIT extends AbstractIT {
     @Test
     public void shouldListHearingWithShadowListedFlagHmiEnabled() {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithShadowListedOffences());
-        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
         verifyShadowListingFlagAndReportingRestrictions(listCourtHearingSteps);
     }
 
@@ -307,7 +288,7 @@ public class ListCourtHearingIT extends AbstractIT {
     @Test
     public void shouldExtendHearingWithShadowListedFlagHmiEnabled() {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithShadowListedOffences());
-        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
         listCourtHearingSteps.whenProgressionHearingExtended();
         verifyShadowListingFlagAndReportingRestrictions(listCourtHearingSteps);

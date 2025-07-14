@@ -71,15 +71,6 @@ subscriptions_descriptor:
         - name: public.listing.court-application-added-for-hearing
           schema_uri: http://justice.gov.uk/listing/courts/public.listing.court-application-added-for-hearing
 
-        - name: public.listing.requested-hearing-from-staging-hmi
-          schema_uri: http://justice.gov.uk/listing/courts/public.listing.requested-hearing-from-staging-hmi.json
-
-        - name: public.listing.updated-hearing-in-staging-hmi
-          schema_uri: http://justice.gov.uk/listing/courts/public.listing.updated-hearing-in-staging-hmi.json
-
-        - name: public.listing.deleted-hearing-in-staging-hmi
-          schema_uri: http://justice.gov.uk/listing/events/public.listing.deleted-hearing-in-staging-hmi.json
-
         - name: public.listing.hearing-days-changed-for-hearing
           schema_uri: http://justice.gov.uk/listing/courts/hearing-days-changed-for-hearing.json
 

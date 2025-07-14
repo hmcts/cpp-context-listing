@@ -157,3 +157,22 @@ rule "Query - API - listing.get.cache-refdata-courtrooms-refresh"
   then
     $outcome.setSuccess(true);
 end
+
+
+rule "Query - API - listing.update.add-courtroom"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.update.add-courtroom");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.SYSTEM_USERS));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.update.close-courtroom"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.update.close-courtroom");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.SYSTEM_USERS));
+  then
+    $outcome.setSuccess(true);
+end

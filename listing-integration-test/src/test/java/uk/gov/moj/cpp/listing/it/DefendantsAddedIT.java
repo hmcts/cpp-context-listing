@@ -29,10 +29,10 @@ public class DefendantsAddedIT extends AbstractIT {
     }
 
     @Test
-    public void shouldAddDefendantsFollowingPublicDefendantsAddedEventFromProgressionAndHearingIsUnallocatedHmiEnabled() {
+    public void shouldAddDefendantsFollowingPublicDefendantsAddedEventFromProgressionAndHearingIsUnallocatedEnabled() {
         HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
@@ -61,7 +61,7 @@ public class DefendantsAddedIT extends AbstractIT {
     public void shouldAddDefendantsFollowingPublicDefendantsAddedEventFromProgressionAndHearingIsAllocatedHmiEnabled() {
         HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();

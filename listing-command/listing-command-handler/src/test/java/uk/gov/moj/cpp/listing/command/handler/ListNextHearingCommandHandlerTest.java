@@ -40,7 +40,6 @@ import uk.gov.justice.listing.courts.RemoveSelectedOffencesFromExistingHearing;
 import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.listing.events.AllocatedHearingDeleted;
 import uk.gov.justice.listing.events.DeleteNextHearingRequested;
-import uk.gov.justice.listing.events.DeletedHearingInStagingHmi;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.HearingDaysChangedForHearing;
@@ -55,7 +54,6 @@ import uk.gov.justice.listing.events.OffencesRemovedFromHearing;
 import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.Type;
 import uk.gov.justice.listing.events.UnallocatedHearingDeleted;
-import uk.gov.justice.listing.events.UpdatedHearingInStagingHmi;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
@@ -68,7 +66,6 @@ import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamEx
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
-import uk.gov.moj.cpp.listing.command.service.HmiService;
 import uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter;
 import uk.gov.moj.cpp.listing.common.service.ProvisionalBookingService;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
@@ -114,8 +111,6 @@ public class ListNextHearingCommandHandlerTest {
             OffencesRemovedFromHearing.class,
             DeleteNextHearingRequested.class,
             NextHearingDayChanged.class,
-            UpdatedHearingInStagingHmi.class,
-            DeletedHearingInStagingHmi.class,
             OffencesRemovedFromExistingAllocatedHearing.class);
 
     @Mock
@@ -148,9 +143,6 @@ public class ListNextHearingCommandHandlerTest {
 
     @Mock
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
-
-    @Mock
-    private HmiService hmiService;
 
     @Test
     public void shouldHandleListNextCourtHearings() throws EventStreamException {
@@ -295,7 +287,7 @@ public class ListNextHearingCommandHandlerTest {
     }
 
     @Test
-    public void shouldHandleDeleteHearingWhenAllOffencesAssosiatedWithSeedId() throws EventStreamException {
+    public void shouldHandleDeleteHearingWhenAllOffencesAssociatedWithSeedId() throws EventStreamException {
         final JsonObject commandPayload = createObjectBuilder().build();
         final JsonEnvelope commandEnvelope = createEnvelope("listing.command.delete-seeded-hearing", commandPayload);
 
@@ -337,26 +329,18 @@ public class ListNextHearingCommandHandlerTest {
                         .build());
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearingAggregate);
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
-        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
 
         listNextHearingCommandHandler.deleteSeededHearing(commandEnvelope);
 
         final List<JsonEnvelope> events = verifyAppendAndGetArgumentFrom(eventStream).collect(Collectors.toList());
 
-        assertThat(events.size(), is(2));
+        assertThat(events.size(), is(1));
         final JsonEnvelope deletedEventProduced = events.get(0);
         assertThat(deletedEventProduced.metadata().name(), is("listing.events.unallocated-hearing-deleted"));
         final JsonObject deleteEventObject = deletedEventProduced.payloadAsJsonObject();
         assertThat(deleteEventObject.getString("hearingId"), is(hearingId.toString()));
         assertThat(deleteEventObject.getJsonArray("caseIds").size(), is(1));
         assertThat(deleteEventObject.getJsonArray("caseIds").getString(0), is(caseId.toString()));
-
-        final JsonEnvelope deletedEventForHmi = events.get(1);
-        assertThat(deletedEventForHmi.metadata().name(), is("listing.events.deleted-hearing-in-staging-hmi"));
-        final JsonObject deletedEventForHmiObject = deletedEventForHmi.payloadAsJsonObject();
-        assertThat(deletedEventForHmiObject.getString("hearingId"), is(hearingId.toString()));
-
-
     }
 
     @Test
@@ -433,13 +417,12 @@ public class ListNextHearingCommandHandlerTest {
                         .build());
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearingAggregate);
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
-        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
 
         listNextHearingCommandHandler.deleteSeededHearing(commandEnvelope);
 
         final List<JsonEnvelope> events = verifyAppendAndGetArgumentFrom(eventStream).collect(Collectors.toList());
 
-        assertThat(events.size(), is(2));
+        assertThat(events.size(), is(1));
         final JsonEnvelope deletedEventProduced = events.get(0);
         assertThat(deletedEventProduced.metadata().name(), is("listing.events.offences-removed-from-hearing"));
         final JsonObject unallocateEventObject = deletedEventProduced.payloadAsJsonObject();
@@ -447,11 +430,6 @@ public class ListNextHearingCommandHandlerTest {
         assertThat(unallocateEventObject.getString("seedingHearingId"), is(seedingHearingId.toString()));
         assertThat(unallocateEventObject.containsKey("unallocated"), is(true));
         assertThat(unallocateEventObject.getJsonArray("caseIdsSeededByOnlySeedingHearingId").size(), is(1));
-
-        final JsonEnvelope deletedEventForHmi = events.get(1);
-        assertThat(deletedEventForHmi.metadata().name(), is("listing.events.deleted-hearing-in-staging-hmi"));
-        final JsonObject deletedEventForHmiObject = deletedEventForHmi.payloadAsJsonObject();
-        assertThat(deletedEventForHmiObject.getString("hearingId"), is(hearingId.toString()));
     }
 
     @Test

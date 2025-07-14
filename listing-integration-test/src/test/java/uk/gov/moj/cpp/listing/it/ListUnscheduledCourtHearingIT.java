@@ -66,16 +66,6 @@ public class ListUnscheduledCourtHearingIT extends AbstractIT {
     }
 
     @Test
-    public void shouldNotListHearingWhenAllHmiEnabledCourtCentres() {
-        final HearingsData hearingsData = hearingsData();
-        final ListUnscheduledCourtHearingSteps listCourtHearingSteps = new ListUnscheduledCourtHearingSteps(hearingsData);
-        listCourtHearingSteps.whenCaseIsSubmittedForUnscheduledListing();
-
-        final Matcher<? super ReadContext> noHearingPresentMatcher = withJsonPath("hearings", hasSize(0));
-        pollForUnscheduledHearings(getLoggedInUser(), hearingsData.getHearingData().get(0).getCourtCentreId(), noHearingPresentMatcher);
-    }
-
-    @Test
     public void shouldOnlyListHearingForNotHmiEnabledCourtCentres() {
         final HearingsData hearingsData = mixtureHmiEnabledAndNotHmiEnabledHearingsData();
         final ListUnscheduledCourtHearingSteps listCourtHearingSteps = new ListUnscheduledCourtHearingSteps(hearingsData);

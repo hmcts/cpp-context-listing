@@ -52,9 +52,7 @@ import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
-import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreHmiListingEnabled;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
-import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtWithHmiListingEnabledCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorizedUserToQueryCaseByDefendantAndHearingDate;
@@ -102,6 +100,7 @@ import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
+import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.ApplicantRespondentData;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
@@ -111,6 +110,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.steps.data.OffenceData;
+import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -161,8 +161,8 @@ public class ListCourtHearingSteps extends AbstractIT {
     private static final String PUBLIC_LISTING_HEARING_LISTED = "public.listing.hearing-listed";
     private static final String PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED = "public.listing.hearing-partially-updated";
     private static final String PUBLIC_LISTING_HEARING_CHANGES_SAVED = "public.listing.hearing-changes-saved";
-    private static final String LISTING_EVENTS_REQUESTED_HEARING_FROM_STAGING_HMI = "listing.events.requested-hearing-from-staging-hmi";
     private static final String PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING = "public.listing.court-application-added-for-hearing";
+    private static final String LISTING_EVENTS_HEARING_DAY_COURT_SCHEDULE_UPDATED = "listing.events.hearing-day-court-schedule-updated";
 
     protected static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
@@ -186,11 +186,11 @@ public class ListCourtHearingSteps extends AbstractIT {
 
     private HearingsData hearingsData;
     private final JmsMessageConsumerClient privateMessageConsumerHearingUpdatedToCase;
+    private final JmsMessageConsumerClient privateMessageConsumerHearingDayScheduleUpdated;
     private final JmsMessageConsumerClient publicMessageConsumerHearingConfirmedForExtendHearing;
     private final JmsMessageConsumerClient publicEventHearingListed;
     private final JmsMessageConsumerClient publicMessageConsumerHearingPartiallyUpdated;
     private final JmsMessageConsumerClient publicMessageConsumerHearingChangesSaved;
-    private final JmsMessageConsumerClient privateEventMessageConsumerRequestedHearingFromStagingHmi;
 
     private final JmsMessageProducerClient publicMessageProducerProgressionHearingExtendedEvent;
     private JmsMessageConsumerClient publicMessageConsumerCourtApplicationAddedForHearing;
@@ -205,14 +205,13 @@ public class ListCourtHearingSteps extends AbstractIT {
         this.hearingsData = hearingsData;
 
         privateMessageConsumerHearingUpdatedToCase = privateEvents.createPrivateConsumer(EVENT_SELECTED_HEARING_UPDATED_TO_CASE);
+        privateMessageConsumerHearingDayScheduleUpdated = privateEvents.createPrivateConsumer(LISTING_EVENTS_HEARING_DAY_COURT_SCHEDULE_UPDATED);
         publicMessageConsumerHearingConfirmedForExtendHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED);
         publicMessageProducerProgressionHearingExtendedEvent = publicEvents.createPublicProducer();
         publicEventHearingListed = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_LISTED);
         publicMessageConsumerHearingPartiallyUpdated = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED);
         publicMessageConsumerHearingChangesSaved = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_CHANGES_SAVED);
         publicMessageConsumerCourtApplicationAddedForHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
-        privateEventMessageConsumerRequestedHearingFromStagingHmi = privateEvents.createPrivateConsumer(LISTING_EVENTS_REQUESTED_HEARING_FROM_STAGING_HMI);
-
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
@@ -220,8 +219,8 @@ public class ListCourtHearingSteps extends AbstractIT {
         privateMessageConsumerHearingUpdatedToCase = null;
         publicMessageConsumerHearingConfirmedForExtendHearing = null;
         publicMessageConsumerHearingChangesSaved = null;
-        privateEventMessageConsumerRequestedHearingFromStagingHmi = null;
         publicMessageProducerProgressionHearingExtendedEvent = null;
+        privateMessageConsumerHearingDayScheduleUpdated = null;
         this.hearingsData = hearingsData;
 
         publicEventHearingListed = publicEvents.createPrivateConsumer(PUBLIC_LISTING_HEARING_LISTED);
@@ -232,12 +231,12 @@ public class ListCourtHearingSteps extends AbstractIT {
 
     public ListCourtHearingSteps() {
         privateMessageConsumerHearingUpdatedToCase = privateEvents.createPrivateConsumer(EVENT_SELECTED_HEARING_UPDATED_TO_CASE);
+        privateMessageConsumerHearingDayScheduleUpdated = privateEvents.createPrivateConsumer(LISTING_EVENTS_HEARING_DAY_COURT_SCHEDULE_UPDATED);
         publicMessageConsumerHearingConfirmedForExtendHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED);
         publicMessageProducerProgressionHearingExtendedEvent = publicEvents.createPublicProducer();
         publicEventHearingListed = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_LISTED);
         publicMessageConsumerHearingPartiallyUpdated = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED);
         publicMessageConsumerHearingChangesSaved = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_CHANGES_SAVED);
-        privateEventMessageConsumerRequestedHearingFromStagingHmi = privateEvents.createPrivateConsumer(LISTING_EVENTS_REQUESTED_HEARING_FROM_STAGING_HMI);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -265,12 +264,6 @@ public class ListCourtHearingSteps extends AbstractIT {
 
     public void whenCaseIsSubmittedForListing() {
         final Response response = getResponseCaseSubmittedForListing(false);
-        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
-    }
-
-
-    public void whenCaseIsSubmittedForListingHmiEnabled() {
-        final Response response = getResponseCaseSubmittedForListingHmiEnabled(false);
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
@@ -348,26 +341,6 @@ public class ListCourtHearingSteps extends AbstractIT {
         return restClient.postCommand(listCaseForHearingUrl, MEDIA_TYPE_LIST_COURT_HEARING, request, getLoggedInHeader());
     }
 
-    private Response getResponseCaseSubmittedForListingHmiEnabled(final boolean isStandaloneApp) {
-
-        stubReferenceDataForFirstHearingHmiEnabled();
-
-        final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
-                (readConfig().getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
-
-        ListCourtHearing listCourtHearingData;
-        if (isStandaloneApp) {
-            listCourtHearingData = getListCourtHearingDataStandaloneApplication(hearingsData);
-        } else {
-            listCourtHearingData = getListCourtHearingData(hearingsData);
-        }
-        final JsonObject listCourtHearingJsonObject = (JsonObject) objectToJsonValueConverter.convert(listCourtHearingData);
-
-        request = listCourtHearingJsonObject.toString();
-
-        return restClient.postCommand(listCaseForHearingUrl, MEDIA_TYPE_LIST_COURT_HEARING, request, getLoggedInHeader());
-    }
-
     private Response getResponseCaseSubmittedForListing(final boolean isStandaloneApp, final UUID judicialId) {
 
         stubReferenceDataForFirstHearing(judicialId);
@@ -420,19 +393,6 @@ public class ListCourtHearingSteps extends AbstractIT {
         hearingsData.getHearingData().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
         hearingsData.getHearingData().stream().filter(hd -> hd.getJudiciary() != null)
                 .forEach(hearingData -> stubGetReferenceDataJudiciaries(judicialId));
-    }
-
-    protected void stubReferenceDataForFirstHearingHmiEnabled() {
-        hearingsData.getHearingData().stream()
-                .map(HearingData::getCourtCentreId)
-                .forEach(cci -> {
-                    stubGetReferenceDataCourtCentreHmiListingEnabled(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, hearingsData.getHearingData().get(0).getCourtRoomId(), hearingsData.getHearingData().get(0).getName()));
-                    stubGetReferenceDataCourtWithHmiListingEnabledCentreById(cci);
-                    stubGetReferenceDataCourtMappings(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, hearingsData.getHearingData().get(0).getCourtRoomId(), hearingsData.getHearingData().get(0).getName()));
-                });
-        hearingsData.getHearingData().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
-        hearingsData.getHearingData().stream().filter(hd -> hd.getJudiciary() != null)
-                .forEach(hearingData -> stubGetReferenceDataJudiciaries(hearingData.getJudiciary().get(0).getJudicialId()));
     }
 
     protected void stubReferenceDataForFirstHearing() {
@@ -524,6 +484,16 @@ public class ListCourtHearingSteps extends AbstractIT {
                         withJsonPath(hearingIdFilter + "startDate", hasItem(hearingData.getHearingStartDate().toString())),
                         withJsonPath(hearingIdFilter + "hearingLanguage", hasItem("ENGLISH"))
                 });
+    }
+
+    public void verifyHearingDayCourtScheduledUpdated(final UUID updatedCourtScheduleId) {
+        final UUID hearingId = hearingsData.getHearingData().get(0).getId();
+        final String url = generateUrlForFindingAHearingById(hearingId.toString());
+        final ResponseData resp = poll(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(status().is(OK),
+                        payload().isJson(
+                                allOf(withJsonPath("$.id", equalTo(hearingId.toString())),
+                                        withJsonPath("$.hearingDays[0].courtScheduleId", equalTo(updatedCourtScheduleId.toString())))));
     }
 
     public void verifyQueryAPIFindCaseByPersonDefendantAndHearingDate() {
@@ -728,6 +698,11 @@ public class ListCourtHearingSteps extends AbstractIT {
         });
     }
 
+    public void verifyHearingUpdatedWithHearingDaysCourtSchedule(final UpdatedHearingData updatedHearingData) {
+        pollForHearing(updatedHearingData.getCourtCentreId().toString(), true, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[0].id", equalTo(updatedHearingData.getHearingId().toString())),
+        });
+    }
 
     public void verifyHearingListedWithHearingDays(final boolean isAllocated, final String[] courtScheduleSlots, final String[] courtRoomIds) {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
@@ -2115,6 +2090,13 @@ public class ListCourtHearingSteps extends AbstractIT {
         assertThat(jsonResponse.get("hearingId"), is(hearingId.toString()));
     }
 
+    public void verifyHearingDayCourtScheduleCarriedOverToCommand(LocalDate hearingDate, UUID courtScheduleId) {
+        JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingDayScheduleUpdated);
+        List<Map<String, String>> schedules = jsonResponse.getList("hearingDayCourtSchedules");
+        assertThat(schedules.get(0).get("courtScheduleId"), is(courtScheduleId.toString()));
+        assertThat(schedules.get(0).get("hearingDate"), is(hearingDate.toString()));
+    }
+
     public void verifyPublicEventHearingConfirmed() {
         final JsonPath jsonResponse = getHearingConfirmedPublicEventPayload();
 
@@ -2284,11 +2266,6 @@ public class ListCourtHearingSteps extends AbstractIT {
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(matchers)));
-    }
-
-    public void verifyPrivateEventRequestedHearingFromStagingHmiInActiveMQ() {
-        final JsonPath jsonResponse = retrieveMessage(privateEventMessageConsumerRequestedHearingFromStagingHmi);
-        assertThat(((ArrayList) ((Map) jsonResponse.get("hearing")).get("listedCases")).size(), is(2));
     }
 
     public void verifyHearingForCourtSchedulerCourtSessionAndBusinessType(final String jurisdictionType, final String courtSession, final String businessType, final boolean allocated, final Matcher... matchers) {

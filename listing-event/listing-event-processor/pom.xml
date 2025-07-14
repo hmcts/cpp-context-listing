@@ -149,17 +149,6 @@
             <artifactId>test-utils-framework-api</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>uk.gov.moj.cpp.staging.hmi</groupId>
-            <artifactId>staginghmi-common</artifactId>
-            <version>${staginghmi.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>uk.gov.moj.cpp.staging.hmi</groupId>
-                    <artifactId>staginghmi-domain-event</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
     </dependencies>
 
     <build>
@@ -264,24 +253,6 @@
                                 <artifactId>*</artifactId>
                             </exclusion>
                         </exclusions>
-                    </dependency>
-                    <dependency>
-                        <groupId>uk.gov.moj.cpp.staging.hmi</groupId>
-                        <artifactId>staginghmi-query-api</artifactId>
-                        <version>${staginghmi.version}</version>
-                        <classifier>raml</classifier>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>*</groupId>
-                                <artifactId>*</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                    <dependency>
-                        <groupId>uk.gov.moj.cpp.staging.hmi</groupId>
-                        <artifactId>staginghmi-command-api</artifactId>
-                        <version>${staginghmi.version}</version>
-                        <classifier>raml</classifier>
                     </dependency>
                 </dependencies>
             </plugin>

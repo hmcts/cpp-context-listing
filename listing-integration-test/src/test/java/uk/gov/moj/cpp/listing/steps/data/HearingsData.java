@@ -1,11 +1,13 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
+import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.singleHearingsData;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.singleNotHmiEnabledHearingsData;
 
 import uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory;
 
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -105,6 +107,17 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary());
     }
 
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciaryWithCourtCenterForMagistrate(final UUID courtCenter) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCenter, MAGISTRATES_JURISDICTION));
+    }
+
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciaryWithCourtCenterForMagistrate(final UUID courtCenter,
+                                                                                                      final UUID courtRoomId,
+                                                                                                      final LocalDate hearingEndDate,
+                                                                                                      final ZonedDateTime hearingStartTime) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCenter, MAGISTRATES_JURISDICTION, courtRoomId, hearingEndDate, hearingStartTime));
+    }
+
     public static HearingsData singleHearingsDataWithAllocationDataAndJudiciary() {
         return new HearingsData(HearingsDataFactory.singleHearingsDataWithAllocationDataAndJudiciary());
     }
@@ -151,6 +164,16 @@ public class HearingsData {
                                                                           final UUID courtRoomId) {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData, courtCentreId, courtRoomId));
     }
+
+
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciary(final CaseAndDefendantData caseAndDefendantData,
+                                                                          final UUID courtCentreId,
+                                                                          final UUID courtRoomId,
+                                                                          final LocalDate hearingEndDate,
+                                                                          final ZonedDateTime hearingStartTime) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithDate(caseAndDefendantData, courtCentreId, courtRoomId, hearingEndDate, hearingStartTime));
+    }
+
 
     public static HearingsData hearingsDataWithUnAllocationDataAndJudiciary(final CaseAndDefendantData caseAndDefendantData) {
         return new HearingsData(HearingsDataFactory.hearingsDataWithUnAllocationDataAndJudiciary(caseAndDefendantData));

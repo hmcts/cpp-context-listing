@@ -16,7 +16,6 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
-import uk.gov.moj.cpp.listing.common.hmi.OrganisationUnitHMICache;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
@@ -42,14 +41,6 @@ import uk.gov.moj.cpp.listing.query.view.service.JsonNodeReader;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
-import javax.inject.Inject;
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import javax.persistence.NoResultException;
-import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -96,6 +87,15 @@ import static uk.gov.justice.services.messaging.JsonObjects.getString;
 import static uk.gov.justice.services.messaging.JsonObjects.toJsonArray;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.valueFor;
 import static uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria.MATCHED_DEFENDANTS;
+
+import javax.inject.Inject;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.NoResultException;
+import javax.ws.rs.NotFoundException;
 
 
 @SuppressWarnings({"squid:S1192", "squid:S00107", "squid:S1166"})
@@ -169,9 +169,6 @@ public class HearingQueryView {
 
     @Inject
     private ListToJsonArrayConverter<Notes> listToJsonArrayConverter;
-
-    @Inject
-    private OrganisationUnitHMICache organisationUnitHMICache;
 
     @Inject
     private JsonObjectToObjectConverter jsonObjectToObjectConverter;
@@ -267,16 +264,9 @@ public class HearingQueryView {
 
         final List<Hearing> hearings;
 
-        final Set<String> notHmiEnabledCourtCentreIdSet = organisationUnitHMICache.getNotHmiEnabledCourtCentreIdSet();
-
-        if(notHmiEnabledCourtCentreIdSet != null) {
-            LOGGER.info("HearingQueryView.notHmiEnabledCourtCentreIdSet size is {} ", notHmiEnabledCourtCentreIdSet.size());
-        }
-
         if (!isNullOrEmpty(courtCentreIdQueryParam)) {
             final Set<String> courtCentreIdSet = Stream.of(courtCentreIdQueryParam.split(","))
                     .map(String::trim)
-                    .filter(courtCentreId -> notHmiEnabledCourtCentreIdSet.contains(courtCentreId))
                     .collect(Collectors.toSet());
             if (!courtCentreIdSet.isEmpty()) {
                 hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam, courtCentreIdSet, paginationParameter.getOffSet(), paginationParameter.getPageSize());
@@ -284,11 +274,7 @@ public class HearingQueryView {
                 hearings = emptyList();
             }
         } else {
-            if (notHmiEnabledCourtCentreIdSet != null && !notHmiEnabledCourtCentreIdSet.isEmpty()) {
-                hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam, notHmiEnabledCourtCentreIdSet, paginationParameter.getOffSet(), paginationParameter.getPageSize());
-            } else {
                 hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam, paginationParameter.getOffSet(), paginationParameter.getPageSize());
-            }
         }
 
         final Long totalCount = !(hearings.isEmpty()) ? hearings.get(0).getTotalCount() : 0;

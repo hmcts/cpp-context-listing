@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.persistence.repository;
 
-import uk.gov.moj.cpp.listing.persistence.entity.CacheRefdataCourtroom;
+import uk.gov.moj.cpp.listing.persistence.entity.CacheRefDataCourtroom;
 
 import java.util.UUID;
 
@@ -10,9 +10,9 @@ import org.apache.deltaspike.data.api.Query;
 import org.apache.deltaspike.data.api.Repository;
 
 @Repository
-public interface CacheRefdataCourtroomRepository extends EntityRepository<CacheRefdataCourtroom, UUID> {
+public interface CacheRefDataCourtroomRepository extends EntityRepository<CacheRefDataCourtroom, UUID> {
 
     @Modifying
-    @Query("delete from CacheRefdataCourtroom")
+    @Query("delete from CacheRefDataCourtroom")
     int deleteAll();
 }

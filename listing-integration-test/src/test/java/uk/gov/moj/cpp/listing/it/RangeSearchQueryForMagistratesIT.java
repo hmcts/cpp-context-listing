@@ -15,7 +15,12 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMa
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON;
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetHearingIds;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubUpdateHearingSlots;
+import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
+import static uk.gov.moj.cpp.listing.utils.FileUtil.payloadToObject;
 
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.services.test.utils.core.http.RequestParams;
@@ -27,6 +32,9 @@ import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
+
+import javax.json.JsonArray;
+import javax.json.JsonObject;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,8 +57,15 @@ public class RangeSearchQueryForMagistratesIT extends AbstractIT {
         databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "listing_notes");
     }
 
+    @Override
+    public String toString() {
+        return "RangeSearchQueryForMagistratesIT{" +
+                "databaseCleaner=" + databaseCleaner +
+                '}';
+    }
+
     @Test
-    public void shouldReturnNotesAndHearingsForMagistratesRangeSearchIfHearingInCourtScheduler() {
+    public void shouldReturnNotesAndHearingsForMagistratesRangeSearchIfHearingInCourtScheduler() throws Exception {
         final UUID hearingId1 = UUID.fromString("51e0e229-f22e-4ab6-87fa-2b1c07f97028");
         final UUID hearingId2 = UUID.fromString("ed4f666a-866a-4fcb-8c3b-e89f6ce1e7e5");
 
@@ -69,7 +84,7 @@ public class RangeSearchQueryForMagistratesIT extends AbstractIT {
 
         final CaseAndDefendantData caseAndDefendantData2 = new CaseAndDefendantData(hearingId2, null, caseUrn2, masterDefendantId2, CASE_AND_MATCHED_DEFENDANTS, null, jurisdictionTypeMags,
                 caseUrnForLinkedCases2, caseUrnForLinkedCases2);
-
+        stubGetHearingIds(false);
         final UUID courtCentreId = randomUUID();
         final UUID courtRoomId = randomUUID();
         ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData1, courtCentreId, courtRoomId));
@@ -84,9 +99,8 @@ public class RangeSearchQueryForMagistratesIT extends AbstractIT {
         final Map<String, String> params = getParams();
         params.remove("panel");
         final String queryString = getQueryString(params);
-        stubGetHearingIds(false);
         final RequestParams requestParams = getCourtSchedulerRequestParams(queryString);
-        final ResponseData res = poll(requestParams).until(status().is(OK),
+        final ResponseData resp = poll(requestParams).until(status().is(OK),
                 payload().isJson(allOf(
                         withJsonPath("$.results", is(2)),
                         withJsonPath("$.pageCount", is(1)),
@@ -104,11 +118,16 @@ public class RangeSearchQueryForMagistratesIT extends AbstractIT {
                         withJsonPath("$.notes[0].note", notNullValue())
                 ))
         );
-        assertThat(res.getPayload(), is(notNullValue()));
+        JsonObject hearingsRespJsonObj = payloadToObject(resp.getPayload());
+        JsonArray hearingsJsonArr = hearingsRespJsonObj.getJsonArray("hearings");
+        JsonObject bookedSlotsJsonObj = payloadToObject(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON));
+        JsonArray bookedSlotsJsonArr = bookedSlotsJsonObj.getJsonArray("provisionalSlots");
+        JsonArray hearingDaysJsonArr = hearingsJsonArr.getJsonObject(0).getJsonArray("hearingDays");
+        assertThat(hearingDaysJsonArr.getJsonObject(0).getString("courtScheduleId"), is(bookedSlotsJsonArr.getJsonObject(0).getString("courtScheduleId")));
     }
 
     @Test
-    public void shouldRetunNothingForMagistrateRangeSearchIfNoHearingInCourtScheduler() {
+    public void shouldReturnNothingForMagistrateRangeSearchIfNoHearingInCourtScheduler() {
         final UUID hearingId1 = UUID.fromString("2329ea2b-b7dd-4aa7-97ba-951ac32aa635");
 
         final UUID masterDefendantId1 = randomUUID();

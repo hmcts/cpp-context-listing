@@ -60,11 +60,8 @@ import uk.gov.justice.listing.events.OffencesRemovedFromExistingUnallocatedHeari
 import uk.gov.justice.listing.events.OffencesRemovedFromHearing;
 import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIds;
 import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIdsV2;
-import uk.gov.justice.listing.events.RequestedHearingFromStagingHmi;
 import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.UnallocatedHearingDeleted;
-import uk.gov.justice.listing.events.UpdatedHearingInStagingHmi;
-import uk.gov.justice.listing.events.UpdatedHmiFieldsForHearing;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;

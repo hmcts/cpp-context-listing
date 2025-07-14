@@ -33,7 +33,6 @@ import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
-import uk.gov.moj.cpp.listing.command.service.HmiService;
 import uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.NonDefaultDayDurationBuilder;
 import uk.gov.moj.cpp.listing.command.utils.RotaSlotToNonDefaultDayConverter;
@@ -99,9 +98,6 @@ public class ListNextHearingCommandHandler {
 
     @Inject
     private HearingTypeFactory hearingTypeFactory;
-
-    @Inject
-    private HmiService hmiService;
 
     @SuppressWarnings("squid:S3655")
     @Handles("listing.command.list-next-hearings-enriched-v2")
@@ -233,11 +229,7 @@ public class ListNextHearingCommandHandler {
         final UUID hearingId = deleteSeededHearing.getHearingId();
         final UUID seedingHearingId = deleteSeededHearing.getSeedingHearingId();
 
-        updateHearingEventStream(command, deleteSeededHearing.getHearingId(), (Hearing hearing) -> {
-            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
-            final Stream<Object> deleteHearingForHmiStream = isHmiEnabled ? hearing.deleteHearingForHmi() : Stream.empty();
-            return Stream.of(hearing.deleteHearing(seedingHearingId, hearingId), deleteHearingForHmiStream).flatMap(i -> i);
-        });
+        updateHearingEventStream(command, deleteSeededHearing.getHearingId(), (Hearing hearing) -> hearing.deleteHearing(seedingHearingId, hearingId));
     }
 
     @Handles("listing.command.delete-next-hearings")
@@ -283,11 +275,7 @@ public class ListNextHearingCommandHandler {
         final UUID hearingId = removeOffencesFromExistingHearing.getHearingId();
         final UUID seedingHearingId = removeOffencesFromExistingHearing.getSeedingHearingId();
 
-        updateHearingEventStream(command, removeOffencesFromExistingHearing.getHearingId(), (Hearing hearing) -> {
-            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
-            final Stream<Object> events = hearing.removeOffencesFromExistingHearing(seedingHearingId, hearingId);
-            return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(events) : events;
-        });
+        updateHearingEventStream(command, removeOffencesFromExistingHearing.getHearingId(), (Hearing hearing) -> hearing.removeOffencesFromExistingHearing(seedingHearingId, hearingId));
     }
 
     @Handles("listing.command.remove-selected-offences-from-existing-hearing")
@@ -300,11 +288,7 @@ public class ListNextHearingCommandHandler {
         final RemoveSelectedOffencesFromExistingHearing removeSelectedOffencesFromExistingHearing = jsonObjectConverter.convert(command.payloadAsJsonObject(), RemoveSelectedOffencesFromExistingHearing.class);
         final UUID hearingId = removeSelectedOffencesFromExistingHearing.getHearingId();
 
-        updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
-            final Stream<Object> events = hearing.removeSelectedOffencesFromExistingHearing(hearingId, removeSelectedOffencesFromExistingHearing.getOffenceIds(), Hearing.SOURCE_HEARING, false);
-            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
-            return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(events) : events;
-        });
+        updateHearingEventStream(command, hearingId, (Hearing hearing) -> hearing.removeSelectedOffencesFromExistingHearing(hearingId, removeSelectedOffencesFromExistingHearing.getOffenceIds(), Hearing.SOURCE_HEARING, false));
     }
 
 

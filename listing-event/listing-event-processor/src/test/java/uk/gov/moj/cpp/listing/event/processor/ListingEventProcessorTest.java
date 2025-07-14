@@ -176,7 +176,6 @@ import uk.gov.moj.cpp.listing.event.processor.util.HearingObjectsListingToCoreCo
 import uk.gov.moj.cpp.listing.event.utils.EventBuilder;
 import uk.gov.moj.cpp.listing.event.utils.FileUtil;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
-import uk.gov.moj.cpp.staginghmi.common.StagingHmiService;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -361,8 +360,6 @@ public class ListingEventProcessorTest {
     private HearingExtended hearingExtended;
     @Mock
     private HearingListedToUpdateHearingForListingCommand hearingListedToUpdateHearingForListingCommand;
-    @Mock
-    private StagingHmiService stagingHmiService;
     @Mock
     private ReferenceDataService referenceDataService;
     @Mock
@@ -740,8 +737,6 @@ public class ListingEventProcessorTest {
 
         given(objectToJsonValueConverter.convert(any())).willReturn(hearingConfirmedJson);
 
-        when(stagingHmiService.isHmiListingEnabled(OU_CODE)).thenReturn(false);
-        //when
         listingEventProcessor.handleHearingAllocatedForListingV2Message(event);
 
         //then
@@ -813,7 +808,6 @@ public class ListingEventProcessorTest {
         final ObjectToJsonValueConverter jsonValueConverter =  new JsonObjectConvertersFactory().objectToJsonValueConverter();
         final JsonValue hearingConfirmedJson = jsonValueConverter.convert(hearingConfirmed);
         given(objectToJsonValueConverter.convert(any())).willReturn(hearingConfirmedJson);
-        when(stagingHmiService.isHmiListingEnabled(OU_CODE)).thenReturn(false);
 
         final String courtScheduleId = randomUUID().toString();
         final String hearingDay = LocalDate.now().toString();

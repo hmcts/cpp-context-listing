@@ -62,6 +62,12 @@ public class SearchHearingHelper {
 
      return payload;
     }
+
+    public static String pollUntilSizeMatch(final String url, final String userId, final String mediaType, final int count) {
+        final String payload = pollForHearing(url, userId, new Matcher[]{withJsonPath("$.hearings",hasSize(count))}, mediaType);
+
+        return payload;
+    }
     public static String pollForHearing(final String courtCentreId, final boolean allocated, final String userId, final Matcher[] matchers) {
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),

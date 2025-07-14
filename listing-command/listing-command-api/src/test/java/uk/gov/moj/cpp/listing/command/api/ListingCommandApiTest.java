@@ -63,7 +63,6 @@ import uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.command.api.util.FileUtil;
-import uk.gov.moj.cpp.staginghmi.common.StagingHmiService;
 
 import java.io.StringReader;
 import java.time.LocalDate;
@@ -122,8 +121,6 @@ public class ListingCommandApiTest {
     private ListingCommandApi listingCommandApi;
     @Mock
     private ExtendHearingForHearing extendHearingForHearing;
-    @Mock
-    private StagingHmiService stagingHmiService;
     @Mock
     private ReferenceDataService referenceDataService;
     @Captor

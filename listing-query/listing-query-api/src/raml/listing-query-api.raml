@@ -584,3 +584,36 @@ protocols: [ HTTP, HTTPS ]
         body:
           application/vnd.listing.get.cache-refdata-courtrooms-refresh+json:
             schema:  !include json/schema/listing.get.cache-refdata-courtrooms-refresh.json
+
+
+/cache-refdata-courtrooms/add:
+  post:
+    description: |
+      Handle courtroom added in Reference data
+      ...
+      (mapping):
+          requestType: application/vnd.listing.update.add-courtroom+json
+          name: listing.update.add-courtroom
+      ...
+    body:
+      application/vnd.listing.update.add-courtroom+json:
+        schema: !include json/schema/listing.update.add-courtroom.json
+    responses:
+      202:
+        description: Request accepted
+
+/cache-refdata-courtrooms/close:
+  post:
+    description: |
+      Handle courtroom closed in Reference data
+      ...
+      (mapping):
+          requestType: application/vnd.listing.update.close-courtroom+json
+          name: listing.update.close-courtroom
+      ...
+    body:
+      application/vnd.listing.update.close-courtroom+json:
+        schema: !include json/schema/listing.update.close-courtroom.json
+    responses:
+      202:
+        description: Request accepted

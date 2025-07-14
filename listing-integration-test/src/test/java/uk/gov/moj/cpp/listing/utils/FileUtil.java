@@ -35,7 +35,6 @@ public class FileUtil {
     }
 
     public static JsonObject payloadToObject(final String payload) throws IOException {
-        //InputStream inputStream = new ByteArrayInputStream(payload.getBytes(StandardCharsets.UTF_8));
         try ( final InputStream inputStream = new ByteArrayInputStream(payload.getBytes()) ) {
             final JsonReader jsonReader = createReader(inputStream);
             return jsonReader.readObject();
