@@ -14,8 +14,7 @@ However, before running any of the integration tests, ensure that you turn it ba
 
 ``` 
 utils/accessControl on
-```
-      
+```    
 
 Finally, if you receive something like the following error, it's likely that it's already in that state; the command isn't idempotent.
 
