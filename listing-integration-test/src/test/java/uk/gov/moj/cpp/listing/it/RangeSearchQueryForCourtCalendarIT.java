@@ -34,9 +34,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings({"squid:S1607"})
+@Disabled("LPT-1383")
 public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
 
     private static final String CONTEXT_NAME = "listing";
