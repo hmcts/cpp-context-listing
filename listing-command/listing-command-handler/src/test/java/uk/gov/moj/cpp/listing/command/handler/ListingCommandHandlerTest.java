@@ -4260,6 +4260,27 @@ public class ListingCommandHandlerTest {
     }
 
     @Test
+    public void calculate2dayNonDefaultDays_Command_NonDefaultDaysEmpty() {
+        final LocalDate startDate = LocalDate.of(2024, 9, 12);
+        final LocalDate endDate = LocalDate.of(2024, 9, 13);
+        final ZonedDateTime firstDay = ZonedDateTime.of(LocalDateTime.of(2024, 9, 12, 9, 0), BST).withZoneSameInstant(UTC);
+        final List<NonDefaultDay> filteredNonDefaultDays = new ArrayList<>();
+        final List<LocalDate> nonSittingDays = emptyList();
+        final String selectedCourtCentreId = randomUUID().toString();
+        final Optional<String> selectedCourtRoomId = of(randomUUID().toString());
+
+        when(courtCentreFactory.getCourtRoomNumber(any(), any())).thenReturn(Optional.of(1));
+
+        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30,filteredNonDefaultDays,mockOrganisationUnitMap, selectedCourtCentreId,selectedCourtRoomId, JurisdictionType.CROWN);
+        assertThat(filteredNonDefaultDays.size(), is(2));
+        assertThat(filteredNonDefaultDays.get(0).getStartTime(),is(firstDay));
+        assertThat(filteredNonDefaultDays.get(1).getStartTime(),is(firstDay.plusDays(1)));
+
+        checkMultiDayDuration(filteredNonDefaultDays);
+    }
+
+
+    @Test
     public void calculateNonDefaultDays_Command_NonDefaultDaysPopulated_NonSittingDaysEmpty() {
         final LocalDate startDate = LocalDate.of(2024, 9, 12);
         final LocalDate endDate = LocalDate.of(2024, 9, 14);

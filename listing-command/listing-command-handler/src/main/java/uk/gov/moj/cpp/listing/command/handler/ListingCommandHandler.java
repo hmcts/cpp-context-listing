@@ -789,7 +789,7 @@ public class ListingCommandHandler {
                                         final JurisdictionType jurisdictionType) {
         final List<LocalDate> nonDefaultDates = filteredNonDefaultDays.stream().map(NonDefaultDay::getStartTime).map(ZonedDateTime::toLocalDate).toList();
         final long numOfDaysBetween = ChronoUnit.DAYS.between(startDate, endDate);
-        boolean isMultiDay = numOfDaysBetween > 1;
+        boolean isMultiDay = numOfDaysBetween >= 1; // Note that 1 means we actually have 2 days between
         boolean isMultiDayAndCrown = isMultiDay && isCrown(jurisdictionType);
         // If the hearing is multi-day and crown, the duration of the non-default days should be 360 minutes i.e a whole day as per spec
         final Integer nonDefaultDayDuration = isMultiDayAndCrown ? SIX_HOUR_HEARING_DAY_IN_MINUTES : defaultDuration;
