@@ -40,9 +40,9 @@ public class SearchHearingHelper {
 
     }
 
-    public static void pollUntilHearingIsPresent(final String courtCentreId, final boolean allocated, final String userId, final String hearingId) {
+    public static String pollUntilHearingIsPresent(final String courtCentreId, final boolean allocated, final String userId, final String hearingId) {
 
-        pollForHearing(courtCentreId, allocated, userId, new Matcher[]{
+        return pollForHearing(courtCentreId, allocated, userId, new Matcher[]{
                 withJsonPath(getHearingFilter(hearingId), hasSize(1))
         });
     }

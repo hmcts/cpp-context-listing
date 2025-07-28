@@ -14,6 +14,7 @@ import static java.util.stream.Collectors.toList;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -4381,6 +4382,9 @@ public class ListingCommandHandlerTest {
 
             //Parse the content to Document object
             Document doc = builder.parse(new InputSource(new StringReader(authContextInfoValue)));
+
+            assertThat(doc, is(notNullValue()));
+
         } catch (Exception e) {
             e.printStackTrace();
         }

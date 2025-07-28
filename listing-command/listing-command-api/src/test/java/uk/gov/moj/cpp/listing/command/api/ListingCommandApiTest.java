@@ -253,6 +253,43 @@ public class ListingCommandApiTest {
                 pc -> verify(jsonObjectConverter, times(2)).convert((JsonObject) pc, ProsecutionCases.class));
     }
 
+
+    @Test
+    void shouldThrowBadRequestException_WhenStartDateGreaterThanEndDate() {
+
+        LocalDate startDate = LocalDate.now();
+        LocalDate endDate = startDate.minusDays(1);
+        //given
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
+        given(updateHearingForListing.getStartDate()).willReturn(startDate);
+        given(updateHearingForListing.getEndDate()).willReturn(endDate);
+
+        //when
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> {
+            listingCommandApi.handleUpdateHearingForListing(envelope);
+        });
+        assertThat(exception.getMessage(), is("startDate must be smaller than endDate"));
+    }
+
+    @Test
+    void shouldThrowBadRequestException_WhenWeekCommencingStartDateGreaterThanWeekCommencingEndDate() {
+
+        LocalDate startDate = LocalDate.now();
+        LocalDate endDate = startDate.minusDays(1);
+        //given
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
+        given(updateHearingForListing.getWeekCommencingStartDate()).willReturn(startDate);
+        given(updateHearingForListing.getWeekCommencingEndDate()).willReturn(endDate);
+
+        //when
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> {
+            listingCommandApi.handleUpdateHearingForListing(envelope);
+        });
+        assertThat(exception.getMessage(), is("Week commencing start date must be smaller than week commencing end date"));
+    }
+
     @Test
     public void shouldVacateTheTrial() throws Exception {
 

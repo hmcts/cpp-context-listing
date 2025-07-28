@@ -1024,6 +1024,11 @@ public class UpdateHearingSteps extends AbstractIT {
 
         return pollUntilSizeMatch(searchHearingUrl, getLoggedInUser().toString(), "application/vnd.listing.search.hearings.court.calendar+json", itemCount);
     }
+
+    public String pollUntilHearingIsPresentWithHearingId(final String courtCentreId, final boolean allocated, final String userId, final String hearingId) {
+        return pollUntilHearingIsPresent(courtCentreId, allocated, userId, hearingId);
+    }
+
     public void verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndSearchDate() {
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),

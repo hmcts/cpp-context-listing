@@ -9,7 +9,6 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STR
 import static uk.gov.moj.cpp.listing.it.SearchAvailableHearingIT.CASE_IN_HEARING;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithCourtCenterForMagistrate;
 
-import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -38,7 +37,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings({"squid:S1607"})
-@Disabled("LPT-1383")
 public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
 
     private static final String CONTEXT_NAME = "listing";
@@ -96,6 +94,8 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
         final UUID crownCourtCenterId = randomUUID();
         final List<TestData> testDataList = new ArrayList<>();
 
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps();
+
         IntStream.range(0, 7).forEach(i ->
         {
             final UUID hearingId = randomUUID();
@@ -112,11 +112,13 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
             ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData, crownCourtCenterId, crownCourtRoomId, hearingEndDate, hearingStartTime));
             testDataList.add(new TestData(hearingStartTime.toLocalDate(), crownCourtRoomId, COURT_ROOMS.get(crownCourtRoomId), hearingStartTime));
             listCourtHearingSteps1.whenCaseIsSubmittedForListing();
+            updateHearingSteps.pollUntilHearingIsPresentWithHearingId(crownCourtCenterId.toString(), ALLOCATED, getLoggedInUser().toString(), hearingId.toString());
         });
-        final String payload = new UpdateHearingSteps().verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDateCourtCalendarWithPagination(crownCourtCenterId, 5, 1, 5);
+
+        final String payload = updateHearingSteps.verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDateCourtCalendarWithPagination(crownCourtCenterId, 5, 1, 5);
         checkPayload(payload, 5, testDataList, 5, 1);
 
-        final String payload2 = new UpdateHearingSteps().verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDateCourtCalendarWithPagination(crownCourtCenterId, 5, 2, 2);
+        final String payload2 = updateHearingSteps.verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDateCourtCalendarWithPagination(crownCourtCenterId, 5, 2, 2);
         checkPayload(payload2, 2, testDataList, 5, 2);
     }
 
@@ -127,7 +129,7 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
         assertThat(jObj.get("pageCount"), Matchers.is(2));
 
         List<Map> hearings = (List<Map>) jObj.get("hearings");
-        assertThat(hearings, hasSize(2));
+        assertThat(hearings, hasSize(hearingCount));
 
         assertThat(hearings.get(0).get("hearingDayCount"), Matchers.is(2));
         assertThat(hearings.get(0).get("hearingDayPosition"), Matchers.is(2));

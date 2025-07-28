@@ -81,6 +81,8 @@ public class ListingCommandApi {
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandApi.class);
     private static final String PROSECUTION_CASES = "prosecutionCases";
     private static final String HEARING_ID = "hearingId";
+    public static final String START_DATE_MUST_BE_SMALLER_THAN_END_DATE = "startDate must be smaller than endDate";
+    public static final String WEEK_COMMENCING_START_DATE_MUST_BE_SMALLER_THAN_WEEK_COMMENCING_END_DATE = "Week commencing start date must be smaller than week commencing end date";
 
     @Inject
     private Sender sender;
@@ -237,6 +239,18 @@ public class ListingCommandApi {
         }
 
         final UpdateHearingForListing updateHearingForListing = jsonObjectConverter.convert(payload, UpdateHearingForListing.class);
+
+        if (updateHearingForListing.getStartDate() != null &&
+            updateHearingForListing.getEndDate() != null &&
+            updateHearingForListing.getStartDate().isAfter(updateHearingForListing.getEndDate())) {
+            throw new BadRequestException(START_DATE_MUST_BE_SMALLER_THAN_END_DATE);
+        }
+
+        if (updateHearingForListing.getWeekCommencingStartDate() != null &&
+            updateHearingForListing.getWeekCommencingEndDate() != null &&
+            updateHearingForListing.getWeekCommencingStartDate().isAfter(updateHearingForListing.getWeekCommencingEndDate())) {
+            throw new BadRequestException(WEEK_COMMENCING_START_DATE_MUST_BE_SMALLER_THAN_WEEK_COMMENCING_END_DATE);
+        }
 
         LOGGER.info("HandleUpdateHearingForListing for the hearing: {} ", updateHearingForListing.getHearingId());
 
