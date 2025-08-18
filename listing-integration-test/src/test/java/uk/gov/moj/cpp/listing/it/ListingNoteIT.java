@@ -18,14 +18,15 @@ import static org.hamcrest.core.Is.is;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClientProvider.newPublicJmsMessageConsumerClientProvider;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.*;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 
+import org.junit.jupiter.api.*;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.justice.services.test.utils.persistence.TestJdbcConnectionProvider;
 import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
@@ -40,6 +41,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -51,10 +54,9 @@ import com.jayway.jsonpath.Filter;
 import io.restassured.path.json.JsonPath;
 import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.CoreMatchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 
 @SuppressWarnings({"squid:S1607"})
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ListingNoteIT extends AbstractIT {
 
     private static final ViewStoreCleaner viewStoreCleaner = new ViewStoreCleaner();
@@ -62,17 +64,30 @@ public class ListingNoteIT extends AbstractIT {
     private static final String PUBLIC_EVENT_SELECTED_NOTE_EDITED = "public.listing.note-edited";
     private static final String PUBLIC_LISTING_CREATED_LISTING_NOTE = "public.listing.created-listing-note";
     private static final String PUBLIC_LISTING_DELETED_LISTING_NOTE = "public.listing.deleted-listing-note";
-    private static final int DELAY = 600;
+    private static final int DELAY = 0;
     private static final int POLL_INTERVAL = 800;
     private static final int TIMEOUT = 5;
     public static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
     public static final String NOTE_DESCRIPTION = "note description";
 
-    private NotesSteps notesSteps = new NotesSteps();
+    private final NotesSteps notesSteps = new NotesSteps();
 
+    private Connection connection;
+
+    @BeforeAll
+    void setUpAll() {
+        connection = testJdbcConnectionProvider.getViewStoreConnection("listing");
+    }
+
+    @AfterAll
+    void tearDownAll() throws SQLException {
+        if (connection != null && !connection.isClosed()) {
+            connection.close();
+        }
+    }
     @Test
-    public void shouldCreateNoteForListing() {
+    void shouldCreateNoteForListing() {
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
         final LocalDate date = now();
         final UUID courtRoomId = randomUUID();
@@ -86,7 +101,7 @@ public class ListingNoteIT extends AbstractIT {
     }
 
     @Test
-    public void shouldEditNote() {
+    void shouldEditNote() {
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
 
         //Given 1 : A note created using create note command
@@ -111,7 +126,7 @@ public class ListingNoteIT extends AbstractIT {
     }
 
     @Test
-    public void shouldDeleteListingNote() {
+    void shouldDeleteListingNote() {
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
         //Given : A note created using create note command
         final LocalDate hearingDate = now();
@@ -129,13 +144,15 @@ public class ListingNoteIT extends AbstractIT {
     }
 
     @Test
-    public void shouldReturnNotesForAllocatedHearingOnSearchQuery() {
+    void shouldReturnNotesForAllocatedHearingOnSearchQuery() {
 
         //Given 1 : Hearing data
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate();
         List<HearingData> hearingData = hearingsData.getHearingData();
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", hearingData.get(0).getCourtRoomId().toString()));
-
+        stubListHearingInCourtSessions(hearingData.get(0).getId().toString(),
+                "8e837de0-743a-4a2c-9db3-b2e678c48729",
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
@@ -152,12 +169,15 @@ public class ListingNoteIT extends AbstractIT {
     }
 
     @Test
-    public void shouldNotReturnNotesForAllocatedHearingIfNoteNotExistForThatHearingOnSearchQuery() {
+    void shouldNotReturnNotesForAllocatedHearingIfNoteNotExistForThatHearingOnSearchQuery() {
 
         //Given 1 : Hearing data and no Note data for this hearing
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         List<HearingData> hearingData = hearingsData.getHearingData();
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", hearingData.get(0).getCourtRoomId().toString()));
+        stubListHearingInCourtSessions(hearingData.get(0).getId().toString(),
+                "8e837de0-743a-4a2c-9db3-b2e678c48729",
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
@@ -168,7 +188,7 @@ public class ListingNoteIT extends AbstractIT {
 
 
     @Test
-    public void shouldReturnNotesGivenNoHearingExistForCourtRoomIdAndDateOnSearchQuery() {
+    void shouldReturnNotesGivenNoHearingExistForCourtRoomIdAndDateOnSearchQuery() {
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
 
@@ -183,16 +203,20 @@ public class ListingNoteIT extends AbstractIT {
     }
 
     @Test
-    public void shouldNotReturnNotesAndHearingDataOnSearchQueryWithUnallocatedQueryParam() {
+    void shouldNotReturnNotesAndHearingDataOnSearchQueryWithUnallocatedQueryParam() {
 
         //Given 1 : Hearing data
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
+        List<HearingData> hearingData = hearingsData.getHearingData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", hearingData.get(0).getCourtRoomId().toString()));
+        stubListHearingInCourtSessions(hearingData.get(0).getId().toString(),
+                "8e837de0-743a-4a2c-9db3-b2e678c48729",
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         //Given 2 : Note data using courtRoomId and date from hearing data
-        List<HearingData> hearingData = hearingsData.getHearingData();
         List<UUID> noteIds = new ArrayList<>();
         hearingData
                 .forEach(hearingData1 -> {
@@ -206,7 +230,7 @@ public class ListingNoteIT extends AbstractIT {
     }
 
     @AfterEach
-    public void cleanUp() {
+    void cleanUp() {
         viewStoreCleaner.cleanViewStoreTables("listing_notes");
         viewStoreCleaner.cleanViewStoreTables("hearing");
     }
@@ -215,8 +239,8 @@ public class ListingNoteIT extends AbstractIT {
         final Filter hearingsArraySizeFilter = getArraySizeFilter("hearings", 0);
         final Filter noteArraySizeFilter = getArraySizeFilter("notes", 0);
 
-        poll(requestParams(getSearchHearingUrlByCourtRoomIdAndSearchDateAndAllocated(false, hearingData.get(0).getCourtRoomId(), hearingData.get(0).getHearingStartDate()),
-                MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(getSearchHearingUrlByCourtRoomIdAndSearchDateAndAllocated(false, hearingData.get(0).getCourtRoomId(), hearingData.get(0).getHearingStartDate()),
+                MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()).build())
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(
@@ -229,8 +253,8 @@ public class ListingNoteIT extends AbstractIT {
         final Filter hearingsArraySizeFilter = getArraySizeFilter("hearings", 0);
         final Filter noteIdFilter = getFilter("id", noteId.toString());
 
-        poll(requestParams(getSearchHearingUrlByCourtRoomIdAndSearchDateAndAllocated(true, courtRoomId, startDate),
-                MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(getSearchHearingUrlByCourtRoomIdAndSearchDateAndAllocated(true, courtRoomId, startDate),
+                MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()).build())
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(
@@ -243,8 +267,8 @@ public class ListingNoteIT extends AbstractIT {
         final Filter hearingIdFilter = getFilter("id", hearingData.get(0).getId().toString());
         final Filter noteArraySizeFilter = getArraySizeFilter("notes", 0);
 
-        poll(requestParams(getSearchHearingUrlByCourtRoomIdAndSearchDateAndAllocated(hearingData),
-                MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(getSearchHearingUrlByCourtRoomIdAndSearchDateAndAllocated(hearingData),
+                MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()).build())
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(
@@ -259,8 +283,8 @@ public class ListingNoteIT extends AbstractIT {
         final Filter noteDescriptionFilter = getFilter("note", NOTE_DESCRIPTION);
         final Filter courtRoomIdFilter = getFilter("courtRoomId", hearingData.get(0).getCourtRoomId().toString());
 
-        poll(requestParams(getSearchHearingUrlByCourtRoomIdAndSearchDateAndAllocated(hearingData),
-                MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(getSearchHearingUrlByCourtRoomIdAndSearchDateAndAllocated(hearingData),
+                MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()).build())
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(
@@ -322,7 +346,7 @@ public class ListingNoteIT extends AbstractIT {
                     .and()
                     .pollInterval(POLL_INTERVAL, MILLISECONDS)
                     .await().atMost(TIMEOUT, TimeUnit.SECONDS)
-                    .until(() -> getNoteById(noteId, editedNoteDescription));
+                    .until(() -> getNoteById(noteId, editedNoteDescription, connection));
         } catch (ConditionTimeoutException e) {
             throw e;
         }
@@ -336,7 +360,7 @@ public class ListingNoteIT extends AbstractIT {
                     .pollInterval(POLL_INTERVAL, MILLISECONDS)
                     .await().atMost(TIMEOUT, TimeUnit.SECONDS)
                     .until(() -> {
-                        noteByCourtRoomIdAndDate.set(getNoteByCourtRoomIdAndDate(courtRoomId, date));
+                        noteByCourtRoomIdAndDate.set(getNoteByCourtRoomIdAndDate(courtRoomId, date, connection));
                         return noteByCourtRoomIdAndDate.get() != null;
                     });
         } catch (ConditionTimeoutException e) {
@@ -346,14 +370,11 @@ public class ListingNoteIT extends AbstractIT {
     }
 
 
-    private boolean getNoteById(final UUID noteId, final String editedNoteDescription) {
+    private boolean getNoteById(final UUID noteId, final String editedNoteDescription, final Connection connection) {
 
         final String queryTemplate = "select id, note from listing_notes where id = ?";
-        try (final Connection sjpEventStoreConnection =
-                     testJdbcConnectionProvider.getViewStoreConnection("listing");
-             final PreparedStatement statement = sjpEventStoreConnection.prepareStatement(
-                     queryTemplate)) {
-            ResultSet resultSet = null;
+        try (final PreparedStatement statement = connection.prepareStatement(queryTemplate)) {
+            ResultSet resultSet;
             statement.setObject(1, noteId);
             resultSet = statement.executeQuery();
             if (resultSet.next()) {
@@ -368,16 +389,12 @@ public class ListingNoteIT extends AbstractIT {
     }
 
 
-    private static UUID getNoteByCourtRoomIdAndDate(final UUID courtRoomId, final LocalDate date) {
+    private static UUID getNoteByCourtRoomIdAndDate(final UUID courtRoomId, final LocalDate date, final Connection connection) {
 
         UUID noteId = null;
         final String queryTemplate = "select id from listing_notes where court_room_id = ? and  date = ?";
-        try (final Connection sjpEventStoreConnection =
-                     testJdbcConnectionProvider.getViewStoreConnection("listing");
-             final PreparedStatement statement =
-                     sjpEventStoreConnection.prepareStatement(queryTemplate)
-        ) {
-            ResultSet resultSet = null;
+        try (final PreparedStatement statement = connection.prepareStatement(queryTemplate)) {
+            ResultSet resultSet;
             statement.setObject(1, courtRoomId);
             statement.setDate(2, Date.valueOf(date));
             resultSet = statement.executeQuery();

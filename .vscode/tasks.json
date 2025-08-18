@@ -1,0 +1,52 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "java (build)",
+      "paths": [
+        "${workspace}"
+      ],
+      "isFullBuild": true,
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": [],
+      "label": "java (build): Build Workspace",
+      "detail": "$(tools) Build all the Java projects in workspace."
+    },
+    {
+      "label": "Maven Clean Install (without tests)",
+      "type": "shell",
+      "paths": [
+        "${workspace}"
+      ],
+      "command": "zsh -l -c 'mvn clean compile package -DskipTests'",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Maven Clean Install (with tests)",
+      "type": "shell",
+      "command": "zsh -l -c 'mvn clean compile package'",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Maven deploy (local)",
+      "type": "shell",
+      "command": "if [ -z \"${CPP_DOCKER_DIR}\" ]; then echo 'Error: CPP_DOCKER_DIR environment variable is not set'; exit 1; fi && export WILDFLY_DEPLOYMENT_DIR=${CPP_DOCKER_DIR}/containers/wildfly/deployments && export CONTEXT_NAME=listing&& echo 'Sourcing deployment and healthcheck functions...' && source ${CPP_DOCKER_DIR}/build-scripts/deployment-functions.sh && source ${CPP_DOCKER_DIR}/build-scripts/healthcheck-functions.sh && echo 'Building application...' && mvn clean install -DskipTests && echo 'Undeploying existing wars...' && undeployWarsFromDocker && echo 'Deploying new war...' && deployWarsForContextsWithoutServiceModule && echo 'Waiting for deployment to complete...' && sleep 30 && echo 'Running health checks...' && healthchecksForContextsWithoutServiceModule",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": []
+    }
+  ]
+}

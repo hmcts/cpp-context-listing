@@ -30,6 +30,7 @@ import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
+import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 import uk.gov.moj.cpp.listing.domain.aggregate.converter.ReportingRestrictionConverter;
 
 import java.util.ArrayList;
@@ -392,5 +393,57 @@ public class NewDomainToEventConverter {
                     .build()));
         }
         return offencesEvents;
+    }
+
+    public static List<uk.gov.justice.listing.events.HearingDay> convertHearingDaysDomainToEvent(final List<uk.gov.moj.cpp.listing.domain.HearingDay> hearingDays) {
+        return hearingDays.stream()
+                .map(hearingDay -> uk.gov.justice.listing.events.HearingDay.hearingDay()
+                        .withDurationMinutes(hearingDay.getDurationMinutes())
+                        .withEndTime(hearingDay.getEndTime())
+                        .withSequence(hearingDay.getSequence())
+                        .withHearingDate(hearingDay.getHearingDate())
+                        .withStartTime(hearingDay.getStartTime())
+                        .withIsCancelled(hearingDay.getIsCancelled().orElse(false))
+                        .withCourtScheduleId(hearingDay.getCourtScheduleId().orElse(null))
+                        .withCourtRoomId(hearingDay.getCourtRoomId().orElse(null))
+                        .withCourtCentreId(hearingDay.getCourtCentreId().orElse(null))
+                        .build())
+                .toList();
+
+    }
+
+    public static List<uk.gov.justice.listing.events.NonDefaultDay> convertHearingDaysDomainToNonDefaultDaysEvent(final List<uk.gov.moj.cpp.listing.domain.HearingDay> hearingDays) {
+        return hearingDays.stream()
+                .map(hearingDay -> {
+                    uk.gov.justice.listing.events.NonDefaultDay.Builder builder = uk.gov.justice.listing.events.NonDefaultDay.nonDefaultDay();
+                    builder.withDuration(hearingDay.getDurationMinutes())
+                            .withStartTime(hearingDay.getStartTime())
+                            .withCourtCentreId(hearingDay.getCourtCentreId().toString());
+                    if (hearingDay.getCourtRoomId().isPresent() && nonNull(hearingDay.getCourtRoomId())) {
+                        builder.withRoomId(hearingDay.getCourtRoomId().toString());
+                    }
+                    if (hearingDay.getCourtScheduleId().isPresent() && nonNull(hearingDay.getCourtScheduleId())) {
+                        builder.withCourtScheduleId(hearingDay.getCourtScheduleId().toString());
+                    }
+                    return builder.build();
+                })
+                .toList();
+
+    }
+
+    public static List<uk.gov.justice.listing.events.NonDefaultDay> convertNonDefaultDaysDomainToEvent(final List<NonDefaultDay> nonDefaultDays) {
+        return nonDefaultDays.stream()
+                .map(nonDefaultDay -> uk.gov.justice.listing.events.NonDefaultDay.nonDefaultDay()
+                        .withCourtCentreId(nonDefaultDay.getCourtCentreId().orElse(null))
+                        .withCourtRoomId(nonDefaultDay.getCourtRoomId().orElse(null))
+                        .withCourtScheduleId(nonDefaultDay.getCourtScheduleId().orElse(null))
+                        .withDuration(nonDefaultDay.getDuration().orElse(null))
+                        .withOucode(nonDefaultDay.getOucode().orElse(null))
+                        .withRoomId(nonDefaultDay.getRoomId().orElse(null))
+                        .withSession(nonDefaultDay.getSession().orElse(null))
+                        .withStartTime(nonDefaultDay.getStartTime())
+                        .build())
+                .toList();
+
     }
 }

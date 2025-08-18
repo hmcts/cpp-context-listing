@@ -5,6 +5,7 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 
@@ -90,6 +91,20 @@ public class UpdateCaseMarkersSteps extends AbstractIT {
     public void verifyCaseMarkersUpdatedThroughAPI(final UUID caseIdToUpdateMarkers) {
 
         pollForHearing(hearingData.getCourtCentreId().toString(), UNALLOCATED, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[0].listedCases[?(@.id == '" + caseIdToUpdateMarkers + "')].markers[0].id", hasItem(caseMarkerData.getId().toString())),
+                withJsonPath("$.hearings[0].listedCases[?(@.id == '" + caseIdToUpdateMarkers + "')].markers[0].markerTypeid", hasItem(caseMarkerData.getCaseMarkerTypeId().toString())),
+                withJsonPath("$.hearings[0].listedCases[?(@.id == '" + caseIdToUpdateMarkers + "')].markers[0].markerTypeDescription", hasItem(caseMarkerData.getCaseMarkerDescription())),
+                withJsonPath("$.hearings[0].listedCases[?(@.id == '" + caseIdToUpdateMarkers + "')].markers[0].markerTypeCode", hasItem(caseMarkerData.getCaseMarkerCode()))
+        });
+    }
+
+    /**
+     * JMS-aware version of verifyCaseMarkersUpdatedThroughAPI for handling asynchronous message processing timing issues.
+     */
+    public void verifyCaseMarkersUpdatedThroughAPIWithJmsDelay(final UUID caseIdToUpdateMarkers) {
+
+        // Use JMS-aware polling to handle asynchronous message processing
+        pollForHearingWithJmsDelay(hearingData.getCourtCentreId().toString(), UNALLOCATED, getLoggedInUser().toString(), new Matcher[]{
                 withJsonPath("$.hearings[0].listedCases[?(@.id == '" + caseIdToUpdateMarkers + "')].markers[0].id", hasItem(caseMarkerData.getId().toString())),
                 withJsonPath("$.hearings[0].listedCases[?(@.id == '" + caseIdToUpdateMarkers + "')].markers[0].markerTypeid", hasItem(caseMarkerData.getCaseMarkerTypeId().toString())),
                 withJsonPath("$.hearings[0].listedCases[?(@.id == '" + caseIdToUpdateMarkers + "')].markers[0].markerTypeDescription", hasItem(caseMarkerData.getCaseMarkerDescription())),

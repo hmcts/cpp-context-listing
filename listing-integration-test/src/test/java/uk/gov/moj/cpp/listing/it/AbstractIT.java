@@ -1,21 +1,5 @@
 package uk.gov.moj.cpp.listing.it;
 
-import com.google.common.io.Resources;
-import io.restassured.http.Header;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
-import uk.gov.justice.services.integrationtest.utils.jms.JmsResourceManagementExtension;
-import uk.gov.justice.services.test.utils.core.rest.RestClient;
-import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-import java.io.IOException;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.reset;
 import static com.google.common.io.Resources.getResource;
 import static java.nio.charset.Charset.defaultCharset;
@@ -26,8 +10,28 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProv
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProsecutionCaseByCaseUrn;
 
+import uk.gov.justice.services.integrationtest.utils.jms.JmsResourceManagementExtension;
+import uk.gov.justice.services.test.utils.core.rest.RestClient;
+import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
+
+import java.io.IOException;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
+
+import com.google.common.io.Resources;
+import io.restassured.http.Header;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+
 @SuppressWarnings("WeakerAccess")
 @ExtendWith(JmsResourceManagementExtension.class)
+@ExtendWith(TestDurationExtension.class)
 public class AbstractIT {
     public static final UUID USER_ID_VALUE = randomUUID();
 
@@ -39,26 +43,35 @@ public class AbstractIT {
     protected static final boolean UNALLOCATED = false;
     private final DatabaseCleaner databaseCleaner = new DatabaseCleaner();
 
-    private final static ThreadLocal<UUID> USER_CONTEXT = new ThreadLocal<>();
+    private static final ThreadLocal<UUID> USER_CONTEXT = new ThreadLocal<>();
 
     static final String CONTEXT_NAME = "listing";
 
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         reset();
         setupAsAuthorisedUser(USER_ID_VALUE);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased();
         setupProsecutionCaseByCaseUrn();
-    }
-
-    protected void clearDB(){
         databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
         databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
         databaseCleaner.cleanStreamStatusTable(CONTEXT_NAME);
         databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing");
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing_days");
         databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "listing_notes");
         databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "cache_refdata_courtroom");
+    }
+
+    @AfterEach
+    void tearDown() {
+        reset();
+        USER_CONTEXT.remove();
+        databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
+        databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
+        databaseCleaner.cleanStreamStatusTable(CONTEXT_NAME);
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing");
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing_days");
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "listing_notes");
     }
 
     protected void givenAUserHasLoggedInAsAListingOfficer(final UUID validUserId) {

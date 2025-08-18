@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.steps.data;
 import static java.util.Optional.empty;
 
 import java.util.Optional;
+import java.util.UUID;
 
 public class NonDefaultDayData {
 
@@ -28,6 +29,10 @@ public class NonDefaultDayData {
 
     public NonDefaultDayData(final String startTime, final Optional<Integer> duration, final Optional<String> courtCentreId, final Optional<String> roomId) {
         this(startTime, duration, empty(), empty(), empty(), empty(), courtCentreId, roomId);
+    }
+
+    public NonDefaultDayData(final String startTime, final Optional<Integer> duration, final Optional<String> courtCentreId, final UUID courtScheduleId, final Optional<String> roomId) {
+        this(startTime, duration, Optional.of(courtScheduleId.toString()), empty(), empty(), empty(), courtCentreId, roomId);
     }
 
     public NonDefaultDayData(final String startTime, final Optional<Integer> duration, final Optional<String> courtScheduleId, final Optional<Integer> courtRoomId, final Optional<String> oucode, final Optional<String> session, final Optional<String> courtCentreId, final Optional<String> roomId) {

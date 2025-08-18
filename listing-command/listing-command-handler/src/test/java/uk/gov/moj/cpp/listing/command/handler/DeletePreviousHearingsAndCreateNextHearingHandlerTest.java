@@ -1,33 +1,5 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.junit.jupiter.MockitoExtension;
-import uk.gov.justice.core.courts.Hearing;
-import uk.gov.justice.core.courts.HearingListingNeeds;
-import uk.gov.justice.core.courts.SeedingHearing;
-import uk.gov.justice.listing.courts.CreateNextHearing;
-import uk.gov.justice.listing.courts.DeletePreviousHearings;
-import uk.gov.justice.listing.courts.DeletePreviousHearingsAndCreateNextHearing;
-import uk.gov.justice.listing.events.*;
-import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
-import uk.gov.justice.services.core.aggregate.AggregateService;
-import uk.gov.justice.services.core.enveloper.Enveloper;
-import uk.gov.justice.services.eventsourcing.source.core.EventSource;
-import uk.gov.justice.services.eventsourcing.source.core.EventStream;
-import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
-import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate;
-
-import javax.json.JsonObject;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.is;
@@ -40,8 +12,39 @@ import static uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory.
 import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloperWithEvents;
 import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
 
+import uk.gov.justice.core.courts.Hearing;
+import uk.gov.justice.core.courts.SeedingHearing;
+import uk.gov.justice.listing.commands.HearingListingNeeds;
+import uk.gov.justice.listing.courts.CreateNextHearing;
+import uk.gov.justice.listing.courts.DeletePreviousHearings;
+import uk.gov.justice.listing.courts.DeletePreviousHearingsAndCreateNextHearing;
+import uk.gov.justice.listing.events.CreateNextHearingRequested;
+import uk.gov.justice.listing.events.DeleteNextHearingRequested;
+import uk.gov.justice.listing.events.NextHearingRequested;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.services.core.aggregate.AggregateService;
+import uk.gov.justice.services.core.enveloper.Enveloper;
+import uk.gov.justice.services.eventsourcing.source.core.EventSource;
+import uk.gov.justice.services.eventsourcing.source.core.EventStream;
+import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+
+import javax.json.JsonObject;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
-public class DeletePreviousHearingsAndCreateNextHearingHandlerTest {
+class DeletePreviousHearingsAndCreateNextHearingHandlerTest {
     @Mock
     private EventSource eventSource;
 
@@ -122,7 +125,7 @@ public class DeletePreviousHearingsAndCreateNextHearingHandlerTest {
 
         verify(seedHearingAggregate).deletePreviousHearingsAndCreateNextHearing(eq(seedingHearingId), eq(sittingDay), eq(createNextHearingEvent));
 
-        final List<JsonEnvelope> events = verifyAppendAndGetArgumentFrom(eventStream).collect(Collectors.toList());
+        final List<JsonEnvelope> events = verifyAppendAndGetArgumentFrom(eventStream).toList();
         assertThat(events.size(), is(2));
         final JsonEnvelope deleteNextHearingRequestedEventProduced = events.get(0);
 

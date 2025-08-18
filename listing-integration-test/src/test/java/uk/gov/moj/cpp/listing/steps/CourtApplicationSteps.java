@@ -101,6 +101,10 @@ public class CourtApplicationSteps extends AbstractIT {
 
     JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectToObjectConverter(objectMapper);
 
+    public HearingsData getHearingsData() {
+        return hearingsData;
+    }
+
     public CourtApplicationSteps(HearingsData hearingsData) {
         this.hearingsData = hearingsData;
 
@@ -113,31 +117,6 @@ public class CourtApplicationSteps extends AbstractIT {
 
     public void whenCaseCourtApplicationIsAddedToListingAndHearingIsExtended() {
         AddCourtApplicationData addCourtApplicationData = getCourtApplicationForHearingData(hearingsData);
-        final JsonObject courtApplicationUpdateDataObject = (JsonObject) objectToJsonValueConverter.convert(addCourtApplicationData);
-        sendMessage(
-                publicEventCourtApplicationAdded,
-                PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED,
-                courtApplicationUpdateDataObject,
-                metadataOf(randomUUID(), PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED).withUserId(randomUUID().toString()).build());
-        request = courtApplicationUpdateDataObject.toString();
-    }
-
-    public void whenCaseCourtApplicationAndLinkedCaseAreAddedToListingAndHearingIsExtended() {
-        AddCourtApplicationData addCourtApplicationData = getCourtApplicationForHearingData(hearingsData);
-
-        final String eventPayloadString = getPayload("prosecution-case.json")
-                .replaceAll("HEARING_ID", hearingsData.getHearingData().get(0).getId().toString())
-                .replaceAll("CASE_ID_1", randomUUID().toString())
-                .replaceAll("DEFENDANT_ID_1", randomUUID().toString())
-                .replaceAll("OFFENCE_ID_1", randomUUID().toString())
-                .replaceAll("CASE_ID_2", randomUUID().toString())
-                .replaceAll("DEFENDANT_ID_2", randomUUID().toString())
-                .replaceAll("OFFENCE_ID_2", randomUUID().toString());
-
-        final JsonObject hearingExtendedDataObject = new StringToJsonObjectConverter().convert(eventPayloadString);
-        ProsecutionCase prosecutionCase = jsonObjectToObjectConverter.convert(hearingExtendedDataObject.getJsonArray("prosecutionCases").getJsonObject(0), ProsecutionCase.class);
-
-        addCourtApplicationData.setProsecutionCases(Stream.of(prosecutionCase).collect(Collectors.toList()));
         final JsonObject courtApplicationUpdateDataObject = (JsonObject) objectToJsonValueConverter.convert(addCourtApplicationData);
         sendMessage(
                 publicEventCourtApplicationAdded,

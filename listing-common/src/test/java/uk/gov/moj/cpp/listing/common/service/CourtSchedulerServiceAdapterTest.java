@@ -204,7 +204,7 @@ public class CourtSchedulerServiceAdapterTest {
         final String courtRoomId = UUID.randomUUID().toString();
         final String startDate = LocalDate.now().toString();
         final String endDate = LocalDate.now().plusDays(7).toString();
-        final Optional<String> businessTypeOptional = Optional.ofNullable("BA123");
+        final Optional<String> businessTypeOptional = Optional.of("BA123");
         final Integer pageSize = 50;
         final Integer pageNumber = 1;
 

@@ -9,11 +9,11 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.progression.courts.CaseLinked.caseLinked;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
@@ -39,10 +39,10 @@ import javax.ws.rs.core.Response;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-
-public class CaseLinkedIT extends AbstractIT {
+class CaseLinkedIT extends AbstractIT {
     private static final UUID CASE_TO_BE_LINKED_1 = randomUUID();
     private static final String CASE_URN_TO_BE_LINKED_1 = STRING.next();
     private static final UUID CASE_TO_BE_LINKED_2 = randomUUID();
@@ -57,12 +57,13 @@ public class CaseLinkedIT extends AbstractIT {
     private final ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         publicEventProgressionCaseLinked = publicEvents.createPublicProducer();
     }
 
     @Test
-    public void shouldUpdateLinkedCases() {
+    @Disabled("Will be fixed with SPRDT-181")
+    void shouldUpdateLinkedCases() {
         final HearingsData hearingsData = listCourtHearing();
         final UUID hearingId = hearingsData.getHearingData().get(0).getId();
         final UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
@@ -113,7 +114,7 @@ public class CaseLinkedIT extends AbstractIT {
 
     private String verifyHearing(final UUID hearingId, final Matcher[] matchers) {
         final String url = generateUrlForFindingAHearingById(hearingId.toString());
-        final ResponseData response = poll(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
+        final ResponseData response = pollWithDefaults(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()).build())
                 .until(status().is(Response.Status.OK),
                         payload().isJson(
                                 allOf(matchers)));

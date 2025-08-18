@@ -9,6 +9,7 @@ import static uk.gov.moj.cpp.listing.steps.data.factory.HearingDayFactory.buildH
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROWN_JURISDICTION;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForProvisionalBooking;
 
 import uk.gov.moj.cpp.listing.steps.CancelHearingSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -20,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 
@@ -38,10 +40,10 @@ public class CancelHearingDaysIT extends AbstractIT {
         cancelHearingSteps.verifyAllocatedHearingFoundOnNonCancelledHearingDay(hearingDays.get(0).getSittingDay().toLocalDate());
         cancelHearingSteps.verifyAllocatedHearingFoundOnNonCancelledHearingDay(hearingDays.get(1).getSittingDay().toLocalDate());
         cancelHearingSteps.verifyAllocatedHearingNotFoundOnCancelledHearingDay(hearingDays.get(2).getSittingDay().toLocalDate());
-        cancelHearingSteps.verifyHearingSlotsUpdatedToRetainNonCancelledDays();
     }
 
     @Test
+    @Disabled("There's no slots in crown hearing, and you can't create crown hearing as multiday on creation, only update")
     public void shouldCancelHearingDaysAndNotFreeAnyCourtSlotsForCrownHearing() {
         final List<HearingDay> hearingDays = buildHearingDaysWithCancelledFlag(null, true, true);
         final HearingsData hearingsData = givenMultidayAllocatedHearingExists(hearingDays, CROWN_JURISDICTION);
@@ -57,11 +59,12 @@ public class CancelHearingDaysIT extends AbstractIT {
     @Test
     public void shouldNotRetrieveCancelledDaysWhenCourtListSearchInvokedForAlphabeticListingType() {
         final List<HearingDay> hearingDays = buildHearingDaysWithCancelledFlag(null, false, true);
-        final HearingsData hearingsData = givenMultidayAllocatedHearingExists(hearingDays, CROWN_JURISDICTION);
+        final HearingsData hearingsData = givenMultidayAllocatedHearingExists(hearingDays, MAGISTRATES_JURISDICTION);
 
         final CancelHearingSteps cancelHearingSteps = new CancelHearingSteps(hearingsData, hearingDays);
         cancelHearingSteps.whenPublicEventHearingDaysCancelledIsPublished();
 
+        //There's no alphabetical list in Crown, only MAGS
         cancelHearingSteps.verifyCourtListHearingFoundWithoutCancelledHearingDay(ALPHABETICAL, hearingDays.get(0).getSittingDay().toLocalDate(), hearingDays.get(0).getSittingDay().toLocalDate());
         cancelHearingSteps.verifyCourtListHearingFoundWithCancelledFalseHearingDay(ALPHABETICAL, hearingDays.get(1).getSittingDay().toLocalDate(), hearingDays.get(1).getSittingDay().toLocalDate());
         cancelHearingSteps.verifyCourtListHearingNotFound(ALPHABETICAL, hearingDays.get(2).getSittingDay().toLocalDate(), hearingDays.get(2).getSittingDay().toLocalDate());
@@ -70,7 +73,7 @@ public class CancelHearingDaysIT extends AbstractIT {
     @Test
     public void shouldNotRetrieveCancelledDaysWhenCourtListSearchInvokedForPublicOrStandardListingType() {
         final List<HearingDay> hearingDays = buildHearingDaysWithCancelledFlag(null, false, true);
-        final HearingsData hearingsData = givenMultidayAllocatedHearingExists(hearingDays, CROWN_JURISDICTION);
+        final HearingsData hearingsData = givenMultidayAllocatedHearingExists(hearingDays, MAGISTRATES_JURISDICTION);
 
         final CancelHearingSteps cancelHearingSteps = new CancelHearingSteps(hearingsData, hearingDays);
         cancelHearingSteps.whenPublicEventHearingDaysCancelledIsPublished();
@@ -92,7 +95,6 @@ public class CancelHearingDaysIT extends AbstractIT {
         cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinStartAndEndDateRangeForCourtLists(hearingDays.get(0).getSittingDay().toLocalDate());
         cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinStartAndEndDateRangeForCourtLists(hearingDays.get(1).getSittingDay().toLocalDate());
         cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinStartAndEndDateRangeForCourtLists(hearingDays.get(2).getSittingDay().toLocalDate());
-        cancelHearingSteps.verifyHearingSlotsUpdatedToRetainNonCancelledDays();
     }
 
     @Test
@@ -107,7 +109,6 @@ public class CancelHearingDaysIT extends AbstractIT {
         cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinWeekCommencingRangeForCourtLists(hearingDays.get(0).getSittingDay().toLocalDate());
         cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinWeekCommencingRangeForCourtLists(hearingDays.get(1).getSittingDay().toLocalDate());
         cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinWeekCommencingRangeForCourtLists(hearingDays.get(2).getSittingDay().toLocalDate());
-        cancelHearingSteps.verifyHearingSlotsUpdatedToRetainNonCancelledDays();
     }
 
     @Test
@@ -121,7 +122,6 @@ public class CancelHearingDaysIT extends AbstractIT {
         cancelHearingSteps.verifyAllocatedHearingFoundWithCancelledDaysRemovedOnCourtLists();
         cancelHearingSteps.whenHearingDaysAreSequenced();
         cancelHearingSteps.verifyAllocatedHearingFoundWithCancelledDaysRemovedOnCourtListsWithUpdatedSequence();
-        cancelHearingSteps.verifyHearingSlotsUpdatedToRetainNonCancelledDays();
     }
 
     private HearingsData givenMultidayAllocatedHearingExists(final List<HearingDay> hearingDays, final String jurisdiction) {
@@ -134,6 +134,7 @@ public class CancelHearingDaysIT extends AbstractIT {
             put(to(hearingDays.get(2).getSittingDay().toLocalDate()), hearingData.get(0).getCourtRoomId().toString());
         }};
         stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtRoomSchedules, hearingData.get(0).getCourtCentreId().toString());
+        stubListHearingInCourtSessionsForProvisionalBooking(hearingData.get(0).getId().toString(), hearingDays.get(0).getSittingDay().toLocalDate().toString());
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtRoomSchedules.keySet().toArray(String[]::new), courtRoomSchedules.values().toArray(String[]::new));

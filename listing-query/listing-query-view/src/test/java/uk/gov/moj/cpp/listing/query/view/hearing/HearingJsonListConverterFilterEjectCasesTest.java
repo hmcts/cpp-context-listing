@@ -40,6 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.junit.jupiter.api.Test;
 
 public class HearingJsonListConverterFilterEjectCasesTest {
@@ -413,7 +414,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertHearingResultForPublicListForMultipleCases() throws IOException {
+    public void shouldConvertHearingResultForPublicListForMultipleCases() throws IOException, JSONException {
         //Given
         final Hearing hearing = createHearing(PUBLIC_LIST_MULTIPLE_CASES);
 

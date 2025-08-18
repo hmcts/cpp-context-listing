@@ -5,6 +5,8 @@ import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
 import static java.util.UUID.fromString;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocation;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 
@@ -21,10 +23,13 @@ import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceData;
 
+import java.io.IOException;
+import java.time.ZonedDateTime;
 import java.util.UUID;
 
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class CourtListIT extends AbstractIT {
@@ -46,44 +51,56 @@ public class CourtListIT extends AbstractIT {
         firstHearing = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearing);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(UNALLOCATED);
 
         UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForAllocation(firstHearing.getHearingData().get(0).getId());
 
+        // Stub court scheduler service for listing hearings in court sessions to prevent 404 error
+        stubListHearingInCourtSessionsWithMultipleSchedules(
+                firstHearing.getHearingData().get(0).getId().toString(),
+                updatedHearingDataForAllocation.getNonDefaultDays().get(0).getCourtScheduleId().map(UUID::fromString).orElse(null).toString(),
+                updatedHearingDataForAllocation.getNonDefaultDays().get(1).getCourtScheduleId().map(UUID::fromString).orElse(null).toString(),
+                ZonedDateTime.parse(updatedHearingDataForAllocation.getNonDefaultDays().get(0).getStartTime()),updatedHearingDataForAllocation.getNonDefaultDays().get(0).getDuration().orElse(20));
+
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(firstHearing, updatedHearingDataForAllocation);
         updateHearingSteps.whenHearingIsUpdatedForListing();
-        updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
+        updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPIWithJmsDelay();
         updateHearingSteps.verifyPublicEventHearingChangesSaved();
         courtListSteps = new CourtListSteps(updatedHearingDataForAllocation);
     }
 
     @Test
+    
     public void generateAlphabeticalCourtListForHearing() {
         courtListSteps.verifyCourtListRequestedAndIsCorrect(ALPHABETICAL);
     }
 
 
     @Test
+    
     public void generatePublicCourtList() {
-        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", new Matcher[0]);
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithJmsDelay(PUBLIC, "PublicCourtListEnglishWelsh", new Matcher[0]);
     }
 
     @Test
-    public void generatePublicCourtWhenHearingAdjourned() {
+    
+    public void generatePublicCourtWhenHearingAdjourned() throws IOException {
         HearingsData nextHearing = HearingsData.nextHearingsData(firstHearing.getHearingData());
         final ListNextHearingSteps listNextHearingSteps1 = new ListNextHearingSteps(firstHearing.getHearingData().get(0));
         listNextHearingSteps1.whenNextHearingSubmittedForListing(nextHearing);
-        listNextHearingSteps1.verifyHearingListedFromAPI(nextHearing);
+        listNextHearingSteps1.verifyHearingListedFromAPIWithJmsDelay(nextHearing);
 
         UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForAllocation(nextHearing.getHearingData().get(0).getId());
 
         final UpdateHearingSteps updateHearingSteps2 = new UpdateHearingSteps(nextHearing, updatedHearingDataForAllocation);
+        stubGetAvailableHearingSlotsWithQueryParams(updateHearingSteps2.getUpdatedHearingData());
+        stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps2.getUpdatedHearingData());
         updateHearingSteps2.whenHearingIsUpdatedForListing();
-        updateHearingSteps2.verifyHearingAllocatedWhenQueryingFromAPI();
+        updateHearingSteps2.verifyHearingAllocatedWhenQueryingFromAPIWithJmsDelay();
         updateHearingSteps2.verifyPublicEventHearingChangesSaved();
         courtListSteps = new CourtListSteps(updatedHearingDataForAllocation);
 
-        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", new Matcher[0]);
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithJmsDelay(PUBLIC, "PublicCourtListEnglishWelsh", new Matcher[0]);
     }
 
     @Test
@@ -100,7 +117,7 @@ public class CourtListIT extends AbstractIT {
                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[3].id", notNullValue()),
                 withoutJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[3].listingNumber"),
         };
-        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", allocatedMatchers);
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithJmsDelay(PUBLIC, "PublicCourtListEnglishWelsh", allocatedMatchers);
     }
 
     @Test
@@ -115,24 +132,26 @@ public class CourtListIT extends AbstractIT {
                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[2].offences[0].id", notNullValue()),
                 withoutJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[2].offences[0].listingNumber"),
         };
-        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", allocatedMatchers);
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithJmsDelay(PUBLIC, "PublicCourtListEnglishWelsh", allocatedMatchers);
     }
 
 
     @Test
     public void generateStandardCourtList() {
-        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(STANDARD, "BenchAndStandardCourtList", new Matcher[0]);
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithJmsDelay(STANDARD, "BenchAndStandardCourtList", new Matcher[0]);
     }
 
     @Test
+    
     public void generatePrisonCourtList() {
         final Matcher<?>[] extraMatchers = {
                 withJsonPath("$.courtCentreDefaultStartTime", notNullValue())
         };
-        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PRISON, "PrisonCourtList", extraMatchers);
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithJmsDelay(PRISON, "PrisonCourtList", extraMatchers);
     }
 
     @Test
+    
     public void generateJudgeList() {
         stubOrganisationUnit(COURT_CENTRE_ID);
         stubGetReferenceDataHearingTypes(HEARING_TYPE_ID);
@@ -140,8 +159,9 @@ public class CourtListIT extends AbstractIT {
     }
 
     @Test
+    
     public void generateBenchList() {
-        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(BENCH, "BenchAndStandardCourtList", new Matcher[0]);
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithJmsDelay(BENCH, "BenchAndStandardCourtList", new Matcher[0]);
     }
 
 }

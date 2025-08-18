@@ -13,6 +13,7 @@ import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsum
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClientProvider.newPublicJmsMessageProducerClientProvider;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 
@@ -107,6 +108,29 @@ public class AddDefendantSteps extends AbstractIT {
         final Person personDetails = defendant.getPersonDefendant().getPersonDetails();
 
         pollForHearing(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[0].id",
+                        equalTo(hearingData.getId().toString())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants[2].lastName",
+                        equalTo(personDetails.getLastName())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants[2].offences[0].offenceWording",
+                        equalTo(defendant.getOffences().get(0).getWording())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants[2].offences[0].offenceCode",
+                        equalTo(defendant.getOffences().get(0).getOffenceCode())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants[2].offences[0].offenceCode",
+                        equalTo(defendant.getOffences().get(0).getOffenceCode()))
+        });
+    }
+
+    /**
+     * JMS-aware version of verifyHearingListedFromAPI for handling asynchronous message processing timing issues.
+     */
+    public void verifyHearingListedFromAPIWithJmsDelay(final boolean isAllocated) {
+        final AddDefendantForCourtProceedingsData addDefendantForCourtProceedingsData = getAddDefendantDetails(caseId);
+        final Defendant defendant = addDefendantForCourtProceedingsData.getDefendants().get(0);
+        final Person personDetails = defendant.getPersonDefendant().getPersonDetails();
+
+        // Use JMS-aware polling to handle asynchronous message processing
+        pollForHearingWithJmsDelay(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
                 withJsonPath("$.hearings[0].id",
                         equalTo(hearingData.getId().toString())),
                 withJsonPath("$.hearings[0].listedCases[0].defendants[2].lastName",

@@ -28,7 +28,7 @@ import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
-import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
+import uk.gov.moj.cpp.listing.domain.SlotDetail;
 
 import java.time.LocalDate;
 import java.time.LocalTime;

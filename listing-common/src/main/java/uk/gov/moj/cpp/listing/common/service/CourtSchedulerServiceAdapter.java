@@ -32,18 +32,19 @@ import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 public class CourtSchedulerServiceAdapter {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(CourtSchedulerServiceAdapter.class);
     public static final String SESSION_START_DATE = "sessionStartDate";
     public static final String SESSION_END_DATE = "sessionEndDate";
     public static final String OU_CODE = "ouCode";
     public static final String PAGE_SIZE = "pageSize";
     public static final String PAGE_NUMBER = "pageNumber";
     public static final String COURT_ROOM_ID = "courtRoomId";
+    public static final String HEARING_SLOTS = "hearingSlots";
     public static final String COURT_SESSION = "courtSession";
     public static final String BUSINESS_TYPE = "businessType";
-    private static final Logger LOGGER = LoggerFactory.getLogger(CourtSchedulerServiceAdapter.class);
     public static final String PANEL_ADULT_YOUTH = "ADULT,YOUTH";
     private static final String PANEL = "panel";
+    public static final String HEARING_ID = "hearingId";
     @Inject
     private HearingSlotsService hearingSlotsService;
     @Inject
@@ -82,7 +83,7 @@ public class CourtSchedulerServiceAdapter {
         final List<JudicialRole> judiciaries = new ArrayList<>();
         final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
 
-        responseJson.getJsonArray("hearingSlots")
+        responseJson.getJsonArray(HEARING_SLOTS)
                 .stream()
                 .map(JsonObject.class::cast)
                 .forEach(hearingSlotJsonObject -> {
@@ -131,7 +132,7 @@ public class CourtSchedulerServiceAdapter {
             LOGGER.warn(errorMessage);
         } else {
             final JsonObject responseJson = objectToJsonObjectConverter.convert(hearingSlotResponse.getEntity());
-            final List<JsonObject> hearingSlots = responseJson.getJsonArray("hearingSlots")
+            final List<JsonObject> hearingSlots = responseJson.getJsonArray(HEARING_SLOTS)
                     .stream()
                     .map(JsonObject.class::cast)
                     .collect(Collectors.toList());
@@ -216,5 +217,4 @@ public class CourtSchedulerServiceAdapter {
 
         return new HearingIdsResponse(uuids, results, pageCount);
     }
-
 }

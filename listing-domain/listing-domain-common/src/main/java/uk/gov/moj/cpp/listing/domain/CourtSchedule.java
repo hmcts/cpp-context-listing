@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.domain;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -29,12 +30,16 @@ public class CourtSchedule implements Comparable<CourtSchedule> {
     private Integer availableDuration;
     private String hearingStartTime;
     private String courtHouseId;
+    private boolean slotBased;
+    private boolean allDaySplit;
+    private Date sessionStartTime;
+    private Date sessionEndTime;
     private final List<CourtScheduleJudiciary> judiciaries = new ArrayList();
 
     public CourtSchedule() {
     }
 
-    public CourtSchedule(final String bookingId, final String courtScheduleId, final String listingProfileId, final String ouCode, final String courtRoomId, final Integer courtRoomNumber, final String courtHouseName, final String courtRoomName, final String operationalUnit, final String businessType, final String panel, final String courtSession, final LocalDate sessionDate, final Integer maxSlots, final Integer maxDuration, final Integer availableSlots, final Integer availableDuration, final String hearingStartTime, final String courtHouseId) {
+    public CourtSchedule(final String bookingId, final String courtScheduleId, final String listingProfileId, final String ouCode, final String courtRoomId, final Integer courtRoomNumber, final String courtHouseName, final String courtRoomName, final String operationalUnit, final String businessType, final String panel, final String courtSession, final LocalDate sessionDate, final Integer maxSlots, final Integer maxDuration, final Integer availableSlots, final Integer availableDuration, final String hearingStartTime, final String courtHouseId, final boolean slotBased, final boolean allDaySplit, final Date sessionStartTime, final Date sessionEndTime) {
         this.bookingId = bookingId;
         this.courtScheduleId = courtScheduleId;
         this.listingProfileId = listingProfileId;
@@ -54,6 +59,10 @@ public class CourtSchedule implements Comparable<CourtSchedule> {
         this.availableDuration = availableDuration;
         this.hearingStartTime = hearingStartTime;
         this.courtHouseId = courtHouseId;
+        this.slotBased = slotBased;
+        this.allDaySplit = allDaySplit;
+        this.sessionStartTime = sessionStartTime;
+        this.sessionEndTime = sessionEndTime;
     }
 
     public String getBookingId() {
@@ -210,6 +219,46 @@ public class CourtSchedule implements Comparable<CourtSchedule> {
 
     public void setCourtHouseId(final String courtHouseId) {
         this.courtHouseId = courtHouseId;
+    }
+
+    public boolean isSlotBased() {
+        return slotBased;
+    }
+
+    public void setSlotBased(final boolean slotBased) {
+        this.slotBased = slotBased;
+    }
+
+    public boolean isAllDaySplit() {
+        return allDaySplit;
+    }
+
+    public void setAllDaySplit(final boolean allDaySplit) {
+        this.allDaySplit = allDaySplit;
+    }
+
+    public Date getSessionStartTime() {
+        return sessionStartTime;
+    }
+
+    public void setSessionStartTime(final Date sessionStartTime) {
+        this.sessionStartTime = sessionStartTime;
+    }
+
+    public Date getSessionEndTime() {
+        return sessionEndTime;
+    }
+
+    public void setSessionEndTime(final Date sessionEndTime) {
+        this.sessionEndTime = sessionEndTime;
+    }
+
+    public Integer getTotalSessionDurationInMinutes() {
+        if (sessionStartTime == null || sessionEndTime == null) {
+            return 0;
+        }
+        long diff = (sessionEndTime.getTime() - sessionStartTime.getTime()) / (60 * 1000);
+        return (int) diff;
     }
 
     @Override

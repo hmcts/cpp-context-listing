@@ -260,6 +260,9 @@
         },
         "courtRoomId": {
           "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+        },
+        "ouCode": {
+          "type": "string"
         }
       },
       "required": [

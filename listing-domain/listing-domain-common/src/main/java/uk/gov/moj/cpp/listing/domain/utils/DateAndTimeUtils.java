@@ -82,6 +82,14 @@ public class DateAndTimeUtils {
         return zonedDateTime.format(ISO_8601_FORMATTER);
     }
 
+    public static String toIsoString(LocalDate localDate) {
+        if (localDate == null) {
+            return null;
+        }
+
+        return localDate.format(ISO_8601_FORMATTER);
+    }
+
     private static String correctRawHours(final String rawHours) {
 
         return rawHours.trim().isEmpty() ? "0" : rawHours.trim();

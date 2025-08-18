@@ -21,13 +21,12 @@ import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.quality.Strictness.LENIENT;
 import static uk.gov.justice.core.courts.CourtCentre.courtCentre;
 import static uk.gov.justice.core.courts.HearingDay.hearingDay;
 import static uk.gov.justice.hearing.courts.HearingDaysCancelled.hearingDaysCancelled;
@@ -45,8 +44,6 @@ import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMA
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_APPLICATION_EJECTED;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_CASE_EJECTED;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_CASE_OR_APPLICATION_EJECTED;
-import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS;
-import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_UPDATE_HEARING_DAY_COURT_SCHEDULE;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_UPDATE_CASE_DEFENDANT_DETAILS;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_UPDATE_CASE_DEFENDANT_OFFENCES;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_UPDATE_COURT_APPLICATION;
@@ -86,7 +83,6 @@ import uk.gov.justice.listing.courts.DeletedOffences;
 import uk.gov.justice.listing.courts.HearingConfirmed;
 import uk.gov.justice.listing.courts.HearingUpdated;
 import uk.gov.justice.listing.courts.OffencesForDefendantUpdated;
-import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.listing.courts.UpdatedOffences;
 import uk.gov.justice.listing.events.AllocatedHearingExtendedForListing;
 import uk.gov.justice.listing.events.AllocatedHearingExtendedForListingV2;
@@ -150,9 +146,9 @@ import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 import uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
+import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
-import uk.gov.moj.cpp.listing.event.processor.azure.builder.SlotDetailBuilder;
-import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
+import uk.gov.moj.cpp.listing.domain.SlotDetail;
 import uk.gov.moj.cpp.listing.event.processor.command.AddCourtApplicationToHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.AddDefendantsForCourtProceedingsCommand;
 import uk.gov.moj.cpp.listing.event.processor.command.AddDefendantsForCourtProceedingsCommandCollectionConverter;
@@ -206,14 +202,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
 import org.slf4j.Logger;
 
-// FIXME!!! Temporarily using lenient strictness to get this
-// context running with junit 5.
-@MockitoSettings(strictness = LENIENT)
 @ExtendWith(MockitoExtension.class)
-public class ListingEventProcessorTest {
+class ListingEventProcessorTest {
 
     private static final String FIELD_HEARING_ID = "hearingId";
     private static final String FIELD_APPLICATION_ID = "applicationId";
@@ -239,10 +231,12 @@ public class ListingEventProcessorTest {
     private static final String ID = "id";
     private static final String HMI_SOURCE = "HMI";
     final Optional<String> OU_CODE = of("BAX0100");
-    public static final String OUCODE = "B06AN00";
+    static final String OUCODE = "B06AN00";
     private final List<uk.gov.justice.listing.events.HearingDay> hearingDays = Arrays.asList(uk.gov.justice.listing.events.HearingDay.hearingDay().withHearingDate(START_DATE).withDurationMinutes(10).build());
     private static final String COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED = "listing.command.update-hearing-for-listing-enriched";
     private static final String COMMAND_CHANGE_NEXT_HEARING_DAY = "listing.command.change-next-hearing-day";
+    private static final String EVENT_AVAILABLE_SLOTS_FOR_HEARING_FREED = "listing.events.available-slots-for-hearing-freed";
+    private static final String COMMAND_MARK_HEARING_AS_DUPLICATE = "listing.command.mark-hearing-as-duplicate";
 
     private static final String HEARINGID = "hearingId";
     private static final String SEEDING_HERAING_ID = "seedingHearingId";
@@ -333,8 +327,6 @@ public class ListingEventProcessorTest {
     @Mock
     private AllocatedHearingUpdatedFactory allocatedHearingUpdatedFactory;
     @Mock
-    private SlotUpdater slotUpdater;
-    @Mock
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
     @Captor
     private ArgumentCaptor<PublicListingNewDefendantAddedForCourtProceedings> publicEventPayloadCaptor;
@@ -361,6 +353,8 @@ public class ListingEventProcessorTest {
     @Mock
     private HearingListedToUpdateHearingForListingCommand hearingListedToUpdateHearingForListingCommand;
     @Mock
+    private HearingSlotsService hearingSlotsService;
+    @Mock
     private ReferenceDataService referenceDataService;
     @Mock
     private HearingService hearingService;
@@ -381,7 +375,7 @@ public class ListingEventProcessorTest {
     private ListingEventProcessor listingEventProcessor;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
         final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(objectMapper);
         ReflectionUtil.setField(listingEventProcessor, "objectToJsonObjectConverter", objectToJsonObjectConverter);
@@ -395,7 +389,6 @@ public class ListingEventProcessorTest {
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
         given(hearingListed.getHearing()).willReturn(hearing);
-        given(hearing.getIsSlotsBooked()).willReturn(null);
         given(addHearingToCaseCommandCollectionConverter.convert(hearingListed)).willReturn(singletonList(addHearingToCaseCommand));
         given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed)).
                 willReturn(singletonList(addApplicationToHearingCommand));
@@ -431,7 +424,7 @@ public class ListingEventProcessorTest {
         listingEventProcessor.handleHearingListedMessage(envelope);
 
         //then
-        verify(sender, times(5)).send(senderJsonEnvelopeCaptor.capture());
+        verify(sender, times(4)).send(senderJsonEnvelopeCaptor.capture());
     }
 
     @Test
@@ -442,10 +435,8 @@ public class ListingEventProcessorTest {
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
         given(hearingListed.getHearing()).willReturn(hearing);
-        given(hearing.getIsSlotsBooked()).willReturn(true);
         given(addHearingToCaseCommandCollectionConverter.convert(hearingListed)).willReturn(singletonList(addHearingToCaseCommand));
         given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed)).willReturn(singletonList(addApplicationToHearingCommand));
-        given(hearingListedToUpdateHearingForListingCommand.convert(hearing)).willReturn(UpdateHearingForListingEnriched.updateHearingForListingEnriched().build());
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
                 forClass(JsonEnvelope.class);
 
@@ -453,8 +444,8 @@ public class ListingEventProcessorTest {
         listingEventProcessor.handleHearingListedMessage(envelope);
 
         //then
-        verify(sender, times(5)).send(senderJsonEnvelopeCaptor.capture());
-        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(2).metadata().name(), is(COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED));
+        verify(sender, times(4)).send(senderJsonEnvelopeCaptor.capture());
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(2).metadata().name(), is("public.listing.hearing-listed"));
     }
 
     @Test
@@ -477,8 +468,8 @@ public class ListingEventProcessorTest {
         listingEventProcessor.handleHearingListedMessage(envelope);
 
         //then
-        verify(sender, times(5)).send(senderJsonEnvelopeCaptor.capture());
-        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(2).metadata().name(), is(COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED));
+        verify(sender, times(4)).send(senderJsonEnvelopeCaptor.capture());
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(2).metadata().name(), is("public.listing.hearing-listed"));
     }
 
     @Test
@@ -627,9 +618,6 @@ public class ListingEventProcessorTest {
 
         //then
         verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
-
-        verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
-        verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
         verify(courtSchedulerServiceAdapter, never()).getJudicialRoles(anyString(), anyString(), any(), anyString());
 
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
@@ -651,32 +639,18 @@ public class ListingEventProcessorTest {
         final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
         final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicialRoles = prepareRotaSLJudiciaryInfo(hearingSlotsResponse);
 
-        when(courtSchedulerServiceAdapter.getJudicialRoles(isNull(), anyString(), any(), anyString())).thenReturn(judicialRoles);
-        when(slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, true, hearingDays))
-                .thenReturn(Optional.of(Collections.singletonList(
-                        SlotDetailBuilder.slotDetail()
-                                .withOuCode("oucode")
-                                .withSession("AD")
-                                .withCourtRoomId(1)
-                                .build()))
-                );
-
         //when
         listingEventProcessor.handleHearingAllocatedForListingMessage(event);
 
         //then
-        verify(sender, times(3)).send(senderJsonEnvelopeCaptor.capture());
-        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
-        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS));
-        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(2).metadata().name(), is(PUBLIC_EVENT_HEARING_CHANGES_SAVED));
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CHANGES_SAVED));
 
-        verify(courtSchedulerServiceAdapter, times(1)).getJudicialRoles(isNull(), anyString(), any(), anyString());
-        verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, true, hearingDays);
-        verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, true, hearingDays);
     }
 
     @Test
-    public void shouldHandleHearingAllocatedForListingMessageWhenRecievedWithoutJudiciaryInfoAndGetFromRotaSL() {
+    public void shouldHandleHearingAllocatedForListingMessageWhenReceivedWithoutJudiciaryInfoAndGetFromRotaSL() {
 
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
         //given
@@ -692,29 +666,13 @@ public class ListingEventProcessorTest {
         final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
         final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicialRoles = prepareRotaSLJudiciaryInfo(hearingSlotsResponse);
 
-        when(courtSchedulerServiceAdapter.getJudicialRoles(isNull(), anyString(), any(), anyString())).thenReturn(judicialRoles);
-        when(slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays))
-                .thenReturn(Optional.of(Collections.singletonList(
-                        SlotDetailBuilder.slotDetail()
-                                .withOuCode("oucode")
-                                .withSession("AD")
-                                .withCourtRoomId(1)
-                                .build()))
-                );
-
         //when
         listingEventProcessor.handleHearingAllocatedForListingMessage(event);
 
         //then
-        verify(sender, times(3)).send(senderJsonEnvelopeCaptor.capture());
-        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS));
-        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
-        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(2).metadata().name(), is(PUBLIC_EVENT_HEARING_CHANGES_SAVED));
-
-        verify(courtSchedulerServiceAdapter, times(1)).getJudicialRoles(isNull(), anyString(), any(), anyString());
-        verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
-        verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
-
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CHANGES_SAVED));
     }
 
     @Test
@@ -736,13 +694,11 @@ public class ListingEventProcessorTest {
         final JsonValue hearingConfirmedJson = jsonValueConverter.convert(hearingConfirmed);
 
         given(objectToJsonValueConverter.convert(any())).willReturn(hearingConfirmedJson);
-
+        //when
         listingEventProcessor.handleHearingAllocatedForListingV2Message(event);
 
         //then
         verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
-        verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
-        verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
         final JsonEnvelope jsonEnvelope = senderJsonEnvelopeCaptor.getAllValues().get(0);
         assertThat(jsonEnvelope.metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
         assertThat(jsonEnvelope.payloadAsJsonObject().getBoolean("sendNotificationToParties"), is(true));
@@ -764,29 +720,13 @@ public class ListingEventProcessorTest {
         final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
         final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicialRoles = prepareRotaSLJudiciaryInfo(hearingSlotsResponse);
 
-        when(courtSchedulerServiceAdapter.getJudicialRoles(isNull(), anyString(), any(), anyString())).thenReturn(judicialRoles);
-        when(slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, true, hearingDays))
-                .thenReturn(Optional.of(Collections.singletonList(
-                        SlotDetailBuilder.slotDetail()
-                                .withOuCode("oucode")
-                                .withSession("AD")
-                                .withSessionDate(LocalDate.now().toString())
-                                .withCourtScheduleId("CourtSchedule")
-                                .withCourtRoomId(1)
-                                .build()))
-                );
-
         //when
         listingEventProcessor.handleHearingAllocatedForListingMessage(event);
 
         //then
-        verify(sender, times(3)).send(senderJsonEnvelopeCaptor.capture());
-        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(COMMAND_UPDATE_HEARING_DAY_COURT_SCHEDULE));
-        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
-        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(2).metadata().name(), is(PUBLIC_EVENT_HEARING_CHANGES_SAVED));
-
-        verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, true, hearingDays);
-        verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, true, hearingDays);
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CHANGES_SAVED));
     }
 
     @Test
@@ -820,18 +760,14 @@ public class ListingEventProcessorTest {
                 30,
                 courtScheduleId,
                 randomUUID().toString(), "09:00:00");
-        when(slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays)).thenReturn(Optional.of(List.of(slotDetail)));
         listingEventProcessor.handleHearingAllocatedForListingV2Message(event);
 
-        verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
-        verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
-        verify(sender, times(3)).send(senderJsonEnvelopeCaptor.capture());
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
         final JsonEnvelope jsonEnvelope = senderJsonEnvelopeCaptor.getAllValues().get(0);
-        assertThat( jsonEnvelope.metadata().name(), is(COMMAND_UPDATE_HEARING_DAY_COURT_SCHEDULE));
+        assertThat( jsonEnvelope.metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
         final JsonObject commandJsonObj = jsonEnvelope.payloadAsJsonObject();
-        final JsonArray hearingDays = commandJsonObj.getJsonArray("hearingDayCourtSchedules");
-        assertThat(hearingDays.getJsonObject(0).getString("hearingDate"), is(hearingDay));
-        assertThat(hearingDays.getJsonObject(0).getString("courtScheduleId"), is(courtScheduleId));
+        final JsonObject confirmedHearing = commandJsonObj.getJsonObject("confirmedHearing");
+        final JsonArray hearingDays = confirmedHearing.getJsonArray("hearingDays");
     }
 
     @Test
@@ -852,9 +788,6 @@ public class ListingEventProcessorTest {
         //then
         verify(sender, times(3)).send(senderJsonEnvelopeCaptor.capture());
 
-        verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
-        verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
-
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(COMMAND_CHANGE_NEXT_HEARING_DAY));
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(2).metadata().name(), is(PUBLIC_EVENT_HEARING_CHANGES_SAVED));
@@ -863,7 +796,7 @@ public class ListingEventProcessorTest {
     }
 
     @Test
-    public void shouldHandleAllocatedHearingUpdatedForListingMessage() {
+    public void shouldHandleAllocatedHearingUpdForListingMessage() {
         //given
         final JsonEnvelope event = hearingAllocatedEvent();
         final AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing = new AllocatedHearingUpdatedForListing.Builder()
@@ -882,9 +815,6 @@ public class ListingEventProcessorTest {
 
         //then
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
-
-        verify(slotUpdater).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
-        verify(slotUpdater, times(1)).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
 
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is(PUBLIC_EVENT_HEARING_UPDATED));
     }
@@ -905,30 +835,10 @@ public class ListingEventProcessorTest {
         HearingUpdated hearingUpdated = hearingUpdated();
         when(allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing, event)).thenReturn(hearingUpdated);
 
-        String courtScheduleId = randomUUID().toString();
-        SlotDetail slotDetail = new SlotDetail("ouCode",
-                "ADULT",
-                1,
-                LocalDate.now().toString(),
-                "AM",
-                randomUUID().toString(),
-                15,
-                courtScheduleId,
-                "Booking1", "09:00");
-        when(slotUpdater.updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays))
-                .thenReturn(Optional.of(List.of(slotDetail)));
-
         listingEventProcessor.handleAllocatedHearingUpdatedForListingMessage(event);
 
-        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
-        verify(slotUpdater).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
+        verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is(PUBLIC_EVENT_HEARING_UPDATED));
-
-        JsonObject cmdJsonObject = senderJsonEnvelopeCaptor.getAllValues().get(0).payloadAsJsonObject();
-        JsonArray courtSchedules = cmdJsonObject.getJsonArray("hearingDayCourtSchedules");
-        JsonObject courtScheduleJsonObject = courtSchedules.getJsonObject(0);
-        assertThat(courtScheduleJsonObject.getString("hearingDate"), is(LocalDate.now().toString()));
-        assertThat(courtScheduleJsonObject.getString("courtScheduleId"), is(courtScheduleId));
     }
 
     @Test
@@ -963,13 +873,9 @@ public class ListingEventProcessorTest {
                 15,
                 courtScheduleId.toString(),
                 "Booking1", "09:00");
-        when(slotUpdater.updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays))
-                .thenReturn(Optional.of(List.of(slotDetail)));
 
         listingEventProcessor.handleAllocatedHearingUpdatedForListingMessage(event);
-
-        verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
-        verify(slotUpdater).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
+        verify(sender).send(senderJsonEnvelopeCaptor.capture());
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is(PUBLIC_EVENT_HEARING_UPDATED));
     }
 
@@ -994,9 +900,6 @@ public class ListingEventProcessorTest {
         //then
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
 
-        verify(slotUpdater).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
-        verify(slotUpdater, times(1)).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
-
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is(PUBLIC_EVENT_HEARING_UPDATED));
     }
 
@@ -1016,9 +919,6 @@ public class ListingEventProcessorTest {
         listingEventProcessor.handleAllocatedHearingUpdatedForListingV2Message(event);
 
         verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
-
-        verify(slotUpdater).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
-        verify(slotUpdater, times(1)).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
 
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(PUBLIC_EVENT_HEARING_UPDATED));
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(COMMAND_CHANGE_NEXT_HEARING_DAY));
@@ -1213,10 +1113,6 @@ public class ListingEventProcessorTest {
         final JsonObject caseDefendantChangeJsonObject = this.objectToJsonObjectConverter.convert(defendantUpdated);
         final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), caseDefendantChangeJsonObject);
 
-        //given
-        given(jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(),
-                DefendantUpdated.class)).willReturn(defendantUpdated);
-
         //when
         listingEventProcessor.handleCaseDefendantChangedMessage(jsonEnvelope);
 
@@ -1263,10 +1159,6 @@ public class ListingEventProcessorTest {
                                 .add(createObjectBuilder().add("id", "095d7412-ba76-4a15-942d-566d3aeae7c9")
                                         .add("allocated", false).build()))
         );
-
-        //given
-        given(jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(),
-                DefendantsAddedToCourtProceedings.class)).willReturn(defendantsAddedToCourtProceedings);
 
         listingEventProcessor.handleDefendantAddedForCourtProceedings(jsonEnvelope);
 
@@ -1316,10 +1208,6 @@ public class ListingEventProcessorTest {
 
         JsonObjectToObjectConverter jsonObjectToObjectConverter2 = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
 
-        //given
-        given(jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(),
-                DefendantsAddedToCourtProceedings.class)).willReturn(defendantsAddedToCourtProceedings);
-
         listingEventProcessor.handleDefendantAddedForCourtProceedings(jsonEnvelope);
 
         //then
@@ -1337,10 +1225,6 @@ public class ListingEventProcessorTest {
         final OffencesForDefendantUpdated offencesForDefendantUpdated = offencesForDefendantUpdated();
         final JsonObject defendantOffencesChangedJsonObject = this.objectToJsonObjectConverter.convert(offencesForDefendantUpdated);
         final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), defendantOffencesChangedJsonObject);
-
-        //given
-        given(jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(),
-                OffencesForDefendantUpdated.class)).willReturn(offencesForDefendantUpdated);
 
         //when
         listingEventProcessor.handleDefendantOffencesChanged(jsonEnvelope);
@@ -1360,10 +1244,6 @@ public class ListingEventProcessorTest {
         final CourtApplicationChanged courtApplicationChanged = courtApplicationChanged();
         final JsonObject courtApplicationChangedJsonObject = this.objectToJsonObjectConverter.convert(courtApplicationChanged);
         final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), courtApplicationChangedJsonObject);
-
-        //given
-        given(jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(),
-                CourtApplicationChanged.class)).willReturn(courtApplicationChanged);
 
         //when
         listingEventProcessor.handleCourtApplicationChanged(jsonEnvelope);
@@ -1476,10 +1356,6 @@ public class ListingEventProcessorTest {
         final JsonObject ejectCaseOrApplicationObject = this.objectToJsonObjectConverter.convert(ejectCaseOrApplication);
         final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), ejectCaseOrApplicationObject);
         final JsonEnvelopeMatcher jsonEnvelopeMatcher = new JsonEnvelopeMatcher();
-
-        //given
-        given(jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(),
-                CaseOrApplicationEjected.class)).willReturn(ejectCaseOrApplication);
 
         listingEventProcessor.handleEventsCaseOrApplicationEjected(jsonEnvelope);
 
@@ -1871,7 +1747,7 @@ public class ListingEventProcessorTest {
                 .willReturn(hearingConfirmed);
 
         final JsonObject jsonObject = createObjectBuilder().add("confirmedHearing", createObjectBuilder().add(ID, HEARING_ID.toString())).build();
-        given(objectToJsonValueConverter.convert(any(HearingConfirmed.class))).willReturn(jsonObject);
+        lenient().when(objectToJsonValueConverter.convert(any(HearingConfirmed.class))).thenReturn(jsonObject);
         //when
         listingEventProcessor.handleAllocatedHearingExtendedForListingMessage(event);
 
@@ -1879,7 +1755,6 @@ public class ListingEventProcessorTest {
         verify(sender, times(2)).send(senderDefaultEnvelopeCaptor.capture());
         final List<DefaultEnvelope<JsonObject>> allValues = senderDefaultEnvelopeCaptor.getAllValues();
 
-        final JsonEnvelopeMatcher jsonEnvelopeMatcher = new JsonEnvelopeMatcher();
         assertThat(allValues.get(0).metadata().name(), is(COMMAND_UPDATE_HEARING_TO_CASE));
         assertThat(allValues.get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
         assertThat(allValues.get(1).payload().getJsonObject("confirmedHearing").getString(ID), equalTo(HEARING_ID.toString()));
@@ -1904,7 +1779,7 @@ public class ListingEventProcessorTest {
                 .willReturn(hearingConfirmed);
 
         final JsonObject jsonObject = createObjectBuilder().add("confirmedHearing", createObjectBuilder().add(ID, HEARING_ID.toString())).build();
-        given(objectToJsonValueConverter.convert(any(HearingConfirmed.class))).willReturn(jsonObject);
+        lenient().when(objectToJsonValueConverter.convert(any(HearingConfirmed.class))).thenReturn(jsonObject);
         //when
         listingEventProcessor.handleAllocatedHearingExtendedForListingV2Message(event);
 
@@ -1912,7 +1787,6 @@ public class ListingEventProcessorTest {
         verify(sender, times(2)).send(senderDefaultEnvelopeCaptor.capture());
         final List<DefaultEnvelope<JsonObject>> allValues = senderDefaultEnvelopeCaptor.getAllValues();
 
-        final JsonEnvelopeMatcher jsonEnvelopeMatcher = new JsonEnvelopeMatcher();
         assertThat(allValues.get(0).metadata().name(), is(COMMAND_UPDATE_HEARING_TO_CASE));
         assertThat(allValues.get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
         assertThat(allValues.get(1).payload().getJsonObject("confirmedHearing").getString(ID), equalTo(HEARING_ID.toString()));
@@ -1976,11 +1850,12 @@ public class ListingEventProcessorTest {
 
         listingEventProcessor.handleHearingMarkedAsDuplicate(event);
 
-        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+        verify(this.sender, times(1)).send(this.senderJsonEnvelopeCaptor.capture());
 
         final JsonEnvelope commandEvent = this.senderJsonEnvelopeCaptor.getValue();
 
-        assertThat(commandEvent.metadata().name(), is("listing.command.mark-hearing-as-duplicate"));
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(COMMAND_MARK_HEARING_AS_DUPLICATE));
+
         assertThat(commandEvent.payload().toString(), isJson(allOf(
                 withJsonPath("$.hearingId", equalTo(hearingId)),
                 withJsonPath("$.prosecutionCaseIds[0]", equalTo(case1Id)),

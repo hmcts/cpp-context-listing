@@ -34,7 +34,6 @@ import javax.json.JsonReader;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class HearingDaysUpdateEventListener {

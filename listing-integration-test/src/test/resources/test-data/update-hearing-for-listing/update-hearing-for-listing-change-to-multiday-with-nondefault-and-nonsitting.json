@@ -1,0 +1,67 @@
+{
+    "selectedCourtCentre":
+    {
+        "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+        "courtRoomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+        "courtCentreName": "Lavender Hill Magistrates' Court",
+        "ouCode": "B01LY00"
+    },
+    "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+    "courtRoomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+    "type":
+    {
+        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+        "description": "First hearing"
+    },
+    "startDate": "2025-05-27",
+    "endDate": "2025-05-30",
+    "nonSittingDays":
+    [
+        "2025-05-28"
+    ],
+    "nonDefaultDays":
+    [
+        {
+            "startTime": "2025-05-29T10:00:00.000Z",
+            "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+            "roomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+            "duration": 360
+        }
+    ],
+    "judiciary":
+    [
+        {
+            "judicialId": "047a75af-800d-490e-b231-f318e60a1b55",
+            "judicialRoleType":
+            {
+                "judiciaryType": "MAGISTRATE"
+            },
+            "isDeputy": false,
+            "isBenchChairman": true
+        },
+        {
+            "judicialId": "0646712d-45d8-4899-8179-b92c0550793e",
+            "judicialRoleType":
+            {
+                "judiciaryType": "MAGISTRATE"
+            },
+            "isDeputy": true,
+            "isBenchChairman": false
+        },
+        {
+            "judicialId": "2e45c74b-1a28-487c-890d-188c9b12e782",
+            "judicialRoleType":
+            {
+                "judiciaryType": "MAGISTRATE"
+            },
+            "isDeputy": true,
+            "isBenchChairman": false
+        }
+    ],
+    "jurisdictionType": "MAGISTRATES",
+    "hearingLanguage": "ENGLISH",
+    "publicListNote": "",
+    "hasVideoLink": false,
+    "sendNotificationToParties": false,
+    "hearingId": "2a9012c6-5f00-4a84-8f6b-8226a1f505f8"
+}

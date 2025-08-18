@@ -22,8 +22,8 @@ public class CourtCentreFactory {
     public CourtCentreDetails getCourtCentre(UUID courtCentreId, JsonEnvelope envelope) {
         final JsonEnvelope courtCentreEnvelope = referenceDataService.getCourtCentreById(courtCentreId, envelope);
         final JsonObject jsonObject = courtCentreEnvelope.payloadAsJsonObject();
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("courtCentreEnvelope response: {}", courtCentreEnvelope.toObfuscatedDebugString());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("courtCentreEnvelope response: {}", courtCentreEnvelope.toObfuscatedDebugString());
         }
 
         final String defaultDurationHoursMins = getJsonObjectString("defaultDurationHrs", jsonObject, courtCentreId);

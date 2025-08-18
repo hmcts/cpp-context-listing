@@ -35,6 +35,7 @@ import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder;
+import uk.gov.moj.cpp.listing.persistence.repository.JsonNodeUpdater;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -52,7 +53,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.gov.moj.cpp.listing.persistence.repository.JsonNodeUpdater;
 
 @SuppressWarnings({"squid:S3655", "squid:S1067"})
 @ServiceComponent(Component.EVENT_LISTENER)

@@ -1,7 +1,7 @@
 # Listing 
 
 ## API
- 
+
 Every request requires a `CJSCPPUID` header, with a valid user id.
 
 If you do not have one, you can turn off access control, by switching to the `atcm-vagrant` directory and running:

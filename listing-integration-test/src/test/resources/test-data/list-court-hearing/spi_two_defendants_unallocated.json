@@ -1,0 +1,217 @@
+{
+    "hearings":
+    [
+        {
+            "courtCentre":
+            {
+                "id": "%%COURT_CENTRE_ID%%",
+                "name": "Lavender Hill Magistrates' Court",
+                "welshName": "Llys Ynadon Lavender Hill"
+            },
+            "defendantListingNeeds":
+            [
+                {
+                    "defendantId": "71da4e08-e284-4dea-bc8b-72d5ed21c585",
+                    "hearingLanguageNeeds": "ENGLISH",
+                    "isYouth": false,
+                    "prosecutionCaseId": "c5c20864-5547-41a0-9ef2-7e86ab81c1a0"
+                },
+                {
+                    "defendantId": "52da6bae-71ea-4b99-b1f9-f40d6acbfd6c",
+                    "hearingLanguageNeeds": "ENGLISH",
+                    "isYouth": false,
+                    "prosecutionCaseId": "c5c20864-5547-41a0-9ef2-7e86ab81c1a0"
+                }
+            ],
+            "estimatedMinutes": 20,
+            "id": "%%HEARING_ID%%",
+            "isGroupProceedings": false,
+            "jurisdictionType": "%%JURISDICTION_TYPE%%",
+            "listedStartDateTime": "%%LISTED_START_DATE_TIME%%",
+            "numberOfGroupCases": 1,
+            "prosecutionCases":
+            [
+                {
+                    "cpsOrganisation": "A30AB00",
+                    "defendants":
+                    [
+                        {
+                            "courtProceedingsInitiated": "2025-05-21T00:16:43.861Z",
+                            "id": "71da4e08-e284-4dea-bc8b-72d5ed21c585",
+                            "masterDefendantId": "71da4e08-e284-4dea-bc8b-72d5ed21c585",
+                            "offences":
+                            [
+                                {
+                                    "arrestDate": "2005-11-19",
+                                    "chargeDate": "2004-12-09",
+                                    "count": 0,
+                                    "endorsableFlag": false,
+                                    "id": "fe36fdb9-caf0-4f5f-a503-4fef129c9841",
+                                    "maxPenalty": "S:L3",
+                                    "modeOfTrial": "Summary",
+                                    "offenceCode": "TW01046",
+                                    "offenceDateCode": 1,
+                                    "offenceDefinitionId": "99f673ae-9505-37f6-853f-462be00ed38a",
+                                    "offenceLegislation": "Contrary to byelaw 19 and 31(1) of the Tyne and Wear Metro Byelaws made under sections 58 and 62 of the Tyneside Metropolitan Railway Act 1973.",
+                                    "offenceTitle": "Occupy reserved seat / berth without a valid ticket on the Tyne and Wear Metro",
+                                    "orderIndex": 1,
+                                    "startDate": "2004-12-09",
+                                    "wording": "Has a violent past and fear that he will commit further offences and interfere with witnesse"
+                                },
+                                {
+                                    "arrestDate": "2005-11-19",
+                                    "chargeDate": "2004-12-09",
+                                    "count": 0,
+                                    "endorsableFlag": false,
+                                    "id": "d1bf7b6d-46ad-4e1f-962e-dddb6bea550c",
+                                    "maxPenalty": "S:L3",
+                                    "modeOfTrial": "Summary",
+                                    "offenceCode": "CA03010",
+                                    "offenceDateCode": 1,
+                                    "offenceDefinitionId": "6d4e6673-a075-35e9-9ded-448284bf316b",
+                                    "offenceLegislation": "Contrary to section 363(2) and (4) of the Communications Act 2003.",
+                                    "offenceLegislationWelsh": "Yn groes i adran 363(2) a (4) Deddf Cyfathrebu 2003.",
+                                    "offenceTitle": "Use a television set without a licence",
+                                    "offenceTitleWelsh": "Defnyddio set deledu heb drwydded",
+                                    "orderIndex": 2,
+                                    "startDate": "2004-12-09",
+                                    "wording": "Has a violent past and fear that he will commit further offences and interfere with witnesse"
+                                }
+                            ],
+                            "personDefendant":
+                            {
+                                "arrestSummonsNumber": "TFL",
+                                "bailStatus":
+                                {
+                                    "code": "C",
+                                    "description": "Custody",
+                                    "id": "12e69486-4d01-3403-a50a-7419ca040635"
+                                },
+                                "personDetails":
+                                {
+                                    "address":
+                                    {
+                                        "address1": "HPg4trfiZF",
+                                        "address2": "StreetDescription",
+                                        "address3": "Locality2O"
+                                    },
+                                    "dateOfBirth": "1932-10-16",
+                                    "documentationLanguageNeeds": "ENGLISH",
+                                    "firstName": "Jayda",
+                                    "gender": "MALE",
+                                    "hearingLanguageNeeds": "ENGLISH",
+                                    "lastName": "Davis",
+                                    "title": "MR"
+                                }
+                            },
+                            "prosecutionAuthorityReference": "TFL",
+                            "prosecutionCaseId": "c5c20864-5547-41a0-9ef2-7e86ab81c1a0"
+                        },
+                        {
+                            "courtProceedingsInitiated": "2025-05-21T00:16:43.861Z",
+                            "id": "52da6bae-71ea-4b99-b1f9-f40d6acbfd6c",
+                            "masterDefendantId": "52da6bae-71ea-4b99-b1f9-f40d6acbfd6c",
+                            "offences":
+                            [
+                                {
+                                    "arrestDate": "2005-11-19",
+                                    "chargeDate": "2004-12-09",
+                                    "count": 0,
+                                    "endorsableFlag": false,
+                                    "id": "df238ec5-c01f-4712-873c-f06854a682ab",
+                                    "maxPenalty": "S:L3",
+                                    "modeOfTrial": "Summary",
+                                    "offenceCode": "TW01046",
+                                    "offenceDateCode": 1,
+                                    "offenceDefinitionId": "99f673ae-9505-37f6-853f-462be00ed38a",
+                                    "offenceLegislation": "Contrary to byelaw 19 and 31(1) of the Tyne and Wear Metro Byelaws made under sections 58 and 62 of the Tyneside Metropolitan Railway Act 1973.",
+                                    "offenceTitle": "Occupy reserved seat / berth without a valid ticket on the Tyne and Wear Metro",
+                                    "orderIndex": 1,
+                                    "startDate": "2004-12-09",
+                                    "wording": "Has a violent past and fear that he will commit further offences and interfere with witnesse"
+                                },
+                                {
+                                    "arrestDate": "2005-11-19",
+                                    "chargeDate": "2004-12-09",
+                                    "count": 0,
+                                    "endorsableFlag": false,
+                                    "id": "59945005-7f14-42f0-b668-b71f64e21fc2",
+                                    "maxPenalty": "S:L3",
+                                    "modeOfTrial": "Summary",
+                                    "offenceCode": "CA03011",
+                                    "offenceDateCode": 1,
+                                    "offenceDefinitionId": "b00b9ed1-18f5-38bd-99e1-e3d7f8d96f7d",
+                                    "offenceLegislation": "Contrary to section 363(3)(a) and (4) of the Communications Act 2003.",
+                                    "offenceLegislationWelsh": "Yn groes i adran 363(3)(a) a (4) Deddf Cyfathrebu 2003.",
+                                    "offenceTitle": "Possess a television set with intent to install / use without a licence",
+                                    "offenceTitleWelsh": "Meddu ar set deledu gan fwriadu'i osod/ddefnyddio heb drwydded",
+                                    "orderIndex": 2,
+                                    "startDate": "2004-12-09",
+                                    "wording": "Has a violent past and fear that he will commit further offences and interfere with witnesse"
+                                }
+                            ],
+                            "personDefendant":
+                            {
+                                "arrestSummonsNumber": "TFL1",
+                                "bailStatus":
+                                {
+                                    "code": "C",
+                                    "description": "Custody",
+                                    "id": "12e69486-4d01-3403-a50a-7419ca040635"
+                                },
+                                "personDetails":
+                                {
+                                    "address":
+                                    {
+                                        "address1": "HPg4trfiZF",
+                                        "address2": "StreetDescription",
+                                        "address3": "Locality2O"
+                                    },
+                                    "dateOfBirth": "1932-10-16",
+                                    "documentationLanguageNeeds": "ENGLISH",
+                                    "firstName": "Bettie",
+                                    "gender": "MALE",
+                                    "hearingLanguageNeeds": "ENGLISH",
+                                    "lastName": "Corkery",
+                                    "title": "MS"
+                                }
+                            },
+                            "prosecutionAuthorityReference": "TFL1",
+                            "prosecutionCaseId": "c5c20864-5547-41a0-9ef2-7e86ab81c1a0"
+                        }
+                    ],
+                    "id": "c5c20864-5547-41a0-9ef2-7e86ab81c1a0",
+                    "initiationCode": "C",
+                    "originatingOrganisation": "0300000",
+                    "prosecutionCaseIdentifier":
+                    {
+                        "address":
+                        {
+                            "address1": "Criminal Justice Department",
+                            "address2": "Derbyshire Constabulary",
+                            "address3": "Butterley Hall",
+                            "address4": "Ripley",
+                            "address5": "Derby",
+                            "postcode": "DE5 3RS"
+                        },
+                        "contact":
+                        {
+                            "primaryEmail": "criminaldataderbyshire@derbyshire.police.uk"
+                        },
+                        "majorCreditorCode": "PO30",
+                        "prosecutionAuthorityCode": "DERPF",
+                        "prosecutionAuthorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+                        "prosecutionAuthorityName": "Derbyshire Police",
+                        "prosecutionAuthorityOUCode": "0300000",
+                        "caseURN": "88GD4304125"
+                    }
+                }
+            ],
+            "type":
+            {
+                "description": "First hearing",
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776"
+            }
+        }
+    ]
+}
