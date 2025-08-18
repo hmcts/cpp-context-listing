@@ -1,21 +1,5 @@
 package uk.gov.moj.cpp.listing.query.view;
 
-import static org.mockito.Mockito.verify;
-import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
-import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUIDAndName;
-import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
-
-import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.justice.services.test.utils.core.converter.JsonObjectToObjectConverterFactory;
-import uk.gov.moj.cpp.listing.persistence.entity.CacheRefDataCourtroom;
-import uk.gov.moj.cpp.listing.persistence.repository.CacheRefDataCourtroomRepository;
-import uk.gov.moj.cpp.listing.query.view.service.CacheRefDataCourtroomLoader;
-
-import java.util.UUID;
-
-import javax.json.Json;
-import javax.json.JsonObject;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +7,20 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.test.utils.core.converter.JsonObjectToObjectConverterFactory;
+import uk.gov.moj.cpp.listing.persistence.entity.CacheRefDataCourtroom;
+import uk.gov.moj.cpp.listing.persistence.repository.CacheRefDataCourtroomRepository;
+import uk.gov.moj.cpp.listing.query.view.service.CacheRefDataCourtroomLoader;
+
+import javax.json.Json;
+import javax.json.JsonObject;
+import java.util.UUID;
+
+import static org.mockito.Mockito.verify;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUIDAndName;
+import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 
 @ExtendWith(MockitoExtension.class)
 class CacheRefDataCourtroomViewTest {

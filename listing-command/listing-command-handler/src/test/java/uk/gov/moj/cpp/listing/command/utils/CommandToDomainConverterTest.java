@@ -10,9 +10,9 @@ import static org.hamcrest.core.IsNot.not;
 import static uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter.REFERRAL_REASON_FOR_DISQUALIFICATION;
 
 import uk.gov.justice.core.courts.DefendantListingNeeds;
+import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.RotaSlot;
-import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
@@ -37,15 +37,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class CommandToDomainConverterTest {
+public class CommandToDomainConverterTest {
 
-    @InjectMocks
-    CommandToDomainConverter commandToDomainConverter;
+    private final CommandToDomainConverter commandToDomainConverter = new CommandToDomainConverter();
 
     @Spy
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
@@ -55,13 +53,8 @@ class CommandToDomainConverterTest {
 
     ObjectToJsonValueConverter objectToJsonValueConverter = new JsonObjectConvertersFactory().objectToJsonValueConverter();
 
-    @Mock
-    NonSittingDaysStringToLocalDateConverter nonSittingDaysStringToLocalDateConverter;
-
-    @Mock
-    HearingDaysCommandToDomainConverter hearingDaysCommandToDomainConverter;
-
-    CommandBuilder commandBuilder = new CommandBuilder(jsonObjectToObjectConverter);
+    @InjectMocks
+    CommandBuilder commandBuilder;
 
     @Test
     public void shouldConvertHearingCommandToHearingDomain() {
@@ -87,6 +80,7 @@ class CommandToDomainConverterTest {
         assertThat(actual.getCourtRoomId().get(), is(commandHearing.getCourtCentre().getRoomId()));
         assertThat(actual.getCourtCentreId(), is(commandHearing.getCourtCentre().getId()));
         assertThat(actual.getEstimatedMinutes(), is(commandHearing.getEstimatedMinutes()));
+        assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getEarliestStartDateTime().toString())));
         assertThat(actual.getEndDate().orElse(null), is(commandHearing.getEndDate()));
         assertThat(actual.getReportingRestrictionReason().get(), is(commandHearing.getReportingRestrictionReason()));
         assertThat(actual.getWeekCommencingStartDate(), is(of(LocalDate.parse(commandHearing.getWeekCommencingDate().getStartDate()))));
@@ -109,7 +103,7 @@ class CommandToDomainConverterTest {
 
 
         @Test
-        void shouldConvertHearingCommandToHearingDomainForBookedSlots() {
+    public void shouldConvertHearingCommandToHearingDomainForBookedSlots() {
 
         //given
         HearingListingNeeds commandHearing = commandBuilder.buildCommandHearingForBookedSlots();
@@ -140,6 +134,7 @@ class CommandToDomainConverterTest {
         assertThat(actual.getCourtCentreId(), is(commandHearing.getCourtCentre().getId()));
         assertThat(actual.getEstimatedMinutes(), is(commandHearing.getEstimatedMinutes()));
         assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getEarliestStartDateTime().toString())));
+        assertThat(actual.getEndDate().orElse(null), is(commandHearing.getEndDate()));
         assertThat(actual.getReportingRestrictionReason().get(), is(commandHearing.getReportingRestrictionReason()));
     }
 
@@ -167,6 +162,7 @@ class CommandToDomainConverterTest {
         assertThat(actual.getCourtCentreId(), is(commandHearing.getCourtCentre().getId()));
         assertThat(actual.getEstimatedMinutes(), is(commandHearing.getEstimatedMinutes()));
         assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getEarliestStartDateTime().toString())));
+        assertThat(actual.getEndDate().orElse(null), is(commandHearing.getEndDate()));
         assertThat(actual.getReportingRestrictionReason().get(), is(commandHearing.getReportingRestrictionReason()));
 
     }
@@ -322,8 +318,8 @@ class CommandToDomainConverterTest {
         assertThat(actualDefendant.getLastName().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getLastName()));
         assertThat(actualDefendant.getDefenceOrganisation().get(), is(commandDefendant.getDefenceOrganisation().getName()));
         assertThat(actualDefendant.getSpecificRequirements().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getSpecificRequirements()));
-        assertThat(actualDefendant.getDateOfBirth().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getDateOfBirth()));
-        assertThat(actualDefendant.getCustodyTimeLimit().get(), is(commandDefendant.getPersonDefendant().getCustodyTimeLimit()));
+        assertThat(actualDefendant.getDateOfBirth().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getDateOfBirth().toString()));
+        assertThat(actualDefendant.getCustodyTimeLimit().get(), is(commandDefendant.getPersonDefendant().getCustodyTimeLimit().toString()));
         assertThat(actualDefendant.getAddress().get().getAddress1(), is(commandDefendant.getPersonDefendant().getPersonDetails().getAddress().getAddress1()));
         assertThat(actualDefendant.getAddress().get().getAddress2().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getAddress().getAddress2()));
         assertThat(actualDefendant.getAddress().get().getAddress3().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getAddress().getAddress3()));
@@ -453,4 +449,6 @@ class CommandToDomainConverterTest {
         //then
         assertThat(actual.getIsPossibleDisqualification().isPresent(), is(false));
     }
+
+
 }

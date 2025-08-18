@@ -1,26 +1,24 @@
 package uk.gov.moj.cpp.listing.it;
 
-import static java.text.MessageFormat.format;
-import static java.time.Duration.ofSeconds;
-import static java.util.UUID.fromString;
-import static java.util.UUID.randomUUID;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
-import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
-import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
-import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.Resources;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.justice.services.test.utils.persistence.TestJdbcConnectionProvider;
+import uk.gov.moj.cpp.listing.steps.CourtListSteps;
 import uk.gov.moj.cpp.listing.steps.RefDataCourtRoomCacheStep;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
+import javax.json.JsonObject;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -30,18 +28,21 @@ import java.sql.Statement;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.json.JsonObject;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.Resources;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.text.MessageFormat.format;
+import static java.time.Duration.ofSeconds;
+import static java.util.UUID.fromString;
+import static java.util.UUID.randomUUID;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
+import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCpCourtRooms;
 
 @SuppressWarnings("squid:S1607")
 

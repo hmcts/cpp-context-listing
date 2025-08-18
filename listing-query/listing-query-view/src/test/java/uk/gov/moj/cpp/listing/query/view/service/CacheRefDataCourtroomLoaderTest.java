@@ -1,23 +1,5 @@
 package uk.gov.moj.cpp.listing.query.view.service;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
-import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUIDAndName;
-
-import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
-import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.persistence.entity.CacheRefDataCourtroom;
-import uk.gov.moj.cpp.listing.persistence.repository.CacheRefDataCourtroomRepository;
-
-import java.util.UUID;
-
-import javax.json.Json;
-import javax.json.JsonObject;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +7,22 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.persistence.entity.CacheRefDataCourtroom;
+import uk.gov.moj.cpp.listing.persistence.repository.CacheRefDataCourtroomRepository;
+
+import javax.json.Json;
+import javax.json.JsonObject;
+import java.util.UUID;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUIDAndName;
 
 @ExtendWith(MockitoExtension.class)
 public class CacheRefDataCourtroomLoaderTest {

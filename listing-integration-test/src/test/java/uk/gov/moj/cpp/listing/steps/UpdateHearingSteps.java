@@ -27,21 +27,29 @@ import static uk.gov.justice.services.common.converter.ZonedDateTimes.fromString
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
-import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithJmsDelay;
-import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.getJsonObject;
 import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.getUUID;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilSizeMatch;
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
+import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocationWithNonDefaultDays;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentres;
@@ -188,10 +196,6 @@ public class UpdateHearingSteps extends AbstractIT {
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
 
         createMessageConsumers();
-    }
-
-    public UpdatedHearingData getUpdatedHearingData() {
-        return updatedHearingData;
     }
 
     public UpdateHearingSteps(final HearingsData hearingsData, final UpdatedHearingData updatedHearingData) {
@@ -983,28 +987,6 @@ public class UpdateHearingSteps extends AbstractIT {
                         )));
     }
 
-    /**
-     * JMS-aware version of verifyCaseIdentifierWhenQueryingFromAPI for handling asynchronous message processing timing issues.
-     */
-    public void verifyCaseIdentifierWhenQueryingFromAPIWithJmsDelay(String hearingId, JsonObject payload, HearingsData hearingsData) {
-        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty(LISTING_QUERY_HEARING), hearingId));
-
-        // Use JMS-aware polling to handle asynchronous message processing
-        pollWithJmsDelay(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARING).withHeader(USER_ID, getLoggedInUser()).build())
-                .until(
-                        status().is(OK),
-                        payload().isJson(allOf(
-                                withJsonPath("$.listedCases[0].id", equalTo(payload.getString("prosecutionCaseId"))),
-                                withJsonPath("$.listedCases[0].prosecutor.prosecutorId", equalTo(payload.getString("prosecutionAuthorityId"))),
-                                withJsonPath("$.listedCases[0].prosecutor.prosecutorCode", equalTo(payload.getString("prosecutionAuthorityCode"))),
-                                withJsonPath("$.listedCases[1].caseIdentifier.authorityId", equalTo(hearingsData.getHearingData().get(0).getListedCases().get(1).getAuthorityId().toString())),
-                                withJsonPath("$.listedCases[1].caseIdentifier.authorityCode", equalTo(hearingsData.getHearingData().get(0).getListedCases().get(1).getAuthorityCode())),
-                                withJsonPath("$.listedCases[1].caseIdentifier.caseReference", equalTo(hearingsData.getHearingData().get(0).getListedCases().get(1).getCaseReference()))
-
-                        )));
-    }
-
     public void verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDate() {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.hearings.by.allocated.court-centre-id.start-date.end-date"),
@@ -1152,50 +1134,6 @@ public class UpdateHearingSteps extends AbstractIT {
         final String hearingId = updatedHearingData.getHearingId().toString();
         final String hearingIdFilter = getHearingFilter(hearingId);
         pollForHearing(updatedHearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), new Matcher[]{
-                withJsonPath(hearingIdFilter + ".judiciary[0].judicialId",
-                        hasItem(updatedHearingData.getJudiciary().get(0).getJudicialId().toString())),
-                withJsonPath(hearingIdFilter + ".judiciary[0].judicialRoleType.judiciaryType",
-                        hasItem(updatedHearingData.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType())),
-                withJsonPath(hearingIdFilter + ".judiciary[0].isBenchChairman",
-                        hasItem(updatedHearingData.getJudiciary().get(0).getIsBenchChairman().get())),
-                withJsonPath(hearingIdFilter + ".judiciary[0].isDeputy",
-                        hasItem(updatedHearingData.getJudiciary().get(0).getIsDeputy().get())),
-                withJsonPath(hearingIdFilter + ".courtRoomId",
-                        hasItem(updatedHearingData.getCourtRoomId().toString())),
-                withJsonPath(hearingIdFilter + ".type.description",
-                        hasItem(updatedHearingData.getHearingTypData().getTypeDescription())),
-                withJsonPath(hearingIdFilter + ".jurisdictionType",
-                        hasItem(updatedHearingData.getJurisdictionType())),
-                withJsonPath(hearingIdFilter + ".hearingLanguage",
-                        hasItem(updatedHearingData.getHearingLanguage())),
-                withJsonPath(hearingIdFilter + ".endDate",
-                        hasItem(updatedHearingData.getEndDate())),
-                withJsonPath(hearingIdFilter + ".startDate",
-                        hasItem(updatedHearingData.getStartDate())),
-                withJsonPath(hearingIdFilter + ".hearingDays[0].startTime",
-                        hasItem(fromString(updatedHearingData.getNonDefaultDays().get(0).getStartTime()).format(ZONED_DATE_TIME_FORMAT))),
-                withJsonPath(hearingIdFilter + ".hearingDays[0].durationMinutes",
-                        hasItem(updatedHearingData.getNonDefaultDays().get(0).getDuration().get())),
-                withJsonPath(hearingIdFilter + ".hearingDays[0].endTime",
-                        hasItem(fromString(updatedHearingData.getNonDefaultDays().get(0).getStartTime())
-                                .plusMinutes(updatedHearingData.getNonDefaultDays().get(0).getDuration().get())
-                                .format(ZONED_DATE_TIME_FORMAT))),
-                withJsonPath(hearingIdFilter + ".nonSittingDays[0]",
-                        hasItem(updatedHearingData.getNonSittingDays().get(0))),
-                withJsonPath(hearingIdFilter + ".nonDefaultDays[0].startTime",
-                        hasItem(fromString(updatedHearingData.getNonDefaultDays().get(0).getStartTime()).format(ZONED_DATE_TIME_FORMAT)))
-        });
-    }
-
-    /**
-     * JMS-aware version of verifyHearingAllocatedWhenQueryingFromAPI for handling asynchronous message processing timing issues.
-     */
-    public void verifyHearingAllocatedWhenQueryingFromAPIWithJmsDelay() {
-
-        final String hearingId = updatedHearingData.getHearingId().toString();
-        final String hearingIdFilter = getHearingFilter(hearingId);
-        // Use JMS-aware polling to handle asynchronous message processing
-        pollForHearingWithJmsDelay(updatedHearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), new Matcher[]{
                 withJsonPath(hearingIdFilter + ".judiciary[0].judicialId",
                         hasItem(updatedHearingData.getJudiciary().get(0).getJudicialId().toString())),
                 withJsonPath(hearingIdFilter + ".judiciary[0].judicialRoleType.judiciaryType",

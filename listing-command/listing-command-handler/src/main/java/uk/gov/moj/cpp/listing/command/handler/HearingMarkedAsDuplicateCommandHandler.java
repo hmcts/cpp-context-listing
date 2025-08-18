@@ -14,6 +14,7 @@ import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 
@@ -44,6 +45,9 @@ public class HearingMarkedAsDuplicateCommandHandler {
     @Inject
     private JsonObjectToObjectConverter jsonObjectConverter;
 
+    @Inject
+    private HearingSlotsService hearingSlotsService;
+
     @Handles("listing.command.mark-hearing-as-duplicate")
     public void handleMarkHearingAsDuplicate(final JsonEnvelope command) throws EventStreamException {
 
@@ -53,6 +57,8 @@ public class HearingMarkedAsDuplicateCommandHandler {
 
         final MarkHearingAsDuplicate markHearingAsDuplicate = jsonObjectConverter.convert(command.payloadAsJsonObject(), MarkHearingAsDuplicate.class);
         final UUID hearingId = markHearingAsDuplicate.getHearingId();
+
+        hearingSlotsService.delete(hearingId);
 
         final List<UUID> caseIds = markHearingAsDuplicate.getProsecutionCaseIds();
         updateHearingEventStream(command, hearingId, (Hearing hearing) -> hearing.markHearingAsDuplicate(hearingId, caseIds));

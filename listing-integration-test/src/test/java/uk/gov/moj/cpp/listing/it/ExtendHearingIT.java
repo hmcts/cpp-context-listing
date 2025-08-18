@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.it;
 
 import static java.util.UUID.randomUUID;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
@@ -21,6 +20,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public class ExtendHearingIT extends AbstractIT {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListCourtHearingSteps.class);
@@ -125,9 +125,24 @@ public class ExtendHearingIT extends AbstractIT {
 
         final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(unallocatedHearingsData1);
         listCourtHearingSteps1.whenCaseIsSubmittedForListing();
-        assertTrue(true);
+
+        final HearingsData hearingsData = HearingsData.singleHearingDataMultipleCasesWithSingleOffence();
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final UUID unallocatedHearingId2 = hearingData.getId();
 
 
+        final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps2.whenCaseIsSubmittedForListing();
+        LOGGER.info("UnAllocated HearingID 1: {}  -  UnAllocated HearingId 2: {} ", UNALLOCATED_HEARING_ID, unallocatedHearingId2);
+        listCourtHearingSteps2.verifyHearingIsCreated(UNALLOCATED_HEARING_ID, 1);
+        listCourtHearingSteps2.extendHearing(unallocatedHearingId2, UNALLOCATED_HEARING_ID);
+
+
+        final UpdatedHearingData updatedHearingData = UpdatedHearingData.updatedHearingData(unallocatedHearingsData1.getHearingData().get(0));
+
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(unallocatedHearingsData1, updatedHearingData);
+        updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
+        updateHearingSteps.verifyPublicEventHearingConfirmed();
     }
 
 

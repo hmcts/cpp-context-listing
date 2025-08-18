@@ -17,11 +17,9 @@ import javax.json.JsonObject;
 import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
 
-import java.util.Optional;
-
 public class QueueUtil {
 
-    private static final long RETRIEVE_TIMEOUT = 1000;
+    private static final long RETRIEVE_TIMEOUT = 20000;
     private static final long MESSAGE_RETRIEVE_TRIAL_TIMEOUT = 10000;
 
     public static final QueueUtil publicEvents = new QueueUtil();
@@ -79,12 +77,5 @@ public class QueueUtil {
             }
         } while (MESSAGE_RETRIEVE_TRIAL_TIMEOUT > (System.currentTimeMillis() - startTime));
         return null;
-    }
-
-    public static void clearAllMessages(JmsMessageConsumerClient consumer) {
-        Optional<String> message;
-        do {
-            message = consumer.retrieveMessage(200).map(Object::toString);
-        } while (message.isPresent());
     }
 }

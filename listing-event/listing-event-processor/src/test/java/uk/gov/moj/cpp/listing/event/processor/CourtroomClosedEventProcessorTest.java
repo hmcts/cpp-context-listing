@@ -1,25 +1,23 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.query.view.CacheRefDataCourtroomView;
-
-import java.util.UUID;
-
-import javax.json.Json;
-import javax.json.JsonObject;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.query.view.CacheRefDataCourtroomView;
+
+import javax.json.Json;
+import javax.json.JsonObject;
+import java.util.UUID;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CourtroomClosedEventProcessorTest {
@@ -34,7 +32,7 @@ class CourtroomClosedEventProcessorTest {
     private CourtroomClosedEventProcessor courtroomClosedEventProcessor;
 
     @Test
-    public void shouldCloseReferenceDataCourtRoom() {
+    void shouldCloseReferenceDataCourtRoom() {
 
         UUID roomId = UUID.randomUUID();
         final JsonObject payload = Json.createObjectBuilder()

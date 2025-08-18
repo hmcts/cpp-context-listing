@@ -43,7 +43,6 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
     public Response getHearingSlots(final String panel,
                                     final String sessionStartDate,
                                     final String sessionEndDate,
-                                    final String hearingStartTime,
                                     final String oucodeL2Code,
                                     final String ouCode,
                                     final String courtRoomId,
@@ -54,16 +53,16 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                                     final String pageSize,
                                     final String pageNumber) {
 
-        final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, hearingStartTime, oucodeL2Code, ouCode, courtRoomId,
-                courtRoomNumber, businessType, courtSession, isSlotBased, pageSize, pageNumber);
+        final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, oucodeL2Code, ouCode, courtRoomId, courtRoomNumber, businessType, courtSession, isSlotBased, pageSize, pageNumber);
         final Response response = courtSchedulerServiceAdapter.hearingSlotsSearch(params);
         if(response.getStatusInfo().getStatusCode() != HttpStatus.SC_OK ){
             return response;
         }
         final JsonArray notes = Optional.ofNullable(response.getEntity()).
+                filter( e -> e != null).
                 map(e -> (JsonObject) e).
                 map(p -> p.getJsonArray("hearingSlots")).
-                map(this::convertToNotes).
+                map(hearings -> convertToNotes(hearings)).
                 orElse(Json.createArrayBuilder().build());
 
         final JsonObjectBuilder builder = buildJsonBuilderFromJsonObject((JsonObject) response.getEntity());
@@ -76,7 +75,6 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
     private Map<String, String> buildParamsMap(final String panel,
                                                final String sessionStartDate,
                                                final String sessionEndDate,
-                                               final String hearingStartTime,
                                                final String oucodeL2Code,
                                                final String ouCode,
                                                final String courtRoomId,
@@ -90,7 +88,6 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
         params.put(PANEL, panel);
         params.put(SESSION_START_DATE, sessionStartDate);
         params.put(SESSION_END_DATE, sessionEndDate);
-        params.put(HEARING_START_TIME, hearingStartTime);
         params.put(OU_L2_CODE, oucodeL2Code);
         params.put(OUCODE, ouCode);
         params.put(COURT_ROOM_ID, courtRoomId);

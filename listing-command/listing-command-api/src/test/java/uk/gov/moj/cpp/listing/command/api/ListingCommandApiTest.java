@@ -1,8 +1,6 @@
 package uk.gov.moj.cpp.listing.command.api;
 
 import static java.util.Arrays.asList;
-import static java.util.Optional.of;
-import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createReader;
@@ -16,7 +14,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -29,22 +26,19 @@ import static uk.gov.justice.services.test.utils.core.matchers.HandlerClassMatch
 import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatcher.method;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUIDAndName;
-import static uk.gov.moj.cpp.listing.command.api.util.FileUtil.getPayload;
-import static uk.gov.moj.cpp.listing.command.api.util.FileUtil.givenPayload;
 
 import uk.gov.justice.core.courts.CourtCentre;
-import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.justice.core.courts.JurisdictionType;
-import uk.gov.justice.core.courts.NonDefaultDay;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
-import uk.gov.justice.listing.commands.HearingListingNeeds;
+import uk.gov.justice.listing.commands.CreateListingNote;
+import uk.gov.justice.listing.commands.DeleteListingNote;
+import uk.gov.justice.listing.commands.NonDefaultDay;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
-import uk.gov.justice.listing.courts.DeleteNextHearings;
 import uk.gov.justice.listing.courts.ExtendHearingForHearing;
-import uk.gov.justice.listing.courts.ListCourtHearingEnriched;
+import uk.gov.justice.listing.courts.ListCourtHearing;
 import uk.gov.justice.listing.courts.ListNextHearingsEnrichedV2;
 import uk.gov.justice.listing.courts.ListNextHearingsV2;
 import uk.gov.justice.listing.courts.ListUnscheduledCourtHearing;
@@ -67,21 +61,17 @@ import uk.gov.justice.services.messaging.MetadataBuilder;
 import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
 import uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
-import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
-import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
-import uk.gov.moj.cpp.listing.domain.JudicialRole;
-import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
-import uk.gov.moj.cpp.listing.domain.Type;
-import uk.gov.moj.cpp.listing.domain.VacateTrialEnriched;
+import uk.gov.moj.cpp.listing.command.api.service.ReferenceDataService;
+import uk.gov.moj.cpp.listing.command.api.util.FileUtil;
 
 import java.io.StringReader;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -114,238 +104,27 @@ public class ListingCommandApiTest {
     @Mock
     private ObjectToJsonValueConverter objectToJsonValueConverter;
     @Mock
+    private Function<Object, JsonEnvelope> enveloperFunction;
+    @Mock
+    private JsonEnvelope finalEnvelope;
+    @Mock
     private CourtCentreFactory courtCentreFactory;
     @Mock
     private UpdateHearingForListing updateHearingForListing;
     @Mock
-    private VacateTrialEnriched vacateTrialEnriched;
+    private ListCourtHearing listCourtHearing;
+    @Mock
+    private CreateListingNote createListingNote;
+    @Mock
+    private DeleteListingNote deleteListingNote;
     @InjectMocks
     private ListingCommandApi listingCommandApi;
     @Mock
     private ExtendHearingForHearing extendHearingForHearing;
+    @Mock
+    private ReferenceDataService referenceDataService;
     @Captor
     private ArgumentCaptor<Envelope> envelopeArgumentCaptor;
-    @Mock
-    private HearingSlotsService hearingSlotsService;
-    @Mock
-    private HearingEnrichmentOrchestrator hearingEnrichmentOrchestrator;
-
-    private static final Type HEARING_TYPE = Type.type()
-            .withId(fromString("6e1bef55-7e13-4615-b3ba-8663f4438e16"))
-            .withDescription("Trial")
-            .build();
-
-    @Test
-    public void shouldEnrichOnlyNonDefaultDaysWithMissingOrZeroDurationAD() {
-        final Metadata metadata = metadataWithRandomUUIDAndName().build();
-        final UUID courtScheduleId1 = UUID.randomUUID();
-        final UUID courtScheduleId2 = UUID.randomUUID();
-        final UUID courtCentreId1 = UUID.randomUUID();
-        final UUID courtCentreId2 = UUID.randomUUID();
-        final UUID hearingTypeId = UUID.randomUUID();
-
-        final HearingType mockType = mock(HearingType.class);
-        when(mockType.getId()).thenReturn(hearingTypeId);
-
-        final HearingListingNeeds hearingNullDuration = HearingListingNeeds.hearingListingNeeds()
-                .withCourtCentre(CourtCentre.courtCentre().withId(courtCentreId1).build())
-                .withNonDefaultDays(List.of(
-                        NonDefaultDay.nonDefaultDay()
-                                .withCourtScheduleId(courtScheduleId1.toString())
-                                .withDuration(null)
-                                .build()))
-                .withType(mockType)
-                .build();
-
-        final HearingListingNeeds hearingWithDuration = HearingListingNeeds.hearingListingNeeds()
-                .withCourtCentre(CourtCentre.courtCentre().withId(courtCentreId2).build())
-                .withNonDefaultDays(List.of(
-                        NonDefaultDay.nonDefaultDay()
-                                .withCourtScheduleId(courtScheduleId2.toString())
-                                .withDuration(20)
-                                .build()))
-                .withType(mockType)
-                .build();
-
-        uk.gov.justice.listing.commands.ListCourtHearing listCourtHearing1 = mock(uk.gov.justice.listing.commands.ListCourtHearing.class);
-
-        given(envelope.payloadAsJsonObject()).willReturn(payload);
-        given(envelope.metadata()).willReturn(metadata);
-        given(jsonObjectConverter.convert(payload, uk.gov.justice.listing.commands.ListCourtHearing.class))
-                .willReturn(listCourtHearing1);
-        given(listCourtHearing1.getHearings()).willReturn(List.of(hearingNullDuration, hearingWithDuration));
-
-        HearingListingNeeds enrichedHearing = HearingListingNeeds.hearingListingNeeds()
-                .withCourtCentre(hearingNullDuration.getCourtCentre())
-                .withType(hearingNullDuration.getType())
-                .withNonDefaultDays(List.of(
-                        NonDefaultDay.nonDefaultDay()
-                                .withCourtScheduleId(courtScheduleId1.toString())
-                                .withDuration(15)
-                                .build()
-                ))
-                .build();
-
-        when(hearingEnrichmentOrchestrator.enrichListCourtHearing(any(), any())).thenReturn(List.of(enrichedHearing));
-
-        mockCourtCentres();
-
-        doAnswer(invocation -> {
-            ListCourtHearingEnriched enriched = invocation.getArgument(0);
-            return new ObjectToJsonValueConverter(new ObjectMapperProducer().objectMapper())
-                    .convert(enriched);
-        }).when(objectToJsonValueConverter).convert(any(ListCourtHearingEnriched.class));
-
-        listingCommandApi.handleListCourtHearing(envelope);
-
-        verify(sender).send(envelopeArgumentCaptor.capture());
-        Envelope capturedEnvelope = envelopeArgumentCaptor.getValue();
-        JsonObject sentPayload = (JsonObject) capturedEnvelope.payload();
-
-        JsonArray hearings = sentPayload.getJsonObject("listCourtHearing").getJsonArray("hearings");
-        JsonArray nonDefaultDays = hearings.getJsonObject(0).getJsonArray("nonDefaultDays");
-        assertThat(nonDefaultDays.getJsonObject(0).getInt("duration"), is(15));
-    }
-
-    @Test
-    public void shouldEnrichOnlyNonDefaultDaysWithMissingOrZeroDuration() {
-        final Metadata metadata = metadataWithRandomUUIDAndName().build();
-        final UUID courtScheduleId1 = UUID.randomUUID();
-        final UUID courtScheduleId2 = UUID.randomUUID();
-        final UUID courtCentreId1 = UUID.randomUUID();
-        final UUID courtCentreId2 = UUID.randomUUID();
-        final UUID hearingTypeId = UUID.randomUUID();
-
-        final HearingType mockType = mock(HearingType.class);
-        when(mockType.getId()).thenReturn(hearingTypeId);
-
-        final HearingListingNeeds hearingNullDuration = HearingListingNeeds.hearingListingNeeds()
-                .withCourtCentre(CourtCentre.courtCentre().withId(courtCentreId1).build())
-                .withNonDefaultDays(List.of(
-                        NonDefaultDay.nonDefaultDay()
-                                .withCourtScheduleId(courtScheduleId1.toString())
-                                .withDuration(null)
-                                .build()))
-                .withType(mockType)
-                .build();
-
-        final HearingListingNeeds hearingWithDuration = HearingListingNeeds.hearingListingNeeds()
-                .withCourtCentre(CourtCentre.courtCentre().withId(courtCentreId2).build())
-                .withNonDefaultDays(List.of(
-                        NonDefaultDay.nonDefaultDay()
-                                .withCourtScheduleId(courtScheduleId2.toString())
-                                .withDuration(20)
-                                .build()))
-                .withType(mockType)
-                .build();
-
-        uk.gov.justice.listing.commands.ListCourtHearing listCourtHearing1 = mock(uk.gov.justice.listing.commands.ListCourtHearing.class);
-        when(envelope.payloadAsJsonObject()).thenReturn(payload);
-        when(envelope.metadata()).thenReturn(metadata);
-        when(jsonObjectConverter.convert(payload, uk.gov.justice.listing.commands.ListCourtHearing.class))
-                .thenReturn(listCourtHearing1);
-        when(listCourtHearing1.getHearings()).thenReturn(List.of(hearingNullDuration, hearingWithDuration));
-
-        HearingListingNeeds enrichedHearing = HearingListingNeeds.hearingListingNeeds()
-                .withCourtCentre(hearingNullDuration.getCourtCentre())
-                .withType(hearingNullDuration.getType())
-                .withNonDefaultDays(List.of(
-                        NonDefaultDay.nonDefaultDay()
-                                .withCourtScheduleId(courtScheduleId1.toString())
-                                .withDuration(45)
-                                .build()
-                ))
-                .build();
-
-        when(hearingEnrichmentOrchestrator.enrichListCourtHearing(any(), any())).thenReturn(List.of(enrichedHearing));
-        mockCourtCentres();
-
-        doAnswer(invocation -> {
-            ListCourtHearingEnriched enriched = invocation.getArgument(0);
-            return new ObjectToJsonValueConverter(new ObjectMapperProducer().objectMapper())
-                    .convert(enriched);
-        }).when(objectToJsonValueConverter).convert(any(ListCourtHearingEnriched.class));
-
-        listingCommandApi.handleListCourtHearing(envelope);
-
-        verify(sender).send(envelopeArgumentCaptor.capture());
-        Envelope capturedEnvelope = envelopeArgumentCaptor.getValue();
-        JsonObject sentPayload = (JsonObject) capturedEnvelope.payload();
-
-        JsonArray hearings = sentPayload.getJsonObject("listCourtHearing").getJsonArray("hearings");
-        JsonArray nonDefaultDays = hearings.getJsonObject(0).getJsonArray("nonDefaultDays");
-        assertThat(nonDefaultDays.getJsonObject(0).getInt("duration"), is(45));
-    }
-
-    @Test
-    public void shouldEnrichOnlyNonDefaultDaysWithMissingOrZeroDurationFromRefData() {
-        final Metadata metadata = metadataWithRandomUUIDAndName().build();
-        final UUID courtScheduleId1 = UUID.randomUUID();
-        final UUID courtScheduleId2 = UUID.randomUUID();
-        final UUID courtCentreId1 = UUID.randomUUID();
-        final UUID courtCentreId2 = UUID.randomUUID();
-        final UUID hearingTypeId = UUID.randomUUID();
-
-        final HearingType mockType = mock(HearingType.class);
-        when(mockType.getId()).thenReturn(hearingTypeId);
-
-        final HearingListingNeeds hearingNullDuration = HearingListingNeeds.hearingListingNeeds()
-                .withCourtCentre(CourtCentre.courtCentre().withId(courtCentreId1).build())
-                .withNonDefaultDays(List.of(
-                        NonDefaultDay.nonDefaultDay()
-                                .withCourtScheduleId(courtScheduleId1.toString())
-                                .withDuration(null)
-                                .build()))
-                .withType(mockType)
-                .build();
-
-        final HearingListingNeeds hearingWithDuration = HearingListingNeeds.hearingListingNeeds()
-                .withCourtCentre(CourtCentre.courtCentre().withId(courtCentreId2).build())
-                .withNonDefaultDays(List.of(
-                        NonDefaultDay.nonDefaultDay()
-                                .withCourtScheduleId(courtScheduleId2.toString())
-                                .withDuration(20)
-                                .build()))
-                .withType(mockType)
-                .build();
-
-        uk.gov.justice.listing.commands.ListCourtHearing listCourtHearing1 = mock(uk.gov.justice.listing.commands.ListCourtHearing.class);
-        when(envelope.payloadAsJsonObject()).thenReturn(payload);
-        when(envelope.metadata()).thenReturn(metadata);
-        when(jsonObjectConverter.convert(payload, uk.gov.justice.listing.commands.ListCourtHearing.class))
-                .thenReturn(listCourtHearing1);
-        when(listCourtHearing1.getHearings()).thenReturn(List.of(hearingNullDuration, hearingWithDuration));
-
-        HearingListingNeeds enrichedHearing = HearingListingNeeds.hearingListingNeeds()
-                .withCourtCentre(hearingNullDuration.getCourtCentre())
-                .withType(hearingNullDuration.getType())
-                .withNonDefaultDays(List.of(
-                        NonDefaultDay.nonDefaultDay()
-                                .withCourtScheduleId(courtScheduleId1.toString())
-                                .withDuration(20)
-                                .build()
-                ))
-                .build();
-
-        when(hearingEnrichmentOrchestrator.enrichListCourtHearing(any(), any())).thenReturn(List.of(enrichedHearing));
-        mockCourtCentres();
-
-        doAnswer(invocation -> {
-            ListCourtHearingEnriched enriched = invocation.getArgument(0);
-            return new ObjectToJsonValueConverter(new ObjectMapperProducer().objectMapper())
-                    .convert(enriched);
-        }).when(objectToJsonValueConverter).convert(any(ListCourtHearingEnriched.class));
-
-        listingCommandApi.handleListCourtHearing(envelope);
-
-        verify(sender).send(envelopeArgumentCaptor.capture());
-        Envelope capturedEnvelope = envelopeArgumentCaptor.getValue();
-        JsonObject sentPayload = (JsonObject) capturedEnvelope.payload();
-
-        JsonArray hearings = sentPayload.getJsonObject("listCourtHearing").getJsonArray("hearings");
-        JsonArray nonDefaultDays = hearings.getJsonObject(0).getJsonArray("nonDefaultDays");
-        assertThat(nonDefaultDays.getJsonObject(0).getInt("duration"), is(20));
-    }
 
     @Test
     public void testIfMethodsArePassThrough() {
@@ -357,38 +136,18 @@ public class ListingCommandApiTest {
                         .thatHandles("listing.command.sequence-hearings")));
     }
 
+
     @Test
     public void shouldUpdateHearingForListingWithProsecutionCases() {
 
-        final JsonObject hearingSlotsResponse = givenPayload("/listing.command.hearingSlots.stub-data.json");
-
-        final List<JudicialRole> judicialRoles = new ArrayList<>();
-        ((JsonObject) hearingSlotsResponse
-                .getJsonArray("hearingSlots").get(0))
-                .getJsonArray("judiciaries")
-                .stream()
-                .map(JsonObject.class::cast)
-                .forEach(judiciaryJsonObject ->
-                        judicialRoles.add(JudicialRole.judicialRole()
-                                .withIsBenchChairman(of(judiciaryJsonObject.getBoolean("benchChairman")))
-                                .withIsDeputy(of(judiciaryJsonObject.getBoolean("deputy")))
-                                .withJudicialId(UUID.fromString(judiciaryJsonObject.getString("judiciaryId")))
-                                .withJudicialRoleType(
-                                        JudicialRoleType.judicialRoleType()
-                                                .withJudiciaryType(judiciaryJsonObject.getString("judiciaryType"))
-                                                .build())
-                                .build())
-                );
-
         //given
-        UUID hearingId = randomUUID();
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
+        given(updateHearingForListing.getSelectedCourtCentre()).willReturn(null);
         given(updateHearingForListing.getCourtRoomId()).willReturn(UUID.randomUUID());
-        given(updateHearingForListing.getHearingId()).willReturn(hearingId);
 
-        when(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(any(), any()))
-                .thenReturn(updateHearingForListing);
+        final UUID courtCentreId = randomUUID();
+        given(updateHearingForListing.getCourtCentreId()).willReturn(courtCentreId);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
         final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
@@ -398,7 +157,6 @@ public class ListingCommandApiTest {
         final JsonArray prosecutionCasesArray = createArrayBuilder().add(prosecutionCases).build();
         given(payload.getJsonArray("prosecutionCases")).willReturn(prosecutionCasesArray);
         given(jsonObjectConverter.convert(prosecutionCases, ProsecutionCases.class)).willReturn(ProsecutionCases.prosecutionCases().build());
-        mockCourtCentres();
 
         //when
         listingCommandApi.handleUpdateHearingForListing(envelope);
@@ -411,43 +169,20 @@ public class ListingCommandApiTest {
     @Test
     public void shouldUpdateHearingForListing() {
 
-        final JsonObject hearingSlotsResponse = givenPayload("/listing.command.hearingSlots.stub-data.json");
-
-        final List<JudicialRole> judicialRoles = new ArrayList<>();
-        ((JsonObject) hearingSlotsResponse
-                .getJsonArray("hearingSlots").get(0))
-                .getJsonArray("judiciaries")
-                .stream()
-                .map(JsonObject.class::cast)
-                .forEach(judiciaryJsonObject ->
-                        judicialRoles.add(JudicialRole.judicialRole()
-                                .withIsBenchChairman(of(judiciaryJsonObject.getBoolean("benchChairman")))
-                                .withIsDeputy(of(judiciaryJsonObject.getBoolean("deputy")))
-                                .withJudicialId(UUID.fromString(judiciaryJsonObject.getString("judiciaryId")))
-                                .withJudicialRoleType(
-                                        JudicialRoleType.judicialRoleType()
-                                                .withJudiciaryType(judiciaryJsonObject.getString("judiciaryType"))
-                                                .build())
-                                .build())
-                );
-
         //given
-        UUID hearingId = randomUUID();
-        HearingType hearingType = HearingType.hearingType().withId(HEARING_TYPE.getId()).build();
-        LocalDate startDate = LocalDate.now();
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(updateHearingForListing.getSelectedCourtCentre()).willReturn(null);
         given(updateHearingForListing.getCourtRoomId()).willReturn(UUID.randomUUID());
-        given(updateHearingForListing.getHearingId()).willReturn(hearingId);
 
-        when(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(any(), any()))
-                .thenReturn(updateHearingForListing);
+        final UUID courtCentreId = randomUUID();
+        given(updateHearingForListing.getCourtCentreId()).willReturn(courtCentreId);
+
         final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
 
         final JsonArray prosecutionCasesArray = createArrayBuilder().build();
         given(payload.getJsonArray("prosecutionCases")).willReturn(prosecutionCasesArray);
-        mockCourtCentres();
 
         //when
         listingCommandApi.handleUpdateHearingForListing(envelope);
@@ -459,7 +194,7 @@ public class ListingCommandApiTest {
 
     @Test
     public void shouldUpdateHearingsForListing() {
-        String jsonString = getPayload("listing.command.update-hearings-for-listing.json");
+        String jsonString = FileUtil.getPayload("listing.command.update-hearings-for-listing.json");
         JsonReader jsonReader = createReader(new StringReader(jsonString));
         final JsonObject hearingsJsonObj = jsonReader.readObject();
         final JsonArray hearingsJsonArr = hearingsJsonObj.getJsonArray("hearings");
@@ -471,63 +206,49 @@ public class ListingCommandApiTest {
         final UpdateHearingForListing hearing1 = jsonConverter.convert(hearingJsonObj1, UpdateHearingForListing.class);
         final List<ProsecutionCases> prosecutionCases1 =
                 hearingJsonObj1.getJsonArray("prosecutionCases").stream().map(
-                        p -> jsonConverter.convert((JsonObject) p, ProsecutionCases.class)).toList();
+                        p -> jsonConverter.convert((JsonObject) p, ProsecutionCases.class)).collect(Collectors.toList());
+        final UpdateHearingForListingEnriched enrichedHearing1 =
+                UpdateHearingForListingEnriched.updateHearingForListingEnriched()
+                        .withUpdateHearingForListing(hearing1)
+                        .withProsecutionCases(prosecutionCases1)
+                        .build();
 
         final JsonObject hearingJsonObj2 = hearingsJsonArr.getJsonObject(1);
         final UpdateHearingForListing hearing2 = jsonConverter.convert(hearingJsonObj2, UpdateHearingForListing.class);
         final List<ProsecutionCases> prosecutionCases2 =
                 hearingJsonObj2.getJsonArray("prosecutionCases").stream().map(
-                        p -> jsonConverter.convert((JsonObject) p, ProsecutionCases.class)).toList();
+                        p -> jsonConverter.convert((JsonObject) p, ProsecutionCases.class)).collect(Collectors.toList());
+        final UpdateHearingForListingEnriched enrichedHearing2 =
+                UpdateHearingForListingEnriched.updateHearingForListingEnriched()
+                        .withUpdateHearingForListing(hearing2)
+                        .withProsecutionCases(prosecutionCases2)
+                        .build();
 
-        // Mock the court centre factory to return court centre details
-        CourtCentreDetails courtCentreDetails = CourtCentreDetails.courtCentreDetails()
-                .withDefaultDuration(30)
-                .build();
-        given(courtCentreFactory.getCourtCentreDetailsById(any(), eq(envelope)))
-                .willReturn(Map.of(hearing1.getCourtCentreId(), courtCentreDetails));
-
-        // Mock the enrichment orchestrator
-        given(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(eq(hearing1), eq(envelope)))
-                .willReturn(hearing1);
-        given(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(eq(hearing2), eq(envelope)))
-                .willReturn(hearing2);
-
-        // Mock the JSON conversions
         given(envelope.payloadAsJsonObject()).willReturn(hearingsJsonObj);
         given(jsonObjectConverter.convert(hearingJsonObj1, UpdateHearingForListing.class)).willReturn(hearing1);
-        given(jsonObjectConverter.convert(hearingJsonObj2, UpdateHearingForListing.class)).willReturn(hearing2);
-        
-        // Mock prosecution cases conversions
+        given(objectToJsonValueConverter.convert(eq(enrichedHearing1))).willReturn(objConverter.convert(enrichedHearing1));
         AtomicInteger idx = new AtomicInteger();
         hearingJsonObj1.getJsonArray("prosecutionCases").forEach(
                 pc -> given(jsonObjectConverter.convert((JsonObject) pc, ProsecutionCases.class))
                         .willReturn(prosecutionCases1.get(idx.getAndIncrement())));
+
+        given(jsonObjectConverter.convert(hearingJsonObj2, UpdateHearingForListing.class)).willReturn(hearing2);
+        given(objectToJsonValueConverter.convert(eq(enrichedHearing2))).willReturn(objConverter.convert(enrichedHearing2));
         idx.set(0);
         hearingJsonObj2.getJsonArray("prosecutionCases").forEach(
-                pc -> given(jsonObjectConverter.convert((JsonObject) pc, ProsecutionCases.class))
-                        .willReturn(prosecutionCases2.get(idx.getAndIncrement())));
-
-        // Mock the object to JSON conversion
-        given(objectToJsonValueConverter.convert(any(UpdateHearingForListingEnriched.class)))
-                .willReturn(Json.createObjectBuilder().add("test", "value").build());
-
+                pc -> given(jsonObjectConverter.convert((JsonObject) pc, ProsecutionCases.class)).
+                        willReturn(prosecutionCases2.get(idx.getAndIncrement())));
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        
+
         final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
-        
-        // When
         listingCommandApi.handleUpdateHearingsForListing(envelope);
 
-        // Then
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
         verify(jsonObjectConverter, times(1)).convert(hearingJsonObj1, UpdateHearingForListing.class);
         verify(jsonObjectConverter, times(1)).convert(hearingJsonObj2, UpdateHearingForListing.class);
-        verify(hearingEnrichmentOrchestrator, times(1)).enrichUpdateHearingForListing(hearing1, envelope);
-        verify(hearingEnrichmentOrchestrator, times(1)).enrichUpdateHearingForListing(hearing2, envelope);
-        
-        // Verify prosecution cases were converted
         hearingJsonObj1.getJsonArray("prosecutionCases").forEach(
                 pc -> verify(jsonObjectConverter, times(2)).convert((JsonObject) pc, ProsecutionCases.class));
+        verify(jsonObjectConverter, times(1)).convert(hearingJsonObj2, UpdateHearingForListing.class);
         hearingJsonObj2.getJsonArray("prosecutionCases").forEach(
                 pc -> verify(jsonObjectConverter, times(2)).convert((JsonObject) pc, ProsecutionCases.class));
     }
@@ -570,13 +291,9 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldVacateTheTrial() {
+    public void shouldVacateTheTrial() throws Exception {
 
         //given
-        UUID hearingId = randomUUID();
-        given(envelope.payloadAsJsonObject()).willReturn(payload);
-        given(jsonObjectConverter.convert(payload, VacateTrialEnriched.class)).willReturn(vacateTrialEnriched);
-        given(vacateTrialEnriched.getHearingId()).willReturn(hearingId);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
         final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
@@ -588,27 +305,21 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldListCourtHearing() {
+    public void shouldListCourtHearing() throws Exception {
 
         //given
-        uk.gov.justice.listing.commands.ListCourtHearing listCourtHearing1 = mock(uk.gov.justice.listing.commands.ListCourtHearing.class);
         given(envelope.payloadAsJsonObject()).willReturn(payload);
-        given(jsonObjectConverter.convert(payload, uk.gov.justice.listing.commands.ListCourtHearing.class)).willReturn(listCourtHearing1);
+        given(jsonObjectConverter.convert(payload, ListCourtHearing.class)).willReturn(listCourtHearing);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
-        HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
-                .withNonDefaultDays(List.of(
-                        uk.gov.justice.core.courts.NonDefaultDay.nonDefaultDay().withCourtScheduleId("123").build()
-                ))
-                .withType(mock())
-                .withCourtCentre(CourtCentre.courtCentre().withId(UUID.randomUUID()).build())
-                .build();
+        final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
 
+        //when
         listingCommandApi.handleListCourtHearing(envelope);
 
-        verify(sender).send(any());
+        //then
+        verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
     }
-
 
     @Test
     public void shouldIssueListNextHearingsEnrichedCommand() {
@@ -749,7 +460,6 @@ public class ListingCommandApiTest {
     @Test
     public void shouldDeleteNextHearings() {
 
-        final DeleteNextHearings deleteNextHearings = mock(DeleteNextHearings.class);
         final ArgumentCaptor<DefaultEnvelope> senderJsonEnvelopeCaptor = forClass(DefaultEnvelope.class);
         final UUID seedHearingId = randomUUID();
         final String sittingDay = LocalDate.now().toString();
@@ -777,39 +487,16 @@ public class ListingCommandApiTest {
 
     @Test
     public void shouldCallNonDefaultDayDurationBuilder() {
-        final JsonObject hearingSlotsResponse = givenPayload("/listing.command.hearingSlots.stub-data.json");
-
-        final List<JudicialRole> judicialRoles = new ArrayList<>();
-        ((JsonObject) hearingSlotsResponse
-                .getJsonArray("hearingSlots").get(0))
-                .getJsonArray("judiciaries")
-                .stream()
-                .map(JsonObject.class::cast)
-                .forEach(judiciaryJsonObject ->
-                        judicialRoles.add(JudicialRole.judicialRole()
-                                .withIsBenchChairman(of(judiciaryJsonObject.getBoolean("benchChairman")))
-                                .withIsDeputy(of(judiciaryJsonObject.getBoolean("deputy")))
-                                .withJudicialId(UUID.fromString(judiciaryJsonObject.getString("judiciaryId")))
-                                .withJudicialRoleType(
-                                        JudicialRoleType.judicialRoleType()
-                                                .withJudiciaryType(judiciaryJsonObject.getString("judiciaryType"))
-                                                .build())
-                                .build())
-                );
-
-        //given
-        UUID hearingId = randomUUID();
-        HearingType hearingType = HearingType.hearingType().withId(HEARING_TYPE.getId()).build();
-        LocalDate startDate = LocalDate.now();
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
         given(updateHearingForListing.getCourtRoomId()).willReturn(UUID.randomUUID());
-        given(updateHearingForListing.getHearingId()).willReturn(hearingId);
-        when(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(any(), any()))
-                .thenReturn(updateHearingForListing);
-        mockCourtCentres();
+        given(updateHearingForListing.getSelectedCourtCentre()).willReturn(null);
+
 
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+
+        final UUID courtCentreId = randomUUID();
+        given(updateHearingForListing.getCourtCentreId()).willReturn(courtCentreId);
 
         final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
 
@@ -820,21 +507,15 @@ public class ListingCommandApiTest {
 
     @Test
     public void shouldThrowBadRequestExceptionWhenJurisdictionTypeIsMagistratesCourtAndCourtRoomIdIsNull() {
-        //given
-        UUID hearingId = randomUUID();
-        HearingType hearingType = HearingType.hearingType().withId(HEARING_TYPE.getId()).build();
-        LocalDate startDate = LocalDate.now();
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
         given(updateHearingForListing.getJurisdictionType()).willReturn(MAGISTRATES);
-        given(updateHearingForListing.getJurisdictionType()).willReturn(MAGISTRATES);
-        given(updateHearingForListing.getHearingId()).willReturn(hearingId);
-
-        when(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(any(), any()))
-                .thenReturn(updateHearingForListing);
-        mockCourtCentres();
 
         assertThrows(BadRequestException.class, () -> listingCommandApi.handleUpdateHearingForListing(envelope));
+    }
+
+    private List<NonDefaultDay> getNonDefaultDays() {
+        return asList(new NonDefaultDay.Builder().withCourtScheduleId("134452").build());
     }
 
     @Test
@@ -946,18 +627,14 @@ public class ListingCommandApiTest {
     public void shouldUpdateHearingForListingFromHmi() {
 
         //given
-        UUID hearingId = randomUUID();
-        HearingType hearingType = HearingType.hearingType().withId(HEARING_TYPE.getId()).build();
-        LocalDate startDate = LocalDate.now();
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(updateHearingForListing.getSelectedCourtCentre()).willReturn(null);
         given(updateHearingForListing.getCourtRoomId()).willReturn(UUID.randomUUID());
-        given(updateHearingForListing.getHearingId()).willReturn(hearingId);
-        when(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(any(), any()))
-                .thenReturn(updateHearingForListing);
-        given(courtCentreFactory.getCourtCentre(any(), any())).willReturn(CourtCentreDetails.courtCentreDetails().build());
-        mockCourtCentres();
+
+        final UUID courtCentreId = randomUUID();
+        given(updateHearingForListing.getCourtCentreId()).willReturn(courtCentreId);
 
         final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
 

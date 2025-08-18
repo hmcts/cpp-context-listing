@@ -13,7 +13,6 @@ import javax.json.JsonObject;
 import javax.json.JsonReader;
 
 import com.google.common.io.Resources;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 public class JsonUtils {
@@ -27,7 +26,7 @@ public class JsonUtils {
         }
     }
 
-    public static void compareJson(final JsonObject actualJsonObject, final JsonObject expectedJsonObject) throws JSONException {
+    public static void compareJson(final JsonObject actualJsonObject, final JsonObject expectedJsonObject) {
 
         final JSONObject actual = new JSONObject(actualJsonObject.toString());
 

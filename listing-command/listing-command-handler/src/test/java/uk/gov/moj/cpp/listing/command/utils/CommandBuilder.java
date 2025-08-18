@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.command.utils;
 import static uk.gov.moj.cpp.listing.command.utils.FileUtil.givenPayload;
 
 import uk.gov.justice.core.courts.CourtApplication;
-import uk.gov.justice.listing.commands.HearingListingNeeds;
+import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.listing.courts.CancelHearingDays;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 

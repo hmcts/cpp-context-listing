@@ -10,9 +10,9 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.test.utils.core.http.BaseUriProvider.getBaseUri;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
+import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
-import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSessionEndDateEmptyRequest;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
@@ -21,6 +21,7 @@ import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.test.utils.core.http.RequestParams;
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.justice.services.test.utils.core.rest.RestClient;
+import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.NotesSteps;
 import uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub;
 
@@ -30,26 +31,41 @@ import java.util.UUID;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
+import com.github.tomakehurst.wiremock.admin.model.ListStubMappingsResult;
 import org.apache.http.HttpStatus;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class HearingSlotsIT extends AbstractIT {
+public class HearingSlotsIT extends AbstractIT {
 
     private static final String QUERY_API_PATH = "/listing-query-api/query/api/rest/listing/hearingSlots";
     private static final String QUERY_MEDIA_TYPE = "application/vnd.listing.search.hearing.slots+json";
-    private final NotesSteps notesSteps = new NotesSteps();
+    private static final String CONTEXT_NAME = "listing";
+
+    private final DatabaseCleaner databaseCleaner = new DatabaseCleaner();
+
+    private NotesSteps notesSteps = new NotesSteps();
 
     StringToJsonObjectConverter stringToJsonObjectConverter = new StringToJsonObjectConverter();
 
 
+    @BeforeEach
+    public void cleanPublishedEventTable(){
+        databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
+        databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
+        databaseCleaner.cleanStreamStatusTable(CONTEXT_NAME);
+        databaseCleaner.cleanViewStoreTables("listing", "hearing");
+        databaseCleaner.cleanViewStoreTables("listing", "listing_notes");
+    }
+
     @Test
-    void shouldGetHearingSlots() {
+    public void shouldGetHearingSlots() {
         final String queryString = getQueryString(getParams());
 
         stubGetAvailableHearingSlots(false);
         listAllStubMappings();
         final RequestParams requestParams = getRequestParams(queryString);
-        pollWithDefaults(requestParams).until(status().is(OK),
+        poll(requestParams).until(status().is(OK),
                 payload().isJson(allOf(
                         withJsonPath("$.results", is(446)),
                         withJsonPath("$.pageCount", is(23)),
@@ -71,13 +87,13 @@ class HearingSlotsIT extends AbstractIT {
     }
 
     @Test
-    void shouldNotReturnHearingsAndNotesWhenThereIsNoSlots() {
+    public void shouldNotReturnHearingsAndNotesWhenThereIsNoSlots() {
         final String queryString = getQueryString(getParams());
 
         stubGetAvailableHearingSlots(true);
         listAllStubMappings();
         final RequestParams requestParams = getRequestParams(queryString);
-        pollWithDefaults(requestParams).until(status().is(OK),
+        poll(requestParams).until(status().is(OK),
                 payload().isJson(allOf(
                         withJsonPath("$.results", is(0)),
                         withJsonPath("$.pageCount", is(0)),
@@ -88,13 +104,13 @@ class HearingSlotsIT extends AbstractIT {
     }
 
     @Test
-    void shouldGetHearingSlotsAndNotes() {
+    public void shouldGetHearingSlotsAndNotes() {
         final String queryString = getQueryString(getParams());
         createListingNotes();
         stubGetAvailableHearingSlots(false);
         listAllStubMappings();
         final RequestParams requestParams = getRequestParams(queryString);
-        pollWithDefaults(requestParams).until(status().is(OK),
+        poll(requestParams).until(status().is(OK),
                 payload().isJson(allOf(
                         withJsonPath("$.results", is(446)),
                         withJsonPath("$.pageCount", is(23)),
@@ -121,7 +137,7 @@ class HearingSlotsIT extends AbstractIT {
 
 
     @Test
-    void shouldReturnErrorWhenSessionEndDateIsEmpty() {
+    public void shouldReturnErrorWhenSessionEndDateIsEmpty() {
         final Map<String, String> params = getParams();
         params.remove("sessionEndDate");
 
@@ -153,4 +169,5 @@ class HearingSlotsIT extends AbstractIT {
             notesSteps.createNoteForListing(UUID.fromString(hearing.getString("courtRoomId")), hearing.getString("sessionDate"), "Note 1");
         });
     }
+
 }

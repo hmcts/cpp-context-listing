@@ -1,8 +1,7 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
-import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
-import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.justice.listing.courts.CreateNextHearing;
 import uk.gov.justice.listing.courts.DeletePreviousHearingsAndCreateNextHearing;
@@ -10,20 +9,21 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.core.aggregate.AggregateService;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
+import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate;
 
+import javax.inject.Inject;
+
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
+import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
 
 @ServiceComponent(COMMAND_HANDLER)
 public class DeletePreviousHearingsAndCreateNextHearingHandler {
@@ -35,6 +35,9 @@ public class DeletePreviousHearingsAndCreateNextHearingHandler {
 
     @Inject
     private AggregateService aggregateService;
+
+    @Inject
+    private Enveloper enveloper;
 
     @Inject
     private JsonObjectToObjectConverter jsonObjectConverter;

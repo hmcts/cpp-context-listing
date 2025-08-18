@@ -4,12 +4,12 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 
-import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.courts.Defendants;
 import uk.gov.justice.listing.courts.Offences;
 import uk.gov.justice.listing.courts.ProsecutionCases;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.moj.cpp.listing.command.utils.ProsecutionCasesBuilder;
+import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 
 import java.time.LocalDate;
@@ -157,7 +157,7 @@ public class ExtendHearingUtils {
                                                        final List<ProsecutionCases> prosecutionCases,
                                                        final Map<UUID, Map<UUID, List<UUID>>> unallocatedHearingRequestCaseMap,
                                                        final Map<UUID, Map<UUID, List<UUID>>> persistedUnallocatedHearingCasesMap,
-                                                       final List<HearingDay> hearingDays,
+                                                       final List<NonDefaultDay> nonDefaultDays,
                                                        final UUID selectedCourtRoomId,
                                                        final LocalDate weekCommencingStartDate) {
         HearingUpdateOperationType operationType = HearingUpdateOperationType.UNALLOCATED_NO_OFFENCE_CHANGE;
@@ -182,7 +182,7 @@ public class ExtendHearingUtils {
         persistedUnallocatedHearingCasesMap.forEach((key, value) -> persistedOffences.addAll(extractAllOffencesInDefendant(value)));
 
         if (Maps.difference(persistedUnallocatedHearingCasesMap, unallocatedHearingRequestCaseMap).areEqual()) {
-            return checkNonDefaultDaysAndCourtRoom(hearingDays, selectedCourtRoomId);
+            return checkNonDefaultDaysAndCourtRoom(nonDefaultDays, selectedCourtRoomId);
         }
 
         if (persistedOffences.containsAll(requestOffences) && requestOffences.size() < persistedOffences.size()) {
@@ -192,16 +192,16 @@ public class ExtendHearingUtils {
                 return operationType;
             }
 
-            LOGGER.info("CollectionUtils.isNotEmpty(nonDefaultDays) :{}, storedHearing.getAllocated() : {}", CollectionUtils.isNotEmpty(hearingDays), storedHearing.getAllocated());
-            operationType = CollectionUtils.isNotEmpty(hearingDays) && Boolean.TRUE.equals(storedHearing.getAllocated()) ? HearingUpdateOperationType.SPLIT : HearingUpdateOperationType.PARTIAL_ALLOCATION;
+            LOGGER.info("CollectionUtils.isNotEmpty(nonDefaultDays) :{}, storedHearing.getAllocated() : {}", CollectionUtils.isNotEmpty(nonDefaultDays), storedHearing.getAllocated());
+            operationType = CollectionUtils.isNotEmpty(nonDefaultDays) && Boolean.TRUE.equals(storedHearing.getAllocated()) ? HearingUpdateOperationType.SPLIT : HearingUpdateOperationType.PARTIAL_ALLOCATION;
             return operationType;
         }
         return operationType;
     }
 
-    private HearingUpdateOperationType checkNonDefaultDaysAndCourtRoom(final List<HearingDay> hearingDays, final UUID selectedCourtRoomId) {
+    private HearingUpdateOperationType checkNonDefaultDaysAndCourtRoom(final List<NonDefaultDay> nonDefaultDays, final UUID selectedCourtRoomId) {
         HearingUpdateOperationType operationType;
-        operationType = CollectionUtils.isNotEmpty(hearingDays) && nonNull(selectedCourtRoomId) ? HearingUpdateOperationType.FULL_ALLOCATION : HearingUpdateOperationType.UNALLOCATED_NO_OFFENCE_CHANGE;
+        operationType = CollectionUtils.isNotEmpty(nonDefaultDays) && nonNull(selectedCourtRoomId) ? HearingUpdateOperationType.FULL_ALLOCATION : HearingUpdateOperationType.UNALLOCATED_NO_OFFENCE_CHANGE;
         return operationType;
     }
 

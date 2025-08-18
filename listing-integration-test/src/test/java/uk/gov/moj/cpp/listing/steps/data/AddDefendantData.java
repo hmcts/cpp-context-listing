@@ -1,0 +1,180 @@
+package uk.gov.moj.cpp.listing.steps.data;
+
+import static java.util.UUID.fromString;
+import static java.util.UUID.randomUUID;
+
+import uk.gov.justice.core.courts.BailStatus;
+
+import java.util.UUID;
+
+
+public class AddDefendantData {
+
+    private final BailStatus bailStatus;
+    private final String custodyTimeLimit;
+    private final String dateOfBirth;
+    private final String firstName;
+    private final UUID defendantId;
+    private final String lastName;
+    private final String legalEntityName;
+    private final UUID legalEntityId;
+    private final String organisationName;
+    private final String specificRequirements;
+    private final UUID courtCentreId;
+
+
+    public static AddDefendantData addDefendantData(DefendantData defendantData) {
+        return AddDefendantData.Builder.AddDefendantData()
+                .withBailStatus(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(UUID.fromString("12e69486-4d01-3403-a50a-7419ca040635")).build())
+                .withCustodyTimeLimit("2018-10-10")
+                .withDateOfBirth("1975-01-01")
+                .withDefendantId(defendantData.getDefendantId())
+                .withFirstName("First Name")
+                .withLastName("Last Name")
+                .withOrganisationName("withOrganisationName")
+                .withLegalEntityName("withOrganisationName")
+                .withLegalEntityId(fromString("55b8e1fd-085d-4236-a14f-8a35d86db8b2"))
+                .withSpecificRequirements("withSpecificRequirements")
+                .withCourtCentreId(randomUUID())
+                .build();
+    }
+
+    public AddDefendantData(final BailStatus bailStatus,
+                            final String custodyTimeLimit,
+                            final String dateOfBirth,
+                            final String firstName,
+                            final UUID defendantId,
+                            final String lastName,
+                            final String organisationName,
+                            final String legalEntityName,
+                            final UUID legalEntityId,
+                            final String specificRequirements,
+                            final UUID courtCentreId) {
+        this.bailStatus = bailStatus;
+        this.custodyTimeLimit = custodyTimeLimit;
+        this.dateOfBirth = dateOfBirth;
+        this.firstName = firstName;
+        this.defendantId = defendantId;
+        this.lastName = lastName;
+        this.organisationName = organisationName;
+        this.legalEntityName = legalEntityName;
+        this.legalEntityId = legalEntityId;
+        this.specificRequirements = specificRequirements;
+        this.courtCentreId = courtCentreId;
+    }
+
+    public BailStatus getBailStatus() {
+        return bailStatus;
+    }
+
+    public String getCustodyTimeLimit() {
+        return custodyTimeLimit;
+    }
+
+    public String getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public UUID getDefendantId() { return defendantId; }
+
+    public String getLastName() { return lastName; }
+
+    public String getLegalEntityName() { return legalEntityName; }
+
+    public UUID getLegalEntityId() {
+        return legalEntityId;
+    }
+
+    public String getOrganisationName() { return organisationName; }
+
+    public String getSpecificRequirements() {
+        return specificRequirements;
+    }
+
+    public UUID getCourtCentreId() {
+        return courtCentreId;
+    }
+
+    public static class Builder {
+        private BailStatus bailStatus;
+        private String custodyTimeLimit;
+        private String dateOfBirth;
+        private String firstName;
+        private UUID defendantId;
+        private String lastName;
+        private String legalEntityName;
+        private UUID legalEntityId;
+        private String organisationName;
+        private String specificRequirements;
+        private UUID courtCentreId;
+
+
+        public static Builder AddDefendantData() {
+            return new Builder();
+        }
+
+        public Builder withBailStatus(final BailStatus bailStatus) {
+            this.bailStatus = bailStatus;
+            return this;
+        }
+
+        public Builder withCustodyTimeLimit(final String custodyTimeLimit) {
+            this.custodyTimeLimit = custodyTimeLimit;
+            return this;
+        }
+
+        public Builder withDateOfBirth(final String dateOfBirth) {
+            this.dateOfBirth = dateOfBirth;
+            return this;
+        }
+
+        public Builder withFirstName(final String firstName) {
+            this.firstName = firstName;
+            return this;
+        }
+
+        public Builder withDefendantId(final UUID defendantId) {
+            this.defendantId = defendantId;
+            return this;
+        }
+
+        public Builder withLastName(final String lastName) {
+            this.lastName = lastName;
+            return this;
+        }
+
+        public Builder withOrganisationName(final String organisationName) {
+            this.organisationName = organisationName;
+            return this;
+        }
+
+        public Builder withLegalEntityName(final String legalEntityName) {
+            this.legalEntityName = legalEntityName;
+            return this;
+        }
+
+        public Builder withLegalEntityId(final UUID legalEntityId) {
+            this.legalEntityId = legalEntityId;
+            return this;
+        }
+
+        public Builder withSpecificRequirements(final String specificRequirements) {
+            this.specificRequirements = specificRequirements;
+            return this;
+        }
+
+        public Builder withCourtCentreId(final UUID courtCentreId) {
+            this.courtCentreId = courtCentreId;
+            return this;
+        }
+
+        public AddDefendantData build() {
+            return new AddDefendantData(bailStatus, custodyTimeLimit, dateOfBirth, firstName, defendantId, lastName, organisationName, legalEntityName, legalEntityId, specificRequirements, courtCentreId);
+        }
+    }
+}
+

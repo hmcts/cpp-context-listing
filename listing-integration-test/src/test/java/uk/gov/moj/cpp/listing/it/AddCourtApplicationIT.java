@@ -7,10 +7,11 @@ import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import org.junit.jupiter.api.Test;
-class AddCourtApplicationIT extends AbstractIT {
+
+public class AddCourtApplicationIT extends AbstractIT {
 
     @Test
-    void shouldAddCourtApplicationForHearingId() {
+    public void shouldAddCourtApplicationForHearingId() {
 
         final HearingsData hearingsData = hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);

@@ -5,38 +5,12 @@
       "id": "HEARING_TYPE_ID",
       "description": "HEARING_TYPE_DESCRIPTION"
     },
-    "panel": "YOUTH",
     "startDate": "START_DATE",
     "endDate": "END_DATE",
     "hearingLanguage": "HEARING_LANGUAGE",
     "courtCentreId": "COURT_CENTRE_ID",
     "jurisdictionType": "JURISDICTION_TYPE",
-    "judiciary": [
-      {
-        "judicialId": "0fd0233e-a8f9-3dc8-8bef-4f6b1d4799f3",
-        "judicialRoleType": {
-          "judiciaryType": "MAGISTRATE"
-        },
-        "isDeputy": true,
-        "isBenchChairman": false
-      },
-      {
-        "judicialId": "d424f73e-4a19-396d-a00c-f4c38d1c864e",
-        "judicialRoleType": {
-          "judiciaryType": "MAGISTRATE"
-        },
-        "isDeputy": false,
-        "isBenchChairman": true
-      },
-      {
-        "judicialId": "f0cd595c-be23-3539-9aed-7f1aab1d1e19",
-        "judicialRoleType": {
-          "judiciaryType": "MAGISTRATE"
-        },
-        "isDeputy": true,
-        "isBenchChairman": false
-      }
-    ],
+    "judiciary": [],
     "nonDefaultDays": [
       {
         "startTime": "NON_DEFAULT_DAY",

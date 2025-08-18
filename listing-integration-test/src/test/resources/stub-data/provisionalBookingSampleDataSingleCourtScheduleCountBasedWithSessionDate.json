@@ -6,7 +6,6 @@
       "ouCode": "B01EF00",
       "courtRoomId": "%COURT_ROOM_ID%",
       "courtRoomNumber": 793,
-      "courtHouseId": "e6986943-68d9-36fc-bbd0-68fa32efdd4f",
       "courtHouseName": "Croydon Magistrates' Court",
       "courtRoomName": "Courtroom 06",
       "operationalUnit": "1",
@@ -20,9 +19,7 @@
       "availableDuration": 0,
       "judiciaries": [],
       "slotStartTimes": [],
-      "bookingId": "62883cad-6dfa-4485-8e97-c766a1d45c37",
-      "hearingStartTime": "%HEARING_START_TIME%"
-
+      "bookingId": "62883cad-6dfa-4485-8e97-c766a1d45c37"
     }
   ]
 }

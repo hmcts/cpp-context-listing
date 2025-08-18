@@ -11,7 +11,6 @@ import static org.junit.Assert.assertEquals;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
-import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithJmsDelay;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.moj.cpp.listing.it.CourtListIT.STANDARD;
@@ -65,50 +64,6 @@ public class CourtListSteps extends AbstractIT {
                 format(readConfig().getProperty("listing.search.court.list.payload-court-room-id"), updatedHearingData.getCourtCentreId(),
                         updatedHearingData.getStartDate(), listId, endDate, updatedHearingData.getCourtRoomId()));
         poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_COURT_LIST_PAYLOAD).withHeader(USER_ID, getLoggedInUser()))
-                .until(
-                        status().is(OK),
-                        payload().isJson(allOf(allOf(
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].panel", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].caseId", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[0].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[1].id", notNullValue()),
-                                withoutJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[1].listingNumber"),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[2].id", notNullValue()),
-                                withoutJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[2].listingNumber"),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[1].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[1].offences[0].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[1].offences[1].id", notNullValue()),
-                                withoutJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[1].offences[1].listingNumber"),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[1].offences[2].id", notNullValue()),
-                                withoutJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[1].offences[2].listingNumber"),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].panel", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].caseId", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].defendants[0].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].defendants[0].offences[0].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].defendants[0].offences[1].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].defendants[0].offences[2].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].defendants[1].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].defendants[1].offences[0].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].defendants[1].offences[1].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].defendants[1].offences[2].id", notNullValue()),
-                                withJsonPath("$.templateName", is(templateName))),
-                                allOf(allocatedMatchers)
-                        )));
-    }
-
-    /**
-     * JMS-aware version of verifyCourtListRequestedAndIsCorrectJson for handling asynchronous message processing timing issues.
-     */
-    public void verifyCourtListRequestedAndIsCorrectJsonWithJmsDelay(final String listId, final String templateName, final Matcher[] allocatedMatchers) {
-        final String endDate = listId.equals(STANDARD) ? updatedHearingData.getStartDate() : updatedHearingData.getEndDate();
-        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.search.court.list.payload-court-room-id"), updatedHearingData.getCourtCentreId(),
-                        updatedHearingData.getStartDate(), listId, endDate, updatedHearingData.getCourtRoomId()));
-        // Use JMS-aware polling to handle asynchronous message processing
-        pollWithJmsDelay(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_COURT_LIST_PAYLOAD).withHeader(USER_ID, getLoggedInUser()).build())
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(allOf(

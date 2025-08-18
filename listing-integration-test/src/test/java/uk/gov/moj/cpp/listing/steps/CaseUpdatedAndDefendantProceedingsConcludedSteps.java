@@ -6,7 +6,6 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
-import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
@@ -71,32 +70,8 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
         });
     }
 
-    /**
-     * JMS-aware version of verifyHearingForCaseStatusAndDefendantProceedingsConcludedFromAPI for handling asynchronous message processing timing issues.
-     */
-    public void verifyHearingForCaseStatusAndDefendantProceedingsConcludedFromAPIWithJmsDelay(boolean isAllocated) {
-        // Use JMS-aware polling to handle asynchronous message processing
-        pollForHearingWithJmsDelay(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
-                withJsonPath("$.hearings[0].listedCases[0].defendants[0].proceedingsConcluded",
-                        equalTo(true)),
-                withJsonPath("$.hearings[0].listedCases[0].caseStatus",
-                        equalTo("CLOSED"))
-        });
-    }
-
     public void verifyHearingForCaseStatusAndDefendantProceedingsConcludedNotSetFromAPI(boolean isAllocated) {
         pollForHearing(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
-                withoutJsonPath("$.hearings[0].listedCases[0].defendants[0].proceedingsConcluded"),
-                withoutJsonPath("$.hearings[0].listedCases[0].caseStatus")
-        });
-    }
-
-    /**
-     * JMS-aware version of verifyHearingForCaseStatusAndDefendantProceedingsConcludedNotSetFromAPI for handling asynchronous message processing timing issues.
-     */
-    public void verifyHearingForCaseStatusAndDefendantProceedingsConcludedNotSetFromAPIWithJmsDelay(boolean isAllocated) {
-        // Use JMS-aware polling to handle asynchronous message processing
-        pollForHearingWithJmsDelay(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
                 withoutJsonPath("$.hearings[0].listedCases[0].defendants[0].proceedingsConcluded"),
                 withoutJsonPath("$.hearings[0].listedCases[0].caseStatus")
         });

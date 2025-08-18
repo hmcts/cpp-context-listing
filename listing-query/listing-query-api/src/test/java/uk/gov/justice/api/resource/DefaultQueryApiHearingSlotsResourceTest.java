@@ -40,10 +40,9 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class DefaultQueryApiHearingSlotsResourceTest {
+public class DefaultQueryApiHearingSlotsResourceTest {
 
     private final String AZURE_RESULT = "listing.search.hearing.slots.json";
-    private final String SLOT_SEARCH_RESPONSE_WITH_HEARING_START_TIME = "listing.search.hearing.slots.withhearingstarttime.json";
 
     @Mock
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
@@ -73,14 +72,13 @@ class DefaultQueryApiHearingSlotsResourceTest {
     }
 
     @Test
-    void searchHearingSlots() {
+    public void searchHearingSlots() {
         when(courtSchedulerServiceAdapter.hearingSlotsSearch(any(Map.class))).thenReturn(response);
         when(notesService.findNotes(any(List.class))).thenReturn(new ArrayList());
 
         Response result = queryApiHearingSlotsResource.getHearingSlots("ADULT",
                 "2017-10-11",
                 "2020-10-11",
-                null,
                 "BAOOUS",
                 "BAOOUS",
                 "001c067d-eaca-4ce5-ad90-a366ef3e4bb6",
@@ -102,44 +100,13 @@ class DefaultQueryApiHearingSlotsResourceTest {
     }
 
     @Test
-    void searchHearingSlots_WithHearingStartTime() {
-        response = Response.status(Response.Status.OK).entity(createJsonObject_WithHearingStartTime()).build();
-        when(courtSchedulerServiceAdapter.hearingSlotsSearch(any(Map.class))).thenReturn(response);
-        when(notesService.findNotes(any(List.class))).thenReturn(new ArrayList());
-
-        Response result = queryApiHearingSlotsResource.getHearingSlots("ADULT",
-                "2017-10-11",
-                "2020-10-11",
-                "2017-10-11T09:00:00.000Z",
-                "BAOOUS",
-                "BAOOUS",
-                "001c067d-eaca-4ce5-ad90-a366ef3e4bb6",
-                "1234",
-                "BYS",
-                "AM",
-                null,
-                "20",
-                "1");
-
-        verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
-        verify(notesService).findNotes(any(List.class));
-        JsonObject payload = (JsonObject) result.getEntity();
-        assertNotNull(payload.getJsonNumber("results"));
-        assertNotNull(payload.getJsonNumber("pageCount"));
-        assertNotNull(payload.getJsonArray("hearingSlots"));
-        assertNotNull(payload.getJsonArray("notes"));
-        assertEquals(0, payload.getJsonArray("notes").size());
-    }
-
-    @Test
-    void shouldReturnListingNotesWhenRelevantListingNotesExist(){
+    public void shouldReturnListingNotesWhenRelevantListingNotesExist(){
         when(courtSchedulerServiceAdapter.hearingSlotsSearch(any(Map.class))).thenReturn(response);
         when(notesService.findNotes(any(List.class))).thenReturn(createNotes(response));
 
         Response result = queryApiHearingSlotsResource.getHearingSlots("ADULT",
                 "2017-10-11",
                 "2020-10-11",
-                null,
                 "BAOOUS",
                 "BAOOUS",
                 "001c067d-eaca-4ce5-ad90-a366ef3e4bb6",
@@ -172,11 +139,6 @@ class DefaultQueryApiHearingSlotsResourceTest {
 
     private JsonObject createJsonObject() {
         final String payload = FileUtil.getPayload(AZURE_RESULT);
-        return new StringToJsonObjectConverter().convert(payload);
-    }
-
-    private JsonObject createJsonObject_WithHearingStartTime() {
-        final String payload = FileUtil.getPayload(SLOT_SEARCH_RESPONSE_WITH_HEARING_START_TIME);
         return new StringToJsonObjectConverter().convert(payload);
     }
 

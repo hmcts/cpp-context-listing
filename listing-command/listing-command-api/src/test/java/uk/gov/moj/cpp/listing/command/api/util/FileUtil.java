@@ -3,13 +3,6 @@ package uk.gov.moj.cpp.listing.command.api.util;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.io.IOException;
-import java.io.InputStream;
-
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
-
 import com.google.common.io.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,15 +20,6 @@ public class FileUtil {
             fail("Error consuming file from location " + path);
         }
         return request;
-    }
-    public static JsonObject givenPayload(final String filePath) {
-        try (InputStream inputStream = FileUtil.class.getResourceAsStream(filePath)) {
-            JsonReader jsonReader = Json.createReader(inputStream);
-            JsonObject var4 = jsonReader.readObject();
-            return var4;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
 

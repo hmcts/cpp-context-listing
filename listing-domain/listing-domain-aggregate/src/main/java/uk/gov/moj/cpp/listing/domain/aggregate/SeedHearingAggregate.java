@@ -1,28 +1,11 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
-import static java.util.Collections.emptyList;
-import static java.util.Objects.nonNull;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Stream.concat;
-import static java.util.stream.Stream.empty;
-import static java.util.stream.Stream.of;
-import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
-import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
-import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
-
+import org.apache.commons.collections.CollectionUtils;
+import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.domain.aggregate.Aggregate;
-import uk.gov.justice.listing.commands.HearingListingNeeds;
-import uk.gov.justice.listing.events.CourtCentreDetails;
-import uk.gov.justice.listing.events.CreateNextHearing;
-import uk.gov.justice.listing.events.CreateNextHearingRequested;
-import uk.gov.justice.listing.events.DeleteNextHearingRequested;
-import uk.gov.justice.listing.events.NextHearingReplaced;
-import uk.gov.justice.listing.events.NextHearingRequested;
-import uk.gov.justice.listing.events.RemoveOffencesFromExistingHearingRequested;
-import uk.gov.justice.listing.events.UnscheduledNextHearingRequested;
-import uk.gov.justice.listing.events.UpdateExistingHearingRequested;
+import uk.gov.justice.listing.events.*;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 
 import java.util.HashMap;
@@ -34,7 +17,15 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import org.apache.commons.collections.CollectionUtils;
+import static java.util.Collections.emptyList;
+import static java.util.Objects.nonNull;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.concat;
+import static java.util.stream.Stream.empty;
+import static java.util.stream.Stream.of;
+import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
+import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
+import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
 
 /**
  * This aggregate streams based on resulted hearing (H1).
@@ -172,10 +163,6 @@ public class SeedHearingAggregate implements Aggregate {
         }
 
         return apply(events);
-    }
-
-    public List<DeleteNextHearingRequested> retrieveDeleteHearingsList(final UUID seedingHearingId, final String hearingDay) {
-        return createDeleteNextHearingEventsForAllPreviouslySeededNextHearings(seedingHearingId, hearingDay);
     }
 
     public Stream<Object> deletePreviousHearingsAndCreateNextHearing(final UUID seedingHearingId, final String hearingDay, final CreateNextHearing createNextHearing)  {

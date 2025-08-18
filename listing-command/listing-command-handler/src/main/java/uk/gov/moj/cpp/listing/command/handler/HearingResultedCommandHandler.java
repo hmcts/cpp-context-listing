@@ -1,26 +1,26 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
-import static java.util.Objects.nonNull;
-import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
-import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.gov.justice.services.core.aggregate.AggregateService;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
+import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 
+import javax.inject.Inject;
+
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.util.Objects.nonNull;
+import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
+import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
 
 @ServiceComponent(COMMAND_HANDLER)
 public class HearingResultedCommandHandler {
@@ -32,6 +32,10 @@ public class HearingResultedCommandHandler {
 
     @Inject
     private AggregateService aggregateService;
+
+    @Inject
+    private Enveloper enveloper;
+
 
     @Handles("listing.command.set-hearing-resulted-status")
     public void handleSetHearingResultStatus(final JsonEnvelope command) throws EventStreamException {

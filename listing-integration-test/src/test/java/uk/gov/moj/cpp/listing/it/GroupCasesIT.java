@@ -15,7 +15,6 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
-import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
@@ -45,7 +44,6 @@ import javax.ws.rs.core.Response;
 import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 
@@ -150,7 +148,7 @@ public class GroupCasesIT extends AbstractIT {
 
     private void verifyHearingInViewStore(final List<Matcher> groupCasesMatcher) {
         final String url = generateUrlForFindingAHearingById(hearingId.toString());
-        final ResponseData response = pollWithDefaults(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()).build())
+        final ResponseData response = poll(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(status().is(Response.Status.OK),
                         payload().isJson(
                                 allOf(groupCasesMatcher.toArray(new Matcher[groupCasesMatcher.size()]))));

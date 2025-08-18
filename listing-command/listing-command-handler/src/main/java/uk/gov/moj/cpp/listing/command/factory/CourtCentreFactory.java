@@ -22,8 +22,8 @@ public class CourtCentreFactory {
     public JsonObject getOrganisationUnit(final UUID courtCentreId, final Envelope envelope) {
         final JsonEnvelope courtCentreEnvelope = referenceDataService.getCourtCentreById(courtCentreId, envelope);
         final JsonObject jsonObject = courtCentreEnvelope.payloadAsJsonObject();
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("courtCentreEnvelope response: {}", courtCentreEnvelope.toObfuscatedDebugString());
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("courtCentreEnvelope response: {}", courtCentreEnvelope.toObfuscatedDebugString());
         }
         return jsonObject;
     }

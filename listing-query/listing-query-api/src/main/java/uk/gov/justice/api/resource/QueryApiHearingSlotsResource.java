@@ -11,7 +11,6 @@ public interface QueryApiHearingSlotsResource {
     String PANEL = "panel";
     String SESSION_START_DATE = "sessionStartDate";
     String SESSION_END_DATE = "sessionEndDate";
-    String HEARING_START_TIME = "hearingStartTime";
     String OU_L2_CODE = "oucodeL2Code";
     String OUCODE = "ouCode";
     String COURT_ROOM_ID = "courtRoomId";
@@ -27,7 +26,6 @@ public interface QueryApiHearingSlotsResource {
     Response getHearingSlots(@QueryParam(PANEL) String panel,
                              @QueryParam(SESSION_START_DATE) String sessionStartDate,
                              @QueryParam(SESSION_END_DATE) String sessionEndDate,
-                             @QueryParam(HEARING_START_TIME) String hearingStartTime,
                              @QueryParam(OU_L2_CODE) String oucodeL2Code,
                              @QueryParam(OUCODE) String ouCode,
                              @QueryParam(COURT_ROOM_ID) String courtRoomId,

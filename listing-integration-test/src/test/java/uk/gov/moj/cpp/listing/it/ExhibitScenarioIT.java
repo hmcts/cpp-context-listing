@@ -7,10 +7,6 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STR
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.buildPublishCourtListCommandPayload;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataForWeekCommencing;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDateWithParameters;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubUpdateAvailableHearingSlotsService;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
@@ -33,23 +29,18 @@ import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import javax.json.JsonObject;
 
 import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("java:S2925")
-class ExhibitScenarioIT extends AbstractIT {
+public class ExhibitScenarioIT extends AbstractIT {
 
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
@@ -62,7 +53,7 @@ class ExhibitScenarioIT extends AbstractIT {
 
 
     @BeforeEach
-    void cleanTables() {
+    public void cleanTables() {
         viewStoreCleaner.cleanViewStoreTables();
     }
 
@@ -78,7 +69,7 @@ class ExhibitScenarioIT extends AbstractIT {
      * Verify the data in XML file.
      */
     @Test
-    void testAdjournHearingListedForSpecificDate() throws Exception {
+    public void testAdjournHearingListedForSpecificDate() throws Exception {
         stubUpdateAvailableHearingSlotsService();
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
@@ -86,23 +77,6 @@ class ExhibitScenarioIT extends AbstractIT {
         final int courtRoomId = 231;
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDateWithParameters(1, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        final ZonedDateTime hearingStartTime = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime();
-        final LocalDate hearingDate = hearingStartTime.toLocalDate();
-        final UUID courtroomId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId();
-        final UUID bookingId = randomUUID();
-        final String courtScheduleId = "8e837de0-743a-4a2c-9db3-b2e678c48729";
-
-        Map<String, String> stubParams = new HashMap<>();
-        stubParams.put("SESSION_DATE", hearingDate.toString());
-        stubParams.put("COURT_CENTRE_ID", courtCentreId.toString());
-        stubParams.put("COURT_SCHEDULE_ID", courtScheduleId);
-        stubParams.put("COURT_ROOM_ID", courtroomId.toString());
-        stubParams.put("BOOKING_ID", bookingId.toString());
-        stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
-        stubProvisionalBookingWithCustomParams(stubParams);
-
-        stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(), courtScheduleId,
-                listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime());
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
@@ -146,36 +120,18 @@ class ExhibitScenarioIT extends AbstractIT {
      */
 
     @Test
-    void testTwoCasesWithLinkedHearingProducesFinalListOnAFixedDate() throws Exception {
+    public void testTwoCasesWithLinkedHearingProducesFinalListOnAFixedDate() throws Exception {
         final ImmutableMap<String, Boolean> features = of("amendReshare", true);
         stubFeaturesFor("listing", features);
         stubUpdateAvailableHearingSlotsService();
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
         final UUID courtListId = randomUUID();
-        final String courtScheduleId = "8e837de0-743a-4a2c-9db3-b2e678c48729";
         final int courtRoomId = 231;
 
-
-
         final HearingsData hearingsData = HearingsData.singleHearingDataSingleCaseWithSingleOffence(courtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(), courtScheduleId,
-                listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime());
-        final ZonedDateTime hearingStartTime = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime();
-        final LocalDate hearingDate = hearingStartTime.toLocalDate();
-        final UUID courtroomId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId();
-        final UUID bookingId = randomUUID();
-
-        Map<String, String> stubParams = new HashMap<>();
-        stubParams.put("SESSION_DATE", hearingDate.toString());
-        stubParams.put("COURT_CENTRE_ID", courtCentreId.toString());
-        stubParams.put("COURT_SCHEDULE_ID", "8e837de0-743a-4a2c-9db3-b2e678c48729");
-        stubParams.put("COURT_ROOM_ID", courtroomId.toString());
-        stubParams.put("BOOKING_ID", bookingId.toString());
-        stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
-        stubProvisionalBookingWithCustomParams(stubParams);
-        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps1.whenCaseIsSubmittedForListing();
 
         final HearingsData anotherHearing = HearingsData.singleHearingDataSingleCaseWithSingleOffence(courtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
         //Copy defendant data and offence details
@@ -183,8 +139,6 @@ class ExhibitScenarioIT extends AbstractIT {
         defendantData.copyDefendantData(hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0));
         //Now submit the case and make sure its unallocated
         final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(anotherHearing);
-        stubListHearingInCourtSessions(listCourtHearingSteps2.getHearingsData().getHearingData().get(0).getId().toString(), "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                listCourtHearingSteps2.getHearingsData().getHearingData().get(0).getHearingStartTime());
         listCourtHearingSteps2.whenCaseIsSubmittedForListing();
 
         //Link hearing
@@ -230,7 +184,7 @@ class ExhibitScenarioIT extends AbstractIT {
      * Verify the data in XML file.
      */
     @Test
-    void testRelatedHearingSpecificCasesForFixedDate() throws Exception {
+    public void testRelatedHearingSpecificCasesForFixedDate() throws Exception {
         final ImmutableMap<String, Boolean> features = of("amendReshare", true);
         stubFeaturesFor("listing", features);
         stubUpdateAvailableHearingSlotsService();
@@ -240,33 +194,13 @@ class ExhibitScenarioIT extends AbstractIT {
         final int courtRoomId = 231;
 
         final HearingsData hearingsData = HearingsData.singleHearingDataSingleCaseWithSingleOffence(courtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-
-        final ZonedDateTime hearingStartTime = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime();
-        final LocalDate hearingDate = hearingStartTime.toLocalDate();
-        final UUID courtroomId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId();
-        final UUID bookingId = randomUUID();
-        final String courtScheduleId = "8e837de0-743a-4a2c-9db3-b2e678c48729";
-
-        Map<String, String> stubParams = new HashMap<>();
-        stubParams.put("SESSION_DATE", hearingDate.toString());
-        stubParams.put("COURT_CENTRE_ID", courtCentreId.toString());
-        stubParams.put("COURT_SCHEDULE_ID", courtScheduleId);
-        stubParams.put("COURT_ROOM_ID", courtroomId.toString());
-        stubParams.put("BOOKING_ID", bookingId.toString());
-        stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
-        stubProvisionalBookingWithCustomParams(stubParams);
-
-        stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(), courtScheduleId,
-                listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime());
-        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps1.whenCaseIsSubmittedForListing();
 
         final HearingsData anotherHearing = HearingsData.singleHearingDataSingleCaseWithSingleOffence(courtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
 
         //Now submit the case and make sure its unallocated
         final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(anotherHearing);
-        stubListHearingInCourtSessions(listCourtHearingSteps2.getHearingsData().getHearingData().get(0).getId().toString(), courtScheduleId,
-                listCourtHearingSteps2.getHearingsData().getHearingData().get(0).getHearingStartTime());
         listCourtHearingSteps2.whenCaseIsSubmittedForListing();
 
         //Link hearing
@@ -313,7 +247,7 @@ class ExhibitScenarioIT extends AbstractIT {
      */
 
     @Test
-    void testRelatedHearingSpecificCasesForFixedDateWithTwoDefendantsAndTwoOffences() throws Exception {
+    public void testRelatedHearingSpecificCasesForFixedDateWithTwoDefendantsAndTwoOffences() throws Exception {
         final ImmutableMap<String, Boolean> features = of("amendReshare", true);
         stubFeaturesFor("listing", features);
         stubUpdateAvailableHearingSlotsService();
@@ -324,31 +258,12 @@ class ExhibitScenarioIT extends AbstractIT {
 
         final HearingsData hearingsData = HearingsData.singleHearingDataSingleCaseWithTwoDefendantAndTwoOffence(courtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        final ZonedDateTime hearingStartTime = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime();
-        final LocalDate hearingDate = hearingStartTime.toLocalDate();
-        final UUID courtroomId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId();
-        final UUID bookingId = randomUUID();
-        final String courtScheduleId = "8e837de0-743a-4a2c-9db3-b2e678c48729";
-
-        Map<String, String> stubParams = new HashMap<>();
-        stubParams.put("SESSION_DATE", hearingDate.toString());
-        stubParams.put("COURT_CENTRE_ID", courtCentreId.toString());
-        stubParams.put("COURT_SCHEDULE_ID", courtScheduleId);
-        stubParams.put("COURT_ROOM_ID", courtroomId.toString());
-        stubParams.put("BOOKING_ID", bookingId.toString());
-        stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
-        stubProvisionalBookingWithCustomParams(stubParams);
-
-        stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(), courtScheduleId,
-                listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime());
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
 
         final HearingsData anotherHearing = HearingsData.singleHearingDataSingleCaseWithTwoDefendantAndTwoOffence(courtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
 
         //Now submit the case and make sure its unallocated
         final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(anotherHearing);
-        stubListHearingInCourtSessions(listCourtHearingSteps2.getHearingsData().getHearingData().get(0).getId().toString(), courtScheduleId,
-                listCourtHearingSteps2.getHearingsData().getHearingData().get(0).getHearingStartTime());
         listCourtHearingSteps2.whenCaseIsSubmittedForListing();
 
         //Link hearing
@@ -391,8 +306,7 @@ class ExhibitScenarioIT extends AbstractIT {
      * Verify the data in XML file.
      */
     @Test
-    @Disabled("Will be fixed with SPRDT-181")
-    void testWeekendCommencingWithTwoCases() throws Exception {
+    public void testWeekendCommencingWithTwoCases() throws Exception {
 
         stubUpdateAvailableHearingSlotsService();
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
@@ -459,7 +373,7 @@ class ExhibitScenarioIT extends AbstractIT {
      */
 
     @Test
-    void testTwoWeekendCommencingWithTwoCases() throws Exception {
+    public void testTwoWeekendCommencingWithTwoCases() throws Exception {
 
         stubUpdateAvailableHearingSlotsService();
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
@@ -508,7 +422,7 @@ class ExhibitScenarioIT extends AbstractIT {
      * @throws Exception
      */
     @Test
-    void testWeekendCommencingWhereSittingIsNull() throws Exception {
+    public void testWeekendCommencingWhereSittingIsNull() throws Exception {
 
         stubUpdateAvailableHearingSlotsService();
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
@@ -518,23 +432,6 @@ class ExhibitScenarioIT extends AbstractIT {
 
         final HearingsData hearingsData1 = HearingsData.singleHearingDataSingleCaseWithSingleOffence(courtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData1);
-        final ZonedDateTime hearingStartTime = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime();
-        final LocalDate hearingDate = hearingStartTime.toLocalDate();
-        final UUID courtroomId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId();
-        final UUID bookingId = randomUUID();
-        final String courtScheduleId = "8e837de0-743a-4a2c-9db3-b2e678c48729";
-
-        Map<String, String> stubParams = new HashMap<>();
-        stubParams.put("SESSION_DATE", hearingDate.toString());
-        stubParams.put("COURT_CENTRE_ID", courtCentreId.toString());
-        stubParams.put("COURT_SCHEDULE_ID", courtScheduleId);
-        stubParams.put("COURT_ROOM_ID", courtroomId.toString());
-        stubParams.put("BOOKING_ID", bookingId.toString());
-        stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
-        stubProvisionalBookingWithCustomParams(stubParams);
-
-        stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(), courtScheduleId,
-                listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime());
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
@@ -580,7 +477,7 @@ class ExhibitScenarioIT extends AbstractIT {
      */
 
     @Test
-    void testUshersCourtList() throws IOException {
+    public void testUshersCourtList() {
         HearingsData firstHearing = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearing);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -589,25 +486,6 @@ class ExhibitScenarioIT extends AbstractIT {
         UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(firstHearing.getHearingData().get(0).getId());
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(firstHearing, updatedHearingDataForAllocation);
-        final ZonedDateTime hearingStartTime =  listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime();
-        final LocalDate hearingDate = hearingStartTime.toLocalDate();
-        final UUID courtroomId = updatedHearingDataForAllocation.getCourtRoomId();
-        final UUID bookingId = randomUUID();
-        final UUID courtCentreId = updatedHearingDataForAllocation.getCourtCentreId();
-        final String courtScheduleId = "8e837de0-743a-4a2c-9db3-b2e678c48729";
-
-        Map<String, String> stubParams = new HashMap<>();
-        stubParams.put("SESSION_DATE", hearingDate.toString());
-        stubParams.put("COURT_CENTRE_ID", courtCentreId.toString());
-        stubParams.put("COURT_SCHEDULE_ID", courtScheduleId);
-        stubParams.put("COURT_ROOM_ID", courtroomId.toString());
-        stubParams.put("BOOKING_ID", bookingId.toString());
-        stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
-        stubProvisionalBookingWithCustomParams(stubParams);
-
-        stubGetAvailableHearingSlotsWithQueryParams(updateHearingSteps.getUpdatedHearingData());
-        stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
-
         updateHearingSteps.whenHearingIsUpdatedForListing();
         updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
         updateHearingSteps.verifyPublicEventHearingChangesSaved();

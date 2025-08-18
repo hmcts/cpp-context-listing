@@ -105,11 +105,12 @@ public class HearingMarkedAsDuplicateCommandHandlerTest {
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearingAggregate);
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
         when(hearingAggregate.markHearingAsDuplicate(eq(hearingId), eq(caseIds))).thenReturn(mock(Stream.class));
-
+        doNothing().when(hearingSlotsService).delete(hearingId);
 
         hearingMarkedAsDuplicateCommandHandler.handleMarkHearingAsDuplicate(commandEnvelope);
 
         verify(hearingAggregate).markHearingAsDuplicate(eq(hearingId), eq(caseIds));
+        verify(hearingSlotsService).delete(eq(hearingId));
     }
 
     @Test

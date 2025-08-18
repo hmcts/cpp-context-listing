@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 public class EjectCaseOrApplicationIT extends AbstractIT {
 
     @Test
-    void shouldEjectCaseFollowingPublicCaseEjectedEventFromProgression() {
+    public void shouldEjectCaseFollowingPublicCaseEjectedEventFromProgression() {
         HearingsData hearingsData = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -25,7 +25,7 @@ public class EjectCaseOrApplicationIT extends AbstractIT {
 
 
     @Test
-    void shouldEjectCaseFollowingPublicApplicationEjectedEventFromProgression() {
+    public void shouldEjectCaseFollowingPublicApplicationEjectedEventFromProgression() {
         HearingsData hearingsData = hearingsDataStandaloneApplication();
         ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListingStandaloneApplication();
@@ -39,7 +39,7 @@ public class EjectCaseOrApplicationIT extends AbstractIT {
 
 
     @Test
-    void shouldNotFailEjectCaseFollowingPublicApplicationEjectedEventFromProgression() {
+    public void shouldNotFailEjectCaseFollowingPublicApplicationEjectedEventFromProgression() {
         HearingsData hearingsData = hearingsDataStandaloneApplication();
         ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListingStandaloneApplication();

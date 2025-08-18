@@ -105,8 +105,6 @@ public class CancelHearingSteps extends AbstractIT {
     }
 
     public void verifyAzureUpdateApiInvoked() {
-//TODO: expected PUT calls to courtscheduler are "list/hearingslots" with all three days followed by "/hearingslots" with two noncancelled days
-// But this version is not making the second PUT to courtscheduler
         final RequestPatternBuilder nonCancelledDaysBuilder = putRequestedFor(urlEqualTo("/listingcourtscheduler-api/rest/courtscheduler/hearingslots"));
         nonCancelledHearingDays.forEach(day -> nonCancelledDaysBuilder.withRequestBody(containing("\"sessionDate\":\"" + day.getSittingDay().toLocalDate().toString() + "\"")));
 

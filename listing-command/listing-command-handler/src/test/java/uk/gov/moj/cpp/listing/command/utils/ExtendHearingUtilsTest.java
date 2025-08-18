@@ -12,7 +12,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingHelper.getEnvelopeForExtendPartialHearing;
 
-import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.courts.Defendants;
 import uk.gov.justice.listing.courts.ExtendHearingForHearingEnriched;
 import uk.gov.justice.listing.courts.Offences;
@@ -27,6 +26,7 @@ import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.command.utils.hearing.ExtendHearingUtils;
 import uk.gov.moj.cpp.listing.command.utils.hearing.HearingUpdateOperationType;
+import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -167,8 +167,8 @@ public class ExtendHearingUtilsTest {
 
         final Map<UUID, Map<UUID, List<UUID>>> unallocatedHearingRequestCaseMap = new HashMap<>();
         final Map<UUID, Map<UUID, List<UUID>>> persistedUnallocatedHearingCasesMap = new HashMap<>();
-        final List<HearingDay> hearingDays = Stream.of(HearingDay.hearingDay().withCourtCentreId(randomUUID()).withCourtRoomId(randomUUID()).withDurationMinutes(RandomGenerator.INTEGER.next()).withStartTime(RandomGenerator.FUTURE_UTC_DATE_TIME.next()).build()).collect(Collectors.toList());
-        final HearingUpdateOperationType operationType = extendHearingUtils.getOperationType(UNALLOCATED_HEARING_ID, unallocatedHearingPersisted, selectedUpdateList, unallocatedHearingRequestCaseMap, persistedUnallocatedHearingCasesMap, hearingDays, randomUUID(), null);
+        final List<NonDefaultDay> nonDefaultDays = Stream.of(NonDefaultDay.nonDefaultDay().withCourtCentreId(Optional.of(randomUUID().toString())).withCourtRoomId(Optional.of(RandomGenerator.INTEGER.next())).withDuration(Optional.of(RandomGenerator.INTEGER.next())).withStartTime(RandomGenerator.FUTURE_UTC_DATE_TIME.next()).withOucode(Optional.of(RandomGenerator.STRING.next())).build()).collect(Collectors.toList());
+        final HearingUpdateOperationType operationType = extendHearingUtils.getOperationType(UNALLOCATED_HEARING_ID, unallocatedHearingPersisted, selectedUpdateList, unallocatedHearingRequestCaseMap, persistedUnallocatedHearingCasesMap, nonDefaultDays, randomUUID(), null);
         extendHearingUtils.createPartiallyAllocationEventForUpdateHearing(hearing, UNALLOCATED_HEARING_ID, unallocatedHearingRequestCaseMap, persistedUnallocatedHearingCasesMap, operationType, Optional.of("allocated"));
 
         verify(hearing).updateUnallocatedHearingPartially(eq(UNALLOCATED_HEARING_ID), prosecutionCaseCapture.capture(), any());
@@ -235,9 +235,9 @@ public class ExtendHearingUtilsTest {
 
         final Map<UUID, Map<UUID, List<UUID>>> unallocatedHearingRequestCaseMap = new HashMap<>();
         final Map<UUID, Map<UUID, List<UUID>>> persistedUnallocatedHearingCasesMap = new HashMap<>();
-        final List<HearingDay> hearingDays = Collections.emptyList();
+        final List<NonDefaultDay> nonDefaultDays = Collections.emptyList();
 
-        final HearingUpdateOperationType operationType = extendHearingUtils.getOperationType(UNALLOCATED_HEARING_ID, unallocatedHearingPersisted, prosecutionCases, unallocatedHearingRequestCaseMap, persistedUnallocatedHearingCasesMap, hearingDays, randomUUID(), null);
+        final HearingUpdateOperationType operationType = extendHearingUtils.getOperationType(UNALLOCATED_HEARING_ID, unallocatedHearingPersisted, prosecutionCases, unallocatedHearingRequestCaseMap, persistedUnallocatedHearingCasesMap, nonDefaultDays, randomUUID(), null);
         extendHearingUtils.createPartiallyAllocationEventForUpdateHearing(hearing, UNALLOCATED_HEARING_ID, unallocatedHearingRequestCaseMap, persistedUnallocatedHearingCasesMap, operationType, Optional.of("unallocated"));
 
         verify(hearing, never()).updateUnallocatedHearingPartially(eq(UNALLOCATED_HEARING_ID), any(), any());

@@ -3,7 +3,7 @@
     <parent>
         <artifactId>listing-command</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <version>17.0.107-SNAPSHOT</version>
+        <version>17.0.105-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -102,6 +102,12 @@
             <groupId>uk.gov.moj.cpp.common.library.utils</groupId>
             <artifactId>cpp-platform-data-utils-service</artifactId>
             <version>${cpp.platform-libraries.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomee</groupId>
+            <artifactId>javaee-api</artifactId>
+            <version>8.0-6</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

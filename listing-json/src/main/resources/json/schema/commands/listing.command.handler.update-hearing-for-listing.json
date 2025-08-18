@@ -42,12 +42,6 @@
         "$ref": "http://justice.gov.uk/listing/commands/non-default-day.json"
       }
     },
-    "hearingDays": {
-      "type": "array",
-      "items": {
-        "$ref": "http://justice.gov.uk/listing/commands/hearingDay.json"
-      }
-    },
     "jurisdictionType": {
       "$ref": "http://justice.gov.uk/core/courts/jurisdictionType.json"
     },
@@ -144,9 +138,6 @@
         },
         "courtRoomId": {
           "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
-        },
-        "ouCode": {
-          "type": "string"
         }
       },
       "required": [

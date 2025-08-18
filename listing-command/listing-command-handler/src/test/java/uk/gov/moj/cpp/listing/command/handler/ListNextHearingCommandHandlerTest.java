@@ -3,19 +3,13 @@ package uk.gov.moj.cpp.listing.command.handler;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
-import static java.util.Optional.empty;
-import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
-import static java.util.stream.Collectors.toList;
+import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
-import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
@@ -27,15 +21,15 @@ import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBu
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.Defendant;
 import uk.gov.justice.core.courts.HearingLanguage;
+import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.core.courts.JudicialRoleType;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.Offence;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
-import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
-import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.courts.ChangeNextHearingDay;
 import uk.gov.justice.listing.courts.DeleteNextHearings;
 import uk.gov.justice.listing.courts.DeleteSeededHearing;
@@ -43,6 +37,7 @@ import uk.gov.justice.listing.courts.ListNextHearing;
 import uk.gov.justice.listing.courts.ListNextHearingsEnrichedV2;
 import uk.gov.justice.listing.courts.ListNextHearingsV2;
 import uk.gov.justice.listing.courts.RemoveSelectedOffencesFromExistingHearing;
+import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.listing.events.AllocatedHearingDeleted;
 import uk.gov.justice.listing.events.DeleteNextHearingRequested;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
@@ -60,6 +55,7 @@ import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.Type;
 import uk.gov.justice.listing.events.UnallocatedHearingDeleted;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.core.aggregate.AggregateService;
@@ -69,13 +65,10 @@ import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
+import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter;
-import uk.gov.moj.cpp.listing.command.utils.CourtApplicationToDomainConverter;
-import uk.gov.moj.cpp.listing.command.utils.HearingListingNeedsConverterCommandToCore;
-import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
+import uk.gov.moj.cpp.listing.common.service.ProvisionalBookingService;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
-import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
-import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate;
 
@@ -83,14 +76,15 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.json.JsonObject;
+import javax.ws.rs.core.Response;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -100,13 +94,12 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ListNextHearingCommandHandlerTest {
+public class ListNextHearingCommandHandlerTest {
 
     public static final UUID HEARING_ID = randomUUID();
     public static final int OFFENCE_COUNT = 1;
     public static final int OFFENCE_ORDER_INDEX = 0;
     public static final String OFFENCE_LEGISLATION = "legislation";
-    public static final String REFERRAL_REASON_FOR_DISQUALIFICATION = "For disqualification";
 
     @Spy
     private final Enveloper enveloper = createEnveloperWithEvents(
@@ -122,20 +115,34 @@ class ListNextHearingCommandHandlerTest {
 
     @Mock
     private EventSource eventSource;
+
     @Mock
     private EventStream eventStream;
+
     @Mock
     private AggregateService aggregateService;
+
     @Spy
     private SeedHearingAggregate seedHearingAggregate;
+
     @Spy
     private JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
+
+    @Spy
+    private final CommandToDomainConverter commandToDomainConverter = new CommandToDomainConverter();
+
     @InjectMocks
     private ListNextHearingCommandHandler listNextHearingCommandHandler;
+
+
     @Mock
-    private HearingListingNeedsConverterCommandToCore hearingListingNeedsConverterCommandToCore;
+    private HearingTypeFactory hearingTypeFactory;
+
     @Mock
-    private CommandToDomainConverter commandToDomainConverter;
+    private ProvisionalBookingService provisionalBookingService;
+
+    @Mock
+    private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
     @Test
     public void shouldHandleListNextCourtHearings() throws EventStreamException {
@@ -180,7 +187,6 @@ class ListNextHearingCommandHandlerTest {
         final UUID offenceId = randomUUID();
         final List<UUID> shadowListedOffences = asList(offenceId);
         final String sittingDay = LocalDate.now().toString();
-
         when(jsonObjectConverter.convert(commandPayload, ListNextHearingsEnrichedV2.class))
                 .thenReturn(ListNextHearingsEnrichedV2.listNextHearingsEnrichedV2()
                         .withAdjournedFromDate(adjournedFromDate)
@@ -195,11 +201,9 @@ class ListNextHearingCommandHandlerTest {
                                 .withShadowListedOffences(shadowListedOffences)
                                 .build())
                         .build());
-        when(hearingListingNeedsConverterCommandToCore.convert(any())).thenReturn(hearings.get(0));
 
         when(aggregateService.get(eventStream, SeedHearingAggregate.class)).thenReturn(seedHearingAggregate);
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
-
 
         final ArgumentCaptor<List> hearingCaptor = ArgumentCaptor.forClass(List.class);
         final ArgumentCaptor<List> courtCentreDefaultsCaptor = ArgumentCaptor.forClass(List.class);
@@ -208,13 +212,14 @@ class ListNextHearingCommandHandlerTest {
 
         listNextHearingCommandHandler.listNextHearings(commandEnvelope);
 
-        verify(seedHearingAggregate).requestNextHearings(hearingCaptor.capture(), eq(sittingDay),
-                courtCentreDefaultsCaptor.capture(), adjournedFromDateCaptor.capture(), shadowOffenceCaptor.capture());
+        verify(seedHearingAggregate).requestNextHearings(hearingCaptor.capture(), eq(sittingDay), courtCentreDefaultsCaptor.capture(), adjournedFromDateCaptor.capture(), shadowOffenceCaptor.capture());
 
 
         assertThat(hearingCaptor.getValue().size(), is(2));
         HearingListingNeeds hearingCaptorValue = (HearingListingNeeds) hearingCaptor.getValue().get(0);
         assertThat(hearingCaptorValue.getId(), is(hearingId));
+        HearingListingNeeds hearingCaptor2Value = (HearingListingNeeds) hearingCaptor.getValue().get(1);
+        assertThat(hearingCaptor2Value.getId(), is(hearing2Id));
 
         assertThat(courtCentreDefaultsCaptor.getValue().size(), is(1));
         CourtCentreDefaults courtCentreDefaultsCaptorValue = (CourtCentreDefaults) courtCentreDefaultsCaptor.getValue().get(0);
@@ -239,25 +244,40 @@ class ListNextHearingCommandHandlerTest {
         assertThat(nextHearingRequestedEventProduced.payloadAsJsonObject().getJsonObject("hearing").getString("id"), is(hearingId.toString()));
 
         assertThat(nextHearingRequestedEvent2Produced.metadata().name(), is("listing.events.next-hearing-requested"));
+        assertThat(nextHearingRequestedEvent2Produced.payloadAsJsonObject().getJsonObject("hearing").getString("id"), is(hearing2Id.toString()));
+
     }
 
     @Test
     public void shouldHandleListNextCourtHearing() throws EventStreamException {
-        final ListNextHearing listNextHearing = buildListNextHearing();
+
         final JsonObject commandPayload = createObjectBuilder().build();
-        when(jsonObjectConverter.convert(commandPayload, ListNextHearing.class)).thenReturn(listNextHearing);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+        when(jsonObjectConverter.convert(commandPayload, ListNextHearing.class)).thenReturn(buildListNextHearing());
 
         final JsonEnvelope commandEnvelope = createEnvelope("listing.command.list-next-hearing",
                 commandPayload);
 
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(new Hearing());
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
-
-        lenient().when(commandToDomainConverter.convert(any(), any(), any())).thenReturn(buildHearing(listNextHearing));
+        when(provisionalBookingService.getSlots(any())).thenReturn(Response.accepted().build());
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(createObjectBuilder()
+                .add("provisionalSlots", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("bookingId", "bookingId")
+                                .add("courtScheduleId", UUID.randomUUID().toString())
+                                .add("ouCode", "ouCode")
+                                .add("courtRoomId", UUID.randomUUID().toString())
+                                .add("courtRoomNumber", 1)
+                                .add("maxSlots", 1)
+                                .add("sessionDate", LocalDate.now().toString())
+                                .build())
+                        .build()
+                ).build());
 
         listNextHearingCommandHandler.listNextCourtHearing(commandEnvelope);
 
-        final List<JsonEnvelope> events = verifyAppendAndGetArgumentFrom(eventStream).toList();
+        final List<JsonEnvelope> events = verifyAppendAndGetArgumentFrom(eventStream).collect(Collectors.toList());
 
         assertThat(events.size(), is(1));
         final JsonEnvelope listedEventProduced = events.get(0);
@@ -413,7 +433,6 @@ class ListNextHearingCommandHandlerTest {
     }
 
     @Test
-    @Disabled("This test is broken and needs fixing")
     public void shouldHandleDeleteNextHearingsCommand() throws EventStreamException {
 
         final JsonObject commandPayload = createObjectBuilder().build();
@@ -729,19 +748,20 @@ class ListNextHearingCommandHandlerTest {
 
     }
 
+
     private ListNextHearing buildListNextHearing() {
         final String adjournedFromDate = "2020-01-25";
         final UUID courtCentreId = randomUUID();
         final UUID bookingReference = randomUUID();
 
         final int estimatedMinutes = 60;
-
+        final HearingLanguage hearingLanguage = HearingLanguage.ENGLISH;
         final String listingDirections = "listing direction";
 
         final String prosecutorDatesToAvoid = "Prosecutor Dates To Avoid";
         final ZonedDateTime startDate = ZonedDateTime.now();
         final String restrictionReason = "Reporting Restriction Reason";
-
+        final UUID typeId = randomUUID();
         final String endDate = startDate.toLocalDate().plusDays(2).toString();
         final UUID prosecutionAuthorityId = randomUUID();
 
@@ -751,6 +771,7 @@ class ListNextHearingCommandHandlerTest {
         final UUID masterDefendantId = randomUUID();
         final ZonedDateTime courtProceedingsInitiated = ZonedDateTime.now();
 
+        final JurisdictionType jurisdictionType = CROWN;
         final String prosecutionAuthorityCode = "authority-code";
         final String prosecutionAuthorityReference = "authority-reference";
         final String weekCommencingStartDate = "2021-01-26";
@@ -774,7 +795,7 @@ class ListNextHearingCommandHandlerTest {
                                         .withJudiciaryType("judiciary-type")
                                         .build())
                                 .build()))
-                        .withJurisdictionType(CROWN)
+                        .withJurisdictionType(jurisdictionType)
                         .withProsecutionCases(asList(ProsecutionCase.prosecutionCase()
                                 .withProsecutionCaseIdentifier(ProsecutionCaseIdentifier.prosecutionCaseIdentifier()
                                         .withProsecutionAuthorityReference(prosecutionAuthorityReference)
@@ -811,83 +832,6 @@ class ListNextHearingCommandHandlerTest {
                         .build())))
                 .build();
 
-    }
-
-    private uk.gov.moj.cpp.listing.domain.Hearing buildHearing(ListNextHearing listNextHearing) {
-        return uk.gov.moj.cpp.listing.domain.Hearing.hearing()
-                .withId(listNextHearing.getHearing().getId())
-                .withType(buildHearingType(listNextHearing.getHearing().getType()))
-                .withHearingLanguage(empty())
-                .withEstimatedMinutes(listNextHearing.getHearing().getEstimatedMinutes())
-                .withEstimatedDuration(listNextHearing.getHearing().getEstimatedDuration())
-                .withStartDateTime(listNextHearing.getHearing().getEarliestStartDateTime())
-                .withCourtCentreId(listNextHearing.getCourtCentresDetails().get(0).getId())
-                .withCourtRoomId(ofNullable(listNextHearing.getHearing().getCourtCentre().getRoomId()))
-                .withListingDirections(ofNullable(listNextHearing.getHearing().getListingDirections()))
-                .withProsecutorDatesToAvoid(ofNullable(listNextHearing.getHearing().getProsecutorDatesToAvoid()))
-                .withReportingRestrictionReason(ofNullable(listNextHearing.getHearing().getReportingRestrictionReason()))
-                .withJudiciary(listNextHearing.getHearing().getJudiciary().stream().map(this::buildJudiciary)
-                .collect(toList()))
-                .withJurisdictionType(JurisdictionType.valueFor(listNextHearing.getHearing().getJurisdictionType().name())
-                        .orElseThrow(IllegalArgumentException::new))
-                .withListedCases(emptyList())
-                .withNonSittingDays(convert(listNextHearing.getHearing().getNonSittingDays()))
-                .withCourtApplication(isEmpty(listNextHearing.getHearing().getCourtApplications()) ? emptyList() : listNextHearing.getHearing().getCourtApplications()
-                        .stream().map(ca -> new CourtApplicationToDomainConverter().convert(ca)).collect(toList()))
-                .withCourtApplicationPartyNeeds(isNull(listNextHearing.getHearing().getCourtApplicationPartyListingNeeds())
-                        ? emptyList() : listNextHearing.getHearing().getCourtApplicationPartyListingNeeds().stream()
-                        .map(this::buildCourtApplicationPartyNeeds).collect(toList()))
-                .withIsPossibleDisqualification(isPossibleDisqualification(listNextHearing.getHearing()))
-                .withIsGroupProceedings(nonNull(listNextHearing.getHearing().getIsGroupProceedings()) ? Optional.of(listNextHearing.getHearing().getIsGroupProceedings()) : empty())
-                .withNumberOfGroupCases(nonNull(listNextHearing.getHearing().getNumberOfGroupCases()) ? Optional.of(listNextHearing.getHearing().getNumberOfGroupCases()) : empty())
-                .build();
-
-    }
-
-    public uk.gov.moj.cpp.listing.domain.Type buildHearingType(final HearingType type) {
-        return uk.gov.moj.cpp.listing.domain.Type.type()
-                .withId(type.getId())
-                .withDescription(type.getDescription())
-                .withWelshDescription(type.getWelshDescription())
-                .build();
-    }
-
-    public List<LocalDate> convert(final List<String> source) {
-        return isEmpty(source) ? emptyList() : source.stream().map(LocalDate::parse).toList();
-    }
-
-    public uk.gov.moj.cpp.listing.domain.JudicialRole buildJudiciary(final uk.gov.justice.core.courts.JudicialRole judicialRole) {
-        return uk.gov.moj.cpp.listing.domain.JudicialRole.judicialRole()
-                .withJudicialId(judicialRole.getJudicialId())
-                .withJudicialRoleType(uk.gov.moj.cpp.listing.domain.JudicialRoleType.judicialRoleType()
-                        .withJudiciaryType(judicialRole.getJudicialRoleType().getJudiciaryType())
-                        .withJudicialRoleTypeId(judicialRole.getJudicialRoleType().getJudicialRoleTypeId())
-                        .build())
-                .withIsDeputy(ofNullable(judicialRole.getIsDeputy()))
-                .withIsBenchChairman(ofNullable(judicialRole.getIsBenchChairman()))
-                .withUserId(judicialRole.getUserId())
-                .build();
-    }
-
-    public CourtApplicationPartyListingNeeds buildCourtApplicationPartyNeeds(
-            final uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds partyNeeds) {
-        final HearingLanguage hearingLanguageNeeds = partyNeeds.getHearingLanguageNeeds();
-        return CourtApplicationPartyListingNeeds.courtApplicationPartyListingNeeds()
-                .withCourtApplicationId(partyNeeds.getCourtApplicationId())
-                .withCourtApplicationPartyId(partyNeeds.getCourtApplicationPartyId())
-                .withHearingLanguageNeeds(HearingLanguageNeeds.valueFor(
-                        nonNull(hearingLanguageNeeds) ? hearingLanguageNeeds.toString() : null).orElse(null))
-                .build();
-    }
-
-    private Optional<Boolean> isPossibleDisqualification(final HearingListingNeeds commandHearing) {
-
-        if (nonNull(commandHearing.getDefendantListingNeeds())) {
-            final boolean match = commandHearing.getDefendantListingNeeds().stream()
-                    .anyMatch(defendantListingNeeds -> REFERRAL_REASON_FOR_DISQUALIFICATION.equals(defendantListingNeeds.getListingReason()));
-            return match ? Optional.of(Boolean.TRUE) : Optional.empty();
-        }
-        return Optional.empty();
     }
 
     private  <T> List<T> asList(T... a) {

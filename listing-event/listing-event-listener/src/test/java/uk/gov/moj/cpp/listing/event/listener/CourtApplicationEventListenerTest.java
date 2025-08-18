@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
+
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.LaaReference;
 import uk.gov.justice.listing.event.CourtApplicationHearingDeleted;

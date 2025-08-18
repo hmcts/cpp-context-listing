@@ -4,7 +4,7 @@
   "type": "object",
   "properties": {
     "listCourtHearing": {
-      "$ref": "http://justice.gov.uk/listing/commands/listCourtHearing.json"
+      "$ref": "http://justice.gov.uk/listing/courts/list-court-hearing.json"
     },
     "courtCentresDetails": {
       "type": "array",

@@ -1,20 +1,22 @@
 package uk.gov.moj.cpp.listing.it;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
+import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.Matchers.contains;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.notHmiEnabledHearingsData;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 
-import com.google.common.collect.ImmutableMap;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.Offence;
+import uk.gov.justice.progression.courts.AddedOffences;
 import uk.gov.justice.progression.courts.OffencesForDefendantUpdated;
+import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.ListNextHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateDefendantOffencesSteps;
@@ -26,18 +28,28 @@ import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceData;
 
 import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import org.hamcrest.Matcher;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class ListNextHearingIT extends AbstractIT {
 
+    private static final String CONTEXT_NAME = "listing";
+    private final DatabaseCleaner databaseCleaner = new DatabaseCleaner();
+
+    @BeforeEach
+    public void cleanPublishedEventTable() {
+        databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
+        databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
+        databaseCleaner.cleanStreamStatusTable(CONTEXT_NAME);
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing");
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "listing_notes");
+    }
+
     @Test
-    void shouldListNextHearings() {
+    public void shouldListNextHearings() {
         final HearingsData firstHearings = hearingsData();
         final HearingsData nextHearings = hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
@@ -51,7 +63,7 @@ public class ListNextHearingIT extends AbstractIT {
 
 
     @Test
-    void shouldDeleteOldNextHearingsAndListNextHearings() {
+    public void shouldDeleteOldNextHearingsAndListNextHearings() {
 
         final HearingsData oldNextHearings = hearingsData();
         final HearingsData nextHearings = hearingsData();
@@ -75,7 +87,7 @@ public class ListNextHearingIT extends AbstractIT {
     }
 
     @Test
-    void shouldDeletePreviousHearingsAndCreateNextHearingRequested() {
+    public void shouldDeletePreviousHearingsAndCreateNextHearingRequested() {
 
         final HearingsData oldNextHearings = HearingsData.hearingsData();
         final HearingsData nextHearings = HearingsData.hearingsData();
@@ -101,7 +113,7 @@ public class ListNextHearingIT extends AbstractIT {
 
 
     @Test
-    void shouldDeleteOldScheduledNextHearingsAndScheduledNextHearings() {
+    public void shouldDeleteOldScheduledNextHearingsAndScheduledNextHearings() {
 
         final HearingsData oldNextHearings = notHmiEnabledHearingsData();
         final HearingsData nextHearings = notHmiEnabledHearingsData();
@@ -127,7 +139,7 @@ public class ListNextHearingIT extends AbstractIT {
 
 
     @Test
-    void shouldDeleteOldRelatedtHearingsAndUpdateRelatedHearings() {
+    public void shouldDeleteOldRelatedtHearingsAndUpdateRelatedHearings() {
 
         final HearingsData oldNextHearings = hearingsData();
         final HearingsData nextHearings = hearingsData();
@@ -158,7 +170,7 @@ public class ListNextHearingIT extends AbstractIT {
     }
 
     @Test
-    void shouldAddCasetoExistingHearingforAdHocHearing() {
+    public void shouldAddCasetoExistingHearingforAdHocHearing() {
         final HearingsData existedHearings = hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(existedHearings);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -177,7 +189,7 @@ public class ListNextHearingIT extends AbstractIT {
     }
 
     @Test
-    void shouldDeleteOldAllocatedRelatedHearingsAndUpdateRelatedHearings() {
+    public void shouldDeleteOldAllocatedRelatedHearingsAndUpdateRelatedHearings() {
 
         final HearingsData oldNextHearings = hearingsDataWithAllocationDataAndJudiciary();
 
@@ -185,28 +197,10 @@ public class ListNextHearingIT extends AbstractIT {
         final HearingsData existedHearings = hearingsDataWithAllocationDataAndJudiciary();
 
         final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(firstHearings);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps1.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
-        stubListHearingInCourtSessions(listCourtHearingSteps1.getHearingsData().getHearingData().get(0).getId().toString(),
-                "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ZonedDateTime.now(ZoneOffset.UTC)
-                        .withHour(9)
-                        .withMinute(0)
-                        .withSecond(0)
-                        .withNano(0)
-                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
         listCourtHearingSteps1.whenCaseIsSubmittedForListing();
         listCourtHearingSteps1.verifyHearingListedFromAPI(ALLOCATED);
 
         final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(existedHearings);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps2.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
-        stubListHearingInCourtSessions(listCourtHearingSteps2.getHearingsData().getHearingData().get(0).getId().toString(),
-                "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ZonedDateTime.now(ZoneOffset.UTC)
-                        .withHour(9)
-                        .withMinute(0)
-                        .withSecond(0)
-                        .withNano(0)
-                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
         listCourtHearingSteps2.whenCaseIsSubmittedForListing();
         listCourtHearingSteps2.verifyHearingListedFromAPI(ALLOCATED);
 
@@ -231,7 +225,7 @@ public class ListNextHearingIT extends AbstractIT {
     }
 
     @Test
-    void shouldRemoveOffencesFromNextHearingWhenFirstSeededHearingAmended(){
+    public void shouldRemoveOffencesFromNextHearingWhenFirstSeededHearingAmended(){
 
         final HearingsData nextHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         final HearingsData secondHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
@@ -239,15 +233,6 @@ public class ListNextHearingIT extends AbstractIT {
         // First hearing created
         final HearingsData firstHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
-        stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
-                "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ZonedDateTime.now(ZoneOffset.UTC)
-                        .withHour(9)
-                        .withMinute(0)
-                        .withSecond(0)
-                        .withNano(0)
-                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
@@ -271,19 +256,10 @@ public class ListNextHearingIT extends AbstractIT {
     }
 
     @Test
-    void shouldRemoveOffencesFromNextHearingWhenNextHearingIsExistingHearing(){
+    public void shouldRemoveOffencesFromNextHearingWhenNextHearingIsExistingHearing(){
 
         HearingsData secondHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(secondHearings);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
-        stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
-                "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ZonedDateTime.now(ZoneOffset.UTC)
-                        .withHour(9)
-                        .withMinute(0)
-                        .withSecond(0)
-                        .withNano(0)
-                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
@@ -323,28 +299,18 @@ public class ListNextHearingIT extends AbstractIT {
     }
 
     @Test
-    void ShouldRemoveOffencesIfNextHearingWasExtended(){
+    public void ShouldRemoveOffencesIfNextHearingWasExtended(){
        // GIVEN first hearing
         final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(randomUUID(), null, STRING.next(), randomUUID(), null, JurisdictionType.MAGISTRATES.name(), JurisdictionType.MAGISTRATES.name(),
                 null, null);
 
         final HearingsData firstHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData);
         final ListCourtHearingSteps firstHearingsSteps = new ListCourtHearingSteps(firstHearings);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", firstHearingsSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
-        stubListHearingInCourtSessions(firstHearingsSteps.getHearingsData().getHearingData().get(0).getId().toString(),
-                "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ZonedDateTime.now(ZoneOffset.UTC)
-                        .withHour(9)
-                        .withMinute(0)
-                        .withSecond(0)
-                        .withNano(0)
-                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
         firstHearingsSteps.whenCaseIsSubmittedForListing();
 
         // GIVEN unallocated Hearing
         final HearingsData unallocatedHearing = hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(unallocatedHearing);
-
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
