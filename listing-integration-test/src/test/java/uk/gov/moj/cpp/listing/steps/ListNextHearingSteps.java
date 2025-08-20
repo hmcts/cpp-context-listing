@@ -27,11 +27,13 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STR
 import static uk.gov.moj.cpp.listing.endpoint.UnscheduledHearingsEndpoint.pollForUnscheduledHearings;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps.getJsonPathQueryForCaseReference;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps.getJsonPathQueryForDefendantLastName;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.clearAllMessages;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
@@ -39,7 +41,6 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
-
 
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.ApplicationStatus;
@@ -55,7 +56,6 @@ import uk.gov.justice.core.courts.Defendant;
 import uk.gov.justice.core.courts.DefendantListingNeeds;
 import uk.gov.justice.core.courts.Ethnicity;
 import uk.gov.justice.core.courts.Gender;
-import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.justice.core.courts.InitiationCode;
@@ -76,6 +76,7 @@ import uk.gov.justice.core.courts.ReportingRestriction;
 import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.justice.core.courts.SummonsTemplateType;
 import uk.gov.justice.core.courts.WeekCommencingDate;
+import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.courts.TypeOfList;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
@@ -217,6 +218,7 @@ public class ListNextHearingSteps extends AbstractIT {
 
         request = listNextHearingsJsonObject.toString();
 
+        clearAllMessages(publicMessageConsumerHearingAddedToCase);
         QueueUtil.sendMessage(
                 publicEventAdhocCreated,
                 "public.progression.related-hearing-updated-for-adhoc-hearing",
@@ -387,6 +389,15 @@ public class ListNextHearingSteps extends AbstractIT {
 
     }
 
+    /**
+     * JMS-aware version of verifyHearingListedFromAPI for handling asynchronous message processing timing issues.
+     */
+    public void verifyHearingListedFromAPIWithJmsDelay(final HearingsData hearingsData) {
+        verifyHearingListedFromAPIWithJmsDelay(hearingsData.getHearingData().get(0), false);
+        verifyHearingListedFromAPIWithJmsDelay(hearingsData.getHearingData().get(1), false);
+
+    }
+
     public void verifySingleHearingListedFromAPI(final HearingData hearingsData, final Boolean isAllocated) {
         verifyHearingListedFromAPI(hearingsData, isAllocated);
 
@@ -546,6 +557,28 @@ public class ListNextHearingSteps extends AbstractIT {
     private void verifyHearingListedFromAPI(final HearingData hearingData, final Boolean isAllocated) {
         final String hearingId = hearingData.getId().toString();
         pollForHearing(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].jurisdictionType",
+                        contains(hearingData.getJurisdictionType())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].courtCentreId",
+                        contains(hearingData.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].type.id",
+                        contains(hearingData.getHearingTypeData().getTypeId().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].type.description",
+                        contains(hearingData.getHearingTypeData().getTypeDescription())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].startDate",
+                        contains(hearingData.getHearingStartDate().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].listedCases[0].defendants[0].isYouth",
+                        contains(true))
+        });
+    }
+
+    /**
+     * JMS-aware version of verifyHearingListedFromAPI private method for handling asynchronous message processing timing issues.
+     */
+    private void verifyHearingListedFromAPIWithJmsDelay(final HearingData hearingData, final Boolean isAllocated) {
+        final String hearingId = hearingData.getId().toString();
+        // Use JMS-aware polling to handle asynchronous message processing
+        pollForHearingWithJmsDelay(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].jurisdictionType",
                         contains(hearingData.getJurisdictionType())),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].courtCentreId",

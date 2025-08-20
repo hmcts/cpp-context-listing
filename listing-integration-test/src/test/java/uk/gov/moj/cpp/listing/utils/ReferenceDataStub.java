@@ -18,13 +18,7 @@ import uk.gov.justice.service.wiremock.testutil.InternalEndpointMockUtils;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 
 import java.time.LocalTime;
-import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
-
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
 
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -53,6 +47,8 @@ public class ReferenceDataStub {
     private static final String REFERENCE_DATA_OU_COURTROOM_URL = "/referencedata-service/query/api/rest/referencedata/courtrooms";
     private static final String REFERENCE_DATA_OU_COURTROOM_MEDIA_TYPE = "application/vnd.referencedata.ou-courtroom+json";
     private static final String REFERENCE_DATA_OU_COURTROOMS_MEDIA_TYPE = "application/vnd.referencedata.ou-courtrooms+json";
+    private static final String REFERENCE_DATA_PROSECUTOR_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/prosecutors/%s";
+    private static final String REFERENCE_DATA_PROSECUTOR_MEDIA_TYPE = "application/vnd.referencedata.query.prosecutor+json";
 
     public static void stubGetReferenceDataCourtMappings(final CourtCentreData courtReferenceData) {
         InternalEndpointMockUtils.stubPingFor("referencedata-service");
@@ -254,6 +250,20 @@ public class ReferenceDataStub {
                 .willReturn(aResponse().withStatus(SC_OK)
                         .withHeader("CPPID", UUID.randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_ORGANISATIONAL_UNITS_MEDIA_TYPE)
+                        .withBody(payload)));
+    }
+
+    public static void stubGetProsecutorPoliceFlag(final UUID prosecutorId) {
+        stubPingForReferenceDataService();
+
+        final String urlPath = String.format(REFERENCE_DATA_PROSECUTOR_QUERY_URL, prosecutorId.toString());
+        String payload = getPayload("stub-data/referencedata.query.get-prosecutor.json")
+                .replace("PROSECUTOR_ID",prosecutorId.toString());
+
+        stubFor(get(urlPathMatching(urlPath))
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader("Content-Type", REFERENCE_DATA_PROSECUTOR_MEDIA_TYPE)
                         .withBody(payload)));
     }
 }

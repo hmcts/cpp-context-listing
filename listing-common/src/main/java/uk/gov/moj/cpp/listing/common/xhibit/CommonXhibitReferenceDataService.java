@@ -2,8 +2,6 @@ package uk.gov.moj.cpp.listing.common.xhibit;
 
 import static java.lang.String.format;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.moj.cpp.listing.common.xhibit.exception.InvalidReferenceDataException;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtMapping;
@@ -26,6 +24,8 @@ import javax.inject.Inject;
 import javax.json.JsonObject;
 
 import com.google.common.collect.ImmutableList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CommonXhibitReferenceDataService {
 

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import uk.gov.justice.listing.commands.CourtCentreDetails;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.command.api.util.FileUtil;
@@ -40,6 +41,9 @@ public class CourtCentreFactoryTest {
 
     @Mock
     private ReferenceDataService referenceDataService;
+
+    @Mock
+    private JsonObjectToObjectConverter jsonObjectConverter;
 
     @InjectMocks
     private CourtCentreFactory courtCentreFactory;

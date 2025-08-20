@@ -103,12 +103,6 @@
             <artifactId>cpp-platform-data-utils-service</artifactId>
             <version>${cpp.platform-libraries.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.tomee</groupId>
-            <artifactId>javaee-api</artifactId>
-            <version>8.0-6</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>

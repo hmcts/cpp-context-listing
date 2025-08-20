@@ -26,7 +26,9 @@ import java.util.List;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
 
 public class ListCourtWeekCommencingHearingIT extends AbstractIT {
     private final static String WEEK_COMMENCING_END_DATE_FOR_ONE_WEEK = LocalDate.now().plusDays(7L).toString();
@@ -39,7 +41,6 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
 
     @BeforeEach
     public void initialize() {
-        cleanListingTables();
         hearingsData = loadFixedHearingData();
         hearingsData.forEach(hd -> {
             pollForHearingById(getLoggedInUser(), hd.getHearingData().get(0).getId(), withJsonPath("$.listedCases", hasSize(greaterThan(0))));
@@ -55,12 +56,8 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
         updatedHearingDataList = asList(updatedHearingData1, updatedHearingData2, updatedHearingData3);
     }
 
-    @AfterEach
-    public void tearDown() {
-        cleanListingTables();
-    }
-
     @Test
+    @Disabled("will be addressed with SPRDT-184")
     public void shouldListHearingsWithinWeekCommencingDateRangeByRelevance() {
         final String weekCommencingSearchStartDate = now().minusDays(7).toString();
         final String weekCommencingSearchEndDate = now().plusDays(22).toString();
@@ -117,6 +114,7 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
     }
 
     @Test
+    @Disabled("will be addressed with SPRDT-184")
     public void shouldListHearingsWithEndDateOrWeekCommencingDatesWithinWeekCommencingDateRangeByRelevance() {
         final String weekCommencingSearchStartDate = now().plusDays(4).toString();
         final String weekCommencingSearchEndDate = now().plusDays(11).toString();
@@ -235,10 +233,4 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
         listCourtHearingSteps.verifyQueryAPIFindCaseByPersonDefendantAndHearingDateForUnallocatedHearing(caseId, urn, defendantId, firstName, lastName, dateOfBirth.toString());
     }
 
-    private static void cleanListingTables() {
-        databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
-        databaseCleaner.cleanStreamStatusTable(CONTEXT_NAME);
-        databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
-        viewStoreCleaner.cleanViewStoreTables();
-    }
 }

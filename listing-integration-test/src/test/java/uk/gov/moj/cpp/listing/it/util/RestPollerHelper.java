@@ -8,14 +8,21 @@ import uk.gov.justice.services.test.utils.core.http.RestPoller;
 
 public class RestPollerHelper {
 
-    public static final long DELAY_IN_MILLIS = 0L;
-    public static final long INTERVAL_IN_MILLIS = 1000L;
-    public static final long TIMEOUT_IN_MILLIS = 40000L;
+    public static final long DELAY_IN_MILLIS = 300L;
+    public static final long INTERVAL_IN_MILLIS = 100L;
+    public static final long TIMEOUT_IN_MILLIS = 30000L;
 
     public static RestPoller pollWithDefaults(final RequestParams requestParams) {
         return poll(requestParams)
                 .timeout(TIMEOUT_IN_MILLIS, MILLISECONDS)
                 .pollDelay(DELAY_IN_MILLIS, MILLISECONDS)
+                .pollInterval(INTERVAL_IN_MILLIS, MILLISECONDS);
+    }
+
+    public static RestPoller pollWithDelayForJms(final RequestParams requestParams) {
+        return poll(requestParams)
+                .timeout(TIMEOUT_IN_MILLIS, MILLISECONDS)
+                .pollDelay(300L, MILLISECONDS)  // Add delay for JMS processing
                 .pollInterval(INTERVAL_IN_MILLIS, MILLISECONDS);
     }
 }

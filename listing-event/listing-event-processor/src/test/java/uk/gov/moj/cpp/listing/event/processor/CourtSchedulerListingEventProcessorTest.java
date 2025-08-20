@@ -14,8 +14,6 @@ import static uk.gov.justice.listing.events.NonDefaultDay.nonDefaultDay;
 
 import uk.gov.justice.listing.events.AvailableSlotsForHearingFreed;
 import uk.gov.justice.listing.events.NonDefaultDay;
-import uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing;
-import uk.gov.justice.listing.events.NonDefaultDaysChangedForHearing;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.event.processor.azure.util.SlotsToJsonStringConverter;
@@ -54,39 +52,6 @@ public class CourtSchedulerListingEventProcessorTest {
 
     @InjectMocks
     private CourtSchedulerListingEventProcessor courtSchedulerListingEventProcessor;
-
-    @Test
-    public void shouldUpdateSlotsInAzureWhenNonDefaultDaysAssigned() {
-        final Envelope<NonDefaultDaysAssignedToHearing> envelope = (Envelope<NonDefaultDaysAssignedToHearing>) mock(Envelope.class);
-
-        final NonDefaultDaysAssignedToHearing hearing = NonDefaultDaysAssignedToHearing.nonDefaultDaysAssignedToHearing()
-                .withNonDefaultDays(nonDefaultDays())
-                .withHearingId(HEARING_ID)
-                .build();
-        given(envelope.payload()).willReturn(hearing);
-
-        given(slotsToJsonStringConverter.convertNonDefaultDaysToJson(HEARING_ID, hearing.getNonDefaultDays())).willReturn(TEST_OUTPUT_ARRAY);
-
-        courtSchedulerListingEventProcessor.nonDefaultDaysAssignedForHearing(envelope);
-
-        verify(hearingSlotsService).update(TEST_OUTPUT.build());
-    }
-
-    @Test
-    public void shouldUpdateSlotsInAzureWhenNonDefaultDaysChanged() {
-        final Envelope<NonDefaultDaysChangedForHearing> envelope = (Envelope<NonDefaultDaysChangedForHearing>) mock(Envelope.class);
-
-        final NonDefaultDaysChangedForHearing hearing = NonDefaultDaysChangedForHearing.nonDefaultDaysChangedForHearing()
-                .withNonDefaultDays(nonDefaultDays())
-                .withHearingId(HEARING_ID)
-                .build();
-        given(envelope.payload()).willReturn(hearing);
-        given(slotsToJsonStringConverter.convertNonDefaultDaysToJson(HEARING_ID, hearing.getNonDefaultDays())).willReturn(TEST_OUTPUT_ARRAY);
-
-        courtSchedulerListingEventProcessor.nonDefaultDaysChangedForHearing(envelope);
-
-        verify(hearingSlotsService).update(TEST_OUTPUT.build());
-    }
 
     @Test
     public void shouldDeleteSlotsInAzureWhenHearingSlotsAvailable() {

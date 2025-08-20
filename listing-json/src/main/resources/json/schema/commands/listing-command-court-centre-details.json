@@ -6,14 +6,61 @@
     "id": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
     },
+    "oucode": {
+      "type": "string"
+    },
+    "lja": {
+      "type": "string"
+    },
+    "oucodeL1Code": {
+      "type": "string"
+    },
+    "courtId": {
+      "type": "string"
+    },
+    "oucodeL1Name": {
+      "type": "string"
+    },
+    "oucodeL3Name": {
+      "type": "string"
+    },
+    "oucodeL3WelshName": {
+      "type": "string"
+    },
+    "address1": {
+      "type": "string"
+    },
+    "address2": {
+      "type": "string"
+    },
+    "postcode": {
+      "type": "string"
+    },
     "defaultStartTime": {
       "$ref": "#/definitions/localTime"
     },
     "defaultDuration": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/positiveInteger"
     },
-    "name" : {
+    "oucodeL2Code": {
       "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "isWelsh": {
+      "type": "boolean"
+    },
+    "region": {
+      "type": "string"
+    },
+    "courtrooms": {
+      "description": "Courtrooms for this particular court",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/courtRoom"
+      }
     }
   },
   "required": [
@@ -25,6 +72,31 @@
     "localTime": {
       "type": "string",
       "format": "time"
+    },
+    "courtRoom": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+        },
+        "venueName": {
+          "type": "string"
+        },
+        "courtroomId": {
+          "type": "integer"
+        },
+        "courtroomName": {
+          "type": "string"
+        },
+        "venueId": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "courtroomId"
+      ],
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

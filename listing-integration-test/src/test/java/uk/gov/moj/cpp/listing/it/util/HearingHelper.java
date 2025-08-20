@@ -6,6 +6,7 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDelayForJms;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 
@@ -29,6 +30,19 @@ public class HearingHelper {
     public static JsonObject pollForHearingById(final UUID userId, final UUID hearingId, final Matcher<? super ReadContext> jsonPayloadMatcher) {
 
         ResponseData responseData = pollWithDefaults(getParams(userId, hearingId))
+                .until(
+                        status().is(OK),
+                        payload().isJson(jsonPayloadMatcher));
+
+        return getJsonObject(responseData.getPayload());
+    }
+
+    /**
+     * JMS-aware version of pollForHearingById for handling asynchronous message processing timing issues.
+     */
+    public static JsonObject pollForHearingByIdWithJmsDelay(final UUID userId, final UUID hearingId, final Matcher<? super ReadContext> jsonPayloadMatcher) {
+
+        ResponseData responseData = pollWithDelayForJms(getParams(userId, hearingId))
                 .until(
                         status().is(OK),
                         payload().isJson(jsonPayloadMatcher));

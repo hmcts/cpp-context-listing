@@ -10,16 +10,18 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
 
-import uk.gov.justice.core.courts.*;
 import uk.gov.justice.core.courts.Hearing;
+import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.core.courts.JudicialRoleType;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.justice.listing.events.CreateNextHearing;
 import uk.gov.justice.listing.events.CreateNextHearingRequested;
 import uk.gov.justice.listing.events.DeleteNextHearingRequested;
 import uk.gov.justice.listing.events.NextHearingReplaced;
+import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.events.NextHearingRequested;
 import uk.gov.justice.listing.events.RemoveOffencesFromExistingHearingRequested;
 import uk.gov.justice.listing.events.UnscheduledNextHearingRequested;
@@ -27,6 +29,7 @@ import uk.gov.justice.listing.events.UpdateExistingHearingRequested;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -286,12 +289,12 @@ public class SeedHearingAggregateTest {
         final String hearingDay = "2021-01-26";
 
         final List<ProsecutionCase> prosecutionCases = Arrays.asList(buildProsecutionCase(prosecutionCaseId1), buildProsecutionCase(prosecutionCaseId2));
-        final List<UUID> shadowListedOffences = Arrays.asList(randomUUID());
+        final List<UUID> shadowListedOffences = List.of(randomUUID());
 
         final Stream<Object> stream = seedHearingAggregate.requestUpdateExistingHearing(seedingHearingId, hearingId, hearingDay, prosecutionCases, shadowListedOffences);
         Stream<Object> streams = seedHearingAggregate.apply(stream);
 
-        List<Object> existingHearingIds = streams.collect(Collectors.toList());
+        List<Object> existingHearingIds = streams.toList();
 
         assertThat(existingHearingIds.size(), is(1));
         UpdateExistingHearingRequested updateExistingHearingRequested = (UpdateExistingHearingRequested) existingHearingIds.get(0);
@@ -548,7 +551,7 @@ public class SeedHearingAggregateTest {
     private HearingListingNeeds buildHearingListingNeeds(final UUID hearingId) {
         return HearingListingNeeds.hearingListingNeeds()
                 .withId(hearingId)
-                .withJudiciary(Arrays.asList(JudicialRole.judicialRole()
+                .withJudiciary(Collections.singletonList(JudicialRole.judicialRole()
                         .withJudicialId(randomUUID())
                         .withIsBenchChairman(null)
                         .withIsDeputy(null)

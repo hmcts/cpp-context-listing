@@ -11,6 +11,9 @@
     },
     "hearingId": {
       "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "isPublicEvent": {
+      "type": "boolean"
     }
   },
   "required": [

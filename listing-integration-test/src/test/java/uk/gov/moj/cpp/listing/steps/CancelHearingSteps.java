@@ -29,6 +29,7 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMat
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.integer;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.DocumentGeneratorStub.stubDocumentCreate;
 import static uk.gov.moj.cpp.listing.utils.DocumentGeneratorStub.stubDocumentCreateWithRequestBody;
@@ -105,6 +106,8 @@ public class CancelHearingSteps extends AbstractIT {
     }
 
     public void verifyAzureUpdateApiInvoked() {
+//TODO: expected PUT calls to courtscheduler are "list/hearingslots" with all three days followed by "/hearingslots" with two noncancelled days
+// But this version is not making the second PUT to courtscheduler
         final RequestPatternBuilder nonCancelledDaysBuilder = putRequestedFor(urlEqualTo("/listingcourtscheduler-api/rest/courtscheduler/hearingslots"));
         nonCancelledHearingDays.forEach(day -> nonCancelledDaysBuilder.withRequestBody(containing("\"sessionDate\":\"" + day.getSittingDay().toLocalDate().toString() + "\"")));
 
@@ -145,7 +148,7 @@ public class CancelHearingSteps extends AbstractIT {
     }
 
     public void verifyAllocatedHearingFoundWithCancelledDaysRemovedOnCourtLists() {
-        pollForHearing(this.hearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), getMatchersForHearingFoundWithCancelledDaysRemoved(false));
+        pollForHearingWithJmsDelay(this.hearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), getMatchersForHearingFoundWithCancelledDaysRemoved(false));
     }
 
     public void verifyAllocatedHearingFoundWhenSearchDateWithinStartAndEndDateRangeForCourtLists(final LocalDate localDate) {

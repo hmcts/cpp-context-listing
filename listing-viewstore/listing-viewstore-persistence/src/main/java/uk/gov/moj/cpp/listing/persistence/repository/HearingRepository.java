@@ -2,18 +2,23 @@ package uk.gov.moj.cpp.listing.persistence.repository;
 
 import static uk.gov.moj.cpp.listing.persistence.repository.courtlist.HearingJdbcRepository.NULL_FLAT_HEARING_FIELDS;
 
-import org.apache.deltaspike.data.api.*;
-
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.HearingJdbcRepository;
-
-import javax.inject.Inject;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+
+import javax.inject.Inject;
+
+import org.apache.deltaspike.data.api.EntityManagerDelegate;
+import org.apache.deltaspike.data.api.EntityRepository;
+import org.apache.deltaspike.data.api.Query;
+import org.apache.deltaspike.data.api.QueryParam;
+import org.apache.deltaspike.data.api.Repository;
+import org.apache.deltaspike.data.api.SingleResultType;
 
 /**
  * Repository for {@link Hearing}

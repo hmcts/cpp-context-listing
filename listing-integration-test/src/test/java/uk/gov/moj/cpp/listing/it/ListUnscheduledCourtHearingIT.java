@@ -3,41 +3,32 @@ package uk.gov.moj.cpp.listing.it;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static org.hamcrest.Matchers.hasSize;
 import static uk.gov.moj.cpp.listing.endpoint.UnscheduledHearingsEndpoint.pollForUnscheduledHearings;
-import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.mixtureHmiEnabledAndNotHmiEnabledHearingsData;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.notHmiEnabledHearingsData;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
 
-import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListUnscheduledCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateUnscheduledHearingSteps;
 import uk.gov.moj.cpp.listing.steps.VacatingTrialSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
+import java.io.IOException;
 import java.util.UUID;
 
 import com.jayway.jsonpath.ReadContext;
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("squid:S1607")
 
 public class ListUnscheduledCourtHearingIT extends AbstractIT {
 
-    private static final String CONTEXT_NAME = "listing";
-    private final DatabaseCleaner databaseCleaner = new DatabaseCleaner();
-
-    @BeforeEach
-    public void cleanPublishedEventTable() {
-        databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
-        databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
-        databaseCleaner.cleanStreamStatusTable(CONTEXT_NAME);
-        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing");
-    }
-
     @Test
-    public void shouldListHearingWithUnallocatedData() {
+    
+    public void shouldListHearingWithUnallocatedData() throws IOException {
         final HearingsData hearingsData = notHmiEnabledHearingsData();
         final ListUnscheduledCourtHearingSteps listCourtHearingSteps = new ListUnscheduledCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForUnscheduledListing();
@@ -45,6 +36,8 @@ public class ListUnscheduledCourtHearingIT extends AbstractIT {
 
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
         final UpdateUnscheduledHearingSteps updateHearingSteps = new UpdateUnscheduledHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        stubGetAvailableHearingSlotsWithQueryParams(updateHearingSteps.getUpdatedHearingData());
+        stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
         updateHearingSteps.whenHearingIsUpdatedForListing();
         updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
         updateHearingSteps.verifyPublicEventHearingConfirmed();

@@ -19,8 +19,8 @@ public enum JurisdictionType {
   }
 
   public static Optional<JurisdictionType> valueFor(final String value) {
-    if(CROWN.value.equals(value)) { return Optional.of(CROWN); };
-    if(MAGISTRATES.value.equals(value)) { return Optional.of(MAGISTRATES); };
+    if(CROWN.value.equals(value)) { return Optional.of(CROWN); }
+    if(MAGISTRATES.value.equals(value)) { return Optional.of(MAGISTRATES); }
     return Optional.empty();
   }
 }

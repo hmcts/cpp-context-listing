@@ -1,8 +1,5 @@
 package uk.gov.moj.cpp.listing.common.xhibit;
 
-import static java.util.Optional.empty;
-import static java.util.Optional.ofNullable;
-
 import uk.gov.moj.cpp.listing.common.xhibit.exception.InvalidReferenceDataException;
 import uk.gov.moj.cpp.listing.common.xhibit.model.CourtCentreRoomKey;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtMapping;

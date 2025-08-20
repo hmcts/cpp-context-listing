@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.query.api;
 
+import static javax.json.Json.createObjectBuilder;
+
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -8,10 +10,9 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.query.view.CacheRefDataCourtroomView;
 import uk.gov.moj.cpp.listing.query.view.service.CacheRefDataCourtroomLoader;
 
-import javax.inject.Inject;
 import java.time.Instant;
 
-import static javax.json.Json.createObjectBuilder;
+import javax.inject.Inject;
 
 @ServiceComponent(Component.QUERY_API)
 public class CacheRefDataCourtroomApi {

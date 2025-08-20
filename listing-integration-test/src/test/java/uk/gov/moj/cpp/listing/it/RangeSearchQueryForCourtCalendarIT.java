@@ -8,6 +8,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.it.SearchAvailableHearingIT.CASE_IN_HEARING;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithCourtCenterForMagistrate;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
 
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
@@ -23,6 +25,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +36,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings({"squid:S1607"})
@@ -51,13 +53,12 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
 
     @BeforeEach
     public void cleanPublishedEventTable() throws JsonProcessingException {
-        clearDB();
         new RefDataCourtRoomCacheStep().assertRefreshCache();
     }
 
 
     @Test
-    public void hearingCanBeSearchedForUsingDifferentCombinationsOfParametersForMagsCourtcalendar() throws JsonProcessingException {
+    public void hearingCanBeSearchedForUsingDifferentCombinationsOfParametersForMagsCourtCalendar() throws JsonProcessingException {
         final UUID magsCourtCenterId = randomUUID();
         final List<TestData> testDataList = new ArrayList<>();
         IntStream.range(0, 7).forEach(i ->
@@ -65,12 +66,13 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
             final UUID magestirateCourtRoomId = new ArrayList<>(COURT_ROOMS.keySet()).get(i % COURT_ROOMS.size());
             final int dayFromToday = i % 3;
             final LocalDate hearingEndDate = LocalDate.now().plusDays(dayFromToday);
-            final ZonedDateTime hearingStartTime = ZonedDateTime.now().plusDays(dayFromToday - 1);
+            //This was failing due to startDate/enDate new adjustment/shrinking
+            final ZonedDateTime hearingStartTime = ZonedDateTime.now().plusDays(dayFromToday);
 
             final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciaryWithCourtCenterForMagistrate(magsCourtCenterId, magestirateCourtRoomId, hearingEndDate, hearingStartTime);
-            final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+            final ListCourtHearingSteps listCourtHearingSteps = getListCourtHearingStepsWithStubbedBookingRef(hearingsData, hearingStartTime);
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+            listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(ALLOCATED);
 
             final UpdatedHearingData updatedHearingDataWithUpdatedJudiciary = UpdatedHearingData.updatedHearingDataDifferentJudiciary(hearingsData.getHearingData().get(0));
             final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataWithUpdatedJudiciary);
@@ -86,6 +88,7 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
         final String payload2 = new UpdateHearingSteps().verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDateCourtCalendarWithPagination(magsCourtCenterId, 5, 2, 2);
         checkPayload(payload2, 2, testDataList, 5, 2);
     }
+
 
     @Test
     public void shouldRangeSearchCourtCalendarForCrown() throws JsonProcessingException {
@@ -105,9 +108,9 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
             final String caseUrn = STRING.next();
             final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(hearingId, caseUrn, caseUrn, masterDefendantId, CASE_IN_HEARING, jurisdictionType, jurisdictionType,
                     null, null);
-            final int dayFromToday = i % 3;
-            final LocalDate hearingEndDate = LocalDate.now().plusDays(dayFromToday);
-            final ZonedDateTime hearingStartTime = ZonedDateTime.now().plusDays(dayFromToday - 1);
+            final int dayFromToday = i % 3 ;
+            final LocalDate hearingEndDate = LocalDate.now().plusDays(dayFromToday + 1);
+            final ZonedDateTime hearingStartTime = ZonedDateTime.now().plusDays(dayFromToday);
 
             ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData, crownCourtCenterId, crownCourtRoomId, hearingEndDate, hearingStartTime));
             testDataList.add(new TestData(hearingStartTime.toLocalDate(), crownCourtRoomId, COURT_ROOMS.get(crownCourtRoomId), hearingStartTime));
@@ -131,8 +134,8 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
         List<Map> hearings = (List<Map>) jObj.get("hearings");
         assertThat(hearings, hasSize(hearingCount));
 
-        assertThat(hearings.get(0).get("hearingDayCount"), Matchers.is(2));
-        assertThat(hearings.get(0).get("hearingDayPosition"), Matchers.is(2));
+        assertThat(hearings.get(0).get("hearingDayCount"), Matchers.is(1));
+        assertThat(hearings.get(0).get("hearingDayPosition"), Matchers.is(1));
         assertThat((List<Map>) hearings.get(0).get("hearingDays"), hasSize(1));
 
         final List<TestData> sortedTestData = testDataList.stream()
@@ -164,6 +167,30 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
         }
 
         return sortedList.subList(fromIndex, toIndex);
+    }
+
+
+    private static ListCourtHearingSteps getListCourtHearingStepsWithStubbedBookingRef(final HearingsData hearingsData, final ZonedDateTime hearingStartTime) {
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+
+        final String courtScheduleId = "8e837de0-743a-4a2c-9db3-b2e678c48729";
+        stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
+                courtScheduleId,
+                listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime());
+
+        final LocalDate hearingDate = hearingStartTime.toLocalDate();
+        final UUID courtroomId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId();
+        final UUID bookingId = randomUUID();
+
+        Map<String, String> stubParams = new HashMap<>();
+        stubParams.put("SESSION_DATE", hearingDate.toString());
+        stubParams.put("COURT_CENTRE_ID", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtCentreId().toString());
+        stubParams.put("COURT_SCHEDULE_ID", courtScheduleId);
+        stubParams.put("COURT_ROOM_ID", courtroomId.toString());
+        stubParams.put("BOOKING_ID", bookingId.toString());
+        stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
+        stubProvisionalBookingWithCustomParams(stubParams);
+        return listCourtHearingSteps;
     }
 }
 

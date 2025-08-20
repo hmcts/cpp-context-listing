@@ -26,13 +26,14 @@ import java.util.UUID;
 
 import javax.json.JsonObject;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings({"squid:UnusedPrivateMethod", "squid:S1607"})
-public class RestrictListFromCourtIT extends AbstractIT {
+class RestrictListFromCourtIT extends AbstractIT {
 
     @Test
-    public void shouldRestrictListingCaseFromCourtForHearingId() {
+    void shouldRestrictListingCaseFromCourtForHearingId() {
         HearingsData hearingsData = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -44,7 +45,7 @@ public class RestrictListFromCourtIT extends AbstractIT {
     }
 
     @Test
-    public void shouldUnRestrictDefendantsAndOffencesFromListingCaseForHearingId() {
+    void shouldUnRestrictDefendantsAndOffencesFromListingCaseForHearingId() {
         HearingsData hearingsData = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -56,7 +57,7 @@ public class RestrictListFromCourtIT extends AbstractIT {
     }
 
     @Test
-    public void shouldRestrictDefendantsAndOffencesFromListingCaseForHearingId() {
+    void shouldRestrictDefendantsAndOffencesFromListingCaseForHearingId() {
         HearingsData hearingsData = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -68,7 +69,7 @@ public class RestrictListFromCourtIT extends AbstractIT {
     }
 
     @Test
-    public void shouldRestrictCourtApplicationFromCourtForHearingId() {
+    void shouldRestrictCourtApplicationFromCourtForHearingId() {
         HearingsData hearingsData = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -80,7 +81,7 @@ public class RestrictListFromCourtIT extends AbstractIT {
     }
 
     @Test
-    public void shouldRestrictCourtApplicationTypeFromCourtForHearingId() {
+    void shouldRestrictCourtApplicationTypeFromCourtForHearingId() {
         HearingsData hearingsData = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -92,7 +93,7 @@ public class RestrictListFromCourtIT extends AbstractIT {
     }
 
     @Test
-    public void shouldPublishCourtListWithHearingsWithDefendantNameMasking() throws Exception {
+    void shouldPublishCourtListWithHearingsWithDefendantNameMasking() throws Exception {
         final ViewStoreCleaner viewStoreCleaner = new ViewStoreCleaner();
         viewStoreCleaner.cleanViewStoreTables();
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");

@@ -16,9 +16,9 @@ import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.NonDefaultDay;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.event.processor.azure.builder.SlotDetailBuilder;
+import uk.gov.moj.cpp.listing.domain.SlotDetail;
+import uk.gov.moj.cpp.listing.domain.builder.SlotDetailBuilder;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.HearingDayDetail;
-import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
 
 import java.util.Collections;
 import java.util.HashMap;

@@ -1,7 +1,10 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static javax.json.JsonValue.NULL;
+import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
+import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+
 import uk.gov.justice.listing.events.CreatedListingNote;
 import uk.gov.justice.listing.events.DeletedListingNote;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
@@ -17,16 +20,15 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.NoteUUIDService;
 import uk.gov.moj.cpp.listing.domain.aggregate.ListingNote;
 
-import javax.inject.Inject;
-import javax.json.JsonObject;
 import java.time.LocalDate;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static javax.json.JsonValue.NULL;
-import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
-import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
-import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import javax.inject.Inject;
+import javax.json.JsonObject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServiceComponent(COMMAND_HANDLER)
 public class ListingNoteCommandHandler {
@@ -38,9 +40,6 @@ public class ListingNoteCommandHandler {
 
     @Inject
     private AggregateService aggregateService;
-
-    @Inject
-    private Enveloper enveloper;
 
     @Inject
     private JsonObjectToObjectConverter jsonObjectConverter;

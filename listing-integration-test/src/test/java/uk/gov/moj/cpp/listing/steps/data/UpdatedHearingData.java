@@ -295,9 +295,10 @@ public class UpdatedHearingData {
         final List<String> nonSittingDays = singletonList(startDate.plusDays(1).toString());
         final UUID courtRoomId = randomUUID();
         final UUID courtCentreId = randomUUID();
+        final UUID courtScheduleId = randomUUID();
 
 
-        final List<NonDefaultDayData> nonDefaultDays = singletonList(new NonDefaultDayData(startTimeWithZone.toString(), of(15), of(courtCentreId).map(UUID::toString), of(courtRoomId).map(UUID::toString)));
+        final List<NonDefaultDayData> nonDefaultDays = singletonList(new NonDefaultDayData(startTimeWithZone.toString(), of(15), of(courtCentreId).map(UUID::toString),courtScheduleId, of(courtRoomId).map(UUID::toString)));
 
         return new UpdatedHearingData(hearingId, courtCentreId, "Carmarthen Magistrates Court", courtRoomId, SENTENCE_HEARING_TYPE,
                 startDate.toString(), endDate, nonDefaultDays,

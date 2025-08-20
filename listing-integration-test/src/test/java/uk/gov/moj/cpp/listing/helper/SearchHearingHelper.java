@@ -13,6 +13,16 @@ import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 
+import uk.gov.justice.services.common.http.HeaderConstants;
+import uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder;
+import uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher;
+import uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher;
+import uk.gov.moj.cpp.listing.it.util.RestPollerHelper;
+import uk.gov.moj.cpp.listing.utils.PropertyUtil;
+
+import java.text.MessageFormat;
+
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 
 public class SearchHearingHelper {
@@ -78,5 +88,34 @@ public class SearchHearingHelper {
 
     public static String getHearingFilter(final String hearingId) {
         return String.format(HEARING_FILTER, hearingId);
+    }
+
+    /**
+     * Poll for hearing with JMS delay to handle asynchronous message processing.
+     * Use this method when the test involves JMS commands that need time to process.
+     */
+    public static String pollForHearingWithJmsDelay(final String courtCentreId, final boolean allocated, final String userId, final Matcher[] matchers) {
+        final String searchHearingUrl = String.format("%s/%s", PropertyUtil.getBaseUri(),
+                MessageFormat.format(PropertyUtil.readConfig().getProperty("listing.range.search.hearings"), courtCentreId, allocated));
+
+        return RestPollerHelper.pollWithDelayForJms(RequestParamsBuilder.requestParams(searchHearingUrl, SearchHearingHelper.MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(HeaderConstants.USER_ID, userId).build())
+                .until(
+                        ResponseStatusMatcher.status().is(OK),
+                        ResponsePayloadMatcher.payload().isJson(CoreMatchers.allOf(matchers))
+                ).getPayload();
+    }
+
+    /**
+     * Poll for hearing by week commencing using the new week commencing range search endpoint.
+     * Uses the listing.range.search.hearings.by.week.commencing property to construct the URL
+     * with specific parameters: courtCentreId, allocated, weekCommencingStartDate, weekCommencingEndDate, pageNumber, pageSize.
+     */
+    public static String pollForHearingByWeekCommencing(final String courtCentreId, final boolean allocated, final String weekCommencingStartDate, final String weekCommencingEndDate, final String userId, final Matcher[] matchers) {
+        final String searchHearingUrl = String.format("%s/%s", PropertyUtil.getBaseUri(),
+                MessageFormat.format(PropertyUtil.readConfig().getProperty("listing.range.search.hearings.by.week.commencing"), 
+                       weekCommencingStartDate, weekCommencingEndDate, courtCentreId, allocated))
+                + "&pageNumber=1&pageSize=50";
+
+        return SearchHearingHelper.pollForHearing(searchHearingUrl, userId, matchers);
     }
 }

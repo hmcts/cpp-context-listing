@@ -17,8 +17,8 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMat
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
-import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
@@ -37,12 +37,10 @@ import uk.gov.justice.core.courts.Jurisdiction;
 import uk.gov.justice.core.courts.LinkType;
 import uk.gov.justice.core.courts.OffenceActiveOrder;
 import uk.gov.justice.core.courts.Person;
-import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
 import uk.gov.justice.core.courts.SummonsTemplateType;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
-import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
@@ -55,8 +53,6 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.time.LocalDate;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
@@ -101,6 +97,10 @@ public class CourtApplicationSteps extends AbstractIT {
 
     JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectToObjectConverter(objectMapper);
 
+    public HearingsData getHearingsData() {
+        return hearingsData;
+    }
+
     public CourtApplicationSteps(HearingsData hearingsData) {
         this.hearingsData = hearingsData;
 
@@ -113,31 +113,6 @@ public class CourtApplicationSteps extends AbstractIT {
 
     public void whenCaseCourtApplicationIsAddedToListingAndHearingIsExtended() {
         AddCourtApplicationData addCourtApplicationData = getCourtApplicationForHearingData(hearingsData);
-        final JsonObject courtApplicationUpdateDataObject = (JsonObject) objectToJsonValueConverter.convert(addCourtApplicationData);
-        sendMessage(
-                publicEventCourtApplicationAdded,
-                PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED,
-                courtApplicationUpdateDataObject,
-                metadataOf(randomUUID(), PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED).withUserId(randomUUID().toString()).build());
-        request = courtApplicationUpdateDataObject.toString();
-    }
-
-    public void whenCaseCourtApplicationAndLinkedCaseAreAddedToListingAndHearingIsExtended() {
-        AddCourtApplicationData addCourtApplicationData = getCourtApplicationForHearingData(hearingsData);
-
-        final String eventPayloadString = getPayload("prosecution-case.json")
-                .replaceAll("HEARING_ID", hearingsData.getHearingData().get(0).getId().toString())
-                .replaceAll("CASE_ID_1", randomUUID().toString())
-                .replaceAll("DEFENDANT_ID_1", randomUUID().toString())
-                .replaceAll("OFFENCE_ID_1", randomUUID().toString())
-                .replaceAll("CASE_ID_2", randomUUID().toString())
-                .replaceAll("DEFENDANT_ID_2", randomUUID().toString())
-                .replaceAll("OFFENCE_ID_2", randomUUID().toString());
-
-        final JsonObject hearingExtendedDataObject = new StringToJsonObjectConverter().convert(eventPayloadString);
-        ProsecutionCase prosecutionCase = jsonObjectToObjectConverter.convert(hearingExtendedDataObject.getJsonArray("prosecutionCases").getJsonObject(0), ProsecutionCase.class);
-
-        addCourtApplicationData.setProsecutionCases(Stream.of(prosecutionCase).collect(Collectors.toList()));
         final JsonObject courtApplicationUpdateDataObject = (JsonObject) objectToJsonValueConverter.convert(addCourtApplicationData);
         sendMessage(
                 publicEventCourtApplicationAdded,
@@ -174,7 +149,7 @@ public class CourtApplicationSteps extends AbstractIT {
         final Filter idFilter = filter(where("id").is(hearingsData.getHearingData().get(0).getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
 
-        pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), false, getLoggedInUser().toString(), new Matcher[]{
+        pollForHearingWithJmsDelay(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), false, getLoggedInUser().toString(), new Matcher[]{
                 withJsonPath(hearingIdFilter),
                 withJsonPath("$.hearings[0].id",
                         equalTo(hearingsData.getHearingData().get(0).getId().toString())),
