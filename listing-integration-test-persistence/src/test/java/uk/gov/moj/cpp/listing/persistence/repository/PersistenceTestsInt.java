@@ -32,6 +32,7 @@ public interface PersistenceTestsInt {
     UUID HEARING_ID = randomUUID();
     UUID OTHER_HEARING_ID = randomUUID();
     UUID OTHER_HEARING_ID2 = randomUUID();
+    UUID OTHER_HEARING_ID3 = randomUUID();
     UUID VACATED_HEARING_ID = randomUUID();
     UUID COURT_ROOM_ID = randomUUID();
     UUID COURT_CENTRE_ID = randomUUID();
@@ -40,6 +41,8 @@ public interface PersistenceTestsInt {
     UUID OTHER_AUTHORITY_ID = randomUUID();
     UUID TYPE_OF_LIST_ID = randomUUID();
     Type HEARING_TYPE = type().withId(fromString("bf8155e1-90b9-4080-b133-bfbad895d6e4")).withDescription("TRIAL").build();
+    Type WOFD_HEARING_TYPE = type().withId(fromString("638ced9d-3f95-4e99-b27b-47fa5a2c6add")).withDescription("TRIAL").build();
+    Type PCB_HEARING_TYPE = type().withId(fromString("3a2d160f-363b-4360-96e1-0007a400a64c")).withDescription("TRIAL").build();
     Type OTHER_HEARING_TYPE = type().withId(randomUUID()).withDescription("SENTENCE").build();
     JurisdictionType JURISDICTION_TYPE = CROWN;
     String JUDICIAL_ID = "0ab98bfb-fc34-44c4-a573-3801343cf123";

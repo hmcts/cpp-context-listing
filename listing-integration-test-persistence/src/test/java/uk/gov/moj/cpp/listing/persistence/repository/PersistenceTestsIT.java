@@ -74,10 +74,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
-import javax.transaction.NotSupportedException;
-import javax.transaction.SystemException;
-import javax.transaction.Transactional;
-import javax.transaction.UserTransaction;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -99,6 +95,10 @@ import org.junit.runner.RunWith;
  * */
 @RunWith(CdiTestRunner.class)
 public class PersistenceTestsIT extends BaseTransactionalTest implements PersistenceTestsInt {
+
+    private static final String WOFD_HEARING_TYPE_ID = "638ced9d-3f95-4e99-b27b-47fa5a2c6add";
+    private static final String PCB_HEARING_TYPE_ID = "3a2d160f-363b-4360-96e1-0007a400a64c";
+
     @Inject
     public HearingRepository hearingRepository;
 
@@ -131,7 +131,7 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
     @Test
     public void shouldFindHearingById() {
-        final Hearing actualHearing = givenHearingsExist().get(0);
+        final Hearing actualHearing = givenHearingsExistWithPCPAndWOFD().get(0);
 
         final Hearing expectedHearing = hearingRepository.findBy(actualHearing.getId());
 
@@ -237,7 +237,7 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
     @Test
     public void shouldSaveAndFindHearingJsonWithSpecificSearchDateAndAllTimes() {
         //given
-        givenHearingsExist();
+        givenHearingsExistWithPCPAndWOFD();
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
@@ -262,7 +262,7 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
     @Test
     public void shouldSaveAndFindHearingJsonWithOptionalStartTime() {
         //given
-        givenHearingsExist();
+        givenHearingsExistWithPCPAndWOFD();
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
@@ -287,7 +287,7 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
     @Test
     public void shouldSaveAndFindHearingJsonWithOptionalEndTime() {
         //given
-        givenHearingsExist();
+        givenHearingsExistWithPCPAndWOFD();
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
@@ -312,7 +312,7 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
     @Test
     public void shouldSaveAndNotFindHearingJsonWithStartTimeMatchingAndEndTimeNotMatching() {
         //given
-        givenHearingsExist();
+        givenHearingsExistWithPCPAndWOFD();
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
@@ -440,21 +440,75 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
     @Test
     public void shouldRetrieveHearingsWhenFindHearingsForPublicStandardListInvoked() {
         //given
-        givenHearingsExist();
+        givenHearingsExistWithPCPAndWOFD();
+        final Set<String> excludedHearingTypeIds = Set.of(WOFD_HEARING_TYPE_ID, PCB_HEARING_TYPE_ID);
 
         //when
         final Hearing actualHearings = hearingRepository.findHearingsForPublicStandardList(
                 UNALLOCATED,
                 COURT_CENTRE_ID.toString(),
                 START_SEARCH_DATE,
-                END_SEARCH_DATE);
+                END_SEARCH_DATE,
+                excludedHearingTypeIds);
 
         //then
         assertThat(actualHearings.getProperties().toString(), hasJsonPath("$.judiciary.size()", equalTo(2)));
-        //assertThat(actualHearings.getProperties().toString(), hasJsonPath("$.judiciary[0].judicialId", equalTo(JUDICIAL_ID)));
         assertThat(actualHearings.getProperties().toString(), hasJsonPath("$.hearings.size()", equalTo(1)));
-        //assertThat(actualHearings.getProperties().toString(), hasJsonPath("$.hearings[0].hearingsByCourtCentreId[0].hearingDate", equalTo(START_DATE.toString())));
         assertThat(actualHearings.getProperties().toString(), hasJsonPath("$.hearings[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.courtRoomId", equalTo(COURT_ROOM_ID.toString())));
+    }
+
+    //IncludePcbHearginTypeId
+    @Test
+    public void shouldRetrieveHearingsWhenFindHearingsForPublicStandardListInvoked_IncludeWOFDHearingTypeId() {
+        //given
+        givenHearingsExistWithPCPAndWOFD();
+        final Set<String> excludedHearingTypeIds = Set.of(PCB_HEARING_TYPE_ID);
+
+        //when
+        final Hearing actualHearings = hearingRepository.findHearingsForPublicStandardList(
+                UNALLOCATED,
+                COURT_CENTRE_ID.toString(),
+                START_SEARCH_DATE,
+                END_SEARCH_DATE,
+                excludedHearingTypeIds);
+
+        //then
+        assertThat(actualHearings.getProperties().toString(), hasJsonPath("$.judiciary.size()", equalTo(2)));
+        assertThat(actualHearings.getProperties().toString(), hasJsonPath("$.hearings.size()", equalTo(1)));
+        assertThat(actualHearings.getProperties().toString(), hasJsonPath("$.hearings[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.courtRoomId", equalTo(COURT_ROOM_ID.toString())));
+
+        assertThat(
+                actualHearings.getProperties().toString(),
+                hasJsonPath(
+                        "$.hearings[0].hearingsByCourtCentreId[0].hearingsByHearingDate[?(@.hearing.type.id == '" + WOFD_HEARING_TYPE_ID + "')]"
+                )
+        );
+    }
+//
+    @Test
+    public void shouldRetrieveHearingsWhenFindHearingsForPublicStandardList_InvokedIncludePCBHearginTypeId() {
+        //given
+        givenHearingsExistWithPCPAndWOFD();
+        final Set<String> excludedHearingTypeIds = Set.of(WOFD_HEARING_TYPE_ID);
+
+        //when
+        final Hearing actualHearings = hearingRepository.findHearingsForPublicStandardList(
+                UNALLOCATED,
+                COURT_CENTRE_ID.toString(),
+                START_SEARCH_DATE,
+                END_SEARCH_DATE,
+                excludedHearingTypeIds);
+
+        //then
+        assertThat(actualHearings.getProperties().toString(), hasJsonPath("$.judiciary.size()", equalTo(2)));
+        assertThat(actualHearings.getProperties().toString(), hasJsonPath("$.hearings.size()", equalTo(1)));
+        assertThat(actualHearings.getProperties().toString(), hasJsonPath("$.hearings[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.courtRoomId", equalTo(COURT_ROOM_ID.toString())));
+        assertThat(
+                actualHearings.getProperties().toString(),
+                hasJsonPath(
+                        "$.hearings[0].hearingsByCourtCentreId[0].hearingsByHearingDate[?(@.hearing.type.id == '" + PCB_HEARING_TYPE_ID + "')]"
+                )
+        );
     }
 
     public void givenHearingsWithMultipleCourtCentres(final UUID courtCentreId, final UUID courtRoomId, final UUID otherCourtCentreId, final LocalDate startDate, final LocalDate endDate) {
@@ -522,11 +576,13 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         givenHearingsWithVacated(TRUE);
 
         //when
+        final Set<String> excludedHearingTypeIds = Set.of(WOFD_HEARING_TYPE_ID, PCB_HEARING_TYPE_ID);
         final Hearing actualHearings = hearingRepository.findHearingsForPublicStandardList(
                 RANDOM_ALLOCATED,
                 OTHER_COURT_CENTRE_ID.toString(),
                 START_SEARCH_DATE,
-                END_SEARCH_DATE);
+                END_SEARCH_DATE,
+                excludedHearingTypeIds);
 
         //then
         assertThat(actualHearings.getProperties().toString(), hasJsonPath("$.judiciary", isEmptyOrNullString()));
@@ -536,9 +592,10 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
     @Test
     public void shouldRetrieveHearingsWhenFindHearingsForAlphabeticalListInvoked() {
-        givenHearingsExist();
+        givenHearingsExistWithPCPAndWOFD();
+        final Set<String> excludedHearingTypeIds = Set.of(WOFD_HEARING_TYPE_ID, PCB_HEARING_TYPE_ID);
 
-        final List<Hearing> foundHearings = hearingRepository.findHearingsForAlphabeticalList(UNALLOCATED, COURT_CENTRE_ID.toString(), HEARING_DATE.toLocalDate());
+        final List<Hearing> foundHearings = hearingRepository.findHearingsForAlphabeticalList(UNALLOCATED, COURT_CENTRE_ID.toString(), HEARING_DATE.toLocalDate(), excludedHearingTypeIds);
 
         assertThat(foundHearings.size(), is(1));
         assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$.size()", equalTo(1)));
@@ -557,12 +614,14 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
     public void shouldNotRetrieveVacatedHearingsWhenFindHearingsForAlphabeticalListInvoked() {
         //given
         givenHearingsWithVacated(TRUE);
+        final Set<String> excludedHearingTypeIds = Set.of(WOFD_HEARING_TYPE_ID, PCB_HEARING_TYPE_ID);
 
         //when
         final List<Hearing> hearingsForAlphabeticalList = hearingRepository.findHearingsForAlphabeticalList(
                 RANDOM_ALLOCATED,
                 OTHER_COURT_CENTRE_ID.toString(),
-                HEARING_DATE.toLocalDate());
+                HEARING_DATE.toLocalDate(),
+                excludedHearingTypeIds);
 
         //then
         assertThat(hearingsForAlphabeticalList.size(), is(1));
@@ -571,10 +630,64 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
     }
 
     @Test
-    public void shouldSaveButNotFindAlphabeticalCourtList() {
-        givenHearingsExist();
+    public void shouldRetrieveHearingsWhenFindHearingsForAlphabeticalListInvoked_IncludePCBHearingTypeId() {
+        //given
+        givenHearingsWithVacated(TRUE);
+        final Set<String> excludedHearingTypeIds = Set.of(WOFD_HEARING_TYPE_ID);
 
-        final List<Hearing> foundHearings = hearingRepository.findHearingsForAlphabeticalList(RANDOM_ALLOCATED, COURT_CENTRE_ID.toString(), parse("1900-01-01"));
+        //when
+        final List<Hearing> hearingsForAlphabeticalList = hearingRepository.findHearingsForAlphabeticalList(
+                UNALLOCATED,
+                COURT_CENTRE_ID.toString(),
+                HEARING_DATE.toLocalDate(),
+                excludedHearingTypeIds);
+
+        //then
+        assertThat(hearingsForAlphabeticalList.size(), is(1));
+        final Hearing hearing = hearingsForAlphabeticalList.get(0);
+
+        assertThat(
+                hearing.getProperties().toString(),
+                hasJsonPath(
+                        "$.[0].hearingsByHearingDate[?(@.hearing.type.id == '" + PCB_HEARING_TYPE_ID + "')]"
+                )
+        );
+
+    }
+
+    //WOFD_HEARING_TYPE_ID
+    @Test
+    public void shouldRetrieveHearingsWhenFindHearingsForAlphabeticalListInvoked_IncludeWOFDHearingTypeId() {
+        //given
+        givenHearingsWithVacated(TRUE);
+        final Set<String> excludedHearingTypeIds = Set.of(PCB_HEARING_TYPE_ID);
+
+        //when
+        final List<Hearing> hearingsForAlphabeticalList = hearingRepository.findHearingsForAlphabeticalList(
+                UNALLOCATED,
+                COURT_CENTRE_ID.toString(),
+                HEARING_DATE.toLocalDate(),
+                excludedHearingTypeIds);
+
+        //then
+        assertThat(hearingsForAlphabeticalList.size(), is(1));
+        final Hearing hearing = hearingsForAlphabeticalList.get(0);
+
+        assertThat(
+                hearing.getProperties().toString(),
+                hasJsonPath(
+                        "$.[0].hearingsByHearingDate[?(@.hearing.type.id == '" + WOFD_HEARING_TYPE_ID + "')]"
+                )
+        );
+
+    }
+
+    @Test
+    public void shouldSaveButNotFindAlphabeticalCourtList() {
+        givenHearingsExistWithPCPAndWOFD();
+        final Set<String> excludedHearingTypeIds = Set.of(WOFD_HEARING_TYPE_ID, PCB_HEARING_TYPE_ID);
+
+        final List<Hearing> foundHearings = hearingRepository.findHearingsForAlphabeticalList(RANDOM_ALLOCATED, COURT_CENTRE_ID.toString(), parse("1900-01-01"), excludedHearingTypeIds);
 
         assertThat(foundHearings.get(0).getProperties(), nullValue());
     }
@@ -1025,6 +1138,68 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
                 .withIsPossibleDisqualification(IS_POSSIBLE_DISQUALIFICATION)
                 .build()));
 
+        hearingsToBeCreated.add(getHearingJson(hearingRepositoryContext()
+                .withHearingId(OTHER_HEARING_ID2)
+                .withCourtCentreId(COURT_CENTRE_ID)
+                .withCourtRoomId(COURT_ROOM_ID)
+                .withAllocated(UNALLOCATED)
+                .withVacated(NOT_VACATED)
+                .withAuthorityId(AUTHORITY_ID)
+                .withHearingType(WOFD_HEARING_TYPE)
+                .withJurisdictionType(JURISDICTION_TYPE)
+                .withJudicialId(JUDICIAL_ID)
+                .withStartDate(START_DATE)
+                .withEndDate(END_DATE)
+                .withStartTime(START_TIME)
+                .withEndTime(END_TIME)
+                .withHearingDate(HEARING_DATE)
+                .withHearingDateDay1(DAY_1_HEARING_DATE)
+                .withStartTimeDay1(DAY_1_START_TIME)
+                .withEndTimeDay1(DAY_1_END_TIME)
+                .withCancelledDay1(false)
+                .withHearingDateDay2(DAY_2_HEARING_DATE)
+                .withStartTimeDay2(DAY_2_START_TIME)
+                .withEndTimeDay2(DAY_2_END_TIME)
+                .withCancelledDay2(false)
+                .withHearingDateDay3(DAY_3_HEARING_DATE)
+                .withStartTimeDay3(DAY_3_START_TIME)
+                .withEndTimeDay3(DAY_3_END_TIME)
+                .withCancelledDay3(false)
+                .withFileLocation(TEST_DATA_SAMPLE_MULTIDAY_HEARING_JSON)
+                .withMultidayHearing(true)
+                .build()));
+
+        hearingsToBeCreated.add(getHearingJson(hearingRepositoryContext()
+                .withHearingId(OTHER_HEARING_ID3)
+                .withCourtCentreId(COURT_CENTRE_ID)
+                .withCourtRoomId(COURT_ROOM_ID)
+                .withAllocated(UNALLOCATED)
+                .withVacated(NOT_VACATED)
+                .withAuthorityId(AUTHORITY_ID)
+                .withHearingType(PCB_HEARING_TYPE)
+                .withJurisdictionType(JURISDICTION_TYPE)
+                .withJudicialId(JUDICIAL_ID)
+                .withStartDate(START_DATE)
+                .withEndDate(END_DATE)
+                .withStartTime(START_TIME)
+                .withEndTime(END_TIME)
+                .withHearingDate(HEARING_DATE)
+                .withHearingDateDay1(DAY_1_HEARING_DATE)
+                .withStartTimeDay1(DAY_1_START_TIME)
+                .withEndTimeDay1(DAY_1_END_TIME)
+                .withCancelledDay1(false)
+                .withHearingDateDay2(DAY_2_HEARING_DATE)
+                .withStartTimeDay2(DAY_2_START_TIME)
+                .withEndTimeDay2(DAY_2_END_TIME)
+                .withCancelledDay2(false)
+                .withHearingDateDay3(DAY_3_HEARING_DATE)
+                .withStartTimeDay3(DAY_3_START_TIME)
+                .withEndTimeDay3(DAY_3_END_TIME)
+                .withCancelledDay3(false)
+                .withFileLocation(TEST_DATA_SAMPLE_MULTIDAY_HEARING_JSON)
+                .withMultidayHearing(true)
+                .build()));
+
         hearingsToBeCreated.forEach(hearingToBeCreated -> hearingRepository.save(hearingToBeCreated));
         return hearingsToBeCreated;
     }
@@ -1037,13 +1212,15 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         UUID courtCentreId = multipleCourtCentre.getCourtCentreId();
         LocalDate startDate = multipleCourtCentre.getStartDate();
+        final Set<String> excludedHearingTypeIds = Set.of(WOFD_HEARING_TYPE_ID, PCB_HEARING_TYPE_ID);
 
         //when
         final Hearing publicCourtListData = hearingRepository.findHearingsForPublicStandardList(
                 true,
                 courtCentreId.toString(),
                 startDate,
-                startDate);
+                startDate,
+                excludedHearingTypeIds);
 
         //then
         final ArrayNode publicHearings = ((ArrayNode) publicCourtListData.getProperties().get("hearings").get(0).get("hearingsByCourtCentreId"));
@@ -1058,12 +1235,14 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         UUID courtCentreId = multipleCourtCentre.getCourtCentreId();
         LocalDate startDate = multipleCourtCentre.getStartDate();
+        final Set<String> excludedHearingTypeIds = Set.of(WOFD_HEARING_TYPE_ID, PCB_HEARING_TYPE_ID);
 
         //when
         final List<Hearing> alphabeticalHearings = hearingRepository.findHearingsForAlphabeticalList(
                 true,
                 courtCentreId.toString(),
-                startDate);
+                startDate,
+                excludedHearingTypeIds);
 
         //then
         assertThat(alphabeticalHearings.get(0).getProperties().get(0).get("hearingsByHearingDate").size(), is(1));
@@ -1076,13 +1255,15 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         UUID courtCentreId = multipleCourtCentre.getCourtCentreId();
         LocalDate endDate = multipleCourtCentre.getEndDate();
+        final Set<String> excludedHearingTypeIds = Set.of(WOFD_HEARING_TYPE_ID, PCB_HEARING_TYPE_ID);
 
         //when
         final Hearing publicCourtListData = hearingRepository.findHearingsForPublicStandardList(
                 true,
                 courtCentreId.toString(),
                 endDate,
-                endDate);
+                endDate,
+                excludedHearingTypeIds);
 
         //then
         final ArrayNode publicHearings = ((ArrayNode) publicCourtListData.getProperties().get("hearings").get(0).get("hearingsByCourtCentreId"));
@@ -1097,12 +1278,14 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         UUID courtCentreId = multipleCourtCentre.getCourtCentreId();
         LocalDate endDate = multipleCourtCentre.getEndDate();
+        final Set<String> excludedHearingTypeIds = Set.of(WOFD_HEARING_TYPE_ID, PCB_HEARING_TYPE_ID);
 
         //when
         final List<Hearing> alphabeticalHearings = hearingRepository.findHearingsForAlphabeticalList(
                 true,
                 courtCentreId.toString(),
-                endDate);
+                endDate,
+                excludedHearingTypeIds);
 
         //then
         assertThat(alphabeticalHearings.get(0).getProperties().get(0).get("hearingsByHearingDate").size(), is(1));
@@ -1116,13 +1299,15 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         UUID courtCentreId = multipleCourtCentre.getCourtCentreId();
         LocalDate startDate = multipleCourtCentre.getStartDate();
         LocalDate endDate = multipleCourtCentre.getEndDate();
+        final Set<String> excludedHearingTypeIds = Set.of(WOFD_HEARING_TYPE_ID, PCB_HEARING_TYPE_ID);
 
         //when
         final Hearing actualHearings = hearingRepository.findHearingsForPublicStandardList(
                 true,
                 courtCentreId.toString(),
                 startDate,
-                endDate);
+                endDate,
+                excludedHearingTypeIds);
 
         //then
         final ArrayNode hearings = ((ArrayNode) actualHearings.getProperties().get("hearings").get(0).get("hearingsByCourtCentreId"));
@@ -1139,13 +1324,15 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         UUID otherCourtCentreId = multipleCourtCentre.getOtherCourtCentreId();
         LocalDate startDate = multipleCourtCentre.getStartDate();
         LocalDate endDate = multipleCourtCentre.getEndDate();
+        final Set<String> excludedHearingTypeIds = Set.of(WOFD_HEARING_TYPE_ID, PCB_HEARING_TYPE_ID);
 
         //when
         final Hearing actualHearings = hearingRepository.findHearingsForPublicStandardList(
                 true,
                 otherCourtCentreId.toString(),
                 startDate,
-                endDate);
+                endDate,
+                excludedHearingTypeIds);
 
         //then
         final ArrayNode hearings = ((ArrayNode) actualHearings.getProperties().get("hearings").get(0).get("hearingsByCourtCentreId"));
@@ -1161,12 +1348,14 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         UUID otherCourtCentreId = multipleCourtCentre.getOtherCourtCentreId();
         LocalDate startDate = multipleCourtCentre.getStartDate();
+        final Set<String> excludedHearingTypeIds = Set.of(WOFD_HEARING_TYPE_ID, PCB_HEARING_TYPE_ID);
 
         //when
         final List<Hearing> alphabeticalHearings = hearingRepository.findHearingsForAlphabeticalList(
                 true,
                 otherCourtCentreId.toString(),
-                startDate);
+                startDate,
+                excludedHearingTypeIds);
 
         //then
         assertThat(alphabeticalHearings.get(0).getProperties().get(0).get("hearingsByHearingDate").size(), is(2));
@@ -1188,7 +1377,7 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
     @Test
     public void shouldReturnEmptyHearingsForCotrWhereQueryDoesNotFindResults() {
-        givenHearingsExist();
+        givenHearingsExistWithPCPAndWOFD();
 
         final Set<String> hearingTypeIds = new HashSet<>();
         hearingTypeIds.add("bf8155e1-90b9-4080-b133-bfbad895d6e4");
@@ -1201,7 +1390,7 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
     @Test
     public void shouldSaveAndFindHearingsForCotrWhereQueryFindsResultsJson() {
         //given
-        givenHearingsExist();
+        givenHearingsExistWithPCPAndWOFD();
 
         final Set<String> hearingTypeIds = new HashSet<>();
         hearingTypeIds.add("bf8155e1-90b9-4080-b133-bfbad895d6e4");
@@ -1739,6 +1928,141 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
                 .build());
         hearing2.setHearingDays(getHearingDays(hearing2));
         hearingsToBeCreated.add(hearing2);
+
+        hearingsToBeCreated.forEach(hearingToBeCreated -> hearingRepository.save(hearingToBeCreated));
+        return hearingsToBeCreated;
+    }
+
+    private List<Hearing> givenHearingsExistWithPCPAndWOFD() {
+        final List<Hearing> hearingsToBeCreated = new ArrayList<>();
+        final Hearing hearing1 = getHearingJson(hearingRepositoryContext()
+                .withHearingId(HEARING_ID)
+                .withCourtCentreId(COURT_CENTRE_ID)
+                .withCourtRoomId(COURT_ROOM_ID)
+                .withAllocated(UNALLOCATED)
+                .withVacated(NOT_VACATED)
+                .withAuthorityId(AUTHORITY_ID)
+                .withHearingType(HEARING_TYPE)
+                .withJurisdictionType(JURISDICTION_TYPE)
+                .withJudicialId(JUDICIAL_ID)
+                .withStartDate(START_DATE)
+                .withEndDate(END_DATE)
+                .withStartTime(START_TIME)
+                .withEndTime(END_TIME)
+                .withHearingDate(HEARING_DATE)
+                .withHearingDateDay1(DAY_1_HEARING_DATE)
+                .withStartTimeDay1(DAY_1_START_TIME)
+                .withEndTimeDay1(DAY_1_END_TIME)
+                .withCancelledDay1(false)
+                .withHearingDateDay2(DAY_2_HEARING_DATE)
+                .withStartTimeDay2(DAY_2_START_TIME)
+                .withEndTimeDay2(DAY_2_END_TIME)
+                .withCancelledDay2(false)
+                .withHearingDateDay3(DAY_3_HEARING_DATE)
+                .withStartTimeDay3(DAY_3_START_TIME)
+                .withEndTimeDay3(DAY_3_END_TIME)
+                .withCancelledDay3(false)
+                .withFileLocation(TEST_DATA_SAMPLE_MULTIDAY_HEARING_JSON)
+                .withMultidayHearing(true)
+                .build());
+        hearing1.setHearingDays(getHearingDays(hearing1));
+        hearingsToBeCreated.add(hearing1);
+
+        final Hearing hearing2 = getHearingJson(hearingRepositoryContext()
+                .withHearingId(OTHER_HEARING_ID)
+                .withCourtCentreId(OTHER_COURT_CENTRE_ID)
+                .withCourtRoomId(COURT_ROOM_ID)
+                .withAllocated(RANDOM_ALLOCATED)
+                .withVacated(NOT_VACATED)
+                .withAuthorityId(OTHER_AUTHORITY_ID)
+                .withHearingType(OTHER_HEARING_TYPE)
+                .withJurisdictionType(OTHER_JURISDICTION_TYPE)
+                .withJudicialId(OTHER_JUDICIAL_ID)
+                .withStartDate(START_DATE)
+                .withEndDate(END_DATE)
+                .withHearingDateDay1(DAY_1_HEARING_DATE)
+                .withStartTimeDay1(DAY_1_START_TIME)
+                .withEndTimeDay1(DAY_1_END_TIME)
+                .withCancelledDay1(false)
+                .withHearingDateDay2(DAY_2_HEARING_DATE)
+                .withStartTimeDay2(DAY_2_START_TIME)
+                .withEndTimeDay2(DAY_2_END_TIME)
+                .withCancelledDay2(false)
+                .withHearingDateDay3(DAY_3_HEARING_DATE)
+                .withStartTimeDay3(DAY_3_START_TIME)
+                .withEndTimeDay3(DAY_3_END_TIME)
+                .withCancelledDay3(false)
+                .withFileLocation(TEST_DATA_SAMPLE_MULTIDAY_HEARING_JSON)
+                .withMultidayHearing(true)
+                .build());
+        hearing2.setHearingDays(getHearingDays(hearing2));
+        hearingsToBeCreated.add(hearing2);
+
+        final Hearing hearing3 = getHearingJson(hearingRepositoryContext()
+                .withHearingId(OTHER_HEARING_ID2)
+                .withCourtCentreId(COURT_CENTRE_ID)
+                .withCourtRoomId(COURT_ROOM_ID)
+                .withAllocated(UNALLOCATED)
+                .withVacated(NOT_VACATED)
+                .withAuthorityId(AUTHORITY_ID)
+                .withHearingType(WOFD_HEARING_TYPE)
+                .withJurisdictionType(JURISDICTION_TYPE)
+                .withJudicialId(JUDICIAL_ID)
+                .withStartDate(START_DATE)
+                .withEndDate(END_DATE)
+                .withStartTime(START_TIME)
+                .withEndTime(END_TIME)
+                .withHearingDate(HEARING_DATE)
+                .withHearingDateDay1(DAY_1_HEARING_DATE)
+                .withStartTimeDay1(DAY_1_START_TIME)
+                .withEndTimeDay1(DAY_1_END_TIME)
+                .withCancelledDay1(false)
+                .withHearingDateDay2(DAY_2_HEARING_DATE)
+                .withStartTimeDay2(DAY_2_START_TIME)
+                .withEndTimeDay2(DAY_2_END_TIME)
+                .withCancelledDay2(false)
+                .withHearingDateDay3(DAY_3_HEARING_DATE)
+                .withStartTimeDay3(DAY_3_START_TIME)
+                .withEndTimeDay3(DAY_3_END_TIME)
+                .withCancelledDay3(false)
+                .withFileLocation(TEST_DATA_SAMPLE_MULTIDAY_HEARING_JSON)
+                .withMultidayHearing(true)
+                .build());
+        hearing3.setHearingDays(getHearingDays(hearing3));
+        hearingsToBeCreated.add(hearing3);
+
+        final Hearing hearing4 = getHearingJson(hearingRepositoryContext()
+                .withHearingId(OTHER_HEARING_ID3)
+                .withCourtCentreId(COURT_CENTRE_ID)
+                .withCourtRoomId(COURT_ROOM_ID)
+                .withAllocated(UNALLOCATED)
+                .withVacated(NOT_VACATED)
+                .withAuthorityId(AUTHORITY_ID)
+                .withHearingType(PCB_HEARING_TYPE)
+                .withJurisdictionType(JURISDICTION_TYPE)
+                .withJudicialId(JUDICIAL_ID)
+                .withStartDate(START_DATE)
+                .withEndDate(END_DATE)
+                .withStartTime(START_TIME)
+                .withEndTime(END_TIME)
+                .withHearingDate(HEARING_DATE)
+                .withHearingDateDay1(DAY_1_HEARING_DATE)
+                .withStartTimeDay1(DAY_1_START_TIME)
+                .withEndTimeDay1(DAY_1_END_TIME)
+                .withCancelledDay1(false)
+                .withHearingDateDay2(DAY_2_HEARING_DATE)
+                .withStartTimeDay2(DAY_2_START_TIME)
+                .withEndTimeDay2(DAY_2_END_TIME)
+                .withCancelledDay2(false)
+                .withHearingDateDay3(DAY_3_HEARING_DATE)
+                .withStartTimeDay3(DAY_3_START_TIME)
+                .withEndTimeDay3(DAY_3_END_TIME)
+                .withCancelledDay3(false)
+                .withFileLocation(TEST_DATA_SAMPLE_MULTIDAY_HEARING_JSON)
+                .withMultidayHearing(true)
+                .build());
+        hearing4.setHearingDays(getHearingDays(hearing4));
+        hearingsToBeCreated.add(hearing4);
 
         hearingsToBeCreated.forEach(hearingToBeCreated -> hearingRepository.save(hearingToBeCreated));
         return hearingsToBeCreated;

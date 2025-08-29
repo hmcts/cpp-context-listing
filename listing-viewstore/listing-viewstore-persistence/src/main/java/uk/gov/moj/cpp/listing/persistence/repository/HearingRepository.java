@@ -591,6 +591,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
     @Query(value = "with filtered_hearings as (select distinct h.id, hd.hearing_date as hearingDate, h.properties as properties from hearing h " +
             "inner join hearing_days hd on hd.hearing_id = h.id where coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(:courtCentreId as varchar) as uuid) " +
             "and cast(h.properties->>'allocated' as boolean) = :allocated and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
+            "and (h.type_id IS NULL or (" +
+                   "cast(h.type_id as varchar) not in (:excludedHearingTypeIds))) " +
             "and hd.hearing_date between :startDate and :endDate) " +
             "select 'd9ea61d4-2441-42bd-9089-510b1c069fb5' as id, " +
             ":courtCentreId as court_centre_id, " +
@@ -624,7 +626,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
     public abstract Hearing findHearingsForPublicStandardList(@QueryParam("allocated") final boolean allocated,
                                                               @QueryParam("courtCentreId") final String courtCentreId,
                                                               @QueryParam("startDate") final LocalDate startDate,
-                                                              @QueryParam("endDate") final LocalDate endDate);
+                                                              @QueryParam("endDate") final LocalDate endDate,
+                                                              @QueryParam("excludedHearingTypeIds") final Set<String> excludedHearingTypeIds);
 
     /**
      * Find {@link Hearing}s based on the query parameters. This query will be used by the
@@ -642,6 +645,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "and h.court_centre_id = cast(cast(:courtCentreId as varchar) as uuid))) " +
             "and cast(h.properties->>'allocated' as boolean) = :allocated " +
             "and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
+            "and (h.type_id IS NULL or (cast(h.type_id as varchar) not in (:excludedHearingTypeIds)))  " +
             "and hd.hearing_date = :hearingDate) " +
             "select 'd9ea61d4-2441-42bd-9089-510b1c069fb5' as id, " +
             ":courtCentreId as court_centre_id, " +
@@ -667,7 +671,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "hrngByCourtCentreId)", isNative = true)
     public abstract List<Hearing> findHearingsForAlphabeticalList(@QueryParam("allocated") final boolean allocated,
                                                                   @QueryParam("courtCentreId") final String courtCentreId,
-                                                                  @QueryParam("hearingDate") final LocalDate hearingDate);
+                                                                  @QueryParam("hearingDate") final LocalDate hearingDate,
+                                                                  @QueryParam("excludedHearingTypeIds") final Set<String> excludedHearingTypeIds);
 
 
     @Query(value = "select distinct h.id, properties, " +

@@ -38,6 +38,7 @@ import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
@@ -57,6 +58,7 @@ import uk.gov.moj.cpp.listing.query.view.dto.ListedCase;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory;
 import uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria;
+import uk.gov.moj.cpp.listing.query.view.hearing.ApplicationTypeFilter;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
 import uk.gov.moj.cpp.listing.query.view.service.JsonNodeReader;
@@ -134,6 +136,8 @@ public class HearingQueryView {
     private static final String RETURN_ALL_HEARINGS = "returnAllHearings";
     private static final String PROSECUTION_CASES = "prosecutionCases";
     private static final String URN = "urn";
+    private static final String WOFD_HEARING_TYPE_ID = "638ced9d-3f95-4e99-b27b-47fa5a2c6add";
+    private static final String PCB_HEARING_TYPE_ID = "3a2d160f-363b-4360-96e1-0007a400a64c";
 
 
     @Inject
@@ -180,6 +184,9 @@ public class HearingQueryView {
     @Inject
     private PaginationParameterFactory paginationParameterFactory;
 
+    @Inject
+    private ApplicationTypeFilter applicationTypeFilter;
+
     public static final String TYPE = "type";
 
     public static final String LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS = "listing.allocated.and.unallocated.hearings";
@@ -222,13 +229,16 @@ public class HearingQueryView {
                 ZonedDateTime.of(LocalDateTime.parse(endTime), UTC)
         );
 
-        LOGGER.info("number of records from query -  {}", hearings.size());
+        final List<Hearing> filteredHearings = applicationTypeFilter.filter(query.metadata(), hearings);
 
-        final List<Notes> notes = notesService.findNotes(allocated, courtRoomId, searchDate, hearings);
+
+        LOGGER.info("number of records from query -  {}", filteredHearings.size());
+
+        final List<Notes> notes = notesService.findNotes(allocated, courtRoomId, searchDate, filteredHearings);
 
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                 createObjectBuilder()
-                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convertForSearchHearing(hearings,
+                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convertForSearchHearing(filteredHearings,
                                 getHearingDayMatchedCriteriaMap(courtCentreId,
                                         courtRoomId, searchDate, startTimeForMatched, endTime)))
                         .add(NOTES, listToJsonArrayConverter.convert(notes))
@@ -461,11 +471,40 @@ public class HearingQueryView {
 
     @Handles("listing.range.search.hearings")
     public JsonEnvelope rangeSearchHearings(final JsonEnvelope query) {
-        return rangeSearchQuery.rangeSearchHearings(query);
+        final JsonEnvelope responseEnvelope = rangeSearchQuery.rangeSearchHearings(query);
+        return filterHearingsBasedOnApplicationType(query, responseEnvelope);
+
     }
 
     public JsonEnvelope rangeSearchHearingsForCourtCalendar(final JsonEnvelope query) {
-        return rangeSearchQuery.rangeSearchCourtCalendar(query);
+        final JsonEnvelope responseEnvelope =  rangeSearchQuery.rangeSearchCourtCalendar(query);
+        return filterHearingsBasedOnApplicationType(query, responseEnvelope);
+    }
+
+    private JsonEnvelope filterHearingsBasedOnApplicationType(final JsonEnvelope query, final JsonEnvelope responseEnvelope) {
+        final JsonObject responsePayload = responseEnvelope.payloadAsJsonObject();
+
+        if (!responsePayload.containsKey(HEARINGS) || responsePayload.getJsonArray(HEARINGS).isEmpty()) {
+            return responseEnvelope;
+        }
+
+        final JsonArray hearingsArray = responsePayload.getJsonArray(HEARINGS);
+
+        final JsonArray filteredHearingsArray = applicationTypeFilter.filter(query.metadata(), hearingsArray);
+
+        // Rebuild the response envelope with filtered hearings, keeping other fields unchanged
+        final JsonObjectBuilder responseBuilder = createObjectBuilder();
+
+        // Copy all existing fields from the original response
+        responsePayload.forEach((key, value) -> {
+            if (!HEARINGS.equals(key)) {
+                responseBuilder.add(key, value);
+            }
+        });
+
+        responseBuilder.add(HEARINGS, filteredHearingsArray);
+
+        return envelopeFrom(responseEnvelope.metadata(), responseBuilder.build());
     }
 
     public JsonEnvelope searchHearingsForCotr(final JsonEnvelope query) {
@@ -493,12 +532,14 @@ public class HearingQueryView {
             return createEmptyResponse(query);
         }
 
+        Set<String> excludedHearingTypeIds = Set.of(WOFD_HEARING_TYPE_ID, PCB_HEARING_TYPE_ID);
+
         if (listType.get().equals(CourtListType.ALPHABETICAL)) {
-            final List<Hearing> matchedHearings = repository.findHearingsForAlphabeticalList(TRUE, courtCentreId, startDate);
+            final List<Hearing> matchedHearings = repository.findHearingsForAlphabeticalList(TRUE, courtCentreId, startDate, excludedHearingTypeIds);
             return createAlphabeticalListJsonEnvelope(query, matchedHearings);
         }
         // Plug in queries for other list types
-        final Hearing matchedHearingsJsonObject = repository.findHearingsForPublicStandardList(TRUE, courtCentreId, startDate, endDate);
+        final Hearing matchedHearingsJsonObject = repository.findHearingsForPublicStandardList(TRUE, courtCentreId, startDate, endDate, excludedHearingTypeIds);
         return createPublicStandardCourtListJsonEnvelope(query, matchedHearingsJsonObject);
     }
 

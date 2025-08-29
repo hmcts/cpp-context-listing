@@ -6,8 +6,10 @@ import static java.time.LocalDate.parse;
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.now;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
+import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.apache.deltaspike.core.util.ArraysUtils.asSet;
@@ -37,8 +39,10 @@ import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatch
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.metadata;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 
 import uk.gov.justice.listing.event.PublishCourtListType;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
@@ -46,7 +50,9 @@ import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.MetadataBuilder;
 import uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory;
+import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
@@ -66,6 +72,7 @@ import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.dto.LinkedApplicationsSummary;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory;
+import uk.gov.moj.cpp.listing.query.view.hearing.ApplicationTypeFilter;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
@@ -150,6 +157,9 @@ public class HearingQueryViewTest {
     private static final String EMPTY_STRING = "";
     private static final String CASE_ID_QUERY_PARAMETER  = "caseId";
     private static final String APPLICATION_ID_QUERY_PARAMETER  = "applicationId";
+    private static final String WOFD_HEARING_TYPE_ID = "638ced9d-3f95-4e99-b27b-47fa5a2c6add";
+    private static final String PCB_HEARING_TYPE_ID = "3a2d160f-363b-4360-96e1-0007a400a64c";
+
 
     @Spy
     private Enveloper enveloper = createEnveloper();
@@ -171,9 +181,13 @@ public class HearingQueryViewTest {
     private PublishedCourtListToJsonConverter publishedCourtListToJsonConverter;
     @Mock
     private NotesService notesService;
-
     @Mock
     private CaseByDefendantRepository caseByDefendantRepository;
+    @Mock
+    private ApplicationTypeFilter applicationTypeFilter;
+
+    @Spy
+    private JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();;
 
     @Spy
     private PaginationParameterFactory paginationParameterFactory;
@@ -288,6 +302,8 @@ public class HearingQueryViewTest {
                 .thenReturn(hearingsJson);
 
         when(hearingJsonListConverterFilterEjectCases.convertForSearchHearing(anyList(), anyMap())).thenReturn(hearingsJsonArray);
+        when(applicationTypeFilter.filter(any(), anyList())).thenReturn(hearingsJson);
+
 
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
@@ -316,6 +332,51 @@ public class HearingQueryViewTest {
     }
 
     @Test
+    public void searchHearingsWithSearchDateWithAllParametersProvidedApartFromStartTimeAndReturnFilteredData() {
+
+        final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
+        final List<Hearing> hearingsFilteredJson = singletonList(hearingsJson.get(0));
+        final JsonArray hearingsJsonArray = hearingsJsonArray();
+
+        Json.createArrayBuilder()
+                .add(Json.createObjectBuilder()
+                        .add("hello", "world"))
+                .build();
+
+        when(hearingRepository.findHearings(
+                ALLOCATED,
+                COURT_CENTRE_ID.toString(),
+                COURT_ROOM_ID.toString(),
+                AUTHORITY_ID,
+                HEARING_TYPE_ID.toString(),
+                JURISDICTION_TYPE.toString(),
+                SEARCH_DATE,
+                SEARCH_DATE.atStartOfDay(UTC),
+                SEARCH_DATE.atTime(END_TIME).atZone(UTC)))
+                .thenReturn(hearingsJson);
+
+        when(hearingJsonListConverterFilterEjectCases.convertForSearchHearing(anyList(), anyMap())).thenReturn(hearingsJsonArray);
+        when(applicationTypeFilter.filter(any(), anyList())).thenReturn(hearingsFilteredJson);
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, ALLOCATED)
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(SEARCH_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_TIME_QUERY_PARAMETER, END_TIME.toString())
+                        .build());
+
+        final JsonEnvelope results = hearingsQueryView.searchHearings(query);
+        assertThat(hearingsJson.size(), is(2));
+        assertThat(results.payloadAsJsonObject().getJsonArray("hearings").size(), is(1));
+    }
+
+    @Test
     public void searchHearingsWithSearchDateWithAllParametersProvided() {
 
         final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
@@ -340,6 +401,7 @@ public class HearingQueryViewTest {
 
         when(hearingJsonListConverterFilterEjectCases.convertForSearchHearing(anyList(), anyMap())).thenReturn(hearingsJsonArray);
         when(notesService.findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), any(List.class))).thenReturn(createNotesList());
+        when(applicationTypeFilter.filter(any(), anyList())).thenReturn(hearingsJson);
 
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
@@ -927,40 +989,13 @@ public class HearingQueryViewTest {
     }
 
     @Test
-    public void testRangeSearch() {
-
-        final JsonEnvelope query = mock(JsonEnvelope.class);
-        final JsonEnvelope rangeSearchQueryResponse = mock(JsonEnvelope.class);
-
-        when(rangeSearchQuery.rangeSearchHearings(query)).thenReturn(rangeSearchQueryResponse);
-
-        final JsonEnvelope results = hearingsQueryView.rangeSearchHearings(query);
-
-        assertThat(results, is(rangeSearchQueryResponse));
-        verify(rangeSearchQuery).rangeSearchHearings(eq(query));
-    }
-
-    @Test
-    public void searchHearingsWithDateRangeWithAllOptionalParametersNotProvided() {
-
-        final JsonEnvelope query = mock(JsonEnvelope.class);
-        final JsonEnvelope rangeSearchQueryResponse = mock(JsonEnvelope.class);
-
-        when(rangeSearchQuery.rangeSearchHearings(query)).thenReturn(rangeSearchQueryResponse);
-
-        final JsonEnvelope results = hearingsQueryView.rangeSearchHearings(query);
-
-        assertThat(results, is(rangeSearchQueryResponse));
-        verify(rangeSearchQuery).rangeSearchHearings(eq(query));
-    }
-
-    @Test
-    public void getAlphabeticalCourtListContentWithAllParamsProvided() throws Exception {
+    public void getAlphabeticalCourtListContentWithAllParamsProvided() {
 
         final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
         final JsonArray hearingsJsonArray = hearingsJsonArray();
 
-        when(hearingRepository.findHearingsForAlphabeticalList(ALLOCATED, COURT_CENTRE_ID.toString(), SEARCH_DATE))
+        final Set<String> excludedHearingTypeIds = Set.of(WOFD_HEARING_TYPE_ID, PCB_HEARING_TYPE_ID);
+        when(hearingRepository.findHearingsForAlphabeticalList(ALLOCATED, COURT_CENTRE_ID.toString(), SEARCH_DATE, excludedHearingTypeIds))
                 .thenReturn(hearingsJson);
         when(hearingJsonListConverterFilterEjectCases.convertHearingResultForAlphabeticalList(hearingsJson)).thenReturn(hearingsJsonArray);
 
@@ -981,7 +1016,7 @@ public class HearingQueryViewTest {
                         withJsonPath("$.hearings[0].hello", equalTo("world"))
                 ))
         ));
-        verify(hearingRepository).findHearingsForAlphabeticalList(eq(ALLOCATED), eq(COURT_CENTRE_ID.toString()), eq(SEARCH_DATE));
+        verify(hearingRepository).findHearingsForAlphabeticalList(eq(ALLOCATED), eq(COURT_CENTRE_ID.toString()), eq(SEARCH_DATE), eq(excludedHearingTypeIds));
         verify(hearingJsonListConverterFilterEjectCases).convertHearingResultForAlphabeticalList(eq(hearingsJson));
     }
 
@@ -1003,6 +1038,7 @@ public class HearingQueryViewTest {
 
         when(hearingJsonListConverterFilterEjectCases.convertForSearchHearing(anyList(), anyMap())).thenCallRealMethod();
         when(notesService.findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), any(List.class))).thenReturn(createNotesList());
+        when(applicationTypeFilter.filter(any(), anyList())).thenReturn(hearingsJson);
 
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
@@ -1331,6 +1367,152 @@ public class HearingQueryViewTest {
         assertEquals(2, ((JsonObject) results.payload()).getJsonArray("hearings").size());
     }
 
+    @Test
+    public void testRangeSearch() {
+
+        final JsonEnvelope query = mock(JsonEnvelope.class);
+        final JsonEnvelope rangeSearchQueryResponse = mock(JsonEnvelope.class);
+
+        when(rangeSearchQuery.rangeSearchHearings(query)).thenReturn(rangeSearchQueryResponse);
+        when(rangeSearchQueryResponse.payloadAsJsonObject()).thenReturn(createObjectBuilder().add("hearings", createArrayBuilder().build()).build());
+
+        final JsonEnvelope results = hearingsQueryView.rangeSearchHearings(query);
+
+        assertThat(results, is(rangeSearchQueryResponse));
+        verify(rangeSearchQuery).rangeSearchHearings(eq(query));
+    }
+
+    @Test
+    public void searchHearingsWithDateRangeWithAllOptionalParametersNotProvided() {
+
+        final JsonEnvelope query = mock(JsonEnvelope.class);
+        final JsonEnvelope rangeSearchQueryResponse = mock(JsonEnvelope.class);
+
+        when(rangeSearchQueryResponse.payloadAsJsonObject()).thenReturn(createObjectBuilder().add("hearings", createArrayBuilder().build()).build());
+        when(rangeSearchQuery.rangeSearchHearings(query)).thenReturn(rangeSearchQueryResponse);
+
+        final JsonEnvelope results = hearingsQueryView.rangeSearchHearings(query);
+
+        assertThat(results, is(rangeSearchQueryResponse));
+        verify(rangeSearchQuery).rangeSearchHearings(eq(query));
+    }
+
+    @Test
+    public void shouldApplyApplicationTypeFilteringToRangeSearchHearings() {
+        final UUID hearingId1 = randomUUID();
+        final UUID hearingId2 = randomUUID();
+        final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.search.hearings");
+
+        final JsonEnvelope query = envelopeFrom(metadataBuilder,
+                createObjectBuilder()
+                        .add("allocated", true)
+                        .add("courtCentreId", COURT_CENTRE_ID.toString())
+                        .build()
+        );
+
+        final JsonArray originalHearings = createArrayBuilder()
+                .add(createObjectBuilder().add("id", hearingId1.toString()).build())
+                .add(createObjectBuilder().add("id", hearingId2.toString()).build())
+                .build();
+
+        final JsonEnvelope originalResponse = envelopeFrom(metadataBuilder,
+                createObjectBuilder()
+                        .add("hearings", originalHearings)
+                        .add("notes", createArrayBuilder().build())
+                        .add("results", 2)
+                        .add("pageCount", 1)
+                        .build());
+
+        final JsonArray filteredHearings = createArrayBuilder()
+                .add(createObjectBuilder().add("id", hearingId1.toString()).build())
+                .build();
+
+        when(rangeSearchQuery.rangeSearchHearings(query)).thenReturn(originalResponse);
+        when(applicationTypeFilter.filter(any(), any(JsonArray.class))).thenReturn(filteredHearings);
+
+        final JsonEnvelope result = hearingsQueryView.rangeSearchHearings(query);
+
+        verify(rangeSearchQuery).rangeSearchHearings(query);
+        verify(applicationTypeFilter).filter(query.metadata(), originalHearings);
+
+        assertThat(result.payloadAsJsonObject().getJsonArray("hearings").size(), is(1));
+        assertThat(result.payloadAsJsonObject().getInt("results"), is(2));
+        assertThat(result.payloadAsJsonObject().getInt("pageCount"), is(1));
+    }
+
+    @Test
+    public void testRangeSearchHearingsForCourtCalendar() {
+
+        final JsonEnvelope query = mock(JsonEnvelope.class);
+        final JsonEnvelope rangeSearchQueryResponse = mock(JsonEnvelope.class);
+
+        when(rangeSearchQuery.rangeSearchCourtCalendar(query)).thenReturn(rangeSearchQueryResponse);
+        when(rangeSearchQueryResponse.payloadAsJsonObject()).thenReturn(createObjectBuilder().add("hearings", createArrayBuilder().build()).build());
+
+        final JsonEnvelope results = hearingsQueryView.rangeSearchHearingsForCourtCalendar(query);
+
+        assertThat(results, is(rangeSearchQueryResponse));
+        verify(rangeSearchQuery).rangeSearchCourtCalendar(eq(query));
+    }
+
+    @Test
+    public void searchHearingsForCourtCalendarWithAllOptionalParametersNotProvided() {
+
+        final JsonEnvelope query = mock(JsonEnvelope.class);
+        final JsonEnvelope rangeSearchQueryResponse = mock(JsonEnvelope.class);
+
+        when(rangeSearchQueryResponse.payloadAsJsonObject()).thenReturn(createObjectBuilder().add("hearings", createArrayBuilder().build()).build());
+        when(rangeSearchQuery.rangeSearchCourtCalendar(query)).thenReturn(rangeSearchQueryResponse);
+
+        final JsonEnvelope results = hearingsQueryView.rangeSearchHearingsForCourtCalendar(query);
+
+        assertThat(results, is(rangeSearchQueryResponse));
+        verify(rangeSearchQuery).rangeSearchCourtCalendar(eq(query));
+    }
+
+    @Test
+    public void shouldApplyApplicationTypeFilteringToRangeSearchHearingsForCourtCalendar() {
+        final UUID hearingId1 = randomUUID();
+        final UUID hearingId2 = randomUUID();
+        final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.range.search.hearings.court.calendar");
+
+        final JsonEnvelope query = envelopeFrom(metadataBuilder,
+                createObjectBuilder()
+                        .add("allocated", true)
+                        .add("courtCentreId", COURT_CENTRE_ID.toString())
+                        .build()
+        );
+
+        final JsonArray originalHearings = createArrayBuilder()
+                .add(createObjectBuilder().add("id", hearingId1.toString()).build())
+                .add(createObjectBuilder().add("id", hearingId2.toString()).build())
+                .build();
+
+        final JsonEnvelope originalResponse = envelopeFrom(metadataBuilder,
+                createObjectBuilder()
+                        .add("hearings", originalHearings)
+                        .add("notes", createArrayBuilder().build())
+                        .add("results", 2)
+                        .add("pageCount", 1)
+                        .build());
+
+        final JsonArray filteredHearings = createArrayBuilder()
+                .add(createObjectBuilder().add("id", hearingId1.toString()).build())
+                .build();
+
+        when(rangeSearchQuery.rangeSearchCourtCalendar(query)).thenReturn(originalResponse);
+        when(applicationTypeFilter.filter(any(), any(JsonArray.class))).thenReturn(filteredHearings);
+
+        final JsonEnvelope result = hearingsQueryView.rangeSearchHearingsForCourtCalendar(query);
+
+        verify(rangeSearchQuery).rangeSearchCourtCalendar(query);
+        verify(applicationTypeFilter).filter(query.metadata(), originalHearings);
+
+        assertThat(result.payloadAsJsonObject().getJsonArray("hearings").size(), is(1));
+        assertThat(result.payloadAsJsonObject().getInt("results"), is(2));
+        assertThat(result.payloadAsJsonObject().getInt("pageCount"), is(1));
+    }
+
 
     private JsonEnvelope generateQuery(final JsonValue payload) {
         return envelopeFrom(
@@ -1409,6 +1591,12 @@ public class HearingQueryViewTest {
             return allOf(withJsonPath("$.notes.size()", equalTo(0)));
         }
 
+    }
+
+    private Hearing createHearing(final UUID hearingId) {
+        final Hearing hearing = new Hearing();
+        hearing.setId(hearingId);
+        return hearing;
     }
 
 }
