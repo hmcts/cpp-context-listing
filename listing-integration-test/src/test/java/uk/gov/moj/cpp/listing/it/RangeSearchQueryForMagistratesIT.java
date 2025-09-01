@@ -10,11 +10,13 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.test.utils.core.http.BaseUriProvider.getBaseUri;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
+import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.EXACT_HEARING_START_DATETIME;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetHearingIds;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
@@ -29,6 +31,7 @@ import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
@@ -93,6 +96,7 @@ public class RangeSearchQueryForMagistratesIT extends AbstractIT {
 
         final Map<String, String> params = getParams();
         params.remove("panel");
+        params.put("courtRoomId", courtRoomId.toString());
         final String queryString = getQueryString(params);
         final RequestParams requestParams = getCourtSchedulerRequestParams(queryString);
         final ResponseData res = pollWithDefaults(requestParams).until(status().is(OK),
@@ -119,6 +123,27 @@ public class RangeSearchQueryForMagistratesIT extends AbstractIT {
         JsonArray bookedSlotsJsonArr = bookedSlotsJsonObj.getJsonArray("provisionalSlots");
         JsonArray hearingDaysJsonArr = hearingsJsonArr.getJsonObject(0).getJsonArray("hearingDays");
         assertThat(hearingDaysJsonArr.getJsonObject(0).getString("courtScheduleId"), is(bookedSlotsJsonArr.getJsonObject(0).getString("courtScheduleId")));
+
+        final Instant instant = Instant.now();
+        stubGetHearingIds(instant);
+        params.put(EXACT_HEARING_START_DATETIME, instant.toString());
+        final String queryString2 = getQueryString(params);
+        final RequestParams requestParams2 = getCourtSchedulerRequestParams(queryString2);
+        final ResponseData resp2 = poll(requestParams2).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.results", is(1)),
+                        withJsonPath("$.pageCount", is(1)),
+                        withJsonPath("$.notes.size()", is(1)),
+                        withJsonPath("$.hearings.size()", is(1)),
+                        withJsonPath("$.hearings[0].id", is("ed4f666a-866a-4fcb-8c3b-e89f6ce1e7e5")),
+                        withJsonPath("$.hearings[0].allocated", is(true)),
+                        withJsonPath("$.hearings[0].jurisdictionType", is(JurisdictionType.MAGISTRATES.name())),
+                        withJsonPath("$.notes[0].id", notNullValue()),
+                        withJsonPath("$.notes[0].courtRoomId", notNullValue()),
+                        withJsonPath("$.notes[0].date", notNullValue()),
+                        withJsonPath("$.notes[0].note", notNullValue())
+                ))
+        );
     }
 
     @Test

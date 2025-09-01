@@ -18,6 +18,7 @@ import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang3.BooleanUtils.toBoolean;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
 import static uk.gov.justice.core.courts.JurisdictionType.valueFor;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
@@ -1045,6 +1046,7 @@ public class Hearing implements Aggregate {
         }
     }
 
+    //Remove as it's not in use. Tests need to be updated to use assignHearingDaysV2
     public Stream<Object> assignHearingDays(final LocalDate startDate, final LocalDate endDate, final List<LocalDate> nonSittingDays, final List<NonDefaultDay> nonDefaultDays, final LocalTime defaultStartTime, final Integer defaultDuration, final UUID hearingId, final CourtCentre defaultCourtCentre) {
         if (this.duplicate) {
             return Stream.empty();
@@ -1076,8 +1078,7 @@ public class Hearing implements Aggregate {
 
     }
 
-
-    public Stream<Object> assignHearingDaysV2(final UUID hearingId, final List<uk.gov.moj.cpp.listing.domain.HearingDay> updatedHearingDays) {
+    public Stream<Object> assignHearingDaysV2(final UUID hearingId, final List<uk.gov.moj.cpp.listing.domain.HearingDay> updatedHearingDays, final UUID oldParentCourtRoom, final UUID newParentCourtRoom, final uk.gov.justice.core.courts.JurisdictionType newJurisdictionType) {
         if (this.duplicate) {
             return Stream.empty();
         }
@@ -1092,11 +1093,22 @@ public class Hearing implements Aggregate {
         if (!this.hearingDays.isEmpty()) {
             final Map<ZonedDateTime, HearingDay> existingHearingDays = this.hearingDays.stream()
                     .collect(toMap(HearingDay::getStartTime, hearingDay -> hearingDay, (hd1, hd2) -> hd2));
-            final List<uk.gov.justice.listing.events.HearingDay> newHearingDaysWithExistingSequences =
+
+            List<uk.gov.justice.listing.events.HearingDay> newHearingDaysWithExistingInfo =
                     mergeHearingDaySequences(hearingDaysChangedForHearing, existingHearingDays);
 
+            /** We are trying to preserve old room info only if there is no change in parent courtRoom */
+            if (CROWN.equals(newJurisdictionType) && newParentCourtRoom != null && newParentCourtRoom.equals(oldParentCourtRoom)) {
+                final Map<LocalDate, HearingDay> existingHearingDaysWithChangedRooms = this.hearingDays.stream()
+                        .filter(hd -> hd.getCourtRoomId() != null) // we do not want to preserve any null courtroom
+                        .filter(hd -> !newParentCourtRoom.equals(hd.getCourtRoomId())) // The courtRoom on the parent is not the same as the one on this day
+                        .collect(toMap(HearingDay::getHearingDate, hearingDay -> hearingDay, (hd1, hd2) -> hd2));
+
+                preservePreviouslyChangedCourtRooms(newHearingDaysWithExistingInfo, existingHearingDaysWithChangedRooms);
+            }
+
             return apply(Stream.of(hearingDaysChangedForHearing()
-                    .withHearingDays(newHearingDaysWithExistingSequences)
+                    .withHearingDays(newHearingDaysWithExistingInfo)
                     .withHearingId(hearingId)
                     .build()));
         }
@@ -2276,6 +2288,17 @@ public class Hearing implements Aggregate {
                 .collect(toList());
     }
 
+    private void preservePreviouslyChangedCourtRooms(final List<uk.gov.justice.listing.events.HearingDay> hearingDaysChangedForHearing, final Map<LocalDate, HearingDay> existingHearingDays) {
+        hearingDaysChangedForHearing.replaceAll(hd -> {
+            uk.gov.moj.cpp.listing.domain.aggregate.HearingDay previousHearingDayToKeep = existingHearingDays.get(hd.getHearingDate());
+            if (previousHearingDayToKeep == null) {
+                return hd;
+            }
+            return convertDomainToHearingDayEvent(previousHearingDayToKeep);
+        });
+
+    }
+
     private SequencesResetOnHearingDays createSequencesResetOnHearingDaysEvent(final UUID hearingId) {
         return SequencesResetOnHearingDays.sequencesResetOnHearingDays()
                 .withHearingId(hearingId)
@@ -2314,6 +2337,7 @@ public class Hearing implements Aggregate {
     private void onNonDefaultDaysAssignedToHearing(final NonDefaultDaysAssignedToHearing event) {
         this.nonDefaultDays = convertNonDefaultDaysToDomain(event.getNonDefaultDays());
         this.updateSlot = event.getNonDefaultDays().stream().anyMatch(ndd -> StringUtils.isNotEmpty(ndd.getCourtScheduleId()));
+        updateCurrentHearingEventStateWithNonDefaultDays();
     }
 
     private void onHearingLanguageChanged(final HearingLanguageChangedForHearing event) {
@@ -2342,6 +2366,7 @@ public class Hearing implements Aggregate {
     private void onNonDefaultDaysChangedForHearing(final NonDefaultDaysChangedForHearing event) {
         this.nonDefaultDays = convertNonDefaultDaysToDomain(event.getNonDefaultDays());
         this.updateSlot = event.getNonDefaultDays().stream().anyMatch(ndd -> StringUtils.isNotEmpty(ndd.getCourtScheduleId()));
+        updateCurrentHearingEventStateWithNonDefaultDays();
     }
 
     private void onHearingDaysChangedForHearing(final HearingDaysChangedForHearing hearingDaysChangedForHearing) {
@@ -2722,18 +2747,22 @@ public class Hearing implements Aggregate {
             return emptyList();
         }
         return hearingDays.stream()
-                .map(cd -> uk.gov.justice.listing.events.HearingDay.hearingDay()
-                        .withCourtScheduleId(cd.getCourtScheduleId())
-                        .withDurationMinutes(cd.getDurationMinutes())
-                        .withEndTime(cd.getEndTime())
-                        .withSequence(cd.getSequence())
-                        .withStartTime(cd.getStartTime())
-                        .withHearingDate(cd.getHearingDate())
-                        .withIsCancelled(cd.isCancelled())
-                        .withCourtCentreId(cd.getCourtCentreId())
-                        .withCourtRoomId(cd.getCourtRoomId())
-                        .build())
+                .map(cd -> convertDomainToHearingDayEvent(cd))
                 .collect(toList());
+    }
+
+    private static uk.gov.justice.listing.events.HearingDay convertDomainToHearingDayEvent(final HearingDay cd) {
+        return uk.gov.justice.listing.events.HearingDay.hearingDay()
+                .withCourtScheduleId(cd.getCourtScheduleId())
+                .withDurationMinutes(cd.getDurationMinutes())
+                .withEndTime(cd.getEndTime())
+                .withSequence(cd.getSequence())
+                .withStartTime(cd.getStartTime())
+                .withHearingDate(cd.getHearingDate())
+                .withIsCancelled(cd.isCancelled())
+                .withCourtCentreId(cd.getCourtCentreId())
+                .withCourtRoomId(cd.getCourtRoomId())
+                .build();
     }
 
     private List<uk.gov.justice.listing.events.HearingDay> convertHearingDaysToEvent(final List<HearingDay> hearingDays) {
@@ -2872,6 +2901,9 @@ public class Hearing implements Aggregate {
                 }
                 return hd;
             });
+
+            updateCurrentHearingEventStateWithHearingDays();
+
         }
 
         if (isNotEmpty(nonDefaultDays)) {
@@ -2886,7 +2918,10 @@ public class Hearing implements Aggregate {
                 }
                 return nd;
             });
+            updateCurrentHearingEventStateWithNonDefaultDays();
+
         }
+
     }
 
     private void correctHearingDaysWithoutCourtCentre(final Optional<UUID> centreId, final Optional<UUID> roomId) {
@@ -3321,6 +3356,13 @@ public class Hearing implements Aggregate {
         if (nonNull(this.currentHearingEventState)) {
             this.currentHearingEventState = uk.gov.justice.listing.events.Hearing.hearing().withValuesFrom(currentHearingEventState)
                     .withHearingDays(convertDomainToHearingDays(this.hearingDays)).build();
+        }
+    }
+
+    private void updateCurrentHearingEventStateWithNonDefaultDays() {
+        if (nonNull(this.currentHearingEventState)) {
+            this.currentHearingEventState = uk.gov.justice.listing.events.Hearing.hearing().withValuesFrom(currentHearingEventState)
+                    .withNonDefaultDays(convertNonDefaultDaysToEvents(this.nonDefaultDays)).build();
         }
     }
 

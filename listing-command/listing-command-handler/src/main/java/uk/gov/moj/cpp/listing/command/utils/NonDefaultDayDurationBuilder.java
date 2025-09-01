@@ -92,7 +92,8 @@ public class NonDefaultDayDurationBuilder {
                 .withSession(nonDefaultDay.getSession())
                 .withStartTime(nonDefaultDay.getStartTime())
                 .withCourtCentreId(nonDefaultDay.getCourtCentreId())
-                .withRoomId(nonDefaultDay.getRoomId()).build();
+                .withRoomId(nonDefaultDay.getRoomId())
+                .withVirtual(nonDefaultDay.getVirtual()).build();
     }
 
     private boolean isAllDaySessionBooking(final List<NonDefaultDay> nonDefaultDays) {

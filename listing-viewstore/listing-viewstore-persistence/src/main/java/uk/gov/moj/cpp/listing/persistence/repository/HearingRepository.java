@@ -5,6 +5,7 @@ import static uk.gov.moj.cpp.listing.persistence.repository.courtlist.HearingJdb
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.HearingJdbcRepository;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -987,15 +988,16 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
     public abstract List<Hearing> findAllCourtSchedulerHearingByIds(@QueryParam("hearingIds") final List<UUID> hearingIds);
 
     public List<Hearing> findAllocatedHearingsForCourtCalendar(final UUID courtCentreId,
-                                      final UUID courtRoomId,
-                                      final UUID authorityCode,
-                                      final UUID hearingTypeId,
-                                      final String jurisdictionType,
-                                      final LocalDate startDate,
-                                      final LocalDate endDate,
-                                      final Integer offSet,
-                                      final Integer pageSize) {
+                                                               final UUID courtRoomId,
+                                                               final UUID authorityCode,
+                                                               final UUID hearingTypeId,
+                                                               final String jurisdictionType,
+                                                               final LocalDate startDate,
+                                                               final LocalDate endDate,
+                                                               final Instant exactHearingStartDateTime,
+                                                               final Integer offSet,
+                                                               final Integer pageSize) {
         return hearingJdbcRepository.findAllocatedHearingsForCourtCalendar(courtCentreId, courtRoomId,
-                authorityCode, hearingTypeId, jurisdictionType, startDate, endDate, offSet, pageSize);
+                authorityCode, hearingTypeId, jurisdictionType, startDate, endDate, exactHearingStartDateTime, offSet, pageSize);
     }
 }

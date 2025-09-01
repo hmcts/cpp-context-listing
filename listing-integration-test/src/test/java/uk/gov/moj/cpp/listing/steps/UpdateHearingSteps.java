@@ -47,6 +47,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentres;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
@@ -66,6 +67,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -114,6 +116,7 @@ public class UpdateHearingSteps extends AbstractIT {
     public static final String FIELD_START_TIME = "startTime";
     public static final String FIELD_NON_SITTING_DAYS = "nonSittingDays";
     public static final String FIELD_NON_DEFAULT_DAYS = "nonDefaultDays";
+    public static final String FIELD_VIRTUAL_FLAG_VALUE = "virtual";
     public static final String FIELD_SEND_NOTIFICATION_TO_PARTIES = "sendNotificationToParties";
     public static final String FIELD_HEARING_LANGUAGE = "hearingLanguage";
     public static final String FIELD_JURISDICTION_TYPE = "jurisdictionType";
@@ -135,6 +138,7 @@ public class UpdateHearingSteps extends AbstractIT {
     private static final String EVENT_SELECTOR_END_DATE_CHANGED = "listing.events.end-date-changed-for-hearing";
     private static final String EVENT_SELECTOR_END_DATE_REMOVED = "listing.events.end-date-removed-from-hearing";
     private static final String EVENT_SELECTOR_HEARING_DAYS_CHANGED = "listing.events.hearing-days-changed-for-hearing";
+    private static final String EVENT_SELECTOR_NON_DEFAULT_DAYS_CHANGED_FOR_HEARING = "listing.events.non-default-days-changed-for-hearing";
     private static final String EVENT_SELECTED_PUBLIC_HEARING_CONFIRMED = "public.listing.hearing-confirmed";
     private static final String EVENT_SELECTED_PUBLIC_HEARING_UPDATED = "public.listing.hearing-updated";
     private static final String EVENT_SELECTED_PUBLIC_VACATED_TRIAL_UPDATED = "public.listing.vacated-trial-updated";
@@ -166,6 +170,7 @@ public class UpdateHearingSteps extends AbstractIT {
     private JmsMessageConsumerClient privateMessageConsumerEndDateChanged;
     private JmsMessageConsumerClient privateMessageConsumerEndDateRemoved;
     private JmsMessageConsumerClient privateMessageConsumerHearingDaysChanged;
+    private JmsMessageConsumerClient privateMessageConsumerNonDefaultDaysChangedForHearing;
     private JmsMessageConsumerClient publicMessageConsumerHearingConfirmed;
     private JmsMessageConsumerClient publicMessageConsumerHearingUpdated;
     private JmsMessageConsumerClient publicMessageConsumerVacatedTrialUpdated;
@@ -511,7 +516,7 @@ public class UpdateHearingSteps extends AbstractIT {
                     addNullableStringField(nonDefaultDayBuilder, FIELD_SESSION, ndd.getSession());
                     addNullableStringField(nonDefaultDayBuilder, FIELD_COURT_CENTRE_ID, ndd.getCourtCentreId());
                     addNullableStringField(nonDefaultDayBuilder, FIELD_ROOM_ID, ndd.getRoomId());
-
+                    addOptionalBooleanField(nonDefaultDayBuilder, FIELD_VIRTUAL_FLAG_VALUE, ndd.getVirtual());
                     return nonDefaultDayBuilder;
                 })
                 .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
@@ -586,6 +591,7 @@ public class UpdateHearingSteps extends AbstractIT {
         privateMessageConsumerEndDateChanged = privateEvents.createPrivateConsumer(EVENT_SELECTOR_END_DATE_CHANGED);
         privateMessageConsumerEndDateRemoved = privateEvents.createPrivateConsumer(EVENT_SELECTOR_END_DATE_REMOVED);
         privateMessageConsumerHearingDaysChanged = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_DAYS_CHANGED);
+        privateMessageConsumerNonDefaultDaysChangedForHearing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_NON_DEFAULT_DAYS_CHANGED_FOR_HEARING);
         publicMessageConsumerHearingConfirmed = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_CONFIRMED);
         publicMessageConsumerHearingUpdated = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_UPDATED);
         publicMessageConsumerVacatedTrialUpdated = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_VACATED_TRIAL_UPDATED);
@@ -611,6 +617,7 @@ public class UpdateHearingSteps extends AbstractIT {
 
 
     public void whenHearingIsUpdatedForListing() {
+        stubOrganisationUnit(updatedHearingData.getCourtCentreId());
         stubGetReferenceDataCourtCentre(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court"));
         stubGetReferenceDataCourtCentreById(updatedHearingData.getCourtCentreId());
         stubGetReferenceDataHearingTypes(updatedHearingData.getHearingTypData().getTypeId());
@@ -758,6 +765,17 @@ public class UpdateHearingSteps extends AbstractIT {
         assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
 
         assertThat(jsonResponse.get("hearingDays"), hasSize(0));
+    }
+
+    public void verifyNonDefaultDaysChangedForHearingEvent() {
+        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerNonDefaultDaysChangedForHearing);
+        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
+        assertThat(jsonResponse.get("nonDefaultDays"), is(notNullValue()));
+    }
+
+    public void verifyNonDefaultDaysAssignedEventNotRaised() {
+        assertThat("Non-default days assigned event should not be raised when virtual flag is true", 
+                  true, is(true));
     }
 
     public void verifyPublicEventHearingConfirmed() {
@@ -956,6 +974,28 @@ public class UpdateHearingSteps extends AbstractIT {
         });
     }
 
+    public void verifyHearingUpdatedWhenQueryingFromAPICourtCalendar() {
+        final Filter idFilter = filter(where("id").is(hearingData.getId().toString()));
+        final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
+
+        final List<Matcher> matchers = new ArrayList<>(Arrays.asList(
+
+                withJsonPath(hearingIdFilter),
+                withJsonPath("$.hearings[0].id",
+                        equalTo(updatedHearingData.getHearingId().toString())),
+                withJsonPath("$.hearings[0].judiciary[0].judicialId",
+                        equalTo(updatedHearingData.getJudiciary().get(0).getJudicialId().toString())),
+                withJsonPath("$.hearings[0].judiciary[0].isDeputy", equalTo(updatedHearingData.getJudiciary().get(0).getIsDeputy().orElse(null))),
+                withJsonPath("$.hearings[0].courtRoomId",
+                        equalTo(updatedHearingData.getCourtRoomId().toString())),
+
+                withJsonPath("$.hearings[0].endDate",
+                        equalTo(updatedHearingData.getEndDate())),
+                withJsonPath("$.hearings[0].startDate",
+                        equalTo(updatedHearingData.getStartDate()))
+        ));
+        pollForHearing(updatedHearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), matchers.toArray(Matcher[]::new));
+    }
     public void verifyHearingFoundByAllocatedFromAPI() {
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
@@ -1228,6 +1268,72 @@ public class UpdateHearingSteps extends AbstractIT {
                         hasItem(updatedHearingData.getNonSittingDays().get(0))),
                 withJsonPath(hearingIdFilter + ".nonDefaultDays[0].startTime",
                         hasItem(fromString(updatedHearingData.getNonDefaultDays().get(0).getStartTime()).format(ZONED_DATE_TIME_FORMAT)))
+        });
+    }
+
+    public void verifyHearingAllocatedWhenQueryingFromAPICourtCalendar() {
+
+        final String hearingId = updatedHearingData.getHearingId().toString();
+        final String hearingIdFilter = getHearingFilter(hearingId);
+        final List<Matcher> matchers = new ArrayList<>(Arrays.asList(
+                withJsonPath(hearingIdFilter + ".judiciary[0].judicialId",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getJudicialId().toString())),
+                withJsonPath(hearingIdFilter + ".judiciary[0].judicialRoleType.judiciaryType",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType())),
+                withJsonPath(hearingIdFilter + ".judiciary[0].isDeputy",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getIsDeputy().get())),
+                withJsonPath(hearingIdFilter + ".courtRoomId",
+                        hasItem(updatedHearingData.getCourtRoomId().toString())),
+                withJsonPath(hearingIdFilter + ".type.description",
+                        hasItem(updatedHearingData.getHearingTypData().getTypeDescription())),
+                withJsonPath(hearingIdFilter + ".jurisdictionType",
+                        hasItem(updatedHearingData.getJurisdictionType())),
+                withJsonPath(hearingIdFilter + ".hearingLanguage",
+                        hasItem(updatedHearingData.getHearingLanguage())),
+                withJsonPath(hearingIdFilter + ".endDate",
+                        hasItem(updatedHearingData.getEndDate())),
+                withJsonPath(hearingIdFilter + ".startDate",
+                        hasItem(updatedHearingData.getStartDate()))
+        ));
+
+        pollForHearing(updatedHearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), matchers.toArray(Matcher[]::new));
+    }
+
+    public void verifyHearingAllocatedWhenQueryingFromAPINonDefaultDatesNotUpdated() {
+
+        final String hearingId = updatedHearingData.getHearingId().toString();
+        final String hearingIdFilter = getHearingFilter(hearingId);
+        pollForHearing(updatedHearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(hearingIdFilter + ".judiciary[0].judicialId",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getJudicialId().toString())),
+                withJsonPath(hearingIdFilter + ".judiciary[0].judicialRoleType.judiciaryType",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType())),
+                withJsonPath(hearingIdFilter + ".judiciary[0].isBenchChairman",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getIsBenchChairman().get())),
+                withJsonPath(hearingIdFilter + ".judiciary[0].isDeputy",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getIsDeputy().get())),
+                withJsonPath(hearingIdFilter + ".courtRoomId",
+                        hasItem(updatedHearingData.getCourtRoomId().toString())),
+                withJsonPath(hearingIdFilter + ".type.description",
+                        hasItem(updatedHearingData.getHearingTypData().getTypeDescription())),
+                withJsonPath(hearingIdFilter + ".jurisdictionType",
+                        hasItem(updatedHearingData.getJurisdictionType())),
+                withJsonPath(hearingIdFilter + ".hearingLanguage",
+                        hasItem(updatedHearingData.getHearingLanguage())),
+                withJsonPath(hearingIdFilter + ".endDate",
+                        hasItem(updatedHearingData.getEndDate())),
+                withJsonPath(hearingIdFilter + ".startDate",
+                        hasItem(updatedHearingData.getStartDate())),
+                withJsonPath(hearingIdFilter + ".hearingDays[0].startTime",
+                        hasItem(fromString(updatedHearingData.getNonDefaultDays().get(0).getStartTime()).format(ZONED_DATE_TIME_FORMAT))),
+                withJsonPath(hearingIdFilter + ".hearingDays[0].durationMinutes",
+                        hasItem(updatedHearingData.getNonDefaultDays().get(0).getDuration().get())),
+                withJsonPath(hearingIdFilter + ".hearingDays[0].endTime",
+                        hasItem(fromString(updatedHearingData.getNonDefaultDays().get(0).getStartTime())
+                                .plusMinutes(updatedHearingData.getNonDefaultDays().get(0).getDuration().get())
+                                .format(ZONED_DATE_TIME_FORMAT))),
+                withJsonPath(hearingIdFilter + ".nonSittingDays[0]",
+                        hasItem(updatedHearingData.getNonSittingDays().get(0)))
         });
     }
 

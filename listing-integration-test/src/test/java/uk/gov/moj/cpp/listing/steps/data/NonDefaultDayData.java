@@ -23,6 +23,8 @@ public class NonDefaultDayData {
 
     private final Optional<String> courtCentreId;
 
+    private final Optional<Boolean> virtual;
+
     public NonDefaultDayData(final String startTime, final Optional<String> courtCentreId, final Optional<String> roomId) {
         this(startTime, empty(), courtCentreId, roomId);
     }
@@ -32,10 +34,17 @@ public class NonDefaultDayData {
     }
 
     public NonDefaultDayData(final String startTime, final Optional<Integer> duration, final Optional<String> courtCentreId, final UUID courtScheduleId, final Optional<String> roomId) {
-        this(startTime, duration, Optional.of(courtScheduleId.toString()), empty(), empty(), empty(), courtCentreId, roomId);
+        this(startTime, duration, empty(), empty(), empty(), empty(), courtCentreId, roomId, Optional.empty());
+    }
+    public NonDefaultDayData(final String startTime, final Optional<Integer> duration, final Optional<String> courtCentreId, final UUID courtScheduleId, final Optional<String> roomId, final Optional<Boolean> virtual) {
+        this(startTime, duration, empty(), empty(), empty(), empty(), courtCentreId, roomId, virtual);
     }
 
     public NonDefaultDayData(final String startTime, final Optional<Integer> duration, final Optional<String> courtScheduleId, final Optional<Integer> courtRoomId, final Optional<String> oucode, final Optional<String> session, final Optional<String> courtCentreId, final Optional<String> roomId) {
+        this(startTime, duration, courtScheduleId, courtRoomId, oucode, session, courtCentreId, roomId, empty());
+    }
+
+    public NonDefaultDayData(final String startTime, final Optional<Integer> duration, final Optional<String> courtScheduleId, final Optional<Integer> courtRoomId, final Optional<String> oucode, final Optional<String> session, final Optional<String> courtCentreId, final Optional<String> roomId, final Optional<Boolean> virtual) {
         this.startTime = startTime;
         this.duration = duration;
         this.courtScheduleId = courtScheduleId;
@@ -44,7 +53,9 @@ public class NonDefaultDayData {
         this.session = session;
         this.courtCentreId = courtCentreId;
         this.roomId = roomId;
+        this.virtual = virtual;
     }
+
 
     public Optional<Integer> getDuration() {
         return duration;
@@ -76,5 +87,9 @@ public class NonDefaultDayData {
 
     public Optional<String> getCourtCentreId() {
         return courtCentreId;
+    }
+
+    public Optional<Boolean> getVirtual() {
+        return virtual;
     }
 }

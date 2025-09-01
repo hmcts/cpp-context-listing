@@ -4,6 +4,8 @@ import static java.lang.String.format;
 import static java.time.LocalDate.parse;
 import static java.time.ZonedDateTime.now;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
@@ -349,7 +351,7 @@ public class ListingCommandHandler {
     }
 
     public List<ProsecutionCaseDefendantOffenceIds> buildFromProsecutionCases(final List<ProsecutionCase> prosecutionCases) {
-        return Objects.isNull(prosecutionCases) ? Collections.emptyList() :
+        return isNull(prosecutionCases) ? Collections.emptyList() :
                 prosecutionCases.stream()
                         .map(p -> ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
                                 .withId(p.getId())
@@ -466,7 +468,7 @@ public class ListingCommandHandler {
         final HearingLanguage hearingLanguage = valueFor(updateHearingForListing.getHearingLanguage().toString()).orElseThrow(IllegalArgumentException::new);
 
         final List<uk.gov.justice.listing.commands.HearingDay> hearingDays = isNotEmpty(updateHearingForListing.getHearingDays()) ? updateHearingForListing.getHearingDays() : emptyList();
-        final List<uk.gov.justice.listing.commands.NonDefaultDay> nonDefaultDays = isNotEmpty(updateHearingForListing.getNonDefaultDays()) ? updateHearingForListing.getNonDefaultDays() : emptyList();
+        final List<NonDefaultDay> nonDefaultDays = convertNonDefaultDaysCommandToDomain(isNotEmpty(updateHearingForListing.getNonDefaultDays()) ? updateHearingForListing.getNonDefaultDays() : emptyList());
         final List<LocalDate> nonSittingDays = isNotEmpty(updateHearingForListing.getNonSittingDays()) ? updateHearingForListing.getNonSittingDays() : emptyList();
         final List<JudicialRole> judiciary = convertJudicialRolesCoreToDomain(updateHearingForListing.getJudiciary());
 
@@ -528,7 +530,9 @@ public class ListingCommandHandler {
             final Stream<Object> endDateEvents = endDate != null ?
                     hearing.changeEndDate(endDate, hearingId) : hearing.removeEndDate(hearingId);
 
-            final Stream<Object> nonDefaultDaysEvents = hearing.assignNonDefaultDays(convertNonDefaultDaysCommandToDomain(nonDefaultDays), hearingId);
+            final Stream<Object> nonDefaultDaysEvents = hearing.assignNonDefaultDays(nonDefaultDays.stream()
+                    .filter(nonDefaultDay -> Boolean.FALSE.equals(nonDefaultDay.getVirtual().orElse(Boolean.FALSE)))
+                    .collect(toList()), hearingId);
 
             final Stream<Object> nonSittingDaysEvents = hearing.assignNonSittingDays(nonSittingDays, hearingId);
             final Stream<Object> courtCentreEvents = hearing.changeCourtCentre(courtCentreId, hearingId);
@@ -538,11 +542,13 @@ public class ListingCommandHandler {
 
             final Stream<Object> judiciaryEvents = getJudiciaryEvents(hearingId, judiciary, hearing);
 
+            //Capture old courtRoomId before it is updated
+            final UUID oldCourtRoomId = hearing.getCurrentHearingEventState() == null ? null: hearing.getCurrentHearingEventState().getCourtRoomId();
             // Check endDate and court-room last as these are the key fields for allocation
             final Stream<Object> courtRoomEvents = courtRoomId != null ?
                     hearing.assignCourtRoom(courtRoomId, hearingId, panelFromCommand) : hearing.removeCourtRoom(hearingId);
 
-            final Stream<Object> hearingDayEvents = hearing.assignHearingDaysV2(hearingId, convertHearingDaysCommandToDomain(updateHearingForListing.getHearingDays()));
+            final Stream<Object> hearingDayEvents = hearing.assignHearingDaysV2(hearingId, convertHearingDaysCommandToDomain(updateHearingForListing.getHearingDays()), oldCourtRoomId, courtRoomId, uk.gov.justice.core.courts.JurisdictionType.valueOf(jurisdictionType.name()));
 
             final Stream<Object> weekCommencingDateEvents = weekCommencingStartDate != null && weekCommencingEndDate != null ?
                     hearing.changeWeekCommencingDate(weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingId) : hearing.removeWeekCommencingDates(hearingId);
@@ -1554,7 +1560,7 @@ public class ListingCommandHandler {
     }
 
     private List<NonDefaultDay> convertNonDefaultDaysCommandToDomain(final List<uk.gov.justice.listing.commands.NonDefaultDay> commandDefaultDays) {
-        List<NonDefaultDay> domainDefaultDays = Collections.emptyList();
+        List<NonDefaultDay> domainDefaultDays;
         if (commandDefaultDays != null && !commandDefaultDays.isEmpty()) {
             domainDefaultDays = commandDefaultDays.stream().map(ndd -> NonDefaultDay.nonDefaultDay()
                             .withStartTime(ndd.getStartTime())
@@ -1564,8 +1570,12 @@ public class ListingCommandHandler {
                             .withOucode(ofNullable(ndd.getOucode()))
                             .withSession(ofNullable(ndd.getSession()))
                             .withRoomId(ofNullable(ndd.getRoomId()))
-                            .withCourtCentreId(ofNullable(ndd.getCourtCentreId())).build())
+                            .withCourtCentreId(ofNullable(ndd.getCourtCentreId()))
+                            .withVirtual(Optional.ofNullable(ndd.getVirtual()))
+                            .build())
                     .collect(toList());
+        } else {
+            domainDefaultDays = new ArrayList<>();
         }
         return domainDefaultDays;
     }

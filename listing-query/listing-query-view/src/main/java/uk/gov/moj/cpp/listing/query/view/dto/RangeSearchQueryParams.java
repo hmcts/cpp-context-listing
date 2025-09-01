@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.query.view.dto;
 
+import java.time.Instant;
 import java.util.Optional;
 
 public record RangeSearchQueryParams(
@@ -18,7 +19,8 @@ public record RangeSearchQueryParams(
     boolean noPagination,
     Optional<String> businessType,
     Optional<String> courtSessionOptional,
-    Optional<Boolean> possibleDisqualificationOpt ) {
+    Optional<Boolean> possibleDisqualificationOpt,
+    Optional<Instant> exactHearingStartDateTime) {
 
     public RangeSearchQueryParams withWeekCommencingStartDate(String weekCommencingStartDate) {
         return new RangeSearchQueryParams(
@@ -37,7 +39,8 @@ public record RangeSearchQueryParams(
             noPagination,
             businessType,
             courtSessionOptional,
-            possibleDisqualificationOpt
+            possibleDisqualificationOpt,
+                exactHearingStartDateTime
         );
     }
 }

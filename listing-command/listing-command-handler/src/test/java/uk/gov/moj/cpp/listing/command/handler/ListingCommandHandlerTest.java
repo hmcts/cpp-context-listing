@@ -3082,6 +3082,13 @@ class ListingCommandHandlerTest {
         return updateHearingForListingCommandEnvelope("/test-data/listing.command.update-hearing-for-listing.json");
     }
 
+    private JsonEnvelope updateHearingForListingCommandEnvelopeWithVirtualFlagTrue() {
+        return updateHearingForListingCommandEnvelope("/test-data/listing.command.update-hearing-for-listing-virtual-flag-true.json");
+    }
+
+    private JsonEnvelope updateHearingForListingCommandEnvelopeWithVirtualFlagFalse() {
+        return updateHearingForListingCommandEnvelope("/test-data/listing.command.update-hearing-for-listing-virtual-flag-false.json");
+    }
     private JsonEnvelope updateHearingForListingCommandEnvelope(final LocalDate endDate) {
         return updateHearingForListingCommandEnvelope("/test-data/listing.command.update-hearing-for-listing.json", endDate.toString());
     }
@@ -4191,6 +4198,40 @@ class ListingCommandHandlerTest {
         }
 
         Assertions.assertNotNull(doc);
+    }
+
+    @Test
+    public void shouldRaiseEmptyNonDefaultDaysEventsWhenVirtualFlagValueIsTrue() throws Exception {
+        final JsonEnvelope commandEnvelope = updateHearingForListingCommandEnvelopeWithVirtualFlagTrue();
+
+        when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
+        when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
+        when(hearing.updateUnallocatedHearingPartially(any(), any(), any())).thenReturn(Stream.of(new Object()));
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+
+        listingCommandHandler.updateHearingForListing(commandEnvelope);
+
+        verify(hearing).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any(), any());
+        verify(hearing).applyAllocationRules(any(), any(), anyBoolean(),anyBoolean(), any());
+        verify(hearing, times(1)).assignNonDefaultDays(emptyList(), HEARING_ID_1);
+    }
+
+    @Test
+    public void shouldRaiseNonDefaultDaysEventsWhenVirtualFlagValueIsFalse() throws Exception {
+        final JsonEnvelope commandEnvelope = updateHearingForListingCommandEnvelopeWithVirtualFlagFalse();
+
+        when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
+        when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
+        when(hearing.updateUnallocatedHearingPartially(any(), any(), any())).thenReturn(Stream.of(new Object()));
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+
+        listingCommandHandler.updateHearingForListing(commandEnvelope);
+
+        verify(hearing).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any(), any());
+        verify(hearing).applyAllocationRules(any(), any(), anyBoolean(),anyBoolean(), any());
+        verify(hearing).assignNonDefaultDays(any(), any());
     }
 
     private List<NonDefaultDay> toMultiDayNonDefaultDay(final List<NonDefaultDay> nonDefaultDays) {

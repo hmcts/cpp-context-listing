@@ -180,7 +180,21 @@ public class UpdatedHearingData {
         return updatedHearingDataForAllocation(hearingId, judiciary);
     }
 
+    public static UpdatedHearingData updatedHearingDataForAllocationWithVirtualFalse(final UUID hearingId) {
+        final List<JudicialRoleData> judiciary = singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "MAGISTRATE")));
+        return updatedHearingDataForAllocationWithVirtual(hearingId, judiciary, false);
+    }
+
+    public static UpdatedHearingData updatedHearingDataForAllocationWithVirtualTrue(final UUID hearingId) {
+        final List<JudicialRoleData> judiciary = singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "MAGISTRATE")));
+        return updatedHearingDataForAllocationWithVirtual(hearingId, judiciary, true);
+    }
+
     private static UpdatedHearingData updatedHearingDataForAllocation(final UUID hearingId, final List<JudicialRoleData> judiciary) {
+        return updatedHearingDataForAllocationWithVirtual(hearingId, judiciary, null);
+    }
+
+    private static UpdatedHearingData updatedHearingDataForAllocationWithVirtual(final UUID hearingId, final List<JudicialRoleData> judiciary, final Boolean virtual) {
 
         final UUID courtCentreId = randomUUID();
         final UUID roomId = randomUUID();
@@ -190,8 +204,8 @@ public class UpdatedHearingData {
 
         final List<String> nonSittingDays = singletonList(startDate.plusDays(1).toString());
 
-        final NonDefaultDayData firstNonDefaultDayData = new NonDefaultDayData(startTimeWithZone.format(DATE_TIME_FORMAT), of(DURATION), of(COURT_SCHEDULE_ID), of(1), of(OUCODE), of(SESSION), of(courtCentreId).map(UUID::toString), of(roomId).map(UUID::toString));
-        final NonDefaultDayData secondNonDefaultDayData = new NonDefaultDayData(startTimeWithZone.plusDays(2).format(DATE_TIME_FORMAT), of(DURATION), of(randomUUID().toString()), of(2), of("BAHOO2"), of("PM"), of(courtCentreId).map(UUID::toString), of(roomId).map(UUID::toString));
+        final NonDefaultDayData firstNonDefaultDayData = new NonDefaultDayData(startTimeWithZone.format(DATE_TIME_FORMAT), of(DURATION), of(COURT_SCHEDULE_ID), of(1), of(OUCODE), of(SESSION), of(courtCentreId).map(UUID::toString), of(roomId).map(UUID::toString),ofNullable(virtual));
+        final NonDefaultDayData secondNonDefaultDayData = new NonDefaultDayData(startTimeWithZone.plusDays(2).format(DATE_TIME_FORMAT), of(DURATION), of(randomUUID().toString()), of(2), of("BAHOO2"), of("PM"), of(courtCentreId).map(UUID::toString), of(roomId).map(UUID::toString),ofNullable(virtual));
 
         final List<NonDefaultDayData> nonDefaultDays = asList(firstNonDefaultDayData, secondNonDefaultDayData);
 

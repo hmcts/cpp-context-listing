@@ -8,6 +8,7 @@ import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,6 +36,7 @@ public class CourtSchedulerServiceAdapter {
     private static final Logger LOGGER = LoggerFactory.getLogger(CourtSchedulerServiceAdapter.class);
     public static final String SESSION_START_DATE = "sessionStartDate";
     public static final String SESSION_END_DATE = "sessionEndDate";
+    public static final String EXACT_HEARING_START_DATETIME = "exactHearingStartDateTime";
     public static final String OU_CODE = "ouCode";
     public static final String PAGE_SIZE = "pageSize";
     public static final String PAGE_NUMBER = "pageNumber";
@@ -166,10 +168,11 @@ public class CourtSchedulerServiceAdapter {
     }
 
     public HearingIdsResponse getCourtSchedulerHearings(final String ouCode,
-                                              final Optional<String> courtSessionOptional,
-                                              final String courtRoomId, final String startDate,
-                                              final String endDate, final Optional<String> businessTypeOptional,
-                                              final String panel, final Integer pageSize, final Integer pageNumber
+                                                        final Optional<String> courtSessionOptional,
+                                                        final String courtRoomId, final String startDate,
+                                                        final String endDate, final Optional<Instant> exactHearingStartDateTime,
+                                                        final Optional<String> businessTypeOptional,
+                                                        final String panel, final Integer pageSize, final Integer pageNumber
     ) {
         final Map<String, String> queryParams = new HashMap<>();
         queryParams.put(PANEL, panel);
@@ -181,7 +184,7 @@ public class CourtSchedulerServiceAdapter {
         queryParams.put(COURT_ROOM_ID, courtRoomId);
         courtSessionOptional.ifPresent(courtSession -> queryParams.put(COURT_SESSION, courtSession));
         businessTypeOptional.ifPresent(businessType -> queryParams.put(BUSINESS_TYPE, businessType));
-
+        exactHearingStartDateTime.ifPresent(s -> queryParams.put(EXACT_HEARING_START_DATETIME, s.toString()));
         final Response hearingsResponse = getCourtSchedulerHearingIds(queryParams);
 
         return getHearingIds(hearingsResponse);

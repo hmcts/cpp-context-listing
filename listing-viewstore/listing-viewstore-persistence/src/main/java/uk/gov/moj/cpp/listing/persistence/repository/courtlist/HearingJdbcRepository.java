@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +26,7 @@ import javax.sql.DataSource;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.StringUtils;
-@SuppressWarnings({"java:S107", "java:S2077"})
+@SuppressWarnings({"java:S107", "java:S2077", "java:S1192"})
 @ApplicationScoped
 public class HearingJdbcRepository {
 
@@ -286,6 +287,26 @@ public class HearingJdbcRepository {
         return additionalWhereClauses.isEmpty() ? "" : " and " + String.join(" and", additionalWhereClauses);
     }
 
+    private static String getAdditionalWhereClauseForCourtCalendar(UUID courtCentreId,
+                                                                   UUID courtRoomId,
+                                                                   UUID authorityCode,
+                                                                   UUID hearingTypeId,
+                                                                   String jurisdictionType,
+                                                                   final Instant exactHearingStartDateTime) {
+        final String courtCentreIdWhereClause = "(? is null or h.court_centre_id = ?)  ";
+        final String courtRoomIdWhereClause = "((hd.court_room_id is null and h.court_room_id = ?) or (hd.court_room_id is not null and hd.court_room_id = ?))  ";
+        final String authorityIdWhereClause = "(? is null or (lc.authority_id = ? or lc.prosecutor_id = ?))  ";
+        final String typeIdWhereClause = "(? is null or h.type_id = ?)  ";
+        final String jurisdictionTypeWhereClause = "(? is null or h.jurisdiction_type = ?)  ";
+        final String exactHearingStartDateTimeWhereClause = "(hd.start_time = ?)";
+        final List<String> additionalWhereClauses = buildAdditionalWherClauses(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType, courtCentreIdWhereClause, courtRoomIdWhereClause, authorityIdWhereClause, typeIdWhereClause, jurisdictionTypeWhereClause);
+        if (exactHearingStartDateTime != null) {
+            additionalWhereClauses.add(exactHearingStartDateTimeWhereClause);
+        }
+        return additionalWhereClauses.isEmpty() ? "" : " and " + String.join(" and", additionalWhereClauses);
+    }
+
+
     private static List<String> buildAdditionalWherClauses(final UUID courtCentreId, final UUID courtRoomId, final UUID authorityCode, final UUID hearingTypeId, final String jurisdictionType, final String courtCentreIdWhereClause, final String courtRoomIdWhereClause, final String authorityIdWhereClause, final String typeIdWhereClause, final String jurisdictionTypeWhereClause) {
         final List<String> additionalWhereClauses = new ArrayList<>();
 
@@ -359,15 +380,16 @@ public class HearingJdbcRepository {
     }
 
     public List<Hearing> findAllocatedHearingsForCourtCalendar(
-                                      final UUID courtCentreId,
-                                      final UUID courtRoomId,
-                                      final UUID authorityCode,
-                                      final UUID hearingTypeId,
-                                      final String jurisdictionType,
-                                      final LocalDate startDate,
-                                      final LocalDate endDate,
-                                      final Integer offSet,
-                                      final Integer pageSize) {
+            final UUID courtCentreId,
+            final UUID courtRoomId,
+            final UUID authorityCode,
+            final UUID hearingTypeId,
+            final String jurisdictionType,
+            final LocalDate startDate,
+            final LocalDate endDate,
+            final Instant exactHearingStartDateTime,
+            final Integer offSet,
+            final Integer pageSize) {
         final List<Hearing> hearingResults = new ArrayList<>();
 
         final String query = """
@@ -400,7 +422,7 @@ public class HearingJdbcRepository {
             and (ca.is_ejected is null or ca.is_ejected =false) 
             and (h.allocated = ?)  
             and (h.unscheduled is null or h.unscheduled = false) 
-            """ + getAdditionalWhereClause(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType) + """
+            """ + getAdditionalWhereClauseForCourtCalendar(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType, exactHearingStartDateTime) + """
             and ( hd.hearing_date between ? and ? ) 
             group by  h.id,hd.hearing_date,crc.courtroom_name,hd.start_time, hd.sequence 
             order by h.court_centre_id, hd.hearing_date, crc.courtroom_name, hd.start_time,hd.sequence, h.id ) as distinct_hearings OFFSET (?) ROWS FETCH NEXT (?) ROWS ONLY
@@ -411,7 +433,10 @@ public class HearingJdbcRepository {
             ps.setBoolean(indexPointer++, true);
 
             indexPointer = setConditionalWhereClauseFields(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType, ps, indexPointer);
-
+            if (exactHearingStartDateTime != null) {
+                final Timestamp exactHearingStartDateTimeTimeTimestamp = Timestamp.from(exactHearingStartDateTime);
+                ps.setTimestamp(indexPointer++, exactHearingStartDateTimeTimeTimestamp);
+            }
             final Timestamp weekCommencingStartDateTimestamp = Timestamp.valueOf(startDate.atStartOfDay());
             final Timestamp weekCommencingEndDateTimestamp = Timestamp.valueOf(endDate.atStartOfDay());
             ps.setTimestamp(indexPointer++, weekCommencingStartDateTimestamp);

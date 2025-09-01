@@ -207,6 +207,10 @@ protocols: [ HTTP, HTTPS ]
           description: Any/AM/PM/AD.  Used only for MAGs with ouCode and (courtSession or businessType) only. Otherwise, BAD_REQUEST.
           type: string
           required: false
+        exactHearingStartDateTime:
+          description: Optional parameter to perform an exact match (equal) on hd.start_time. Must be in ISO date-time format in UTC i.e "2025-09-15T18:35:24.00Z". This is used by court calendar only
+          type: string
+          required: false
       responses:
             200:
                 description: OK

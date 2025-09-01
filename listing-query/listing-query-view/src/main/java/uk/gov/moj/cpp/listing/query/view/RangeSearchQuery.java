@@ -13,6 +13,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import static uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter.EXACT_HEARING_START_DATETIME;
 import static uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter.PANEL_ADULT_YOUTH;
 import static uk.gov.moj.cpp.listing.common.service.HearingIdsResponse.EMPTY_HEARING_ID_RESPONSE;
 
@@ -33,6 +34,7 @@ import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterE
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -122,7 +124,7 @@ public class RangeSearchQuery {
         if (params.courtSessionOptional().isPresent() || params.businessType().isPresent()) {
 
             if(isMags(params.jurisdictionType()) && params.allocated() && params.ouCode() != null ) {
-                return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.businessType(), PANEL_ADULT_YOUTH, params.paginationParameter());
+                return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.exactHearingStartDateTime(), params.businessType(), PANEL_ADULT_YOUTH, params.paginationParameter());
             }
 
             throw new BadRequestException("courtSession or businessType are only relevant to allocated MAGs with ouCode");
@@ -308,8 +310,8 @@ public class RangeSearchQuery {
     }
 
 
-     private JsonEnvelope getCourtSchedulerHearings(final JsonEnvelope query , final boolean allocated, final String ouCode, final Optional<String> courtSessionOptional, final String courtRoomId, final String startDate, final String endDate, final Optional<String> businessType, final String panel, final PaginationParameter paginationParameter) {
-        final HearingIdsResponse hearingIdsResponse = courtSchedulerServiceAdapter.getCourtSchedulerHearings(ouCode, courtSessionOptional, courtRoomId, startDate, endDate, businessType, panel, paginationParameter.getPageSize(), paginationParameter.getPageNumber());
+     private JsonEnvelope getCourtSchedulerHearings(final JsonEnvelope query , final boolean allocated, final String ouCode, final Optional<String> courtSessionOptional, final String courtRoomId, final String startDate, final String endDate, final Optional<Instant> startDateTime, final Optional<String> businessType, final String panel, final PaginationParameter paginationParameter) {
+        final HearingIdsResponse hearingIdsResponse = courtSchedulerServiceAdapter.getCourtSchedulerHearings(ouCode, courtSessionOptional, courtRoomId, startDate, endDate, startDateTime, businessType, panel, paginationParameter.getPageSize(), paginationParameter.getPageNumber());
         logger.info("CourtScheduler Hearings response : {}", hearingIdsResponse);
         final List<Hearing> enrichedHearingList = isEmpty(hearingIdsResponse.getUuids())
                 ? emptyList() : enrichAllCourtSchedulerHearingIdsIntoHearings(hearingIdsResponse.getUuids());
@@ -357,7 +359,7 @@ public class RangeSearchQuery {
         if (params.courtSessionOptional().isPresent() || params.businessType().isPresent()) {
 
             if(isMags(params.jurisdictionType()) && params.allocated() && params.ouCode() != null ) {
-                return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.businessType(), PANEL_ADULT_YOUTH, params.paginationParameter());
+                return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.exactHearingStartDateTime(), params.businessType(), PANEL_ADULT_YOUTH, params.paginationParameter());
             }
 
             throw new BadRequestException("courtSession or businessType are only relevant to allocated MAGs with ouCode");
@@ -368,7 +370,8 @@ public class RangeSearchQuery {
         if(!params.weekCommencingStartDate().isEmpty()){
             hearings = findHearingsByWeekCommencingRange(params.allocated(), params.courtCentreId(), params.courtRoomId(), params.authorityId(), params.hearingTypeId(), params.jurisdictionType(), params.weekCommencingStartDate(), params.weekCommencingEndDate(), params.possibleDisqualificationOpt(), params.paginationParameter().getOffSet(), params.paginationParameter().getPageSize(), params.noPagination());
         } else if(params.allocated()){
-            hearings = findAllocatedHearingsForCourtCalendar(params.courtCentreId(), params.courtRoomId(), params.authorityId(), params.hearingTypeId(), params.jurisdictionType(), params.startDate(), params.endDate(), params.paginationParameter().getOffSet(), params.paginationParameter().getPageSize());
+            final Instant exactHearingStartDateTime = params.exactHearingStartDateTime().orElse(null);
+            hearings = findAllocatedHearingsForCourtCalendar(params.courtCentreId(), params.courtRoomId(), params.authorityId(), params.hearingTypeId(), params.jurisdictionType(), params.startDate(), params.endDate(), exactHearingStartDateTime, params.paginationParameter().getOffSet(), params.paginationParameter().getPageSize());
         } else {
             hearings = findHearings(params.allocated(), params.courtCentreId(), params.courtRoomId(), params.authorityId(), params.hearingTypeId(), params.jurisdictionType(), params.startDate(), params.endDate(), params.paginationParameter().getOffSet(), params.paginationParameter().getPageSize(), params.noPagination());
         }
@@ -398,7 +401,17 @@ public class RangeSearchQuery {
         if (nonNull(query.payloadAsJsonObject().get(POSSIBLE_DISQUALIFICATION_QUERY_PARAMETER))) {
             possibleDisqualificationOpt = Optional.of(query.payloadAsJsonObject().getBoolean(POSSIBLE_DISQUALIFICATION_QUERY_PARAMETER));
         }
-        RangeSearchQueryParams params = new RangeSearchQueryParams(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, ouCode, startDate, endDate, weekCommencingStartDate, weekCommencingEndDate, paginationParameter, noPagination, businessType, courtSessionOptional, possibleDisqualificationOpt);
+        Optional<Instant> exactHearingStartDateTimeOpt = Optional.empty();
+        String exactHearingStartDateTimeStr = query.payloadAsJsonObject().getString(EXACT_HEARING_START_DATETIME, null);
+        if (exactHearingStartDateTimeStr != null) {
+            try {
+                exactHearingStartDateTimeOpt = Optional.of(Instant.parse(exactHearingStartDateTimeStr));
+            } catch (Exception e) {
+                logger.warn("Invalid exact hearing startDateTime format: {}. Expected ISO format with UTC timezone (yyyy-MM-ddTHH:mm:ssZ)", exactHearingStartDateTimeStr);
+                throw new BadRequestException("Invalid startDateTime format %s".formatted(exactHearingStartDateTimeStr));
+            }
+        }
+        RangeSearchQueryParams params = new RangeSearchQueryParams(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, ouCode, startDate, endDate, weekCommencingStartDate, weekCommencingEndDate, paginationParameter, noPagination, businessType, courtSessionOptional, possibleDisqualificationOpt, exactHearingStartDateTimeOpt);
 
         logger.info("Query params: {} ", params);
 
@@ -406,7 +419,7 @@ public class RangeSearchQuery {
     }
 
     private List<Hearing> findAllocatedHearingsForCourtCalendar(final String courtCentreId, final String courtRoomId, final String authorityId,
-                                       final String hearingTypeId, final String jurisdictionType, final String startDate, final String endDate,
+                                       final String hearingTypeId, final String jurisdictionType, final String startDate, final String endDate, final Instant startDateTime,
                                        final Integer offSet, final Integer pageSize) {
 
             return repository.findAllocatedHearingsForCourtCalendar(
@@ -416,6 +429,6 @@ public class RangeSearchQuery {
                     getUUID(hearingTypeId),
                     ofNullable(jurisdictionType).orElse(null),
                     parse(startDate),
-                    parse(endDate), offSet, pageSize);
+                    parse(endDate), startDateTime, offSet, pageSize);
    }
 }

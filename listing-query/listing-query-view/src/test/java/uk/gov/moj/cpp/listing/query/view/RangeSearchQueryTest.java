@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -20,6 +21,7 @@ import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
+import static uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter.EXACT_HEARING_START_DATETIME;
 
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
@@ -40,6 +42,7 @@ import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -281,6 +284,7 @@ public class RangeSearchQueryTest {
                         COURT_ROOM_ID.toString(),
                         SEARCH_DATE.toString(),
                         SEARCH_DATE.toString(),
+                        Optional.empty(),
                         Optional.of(BUSINESS_TYPE), "ADULT,YOUTH", 50, 1)).thenReturn(response);
 
         when(hearingRepository.findAllCourtSchedulerHearingByIds(anyList())).thenReturn(hearings);
@@ -698,6 +702,56 @@ public class RangeSearchQueryTest {
                 0,
                 50);
 
+    }
+
+    @Test
+    void searchHearingsWithExactHearingStartDateTime() {
+        final String exactHearingStartDateTime = "2023-08-29T10:30:00Z";
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(EXACT_HEARING_START_DATETIME, exactHearingStartDateTime)
+                        .add(PAGE_SIZE, 10)
+                        .add(PAGE_NUMBER, 1)
+                        .build());
+
+        final List<Hearing> mockHearings = hearingsJson(ALLOCATEDSTR);
+        when(hearingRepository.findAllocatedHearingsForCourtCalendar(
+                eq(COURT_CENTRE_ID),
+                eq(COURT_ROOM_ID),
+                eq(UUID.fromString(AUTHORITY_ID)),
+                eq(HEARING_TYPE_ID),
+                eq(JURISDICTION_TYPE.toString()),
+                eq(SEARCH_DATE),
+                eq(SEARCH_DATE),
+                eq(Instant.parse(exactHearingStartDateTime)),
+                eq(0),
+                eq(10)
+        )).thenReturn(mockHearings);
+
+        final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
+
+        assertThat(result, is(notNullValue()));
+        verify(hearingRepository).findAllocatedHearingsForCourtCalendar(
+                eq(COURT_CENTRE_ID),
+                eq(COURT_ROOM_ID),
+                eq(UUID.fromString(AUTHORITY_ID)),
+                eq(HEARING_TYPE_ID),
+                eq(JURISDICTION_TYPE.toString()),
+                eq(SEARCH_DATE),
+                eq(SEARCH_DATE),
+                any(Instant.class),
+                eq(0),
+                eq(10)
+        );
     }
 
     private List<Hearing> hearingsJson(String allocated) {

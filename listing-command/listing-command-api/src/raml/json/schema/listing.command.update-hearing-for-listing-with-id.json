@@ -245,6 +245,9 @@
         },
         "roomId": {
           "type": "string"
+        },
+        "virtual": {
+          "type": "boolean"
         }
       },
       "required": [

@@ -1,12 +1,23 @@
 package uk.gov.moj.cpp.listing.utils;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
+import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -53,24 +64,25 @@ public class CourtSchedulerServiceStub {
     public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_WITH_SESSION_DATE_JSON = "stub-data/provisionalBookingSampleDataSingleCourtScheduleCountBasedWithSessionDate.json";
     public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULES_WITH_CUSTOM_PARAMS_JSON = "stub-data/provisionalBookingSampleDataCustomParams.json";
     private static final LocalTime DEFAULT_MORNING_START = LocalTime.of(10, 0, 0, 0);
+    public static final String EXACT_HEARING_START_DATETIME = "exactHearingStartDateTime";
 
     static {
         WireMock.configureFor(CourtSchedulerServiceStub.HOST, 8080);
     }
 
     public static void stubUpdateAvailableHearingSlotsService() {
-        WireMock.stubFor(WireMock.post(WireMock.urlPathMatching(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
-                .willReturn(WireMock.aResponse().withStatus(NO_CONTENT.getStatusCode())));
+        stubFor(WireMock.post(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
+                .willReturn(aResponse().withStatus(NO_CONTENT.getStatusCode())));
     }
 
     public static void stubDeleteAvailableHearingSlotsService(final String hearingId) {
-        WireMock.stubFor(WireMock.delete(WireMock.urlPathMatching(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS + "/" + hearingId))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())));
+        stubFor(WireMock.delete(urlPathMatching(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS + "/" + hearingId))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())));
     }
 
     public static void verifyDeleteAvailableHearingSlotsStubCommandInvoked(final String hearingId) {
         Awaitility.await().atMost(30, SECONDS).pollInterval(1, SECONDS).until(() -> {
-            final RequestPatternBuilder requestPatternBuilder = WireMock.deleteRequestedFor(WireMock.urlPathMatching(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS + "/" + hearingId));
+            final RequestPatternBuilder requestPatternBuilder = WireMock.deleteRequestedFor(urlPathMatching(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS + "/" + hearingId));
             try {
                 WireMock.verify(WireMock.exactly(1), requestPatternBuilder);
             } catch (VerificationException e) {
@@ -81,41 +93,57 @@ public class CourtSchedulerServiceStub {
     }
 
     public static void stubGetAvailableHearingSlots(boolean isEmpty) {
-        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
-                .withQueryParam("sessionStartDate", WireMock.matching("2017-10-11"))
-                .withQueryParam("pageNumber", WireMock.matching("1"))
-                .withQueryParam("pageSize", WireMock.matching("20"))
-                .withQueryParam("panel", WireMock.matching("ADULT"))
-                .withQueryParam("oucodeL2Code", WireMock.matching("Z01KR05"))
-                .withQueryParam("sessionEndDate", WireMock.matching("2020-10-11"))
-                .withHeader("Accept", WireMock.containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
-                        .withBody(FileUtil.getPayload(isEmpty ? CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON : CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_SLOTS_JSON))
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
+                .withQueryParam("sessionStartDate", matching("2017-10-11"))
+                .withQueryParam("pageNumber", matching("1"))
+                .withQueryParam("pageSize", matching("20"))
+                .withQueryParam("panel", matching("ADULT"))
+                .withQueryParam("oucodeL2Code", matching("Z01KR05"))
+                .withQueryParam("sessionEndDate", matching("2020-10-11"))
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(isEmpty ? CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON : CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_SLOTS_JSON))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
     public static void stubGetAvailableHearingSlots() {
-        WireMock.stubFor(WireMock.get(WireMock.urlPathEqualTo(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
-                .withHeader("Accept", WireMock.containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
-                        .withBody(FileUtil.getPayload(CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_SLOTS_JSON))
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+        stubFor(get(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_SLOTS_JSON))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
     public static void stubGetHearingIds(boolean isEmpty) {
-        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
-                .withQueryParam("sessionStartDate", WireMock.matching("1900-01-01"))
-                .withQueryParam("pageNumber", WireMock.matching("1"))
-                .withQueryParam("pageSize", WireMock.matching("20"))
-                .withQueryParam("panel", WireMock.matching("ADULT,YOUTH"))
-                .withQueryParam("ouCode", WireMock.matching("B01LY00"))
-                .withQueryParam("sessionEndDate", WireMock.matching("9999-01-01"))
-                .withHeader("Accept", WireMock.containing("application/vnd.courtscheduler.get.hearing.ids+json"))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
-                        .withBody(FileUtil.getPayload(isEmpty ? "stub-data/listing.search.hearing.ids.empty.json" : "stub-data/listing.search.hearing.ids.json"))
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
+                .withQueryParam("sessionStartDate", matching("1900-01-01"))
+                .withQueryParam("pageNumber", matching("1"))
+                .withQueryParam("pageSize", matching("20"))
+                .withQueryParam("panel", matching("ADULT,YOUTH"))
+                .withQueryParam("ouCode", matching("B01LY00"))
+                .withQueryParam("sessionEndDate", matching("9999-01-01"))
+                .withHeader("Accept", containing("application/vnd.courtscheduler.get.hearing.ids+json"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(isEmpty ? "stub-data/listing.search.hearing.ids.empty.json" : "stub-data/listing.search.hearing.ids.json"))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    public static void stubGetHearingIds(final Instant exactHearingStartDateTime) {
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
+                .withQueryParam("sessionStartDate", matching("1900-01-01"))
+                .withQueryParam("pageNumber", matching("1"))
+                .withQueryParam("pageSize", matching("20"))
+                .withQueryParam("panel", matching("ADULT,YOUTH"))
+                .withQueryParam("ouCode", matching("B01LY00"))
+                .withQueryParam("sessionEndDate", matching("9999-01-01"))
+                .withQueryParam(EXACT_HEARING_START_DATETIME, matching(exactHearingStartDateTime.toString()))
+                .withHeader("Accept", containing("application/vnd.courtscheduler.get.hearing.ids+json"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload( "stub-data/listing.search.hearing.ids-single.json"))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
@@ -123,11 +151,11 @@ public class CourtSchedulerServiceStub {
         final String courtRoomId = Optional.ofNullable(values.get("courtRoomId")).orElse("fce80cd4-0c00-3c30-9471-2c2ee7a52453");
         final String hearingStartTime = sessionDate.atTime(LocalTime.of(10, 0,0,0)).atZone(ZoneId.of("Europe/London")).withZoneSameInstant(ZoneOffset.UTC).toString();
 
-        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
                 .withQueryParam("bookingIds", WireMock.notMatching("null"))
-                .withHeader("Accept", WireMock.containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
-                        .withBody(FileUtil.getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_WITH_SESSION_DATE_JSON)
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_WITH_SESSION_DATE_JSON)
                                 .replace("%SESSION_DATE%", sessionDate.toString())
                                 .replace("%COURT_ROOM_ID%", courtRoomId)
                                 .replace("%HEARING_START_TIME%", hearingStartTime))
@@ -136,11 +164,11 @@ public class CourtSchedulerServiceStub {
     }
 
     public static void stubProvisionalBookingWithCustomParams(final Map<String, String> values) {
-        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
                 .withQueryParam("bookingIds", WireMock.notMatching("null"))
-                .withHeader("Accept", WireMock.containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
-                        .withBody(FileUtil.getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULES_WITH_CUSTOM_PARAMS_JSON)
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULES_WITH_CUSTOM_PARAMS_JSON)
                                 .replace("%SESSION_DATE%", Optional.of(values.get("SESSION_DATE")).orElse(LocalDate.now().toString()))
                                 .replace("%COURT_ROOM_ID%", Optional.of(values.get("COURT_ROOM_ID")).orElse(UUID.randomUUID().toString()))
                                 .replace("%COURT_SCHEDULE_ID%", Optional.of(values.get("COURT_SCHEDULE_ID")).orElse(UUID.randomUUID().toString()))
@@ -156,37 +184,37 @@ public class CourtSchedulerServiceStub {
 
 
     public static void stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased() {
-        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
                 .withQueryParam("bookingIds", WireMock.notMatching("null"))
-                .withHeader("Accept", WireMock.containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
-                        .withBody(FileUtil.getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON))
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
     public static void stubGetProvisionalBookedSlotsMultipleCourtSchedulesCountBased() {
-        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
                 .withQueryParam("bookingIds", WireMock.notMatching("null"))
-                .withHeader("Accept", WireMock.containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
-                        .withBody(FileUtil.getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_JSON))
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_JSON))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
     public static void stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased() {
-        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
                 .withQueryParam("bookingIds", WireMock.notMatching("null"))
-                .withHeader("Accept", WireMock.containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
-                        .withBody(FileUtil.getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_DURATION_BASED_JSON))
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_DURATION_BASED_JSON))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
     public static void stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(final Map<String, String> courtRoomScedules, final String courtCentreId) {
-        String payload = FileUtil.getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_DURATION_BASED_JSON);
+        String payload = getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_DURATION_BASED_JSON);
         String dateStr;
         ZonedDateTime hearingStartTime;
         int idx = 0;
@@ -204,12 +232,12 @@ public class CourtSchedulerServiceStub {
             payload = payload.replace("COURT_CENTRE_ID", courtCentreId);
         }
 
-        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
                 .withQueryParam("bookingIds", WireMock.notMatching("null"))
-                .withHeader("Accept", WireMock.containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
@@ -218,23 +246,23 @@ public class CourtSchedulerServiceStub {
                                                                          final String ouCode,
                                                                          final String sessionStartDate,
                                                                          final String sessionEndDate) throws IOException {
-        final String getHearingSlotsPayload = FileUtil.getPayload(isEmpty ? CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON :
+        final String getHearingSlotsPayload = getPayload(isEmpty ? CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON :
                 CourtSchedulerServiceStub.ROTASL_GET_HEARING_SLOTS_RESPONSE_JSON_WITH_JUDICIARIES)
                 .replaceAll("COURT_ROOM_ID", courtRoomId)
                 .replaceAll("OU_CODE", ouCode)
                 .replaceAll("SESSION_DATE", sessionStartDate);
 
-        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
-                .withQueryParam("sessionStartDate", WireMock.matching(sessionStartDate))
-                .withQueryParam("sessionEndDate", WireMock.matching(sessionEndDate))
-                .withQueryParam("ouCode", WireMock.matching(ouCode))
-                .withQueryParam("pageSize", WireMock.matching("1"))
-                .withQueryParam("pageNumber", WireMock.matching("1"))
-                .withQueryParam("courtRoomId", WireMock.matching(courtRoomId))
-                .withHeader("Accept", WireMock.containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
+                .withQueryParam("sessionStartDate", matching(sessionStartDate))
+                .withQueryParam("sessionEndDate", matching(sessionEndDate))
+                .withQueryParam("ouCode", matching(ouCode))
+                .withQueryParam("pageSize", matching("1"))
+                .withQueryParam("pageNumber", matching("1"))
+                .withQueryParam("courtRoomId", matching(courtRoomId))
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getHearingSlotsPayload)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
 
         return FileUtil.payloadToObject(getHearingSlotsPayload);
@@ -318,17 +346,17 @@ public class CourtSchedulerServiceStub {
         final String payloadString = hearingSlotsJson.toString();
         
         // Create WireMock stub that matches any query parameters
-        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
-                .withQueryParam("sessionStartDate", WireMock.matching(".*"))
-                .withQueryParam("sessionEndDate", WireMock.matching(".*"))
-                .withQueryParam("ouCode", WireMock.matching(".*"))
-                .withQueryParam("pageSize", WireMock.matching(".*"))
-                .withQueryParam("pageNumber", WireMock.matching(".*"))
-                .withQueryParam("courtRoomId", WireMock.matching(".*"))
-                .withHeader("Accept", WireMock.containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
+                .withQueryParam("sessionStartDate", matching(".*"))
+                .withQueryParam("sessionEndDate", matching(".*"))
+                .withQueryParam("ouCode", matching(".*"))
+                .withQueryParam("pageSize", matching(".*"))
+                .withQueryParam("pageNumber", matching(".*"))
+                .withQueryParam("courtRoomId", matching(".*"))
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payloadString)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
 
         return FileUtil.payloadToObject(payloadString);
@@ -340,7 +368,7 @@ public class CourtSchedulerServiceStub {
                                                                          final String ouCode,
                                                                          final String sessionStartDate,
                                                                          final ZonedDateTime hearingStartTime) throws IOException {
-        final String getHearingSlotsPayload = FileUtil.getPayload(isEmpty ? CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON :
+        final String getHearingSlotsPayload = getPayload(isEmpty ? CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON :
                         CourtSchedulerServiceStub.LISTING_GET_HEARING_SLOTS_RESPONSE_JSON_WITH_JUDICIARIES_AND_SLOTTIMES)
                 .replaceAll("%%COURT_ROOM_ID%%", courtRoomId)
                 .replaceAll("%%COURT_SCHEDULE_ID%%", courtScheduleId)
@@ -348,37 +376,37 @@ public class CourtSchedulerServiceStub {
                 .replaceAll("%%SESSION_DATE%%", sessionStartDate)
                 .replaceAll("%%HEARING_START_TIME%%", hearingStartTime.toString());
 
-        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
 //                .withQueryParam("sessionStartDate", WireMock.matching(sessionStartDate))
-                .withQueryParam("sessionStartDate", WireMock.matching(".*"))
+                .withQueryParam("sessionStartDate", matching(".*"))
 //                .withQueryParam("sessionEndDate", WireMock.matching(sessionEndDate))
-                .withQueryParam("sessionEndDate", WireMock.matching(".*"))
+                .withQueryParam("sessionEndDate", matching(".*"))
 //                .withQueryParam("ouCode", WireMock.matching(ouCode))
-                .withQueryParam("ouCode", WireMock.matching(".*"))
-                .withQueryParam("pageSize", WireMock.matching("1"))
-                .withQueryParam("pageNumber", WireMock.matching("1"))
+                .withQueryParam("ouCode", matching(".*"))
+                .withQueryParam("pageSize", matching("1"))
+                .withQueryParam("pageNumber", matching("1"))
 //                .withQueryParam("courtRoomId", WireMock.matching(courtRoomId))
-                .withQueryParam("courtRoomId", WireMock.matching(".*"))
+                .withQueryParam("courtRoomId", matching(".*"))
 //                .withQueryParam("panel", WireMock.matching("ADULT,YOUTH"))
-                .withQueryParam("panel", WireMock.matching(".*"))
-                .withHeader("Accept", WireMock.containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
+                .withQueryParam("panel", matching(".*"))
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getHearingSlotsPayload)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
 
         return FileUtil.payloadToObject(getHearingSlotsPayload);
     }
 
     public static void stubSessionEndDateEmptyRequest() {
-        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
-                .withQueryParam("sessionStartDate", WireMock.matching("2017-10-11"))
-                .withQueryParam("pageNumber", WireMock.matching("1"))
-                .withQueryParam("pageSize", WireMock.matching("20"))
-                .withQueryParam("panel", WireMock.matching("ADULT"))
-                .withQueryParam("oucodeL2Code", WireMock.matching("Z01KR05"))
-                .withHeader("Accept", WireMock.containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
-                .willReturn(WireMock.aResponse().withStatus(BAD_REQUEST.getStatusCode())
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
+                .withQueryParam("sessionStartDate", matching("2017-10-11"))
+                .withQueryParam("pageNumber", matching("1"))
+                .withQueryParam("pageSize", matching("20"))
+                .withQueryParam("panel", matching("ADULT"))
+                .withQueryParam("oucodeL2Code", matching("Z01KR05"))
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
+                .willReturn(aResponse().withStatus(BAD_REQUEST.getStatusCode())
                         .withBody("Mandatory Search Criteria sessionEndDate cannot be null")
                 ));
     }
@@ -395,12 +423,12 @@ public class CourtSchedulerServiceStub {
                 "  ]\n" +
                 "}";
 
-        WireMock.stubFor(WireMock.put(WireMock.urlPathEqualTo(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
-                .withHeader("content-type", WireMock.containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
-                .withRequestBody(WireMock.containing("hearingSlots"))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
+        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
+                .withRequestBody(containing("hearingSlots"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
@@ -416,12 +444,12 @@ public class CourtSchedulerServiceStub {
                 "  ]\n" +
                 "}";
 
-        WireMock.stubFor(WireMock.put(WireMock.urlPathEqualTo(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
-                .withHeader("content-type", WireMock.containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
-                .withRequestBody(WireMock.containing("hearingSlots"))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
+        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
+                .withRequestBody(containing("hearingSlots"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
@@ -444,7 +472,7 @@ public class CourtSchedulerServiceStub {
                 JudicialRoleData judiciary = judiciaries.get(i);
                 payload.append("        {\n");
                 payload.append("          \"judiciaryId\": \"").append(judiciary.getJudicialId()).append("\",\n");
-                payload.append("          \"rotaJudiciaryId\": \"MA").append(String.format("%04d", 2000 + i)).append("\",\n");
+                payload.append("          \"rotaJudiciaryId\": \"MA").append(format("%04d", 2000 + i)).append("\",\n");
                 payload.append("          \"title\": \"Mr\",\n");
                 payload.append("          \"surname\": \"DefaultSurname").append(i + 1).append("\",\n");
                 payload.append("          \"courtScheduleId\": \"").append(courtScheduleId).append("\",\n");
@@ -477,12 +505,12 @@ public class CourtSchedulerServiceStub {
         payload.append("  ]\n");
         payload.append("}");
 
-        WireMock.stubFor(WireMock.put(WireMock.urlPathEqualTo(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
-                .withHeader("content-type", WireMock.containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
-                .withRequestBody(WireMock.containing("hearingSlots"))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
+        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
+                .withRequestBody(containing("hearingSlots"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload.toString())
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
@@ -504,12 +532,12 @@ public class CourtSchedulerServiceStub {
                 "  ]\n" +
                 "}";
 
-        WireMock.stubFor(WireMock.put(WireMock.urlPathEqualTo(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
-                .withHeader("content-type", WireMock.containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
-                .withRequestBody(WireMock.containing("hearingSlots"))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
+        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
+                .withRequestBody(containing("hearingSlots"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
@@ -546,7 +574,7 @@ public class CourtSchedulerServiceStub {
                     JudicialRoleData judiciary = judiciaries.get(i);
                     hearingsJson.append("        {\n");
                     hearingsJson.append("          \"judiciaryId\": \"").append(judiciary.getJudicialId()).append("\",\n");
-                    hearingsJson.append("          \"rotaJudiciaryId\": \"MA").append(String.format("%04d", 2000 + i)).append("\",\n");
+                    hearingsJson.append("          \"rotaJudiciaryId\": \"MA").append(format("%04d", 2000 + i)).append("\",\n");
                     hearingsJson.append("          \"title\": \"Mr\",\n");
                     hearingsJson.append("          \"surname\": \"DefaultSurname").append(i + 1).append("\",\n");
                     hearingsJson.append("          \"courtScheduleId\": \"").append(courtScheduleId).append("\",\n");
@@ -585,12 +613,12 @@ public class CourtSchedulerServiceStub {
         hearingsJson.append("\n  ]\n");
         hearingsJson.append("}");
 
-        WireMock.stubFor(WireMock.put(WireMock.urlPathEqualTo(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
-                .withHeader("content-type", WireMock.containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
-                .withRequestBody(WireMock.containing("hearingSlots"))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
+        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
+                .withRequestBody(containing("hearingSlots"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(hearingsJson.toString())
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
@@ -626,7 +654,7 @@ public class CourtSchedulerServiceStub {
                     JudicialRoleData judiciary = judiciaries.get(i);
                     hearingsJson.append("        {\n");
                     hearingsJson.append("          \"judiciaryId\": \"").append(judiciary.getJudicialId()).append("\",\n");
-                    hearingsJson.append("          \"rotaJudiciaryId\": \"MA").append(String.format("%04d", 2000 + i)).append("\",\n");
+                    hearingsJson.append("          \"rotaJudiciaryId\": \"MA").append(format("%04d", 2000 + i)).append("\",\n");
                     hearingsJson.append("          \"title\": \"Mr\",\n");
                     hearingsJson.append("          \"surname\": \"DefaultSurname").append(i + 1).append("\",\n");
                     hearingsJson.append("          \"courtScheduleId\": \"").append(courtScheduleId).append("\",\n");
@@ -665,12 +693,12 @@ public class CourtSchedulerServiceStub {
         hearingsJson.append("\n  ]\n");
         hearingsJson.append("}");
 
-        WireMock.stubFor(WireMock.put(WireMock.urlPathEqualTo(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
-                .withHeader("content-type", WireMock.containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
-                .withRequestBody(WireMock.containing("hearingSlots"))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
+        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
+                .withRequestBody(containing("hearingSlots"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(hearingsJson.toString())
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
@@ -704,12 +732,12 @@ public class CourtSchedulerServiceStub {
                 "}";
 
 
-        WireMock.stubFor(WireMock.put(WireMock.urlPathEqualTo(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
-                .withHeader("content-type", WireMock.containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
-                .withRequestBody(WireMock.containing("hearingSlots"))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
+        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
+                .withRequestBody(containing("hearingSlots"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
@@ -726,21 +754,21 @@ public class CourtSchedulerServiceStub {
                 "  }\n" +
                 "}";
 
-        WireMock.stubFor(WireMock.get(WireMock.urlPathEqualTo(String.format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/searchlist/hearingslots")))
-                .withHeader("Accept", WireMock.containing("application/vnd.courtscheduler.search.book.hearing.slots+json"))
+        stubFor(get(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/searchlist/hearingslots")))
+                .withHeader("Accept", containing("application/vnd.courtscheduler.search.book.hearing.slots+json"))
 //                .withQueryParam("hearingId", WireMock.matching(".*"))
-                .withQueryParam("hearingId", WireMock.matching(hearingId))
+                .withQueryParam("hearingId", matching(hearingId))
 //                .withQueryParam("courtCentreId", WireMock.matching(".*"))
-                .withQueryParam("courtCentreId", WireMock.matching(courtCentreId))
+                .withQueryParam("courtCentreId", matching(courtCentreId))
 //                .withQueryParam("hearingDate", WireMock.matching(".*"))
-                .withQueryParam("hearingDate", WireMock.matching(hearingDate))
-                .withQueryParam("hearingSessionDateSearchCutOff", WireMock.matching(hearingDate))
+                .withQueryParam("hearingDate", matching(hearingDate))
+                .withQueryParam("hearingSessionDateSearchCutOff", matching(hearingDate))
 //                .withQueryParam("hearingStartTime", WireMock.matching(hearingStartTime.toString()))
-                .withQueryParam("durationInMinutes", WireMock.matching("20"))
-                .withQueryParam("isPolice", WireMock.matching("true|false"))
-                .willReturn(WireMock.aResponse().withStatus(OK.getStatusCode())
+                .withQueryParam("durationInMinutes", matching("20"))
+                .withQueryParam("isPolice", matching("true|false"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 }

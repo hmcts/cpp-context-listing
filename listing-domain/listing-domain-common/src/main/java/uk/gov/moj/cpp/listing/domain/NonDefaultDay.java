@@ -29,7 +29,9 @@ public class NonDefaultDay implements Serializable {
 
     private final String roomId;
 
-    public NonDefaultDay(final Optional<String> courtScheduleId, final Optional<Integer> courtRoomId, final Optional<Integer> duration, final Optional<String> oucode, final Optional<String> session, final ZonedDateTime startTime, final Optional<String> courtCentreId, final Optional<String> roomId) {
+    private final Boolean virtual;
+
+    public NonDefaultDay(final Optional<String> courtScheduleId, final Optional<Integer> courtRoomId, final Optional<Integer> duration, final Optional<String> oucode, final Optional<String> session, final ZonedDateTime startTime, final Optional<String> courtCentreId, final Optional<String> roomId, final Optional<Boolean> virtual) {
         this.courtScheduleId = courtScheduleId.orElse(null);
         this.courtRoomId = courtRoomId.orElse(null);
         this.duration = duration.orElse(null);
@@ -38,6 +40,7 @@ public class NonDefaultDay implements Serializable {
         this.startTime = startTime;
         this.courtCentreId = courtCentreId.orElse(null);
         this.roomId = roomId.orElse(null);
+        this.virtual = virtual.orElse(null);
     }
 
     public Optional<String> getCourtScheduleId() {
@@ -72,6 +75,10 @@ public class NonDefaultDay implements Serializable {
         return roomId != null ? of(roomId): empty();
     }
 
+    public Optional<Boolean> getVirtual() {
+        return virtual != null ? of(virtual) : empty();
+    }
+
     public static Builder nonDefaultDay() {
         return new NonDefaultDay.Builder();
     }
@@ -88,12 +95,13 @@ public class NonDefaultDay implements Serializable {
                 Objects.equals(session, that.session) &&
                 Objects.equals(startTime, that.startTime) &&
                 Objects.equals(courtCentreId, that.courtCentreId) &&
-                Objects.equals(roomId, that.roomId);
+                Objects.equals(roomId, that.roomId) &&
+                Objects.equals(virtual, that.virtual);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(courtScheduleId, courtRoomId, duration, oucode, session, startTime, courtCentreId, roomId);
+        return Objects.hash(courtScheduleId, courtRoomId, duration, oucode, session, startTime, courtCentreId, roomId, virtual);
     }
 
     @Override
@@ -107,6 +115,7 @@ public class NonDefaultDay implements Serializable {
                 ", startTime=" + startTime +
                 ", courtCentreId='" + courtCentreId + '\'' +
                 ", roomId='" + roomId + '\'' +
+                ", virtual=" + virtual +
                 '}';
     }
 
@@ -126,6 +135,8 @@ public class NonDefaultDay implements Serializable {
         private Optional<String> courtCentreId = empty();
 
         private Optional<String> roomId = empty();
+
+        private Optional<Boolean> virtual = empty();
 
         public Builder withCourtScheduleId(final Optional<String> courtScheduleId) {
             this.courtScheduleId = courtScheduleId;
@@ -167,8 +178,13 @@ public class NonDefaultDay implements Serializable {
             return this;
         }
 
+        public Builder withVirtual(final Optional<Boolean> virtual) {
+            this.virtual = virtual;
+            return this;
+        }
+
         public NonDefaultDay build() {
-            return new NonDefaultDay(courtScheduleId, courtRoomId, duration, oucode, session, startTime, courtCentreId, roomId);
+            return new NonDefaultDay(courtScheduleId, courtRoomId, duration, oucode, session, startTime, courtCentreId, roomId, virtual);
         }
 
         public NonDefaultDay.Builder withValuesFrom(final NonDefaultDay nonDefaultDay) {
@@ -180,6 +196,7 @@ public class NonDefaultDay implements Serializable {
             this.roomId = ofNullable(nonDefaultDay.roomId);
             this.session = ofNullable(nonDefaultDay.session);
             this.startTime = nonDefaultDay.startTime;
+            this.virtual = ofNullable(nonDefaultDay.virtual);
             return this;
         }
     }
