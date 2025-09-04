@@ -8,6 +8,7 @@ import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -489,16 +490,14 @@ public class ListNextHearingSteps extends AbstractIT {
     public void verifyPublicOffencesRemovedFromExistingHearingInActiveMQ(final UUID existedHearingId, final HearingsData hearingsData) {
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesRemovedFromExistingHearing);
 
-        final List<String> offenceIds = hearingsData.getHearingData().get(0).getListedCases().stream()
+        hearingsData.getHearingData().get(0).getListedCases().stream()
                 .flatMap(listedCaseData -> listedCaseData.getDefendants().stream())
                 .flatMap(defendantData -> defendantData.getOffences().stream())
                 .map(OffenceData::getOffenceId)
                 .map(UUID::toString)
-                .collect(Collectors.toList());
+                .forEach(id ->  assertThat(jsonResponse.get("offenceIds"), hasItem(id)));
 
         assertThat(jsonResponse.get("hearingId"), is(existedHearingId.toString()));
-        assertThat(jsonResponse.get("offenceIds"), is(offenceIds));
-
     }
 
     public void verifyPublicHearingAddedToCaseInActiveMQ(final UUID existedHearingId) {

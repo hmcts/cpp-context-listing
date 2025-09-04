@@ -328,11 +328,11 @@ public class SeedHearingAggregateTest {
         assertThat(nextHearing2Requested.getHearing().getId(), is(hearingId2));
 
         //SeedingHearing Amended so delete 2 next hearings
-        final Stream<Object> stream2 = seedHearingAggregate.deleteNextHearings(seedingHearingId, hearingDay);
+        final Stream<Object> stream2 = seedHearingAggregate.deletePreviousHearingsAndCreateNextHearing(seedingHearingId, hearingDay, CreateNextHearing.createNextHearing().build());
 
         List<Object> deleteNextHearingRequestedList = stream2.collect(Collectors.toList());
 
-        assertThat(deleteNextHearingRequestedList.size(), is(2));
+        assertThat(deleteNextHearingRequestedList.size(), is(3));
 
         DeleteNextHearingRequested hearingDeleted1 = (DeleteNextHearingRequested) deleteNextHearingRequestedList.get(0);
         DeleteNextHearingRequested hearingDeleted2 = (DeleteNextHearingRequested) deleteNextHearingRequestedList.get(1);
@@ -431,11 +431,11 @@ public class SeedHearingAggregateTest {
         assertThat(nextHearing2Requested.getHearing().getId(), is(hearingId2));
 
         //SeedingHearing Amended so delete 2 next hearings
-        final Stream<Object> stream2 = seedHearingAggregate.deleteNextHearings(seedingHearingId, hearingDay);
+        final Stream<Object> stream2 = seedHearingAggregate.deletePreviousHearingsAndCreateNextHearing(seedingHearingId, hearingDay, CreateNextHearing.createNextHearing().build());
 
         List<Object> deleteNextHearingRequestedList = stream2.collect(Collectors.toList());
 
-        assertThat(deleteNextHearingRequestedList.size(), is(2));
+        assertThat(deleteNextHearingRequestedList.size(), is(3));
 
         DeleteNextHearingRequested hearingDeleted1 = (DeleteNextHearingRequested) deleteNextHearingRequestedList.get(0);
         DeleteNextHearingRequested hearingDeleted2 = (DeleteNextHearingRequested) deleteNextHearingRequestedList.get(1);
@@ -522,11 +522,11 @@ public class SeedHearingAggregateTest {
         assertThat(updateExistingHearingRequested.getHearingId(), is(existingHearingId));
 
         //SeedingHearing Amended so delete offences
-        final Stream<Object> stream2 = seedHearingAggregate.deleteNextHearings(seedingHearingId, hearingDay);
+        final Stream<Object> stream2 = seedHearingAggregate.deletePreviousHearingsAndCreateNextHearing(seedingHearingId, hearingDay, CreateNextHearing.createNextHearing().build());
 
         List<Object> deleteNextHearingRequestedList = stream2.collect(Collectors.toList());
 
-        assertThat(deleteNextHearingRequestedList.size(), is(1));
+        assertThat(deleteNextHearingRequestedList.size(), is(2));
 
         RemoveOffencesFromExistingHearingRequested removeOffencesFromExistingHearingRequested = (RemoveOffencesFromExistingHearingRequested) deleteNextHearingRequestedList.get(0);
         assertThat(removeOffencesFromExistingHearingRequested.getHearingId(), is(existingHearingId));

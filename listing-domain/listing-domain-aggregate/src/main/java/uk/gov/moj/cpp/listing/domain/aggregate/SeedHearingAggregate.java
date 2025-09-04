@@ -50,7 +50,7 @@ import org.apache.commons.collections.CollectionUtils;
 public class SeedHearingAggregate implements Aggregate {
 
 
-    private static final long serialVersionUID = 6;
+    private static final long serialVersionUID = 7;
     private Map<String, Set<UUID>> seededHearingIdsMapForHearingDay = new HashMap<>();
     private Map<String, Set<UUID>> existingHearingIdsMapForHearingDay = new HashMap<>();
 
@@ -67,17 +67,12 @@ public class SeedHearingAggregate implements Aggregate {
                 when(UpdateExistingHearingRequested.class).apply(this::onUpdateExistingHearingRequested),
                 when(UnscheduledNextHearingRequested.class).apply(this::onUnscheduledNextHearingRequested),
                 when(NextHearingReplaced.class).apply(this::onNextHearingReplaced),
-                when(CreateNextHearingRequested.class).apply(this::onCreateNextHearingRequested),
                 otherwiseDoNothing());
     }
 
     private void onNextHearingReplaced(NextHearingReplaced nextHearingReplaced) {
         currentHearingIds.add(nextHearingReplaced.getNewHearingId());
 
-    }
-
-    private void onCreateNextHearingRequested(CreateNextHearingRequested createNextHearingRequested) {
-        previousHearingIds.clear();
     }
 
     public Stream<Object> requestNextHearings(final List<HearingListingNeeds> hearingListingNeeds, final String hearingDay, final List<CourtCentreDefaults> courtCentreDefaults, final Optional<String> adjournedFromDate, final List<UUID> shadowListedOffences) {
@@ -192,7 +187,7 @@ public class SeedHearingAggregate implements Aggregate {
             events = concat(events, Stream.of(removeOffencesFromExistingHearingRequested));
         }
 
-        return concat(events, Stream.of(CreateNextHearingRequested.createNextHearingRequested().withCreateNextHearing(createNextHearing).build()));
+        return apply(concat(events, Stream.of(CreateNextHearingRequested.createNextHearingRequested().withCreateNextHearing(createNextHearing).build())));
     }
 
     private List<CourtCentreDetails> convertCourtCentreDetails(final List<CourtCentreDefaults> courtCentreDefaults) {
