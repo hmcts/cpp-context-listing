@@ -15,6 +15,7 @@ import uk.gov.moj.cpp.listing.helper.SearchHearingHelper;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.time.LocalDate;
@@ -38,6 +39,8 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
     private final UUID COURT_ROOM_ID = randomUUID(); // Court Room 1
     private final UUID COURT_ROOM_ID2 = UUID.fromString("33b7d399-8379-437c-980d-af9487b1198c");
     private final UUID COURT_ROOM_ID3 = UUID.fromString("2a128f95-5892-4ca9-b6ba-45d027d389e7");
+    private final UUID COURT_ROOM_ID4 = UUID.fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+
     private final String CASE_URN = "CASE_URN_123";
     private final String JURISDICTION_TYPE = CROWN.name();
 
@@ -80,66 +83,11 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
         listCourtHearingSteps.verifyHearingListedFromAPI(true);
 
         LOGGER.info("Crown Court hearing created with ID: {} in Crown Court", HEARING_ID);
-
-        // When: We change rooms of 2025-08-18 and 2025-08-19 to room 2
-        var virtualNonDefaultDaysNotPersistedRoom2 = java.util.List.of(
-                new uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData(
-                        java.time.ZonedDateTime.of(2025, 8, 18, 10, 30, 0, 0, java.time.ZoneOffset.UTC).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")),
-                        Optional.of(360), // 1 d in minutes
-                        Optional.of(COURT_CENTRE_ID.toString()),
-                        null,
-                        Optional.of(COURT_ROOM_ID2.toString()),
-                        Optional.of(Boolean.TRUE)
-                ),
-                new uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData(
-                        java.time.ZonedDateTime.of(2025, 8, 19, 10, 30, 0, 0, java.time.ZoneOffset.UTC).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")),
-                        Optional.of(360),
-                        Optional.of(COURT_CENTRE_ID.toString()),
-                        null,
-                        Optional.of(COURT_ROOM_ID2.toString()),
-                        Optional.of(Boolean.TRUE)
-                )
-        );
-
         var hearingData = hearingsData.getHearingData().get(0);
-        var virtualNonDefaultDaysNotPersistedUpdatedHearingDataRoom2 = new uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData(
-                HEARING_ID,
-                COURT_CENTRE_ID,
-                hearingData.getName(),
-                COURT_ROOM_ID,
-                hearingData.getHearingTypeData(),
-                START_DATE.toString(),
-                END_DATE.toString(),
-                virtualNonDefaultDaysNotPersistedRoom2,
-                emptyList(),
-                "ENGLISH",
-                hearingData.getJudiciary(),
-                JURISDICTION_TYPE,
-                null,
-                null,
-                null,
-                hearingData.getHasVideoLink(),
-                hearingData.getPublicListNote(),
-                "High",
-                null,
-                null,
-                false,
-                null
-        );
 
-        final UpdateHearingSteps virtualNonDefaultDaysNotPersistedUpdateHearingStepsRoom2 = new UpdateHearingSteps(hearingsData, virtualNonDefaultDaysNotPersistedUpdatedHearingDataRoom2);
-        virtualNonDefaultDaysNotPersistedUpdateHearingStepsRoom2.whenHearingIsUpdatedForListing();
-
-        // Then: Verify the hearing is still allocated in Crown Court
-        virtualNonDefaultDaysNotPersistedUpdateHearingStepsRoom2.verifyHearingUpdatedWhenQueryingFromAPICourtCalendar();
-
-        // Verify the hearing remains allocated
-        virtualNonDefaultDaysNotPersistedUpdateHearingStepsRoom2.verifyHearingAllocatedWhenQueryingFromAPICourtCalendar();
-
-        // Verify that hearing days on 2025-08-18 and 2025-08-19 have courtRoom COURT_ROOM_ID2
-        // and that the hearing has empty virtualNonDefaultDaysNotPersistedRoom2
-        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(virtualNonDefaultDaysNotPersistedUpdateHearingStepsRoom2, HEARING_ID, 0, COURT_ROOM_ID2, "2025-08-18", "2025-08-19");
-
+        changeTwodaysToCourtRoom(hearingData, hearingsData, COURT_ROOM_ID2);
+        changeTwodaysToCourtRoom(hearingData, hearingsData, COURT_ROOM_ID4);
+        changeTwodaysToCourtRoom(hearingData, hearingsData, COURT_ROOM_ID2);
 
         var updatedHearingDataWithoutNonDefaultDaysShouldPreservePrevRoomChange = new uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData(
                 HEARING_ID,
@@ -328,6 +276,67 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
         verifyCourtCalendarSearch(COURT_CENTRE_ID, COURT_ROOM_ID3, "2025-08-15", "2025-08-22", null, 8);
 
         LOGGER.info("Successfully verified Crown Court hearing remains allocated after duration change");
+    }
+
+    private void changeTwodaysToCourtRoom(final HearingData hearingData, final HearingsData hearingsData, final UUID newCourtRoomId) {
+        // When: We change rooms of 2025-08-18 and 2025-08-19 to room 2
+        var virtualNonDefaultDaysNotPersistedRoom2 = List.of(
+                new uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData(
+                        ZonedDateTime.of(2025, 8, 18, 10, 30, 0, 0, java.time.ZoneOffset.UTC).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")),
+                        Optional.of(360), // 1 d in minutes
+                        Optional.of(COURT_CENTRE_ID.toString()),
+                        null,
+                        Optional.of(newCourtRoomId.toString()),
+                        Optional.of(Boolean.TRUE)
+                ),
+                new uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData(
+                        ZonedDateTime.of(2025, 8, 19, 10, 30, 0, 0, java.time.ZoneOffset.UTC).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")),
+                        Optional.of(360),
+                        Optional.of(COURT_CENTRE_ID.toString()),
+                        null,
+                        Optional.of(newCourtRoomId.toString()),
+                        Optional.of(Boolean.TRUE)
+                )
+        );
+
+
+        var virtualNonDefaultDaysNotPersistedUpdatedHearingDataRoom2 = new uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData(
+                HEARING_ID,
+                COURT_CENTRE_ID,
+                hearingData.getName(),
+                COURT_ROOM_ID,
+                hearingData.getHearingTypeData(),
+                START_DATE.toString(),
+                END_DATE.toString(),
+                virtualNonDefaultDaysNotPersistedRoom2,
+                emptyList(),
+                "ENGLISH",
+                hearingData.getJudiciary(),
+                JURISDICTION_TYPE,
+                null,
+                null,
+                null,
+                hearingData.getHasVideoLink(),
+                hearingData.getPublicListNote(),
+                "High",
+                null,
+                null,
+                false,
+                null
+        );
+
+        final UpdateHearingSteps virtualNonDefaultDaysNotPersistedUpdateHearingStepsRoom2 = new UpdateHearingSteps(hearingsData, virtualNonDefaultDaysNotPersistedUpdatedHearingDataRoom2);
+        virtualNonDefaultDaysNotPersistedUpdateHearingStepsRoom2.whenHearingIsUpdatedForListing();
+
+        // Then: Verify the hearing is still allocated in Crown Court
+        virtualNonDefaultDaysNotPersistedUpdateHearingStepsRoom2.verifyHearingUpdatedWhenQueryingFromAPICourtCalendar();
+
+        // Verify the hearing remains allocated
+        virtualNonDefaultDaysNotPersistedUpdateHearingStepsRoom2.verifyHearingAllocatedWhenQueryingFromAPICourtCalendar();
+
+        // Verify that hearing days on 2025-08-18 and 2025-08-19 have courtRoom newCourtRoomId
+        // and that the hearing has empty virtualNonDefaultDaysNotPersistedRoom2
+        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(virtualNonDefaultDaysNotPersistedUpdateHearingStepsRoom2, HEARING_ID, 0, newCourtRoomId, "2025-08-18", "2025-08-19");
     }
 
     /**

@@ -1104,7 +1104,7 @@ public class Hearing implements Aggregate {
                         .filter(hd -> !newParentCourtRoom.equals(hd.getCourtRoomId())) // The courtRoom on the parent is not the same as the one on this day
                         .collect(toMap(HearingDay::getHearingDate, hearingDay -> hearingDay, (hd1, hd2) -> hd2));
 
-                preservePreviouslyChangedCourtRooms(newHearingDaysWithExistingInfo, existingHearingDaysWithChangedRooms);
+                preservePreviouslyChangedCourtRooms(newHearingDaysWithExistingInfo, existingHearingDaysWithChangedRooms, oldParentCourtRoom);
             }
 
             return apply(Stream.of(hearingDaysChangedForHearing()
@@ -2288,12 +2288,18 @@ public class Hearing implements Aggregate {
                 .collect(toList());
     }
 
-    private void preservePreviouslyChangedCourtRooms(final List<uk.gov.justice.listing.events.HearingDay> hearingDaysChangedForHearing, final Map<LocalDate, HearingDay> existingHearingDays) {
+    private void preservePreviouslyChangedCourtRooms(final List<uk.gov.justice.listing.events.HearingDay> hearingDaysChangedForHearing, final Map<LocalDate, HearingDay> existingHearingDays, final UUID parentCourtroomId) {
         hearingDaysChangedForHearing.replaceAll(hd -> {
             uk.gov.moj.cpp.listing.domain.aggregate.HearingDay previousHearingDayToKeep = existingHearingDays.get(hd.getHearingDate());
             if (previousHearingDayToKeep == null) {
                 return hd;
             }
+
+            if (!parentCourtroomId.equals(hd.getCourtRoomId())) {
+                // keep new coming one if it does not have same parent room
+                return hd;
+            }
+
             return convertDomainToHearingDayEvent(previousHearingDayToKeep);
         });
 
