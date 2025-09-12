@@ -179,4 +179,113 @@ class CourtScheduleEnrichmentServiceTest {
             org.hamcrest.MatcherAssert.assertThat(qp.get("isSlotBased"), is(Boolean.FALSE.toString()));
         }
     }
+
+    @Test
+    void enrichShouldNotIncludeStartTimeForMultiDaySearch() {
+        // Arrange: two hearing days -> isMultiDay = true
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now();
+        final LocalDate day2 = day1.plusDays(1);
+
+        final uk.gov.justice.listing.commands.HearingDay hd1 =
+                uk.gov.justice.listing.commands.HearingDay.hearingDay()
+                        .withCourtRoomId(courtRoomId)
+                        .withHearingDate(day1)
+                        .withStartTime(java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC))
+                        .withDurationMinutes(30)
+                        .build();
+
+        final uk.gov.justice.listing.commands.HearingDay hd2 =
+                uk.gov.justice.listing.commands.HearingDay.hearingDay()
+                        .withCourtRoomId(courtRoomId)
+                        .withHearingDate(day2)
+                        .withStartTime(java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC).plusHours(1))
+                        .withDurationMinutes(30)
+                        .build();
+
+        final uk.gov.justice.listing.commands.UpdateHearingForListing update =
+                uk.gov.justice.listing.commands.UpdateHearingForListing.updateHearingForListing()
+                        .withHearingId(hearingId)
+                        .withSelectedCourtCentre(
+                                uk.gov.justice.listing.courts.SelectedCourtCentre.selectedCourtCentre()
+                                        .withOuCode("OU123")
+                                        .build())
+                        .withCourtRoomId(courtRoomId)
+                        .withStartDate(day1)
+                        .withHearingDays(java.util.Arrays.asList(hd1, hd2))
+                        .build();
+
+        // Mock search response (first available slot)
+        final String bookedCourtScheduleId = java.util.UUID.randomUUID().toString();
+        final javax.json.JsonObject searchJson =
+                javax.json.Json.createObjectBuilder()
+                        .add("hearingSlots", javax.json.Json.createArrayBuilder()
+                                .add(javax.json.Json.createObjectBuilder()
+                                        .add("courtScheduleId", bookedCourtScheduleId)
+                                        .add("courtRoomId", courtRoomId.toString())
+                                        .add("sessionStartTime", "2020-01-01T09:00:00Z")))
+                        .build();
+
+        final Response searchResponse = org.mockito.Mockito.mock(Response.class);
+        when(searchResponse.getStatus()).thenReturn(org.apache.http.HttpStatus.SC_OK);
+        when(searchResponse.getEntity()).thenReturn(searchJson);
+        when(hearingSlotsService.search(anyMap())).thenReturn(searchResponse);
+        when(objectToJsonObjectConverter.convert(searchJson)).thenReturn(searchJson);
+
+        // Ensure payload building doesn't see nulls
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(org.mockito.ArgumentMatchers.anyList()))
+                .thenReturn(javax.json.Json.createArrayBuilder().add(bookedCourtScheduleId).build());
+
+        // Mock list response used by combineSearchAndBookResponseAndListResponse()
+        final javax.json.JsonObject listJson =
+                javax.json.Json.createObjectBuilder()
+                        .add("hearings", javax.json.Json.createArrayBuilder()
+                                .add(javax.json.Json.createObjectBuilder()
+                                        .add("courtScheduleId", bookedCourtScheduleId)
+                                        .add("hearingStartTime", "2020-01-01T09:00:00Z")
+                                        .add("duration", 30)))
+                        .build();
+
+        final Response listResponse = org.mockito.Mockito.mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(org.apache.http.HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(javax.json.JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        // Map each "hearings" item to ListUpdateHearing
+        when(jsonObjectConverter.convert(
+                org.mockito.ArgumentMatchers.any(javax.json.JsonObject.class),
+                org.mockito.ArgumentMatchers.eq(uk.gov.moj.cpp.listing.domain.ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    javax.json.JsonObject jo = inv.getArgument(0);
+                    uk.gov.moj.cpp.listing.domain.ListUpdateHearing luh = new uk.gov.moj.cpp.listing.domain.ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        // Capture the search query maps for both days
+        @SuppressWarnings("unchecked")
+        final org.mockito.ArgumentCaptor<java.util.Map<String, String>> mapCaptor =
+                org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+
+        // Act
+        courtScheduleEnrichmentService.enrichWithCourtSchedules(
+                update,
+                org.mockito.Mockito.mock(uk.gov.justice.services.messaging.JsonEnvelope.class));
+
+        // Assert: search() called twice and multi-day flags present…
+        verify(hearingSlotsService, times(2)).search(mapCaptor.capture());
+        for (java.util.Map<String, String> qp : mapCaptor.getAllValues()) {
+            // multi-day flags
+            org.hamcrest.MatcherAssert.assertThat(qp.get("courtSession"), is("AD"));
+            org.hamcrest.MatcherAssert.assertThat(qp.get("isSlotBased"), is(Boolean.FALSE.toString()));
+            // …and hearingStartTime MUST NOT be present
+            org.hamcrest.MatcherAssert.assertThat("hearingStartTime should not be sent for multi-day search",
+                    qp.containsKey(CourtScheduleEnrichmentService.HEARING_START_TIME), is(false));
+        }
+    }
+
 }
