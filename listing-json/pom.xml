@@ -4,7 +4,7 @@
     <parent>
         <artifactId>listing-parent</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <version>17.0.114-SPIPH4-SNAPSHOT</version>
+        <version>17.0.115-SPIPH4-SNAPSHOT</version>
     </parent>
 
     <artifactId>listing-json</artifactId>
