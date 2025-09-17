@@ -625,3 +625,33 @@ protocols: [ HTTP, HTTPS ]
     responses:
       202:
         description: Request accepted
+
+/hearings/download-hearing-csv-report:
+  get:
+    description: |
+      Retrieve hearing Data into CSV.
+      ...
+      (mapping):
+          responseType: text/csv
+          name: listing.query.download-hearing-csv-report
+      ...
+    queryParameters:
+      courtCentreId:
+        description: The court centre UUID
+        type: string
+        required: true
+      startDate:
+        description: The startDate. If not a Monday, backend will go back to the Monday of the week the date belongs to
+        type: string
+        required: true
+      numberOfWeeks:
+        description: The number of weeks worth of data. Default is 2
+        type: integer
+        required: false
+        default: 2
+    responses:
+      200:
+        description: OK
+        body:
+           text/csv:
+

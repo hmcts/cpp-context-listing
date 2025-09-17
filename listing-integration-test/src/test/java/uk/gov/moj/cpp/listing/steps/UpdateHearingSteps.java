@@ -774,7 +774,7 @@ public class UpdateHearingSteps extends AbstractIT {
     }
 
     public void verifyNonDefaultDaysAssignedEventNotRaised() {
-        assertThat("Non-default days assigned event should not be raised when virtual flag is true", 
+        assertThat("Non-default days assigned event should not be raised when virtual flag is true",
                   true, is(true));
     }
 
