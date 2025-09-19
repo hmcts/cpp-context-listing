@@ -30,6 +30,7 @@ import static uk.gov.moj.cpp.listing.domain.CourtListType.valueFor;
 import static uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria.MATCHED_DEFENDANTS;
 
 import uk.gov.justice.listing.event.PublishCourtListType;
+import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
@@ -42,6 +43,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
+import uk.gov.moj.cpp.listing.query.view.dto.csv.HearingCsvData;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.entity.query.CaseByDefendant;
@@ -63,6 +65,7 @@ import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterE
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
 import uk.gov.moj.cpp.listing.query.view.service.JsonNodeReader;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
+import uk.gov.moj.cpp.listing.query.view.service.csv.HearingCsvReportService;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -186,6 +189,9 @@ public class HearingQueryView {
 
     @Inject
     private ApplicationTypeFilter applicationTypeFilter;
+
+    @Inject
+    private HearingCsvReportService hearingCsvReportService;
 
     public static final String TYPE = "type";
 
@@ -779,5 +785,32 @@ public class HearingQueryView {
         }
         return listedCases;
     }
+
+
+    public String generateHearingCsvReport(final JsonEnvelope query) {
+        final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID);
+        final String startDateStr = query.payloadAsJsonObject().getString(START_DATE);
+
+        LocalDate startDate ;
+        try{
+            startDate =  LocalDate.parse(startDateStr);
+        }catch (Exception e){
+            throw new BadRequestException("Invalid start date: " + startDateStr);
+        }
+        final Integer numberOfWeeks = query.payloadAsJsonObject().getInt("numberOfWeeks", 2);
+
+        LOGGER.info("Generating CSV report for courtCentreId: {}, startDate: {}, numberOfWeeks: {}",
+                   courtCentreId, startDate, numberOfWeeks);
+
+        final List<HearingCsvData> csvData = hearingCsvReportService.findHearingsForCsvReport(courtCentreId, startDate, numberOfWeeks, paginationParameterFactory.getMaxPageSize());
+
+        if (csvData.isEmpty()) {
+            LOGGER.warn("No hearing data found for CSV report");
+           // return "";
+        }
+
+        return hearingCsvReportService.generateCsvContent(csvData, query);
+    }
+
 
 }

@@ -34,4 +34,8 @@ public class PaginationParameterFactory {
         final Integer offSet = (pageNumber - 1) * pageSize;
         return new PaginationParameter(pageSize, pageNumber, offSet);
     }
+
+    public long getMaxPageSize() {
+        return maxPageSize;
+    }
 }
