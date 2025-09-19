@@ -4,10 +4,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.reset;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.text.MessageFormat.format;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
@@ -22,7 +24,10 @@ import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import java.util.UUID;
 
 import javax.json.Json;
+import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
+
+import com.github.tomakehurst.wiremock.client.WireMock;
 
 /**
  * Utility class for setting stubs.
@@ -75,6 +80,50 @@ public class WireMockStubUtils {
                         .withHeader(ID, randomUUID().toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                         .withBody(Json.createObjectBuilder().add("caseId", randomUUID().toString()).build().toString())));
+    }
+
+    public static void setupProgressionNotesStubs() {
+        stubPingFor("progression-service");
+
+        stubFor(get(urlPathMatching("/progression-service/query/api/rest/progression/cases/.*/notes"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withHeader(ID, randomUUID().toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                        .withBody(createCaseNotesResponse().toString())));
+
+        stubFor(get(urlPathMatching("/progression-service/query/api/rest/progression/applications/.*/notes"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withHeader(ID, randomUUID().toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                        .withBody(createApplicationNotesResponse().toString())));
+    }
+
+    private static JsonObject createCaseNotesResponse() {
+        return createObjectBuilder()
+                .add("caseNotes", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("note", "Test case note 1")
+                                .add("isPinned", true)
+                                .add("createdDate", "2024-01-01T10:00:00Z"))
+                        .add(createObjectBuilder()
+                                .add("note", "Test case note 2")
+                                .add("isPinned", false)
+                                .add("createdDate", "2024-01-02T11:00:00Z")))
+                .build();
+    }
+
+    private static JsonObject createApplicationNotesResponse() {
+        return createObjectBuilder()
+                .add("applicationNotes", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("note", "Test application note 1")
+                                .add("isPinned", true)
+                                .add("createdDate", "2024-01-01T10:00:00Z"))
+                        .add(createObjectBuilder()
+                                .add("note", "Test application note 2")
+                                .add("isPinned", false)
+                                .add("createdDate", "2024-01-02T11:00:00Z")))
+                .build();
     }
 
     public static void setupAsAuthorizedUserToQueryCaseByDefendantAndHearingDate(final UUID userId) {

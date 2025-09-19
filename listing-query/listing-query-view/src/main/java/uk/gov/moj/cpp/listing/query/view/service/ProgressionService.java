@@ -31,6 +31,8 @@ public class ProgressionService {
 
     private static final String PROGRESSION_CASE_DETAILS = "progression.query.prosecutioncase";
     private static final String PROGRESSION_QUERY_CASE_EXISTS_BY_CASEURN = "progression.query.case-exist-by-caseurn";
+    private static final String PROGRESSION_QUERY_CASE_NOTES = "progression.query.case-notes";
+    private static final String PROGRESSION_QUERY_APPLICATION_NOTES = "progression.query.application-notes";
 
     @Inject
     @ServiceComponent(QUERY_API)

@@ -14,8 +14,11 @@ import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.apache.deltaspike.core.util.ArraysUtils.asSet;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -42,6 +46,7 @@ import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePaylo
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 
 import uk.gov.justice.listing.event.PublishCourtListType;
+import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.common.converter.LocalDates;
@@ -57,6 +62,7 @@ import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.enums.CsvRecordType;
 import uk.gov.moj.cpp.listing.persistence.entity.ListedCases;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.entity.query.CaseByDefendant;
@@ -72,9 +78,11 @@ import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.dto.LinkedApplicationsSummary;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory;
+import uk.gov.moj.cpp.listing.query.view.dto.csv.HearingCsvData;
 import uk.gov.moj.cpp.listing.query.view.hearing.ApplicationTypeFilter;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
+import uk.gov.moj.cpp.listing.query.view.service.csv.HearingCsvReportService;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -185,6 +193,8 @@ public class HearingQueryViewTest {
     private CaseByDefendantRepository caseByDefendantRepository;
     @Mock
     private ApplicationTypeFilter applicationTypeFilter;
+    @Mock
+    private HearingCsvReportService hearingCsvReportService;
 
     @Spy
     private JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();;
@@ -1597,6 +1607,123 @@ public class HearingQueryViewTest {
         final Hearing hearing = new Hearing();
         hearing.setId(hearingId);
         return hearing;
+    }
+
+
+    @Test
+    void shouldGenerateCsvReport() {
+        // Given
+        final String courtCentreId = "123e4567-e89b-12d3-a456-426614174000";
+        final String startDate = "2024-01-01";
+        final Integer numberOfWeeks = 2;
+        final UUID judiciaryId = randomUUID();
+        final String judiciaryJson = String.format("%s", judiciaryId);
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("listing.query.download-hearing-csv-report"),
+                createObjectBuilder()
+                        .add("courtCentreId", courtCentreId)
+                        .add("startDate", startDate)
+                        .add("numberOfWeeks", numberOfWeeks)
+                        .build());
+
+        final List<HearingCsvData> csvData = new ArrayList<>();
+        csvData.add(new HearingCsvData(
+                LocalDate.parse("2024-01-01"),
+                "From 2024-01-01 to 2024-01-07",
+                "Courtroom 1",
+                judiciaryJson, // Use JSON format instead of simple string
+                "09:00",
+                "Trial",
+                "120",
+                "Day 1 of 1",
+                "URN123",
+                "", // caseIds
+                "John Doe",
+                "Flag",
+                "Offence",
+                "Note",
+                "English",
+                "Video",
+                "CTL 2025",
+                "Multi-day details",
+                "Pinned",
+                "Unpinned",
+                "Markers",
+                "Restriction",
+                CsvRecordType.CASE
+        ));
+
+        when(hearingCsvReportService.findHearingsForCsvReport(eq(courtCentreId), eq(LocalDate.parse(startDate)), eq(numberOfWeeks), anyLong()))
+                .thenReturn(csvData);
+        when(hearingCsvReportService.generateCsvContent(csvData, query))
+                .thenReturn("Date of hearing,Fixed/week commencing,Courtroom,Judiciary,Time,Hearing type,Duration,Day,URN/s,Defendant Names,Deft flag,Offences,Public list note,Language,Video Hearing,Custody status,Multi-day hearing details,Pinned notes,Unpinned notes,Markers,Reporting Restriction\n2024-01-01,From 2024-01-01 to 2024-01-07,Courtroom 1,His Honour Judge Smith,09:00,Trial,120,Day 1 of 1,URN123,John Doe,Flag,Offence,Note,English,Video,CTL 2025,Multi-day details,Pinned,Unpinned,Markers,Restriction");
+
+        // When
+        final String result = hearingsQueryView.generateHearingCsvReport(query);
+
+        // Then
+        assertThat(result, is(not(emptyString())));
+        assertThat(result, containsString("Date of hearing"));
+        assertThat(result, containsString("Courtroom"));
+        assertThat(result, containsString("His Honour Judge Smith")); // Should contain resolved name
+        verify(hearingCsvReportService).findHearingsForCsvReport(eq(courtCentreId), eq(LocalDate.parse(startDate)), eq(numberOfWeeks), anyLong());
+        verify(hearingCsvReportService).generateCsvContent(csvData, query);
+    }
+
+    @Test
+    void shouldReturnOnlyHeadersWhenNoDataForCsvReport() {
+        // Given
+        final String courtCentreId = "123e4567-e89b-12d3-a456-426614174000";
+        final String startDate = "2024-01-01";
+        final Integer numberOfWeeks = 2;
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("listing.query.download-hearing-csv-report"),
+                createObjectBuilder()
+                        .add("courtCentreId", courtCentreId)
+                        .add("startDate", startDate)
+                        .add("numberOfWeeks", numberOfWeeks)
+                        .build());
+
+        when(hearingCsvReportService.findHearingsForCsvReport(eq(courtCentreId), eq(LocalDate.parse(startDate)), eq(numberOfWeeks), anyLong()))
+                .thenReturn(new ArrayList<>());
+        when(hearingCsvReportService.generateCsvContent(new ArrayList<>(), query))
+                .thenReturn("Date of hearing,Fixed/week commencing,Courtroom,Judiciary,Time,Hearing type,Duration,Day,URN/s,Defendant Names,Deft flag,Offences,Public list note,Language,Video Hearing,Custody status,Multi-day hearing details,Pinned notes,Unpinned notes,Markers,Reporting Restriction");
+
+        // When
+        final String result = hearingsQueryView.generateHearingCsvReport(query);
+
+        // Then
+        assertThat(result, containsString("Courtroom"));
+        long lineCount = result.split("\n").length;
+        assertThat(lineCount, is(1L));
+
+        verify(hearingCsvReportService).findHearingsForCsvReport(eq(courtCentreId), eq(LocalDate.parse(startDate)), eq(numberOfWeeks), anyLong());
+        verify(hearingCsvReportService).generateCsvContent(new ArrayList<>(), query);
+    }
+
+    @Test
+    void shouldThrowBadRequestExceptionWhenInvalidDateFormat() {
+        // Given
+        final String courtCentreId = "123e4567-e89b-12d3-a456-426614174000";
+        final String invalidStartDate = "invalid-date";
+        final Integer numberOfWeeks = 2;
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("listing.query.download-hearing-csv-report"),
+                createObjectBuilder()
+                        .add("courtCentreId", courtCentreId)
+                        .add("startDate", invalidStartDate)
+                        .add("numberOfWeeks", numberOfWeeks)
+                        .build());
+
+        // When & Then
+        final BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> hearingsQueryView.generateHearingCsvReport(query));
+
+        assertThat(exception.getMessage(), is("Invalid start date: " + invalidStartDate));
     }
 
 }
