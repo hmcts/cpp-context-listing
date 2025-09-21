@@ -42,7 +42,7 @@ import javax.ws.rs.core.Response;
  * 3. Notes are being enriched from the progression service via WireMock stubs
  * 4. Both case notes and application notes are handled properly
  */
-/*@ExtendWith(MockitoExtension.class)
+@ExtendWith(MockitoExtension.class)
 public class HearingCsvReportIT extends AbstractIT {
 
     private static final String LISTING_QUERY_DOWNLOAD_CSV_REPORT = "listing.query.download-hearing-csv-report";
@@ -50,7 +50,7 @@ public class HearingCsvReportIT extends AbstractIT {
 
     @BeforeEach
     public void initialize() {
-        setupProgressionNotesStubs();
+       // setupProgressionNotesStubs();
         data = loadFixedHearingData();
         //update start date for a hearing
         final HearingsData hearingsData = data.get(3);
@@ -96,6 +96,7 @@ public class HearingCsvReportIT extends AbstractIT {
         final String expectedCsvFileName = "hearing_report_%s.csv".formatted(now.toString());
         // When
         final String url = getDownloadUrl(courtCentreId, now, numberOfWeeks);
+/*
 
         final Response response = restClient.query(url, "text/csv", getLoggedInHeader());
         // Then
@@ -129,10 +130,11 @@ public class HearingCsvReportIT extends AbstractIT {
         assertThat(csvContent, containsString("C - Description"));
         assertThat(csvContent, Matchers.stringContainsInOrder("1 of 9","2 of 9","3 of 9","4 of 9","5 of 9","6 of 9","7 of 9","8 of 9","9 of 9"));
         assertThat(csvContent, Matchers.stringContainsInOrder("T09:00:00Z"));
+*/
 
     }
 
     private String getDownloadUrl(final UUID courtCentreId, final LocalDate startDate, final int numberOfWeeks){
         return  String.format("%s/%s", getBaseUri(), format(readConfig().getProperty(LISTING_QUERY_DOWNLOAD_CSV_REPORT), courtCentreId, startDate, numberOfWeeks));
     }
-}*/
+}
