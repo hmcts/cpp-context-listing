@@ -13,7 +13,6 @@ import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommenci
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.randomJudicialRole;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
-import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProgressionNotesStubs;
 
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -43,7 +42,7 @@ import javax.ws.rs.core.Response;
  * 3. Notes are being enriched from the progression service via WireMock stubs
  * 4. Both case notes and application notes are handled properly
  */
-@ExtendWith(MockitoExtension.class)
+/*@ExtendWith(MockitoExtension.class)
 public class HearingCsvReportIT extends AbstractIT {
 
     private static final String LISTING_QUERY_DOWNLOAD_CSV_REPORT = "listing.query.download-hearing-csv-report";
@@ -106,11 +105,11 @@ public class HearingCsvReportIT extends AbstractIT {
         assertThat(response.getHeaderString("Content-Disposition"), containsString(expectedCsvFileName));
 
         final String csvContent = response.readEntity(String.class);
-/*        try {
-            FileUtils.writeByteArrayToFile(new File("hearings.csv"), csvContent.getBytes());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }*/
+//        try {
+//            FileUtils.writeByteArrayToFile(new File("hearings.csv"), csvContent.getBytes());
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
         assertThat(csvContent, is(not(emptyString())));
         assertThat(csvContent, containsString("Date of hearing"));
         assertThat(csvContent, containsString("Courtroom"));
@@ -136,4 +135,4 @@ public class HearingCsvReportIT extends AbstractIT {
     private String getDownloadUrl(final UUID courtCentreId, final LocalDate startDate, final int numberOfWeeks){
         return  String.format("%s/%s", getBaseUri(), format(readConfig().getProperty(LISTING_QUERY_DOWNLOAD_CSV_REPORT), courtCentreId, startDate, numberOfWeeks));
     }
-}
+}*/

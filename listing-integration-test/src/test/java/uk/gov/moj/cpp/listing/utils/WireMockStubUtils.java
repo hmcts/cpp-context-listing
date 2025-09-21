@@ -82,49 +82,49 @@ public class WireMockStubUtils {
                         .withBody(Json.createObjectBuilder().add("caseId", randomUUID().toString()).build().toString())));
     }
 
-    public static void setupProgressionNotesStubs() {
-        stubPingFor("progression-service");
-
-        stubFor(get(urlPathMatching("/progression-service/query/api/rest/progression/cases/.*/notes"))
-                .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withHeader(ID, randomUUID().toString())
-                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
-                        .withBody(createCaseNotesResponse().toString())));
-
-        stubFor(get(urlPathMatching("/progression-service/query/api/rest/progression/applications/.*/notes"))
-                .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withHeader(ID, randomUUID().toString())
-                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
-                        .withBody(createApplicationNotesResponse().toString())));
-    }
-
-    private static JsonObject createCaseNotesResponse() {
-        return createObjectBuilder()
-                .add("caseNotes", createArrayBuilder()
-                        .add(createObjectBuilder()
-                                .add("note", "Test case note 1")
-                                .add("isPinned", true)
-                                .add("createdDate", "2024-01-01T10:00:00Z"))
-                        .add(createObjectBuilder()
-                                .add("note", "Test case note 2")
-                                .add("isPinned", false)
-                                .add("createdDate", "2024-01-02T11:00:00Z")))
-                .build();
-    }
-
-    private static JsonObject createApplicationNotesResponse() {
-        return createObjectBuilder()
-                .add("applicationNotes", createArrayBuilder()
-                        .add(createObjectBuilder()
-                                .add("note", "Test application note 1")
-                                .add("isPinned", true)
-                                .add("createdDate", "2024-01-01T10:00:00Z"))
-                        .add(createObjectBuilder()
-                                .add("note", "Test application note 2")
-                                .add("isPinned", false)
-                                .add("createdDate", "2024-01-02T11:00:00Z")))
-                .build();
-    }
+//    public static void setupProgressionNotesStubs() {
+//        stubPingFor("progression-service");
+//
+//        stubFor(get(urlPathMatching("/progression-service/query/api/rest/progression/cases/.*/notes"))
+//                .willReturn(aResponse().withStatus(OK.getStatusCode())
+//                        .withHeader(ID, randomUUID().toString())
+//                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+//                        .withBody(createCaseNotesResponse().toString())));
+//
+//        stubFor(get(urlPathMatching("/progression-service/query/api/rest/progression/applications/.*/notes"))
+//                .willReturn(aResponse().withStatus(OK.getStatusCode())
+//                        .withHeader(ID, randomUUID().toString())
+//                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+//                        .withBody(createApplicationNotesResponse().toString())));
+//    }
+//
+//    private static JsonObject createCaseNotesResponse() {
+//        return createObjectBuilder()
+//                .add("caseNotes", createArrayBuilder()
+//                        .add(createObjectBuilder()
+//                                .add("note", "Test case note 1")
+//                                .add("isPinned", true)
+//                                .add("createdDate", "2024-01-01T10:00:00Z"))
+//                        .add(createObjectBuilder()
+//                                .add("note", "Test case note 2")
+//                                .add("isPinned", false)
+//                                .add("createdDate", "2024-01-02T11:00:00Z")))
+//                .build();
+//    }
+//
+//    private static JsonObject createApplicationNotesResponse() {
+//        return createObjectBuilder()
+//                .add("applicationNotes", createArrayBuilder()
+//                        .add(createObjectBuilder()
+//                                .add("note", "Test application note 1")
+//                                .add("isPinned", true)
+//                                .add("createdDate", "2024-01-01T10:00:00Z"))
+//                        .add(createObjectBuilder()
+//                                .add("note", "Test application note 2")
+//                                .add("isPinned", false)
+//                                .add("createdDate", "2024-01-02T11:00:00Z")))
+//                .build();
+//    }
 
     public static void setupAsAuthorizedUserToQueryCaseByDefendantAndHearingDate(final UUID userId) {
         stubPingFor("usersgroups-service");
