@@ -1,16 +1,5 @@
 package uk.gov.moj.cpp.listing.common.xhibit;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.json.JsonObject;
-
 import uk.gov.moj.cpp.listing.common.xhibit.exception.InvalidReferenceDataException;
 import uk.gov.moj.cpp.listing.common.xhibit.model.CourtCentreRoomKey;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtMapping;
@@ -22,6 +11,17 @@ import uk.gov.moj.cpp.listing.domain.referencedata.Judiciary;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnitList;
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.json.JsonObject;
 
 @ApplicationScoped
 public class ReferenceDataCache {
@@ -54,24 +54,21 @@ public class ReferenceDataCache {
     @PostConstruct
     public void initReferenceData() {
         synchronized (this) {
-            this.initCrownCourtMappingsList();
-            this.initAllHearingTypes();
-            this.initOrganisationUnitList();
+            initCrownCourtMappingsList();
+            initAllHearingTypes();
+            initOrganisationUnitList();
         }
     }
 
     public Optional<List<CourtMapping>> getCrownCourtMappingsMapCache(final UUID courtCentreId) {
-        this.ensureOrganisationUnitsInitialized();
-        this.ensureCrownCourtMappingsInitialized();
-        OrganisationUnit organisationUnit = this.organisationUnitMapByIdCache.get(courtCentreId);
+        OrganisationUnit organisationUnit = organisationUnitMapByIdCache.get(courtCentreId);
         return organisationUnit == null
                 ? Optional.empty()
-                : Optional.ofNullable(this.crownCourtMappingListMapCache.get(organisationUnit.getOucode()));
+                : Optional.ofNullable(crownCourtMappingListMapCache.get(organisationUnit.getOucode()));
     }
 
     public Optional<List<CourtMapping>> getMagsCourtMappingsMapCache(final UUID courtCentreId) {
-        this.ensureOrganisationUnitsInitialized();
-        OrganisationUnit organisationUnit = this.organisationUnitMapByIdCache.get(courtCentreId);
+        OrganisationUnit organisationUnit = organisationUnitMapByIdCache.get(courtCentreId);
         if (organisationUnit == null) {
             return Optional.empty();
         }
@@ -80,8 +77,8 @@ public class ReferenceDataCache {
 
         // Ensure safe lazy load
         return Optional.ofNullable(
-                this.magsCourtMappingListMapCache.computeIfAbsent(oucode, key ->
-                        this.referenceDataLoader.getXhibitMagsCourtMappings(oucode)
+                magsCourtMappingListMapCache.computeIfAbsent(oucode, key ->
+                        referenceDataLoader.getXhibitMagsCourtMappings(oucode)
                                 .map(m -> m.getCpXhibitCourtMappings())
                                 .orElse(null))
         );
@@ -89,18 +86,18 @@ public class ReferenceDataCache {
 
     public Optional<Judiciary> getJudiciariesMapCache(final UUID judiciaryId) {
         return Optional.ofNullable(
-                this.judiciariesMapCache.computeIfAbsent(judiciaryId,
-                        key -> this.referenceDataLoader.getJudiciary(judiciaryId).orElse(null)));
+                judiciariesMapCache.computeIfAbsent(judiciaryId,
+                        key -> referenceDataLoader.getJudiciary(judiciaryId).orElse(null)));
     }
 
     public CourtRoomMappingsList getCourtRoomMappingsMapCache(final UUID courtCentreId) {
-        return this.courtRoomMappingsMapCache.computeIfAbsent(courtCentreId,
-                key -> this.referenceDataLoader.getCourtRoomMappingsList(courtCentreId).orElse(null));
+        return courtRoomMappingsMapCache.computeIfAbsent(courtCentreId,
+                key -> referenceDataLoader.getCourtRoomMappingsList(courtCentreId).orElse(null));
     }
 
     public Optional<CourtRoomMapping> getCourtRoomMappingByCourtCentreAndCourtRoom(final UUID courtCentreId, final UUID courtRoomId) {
-        return this.courtRoomMappingByCourtCentreRoomMap.computeIfAbsent(new CourtCentreRoomKey(courtCentreId, courtRoomId), key -> {
-            return this.referenceDataLoader.getCourtRoomMappingsList(courtCentreId)
+        return courtRoomMappingByCourtCentreRoomMap.computeIfAbsent(new CourtCentreRoomKey(courtCentreId, courtRoomId), key -> {
+            return referenceDataLoader.getCourtRoomMappingsList(courtCentreId)
                     .orElseThrow(() -> new InvalidReferenceDataException("Invalid object courtRoomMappings"))
                     .getCpXhibitCourtRoomMappings()
                     .stream()
@@ -111,50 +108,50 @@ public class ReferenceDataCache {
 
     public Optional<OrganisationUnit> getOrganisationUnitMapCache(final String ouCode) {
         return Optional.ofNullable(
-                this.organisationUnitMapCache.computeIfAbsent(ouCode,
-                        key -> this.referenceDataLoader.getOrganisationUnitByOuCode(ouCode).orElse(null)));
+                organisationUnitMapCache.computeIfAbsent(ouCode,
+                        key -> referenceDataLoader.getOrganisationUnitByOuCode(ouCode).orElse(null)));
     }
 
     public List<JsonObject> getCpCourtRoomCache(final UUID courtCentreId) {
-        return this.cpCourtRoomCache.computeIfAbsent(courtCentreId,
-                key -> this.referenceDataLoader.getCpCourtRoom(courtCentreId));
+        return cpCourtRoomCache.computeIfAbsent(courtCentreId,
+                key -> referenceDataLoader.getCpCourtRoom(courtCentreId));
     }
 
     public Optional<HearingType> getHearingTypeCache(final UUID hearingTypeId) {
-        this.ensureHearingTypesInitialized();
-        return Optional.ofNullable(this.hearingTypesMapCache.get(hearingTypeId));
+        ensureHearingTypesInitialized();
+        return Optional.ofNullable(hearingTypesMapCache.get(hearingTypeId));
     }
 
     public Optional<HearingType> getHearingTypeCodeCache(final String hearingCode) {
-        this.ensureHearingTypesInitialized();
-        return Optional.ofNullable(this.hearingTypesCodesMapCache.get(hearingCode));
+        ensureHearingTypesInitialized();
+        return Optional.ofNullable(hearingTypesCodesMapCache.get(hearingCode));
     }
 
     public List<CourtLocation> getCrownCourtLocationsCache(final String crestCourtId) {
-        this.ensureCrownCourtMappingsInitialized();
-        return this.crownCourtLocationListMapCache.get(crestCourtId);
+        ensureCrownCourtMappingsInitialized();
+        return crownCourtLocationListMapCache.get(crestCourtId);
     }
 
     private synchronized void ensureHearingTypesInitialized() {
-        if (this.hearingTypesMapCache.isEmpty() || this.hearingTypesCodesMapCache.isEmpty()) {
-            this.initAllHearingTypes();
+        if (hearingTypesMapCache.isEmpty() || hearingTypesCodesMapCache.isEmpty()) {
+            initAllHearingTypes();
         }
     }
 
     private synchronized void ensureCrownCourtMappingsInitialized() {
-        if (this.crownCourtLocationListMapCache.isEmpty() || this.crownCourtMappingListMapCache.isEmpty()) {
-            this.initCrownCourtMappingsList();
+        if (crownCourtLocationListMapCache.isEmpty()) {
+            initCrownCourtMappingsList();
         }
     }
 
     private void initCrownCourtMappingsList() {
-        this.referenceDataLoader.getXhibitCrownCourtMappings().ifPresent(courtMappingsList -> {
+        referenceDataLoader.getXhibitCrownCourtMappings().ifPresent(courtMappingsList -> {
             courtMappingsList.getCpXhibitCourtMappings().forEach(courtMapping -> {
-                this.crownCourtLocationListMapCache
+                crownCourtLocationListMapCache
                         .computeIfAbsent(courtMapping.getCrestCourtId(), k -> new java.util.concurrent.CopyOnWriteArrayList<>())
-                        .add(this.createCourtLocation(courtMapping));
+                        .add(createCourtLocation(courtMapping));
 
-                this.crownCourtMappingListMapCache
+                crownCourtMappingListMapCache
                         .computeIfAbsent(courtMapping.getOucode(), k -> new java.util.concurrent.CopyOnWriteArrayList<>())
                         .add(courtMapping);
             });
@@ -162,11 +159,11 @@ public class ReferenceDataCache {
     }
 
     public void initAllHearingTypes() {
-        this.referenceDataLoader.getAllHearingTypesList().ifPresent(this::getHearingTypes);
+        referenceDataLoader.getAllHearingTypesList().ifPresent(this::getHearingTypes);
     }
 
     public void initOrganisationUnitList() {
-        this.referenceDataLoader.getOrganisationUnitList().ifPresent(this::getOrganisationUnits);
+        referenceDataLoader.getOrganisationUnitList().ifPresent(this::getOrganisationUnits);
     }
 
     public CourtLocation createCourtLocation(final CourtMapping courtMapping) {
@@ -183,21 +180,15 @@ public class ReferenceDataCache {
 
     private void getHearingTypes(HearingTypesList hearingTypesList) {
         hearingTypesList.getHearingTypes().forEach(hearingType -> {
-            this.hearingTypesMapCache.putIfAbsent(hearingType.getId(), hearingType);
-            this.hearingTypesCodesMapCache.putIfAbsent(hearingType.getHearingCode(), hearingType);
+            hearingTypesMapCache.putIfAbsent(hearingType.getId(), hearingType);
+            hearingTypesCodesMapCache.putIfAbsent(hearingType.getHearingCode(), hearingType);
         });
     }
 
     private void getOrganisationUnits(OrganisationUnitList organisationUnitList) {
         organisationUnitList.getOrganisationunits().forEach(unit -> {
-            this.organisationUnitMapByIdCache.putIfAbsent(unit.getId(), unit);
-            this.organisationUnitMapCache.putIfAbsent(unit.getOucode(), unit);
+            organisationUnitMapByIdCache.putIfAbsent(unit.getId(), unit);
+            organisationUnitMapCache.putIfAbsent(unit.getOucode(), unit);
         });
-    }
-
-    private synchronized void ensureOrganisationUnitsInitialized() {
-        if (this.organisationUnitMapByIdCache.isEmpty() || this.organisationUnitMapCache.isEmpty()) {
-            this.initOrganisationUnitList();
-        }
     }
 }
