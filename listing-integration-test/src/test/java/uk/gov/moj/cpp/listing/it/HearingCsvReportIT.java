@@ -97,12 +97,12 @@ public class HearingCsvReportIT extends AbstractIT {
         final String expectedCsvFileName = "hearing_report_%s.csv".formatted(now.toString());
         // When
         final String url = getDownloadUrl(courtCentreId, now, numberOfWeeks);
-/*
+
 
         final Response response = restClient.query(url, "text/csv", getLoggedInHeader());
         // Then
         assertThat(response.getStatus(), is(OK.getStatusCode()));
-        assertThat(response.getHeaderString("Content-Type"), containsString("text/csv"));
+/*        assertThat(response.getHeaderString("Content-Type"), containsString("text/csv"));
         assertThat(response.getHeaderString("Content-Disposition"), containsString("attachment"));
         assertThat(response.getHeaderString("Content-Disposition"), containsString(expectedCsvFileName));
 
