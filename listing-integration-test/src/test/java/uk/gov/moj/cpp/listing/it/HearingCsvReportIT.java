@@ -13,6 +13,7 @@ import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommenci
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.randomJudicialRole;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProgressionNotesStubs;
 
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -50,7 +51,7 @@ public class HearingCsvReportIT extends AbstractIT {
 
     @BeforeEach
     public void initialize() {
-       // setupProgressionNotesStubs();
+        setupProgressionNotesStubs();
         data = loadFixedHearingData();
         //update start date for a hearing
         final HearingsData hearingsData = data.get(3);
