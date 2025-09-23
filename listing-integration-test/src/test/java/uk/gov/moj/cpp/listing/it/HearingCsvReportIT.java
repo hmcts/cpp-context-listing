@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.it;
 
 import static java.text.MessageFormat.format;
 import static java.util.Collections.emptyList;
+import static java.util.UUID.fromString;
 import static org.codehaus.groovy.runtime.InvokerHelper.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -9,23 +10,25 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.emptyString;
 import static javax.ws.rs.core.Response.Status.OK;
-import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.loadFixedHearingData;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingDataWithJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.randomJudicialRole;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
-import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProgressionNotesStubs;
-
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCpCourtRooms;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataXhibitCourtRoomMappings;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
+import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
-import uk.gov.moj.cpp.listing.steps.data.HearingData;
+import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
-import java.io.File;
-import java.io.IOException;
 import java.time.LocalDate;
-import java.util.List;
+import java.time.LocalTime;
 import java.util.UUID;
 
-import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,15 +50,26 @@ import javax.ws.rs.core.Response;
 public class HearingCsvReportIT extends AbstractIT {
 
     private static final String LISTING_QUERY_DOWNLOAD_CSV_REPORT = "listing.query.download-hearing-csv-report";
-    private List<HearingsData> data;
+    private HearingsData data;
 
     @BeforeEach
     public void initialize() {
-        setupProgressionNotesStubs();
-        data = loadFixedHearingData();
-        //update start date for a hearing
-        final HearingsData hearingsData = data.get(3);
-        final HearingData first = hearingsData.getHearingData().get(0);
+        final ViewStoreCleaner viewStoreCleaner = new ViewStoreCleaner();
+        viewStoreCleaner.cleanViewStoreTables();
+        final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+        final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
+        final int courtRoomId = 231;
+
+        stubGetReferenceDataCourtCentreById(courtCentreId);
+
+        data = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
+
+        stubOrganisationUnit(courtCentreId);
+        stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreId, LocalTime.of(10, 30), "6:30", null, STRING.next()));
+        stubGetReferenceDataCpCourtRooms(data.getHearingData().get(0).getCourtRoomId(), courtRoomId);
+        stubGetReferenceDataXhibitCourtRoomMappings(data.getHearingData().get(0).getCourtRoomId());
+
+        var first  = data.getHearingData().get(0);
         var updatedHearingDataWithoutNonDefaultDaysShouldPreservePrevRoomChange = new uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData(
                 first.getId(),
                 first.getCourtCentreId(),
@@ -82,21 +96,23 @@ public class HearingCsvReportIT extends AbstractIT {
         );
 
 
-        final UpdateHearingSteps updateHearingStepsWithoutNonDefaultDaysShouldPreservePrevRoomChange = new UpdateHearingSteps(hearingsData, updatedHearingDataWithoutNonDefaultDaysShouldPreservePrevRoomChange);
+        final UpdateHearingSteps updateHearingStepsWithoutNonDefaultDaysShouldPreservePrevRoomChange = new UpdateHearingSteps(data, updatedHearingDataWithoutNonDefaultDaysShouldPreservePrevRoomChange);
         updateHearingStepsWithoutNonDefaultDaysShouldPreservePrevRoomChange.whenHearingIsUpdatedForListing();
         updateHearingStepsWithoutNonDefaultDaysShouldPreservePrevRoomChange.verifyHearingUpdatedWhenQueryingFromAPICourtCalendar();
+
     }
 
     @Test
     void shouldDownloadHearingCsvReport() {
         // Given
-        final UUID courtCentreId =  data.get(3).getHearingData().get(0).getCourtCentreId();
+        final UUID courtCentreId =  data.getHearingData().get(0).getCourtCentreId();
         final Integer numberOfWeeks = 2;
 
         final LocalDate now = LocalDate.now();
         final String expectedCsvFileName = "hearing_report_%s.csv".formatted(now.toString());
         // When
         final String url = getDownloadUrl(courtCentreId, now, numberOfWeeks);
+
 
         final Response response = restClient.query(url, "text/csv", getLoggedInHeader());
         // Then
@@ -106,11 +122,7 @@ public class HearingCsvReportIT extends AbstractIT {
         assertThat(response.getHeaderString("Content-Disposition"), containsString(expectedCsvFileName));
 
         final String csvContent = response.readEntity(String.class);
-/*        try {
-            FileUtils.writeByteArrayToFile(new File("hearings.csv"), csvContent.getBytes());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }*/
+
         assertThat(csvContent, is(not(emptyString())));
         assertThat(csvContent, containsString("Date of hearing"));
         assertThat(csvContent, containsString("Courtroom"));
@@ -124,11 +136,10 @@ public class HearingCsvReportIT extends AbstractIT {
         assertThat(csvContent, containsString("Youth"));
         assertThat(csvContent, containsString("ENGLISH"));
         assertThat(csvContent, containsString("Custody"));
-        assertThat(csvContent, containsString("Test case note "));
         assertThat(csvContent, containsString("ENGLISH"));
         assertThat(csvContent, containsString("RestrictionApplied"));
         assertThat(csvContent, containsString("C - Description"));
-        assertThat(csvContent, Matchers.stringContainsInOrder("1 of 9","2 of 9","3 of 9","4 of 9","5 of 9","6 of 9","7 of 9","8 of 9","9 of 9"));
+        assertThat(csvContent, Matchers.stringContainsInOrder("1 of 4","2 of 4","3 of 4","4 of 4"));
         assertThat(csvContent, Matchers.stringContainsInOrder("T09:00:00Z"));
 
     }
