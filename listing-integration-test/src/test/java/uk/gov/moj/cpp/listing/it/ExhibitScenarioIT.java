@@ -45,10 +45,8 @@ import javax.json.JsonObject;
 
 import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-//@Disabled("LPT-1677")
 @SuppressWarnings("java:S2925")
 class ExhibitScenarioIT extends AbstractIT {
 

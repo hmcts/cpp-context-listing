@@ -3,7 +3,6 @@ package uk.gov.moj.cpp.listing.it;
 import static java.text.MessageFormat.format;
 import static java.util.Collections.emptyList;
 import static java.util.UUID.fromString;
-import static java.util.UUID.randomUUID;
 import static org.codehaus.groovy.runtime.InvokerHelper.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -21,9 +20,6 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCpCourtRooms;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataXhibitCourtRoomMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
-import static uk.gov.moj.cpp.listing.utils.SystemIdMapperStub.stubIdMapperReturningExistingAssociation;
-
-import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
@@ -62,17 +58,12 @@ public class HearingCsvReportIT extends AbstractIT {
         viewStoreCleaner.cleanViewStoreTables();
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
-
-        final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
-        final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
-        final LocalDate startDate = LocalDate.now();
 
         stubGetReferenceDataCourtCentreById(courtCentreId);
 
         data = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
 
-        stubIdMapperReturningExistingAssociation(courtListId);
         stubOrganisationUnit(courtCentreId);
         stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreId, LocalTime.of(10, 30), "6:30", null, STRING.next()));
         stubGetReferenceDataCpCourtRooms(data.getHearingData().get(0).getCourtRoomId(), courtRoomId);
@@ -131,11 +122,7 @@ public class HearingCsvReportIT extends AbstractIT {
         assertThat(response.getHeaderString("Content-Disposition"), containsString(expectedCsvFileName));
 
         final String csvContent = response.readEntity(String.class);
-/*        try {
-            FileUtils.writeByteArrayToFile(new File("hearings.csv"), csvContent.getBytes());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }*/
+
         assertThat(csvContent, is(not(emptyString())));
         assertThat(csvContent, containsString("Date of hearing"));
         assertThat(csvContent, containsString("Courtroom"));
