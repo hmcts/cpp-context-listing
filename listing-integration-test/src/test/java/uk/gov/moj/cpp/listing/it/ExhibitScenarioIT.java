@@ -45,9 +45,7 @@ import javax.json.JsonObject;
 
 import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
 
 @SuppressWarnings("java:S2925")
 class ExhibitScenarioIT extends AbstractIT {

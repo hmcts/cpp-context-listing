@@ -44,9 +44,7 @@ import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
 public class PublishCourtListIT extends AbstractIT {
 
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
