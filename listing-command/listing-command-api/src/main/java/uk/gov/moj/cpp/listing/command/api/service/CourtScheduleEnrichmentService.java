@@ -88,10 +88,11 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     public UpdateHearingForListing enrichWithCourtSchedules(final UpdateHearingForListing updateHearingForListing, final JsonEnvelope envelope) {
         //HearingDays courtscheduleId provided in payload, we can list them directly
         List<HearingDay> hearingDaysWithCourScheduleId = new ArrayList<>();
-        
+
+        final boolean isMultiDay = updateHearingForListing.getHearingDays().size() > 1;
         updateHearingForListing.getHearingDays().forEach(hearingDay -> {
             if (isNull(hearingDay.getCourtScheduleId())) {
-                HearingSlotSearchResponse hearingSlotSearchResponse = getFirstAvailableSlot(updateHearingForListing, hearingDay, envelope);
+                HearingSlotSearchResponse hearingSlotSearchResponse = getFirstAvailableSlot(updateHearingForListing, hearingDay, envelope, isMultiDay);
                 hearingDaysWithCourScheduleId.add(populateHearingDaysByHearingSlotSearch(hearingDay, hearingSlotSearchResponse));
                 // No need to collect judiciaries from search - they will be included in the list response
             } else {
@@ -406,14 +407,19 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     }
 
     //This should be called only if you're sure you will get a session.(There's a UI validation)
-    private HearingSlotSearchResponse getFirstAvailableSlot(final UpdateHearingForListing updateHearingForListing, final HearingDay hearingDay, final JsonEnvelope envelope) {
+    private HearingSlotSearchResponse getFirstAvailableSlot(final UpdateHearingForListing updateHearingForListing, final HearingDay hearingDay, final JsonEnvelope envelope, final boolean isMultiDay) {
         LOGGER.info("getFirstAvailableSlot for hearingDay: {}", hearingDay.getHearingDate());
         final Map<String, String> queryParams = new HashMap<>();
+        if (isMultiDay){
+            queryParams.put("courtSession", "AD");
+            queryParams.put("isSlotBased", Boolean.FALSE.toString());
+        } else {
+            queryParams.put(HEARING_START_TIME, hearingDay.getStartTime().toString());
+        }
         queryParams.put(COURT_ROOM_ID, hearingDay.getCourtRoomId().toString());
         queryParams.put("ouCode", getOrRetrieveOucode(updateHearingForListing, envelope));
         queryParams.put("sessionStartDate", hearingDay.getHearingDate().toString());
         queryParams.put("sessionEndDate", hearingDay.getHearingDate().toString());
-        queryParams.put(HEARING_START_TIME, hearingDay.getStartTime().toString());
         queryParams.put("panel", "ADULT,YOUTH");
         queryParams.put("pageNumber", "1");
         queryParams.put("pageSize", "1");
