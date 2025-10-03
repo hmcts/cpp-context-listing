@@ -4,7 +4,6 @@ import static java.lang.String.format;
 import static java.time.LocalDate.parse;
 import static java.time.ZonedDateTime.now;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
@@ -548,7 +547,8 @@ public class ListingCommandHandler {
             final Stream<Object> courtRoomEvents = courtRoomId != null ?
                     hearing.assignCourtRoom(courtRoomId, hearingId, panelFromCommand) : hearing.removeCourtRoom(hearingId);
 
-            final Stream<Object> hearingDayEvents = hearing.assignHearingDaysV2(hearingId, convertHearingDaysCommandToDomain(updateHearingForListing.getHearingDays()), oldCourtRoomId, courtRoomId, uk.gov.justice.core.courts.JurisdictionType.valueOf(jurisdictionType.name()));
+            final List<LocalDate> daysOfNonDefaultDays =  updateHearingForListing.getNonDefaultDays() == null ? emptyList(): updateHearingForListing.getNonDefaultDays().stream().filter(ndd -> ndd.getStartTime() != null).map(ndd -> ndd.getStartTime().toLocalDate()).toList();
+            final Stream<Object> hearingDayEvents = hearing.assignHearingDaysV2(hearingId, convertHearingDaysCommandToDomain(updateHearingForListing.getHearingDays()), oldCourtRoomId, courtRoomId, uk.gov.justice.core.courts.JurisdictionType.valueOf(jurisdictionType.name()), daysOfNonDefaultDays);
 
             final Stream<Object> weekCommencingDateEvents = weekCommencingStartDate != null && weekCommencingEndDate != null ?
                     hearing.changeWeekCommencingDate(weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingId) : hearing.removeWeekCommencingDates(hearingId);

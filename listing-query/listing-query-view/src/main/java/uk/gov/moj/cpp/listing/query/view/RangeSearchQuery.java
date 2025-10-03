@@ -315,8 +315,8 @@ public class RangeSearchQuery {
         logger.info("CourtScheduler Hearings response : {}", hearingIdsResponse);
         final List<Hearing> enrichedHearingList = isEmpty(hearingIdsResponse.getUuids())
                 ? emptyList() : enrichAllCourtSchedulerHearingIdsIntoHearings(hearingIdsResponse.getUuids());
-        logger.info("getCourtSchedulerHearings found {} hearings", enrichedHearingList.size());
-        return buildHearingsResponse(query, allocated, courtRoomId, startDate, enrichedHearingList, (long) enrichedHearingList.size(), hearingIdsResponse, paginationParameter);
+        logger.info("getCourtSchedulerHearings found {} hearings", hearingIdsResponse.getResults());
+        return buildHearingsResponse(query, allocated, courtRoomId, startDate, enrichedHearingList, hearingIdsResponse.getResults(), hearingIdsResponse, paginationParameter);
     }
 
 

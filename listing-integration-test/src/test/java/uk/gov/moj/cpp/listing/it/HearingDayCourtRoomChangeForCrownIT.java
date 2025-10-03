@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.it;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.Matchers.equalTo;
@@ -85,9 +86,11 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
         LOGGER.info("Crown Court hearing created with ID: {} in Crown Court", HEARING_ID);
         var hearingData = hearingsData.getHearingData().get(0);
 
-        changeTwodaysToCourtRoom(hearingData, hearingsData, COURT_ROOM_ID2);
-        changeTwodaysToCourtRoom(hearingData, hearingsData, COURT_ROOM_ID4);
-        changeTwodaysToCourtRoom(hearingData, hearingsData, COURT_ROOM_ID2);
+        changeTwoDaysToCourtRoom(hearingData, hearingsData, COURT_ROOM_ID2);
+        changeTwoDaysToCourtRoom(hearingData, hearingsData, COURT_ROOM_ID);
+        changeTwoDaysToCourtRoom(hearingData, hearingsData, COURT_ROOM_ID2);
+        changeTwoDaysToCourtRoom(hearingData, hearingsData, COURT_ROOM_ID4);
+        changeTwoDaysToCourtRoom(hearingData, hearingsData, COURT_ROOM_ID2);
 
         var updatedHearingDataWithoutNonDefaultDaysShouldPreservePrevRoomChange = new uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData(
                 HEARING_ID,
@@ -122,16 +125,16 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
         updateHearingStepsWithoutNonDefaultDaysShouldPreservePrevRoomChange.verifyHearingUpdatedWhenQueryingFromAPICourtCalendar();
         LOGGER.info("Successfully verified Crown Court hearing remains allocated after duration change");
 
-        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(updateHearingStepsWithoutNonDefaultDaysShouldPreservePrevRoomChange, HEARING_ID, 0, COURT_ROOM_ID2, "2025-08-18", "2025-08-19");
-        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(updateHearingStepsWithoutNonDefaultDaysShouldPreservePrevRoomChange, HEARING_ID, 0, COURT_ROOM_ID, "2025-08-15", "2025-08-16",
-                "2025-08-17", "2025-08-20", "2025-08-21", "2025-08-22");
+        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(updateHearingStepsWithoutNonDefaultDaysShouldPreservePrevRoomChange, HEARING_ID, 0, COURT_ROOM_ID2, asList("2025-08-18", "2025-08-19"));
+        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(updateHearingStepsWithoutNonDefaultDaysShouldPreservePrevRoomChange, HEARING_ID, 0, COURT_ROOM_ID, asList("2025-08-15", "2025-08-16",
+                "2025-08-17", "2025-08-20", "2025-08-21", "2025-08-22"));
 
         var userCreatedNonDefaultDaysPersisted = java.util.List.of(
                 new uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData(
-                        java.time.ZonedDateTime.of(2025, 8, 22, 10, 30, 0, 0, java.time.ZoneOffset.UTC).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")),
+                        java.time.ZonedDateTime.of(2025, 8, 22, 11, 30, 0, 0, java.time.ZoneOffset.UTC).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")),
                         Optional.of(360), // 1 d in minutes
                         Optional.of(COURT_CENTRE_ID.toString()),
-                        Optional.of(COURT_ROOM_ID2.toString())
+                        Optional.of(COURT_ROOM_ID2.toString())// UI/client needs to send new room along with time change
                 )
         );
 
@@ -168,10 +171,13 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
         // Then: Verify the hearing is still allocated in Crown Court
         updateHearingStepWithUserCreatedPersistedNonDefaultDays.verifyHearingUpdatedWhenQueryingFromAPICourtCalendar();
         LOGGER.info("Successfully verified Crown Court hearing remains allocated after duration change");
-        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(updateHearingStepWithUserCreatedPersistedNonDefaultDays, HEARING_ID, 1, COURT_ROOM_ID2, "2025-08-18", "2025-08-19", "2025-08-22");
-        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(updateHearingStepWithUserCreatedPersistedNonDefaultDays, HEARING_ID, 1, COURT_ROOM_ID, "2025-08-15", "2025-08-16", "2025-08-17",
-                "2025-08-20", "2025-08-21");
-        // delete the user created hon default days above
+        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(updateHearingStepWithUserCreatedPersistedNonDefaultDays, HEARING_ID, 1, COURT_ROOM_ID2, asList("2025-08-18", "2025-08-19", "2025-08-22"));
+        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(updateHearingStepWithUserCreatedPersistedNonDefaultDays, HEARING_ID, 1, COURT_ROOM_ID, asList("2025-08-15", "2025-08-16", "2025-08-17",
+                "2025-08-20", "2025-08-21"));
+
+        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(updateHearingStepWithUserCreatedPersistedNonDefaultDays, HEARING_ID, 1, COURT_ROOM_ID2, emptyList(), asList("2025-08-22T11:30:00.000Z"));
+
+        // delete the user created non default days above
         final List<uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData> anotherEmptyNonDefaultDays = emptyList();
         var updatedHearingDataWithAnotherEmptyNonDefaultDays = new uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData(
                 HEARING_ID,
@@ -206,9 +212,9 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
         updateHearingStepsForAnotherEmptyNonDefaulsDays.verifyHearingUpdatedWhenQueryingFromAPICourtCalendar();
         LOGGER.info("Successfully verified Crown Court hearing remains allocated after duration change");
 
-        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(updateHearingStepsForAnotherEmptyNonDefaulsDays, HEARING_ID, 0, COURT_ROOM_ID2, "2025-08-18", "2025-08-19", "2025-08-22");
-        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(updateHearingStepsForAnotherEmptyNonDefaulsDays, HEARING_ID, 0, COURT_ROOM_ID, "2025-08-15", "2025-08-16",
-                "2025-08-17", "2025-08-20", "2025-08-21");
+        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(updateHearingStepsForAnotherEmptyNonDefaulsDays, HEARING_ID, 0, COURT_ROOM_ID2, asList("2025-08-18", "2025-08-19", "2025-08-22"));
+        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(updateHearingStepsForAnotherEmptyNonDefaulsDays, HEARING_ID, 0, COURT_ROOM_ID, asList("2025-08-15", "2025-08-16",
+                "2025-08-17", "2025-08-20", "2025-08-21"));
 
         // Search for hearings using court calendar endpoint with COURT_ROOM_ID2
         verifyCourtCalendarSearch(COURT_CENTRE_ID, COURT_ROOM_ID2, "2025-08-15", "2025-08-22", null, 3);
@@ -219,10 +225,10 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
         verifyCourtCalendarSearch(COURT_CENTRE_ID, null, "2025-08-15", "2025-08-22", null, 8);
 
         // Search for hearings using court calendar endpoint with COURT_ROOM_ID and exactHearingStartDateTime
-        verifyCourtCalendarSearch(COURT_CENTRE_ID, COURT_ROOM_ID, "2025-08-15", "2025-08-22", "2025-08-15T09:00:00.000Z", 1);
+        verifyCourtCalendarSearch(COURT_CENTRE_ID, COURT_ROOM_ID, "2025-08-15", "2025-08-22", "2025-08-15T09:00:07.007Z", 1);
 
         // Search for hearings using court calendar endpoint with COURT_ROOM_ID and WRONG exactHearingStartDateTime
-        verifyCourtCalendarSearch(COURT_CENTRE_ID, COURT_ROOM_ID, "2025-08-15", "2025-08-22", "2025-08-15T10:30:00.000Z", 0);
+        verifyCourtCalendarSearch(COURT_CENTRE_ID, COURT_ROOM_ID, "2025-08-15", "2025-08-22", "2025-08-15T10:30:08.008Z", 0);
 
 
         // perform re-allocation by moving all days including the parent room to room03
@@ -278,7 +284,7 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
         LOGGER.info("Successfully verified Crown Court hearing remains allocated after duration change");
     }
 
-    private void changeTwodaysToCourtRoom(final HearingData hearingData, final HearingsData hearingsData, final UUID newCourtRoomId) {
+    private void changeTwoDaysToCourtRoom(final HearingData hearingData, final HearingsData hearingsData, final UUID newCourtRoomId) {
         // When: We change rooms of 2025-08-18 and 2025-08-19 to room 2
         var virtualNonDefaultDaysNotPersistedRoom2 = List.of(
                 new uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData(
@@ -336,7 +342,7 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
 
         // Verify that hearing days on 2025-08-18 and 2025-08-19 have courtRoom newCourtRoomId
         // and that the hearing has empty virtualNonDefaultDaysNotPersistedRoom2
-        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(virtualNonDefaultDaysNotPersistedUpdateHearingStepsRoom2, HEARING_ID, 0, newCourtRoomId, "2025-08-18", "2025-08-19");
+        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(virtualNonDefaultDaysNotPersistedUpdateHearingStepsRoom2, HEARING_ID, 0, newCourtRoomId, asList("2025-08-18", "2025-08-19"));
     }
 
     /**
@@ -347,14 +353,15 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
             UUID hearingId,
             int nonDefaultDaysSize,
             UUID expectedCourtRoomId,
-            String... expectedDates) {
+            List<String> expectedDates, List<String> expectedDateTimes) {
 
+        String searchDate  = !expectedDates.isEmpty()? expectedDates.get(0) : dateTimeToDate(expectedDateTimes.get(0));
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.hearings.by.allocated.court-centre-id.court-room-id.search-date"),
                         ALLOCATED,
                         COURT_CENTRE_ID,
                         expectedCourtRoomId,
-                        expectedDates[0]));
+                        searchDate));
 
         final String hearingIdFilter = SearchHearingHelper.getHearingFilter(hearingId.toString());
 
@@ -374,7 +381,7 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
                             expectedCourtRoomId,
                             expectedDate));
 
-            SearchHearingHelper.pollForHearing(dateSpecificUrl, getLoggedInUser().toString(), new Matcher[]{
+         SearchHearingHelper.pollForHearing(dateSpecificUrl, getLoggedInUser().toString(), new Matcher[]{
                     withJsonPath(hearingIdFilter),
                     withJsonPath("$.hearings[0].hearingDays[?(@.hearingDate == '" + expectedDate + "')].courtRoomId",
                             hasItem(expectedCourtRoomId.toString())),
@@ -383,10 +390,45 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
             });
         }
 
+
+        for (String expectedDateTime : expectedDateTimes) {
+            final String dateSpecificUrl = String.format("%s/%s", getBaseUri(),
+                    format(readConfig().getProperty("listing.search.hearings.by.allocated.court-centre-id.court-room-id.search-date"),
+                            ALLOCATED,
+                            COURT_CENTRE_ID,
+                            expectedCourtRoomId,
+                             dateTimeToDate(expectedDateTime)));
+
+            SearchHearingHelper.pollForHearing(dateSpecificUrl, getLoggedInUser().toString(), new Matcher[]{
+                    withJsonPath(hearingIdFilter),
+                    withJsonPath("$.hearings[0].hearingDays[?(@.startTime == '" + expectedDateTime + "')].courtRoomId",
+                            hasItem(expectedCourtRoomId.toString())),
+                    withJsonPath("$.hearings[0].hearingDays[?(@.startTime == '" + expectedDateTime + "')].courtCentreId",
+                            hasItem(COURT_CENTRE_ID.toString()))
+            });
+        }
+
         LOGGER.info("Successfully verified hearing days on {} have courtRoom {} and empty nonDefaultDays",
                 String.join(", ", expectedDates), expectedCourtRoomId);
     }
 
+    private static String dateTimeToDate(final String expectedDateTime) {
+        return expectedDateTime.split("T")[0];
+    }
+
+    private void verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(
+            UpdateHearingSteps updateHearingSteps,
+            UUID hearingId,
+            int nonDefaultDaysSize,
+            UUID expectedCourtRoomId,
+            List<String> expectedDates) {
+
+        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(updateHearingSteps,hearingId,
+        nonDefaultDaysSize,
+        expectedCourtRoomId,
+        expectedDates, emptyList());
+
+    }
     /**
      * Verifies court calendar search returns expected number of hearings
      */

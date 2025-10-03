@@ -1,6 +1,6 @@
 {
-  "results": 2,
-  "pageCount": 1,
+  "results": 3,
+  "pageCount": 2,
   "hearingIds": [
     {"hearingId":"51e0e229-f22e-4ab6-87fa-2b1c07f97028", "courtScheduleId":"61e0e229-f22e-4ab6-87fa-2b1c07f97028", "hearingDate": "2020-05-21", "hearingDayCount": 1, "hearingDayPosition": 1},
     {"hearingId":"ed4f666a-866a-4fcb-8c3b-e89f6ce1e7e5", "courtScheduleId":"71e0e229-f22e-4ab6-87fa-2b1c07f97028", "hearingDate": "2025-06-04", "hearingDayCount": 1, "hearingDayPosition": 1}

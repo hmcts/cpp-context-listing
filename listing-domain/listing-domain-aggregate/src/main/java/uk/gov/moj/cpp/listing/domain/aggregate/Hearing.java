@@ -1078,7 +1078,7 @@ public class Hearing implements Aggregate {
 
     }
 
-    public Stream<Object> assignHearingDaysV2(final UUID hearingId, final List<uk.gov.moj.cpp.listing.domain.HearingDay> updatedHearingDays, final UUID oldParentCourtRoom, final UUID newParentCourtRoom, final uk.gov.justice.core.courts.JurisdictionType newJurisdictionType) {
+    public Stream<Object> assignHearingDaysV2(final UUID hearingId, final List<uk.gov.moj.cpp.listing.domain.HearingDay> updatedHearingDays, final UUID oldParentCourtRoom, final UUID newParentCourtRoom, final uk.gov.justice.core.courts.JurisdictionType newJurisdictionType, List<LocalDate> daysOfNonDefaultDays) {
         if (this.duplicate) {
             return Stream.empty();
         }
@@ -1102,9 +1102,10 @@ public class Hearing implements Aggregate {
                 final Map<LocalDate, HearingDay> existingHearingDaysWithChangedRooms = this.hearingDays.stream()
                         .filter(hd -> hd.getCourtRoomId() != null) // we do not want to preserve any null courtroom
                         .filter(hd -> !newParentCourtRoom.equals(hd.getCourtRoomId())) // The courtRoom on the parent is not the same as the one on this day
+                        .filter(hd -> !daysOfNonDefaultDays.contains(hd.getHearingDate())) // if we are right now changing this room
                         .collect(toMap(HearingDay::getHearingDate, hearingDay -> hearingDay, (hd1, hd2) -> hd2));
 
-                preservePreviouslyChangedCourtRooms(newHearingDaysWithExistingInfo, existingHearingDaysWithChangedRooms, oldParentCourtRoom);
+               newHearingDaysWithExistingInfo = mergePreviouslyChangedCourtRooms(newHearingDaysWithExistingInfo, existingHearingDaysWithChangedRooms);
             }
 
             return apply(Stream.of(hearingDaysChangedForHearing()
@@ -2286,21 +2287,23 @@ public class Hearing implements Aggregate {
                 .collect(toList());
     }
 
-    private void preservePreviouslyChangedCourtRooms(final List<uk.gov.justice.listing.events.HearingDay> hearingDaysChangedForHearing, final Map<LocalDate, HearingDay> existingHearingDays, final UUID parentCourtroomId) {
-        hearingDaysChangedForHearing.replaceAll(hd -> {
-            uk.gov.moj.cpp.listing.domain.aggregate.HearingDay previousHearingDayToKeep = existingHearingDays.get(hd.getHearingDate());
-            if (previousHearingDayToKeep == null) {
-                return hd;
-            }
-
-            if (!parentCourtroomId.equals(hd.getCourtRoomId())) {
-                // keep new coming one if it does not have same parent room
-                return hd;
-            }
-
-            return convertDomainToHearingDayEvent(previousHearingDayToKeep);
-        });
-
+    private List<uk.gov.justice.listing.events.HearingDay> mergePreviouslyChangedCourtRooms(final List<uk.gov.justice.listing.events.HearingDay> hearingDaysChangedForHearing, final Map<LocalDate, HearingDay> existingHearingDays) {
+        return hearingDaysChangedForHearing.stream()
+                .map(cd -> {
+                    final HearingDay existingHearingDay = existingHearingDays.get(cd.getHearingDate());
+                    return uk.gov.justice.listing.events.HearingDay.hearingDay()
+                            .withDurationMinutes(cd.getDurationMinutes())
+                            .withEndTime(cd.getEndTime())
+                            .withSequence(cd.getSequence())
+                            .withHearingDate(cd.getHearingDate())
+                            .withStartTime(cd.getStartTime())
+                            .withIsCancelled(cd.getIsCancelled())
+                            .withCourtScheduleId(cd.getCourtScheduleId())
+                            .withCourtRoomId(existingHearingDay !=null? existingHearingDay.getCourtRoomId(): cd.getCourtRoomId())
+                            .withCourtCentreId(existingHearingDay !=null? existingHearingDay.getCourtCentreId(): cd.getCourtCentreId())
+                            .build();
+                })
+                .collect(toList());
     }
 
     private SequencesResetOnHearingDays createSequencesResetOnHearingDaysEvent(final UUID hearingId) {

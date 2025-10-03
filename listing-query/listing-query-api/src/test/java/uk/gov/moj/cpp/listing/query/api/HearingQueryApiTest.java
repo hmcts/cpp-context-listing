@@ -86,7 +86,6 @@ public class HearingQueryApiTest {
     private static final String LISTING_AVAILABLE_HEARING_SEARCH = "listing.available";
     private static final String LISTING_SEARCH_BY_PERSON_DEFENDANT = "listing.get.cases-by-person-defendant";
     private static final String LISTING_SEARCH_BY_ORGANISATION_DEFENDANT = "listing.get.cases-by-organisation-defendant";
-
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String COURT_ROOM_ID = "courtRoomId";
     private static final String LIST_ID = "listId";
@@ -146,7 +145,7 @@ public class HearingQueryApiTest {
                         || line.contains(LISTING_COTR_SEARCH_HEARING)
                         || line.contains(LISTING_SEARCH_BY_PERSON_DEFENDANT)
                         || line.contains(LISTING_SEARCH_BY_ORGANISATION_DEFENDANT)
-                )
+                        )
                 .map(line -> line.replaceAll(NAME, "").trim())
                 .collect(toList());
 

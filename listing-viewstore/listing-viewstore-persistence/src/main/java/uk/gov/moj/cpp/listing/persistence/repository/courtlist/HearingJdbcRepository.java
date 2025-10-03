@@ -5,7 +5,6 @@ import static java.lang.String.format;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.jdbc.persistence.ViewStoreJdbcDataSourceProvider;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Date;
@@ -298,7 +297,7 @@ public class HearingJdbcRepository {
         final String authorityIdWhereClause = "(? is null or (lc.authority_id = ? or lc.prosecutor_id = ?))  ";
         final String typeIdWhereClause = "(? is null or h.type_id = ?)  ";
         final String jurisdictionTypeWhereClause = "(? is null or h.jurisdiction_type = ?)  ";
-        final String exactHearingStartDateTimeWhereClause = "(hd.start_time = ?)";
+        final String exactHearingStartDateTimeWhereClause = "(DATE_TRUNC('minute', hd.start_time) = DATE_TRUNC('minute', cast(? as timestamptz)))";
         final List<String> additionalWhereClauses = buildAdditionalWherClauses(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType, courtCentreIdWhereClause, courtRoomIdWhereClause, authorityIdWhereClause, typeIdWhereClause, jurisdictionTypeWhereClause);
         if (exactHearingStartDateTime != null) {
             additionalWhereClauses.add(exactHearingStartDateTimeWhereClause);
@@ -459,4 +458,5 @@ public class HearingJdbcRepository {
         return hearingResults;
 
     }
+
 }

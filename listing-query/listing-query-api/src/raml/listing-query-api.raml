@@ -208,7 +208,7 @@ protocols: [ HTTP, HTTPS ]
           type: string
           required: false
         exactHearingStartDateTime:
-          description: Optional parameter to perform an exact match (equal) on hd.start_time. Must be in ISO date-time format in UTC i.e "2025-09-15T18:35:24.00Z". This is used by court calendar only
+          description: Optional parameter to perform an exact match (equal) on hd.start_time. Must be in ISO date-time format in UTC i.e "2025-09-15T18:35:00.00Z". This is used by court calendar only and seconds/millisecs/nanos are stripped
           type: string
           required: false
       responses:

@@ -97,12 +97,13 @@ public class RangeSearchQueryForMagistratesIT extends AbstractIT {
         final Map<String, String> params = getParams();
         params.remove("panel");
         params.put("courtRoomId", courtRoomId.toString());
+        params.put("pageSize", "2");
         final String queryString = getQueryString(params);
         final RequestParams requestParams = getCourtSchedulerRequestParams(queryString);
         final ResponseData res = pollWithDefaults(requestParams).until(status().is(OK),
                 payload().isJson(allOf(
-                        withJsonPath("$.results", is(2)),
-                        withJsonPath("$.pageCount", is(1)),
+                        withJsonPath("$.results", is(3)),
+                        withJsonPath("$.pageCount", is(2)),
 //                        withJsonPath("$.notes.size()", is(1)),
                         withJsonPath("$.hearings.size()", is(2)),
                         withJsonPath("$.hearings[0].id", is("51e0e229-f22e-4ab6-87fa-2b1c07f97028")),
@@ -256,7 +257,10 @@ public class RangeSearchQueryForMagistratesIT extends AbstractIT {
     }
 
     private RequestParams getCourtSchedulerRequestParams(final String queryString) {
-        final String url = format("%s%s%s%s&allocated=true&jurisdictionType=MAGISTRATES&businessType=TRIAL&ouCode=B01LY00&sessionStartDate=2020-06-01&sessionEndDate=2020-06-01&pageSize=10&pageNumber=1", getBaseUri(), "/listing-query-api/query/api/rest/listing/hearings/range-search", "?", queryString);
+        String url = format("%s%s%s%s&allocated=true&jurisdictionType=MAGISTRATES&businessType=TRIAL&ouCode=B01LY00&sessionStartDate=2020-06-01&sessionEndDate=2020-06-01&pageNumber=1", getBaseUri(), "/listing-query-api/query/api/rest/listing/hearings/range-search", "?", queryString);
+        if(!url.contains("pageSize")) {
+            url = url  + "&pageSize=10" ;
+        }
         return requestParams(url, "application/vnd.listing.search.hearings+json")
                 .withHeader(CPP_UID_HEADER.getName(), CPP_UID_HEADER.getValue())
                 .build();
