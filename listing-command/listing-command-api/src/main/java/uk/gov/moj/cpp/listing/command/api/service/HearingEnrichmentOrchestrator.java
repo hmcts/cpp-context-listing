@@ -7,6 +7,7 @@ import static uk.gov.moj.cpp.listing.command.api.service.HearingDurationEnrichme
 
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.WeekCommencingDate;
+import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
@@ -28,6 +29,7 @@ import org.slf4j.LoggerFactory;
 public class HearingEnrichmentOrchestrator {
 
     private static final int DEFAULT_WEEK_COMMENCING_DURATION = 1;
+    public static final String UNSUPPORTED_JURISDICTION_TYPE = "Unsupported jurisdiction type: ";
     @Inject
     private HearingDurationEnrichmentService hearingDurationEnrichmentService;
 
@@ -57,7 +59,7 @@ public class HearingEnrichmentOrchestrator {
                 HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
                 enrichedHearings.add(withDurations);
             } else {
-                throw new IllegalArgumentException("Unsupported jurisdiction type: " + hearing.getJurisdictionType());
+                throw new IllegalArgumentException(UNSUPPORTED_JURISDICTION_TYPE + hearing.getJurisdictionType());
             }
         });
         logEnrichedHearings(enrichedHearings);
@@ -81,11 +83,35 @@ public class HearingEnrichmentOrchestrator {
             enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
             //enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withDuration, envelope);
         } else {
-            throw new IllegalArgumentException("Unsupported jurisdiction type: " + jurisdictionType);
+            throw new IllegalArgumentException(UNSUPPORTED_JURISDICTION_TYPE + jurisdictionType);
         }
 
         return recalculateDurationSequenceAndEndDatesForHearingDays(enrichedHearing);
     }
+
+    public UpdateHearingForListing enrichUpdateHearingForListing(UpdateHearingForListing hearing, JsonEnvelope envelope, CourtCentreDetails courtCentreDetails) {
+        JurisdictionType jurisdictionType = hearing.getJurisdictionType();
+        UpdateHearingForListing enrichedHearing;
+        if (JurisdictionType.MAGISTRATES.equals(jurisdictionType)) {
+            LOGGER.info("Enrich update hearing for MAGISTRATES hearingid: {}", hearing.getHearingId());
+            // For magistrates: Hearing Days -> Duration -> Court Schedule
+            UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(hearing, envelope, courtCentreDetails);
+            UpdateHearingForListing withDuration = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
+            //TODO: enrich panel and judiciary information
+            enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration,envelope);
+        } else if (JurisdictionType.CROWN.equals(jurisdictionType)) {
+            LOGGER.info("Enrich update hearing for CROWN hearingid: {}", hearing.getHearingId());
+            // For crown: Hearing Days -> Duration
+            UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(hearing, envelope, courtCentreDetails);
+            enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
+            //enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withDuration, envelope);
+        } else {
+            throw new IllegalArgumentException(UNSUPPORTED_JURISDICTION_TYPE + jurisdictionType);
+        }
+
+        return recalculateDurationSequenceAndEndDatesForHearingDays(enrichedHearing);
+    }
+
 
     static void logEnrichedHearings(final List<HearingListingNeeds> enrichedHearings) {
         for (HearingListingNeeds hearing : enrichedHearings) {

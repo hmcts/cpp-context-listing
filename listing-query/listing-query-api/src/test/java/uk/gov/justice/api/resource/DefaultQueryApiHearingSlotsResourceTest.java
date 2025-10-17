@@ -88,8 +88,10 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 "BYS",
                 "AM",
                 null,
+                null,
                 "20",
-                "1");
+                "1",
+                20);
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
         verify(notesService).findNotes(any(List.class));
@@ -118,8 +120,10 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 "BYS",
                 "AM",
                 null,
+                null,
                 "20",
-                "1");
+                "1",
+                20);
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
         verify(notesService).findNotes(any(List.class));
@@ -147,8 +151,10 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 "BYS",
                 "AM",
                 null,
+                null,
                 "20",
-                "1");
+                "1",
+                20);
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
         verify(notesService).findNotes(any(List.class));

@@ -10,10 +10,12 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.test.utils.core.http.BaseUriProvider.getBaseUri;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
+import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlots;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithOverbookedSlots;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSessionEndDateEmptyRequest;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 
@@ -132,6 +134,73 @@ class HearingSlotsIT extends AbstractIT {
 
         assertThat(responseData.getStatus().getStatusCode(), is(HttpStatus.SC_BAD_REQUEST));
         assertThat(responseData.getPayload(), is("Mandatory Search Criteria sessionEndDate cannot be null"));
+    }
+
+    @Test
+    public void shouldGetHearingSlotsWithOverbookedSlotsWhenShowOverbookedSlotsIsTrue() {
+        final Map<String, String> params = getParams();
+        params.put("showOverbookedSlots", "true");
+        final String queryString = getQueryString(params);
+
+        stubGetAvailableHearingSlotsWithOverbookedSlots(true);
+        listAllStubMappings();
+        final RequestParams requestParams = getRequestParams(queryString);
+        final ResponseData responseData = poll(requestParams).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.results", is(446)),
+                        withJsonPath("$.pageCount", is(23)),
+                        withJsonPath("$.notes.size()", is(0)),
+                        withJsonPath("$.hearingSlots.size()", is(10)),
+                        withJsonPath("$.hearingSlots[0].courtScheduleId", is("0205eb29-5d01-4779-a8c1-3038bc39dc09")),
+                        withJsonPath("$.hearingSlots[0].sessionDate", is("2020-06-01")),
+                        withJsonPath("$.hearingSlots[0].ouCode", is("B01LY00")),
+                        withJsonPath("$.hearingSlots[0].courtHouseName", is("Lavender Hill Magistrates' Court")),
+                        withJsonPath("$.hearingSlots[0].courtRoomNumber", is(2331)),
+                        withJsonPath("$.hearingSlots[0].courtRoomName", is("Courtroom 02")),
+                        withJsonPath("$.hearingSlots[0].availableSlots", is(5)),
+                        withJsonPath("$.hearingSlots[0].availableDuration", is(0)),
+                        withJsonPath("$.hearingSlots[0].maxSlots", is(10)),
+                        withJsonPath("$.hearingSlots[0].maxDuration", is(0)),
+                        withJsonPath("$.hearingSlots[0].slotStartTimes.size()", is(1))
+                ))
+        );
+
+        // Additional assertions to verify the showOverbookedSlots parameter behavior
+        assertThat("Response should contain hearing slots when showOverbookedSlots is true", 
+                responseData.getPayload(), notNullValue());
+        assertThat("Query string should contain showOverbookedSlots parameter", 
+                queryString, is(notNullValue()));
+        assertThat("showOverbookedSlots parameter should be set to true", 
+                queryString.contains("showOverbookedSlots=true"), is(true));
+    }
+
+    @Test
+    public void shouldNotReturnOverbookedSlotsWhenShowOverbookedSlotsIsFalse() {
+        final Map<String, String> params = getParams();
+        params.put("showOverbookedSlots", "false");
+        final String queryString = getQueryString(params);
+
+        stubGetAvailableHearingSlotsWithOverbookedSlots(false);
+        listAllStubMappings();
+        final RequestParams requestParams = getRequestParams(queryString);
+        final ResponseData responseData = poll(requestParams).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.results", is(0)),
+                        withJsonPath("$.pageCount", is(0)),
+                        withJsonPath("$.notes.size()", is(0)),
+                        withJsonPath("$.hearingSlots.size()", is(0))
+                ))
+        );
+
+        // Additional assertions to verify the showOverbookedSlots parameter behavior
+        assertThat("Response should be empty when showOverbookedSlots is false", 
+                responseData.getPayload(), notNullValue());
+        assertThat("Query string should contain showOverbookedSlots parameter", 
+                queryString, is(notNullValue()));
+        assertThat("showOverbookedSlots parameter should be set to false", 
+                queryString.contains("showOverbookedSlots=false"), is(true));
+        assertThat("Response should indicate no results when overbooked slots are filtered out", 
+                responseData.getPayload().contains("\"results\":0"), is(true));
     }
 
 

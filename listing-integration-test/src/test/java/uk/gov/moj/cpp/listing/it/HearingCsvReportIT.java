@@ -140,7 +140,7 @@ public class HearingCsvReportIT extends AbstractIT {
         assertThat(csvContent, containsString("RestrictionApplied"));
         assertThat(csvContent, containsString("C - Description"));
         assertThat(csvContent, Matchers.stringContainsInOrder("1 of 4","2 of 4","3 of 4","4 of 4"));
-        assertThat(csvContent, Matchers.stringContainsInOrder("T09:00:00Z"));
+        assertThat(csvContent, Matchers.stringContainsInOrder("T09:30:00Z"));
 
     }
 

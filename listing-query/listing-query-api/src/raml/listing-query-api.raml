@@ -406,6 +406,10 @@ protocols: [ HTTP, HTTPS ]
           description: slot based or not
           type: boolean
           required: false
+        showOverbookedSlots:
+          description: show overbooked slots or not
+          type: boolean
+          required: false
         pageSize:
             description: Number of records to be displayed per page
             type: string
@@ -414,6 +418,10 @@ protocols: [ HTTP, HTTPS ]
             description: currentPageNumber details
             type: string
             required: true
+        availableDurationMins:
+            description: Available duration of the hearing in minutes
+            type: integer
+            required: false
     responses:
         200:
             description: OK

@@ -268,9 +268,10 @@ public class ListingCommandApi {
         }
 
         LOGGER.info("HandleUpdateHearingForListing for the hearing: {} ", updateHearingForListing.getHearingId());
-        updateHearingForListing = hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(updateHearingForListing, envelope);
         final CourtCentreDetails courtCentre =
                 courtCentreFactory.getCourtCentre(getCourtCentreId(updateHearingForListing), envelope);
+        updateHearingForListing = hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(updateHearingForListing, envelope, courtCentre);
+
         final UpdateHearingForListingEnriched updateHearingForListingEnriched =
                 updateHearingForListingEnriched(updateHearingForListing, courtCentre, payload);
 
@@ -299,7 +300,7 @@ public class ListingCommandApi {
             final UUID courtCentreId = getCourtCentreId(wrapper.updateHearingForListing());
 
             final CourtCentreDetails courtCentreDetails = courtCentreDetailsById.get(courtCentreId);
-            final UpdateHearingForListing enrichedHearing = hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(wrapper.updateHearingForListing(), envelope) ;
+            final UpdateHearingForListing enrichedHearing = hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(wrapper.updateHearingForListing(), envelope, courtCentreDetails) ;
             final UpdateHearingForListingEnriched updateHearingEnriched =
                     updateHearingForListingEnriched(enrichedHearing, courtCentreDetails, wrapper.fullPayload());
             hearingsEnrichedArrayBuilder.add(objectToJsonValueConverter.convert(updateHearingEnriched));

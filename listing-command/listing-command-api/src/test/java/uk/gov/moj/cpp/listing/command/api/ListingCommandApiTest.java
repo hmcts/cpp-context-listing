@@ -387,7 +387,7 @@ public class ListingCommandApiTest {
         given(updateHearingForListing.getCourtRoomId()).willReturn(UUID.randomUUID());
         given(updateHearingForListing.getHearingId()).willReturn(hearingId);
 
-        when(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(any(), any()))
+        when(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(any(), any(), any()))
                 .thenReturn(updateHearingForListing);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
@@ -441,7 +441,7 @@ public class ListingCommandApiTest {
         given(updateHearingForListing.getCourtRoomId()).willReturn(UUID.randomUUID());
         given(updateHearingForListing.getHearingId()).willReturn(hearingId);
 
-        when(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(any(), any()))
+        when(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(any(), any(), any()))
                 .thenReturn(updateHearingForListing);
         final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
 
@@ -487,9 +487,9 @@ public class ListingCommandApiTest {
                 .willReturn(Map.of(hearing1.getCourtCentreId(), courtCentreDetails));
 
         // Mock the enrichment orchestrator
-        given(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(eq(hearing1), eq(envelope)))
+        given(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(eq(hearing1), eq(envelope), eq(courtCentreDetails)))
                 .willReturn(hearing1);
-        given(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(eq(hearing2), eq(envelope)))
+        given(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(eq(hearing2), eq(envelope), eq(courtCentreDetails)))
                 .willReturn(hearing2);
 
         // Mock the JSON conversions
@@ -522,8 +522,8 @@ public class ListingCommandApiTest {
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
         verify(jsonObjectConverter, times(1)).convert(hearingJsonObj1, UpdateHearingForListing.class);
         verify(jsonObjectConverter, times(1)).convert(hearingJsonObj2, UpdateHearingForListing.class);
-        verify(hearingEnrichmentOrchestrator, times(1)).enrichUpdateHearingForListing(hearing1, envelope);
-        verify(hearingEnrichmentOrchestrator, times(1)).enrichUpdateHearingForListing(hearing2, envelope);
+        verify(hearingEnrichmentOrchestrator, times(1)).enrichUpdateHearingForListing(hearing1, envelope, courtCentreDetails);
+        verify(hearingEnrichmentOrchestrator, times(1)).enrichUpdateHearingForListing(hearing2, envelope, courtCentreDetails);
         
         // Verify prosecution cases were converted
         hearingJsonObj1.getJsonArray("prosecutionCases").forEach(
@@ -805,7 +805,7 @@ public class ListingCommandApiTest {
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
         given(updateHearingForListing.getCourtRoomId()).willReturn(UUID.randomUUID());
         given(updateHearingForListing.getHearingId()).willReturn(hearingId);
-        when(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(any(), any()))
+        when(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(any(), any(), any()))
                 .thenReturn(updateHearingForListing);
         mockCourtCentres();
 
@@ -830,7 +830,7 @@ public class ListingCommandApiTest {
         given(updateHearingForListing.getJurisdictionType()).willReturn(MAGISTRATES);
         given(updateHearingForListing.getHearingId()).willReturn(hearingId);
 
-        when(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(any(), any()))
+        when(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(any(), any(), any()))
                 .thenReturn(updateHearingForListing);
         mockCourtCentres();
 
@@ -954,7 +954,7 @@ public class ListingCommandApiTest {
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
         given(updateHearingForListing.getCourtRoomId()).willReturn(UUID.randomUUID());
         given(updateHearingForListing.getHearingId()).willReturn(hearingId);
-        when(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(any(), any()))
+        when(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(any(), any(), any()))
                 .thenReturn(updateHearingForListing);
         given(courtCentreFactory.getCourtCentre(any(), any())).willReturn(CourtCentreDetails.courtCentreDetails().build());
         mockCourtCentres();

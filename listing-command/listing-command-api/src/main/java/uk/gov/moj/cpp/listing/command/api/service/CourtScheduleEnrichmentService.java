@@ -421,6 +421,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         queryParams.put("sessionStartDate", hearingDay.getHearingDate().toString());
         queryParams.put("sessionEndDate", hearingDay.getHearingDate().toString());
         queryParams.put("panel", "ADULT,YOUTH");
+        queryParams.put("showOverbookedSlots",Boolean.TRUE.toString());
         queryParams.put("pageNumber", "1");
         queryParams.put("pageSize", "1");
 

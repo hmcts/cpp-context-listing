@@ -19,8 +19,11 @@ public interface QueryApiHearingSlotsResource {
     String BUSINESS_TYPE = "businessType";
     String COURT_SESSION = "courtSession";
     String IS_SLOT_BASED = "isSlotBased";
+    String SHOW_OVERBOOKED_SLOTS = "showOverbookedSlots";
     String PAGE_SIZE = "pageSize";
     String PAGE_NUMBER = "pageNumber";
+    String AVAILABLE_DURATION_MINS = "availableDurationMins";
+    String DURATION = "duration";
 
     @GET
     @Produces("application/vnd.listing.search.hearing.slots+json")
@@ -35,6 +38,8 @@ public interface QueryApiHearingSlotsResource {
                              @QueryParam(BUSINESS_TYPE) String businessType,
                              @QueryParam(COURT_SESSION) String courtSession,
                              @QueryParam(IS_SLOT_BASED) Boolean isSlotBased,
+                             @QueryParam(SHOW_OVERBOOKED_SLOTS) Boolean showOverbookedSlots,
                              @QueryParam(PAGE_SIZE) String pageSize,
-                             @QueryParam(PAGE_NUMBER) String pageNumber);
+                             @QueryParam(PAGE_NUMBER) String pageNumber,
+                             @QueryParam(AVAILABLE_DURATION_MINS) Integer availableDurationMins);
 }

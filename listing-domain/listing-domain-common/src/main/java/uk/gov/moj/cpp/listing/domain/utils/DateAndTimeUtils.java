@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.domain.utils;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -89,6 +90,16 @@ public class DateAndTimeUtils {
 
         return localDate.format(ISO_8601_FORMATTER);
     }
+
+    public static LocalTime getUtcLocalTimeForDate(LocalDate date, int hour, int minute) {
+        LocalTime localTime = LocalTime.of(hour, minute);
+
+        ZonedDateTime localZdt = ZonedDateTime.of(date, localTime, ZoneId.of("Europe/London"));
+        ZonedDateTime utcZdt = localZdt.withZoneSameInstant(ZoneOffset.UTC);
+
+        return utcZdt.toLocalTime();
+    }
+
 
     private static String correctRawHours(final String rawHours) {
 

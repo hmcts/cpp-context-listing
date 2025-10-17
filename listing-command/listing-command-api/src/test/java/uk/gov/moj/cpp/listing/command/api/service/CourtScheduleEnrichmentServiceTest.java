@@ -176,6 +176,7 @@ class CourtScheduleEnrichmentServiceTest {
         // Each captured map must contain the multi-day flags
         for (java.util.Map<String, String> qp : mapCaptor.getAllValues()) {
             org.hamcrest.MatcherAssert.assertThat(qp.get("courtSession"), is("AD"));
+            org.hamcrest.MatcherAssert.assertThat(qp.get("showOverbookedSlots"), is(Boolean.TRUE.toString()));
             org.hamcrest.MatcherAssert.assertThat(qp.get("isSlotBased"), is(Boolean.FALSE.toString()));
         }
     }

@@ -51,11 +51,12 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                                     final String businessType,
                                     final String courtSession,
                                     final Boolean isSlotBased,
+                                    final Boolean showOverbookedSlots,
                                     final String pageSize,
-                                    final String pageNumber) {
+                                    final String pageNumber,
+                                    final Integer availableDurationMins) {
 
-        final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, hearingStartTime, oucodeL2Code, ouCode, courtRoomId,
-                courtRoomNumber, businessType, courtSession, isSlotBased, pageSize, pageNumber);
+        final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, hearingStartTime, oucodeL2Code, ouCode, courtRoomId, courtRoomNumber, businessType, courtSession, isSlotBased, showOverbookedSlots, pageSize, pageNumber, availableDurationMins);
         final Response response = courtSchedulerServiceAdapter.hearingSlotsSearch(params);
         if(response.getStatusInfo().getStatusCode() != HttpStatus.SC_OK ){
             return response;
@@ -84,8 +85,10 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                                                final String businessType,
                                                final String courtSession,
                                                final Boolean isSlotBased,
+                                               final Boolean showOverbookedSlots,
                                                final String pageSize,
-                                               final String pageNumber) {
+                                               final String pageNumber,
+                                               final Integer availableDurationMins) {
         final Map<String, String> params = new HashMap<>();
         params.put(PANEL, panel);
         params.put(SESSION_START_DATE, sessionStartDate);
@@ -100,8 +103,13 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
         if(isSlotBased != null) {
             params.put(IS_SLOT_BASED, String.valueOf(isSlotBased));
         }
+        if(showOverbookedSlots != null) {
+            params.put(SHOW_OVERBOOKED_SLOTS, String.valueOf(showOverbookedSlots));
+        }
         params.put(PAGE_SIZE, pageSize);
         params.put(PAGE_NUMBER, pageNumber);
+        if(availableDurationMins != null)
+            params.put(DURATION, String.valueOf(availableDurationMins));
 
         return params.entrySet().stream().filter(entry -> entry.getValue() != null).collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     }

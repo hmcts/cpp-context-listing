@@ -4,6 +4,9 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.lang.String.format;
@@ -93,7 +96,7 @@ public class CourtSchedulerServiceStub {
     }
 
     public static void stubGetAvailableHearingSlots(boolean isEmpty) {
-        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
                 .withQueryParam("sessionStartDate", matching("2017-10-11"))
                 .withQueryParam("pageNumber", matching("1"))
                 .withQueryParam("pageSize", matching("20"))
@@ -112,6 +115,22 @@ public class CourtSchedulerServiceStub {
                 .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_SLOTS_JSON))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    public static void stubGetAvailableHearingSlotsWithOverbookedSlots(boolean showOverbookedSlots) {
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
+                .withQueryParam("sessionStartDate", matching("2017-10-11"))
+                .withQueryParam("pageNumber", matching("1"))
+                .withQueryParam("pageSize", matching("20"))
+                .withQueryParam("panel", matching("ADULT"))
+                .withQueryParam("oucodeL2Code", matching("Z01KR05"))
+                .withQueryParam("sessionEndDate", matching("2020-10-11"))
+                .withQueryParam("showOverbookedSlots", matching(String.valueOf(showOverbookedSlots)))
+                .withHeader("Accept", containing(COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(showOverbookedSlots ? LISTING_SEARCH_HEARING_SLOTS_JSON : LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON))
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
@@ -278,13 +297,13 @@ public class CourtSchedulerServiceStub {
             if (!isFirst) {
                 hearingSlotsJson.append(",\n");
             }
-            
+
             final String courtScheduleId = nonDefaultDay.getCourtScheduleId().orElse("8e837de0-743a-4a2c-9db3-b2e678c48729");
             final String courtRoomId = nonDefaultDay.getRoomId().orElse(updatedHearingData.getCourtRoomId() != null ? updatedHearingData.getCourtRoomId().toString() : UUID.randomUUID().toString());
             final String ouCode = nonDefaultDay.getOucode().orElse("B01LY00");
             final String sessionDate = ZonedDateTime.parse(nonDefaultDay.getStartTime()).toLocalDate().toString();
             final String session = nonDefaultDay.getSession().orElse("AM");
-            
+
             hearingSlotsJson.append("    {\n");
             hearingSlotsJson.append("      \"courtScheduleId\": \"").append(courtScheduleId).append("\",\n");
             hearingSlotsJson.append("      \"listingProfileId\": \"CS2339681\",\n");
@@ -305,7 +324,7 @@ public class CourtSchedulerServiceStub {
             hearingSlotsJson.append("      \"availableSlots\": 0,\n");
             hearingSlotsJson.append("      \"availableDuration\": 0,\n");
             hearingSlotsJson.append("      \"judiciaries\": [\n");
-            
+
             // Add judiciary information if available
             if (updatedHearingData.getJudiciary() != null && !updatedHearingData.getJudiciary().isEmpty()) {
                 boolean isFirstJudiciary = true;
@@ -324,7 +343,7 @@ public class CourtSchedulerServiceStub {
                     isFirstJudiciary = false;
                 }
             }
-            
+
             hearingSlotsJson.append("\n      ],\n");
             hearingSlotsJson.append("      \"slotStartTimes\": [\n");
             hearingSlotsJson.append("        {\n");
@@ -334,7 +353,7 @@ public class CourtSchedulerServiceStub {
             hearingSlotsJson.append("      ],\n");
             hearingSlotsJson.append("      \"sessionStartTime\": \"").append(nonDefaultDay.getStartTime()).append("\"\n");
             hearingSlotsJson.append("    }");
-            
+
             isFirst = false;
         }
 
@@ -342,7 +361,7 @@ public class CourtSchedulerServiceStub {
         hearingSlotsJson.append("}");
 
         final String payloadString = hearingSlotsJson.toString();
-        
+
         // Create WireMock stub that matches any query parameters
         stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS)))
                 .withQueryParam("sessionStartDate", matching(".*"))
@@ -461,7 +480,7 @@ public class CourtSchedulerServiceStub {
         payload.append("      \"hearingStartTime\": \"").append(hearingStartTime.toString()).append("\",\n");
         payload.append("      \"duration\": ").append(duration).append(",\n");
         payload.append("      \"judiciaries\": [\n");
-        
+
         if (judiciaries != null && !judiciaries.isEmpty()) {
             for (int i = 0; i < judiciaries.size(); i++) {
                 if (i > 0) {
@@ -475,7 +494,7 @@ public class CourtSchedulerServiceStub {
                 payload.append("          \"surname\": \"DefaultSurname").append(i + 1).append("\",\n");
                 payload.append("          \"courtScheduleId\": \"").append(courtScheduleId).append("\",\n");
                 payload.append("          \"judiciaryType\": \"").append(judiciary.getJudicialRoleType().getJudiciaryType()).append("\",\n");
-                
+
                 // Determine position based on chairman status and index
                 String position;
                 if (judiciary.getIsBenchChairman().orElse(false)) {
@@ -488,7 +507,7 @@ public class CourtSchedulerServiceStub {
                     position = "CHAIR"; // Default fallback
                 }
                 payload.append("          \"position\": \"").append(position).append("\",\n");
-                
+
                 payload.append("          \"active\": false,\n");
                 payload.append("          \"createdOn\": \"2025-03-12T20:27:00.724+00:00\",\n");
                 payload.append("          \"updatedOn\": \"2025-03-12T20:27:00.724+00:00\",\n");
@@ -497,7 +516,7 @@ public class CourtSchedulerServiceStub {
                 payload.append("        }");
             }
         }
-        
+
         payload.append("\n      ]\n");
         payload.append("    }\n");
         payload.append("  ]\n");
@@ -543,28 +562,28 @@ public class CourtSchedulerServiceStub {
         final StringBuilder hearingsJson = new StringBuilder();
         hearingsJson.append("{\n");
         hearingsJson.append("  \"hearings\": [\n");
-        
+
         boolean isFirst = true;
         for (NonDefaultDayData nonDefaultDay : updatedHearingData.getNonDefaultDays()) {
             if (!isFirst) {
                 hearingsJson.append(",\n");
             }
-            
+
             final Integer duration = nonDefaultDay.getDuration().orElse(20);
             final String courtScheduleId = nonDefaultDay.getCourtScheduleId().orElse("8e837de0-743a-4a2c-9db3-b2e678c48729");
-            
+
             hearingsJson.append("    {\n");
             hearingsJson.append("      \"hearingId\": \"").append(updatedHearingData.getHearingId()).append("\",\n");
             hearingsJson.append("      \"courtScheduleId\": \"").append(courtScheduleId).append("\",\n");
             hearingsJson.append("      \"hearingStartTime\": \"").append(nonDefaultDay.getStartTime()).append("\",\n");
             hearingsJson.append("      \"duration\": ").append(duration);
-            
+
             // Add judiciary information if available
             List<JudicialRoleData> judiciaries = updatedHearingData.getJudiciary();
             if (isNotEmpty(judiciaries)) {
                 hearingsJson.append(",\n");
                 hearingsJson.append("      \"judiciaries\": [\n");
-                
+
                 for (int i = 0; i < judiciaries.size(); i++) {
                     if (i > 0) {
                         hearingsJson.append(",\n");
@@ -577,7 +596,7 @@ public class CourtSchedulerServiceStub {
                     hearingsJson.append("          \"surname\": \"DefaultSurname").append(i + 1).append("\",\n");
                     hearingsJson.append("          \"courtScheduleId\": \"").append(courtScheduleId).append("\",\n");
                     hearingsJson.append("          \"judiciaryType\": \"").append(judiciary.getJudicialRoleType().getJudiciaryType()).append("\",\n");
-                    
+
                     // Determine position based on chairman status and index
                     String position;
                     if (judiciary.getIsBenchChairman().orElse(false)) {
@@ -590,7 +609,7 @@ public class CourtSchedulerServiceStub {
                         position = "CHAIR"; // Default fallback
                     }
                     hearingsJson.append("          \"position\": \"").append(position).append("\",\n");
-                    
+
                     hearingsJson.append("          \"active\": false,\n");
                     hearingsJson.append("          \"createdOn\": \"2025-03-12T20:27:00.724+00:00\",\n");
                     hearingsJson.append("          \"updatedOn\": \"2025-03-12T20:27:00.724+00:00\",\n");
@@ -598,16 +617,16 @@ public class CourtSchedulerServiceStub {
                     hearingsJson.append("          \"benchChairman\": ").append(judiciary.getIsBenchChairman().orElse(false)).append("\n");
                     hearingsJson.append("        }");
                 }
-                
+
                 hearingsJson.append("\n      ]");
             }
-            
+
             hearingsJson.append("\n");
             hearingsJson.append("    }");
-            
+
             isFirst = false;
         }
-        
+
         hearingsJson.append("\n  ]\n");
         hearingsJson.append("}");
 
