@@ -63,6 +63,45 @@ public class RequestedNameMapperTest {
         assertThat(judgeName, is(SPACE));
     }
 
+    @Test
+    void shouldTruncateCitizenNameToThirtyFiveCharacters() {
+        final String longFirst = "FirstnameFirstnameFirstname"; // 27 chars
+        final String longLast = "LastnameLastnameLastname";   // 24 chars
+        final String full = format("%s %s", longFirst, longLast).trim();
+        final String expected = full.substring(0, 35);
+
+        final String actual = requestedNameMapper.getRequestedCitizenName(longFirst, longLast);
+
+        assertThat(actual, is(expected));
+    }
+
+    @Test
+    void shouldReturnSurnameUnchangedWhenLengthAtMostThirtyFive() {
+        final String surname = "Anderson-Smith-Johnson-Brown"; // length 31
+        final String actual = requestedNameMapper.getCitizenNameSurname(surname);
+        assertThat(actual, is(surname));
+    }
+
+    @Test
+    void shouldTruncateSurnameToThirtyFiveCharacters() {
+        final String longSurname = "Anderson-Smith-Johnson-Brown-Williams"; // > 35
+        final String expected = longSurname.substring(0, 35);
+        final String actual = requestedNameMapper.getCitizenNameSurname(longSurname);
+        assertThat(actual, is(expected));
+    }
+
+    @Test
+    void shouldReturnEmptyWhenSurnameIsEmpty() {
+        final String actual = requestedNameMapper.getCitizenNameSurname(EMPTY);
+        assertThat(actual, is(EMPTY));
+    }
+
+    @Test
+    void shouldReturnNullWhenSurnameIsNull() {
+        final String actual = requestedNameMapper.getCitizenNameSurname(null);
+        assertThat(actual, is((String) null));
+    }
+
 
     private JsonObject createJudiciaryWithRequestedName() {
         final JsonObjectBuilder judiciaryBuilder = Json.createObjectBuilder();

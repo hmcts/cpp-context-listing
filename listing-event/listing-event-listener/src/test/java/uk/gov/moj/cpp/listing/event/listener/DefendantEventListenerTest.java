@@ -24,6 +24,7 @@ import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
@@ -63,6 +64,9 @@ public class DefendantEventListenerTest {
 
     @Mock
     private HearingRepository hearingRepository;
+
+    @Mock
+    private HearingSearchSyncService hearingSearchSyncService;
 
     @Mock
     Hearing hearing;
@@ -113,7 +117,7 @@ public class DefendantEventListenerTest {
     }
 
     @Test
-    public void shouldNotUpdateHearingDefendantWhenCaseIsNotAssociatedToTheHearing() throws Exception {
+    void shouldNotUpdateHearingDefendantWhenCaseIsNotAssociatedToTheHearing() throws Exception {
         final UUID defendantId = randomUUID();
         final UUID nonAssociatedDefendantId = randomUUID();
         final UUID caseId = randomUUID();
@@ -137,7 +141,6 @@ public class DefendantEventListenerTest {
         given(hearing.getProperties()).willReturn(properties);
         given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
 
-
         final ArgumentCaptor<ArrayNode> objectNodeCaptor = ArgumentCaptor.forClass(ArrayNode.class);
 
         defendantEventListener.defendantDetailsUpdated(defendantDetailsUpdatedEnvelope);
@@ -152,6 +155,7 @@ public class DefendantEventListenerTest {
         assertThat(defendants.get(0).get("id").asText(), equalTo(defendantId.toString()));
 
         verify(hearingRepository).save(hearing);
+        verify(hearingSearchSyncService).sync(HEARING_ID);
     }
 
     @Test

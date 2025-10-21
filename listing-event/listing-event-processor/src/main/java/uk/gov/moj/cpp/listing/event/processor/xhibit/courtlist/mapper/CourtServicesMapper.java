@@ -640,7 +640,7 @@ public class CourtServicesMapper {
         if (isBlank(lastOrOrganisationName) && isNotBlank(firstName)) {
             throw new InvalidDataException(format("Surname = %s is not provided. This is a mandatory field", lastOrOrganisationName));
         }
-        citizenNameStructure.setCitizenNameSurname(restrictFromCourtList ? MASKED_VALUE : lastOrOrganisationName);
+        citizenNameStructure.setCitizenNameSurname(restrictFromCourtList ? MASKED_VALUE : judicialRequestedName.getCitizenNameSurname(lastOrOrganisationName));
 
         citizenNameStructure.setCitizenNameRequestedName(restrictFromCourtList ? MASKED_VALUE : judicialRequestedName.getRequestedCitizenName(firstName, lastOrOrganisationName));
 

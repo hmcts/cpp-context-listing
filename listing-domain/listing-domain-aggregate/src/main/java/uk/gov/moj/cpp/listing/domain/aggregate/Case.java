@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.domain.aggregate;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
+import static java.util.stream.Stream.builder;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
@@ -16,6 +17,7 @@ import uk.gov.justice.listing.events.DefendantLegalaidStatusUpdated;
 import uk.gov.justice.listing.events.CaseEjectedForHearings;
 import uk.gov.justice.listing.events.DefendantsToBeAddedForCourtProceedings;
 import uk.gov.justice.listing.events.DefendantsToBeUpdated;
+import uk.gov.justice.listing.events.DefendantsToBeUpdatedLater;
 import uk.gov.justice.listing.events.HearingAddedToCase;
 import uk.gov.justice.listing.events.HearingMarkedAsDuplicateForCase;
 import uk.gov.justice.listing.events.HearingUpdatedToCase;
@@ -42,9 +44,11 @@ import java.util.stream.Stream;
 @SuppressWarnings({"pmd:BeanMembersShouldSerialize", "squid:S1068"})
 public class Case implements Aggregate {
 
-    private static final long serialVersionUID = 202L;
+    private static final long serialVersionUID = 203L;
 
     private final Set<UUID> hearingIds = new HashSet<>();
+
+    private final Set<uk.gov.justice.listing.events.Defendant> defendantsToBeUpdated = new HashSet<>();
 
     public List<UUID> getHearingIds() {
         return unmodifiableList(new ArrayList<>(this.hearingIds));
@@ -56,6 +60,7 @@ public class Case implements Aggregate {
                 when(HearingAddedToCase.class).apply(this::onHearingAddedToCase),
                 when(HearingUpdatedToCase.class).apply(this::onHearingUpdatedToCase),
                 when(DefendantsToBeUpdated.class).apply(e -> onDefendantsToBeUpdated()),
+                when(DefendantsToBeUpdatedLater.class).apply(this::onDefendantsToBeUpdatedLater),
                 when(OffencesToBeAdded.class).apply(e -> onOffencesToBeAdded()),
                 when(OffencesToBeDeleted.class).apply(e -> onOffencesToBeDeleted()),
                 when(OffencesToBeUpdated.class).apply(e -> onOffencesToBeUpdated()),
@@ -69,19 +74,29 @@ public class Case implements Aggregate {
     }
 
     public Stream<Object> addHearing(final UUID caseId, final UUID hearingId) {
-        return apply(Stream.of(new HearingAddedToCase(caseId, hearingId)));
+        final Stream.Builder<Object> streamBuilder = builder()
+                .add(new HearingAddedToCase(caseId, hearingId));
+
+        this.defendantsToBeUpdated.forEach(defendant ->
+                        streamBuilder.add(DefendantsToBeUpdated.defendantsToBeUpdated()
+                                .withCaseId(caseId)
+                                .withDefendants(singletonList(defendant))
+                                .withHearings(singletonList(hearingId))
+                                .build()));
+
+        return apply(streamBuilder.build());
     }
 
     public Stream<Object> updateHearing(final UUID caseId, final UUID allocatedHearingId, final UUID unAllocatedHearingId) {
-
         return apply(Stream.of(new HearingUpdatedToCase(caseId, allocatedHearingId, unAllocatedHearingId)));
-
-
     }
 
     public Stream<Object> updateDefendant(UUID caseId, Defendant defendant) {
         if (hearingIds.isEmpty()) {
-            return Stream.empty();
+            return apply(Stream.of(DefendantsToBeUpdatedLater.defendantsToBeUpdatedLater()
+                    .withCaseId(caseId)
+                    .withDefendants(singletonList(NewDomainToEventConverter.buildDefendant(defendant)))
+                    .build()));
         }
 
         return apply(Stream.of(DefendantsToBeUpdated.defendantsToBeUpdated()
@@ -234,8 +249,12 @@ public class Case implements Aggregate {
         this.hearingIds.add(event.getExistingHearingId());
     }
 
+    private void onDefendantsToBeUpdatedLater(final DefendantsToBeUpdatedLater event) {
+        this.defendantsToBeUpdated.add(event.getDefendants().get(0));
+    }
+
     private void onDefendantsToBeUpdated() {
-        // Do nothing
+        this.defendantsToBeUpdated.clear();
     }
 
     private void onOffencesToBeUpdated() {
