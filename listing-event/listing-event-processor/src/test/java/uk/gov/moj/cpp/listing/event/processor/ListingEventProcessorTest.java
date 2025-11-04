@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -54,6 +55,7 @@ import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PUBLI
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PUBLIC_EVENT_HEARING_UPDATED;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PUBLIC_EVENT_VACATED_TRIAL_UPDATED;
 
+import org.mockito.Mockito;
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.CourtApplication;
@@ -392,6 +394,10 @@ class ListingEventProcessorTest {
         given(addHearingToCaseCommandCollectionConverter.convert(hearingListed)).willReturn(singletonList(addHearingToCaseCommand));
         given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed)).
                 willReturn(singletonList(addApplicationToHearingCommand));
+        uk.gov.justice.core.courts.Hearing mockHearing = mock(uk.gov.justice.core.courts.Hearing.class);
+        given(hearingListingToCoreConverter.convert(any())).willReturn(mockHearing);
+        given(mockHearing.getType()).willReturn(mock(uk.gov.justice.core.courts.HearingType.class));
+
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
                 forClass(JsonEnvelope.class);
 
@@ -417,6 +423,10 @@ class ListingEventProcessorTest {
         given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed2)).
                 willReturn(singletonList(addApplicationToHearingCommand));
 
+        uk.gov.justice.core.courts.Hearing mockHearing = mock(uk.gov.justice.core.courts.Hearing.class);
+        given(hearingListingToCoreConverter.convert(any())).willReturn(mockHearing);
+        given(mockHearing.getType()).willReturn(mock(uk.gov.justice.core.courts.HearingType.class));
+
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
                 forClass(JsonEnvelope.class);
 
@@ -437,6 +447,11 @@ class ListingEventProcessorTest {
         given(hearingListed.getHearing()).willReturn(hearing);
         given(addHearingToCaseCommandCollectionConverter.convert(hearingListed)).willReturn(singletonList(addHearingToCaseCommand));
         given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed)).willReturn(singletonList(addApplicationToHearingCommand));
+
+        uk.gov.justice.core.courts.Hearing mockHearing = mock(uk.gov.justice.core.courts.Hearing.class);
+        given(hearingListingToCoreConverter.convert(any())).willReturn(mockHearing);
+        given(mockHearing.getType()).willReturn(mock(uk.gov.justice.core.courts.HearingType.class));
+
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
                 forClass(JsonEnvelope.class);
 
@@ -462,6 +477,10 @@ class ListingEventProcessorTest {
         given(addHearingToCaseCommandCollectionConverter.convert(hearingListed2)).willReturn(singletonList(addHearingToCaseCommand));
         given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed2)).
                 willReturn(singletonList(addApplicationToHearingCommand));
+        uk.gov.justice.core.courts.Hearing mockHearing = mock(uk.gov.justice.core.courts.Hearing.class);
+        given(hearingListingToCoreConverter.convert(any())).willReturn(mockHearing);
+        given(mockHearing.getType()).willReturn(mock(uk.gov.justice.core.courts.HearingType.class));
+
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
                 forClass(JsonEnvelope.class);
         //when

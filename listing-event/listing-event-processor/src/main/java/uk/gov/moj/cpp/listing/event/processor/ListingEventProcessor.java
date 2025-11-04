@@ -18,10 +18,12 @@ import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.Hearing;
+import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.listing.commands.AddApplicationToHearingCommand;
 import uk.gov.justice.listing.commands.AddHearingToCaseCommand;
 import uk.gov.justice.listing.commands.LinkedToCases;
 import uk.gov.justice.listing.commands.UpdateLinkedCaseInHearing;
+import uk.gov.justice.listing.courts.CaseUrns;
 import uk.gov.justice.listing.courts.HearingChangesSaved;
 import uk.gov.justice.listing.courts.HearingConfirmed;
 import uk.gov.justice.listing.courts.HearingUpdated;
@@ -1314,10 +1316,20 @@ public class ListingEventProcessor {
         final HearingListed listingHearingListed = jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(), HearingListed.class);
 
         final Hearing courtDomainHearing = hearingListingToCoreConverter.convert(listingHearingListed.getHearing());
+        final List<ProsecutionCase> prosecutionCases = courtDomainHearing.getProsecutionCases();
+
+        // Create caseUrns from ProsecutionCase list
+        List<CaseUrns> caseUrns = prosecutionCases.stream()
+                .map(prosecutionCase -> CaseUrns.caseUrns()
+                        .withCaseURN(prosecutionCase.getProsecutionCaseIdentifier().getCaseURN())
+                        .build()).toList();
+
         final uk.gov.justice.listing.courts.HearingListed courtHearingListed = uk.gov.justice.listing.courts.HearingListed.
-                hearingListed().
-                withHearing(courtDomainHearing).
-                build();
+                hearingListed()
+                .withHearingId(courtDomainHearing.getId())
+                .withHearingType(courtDomainHearing.getType().getDescription())
+                .withCaseUrns(caseUrns)
+                .build();
 
         final JsonEnvelope publicEvent = envelopeFrom(metadataFrom(jsonEnvelope.metadata()).withName(PUBLIC_LISTING_HEARING_LISTED),
                 objectToJsonObjectConverter.convert(courtHearingListed));
