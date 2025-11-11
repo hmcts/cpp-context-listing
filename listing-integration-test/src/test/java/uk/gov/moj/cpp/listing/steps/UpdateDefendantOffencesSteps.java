@@ -24,6 +24,7 @@ import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessageString;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 
+import uk.gov.justice.core.courts.CivilOffence;
 import uk.gov.justice.core.courts.LaaReference;
 import uk.gov.justice.core.courts.Offence;
 import uk.gov.justice.core.courts.ReportingRestriction;
@@ -176,7 +177,9 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
                         "    {\n" +
                         "      \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
                         "      \"offences\": [\n" +
-                        "        {\n" +
+                        "        {\n" + "\"civilOffence\": {\n" +
+                        "                        \"isExParte\": false\n" +
+                        "                    }," +
                         "          \"endDate\": \"" + updatedOffenceData.getEndDate() + "\",\n" +
                         "          \"id\": \"" + updatedOffenceData.getRandomOffenceId() + "\",\n" +
                         "          \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() + "\",\n" +
@@ -221,7 +224,9 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
                         "    {\n" +
                         "      \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
                         "      \"offences\": [\n" +
-                        "        {\n" +
+                        "        {\n" + "\"civilOffence\": {\n" +
+                        "                        \"isExParte\": false\n" +
+                        "                    }," +
                         "          \"endDate\": \"" + updatedOffenceData.getEndDate() + "\",\n" +
                         "          \"id\": \"" + updatedOffenceData.getOffenceId() + "\",\n" +
                         "          \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() + "\",\n" +
@@ -743,6 +748,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
                 .withOffenceDefinitionId(offenceData.getOffenceDefinitionId())
                 .withLaaApplnReference(buildLaaReference(updatedOffenceData.getLaaReferences().get()))
                 .withReportingRestrictions(buildReportingRestriction(updatedOffenceData.getReportingRestriction()))
+                .withCivilOffence(CivilOffence.civilOffence().withIsExParte(false).build())
                 .build();
     }
 

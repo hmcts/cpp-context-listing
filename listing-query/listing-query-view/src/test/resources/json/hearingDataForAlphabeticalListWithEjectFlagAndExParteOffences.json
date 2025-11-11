@@ -1,0 +1,727 @@
+[
+  {
+    "hearingDate": "2020-06-03",
+    "hearingsByHearingDate": [
+      {
+        "hearing": {
+          "id": "d8d9bf44-494b-4c4d-a27e-1737c22f1ca7",
+          "type": {
+            "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+            "description": "First hearing"
+          },
+          "endDate": "2020-06-03",
+          "allocated": true,
+          "judiciary": [],
+          "startDate": "2020-06-03",
+          "courtRoomId": "f1ead1d2-4b26-3230-b781-508d6aaafd26",
+          "hearingDays": [
+            {
+              "endTime": "2020-06-03T13:01:00.000Z",
+              "sequence": 2,
+              "startTime": "2020-06-03T13:00:00.000Z",
+              "hearingDate": "2020-06-03",
+              "durationMinutes": 1
+            }
+          ],
+          "listedCases": [
+            {
+              "id": "e4f56b2e-3f36-4782-ab3d-aaca5fbdbd56",
+              "isEjected": false,
+              "markers": [],
+              "defendants": [
+                {
+                  "id": "7fe5e5a8-bd86-404e-8258-33cdb9316925",
+                  "address": {
+                    "address1": "No fixed abode"
+                  },
+                  "isYouth": false,
+                  "lastName": "Smith",
+                  "offences": [
+                    {
+                      "id": "ebcfa795-181a-4570-af3c-6f2125213f10",
+                      "startDate": "2020-05-01",
+                      "offenceCode": "LA83001",
+                      "offenceWording": "On or in 1 May 2020 at Croydon wilfully removed a notice board provided or erected under section 185 of the Highways Act 1980",
+                      "statementOfOffence": {
+                        "title": "Wilfully remove / interfere with litter bin / notice board erected under the Litter Act / the Highways Act",
+                        "welshTitle": "Wilfully remove / interfere with litter bin / notice board erected under the Litter Act / the Highways Act",
+                        "legislation": "Contrary to section 5(9) of the Litter Act 1983."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "John",
+                  "bailStatus": {
+                    "id": "eaf18bf8-9569-3656-a4ab-64299f9bd513",
+                    "code": "U",
+                    "description": "Unconditional Bail"
+                  },
+                  "dateOfBirth": "1990-01-01",
+                  "masterDefendantId": "7fe5e5a8-bd86-404e-8258-33cdb9316925",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "restrictFromCourtList": false,
+                  "nationalityDescription": "British",
+                  "courtProceedingsInitiated": "2020-06-02T11:17:19.281Z"
+                },
+                {
+                  "id": "316bff6e-580a-4b38-bdd2-0e6edfc84981",
+                  "address": {
+                    "address1": "No fixed abode"
+                  },
+                  "isYouth": false,
+                  "lastName": "Smith",
+                  "offences": [
+                    {
+                      "id": "ebcfa795-181a-4570-af3c-6f2125213f10",
+                      "startDate": "2020-05-01",
+                      "offenceCode": "LA83001",
+                      "offenceWording": "On or in 1 May 2020 at Croydon wilfully removed a notice board provided or erected under section 185 of the Highways Act 1980",
+                      "statementOfOffence": {
+                        "title": "Wilfully remove / interfere with litter bin / notice board erected under the Litter Act / the Highways Act",
+                        "welshTitle": "Wilfully remove / interfere with litter bin / notice board erected under the Litter Act / the Highways Act",
+                        "legislation": "Contrary to section 5(9) of the Litter Act 1983."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Joan",
+                  "bailStatus": {
+                    "id": "eaf18bf8-9569-3656-a4ab-64299f9bd513",
+                    "code": "U",
+                    "description": "Unconditional Bail"
+                  },
+                  "dateOfBirth": "1990-01-01",
+                  "masterDefendantId": "316bff6e-580a-4b38-bdd2-0e6edfc84981",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "restrictFromCourtList": false,
+                  "nationalityDescription": "British",
+                  "courtProceedingsInitiated": "2020-06-02T11:17:19.286Z"
+                }
+              ],
+              "caseIdentifier": {
+                "authorityId": "8f8024ca-ff7c-3829-a0d2-35d37492aebb",
+                "authorityCode": "METPF",
+                "caseReference": "CYIUXKM8RV"
+              },
+              "restrictFromCourtList": false
+            },
+            {
+              "id": "e4f56b2e-3f36-4782-ab3d-aaca5fbdbd56",
+              "isEjected": true,
+              "markers": [],
+              "defendants": [
+                {
+                  "id": "7fe5e5a8-bd86-404e-8258-33cdb9316925",
+                  "address": {
+                    "address1": "No fixed abode"
+                  },
+                  "isYouth": false,
+                  "lastName": "Smith",
+                  "offences": [
+                    {
+                      "id": "ebcfa795-181a-4570-af3c-6f2125213f10",
+                      "startDate": "2020-05-01",
+                      "offenceCode": "LA83001",
+                      "offenceWording": "On or in 1 May 2020 at Croydon wilfully removed a notice board provided or erected under section 185 of the Highways Act 1980",
+                      "statementOfOffence": {
+                        "title": "Wilfully remove / interfere with litter bin / notice board erected under the Litter Act / the Highways Act",
+                        "welshTitle": "Wilfully remove / interfere with litter bin / notice board erected under the Litter Act / the Highways Act",
+                        "legislation": "Contrary to section 5(9) of the Litter Act 1983."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "John",
+                  "bailStatus": {
+                    "id": "eaf18bf8-9569-3656-a4ab-64299f9bd513",
+                    "code": "U",
+                    "description": "Unconditional Bail"
+                  },
+                  "dateOfBirth": "1990-01-01",
+                  "masterDefendantId": "7fe5e5a8-bd86-404e-8258-33cdb9316925",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "restrictFromCourtList": false,
+                  "nationalityDescription": "British",
+                  "courtProceedingsInitiated": "2020-06-02T11:17:19.281Z"
+                },
+                {
+                  "id": "316bff6e-580a-4b38-bdd2-0e6edfc84981",
+                  "address": {
+                    "address1": "No fixed abode"
+                  },
+                  "isYouth": false,
+                  "lastName": "Smith",
+                  "offences": [
+                    {
+                      "id": "ebcfa795-181a-4570-af3c-6f2125213f10",
+                      "startDate": "2020-05-01",
+                      "offenceCode": "LA83001",
+                      "offenceWording": "On or in 1 May 2020 at Croydon wilfully removed a notice board provided or erected under section 185 of the Highways Act 1980",
+                      "statementOfOffence": {
+                        "title": "Wilfully remove / interfere with litter bin / notice board erected under the Litter Act / the Highways Act",
+                        "welshTitle": "Wilfully remove / interfere with litter bin / notice board erected under the Litter Act / the Highways Act",
+                        "legislation": "Contrary to section 5(9) of the Litter Act 1983."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Joan",
+                  "bailStatus": {
+                    "id": "eaf18bf8-9569-3656-a4ab-64299f9bd513",
+                    "code": "U",
+                    "description": "Unconditional Bail"
+                  },
+                  "dateOfBirth": "1990-01-01",
+                  "masterDefendantId": "316bff6e-580a-4b38-bdd2-0e6edfc84981",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "restrictFromCourtList": false,
+                  "nationalityDescription": "British",
+                  "courtProceedingsInitiated": "2020-06-02T11:17:19.286Z"
+                }
+              ],
+              "caseIdentifier": {
+                "authorityId": "8f8024ca-ff7c-3829-a0d2-35d37492aebb",
+                "authorityCode": "METPF",
+                "caseReference": "CYIUXKM8RV"
+              },
+              "restrictFromCourtList": false
+            },
+            {
+              "id": "e4f56b2e-3f36-4782-ab3d-aaca5fbdbd56",
+              "isEjected": true,
+              "markers": [],
+              "defendants": [
+                {
+                  "id": "7fe5e5a8-bd86-404e-8258-33cdb9316925",
+                  "address": {
+                    "address1": "No fixed abode"
+                  },
+                  "isYouth": false,
+                  "lastName": "Smith",
+                  "offences": [
+                    {
+                      "id": "ebcfa795-181a-4570-af3c-6f2125213f10",
+                      "startDate": "2020-05-01",
+                      "offenceCode": "LA83001",
+                      "offenceWording": "On or in 1 May 2020 at Croydon wilfully removed a notice board provided or erected under section 185 of the Highways Act 1980",
+                      "civilOffence": {
+                        "isExParte" : true
+                      },
+                      "statementOfOffence": {
+                        "title": "Wilfully remove / interfere with litter bin / notice board erected under the Litter Act / the Highways Act",
+                        "welshTitle": "Wilfully remove / interfere with litter bin / notice board erected under the Litter Act / the Highways Act",
+                        "legislation": "Contrary to section 5(9) of the Litter Act 1983."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "John",
+                  "bailStatus": {
+                    "id": "eaf18bf8-9569-3656-a4ab-64299f9bd513",
+                    "code": "U",
+                    "description": "Unconditional Bail"
+                  },
+                  "dateOfBirth": "1990-01-01",
+                  "masterDefendantId": "7fe5e5a8-bd86-404e-8258-33cdb9316925",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "restrictFromCourtList": false,
+                  "nationalityDescription": "British",
+                  "courtProceedingsInitiated": "2020-06-02T11:17:19.281Z"
+                },
+                {
+                  "id": "316bff6e-580a-4b38-bdd2-0e6edfc84981",
+                  "address": {
+                    "address1": "No fixed abode"
+                  },
+                  "isYouth": false,
+                  "lastName": "Smith",
+                  "offences": [
+                    {
+                      "id": "ebcfa795-181a-4570-af3c-6f2125213f10",
+                      "startDate": "2020-05-01",
+                      "offenceCode": "LA83001",
+                      "offenceWording": "On or in 1 May 2020 at Croydon wilfully removed a notice board provided or erected under section 185 of the Highways Act 1980",
+                      "statementOfOffence": {
+                        "title": "Wilfully remove / interfere with litter bin / notice board erected under the Litter Act / the Highways Act",
+                        "welshTitle": "Wilfully remove / interfere with litter bin / notice board erected under the Litter Act / the Highways Act",
+                        "legislation": "Contrary to section 5(9) of the Litter Act 1983."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Joan",
+                  "bailStatus": {
+                    "id": "eaf18bf8-9569-3656-a4ab-64299f9bd513",
+                    "code": "U",
+                    "description": "Unconditional Bail"
+                  },
+                  "dateOfBirth": "1990-01-01",
+                  "masterDefendantId": "316bff6e-580a-4b38-bdd2-0e6edfc84981",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "restrictFromCourtList": false,
+                  "nationalityDescription": "British",
+                  "courtProceedingsInitiated": "2020-06-02T11:17:19.286Z"
+                }
+              ],
+              "caseIdentifier": {
+                "authorityId": "8f8024ca-ff7c-3829-a0d2-35d37492aebb",
+                "authorityCode": "METPF",
+                "caseReference": "CYIUXKM8RV"
+              },
+              "restrictFromCourtList": false
+            }
+          ],
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "nonDefaultDays": [
+            {
+              "oucode": "B01LY00",
+              "session": "PM",
+              "duration": 1,
+              "startTime": "2020-06-03T13:00:00.000Z",
+              "courtRoomId": 2332,
+              "courtScheduleId": "9e7f2bbe-c9df-3372-b26f-c5de369d654e"
+            }
+          ],
+          "nonSittingDays": [],
+          "hearingLanguage": "ENGLISH",
+          "estimatedMinutes": 15,
+          "jurisdictionType": "MAGISTRATES",
+          "courtApplications": []
+        }
+      },
+      {
+        "hearing": {
+          "id": "558ef5f5-048b-4df4-8588-2d6841280890",
+          "type": {
+            "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+            "description": "Plea and Trial Preparation"
+          },
+          "endDate": "2020-06-03",
+          "allocated": true,
+          "judiciary": [],
+          "startDate": "2020-06-02",
+          "courtRoomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+          "hearingDays": [
+            {
+              "endTime": "2020-06-02T09:01:00.000Z",
+              "sequence": 4,
+              "startTime": "2020-06-02T09:00:00.000Z",
+              "hearingDate": "2020-06-02",
+              "durationMinutes": 1
+            },
+            {
+              "endTime": "2020-06-03T13:01:00.000Z",
+              "sequence": 1,
+              "startTime": "2020-06-03T13:00:00.000Z",
+              "hearingDate": "2020-06-03",
+              "durationMinutes": 1
+            }
+          ],
+          "listedCases": [
+            {
+              "id": "55c71701-538b-447c-abe9-13a8674c600e",
+              "isEjected": false,
+              "markers": [],
+              "caseStatus": "SJP_REFERRAL",
+              "defendants": [
+                {
+                  "id": "5bfb978c-25c6-46d5-b06a-29b61f69780c",
+                  "address": {
+                    "address1": "41957 Armand Fort",
+                    "address2": "Emil Isle",
+                    "address3": "Mueller Parks",
+                    "address4": "Carly Bridge",
+                    "address5": "Lake Johannefort",
+                    "postcode": "SW11 5TQ"
+                  },
+                  "isYouth": false,
+                  "lastName": "Legros",
+                  "offences": [
+                    {
+                      "id": "e787b300-11ae-4a11-9b13-416186011f63",
+                      "startDate": "2019-04-26",
+                      "offenceCode": "RT88569",
+                      "offenceWording": "voluptates",
+                      "civilOffence": {
+                        "isExParte" : true
+                      },
+                      "statementOfOffence": {
+                        "title": "Keep a motor vehicle which does not meet insurance requirements",
+                        "welshTitle": "Cadw cerbyd modur nad yw'n bodloni'r gofynion yswiriant",
+                        "legislation": "Contrary to section 144A of the Road Traffic Act 1988 and Schedule 2 to the Road Traffic Offenders Act 1988.",
+                        "welshLegislation": "Yn groes i adran 144a Deddf Traffig Ffyrdd 1988 ac Atodlen 2 Deddf Troseddwyr Traffig Ffyrdd 1988."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Susan",
+                  "dateOfBirth": "1997-07-15",
+                  "masterDefendantId": "5bfb978c-25c6-46d5-b06a-29b61f69780c",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "proceedingsConcluded": false,
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2020-06-02T07:27:44.468Z"
+                }
+              ],
+              "caseIdentifier": {
+                "authorityId": "6ae4b163-658b-3ae2-a66d-43401cac2f96",
+                "authorityCode": "DVLA",
+                "caseReference": "69779682TN51BGR"
+              },
+              "restrictFromCourtList": false
+            }
+          ],
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "nonDefaultDays": [
+            {
+              "oucode": "B01LY00",
+              "session": "AD",
+              "duration": 1,
+              "startTime": "2020-06-02T09:00:00.000Z",
+              "courtRoomId": 2331,
+              "courtScheduleId": "497ae634-4d34-36c9-954a-5944a726f62f"
+            },
+            {
+              "oucode": "B01LY00",
+              "session": "PM",
+              "duration": 1,
+              "startTime": "2020-06-03T13:00:00.000Z",
+              "courtRoomId": 2331,
+              "courtScheduleId": "aaaca9d2-17f1-3a2f-97ca-9ebd590c7ea1"
+            }
+          ],
+          "nonSittingDays": [],
+          "hearingLanguage": "ENGLISH",
+          "estimatedMinutes": 20,
+          "jurisdictionType": "MAGISTRATES",
+          "courtApplications": []
+        }
+      },
+      {
+        "hearing": {
+          "id": "1683c31b-485b-46d2-b655-2d54a621a991",
+          "type": {
+            "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+            "description": "Plea and Trial Preparation"
+          },
+          "endDate": "2020-06-03",
+          "allocated": true,
+          "judiciary": [],
+          "startDate": "2020-06-02",
+          "courtRoomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+          "hearingDays": [
+            {
+              "endTime": "2020-06-02T09:01:00.000Z",
+              "sequence": 3,
+              "startTime": "2020-06-02T09:00:00.000Z",
+              "hearingDate": "2020-06-02",
+              "durationMinutes": 1
+            },
+            {
+              "endTime": "2020-06-03T09:01:00.000Z",
+              "sequence": 2,
+              "startTime": "2020-06-03T09:00:00.000Z",
+              "hearingDate": "2020-06-03",
+              "durationMinutes": 1
+            }
+          ],
+          "listedCases": [
+            {
+              "id": "f0c9b123-33d6-4ea8-bb89-75b9a69cb2d6",
+              "isEjected": true,
+              "markers": [],
+              "defendants": [
+                {
+                  "id": "9ad3e8a2-c924-4ed1-a8a7-3f29bffea970",
+                  "address": {
+                    "address1": "3271 Domingo Rapid",
+                    "address2": "Napoleon Fords",
+                    "address3": "Taylor Via",
+                    "address4": "Donovan Cove",
+                    "address5": "West Lashaun",
+                    "postcode": "SW11 5TQ"
+                  },
+                  "isYouth": false,
+                  "lastName": "Legros",
+                  "offences": [
+                    {
+                      "id": "9e2dda8a-9a9f-4040-8d30-e416a2a3acf8",
+                      "startDate": "2019-03-26",
+                      "offenceCode": "RT88569",
+                      "offenceWording": "quaerat",
+                      "statementOfOffence": {
+                        "title": "Keep a motor vehicle which does not meet insurance requirements",
+                        "welshTitle": "Cadw cerbyd modur nad yw'n bodloni'r gofynion yswiriant",
+                        "legislation": "Contrary to section 144A of the Road Traffic Act 1988 and Schedule 2 to the Road Traffic Offenders Act 1988.",
+                        "welshLegislation": "Yn groes i adran 144a Deddf Traffig Ffyrdd 1988 ac Atodlen 2 Deddf Troseddwyr Traffig Ffyrdd 1988."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Susan",
+                  "dateOfBirth": "1997-07-15",
+                  "masterDefendantId": "9ad3e8a2-c924-4ed1-a8a7-3f29bffea970",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2020-06-02T07:25:06.850Z"
+                }
+              ],
+              "linkedCases": [
+                {
+                  "caseId": "55c71701-538b-447c-abe9-13a8674c600e",
+                  "caseUrn": "69779682TN51BGR"
+                }
+              ],
+              "caseIdentifier": {
+                "authorityId": "6ae4b163-658b-3ae2-a66d-43401cac2f96",
+                "authorityCode": "DVLA",
+                "caseReference": "36499205GW48PTY"
+              },
+              "restrictFromCourtList": false
+            }
+          ],
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "nonDefaultDays": [
+            {
+              "oucode": "B01LY00",
+              "session": "AD",
+              "duration": 1,
+              "startTime": "2020-06-02T09:00:00.000Z",
+              "courtRoomId": 2331,
+              "courtScheduleId": "497ae634-4d34-36c9-954a-5944a726f62f"
+            },
+            {
+              "oucode": "B01LY00",
+              "session": "AM",
+              "duration": 1,
+              "startTime": "2020-06-03T09:00:00.000Z",
+              "courtRoomId": 2331,
+              "courtScheduleId": "ccb7cd35-f749-328f-8409-1c17ca70da48"
+            }
+          ],
+          "nonSittingDays": [],
+          "hearingLanguage": "ENGLISH",
+          "estimatedMinutes": 20,
+          "jurisdictionType": "MAGISTRATES",
+          "courtApplications": []
+        }
+      },
+      {
+        "hearing": {
+          "id": "1e88e27e-7ba3-4448-9f07-7c09a4dd3210",
+          "type": {
+            "id": "3449743b-95d6-4836-8941-57f588b52068",
+            "description": "Application"
+          },
+          "endDate": "2020-06-03",
+          "allocated": true,
+          "judiciary": [
+            {
+              "judicialId": "82c915bc-a753-3ef1-9265-aa134511f272",
+              "judicialRoleType": {
+                "judiciaryType": "RECORDER"
+              }
+            },
+            {
+              "judicialId": "3d387d26-12f9-3271-94ed-3b99a7427da1",
+              "judicialRoleType": {
+                "judiciaryType": "DISTRICT_JUDGE"
+              }
+            },
+            {
+              "judicialId": "7291c61f-37b6-384b-bc7b-59c6e3aa93c3",
+              "judicialRoleType": {
+                "judiciaryType": "CIRCUIT_JUDGE"
+              }
+            },
+            {
+              "isDeputy": false,
+              "judicialId": "a952dded-a0b7-32c2-8744-e52e728e5594",
+              "isBenchChairman": true,
+              "judicialRoleType": {
+                "judiciaryType": "MAGISTRATE"
+              }
+            },
+            {
+              "isDeputy": true,
+              "judicialId": "49360dcc-9b1e-3052-986b-ac40de101fdb",
+              "isBenchChairman": false,
+              "judicialRoleType": {
+                "judiciaryType": "MAGISTRATE"
+              }
+            },
+            {
+              "isDeputy": true,
+              "judicialId": "e7324939-7da1-3711-b853-87d3621fb191",
+              "isBenchChairman": false,
+              "judicialRoleType": {
+                "judiciaryType": "MAGISTRATE"
+              }
+            }
+          ],
+          "startDate": "2020-06-03",
+          "courtRoomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+          "hearingDays": [
+            {
+              "endTime": "2020-06-03T10:30:00.000Z",
+              "sequence": 1,
+              "startTime": "2020-06-03T10:00:00.000Z",
+              "hearingDate": "2020-06-03",
+              "durationMinutes": 30
+            }
+          ],
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "nonDefaultDays": [
+            {
+              "duration": 30,
+              "startTime": "2020-06-03T10:00:00.000Z"
+            }
+          ],
+          "nonSittingDays": [],
+          "hearingLanguage": "ENGLISH",
+          "estimatedMinutes": 30,
+          "jurisdictionType": "MAGISTRATES",
+          "courtApplications": [
+            {
+              "id": "1bb1b8b5-c6bd-49cc-a4aa-9c02b4ffd535",
+              "isEjected": true,
+              "applicant": {
+                "id": "25685ba1-34e2-411c-8069-43175995709d",
+                "lastName": "Test organisation",
+                "isRespondent": false,
+                "restrictFromCourtList": false,
+                "courtApplicationPartyType": "ORGANISATION"
+              },
+              "respondents": [],
+              "applicationType": "Complaint for a football banning order",
+              "applicationReference": "9WAJCO9PQN",
+              "restrictFromCourtList": false,
+              "restrictCourtApplicationType": false
+            },
+            {
+              "id": "1bb1b8b5-c6bd-49cc-a4aa-9c02b4ffd535",
+              "isEjected": true,
+              "applicant": {
+                "id": "25685ba1-34e2-411c-8069-43175995709d",
+                "lastName": "Test organisation",
+                "isRespondent": false,
+                "restrictFromCourtList": false,
+                "courtApplicationPartyType": "ORGANISATION"
+              },
+              "respondents": [],
+              "applicationType": "Complaint for a football banning order",
+              "applicationReference": "9WAJCO9PQN",
+              "restrictFromCourtList": false,
+              "restrictCourtApplicationType": false
+            }
+          ]
+        }
+      },
+      {
+        "hearing": {
+          "id": "f3dc9023-9f85-4fda-b6c1-40c8c575288d",
+          "type": {
+            "id": "3449743b-95d6-4836-8941-57f588b52068",
+            "description": "Application"
+          },
+          "endDate": "2020-06-03",
+          "allocated": true,
+          "judiciary": [
+            {
+              "judicialId": "2ddc6693-81f1-38fa-9cc8-0573e13870fd",
+              "judicialRoleType": {
+                "judiciaryType": "RECORDER"
+              }
+            },
+            {
+              "judicialId": "fa1839c5-5070-3f5c-b53f-d4a2e523641c",
+              "judicialRoleType": {
+                "judiciaryType": "DISTRICT_JUDGE"
+              }
+            },
+            {
+              "judicialId": "3ce257b3-11e5-3cf8-8999-2f5a675188e8",
+              "judicialRoleType": {
+                "judiciaryType": "CIRCUIT_JUDGE"
+              }
+            },
+            {
+              "isDeputy": false,
+              "judicialId": "fa3dade3-a493-35f2-bf64-203452ac954c",
+              "isBenchChairman": true,
+              "judicialRoleType": {
+                "judiciaryType": "MAGISTRATE"
+              }
+            },
+            {
+              "isDeputy": true,
+              "judicialId": "f3482a10-2a8d-3a7e-8df5-7d63ec37872a",
+              "isBenchChairman": false,
+              "judicialRoleType": {
+                "judiciaryType": "MAGISTRATE"
+              }
+            },
+            {
+              "isDeputy": true,
+              "judicialId": "ccf68ece-4bf7-3058-9b07-b91d40775d8c",
+              "isBenchChairman": false,
+              "judicialRoleType": {
+                "judiciaryType": "MAGISTRATE"
+              }
+            }
+          ],
+          "startDate": "2020-06-03",
+          "courtRoomId": "f1ead1d2-4b26-3230-b781-508d6aaafd26",
+          "hearingDays": [
+            {
+              "endTime": "2020-06-03T10:00:00.000Z",
+              "sequence": 1,
+              "startTime": "2020-06-03T09:30:00.000Z",
+              "hearingDate": "2020-06-03",
+              "durationMinutes": 30
+            }
+          ],
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "nonDefaultDays": [
+            {
+              "duration": 30,
+              "startTime": "2020-06-03T09:30:00.000Z"
+            }
+          ],
+          "nonSittingDays": [],
+          "hearingLanguage": "ENGLISH",
+          "estimatedMinutes": 30,
+          "jurisdictionType": "MAGISTRATES",
+          "courtApplications": [
+            {
+              "id": "bba9c062-32a1-4040-b4fb-163d96763c7c",
+              "isEjected": false,
+              "applicant": {
+                "id": "89a87ce1-1cf4-4f10-adb3-004e20baab08",
+                "lastName": "Sharma",
+                "firstName": "Kunal",
+                "isRespondent": false,
+                "restrictFromCourtList": true,
+                "courtApplicationPartyType": "PERSON"
+              },
+              "respondents": [
+                {
+                  "id": "b2de787c-6000-4d74-9951-a6b25cc96608",
+                  "lastName": "Respondant",
+                  "firstName": "Test",
+                  "isRespondent": true,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON"
+                }
+              ],
+              "applicationType": "Application to vary police bail",
+              "applicationReference": "CPWPSOCEH9",
+              "restrictFromCourtList": false,
+              "restrictCourtApplicationType": false
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
 import uk.gov.justice.core.courts.CustodyTimeLimit;
+import uk.gov.moj.cpp.listing.steps.CivilOffenceData;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -27,13 +28,14 @@ public class OffenceData {
     private Optional<Boolean> shadowListed;
     private List<ReportingRestrictionData> reportingRestriction;
     private String indictmentParticular;
+    private CivilOffenceData civilOffenceData;
 
     public OffenceData(final UUID offenceId, final String offenceCode,
                        final LocalDate startDate, final LocalDate endDate, final String statementOfOffenceTitle,
                        final String statementOfOffenceTitleWelsh, final String offenceWording,
                        final Integer count, final Integer orderIndex, final String offenceLegislation, UUID offenceDefinitionId, Optional<CustodyTimeLimit> custodyTimeLimit,
                        final Optional<LaaReferenceData> laaApplnReference, final LocalDate laidDate,
-                       final Optional<Boolean> shadowListed, final List<ReportingRestrictionData> reportingRestrictionData, final String indictmentParticular) {
+                       final Optional<Boolean> shadowListed, final List<ReportingRestrictionData> reportingRestrictionData, final String indictmentParticular, final CivilOffenceData civilOffenceData) {
 
         this.endDate = endDate;
         this.offenceCode = offenceCode;
@@ -53,6 +55,7 @@ public class OffenceData {
         this.shadowListed = shadowListed;
         this.reportingRestriction = reportingRestrictionData;
         this.indictmentParticular = indictmentParticular;
+        this.civilOffenceData = civilOffenceData;
     }
 
     public Optional<LaaReferenceData> getLaaApplnReference() {
@@ -151,6 +154,14 @@ public class OffenceData {
         return indictmentParticular;
     }
 
+    public CivilOffenceData getCivilOffenceData() {
+        return civilOffenceData;
+    }
+
+    public void setCivilOffenceData(final CivilOffenceData civilOffenceData) {
+        this.civilOffenceData = civilOffenceData;
+    }
+
     public void copyOffenceData(OffenceData offenceData) {
         this.count = offenceData.getCount();
         this.custodyTimeLimit = offenceData.getCustodyTimeLimit();
@@ -168,5 +179,6 @@ public class OffenceData {
         this.shadowListed = offenceData.getShadowListed();
         this.statementOfOffenceTitle = offenceData.getStatementOfOffenceTitle();
         this.statementOfOffenceTitleWelsh = offenceData.getStatementOfOffenceTitleWelsh();
+        this.civilOffenceData = offenceData.getCivilOffenceData();
     }
 }

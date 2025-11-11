@@ -18,6 +18,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsData());
     }
 
+    public static HearingsData hearingsDataWithExParteOffence() {
+        return new HearingsData(HearingsDataFactory.hearingsDataForCasesWithExParte());
+    }
+
     public static HearingsData trialHearingsData() {
         return new HearingsData(HearingsDataFactory.trialHearingsData());
     }

@@ -16,6 +16,7 @@ import static java.time.ZoneOffset.UTC;
 import static java.util.Collections.emptyMap;
 import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.*;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetProsecutorPoliceFlag;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 
 class TestSpiScenario extends AbstractIT {
@@ -63,7 +64,8 @@ class TestSpiScenario extends AbstractIT {
         ListCourtHearingStepsSpi listCourtHearingSteps = new ListCourtHearingStepsSpi();
         Map<String, String> payload = getPayloadValues("listing");
         final JsonObject listCourtHearingJsonObject = listCourtHearingSteps.preparePayloadToListCourtHearing(LIST_SPI_ALLOCATED_HEARING_JSON, payload);
-
+        stubGetProsecutorPoliceFlag(UUID.fromString("764bff92-a135-34cb-b858-8bb6b4b66301"));
+        stubSearchBookHearingSlots(hearingId.toString(), courtCentreId.toString(), startDate.toString(), hearingStartTime);
         listCourtHearingSteps.listCourtHearing(listCourtHearingJsonObject.getJsonArray("hearings").getJsonObject(0));
 
         listCourtHearingSteps.verifyAllocatedHearingFound(payload);
@@ -138,6 +140,7 @@ class TestSpiScenario extends AbstractIT {
                     put("hearingStartTime", hearingStartTime.format(formatter));
                     put("estimatedMinutes", String.valueOf(defaultDuration));
                     put("prosecutionCaseId", String.valueOf(prosecutionCaseId));
+                    put("listedStartDateTime", hearingStartTime.format(formatter));
 
                     put("caseUrn", caseUrn);
                 }};

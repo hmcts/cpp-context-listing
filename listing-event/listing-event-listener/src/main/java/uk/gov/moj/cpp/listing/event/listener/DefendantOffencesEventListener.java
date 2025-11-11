@@ -176,6 +176,7 @@ public class DefendantOffencesEventListener {
                 .withListingNumber(originalOffence.map(Offence::getListingNumber).orElse(null))
                 .withReportingRestrictions(dedupReportingRestrictions(updatedOffence.getReportingRestrictions()))
                 .withIndictmentParticular(updatedOffence.getIndictmentParticular())
+                .withCivilOffence(updatedOffence.getCivilOffence())
                 .build();
     }
 

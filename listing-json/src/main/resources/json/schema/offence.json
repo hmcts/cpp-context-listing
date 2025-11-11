@@ -60,6 +60,10 @@
     },
     "indictmentParticular": {
       "type": "string"
+    },
+    "civilOffence": {
+      "description": "The Offence data object related to civil cases",
+      "$ref": "http://justice.gov.uk/core/courts/civilOffence.json"
     }
   },
   "required": [

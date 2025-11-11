@@ -34,6 +34,7 @@ import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.moj.cpp.listing.domain.BailStatus;
 import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
+import uk.gov.moj.cpp.listing.domain.CivilOffence;
 import uk.gov.moj.cpp.listing.domain.CommittingCourt;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
@@ -467,38 +468,49 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
     }
 
     @SuppressWarnings({"squid:S3655"})
-    public uk.gov.moj.cpp.listing.domain.Offence buildOffence(final uk.gov.justice.core.courts.Offence o, final List<UUID> shadowListedOffences) {
+    public uk.gov.moj.cpp.listing.domain.Offence buildOffence(final uk.gov.justice.core.courts.Offence offence, final List<UUID> shadowListedOffences) {
         boolean shadowListed = false;
         if (shadowListedOffences != null) {
             shadowListed = shadowListedOffences.stream()
-                    .anyMatch(offenceId -> offenceId.equals(o.getId()));
+                    .anyMatch(offenceId -> offenceId.equals(offence.getId()));
         }
 
         final Offence.Builder builder = Offence.offence()
-                .withId(o.getId())
-                .withEndDate(ofNullable(o.getEndDate()))
-                .withStartDate(o.getStartDate())
-                .withLaidDate(ofNullable(o.getLaidDate()))
-                .withOffenceCode(o.getOffenceCode())
-                .withOrderIndex(o.getOrderIndex())
-                .withCount(o.getCount())
-                .withOffenceWording(o.getWording())
-                .withStatementOfOffence(buildStatementOfOffence(o))
-                .withSeedingHearing(buildSeedingHearing(o.getSeedingHearing()))
-                .withLaaApplnReference(buildLaaReference(o.getLaaApplnReference()))
+                .withId(offence.getId())
+                .withEndDate(ofNullable(offence.getEndDate()))
+                .withStartDate(offence.getStartDate())
+                .withLaidDate(ofNullable(offence.getLaidDate()))
+                .withOffenceCode(offence.getOffenceCode())
+                .withOrderIndex(offence.getOrderIndex())
+                .withCount(offence.getCount())
+                .withOffenceWording(offence.getWording())
+                .withStatementOfOffence(buildStatementOfOffence(offence))
+                .withSeedingHearing(buildSeedingHearing(offence.getSeedingHearing()))
+                .withLaaApplnReference(buildLaaReference(offence.getLaaApplnReference()))
                 .withShadowListed(ofNullable(shadowListed));
 
-        if (nonNull(o.getCommittingCourt())) {
-            builder.withCommittingCourt(buildCommittingCourt(o.getCommittingCourt()));
+        if (nonNull(offence.getCommittingCourt())) {
+            builder.withCommittingCourt(buildCommittingCourt(offence.getCommittingCourt()));
         }
-        if (!isNull(o.getReportingRestrictions()) && !o.getReportingRestrictions().isEmpty()) {
-            builder.withReportingRestrictions(o.getReportingRestrictions().stream()
+        if (!isNull(offence.getReportingRestrictions()) && !offence.getReportingRestrictions().isEmpty()) {
+            builder.withReportingRestrictions(offence.getReportingRestrictions().stream()
                     .map(ReportingRestrictionConverter::courtsToDomain)
                     .collect(toList())
             );
         }
 
+        if(nonNull(offence.getCivilOffence())) {
+            builder.withCivilOffence(buildCivilOffence(offence));
+        }
+
         return builder.build();
+    }
+
+    private CivilOffence buildCivilOffence(final uk.gov.justice.core.courts.Offence offence) {
+        return CivilOffence.civilOffence()
+                .withIsExParte(offence.getCivilOffence().getIsExParte())
+                .withIsRespondent(offence.getCivilOffence().getIsRespondent())
+                .build();
     }
 
     private StatementOfOffence buildStatementOfOffence(final uk.gov.justice.core.courts.Offence offence) {

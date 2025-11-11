@@ -62,6 +62,7 @@ public class PayloadGenerator {
         
         // Generate UUIDs for common placeholders
         values.put("%%HEARING_ID%%", UUID.randomUUID().toString());
+        values.put("%%HEARING_TYPE_ID%%", UUID.randomUUID().toString());
         values.put("%%COURT_CENTRE_ID%%", UUID.randomUUID().toString());
         values.put("%%COURT_ROOM_ID%%", UUID.randomUUID().toString());
         values.put("%%COURTSCHEDULE_ID%%", UUID.randomUUID().toString());

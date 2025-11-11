@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.query.api;
 
 import static javax.json.Json.createObjectBuilder;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static uk.gov.justice.services.core.annotation.Component.QUERY_API;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -192,15 +193,18 @@ public class HearingQueryApi {
         final JsonObject payload = query.payloadAsJsonObject();
         final String firstName = payload.getString(FIRST_NAME);
         final String lastName = payload.getString(LAST_NAME);
-        final String dateOfBirth = payload.getString(DOB);
+        final String dateOfBirth = payload.getString(DOB, null);
         final String hearingDate = payload.getString(HEARING_DATE);
         final boolean isCivilParameterExists = payload.containsKey(IS_CIVIL);
         final boolean isGroupMemberParameterExists = payload.containsKey(IS_GROUP_MEMBER);
 
         final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
                 .add(FIRST_NAME, firstName)
-                .add(LAST_NAME, lastName)
-                .add(DOB, dateOfBirth);
+                .add(LAST_NAME, lastName);
+
+        if(isNotEmpty(dateOfBirth)) {
+            jsonObjectBuilder.add(DOB, dateOfBirth);
+        }
 
         if (isCivilParameterExists) {
             jsonObjectBuilder.add(IS_CIVIL, payload.getBoolean(IS_CIVIL));

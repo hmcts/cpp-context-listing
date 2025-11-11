@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/civilOffence.json",
+  "type": "object",
+  "properties": {
+    "isExParte": {
+      "type": "boolean"
+    },
+    "isRespondent": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

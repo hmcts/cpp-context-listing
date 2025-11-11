@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -166,6 +167,7 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
         return hearings.stream()
                 .map(this::deepCopyProperties)
                 .map(this::filterEjectedCasesAndCourtApplicationsForAlphabeticalList)
+                .map(this::filterExParteOffenceCasesForPublishList)
                 .map(this::removeHearingsWhenBothCasesAndApplicationsAreEmpty)
                 .filter(Objects::nonNull)
                 .map(hearingJsonNode -> this.jsonFromString(hearingJsonNode.get(0).toString()))
@@ -175,7 +177,12 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
     @Override
     public JsonArray convertHearingResultForPublicList(final Hearing hearing) {
         if (nonNull(hearing)) {
-            final JsonObject publicHearingResult = this.jsonFromString(hearing.getProperties().toString());
+            final JsonNode filteredHearingProperties = filterExParteOffenceCasesForPublishList(hearing.getProperties());
+            if(isNull(filteredHearingProperties)) {
+                return createArrayBuilder().build();
+            }
+
+            final JsonObject publicHearingResult = this.jsonFromString(filteredHearingProperties.toString());
             final JsonArray judiciary = publicHearingResult.isNull(JUDICIARY) ? EMPTY_JSON_ARRAY : publicHearingResult.getJsonArray(JUDICIARY);
             if (publicHearingResult.isNull(HEARINGS)) {
                 return createArrayBuilder().build();
@@ -287,6 +294,15 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
         return properties;
     }
 
+    private JsonNode filterExParteOffenceCasesForPublishList(final JsonNode properties) {
+        if (isNull(properties)) {
+            return null;
+        }
+        final List<JsonNode> listedCasesNodes = properties.findValues(LISTED_CASES);
+        listedCasesNodes.forEach(this::removeNodeForExParteFlag);
+        return properties;
+    }
+
     private JsonNode removeHearingsWhenBothCasesAndApplicationsAreEmpty(final JsonNode properties) {
         if (isNull(properties)) {
             return null;
@@ -338,6 +354,40 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
                 index++;
             }
         }
+    }
+    private void removeNodeForExParteFlag(final JsonNode jsonNode) {
+        if (jsonNode == null || !jsonNode.isArray()) {
+            return;
+        }
+
+        ArrayNode arrayNode = (ArrayNode) jsonNode;
+        Iterator<JsonNode> iterator = arrayNode.elements();
+
+        while (iterator.hasNext()) {
+            JsonNode listedCase = iterator.next();
+            if (isExparteOffenceCase(listedCase)) {
+                iterator.remove();
+            }
+        }
+
+    }
+
+    private boolean isExparteOffenceCase(JsonNode listedCase) {
+
+        JsonNode offencesNode = listedCase.findPath("offences");
+
+        if (offencesNode.isMissingNode() || !offencesNode.isArray()) {
+            return false;
+        }
+
+        for (JsonNode offence : offencesNode) {
+            JsonNode isExParteNode = offence.findPath("civilOffence").findPath("isExParte");
+            if (!isExParteNode.isMissingNode() && isExParteNode.asBoolean()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private JsonObject jsonFromString(final String jsonObjectStr) {

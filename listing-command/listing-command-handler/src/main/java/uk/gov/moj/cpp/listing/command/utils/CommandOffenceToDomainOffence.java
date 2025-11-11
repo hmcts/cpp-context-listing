@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
+import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
@@ -7,6 +8,7 @@ import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 
 import uk.gov.justice.listing.commands.Offence;
 import uk.gov.justice.services.common.converter.Converter;
+import uk.gov.moj.cpp.listing.domain.CivilOffence;
 import uk.gov.moj.cpp.listing.domain.CustodyTimeLimit;
 import uk.gov.moj.cpp.listing.domain.LaaReference;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
@@ -67,6 +69,12 @@ public class CommandOffenceToDomainOffence implements Converter<List<Offence>, L
 
         if (isNotEmpty(commandOffence.getReportingRestrictions())) {
             offenceBuilder.withReportingRestrictions(ReportingRestrictionConverter.eventsToDomainAsList(commandOffence.getReportingRestrictions()));
+        }
+
+        if (nonNull(commandOffence.getCivilOffence())){
+            offenceBuilder.withCivilOffence(CivilOffence.civilOffence()
+                    .withIsExParte(commandOffence.getCivilOffence().getIsExParte())
+                    .build());
         }
 
         return offenceBuilder.build();
