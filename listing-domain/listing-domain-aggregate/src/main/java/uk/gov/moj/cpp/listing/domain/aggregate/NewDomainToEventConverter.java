@@ -215,39 +215,48 @@ public class NewDomainToEventConverter {
     }
 
     @SuppressWarnings({"squid:S3655"})
-    public static Offence buildOffence(final uk.gov.moj.cpp.listing.domain.Offence o) {
+    public static Offence buildOffence(final uk.gov.moj.cpp.listing.domain.Offence offence) {
         final Offence.Builder builder = Offence.offence()
-                .withId(o.getId())
-                .withEndDate(o.getEndDate().orElse(null))
-                .withStartDate(o.getStartDate())
-                .withOffenceCode(o.getOffenceCode())
-                .withOffenceWording(o.getOffenceWording())
-                .withCount(o.getCount())
-                .withIndictmentParticular(o.getIndictmentParticular())
-                .withOrderIndex(o.getOrderIndex())
-                .withStatementOfOffence(buildStatementOfOffence(o))
-                .withOffenceWording(o.getOffenceWording())
+                .withId(offence.getId())
+                .withEndDate(offence.getEndDate().orElse(null))
+                .withStartDate(offence.getStartDate())
+                .withOffenceCode(offence.getOffenceCode())
+                .withOffenceWording(offence.getOffenceWording())
+                .withCount(offence.getCount())
+                .withIndictmentParticular(offence.getIndictmentParticular())
+                .withOrderIndex(offence.getOrderIndex())
+                .withStatementOfOffence(buildStatementOfOffence(offence))
+                .withOffenceWording(offence.getOffenceWording())
                 .withRestrictFromCourtList(false)
-                .withLaaApplnReference(o.getLaaApplnReference().isPresent() ? buildLaaReference(o.getLaaApplnReference().get()) : null)
-                .withLaidDate(o.getLaidDate().orElse(null))
-                .withShadowListed(o.getShadowListed().orElse(null));
+                .withLaaApplnReference(offence.getLaaApplnReference().isPresent() ? buildLaaReference(offence.getLaaApplnReference().get()) : null)
+                .withLaidDate(offence.getLaidDate().orElse(null))
+                .withShadowListed(offence.getShadowListed().orElse(null));
 
-        if(nonNull(o.getSeedingHearing()) && o.getSeedingHearing().isPresent()) {
-            builder.withSeedingHearing(buildSeedingHearing(o.getSeedingHearing().get()).get());
+        if(nonNull(offence.getSeedingHearing()) && offence.getSeedingHearing().isPresent()) {
+            builder.withSeedingHearing(buildSeedingHearing(offence.getSeedingHearing().get()).get());
         }
 
-        if (nonNull(o.getCommittingCourt()) && o.getCommittingCourt().isPresent()) {
-            builder.withCommittingCourt(buildCommittingCourt(o.getCommittingCourt().get()));
+        if (nonNull(offence.getCommittingCourt()) && offence.getCommittingCourt().isPresent()) {
+            builder.withCommittingCourt(buildCommittingCourt(offence.getCommittingCourt().get()));
         }
 
-        if (!isNull(o.getReportingRestrictions()) && !o.getReportingRestrictions().isEmpty()) {
-            builder.withReportingRestrictions(o.getReportingRestrictions().stream()
+        if (!isNull(offence.getReportingRestrictions()) && !offence.getReportingRestrictions().isEmpty()) {
+            builder.withReportingRestrictions(offence.getReportingRestrictions().stream()
                     .map(ReportingRestrictionConverter::domainToEvents)
                     .collect(toList())
             );
         }
+        if(nonNull(offence.getCivilOffence())) {
+            builder.withCivilOffence(buildCivilOffence(offence));
+        }
 
         return builder.build();
+    }
+
+    private static uk.gov.justice.core.courts.CivilOffence buildCivilOffence(final uk.gov.moj.cpp.listing.domain.Offence offence) {
+        return uk.gov.justice.core.courts.CivilOffence.civilOffence()
+                .withIsExParte(offence.getCivilOffence().getIsExParte())
+                .build();
     }
 
     private static uk.gov.justice.core.courts.BailStatus buildBailStatusEvent(final Optional<uk.gov.moj.cpp.listing.domain.BailStatus> bailStatus) {

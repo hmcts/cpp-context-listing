@@ -30,6 +30,9 @@
         "statusDate": "2010-12-01",
         "statusDescription": "Further Plea & Trial Preparation",
         "statusId": "7e2f843e-d639-40b3-8611-8015f3a18612"
+      },
+      "civilOffence": {
+        "isExParte": true
       }
     }
   ]

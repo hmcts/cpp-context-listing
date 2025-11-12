@@ -14,9 +14,6 @@
       "courtApplications": [
         {
           "courtApplicationPayment": {
-            "isFeeExempt": false,
-            "isFeePaid": false,
-            "isFeeUndertakingAttached": false,
             "paymentReference": "TEST101"
           },
           "courtCivilApplication": {

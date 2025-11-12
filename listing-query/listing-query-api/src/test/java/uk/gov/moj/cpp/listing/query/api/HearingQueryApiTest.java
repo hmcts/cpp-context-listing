@@ -392,6 +392,12 @@ public class HearingQueryApiTest {
     }
 
     @Test
+    public void shouldGetCasesByPersonDefendantWithIsCivilAndIsGroupMemberFlagFALSEAndDobAbsent() {
+        assertGetCasesByPersonDefendantWithoutDob(false, false);
+    }
+
+
+    @Test
     public void shouldGetCasesByPersonDefendant() {
         final JsonEnvelope envelope = EnvelopeFactory.createEnvelope("listing.get.cases-by-person-defendant", createObjectBuilder()
                 .add("firstName", randomAlphabetic(5))
@@ -438,6 +444,45 @@ public class HearingQueryApiTest {
                 .add("firstName", randomAlphabetic(5))
                 .add("lastName", randomAlphabetic(5))
                 .add("dateOfBirth", now().toString())
+                .add("hearingDate", now().toString());
+
+        if (nonNull(isCivil)) {
+            jsonObjectBuilder.add("isCivil", isCivil);
+        }
+        if (nonNull(isGroupMember)) {
+            jsonObjectBuilder.add("isGroupMember", isGroupMember);
+        }
+        final JsonEnvelope envelope = EnvelopeFactory.createEnvelope("listing.get.cases-by-person-defendant", jsonObjectBuilder.build());
+
+        final MetadataBuilder metadataBuilder = metadataBuilder()
+                .withId(randomUUID())
+                .withName("defence.query.get-case-by-person-defendant");
+
+        final Envelope responseEnvelope = Envelope.envelopeFrom(metadataBuilder.build(), createObjectBuilder().add("caseIds", createArrayBuilder().add(randomUUID().toString()).build())
+                .add("defendants", createArrayBuilder().add(randomUUID().toString()).build()).build());
+        when(requester.request(any(), any())).thenReturn(responseEnvelope);
+        hearingQueryApi.getCasesByPersonDefendantAndHearingDate(envelope);
+
+        verify(requester).request(requesterCaptor.capture(), any());
+
+        final JsonObject jsonObject = requesterCaptor.getValue().payloadAsJsonObject();
+
+        if (nonNull(isCivil)) {
+            assertThat(jsonObject.getBoolean("isCivil"), is(isCivil));
+        } else {
+            assertThat(jsonObject.containsKey("isCivil"), is(false));
+        }
+        if (nonNull(isGroupMember)) {
+            assertThat(jsonObject.getBoolean("isGroupMember"), is(isGroupMember));
+        } else {
+            assertThat(jsonObject.containsKey("isGroupMember"), is(false));
+        }
+    }
+
+    private void assertGetCasesByPersonDefendantWithoutDob(final Boolean isCivil, final Boolean isGroupMember) {
+        JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
+                .add("firstName", randomAlphabetic(5))
+                .add("lastName", randomAlphabetic(5))
                 .add("hearingDate", now().toString());
 
         if (nonNull(isCivil)) {

@@ -7,6 +7,7 @@ import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 
 import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.services.common.converter.Converter;
+import uk.gov.moj.cpp.listing.domain.CivilOffence;
 import uk.gov.moj.cpp.listing.domain.LaaReference;
 import uk.gov.moj.cpp.listing.domain.Offence;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
@@ -50,6 +51,12 @@ public class AddOffencesForHearingCommandCollectionConverter implements Converte
 
             if (isNotEmpty(offence.getReportingRestrictions())) {
                 offenceBuilder.withReportingRestrictions(commonHearingCommandConverter.buildReportingRestrictions(offence.getReportingRestrictions()));
+            }
+
+            if(nonNull(offence.getCivilOffence())){
+                offenceBuilder.withCivilOffence(CivilOffence.civilOffence()
+                                .withIsExParte(offence.getCivilOffence().getIsExParte())
+                        .build());
             }
 
             return offenceBuilder.build();

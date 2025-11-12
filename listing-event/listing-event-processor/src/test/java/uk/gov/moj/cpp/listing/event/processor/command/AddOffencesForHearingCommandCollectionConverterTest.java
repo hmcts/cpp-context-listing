@@ -20,7 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class AddOffencesForHearingCommandCollectionConverterTest {
 
-    private AddOffencesForHearingCommandCollectionConverter  addOffencesForHearingCommandCollectionConverter = new AddOffencesForHearingCommandCollectionConverter();
+    private AddOffencesForHearingCommandCollectionConverter addOffencesForHearingCommandCollectionConverter = new AddOffencesForHearingCommandCollectionConverter();
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
@@ -70,7 +70,9 @@ public class AddOffencesForHearingCommandCollectionConverterTest {
                         "           \"statusDate\": \"2010-12-01\", \n" +
                         "           \"statusDescription\": \"Further Plea & Trial Preparation\", \n" +
                         "           \"statusId\": \"7e2f843e-d639-40b3-8611-8015f3a18612\", \n" +
-                        "         }\n" +
+                        "         },\n" +
+                        "       \"civilOffence\":{\"isExParte\":true "+
+                        "        }\n" +
                         "      }\n" +
                         "    ],\n" +
                         "    \"hearingId\": \"0baecac5-222b-402d-9047-84803679edaf\"\n" +

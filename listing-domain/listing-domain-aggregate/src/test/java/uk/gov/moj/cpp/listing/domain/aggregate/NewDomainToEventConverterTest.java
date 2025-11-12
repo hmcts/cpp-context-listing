@@ -15,6 +15,7 @@ import static uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.PERSON;
 import static uk.gov.moj.cpp.listing.domain.aggregate.NewDomainToEventConverter.buildCourtApplications;
 
 import uk.gov.moj.cpp.listing.domain.Address;
+import uk.gov.moj.cpp.listing.domain.CivilOffence;
 import uk.gov.moj.cpp.listing.domain.CommittingCourt;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.CourtHouseType;
@@ -76,6 +77,9 @@ public class NewDomainToEventConverterTest {
         final UUID judicialResultId = randomUUID();
         final String label = "label";
         final LocalDate orderedDate = LocalDate.now().plusDays(-1);
+        final CivilOffence civilOffence = CivilOffence.civilOffence()
+                .withIsExParte(true)
+                .build();
         final Offence offence = Offence.offence()
                 .withLaidDate(of(laidDate))
                 .withId(offenceId)
@@ -116,6 +120,7 @@ public class NewDomainToEventConverterTest {
                         .withLabel(label)
                         .withOrderedDate(of(orderedDate))
                         .build()))
+                .withCivilOffence(civilOffence)
                 .build();
 
         final uk.gov.justice.listing.events.Offence eventOffence = NewDomainToEventConverter.buildOffence(offence);
@@ -160,6 +165,8 @@ public class NewDomainToEventConverterTest {
         assertThat(reportingRestriction.getJudicialResultId(), is(judicialResultId));
         assertThat(reportingRestriction.getLabel(), is(label));
         assertThat(reportingRestriction.getOrderedDate(), is(orderedDate));
+
+        assertThat(civilOffence.getIsExParte(),is(eventOffence.getCivilOffence().getIsExParte()));
 
     }
 
