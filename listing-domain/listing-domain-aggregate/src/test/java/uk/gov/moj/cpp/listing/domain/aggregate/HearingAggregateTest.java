@@ -31,10 +31,14 @@ import uk.gov.justice.listing.events.AllocatedHearingDeleted;
 import uk.gov.justice.listing.events.AllocatedHearingExtendedForListingV2;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListingV2;
 import uk.gov.justice.listing.events.ApplicantRespondent;
+import uk.gov.justice.listing.events.ApplicationEjected;
 import uk.gov.justice.listing.events.AvailableSlotsForHearingFreed;
+import uk.gov.justice.listing.events.CaseEjected;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.CaseIdentifierUpdated;
 import uk.gov.justice.listing.events.CasesAddedToHearing;
+import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
+import uk.gov.justice.listing.events.CourtRoomRemovedFromHearing;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdatedV2;
 import uk.gov.justice.listing.events.DefendantLegalaidStatusUpdatedForHearing;
@@ -51,6 +55,7 @@ import uk.gov.justice.listing.events.HearingMarkedAsDeleted;
 import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
 import uk.gov.justice.listing.events.HearingRequestedForListing;
 import uk.gov.justice.listing.events.HearingResultStatusUpdated;
+import uk.gov.justice.listing.events.HearingUnallocatedCourtroomRemoved;
 import uk.gov.justice.listing.events.JudiciaryChangedForHearingsStatus;
 import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
@@ -64,6 +69,7 @@ import uk.gov.justice.listing.events.OffencesRemovedFromHearing;
 import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIds;
 import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIdsV2;
 import uk.gov.justice.listing.events.SeedingHearing;
+import uk.gov.justice.listing.events.SequencesResetOnHearingDays;
 import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.justice.listing.events.UnallocatedHearingDeleted;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
@@ -91,6 +97,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -1485,7 +1492,164 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldNotBeAbleToMarkHearingAsDeletedIfAllreadyDeleted() {
+    void shouldBeAbleToEjectApplicationAndAvailableSlotsForHearingFreed_IfHearingIsListedAndAllEjectedTrue() {
+
+        final UUID applicationId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final String removalReason = "removal reason";
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withCourtApplications(new ArrayList<>(asList(uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                .withId(applicationId)
+                                .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                .withIsEjected(true)
+                                .build())))
+                        .build())
+                .build()
+        );
+
+
+        var listedHearing = hearing.ejectApplication(hearingId, applicationId, removalReason).toList();
+
+        assertThat(listedHearing, hasSize(2));
+
+        var availableSlotsForHearingFreed = (AvailableSlotsForHearingFreed)listedHearing.get(0);
+        var applicationEjected = (ApplicationEjected)listedHearing.get(1);
+
+        assertThat(availableSlotsForHearingFreed.getHearingId(), is(hearingId));
+        assertThat(applicationEjected.getHearingId(), is(hearingId));
+    }
+
+    @Test
+    void shouldBeAbleToEjectHearingAndAvailableSlotsForHearingFreed_IfHearingIsListedAndAllEjectedTrue() {
+
+        final UUID caseId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final String removalReason = "removal reason";
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withAllocated(true)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(new ArrayList<>(
+                                asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(caseId)
+                                        .withDefendants(emptyList())
+                                        .withIsEjected(true)
+                                        .build()
+                                )
+                        ))
+                        .build())
+                .build()
+        );
+
+
+        var listedHearing = hearing.ejectCase(hearingId, caseId, removalReason).toList();
+
+        assertThat(listedHearing, hasSize(2));
+
+        var availableSlotsForHearingFreed = (AvailableSlotsForHearingFreed)listedHearing.get(0);
+        var caseEjected = (CaseEjected)listedHearing.get(1);
+
+        assertThat(availableSlotsForHearingFreed.getHearingId(), is(hearingId));
+        assertThat(caseEjected.getHearingId(), is(hearingId));
+    }
+
+    @Test
+    void shouldBeAbleToEjectApplicationAndNoSlotsForHearingFreedForCrown() {
+
+        final UUID applicationId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final String removalReason = "removal reason";
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(CROWN)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withCourtApplications(new ArrayList<>(asList(uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                .withId(applicationId)
+                                .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                .withIsEjected(true)
+                                .build())))
+                        .build())
+                .build()
+        );
+
+
+        var listedHearing = hearing.ejectApplication(hearingId, applicationId, removalReason).toList();
+
+        assertThat(listedHearing, hasSize(1));
+
+        var applicationEjected = (ApplicationEjected)listedHearing.get(0);
+
+        assertThat(applicationEjected.getHearingId(), is(hearingId));
+    }
+
+    @Test
+    void shouldBeAbleToEjectApplicationAndNoSlotsForHearingFreedForHearingThatHasAlreadyStarted() {
+
+        final UUID applicationId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final String removalReason = "removal reason";
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now())
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withCourtApplications(new ArrayList<>(asList(uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                .withId(applicationId)
+                                .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                .withIsEjected(true)
+                                .build())))
+                        .build())
+                .build()
+        );
+
+
+        var listedHearing = hearing.ejectApplication(hearingId, applicationId, removalReason).toList();
+
+        assertThat(listedHearing, hasSize(1));
+
+        var applicationEjected = (ApplicationEjected)listedHearing.get(0);
+
+        assertThat(applicationEjected.getHearingId(), is(hearingId));
+    }
+
+    @Test
+    void shouldNotBeAbleToMarkHearingAsDeletedIfAllreadyDeleted() {
 
         final UUID case1Id = randomUUID();
         final UUID case1Defendant1Id = randomUUID();
@@ -1532,7 +1696,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldNotBeAbleToMarkHearingAsDeletedIfHearingResulted() {
+    void shouldNotBeAbleToMarkHearingAsDeletedIfHearingResulted() {
 
         final UUID case1Id = randomUUID();
         final UUID case1Defendant1Id = randomUUID();
@@ -1579,7 +1743,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldBeAbleToDeleteHearingIfNotDeleted() {
+    void shouldBeAbleToDeleteHearingIfNotDeleted() {
 
         final UUID case1Id = randomUUID();
         final UUID case1Defendant1Id = randomUUID();
@@ -1624,7 +1788,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldNotBeAbleToDeleteHearingIfAllReadyDeleted() {
+    void shouldNotBeAbleToDeleteHearingIfAllReadyDeleted() {
 
         final UUID case1Id = randomUUID();
         final UUID case1Defendant1Id = randomUUID();
@@ -1671,7 +1835,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldReturnNothingWhenDefendantListIsNullForUpdateDefendantCourtProceedingForHearing2() {
+    void shouldReturnNothingWhenDefendantListIsNullForUpdateDefendantCourtProceedingForHearing2() {
         final UUID case1Id = randomUUID();
         final ProsecutionCase prosecutionCase = prosecutionCase().
                 withId(case1Id).
@@ -1684,7 +1848,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldPopulateSeedingHearingInAllocationWhenSeedingHearingNotExistsInPayloadsOffenceLevel() {
+    void shouldPopulateSeedingHearingInAllocationWhenSeedingHearingNotExistsInPayloadsOffenceLevel() {
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
         final UUID defendant1Id = randomUUID();
@@ -1791,7 +1955,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldUpdateProsecutionCaseDefendantsOffenceIdsWhenCasesAddedToHearing() {
+    void shouldUpdateProsecutionCaseDefendantsOffenceIdsWhenCasesAddedToHearing() {
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
         final UUID case1Defendant1Id = randomUUID();
@@ -1908,7 +2072,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldNotIncludeDefendantWhoseOffencesReRemovedFromHearing() {
+    void shouldNotIncludeDefendantWhoseOffencesReRemovedFromHearing() {
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
         final UUID case1Defendant1Id = randomUUID();
@@ -2034,7 +2198,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldUpdateProsecutionCaseDefendantsOffenceIdsWhenOffenceAddedOrDeleted() {
+    void shouldUpdateProsecutionCaseDefendantsOffenceIdsWhenOffenceAddedOrDeleted() {
         final UUID case1Id = randomUUID();
         final UUID case1Defendant1Id = randomUUID();
         final UUID case1Defendant1Offence1Id = randomUUID();
@@ -2105,7 +2269,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldUpdateProsecutionCaseDefendantsWhenCasesAddedForHearing() {
+    void shouldUpdateProsecutionCaseDefendantsWhenCasesAddedForHearing() {
 
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
@@ -2165,7 +2329,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldRaiseOffenceRemovedEventWhenOffenceIsInAllocatedHearing() {
+    void shouldRaiseOffenceRemovedEventWhenOffenceIsInAllocatedHearing() {
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
         final UUID defendant1Id = randomUUID();
@@ -2279,18 +2443,18 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldRaiseOffenceRemovedEventWhenOffenceIsInAllocatedHearingWhenSourceIsListing() {
+    void shouldRaiseOffenceRemovedEventWhenOffenceIsInAllocatedHearingWhenSourceIsListing() {
         shouldRaiseOffenceRemovedEventWhenOffenceIsInAllocatedHearing(Hearing.SOURCE_LISTING);
     }
 
     @Test
-    public void shouldRaiseOffenceRemovedEventWhenOffenceIsInAllocatedHearingWhenSourceIsHearing() {
+    void shouldRaiseOffenceRemovedEventWhenOffenceIsInAllocatedHearingWhenSourceIsHearing() {
         shouldRaiseOffenceRemovedEventWhenOffenceIsInAllocatedHearing(Hearing.SOURCE_HEARING);
     }
 
 
     @Test
-    public void shouldRaiseOffenceRemovedEventWhenOffenceIsInUnAllocatedHearing() {
+    void shouldRaiseOffenceRemovedEventWhenOffenceIsInUnAllocatedHearing() {
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
         final UUID defendant1Id = randomUUID();
@@ -2340,7 +2504,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldAddNewCaseWhenDefendantCourtProceedingsUpdatedV2() {
+    void shouldAddNewCaseWhenDefendantCourtProceedingsUpdatedV2() {
         final UUID seedingHearingId = randomUUID();
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
@@ -2404,7 +2568,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldAddNewDefendantWhenDefendantCourtProceedingsUpdatedV2WithSameCaseWithDifferentDefendant() {
+    void shouldAddNewDefendantWhenDefendantCourtProceedingsUpdatedV2WithSameCaseWithDifferentDefendant() {
         final UUID seedingHearingId = randomUUID();
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
@@ -2476,7 +2640,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldAddNewOffenceWhenDefendantCourtProceedingsUpdatedV2WithSameCaseWithSameDefendantButDifferentOffence() {
+    void shouldAddNewOffenceWhenDefendantCourtProceedingsUpdatedV2WithSameCaseWithSameDefendantButDifferentOffence() {
         final UUID seedingHearingId = randomUUID();
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
@@ -2548,7 +2712,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldAddNothingWhenDefendantCourtProceedingsUpdatedV2WithSameCaseWithSameDefendantAmndSameOffence() {
+    void shouldAddNothingWhenDefendantCourtProceedingsUpdatedV2WithSameCaseWithSameDefendantAmndSameOffence() {
         final UUID seedingHearingId = randomUUID();
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
@@ -2618,7 +2782,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldCreateEventForSplit() {
+    void shouldCreateEventForSplit() {
         final List<uk.gov.justice.listing.events.ListedCase> listedCases = singletonList(uk.gov.justice.listing.events.ListedCase
                 .listedCase()
                 .withId(randomUUID())
@@ -2663,7 +2827,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldCreateEventForWeekCommencingSplit() {
+    void shouldCreateEventForWeekCommencingSplit() {
         final List<uk.gov.justice.listing.events.ListedCase> listedCases = singletonList(uk.gov.justice.listing.events.ListedCase
                 .listedCase()
                 .withId(randomUUID())
@@ -2708,7 +2872,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldUpdateCaseIdentifier() {
+    void shouldUpdateCaseIdentifier() {
         final UUID prosecutionAuthorityId = randomUUID();
         final String prosecutionAuthorityCode = "code";
 
@@ -2753,7 +2917,7 @@ class HearingAggregateTest {
 
 
     @Test
-    public void shouldTestCurrentHearingEventStateWithAddedMultipleDefendantsInSameCaseWhenCaseSplitAtDefendantLevelAndMergedBack() {
+    void shouldTestCurrentHearingEventStateWithAddedMultipleDefendantsInSameCaseWhenCaseSplitAtDefendantLevelAndMergedBack() {
 
         final UUID defendantId = randomUUID();
         final UUID defendantId2 = randomUUID();
@@ -2811,7 +2975,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldTestCurrentHearingEventStateWithAddedMultipleOffencesInSameDefendantWhenCaseSplitAtOffenceLevelLevelAndMergedBack() {
+    void shouldTestCurrentHearingEventStateWithAddedMultipleOffencesInSameDefendantWhenCaseSplitAtOffenceLevelLevelAndMergedBack() {
 
         final UUID defendantId = randomUUID();
         final UUID prosecutionCaseId = randomUUID();
@@ -2869,7 +3033,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldTestCurrentHearingEventStateWithAddedMultipleOffencesInSameDefendantWhenCaseSplitAtOffenceLevelLevelAndMergedBackAndSameOffenceisBeingAdded() {
+    void shouldTestCurrentHearingEventStateWithAddedMultipleOffencesInSameDefendantWhenCaseSplitAtOffenceLevelLevelAndMergedBackAndSameOffenceisBeingAdded() {
 
         final UUID defendantId = randomUUID();
         final UUID prosecutionCaseId = randomUUID();
@@ -2933,7 +3097,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldTestCurrentHearingEventStateWithAddedMultipleCasesWhenNewCaseIsBeingAdded() {
+    void shouldTestCurrentHearingEventStateWithAddedMultipleCasesWhenNewCaseIsBeingAdded() {
 
         final UUID defendantId = randomUUID();
         final UUID prosecutionCaseId = randomUUID();
@@ -3006,7 +3170,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldKeepAllOffencesIntoProsecutionCaseDefendantOffenceIdsWhenHearingExtendedWithNewCase() {
+    void shouldKeepAllOffencesIntoProsecutionCaseDefendantOffenceIdsWhenHearingExtendedWithNewCase() {
 
         final UUID defendantId = randomUUID();
         final UUID prosecutionCaseId = randomUUID();
@@ -3098,7 +3262,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldRaiseHearingAllocationEventWhenHearingIsAllocatedAfterAddingCaseIntoAnUnallocatedHearingFromAnotherUnAllocatedHearing() {
+    void shouldRaiseHearingAllocationEventWhenHearingIsAllocatedAfterAddingCaseIntoAnUnallocatedHearingFromAnotherUnAllocatedHearing() {
 
         final UUID defendantId = randomUUID();
         final UUID prosecutionCaseId = randomUUID();
@@ -3207,7 +3371,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void testOffencesRemovedFromExistingOffencesFromUnAllocatedHearingAfterCasesAddedToHearing() {
+    void testOffencesRemovedFromExistingOffencesFromUnAllocatedHearingAfterCasesAddedToHearing() {
 
         final UUID defendantId = randomUUID();
         final UUID defendantId2 = randomUUID();
@@ -3274,7 +3438,7 @@ class HearingAggregateTest {
 
 
     @Test
-    public void shouldRaiseHearingAllocationEventWhenHearingIsAllocatedAfterAddingCaseIntoAnUnallocatedHearingFromAnotherUnAllocatedHearingRepeatedly() {
+    void shouldRaiseHearingAllocationEventWhenHearingIsAllocatedAfterAddingCaseIntoAnUnallocatedHearingFromAnotherUnAllocatedHearingRepeatedly() {
 
         final UUID defendantId = randomUUID();
         final UUID prosecutionCaseId = randomUUID();
@@ -3421,7 +3585,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void testOffencesRemovedFromExistingOffencesFromAllocatedHearingAfterCasesAddedToHearing() {
+    void testOffencesRemovedFromExistingOffencesFromAllocatedHearingAfterCasesAddedToHearing() {
 
         final UUID defendantId = randomUUID();
         final UUID defendantId2 = randomUUID();
@@ -3487,7 +3651,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldNotRaiseHearingVacatedEventAsBoxWorkHearingDoesNotExistInListingContext() {
+    void shouldNotRaiseHearingVacatedEventAsBoxWorkHearingDoesNotExistInListingContext() {
 
         final UUID vacatingTrialReasonId = randomUUID();
         final Stream<Object> events = hearing.hearingVacateTrial(Optional.of(vacatingTrialReasonId));
@@ -3497,7 +3661,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldRaiseUnallocatedDeleteHearingEvent() {
+    void shouldRaiseUnallocatedDeleteHearingEvent() {
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
         final UUID defendant1Id = randomUUID();
@@ -3557,7 +3721,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldNotAddOffenceWhenAllOffencesOfDefendantRemoved()  {
+    void shouldNotAddOffenceWhenAllOffencesOfDefendantRemoved()  {
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
         final UUID case3Id = randomUUID();
@@ -4248,7 +4412,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldChangeJudiciaryStatusForHearingsStatus(){
+    void shouldChangeJudiciaryStatusForHearingsStatus(){
         final List<Object> eventStreams = hearing.judiciaryChangedForHearingsStatus().toList();
         assertThat(eventStreams, hasSize(1));
         assertThat(((JudiciaryChangedForHearingsStatus)eventStreams.get(0)).getStatus(), is("Success"));
@@ -4716,4 +4880,1029 @@ class HearingAggregateTest {
         assertThat(offencesRemovedFromHearing.getSeededOffences(), hasItems(offence1Id, offence2Id, offenceNewId));
         assertThat(offencesRemovedFromHearing.getUnallocated(), is(false));
     }
+
+    // Unit tests for magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected method
+    
+    @Test
+    void shouldReturnFalse_WhenCurrentHearingEventStateIsNull() {
+        final UUID ejectedItemId = randomUUID();
+
+        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+
+        assertThat(result, is(false));
+    }
+    
+    @Test
+    void shouldReturnFalse_WhenJurisdictionTypeIsNotMagistrates() {
+        final UUID ejectedItemId = randomUUID();
+        final UUID hearingId = randomUUID();
+        
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(CROWN) // Not MAGISTRATES
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .build())
+                .build()
+        );
+        
+        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        
+        assertThat(result, is(false));
+    }
+    
+    @Test
+    void shouldReturnFalse_WhenStartDateIsInThePast() {
+        final UUID ejectedItemId = randomUUID();
+        final UUID hearingId = randomUUID();
+        
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(LocalDate.now().minusDays(1)) // Past date
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .build())
+                .build()
+        );
+        
+        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        
+        assertThat(result, is(false));
+    }
+    
+    @Test
+    void shouldReturnFalse_WhenStartDateIsNull() {
+        final UUID ejectedItemId = randomUUID();
+        final UUID hearingId = randomUUID();
+        
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(null) // Null start date should be allowed
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .build())
+                .build()
+        );
+        
+        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        
+        assertThat(result, is(false));
+    }
+    
+    @Test
+    void shouldReturnFalse_WhenHearingIsNotAllocated() {
+        final UUID ejectedItemId = randomUUID();
+        final UUID hearingId = randomUUID();
+        
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(false) // Not allocated
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .build())
+                .build()
+        );
+        
+        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        
+        assertThat(result, is(false));
+    }
+    
+    @Test
+    void shouldReturnTrue_WhenNoCasesAndNoApplications() {
+        final UUID ejectedItemId = randomUUID();
+        final UUID hearingId = randomUUID();
+        
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(null) // No cases
+                        .withCourtApplications(null) // No applications
+                        .build())
+                .build()
+        );
+        
+        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        
+        assertThat(result, is(true));
+    }
+    
+    @Test
+    void shouldReturnTrue_WhenAllCasesAreEjected() {
+        final UUID ejectedItemId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID case1Id = randomUUID();
+        final UUID case2Id = randomUUID();
+        
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(new ArrayList<>(asList(
+                                uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case1Id)
+                                        .withDefendants(emptyList())
+                                        .withIsEjected(true) // Ejected
+                                        .build(),
+                                uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case2Id)
+                                        .withDefendants(emptyList())
+                                        .withIsEjected(true) // Ejected
+                                        .build()
+                        )))
+                        .withCourtApplications(null)
+                        .build())
+                .build()
+        );
+        
+        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        
+        assertThat(result, is(true));
+    }
+    
+    @Test
+    void shouldReturnFalse_WhenSomeCasesAreNotEjected() {
+        final UUID ejectedItemId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID case1Id = randomUUID();
+        final UUID case2Id = randomUUID();
+        
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(new ArrayList<>(asList(
+                                uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case1Id)
+                                        .withDefendants(emptyList())
+                                        .withIsEjected(true) // Ejected
+                                        .build(),
+                                uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case2Id)
+                                        .withDefendants(emptyList())
+                                        .withIsEjected(false) // Not ejected
+                                        .build()
+                        )))
+                        .withCourtApplications(null)
+                        .build())
+                .build()
+        );
+        
+        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        
+        assertThat(result, is(false));
+    }
+    
+    @Test
+    void shouldReturnTrue_WhenAllApplicationsAreEjected() {
+        final UUID ejectedItemId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID application1Id = randomUUID();
+        final UUID application2Id = randomUUID();
+        
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(null)
+                        .withCourtApplications(new ArrayList<>(asList(
+                                uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                        .withId(application1Id)
+                                        .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                        .withIsEjected(true) // Ejected
+                                        .build(),
+                                uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                        .withId(application2Id)
+                                        .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                        .withIsEjected(true) // Ejected
+                                        .build()
+                        )))
+                        .build())
+                .build()
+        );
+        
+        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        
+        assertThat(result, is(true));
+    }
+
+    @Test
+    void shouldReturnTrue_WhenAllApplicationsAreEjectedAndStartDateIsToday() {
+        final UUID ejectedItemId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID application1Id = randomUUID();
+        final UUID application2Id = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(LocalDate.now())
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(null)
+                        .withCourtApplications(new ArrayList<>(asList(
+                                uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                        .withId(application1Id)
+                                        .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                        .withIsEjected(true) // Ejected
+                                        .build(),
+                                uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                        .withId(application2Id)
+                                        .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                        .withIsEjected(true) // Ejected
+                                        .build()
+                        )))
+                        .build())
+                .build()
+        );
+
+        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+
+        assertThat(result, is(true));
+    }
+
+    @Test
+    void shouldReturnFalse_WhenHearingResulted() {
+        final UUID ejectedItemId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID application1Id = randomUUID();
+        final UUID application2Id = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(LocalDate.now())
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(null)
+                        .withCourtApplications(new ArrayList<>(asList(
+                                uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                        .withId(application1Id)
+                                        .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                        .withIsEjected(true) // Ejected
+                                        .build(),
+                                uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                        .withId(application2Id)
+                                        .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                        .withIsEjected(true) // Ejected
+                                        .build()
+                        )))
+                        .build())
+                .build()
+        );
+
+        hearing.apply(HearingResultStatusUpdated.
+                hearingResultStatusUpdated().
+                withHearingId(hearingId).build());
+
+
+        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+
+        assertThat(result, is(false));
+    }
+    
+    @Test
+    void shouldReturnFalse_WhenSomeApplicationsAreNotEjected() {
+        final UUID ejectedItemId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID application1Id = randomUUID();
+        final UUID application2Id = randomUUID();
+        
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(null)
+                        .withCourtApplications(new ArrayList<>(asList(
+                                uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                        .withId(application1Id)
+                                        .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                        .withIsEjected(true) // Ejected
+                                        .build(),
+                                uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                        .withId(application2Id)
+                                        .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                        .withIsEjected(false) // Not ejected
+                                        .build()
+                        )))
+                        .build())
+                .build()
+        );
+        
+        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        
+        assertThat(result, is(false));
+    }
+    
+    @Test
+    void shouldReturnTrue_WhenEjectedItemIsExcludedFromCaseCheck() {
+        final UUID ejectedItemId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID case1Id = randomUUID();
+        final UUID case2Id = ejectedItemId; // This is the ejected item
+        
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(new ArrayList<>(asList(
+                                uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case1Id)
+                                        .withDefendants(emptyList())
+                                        .withIsEjected(true) // Ejected
+                                        .build(),
+                                uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case2Id)
+                                        .withDefendants(emptyList())
+                                        .withIsEjected(false) // Not ejected, but this is the ejected item so should be excluded
+                                        .build()
+                        )))
+                        .withCourtApplications(null)
+                        .build())
+                .build()
+        );
+        
+        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        
+        assertThat(result, is(true));
+    }
+    
+    @Test
+    void shouldReturnTrue_WhenEjectedItemIsExcludedFromApplicationCheck() {
+        final UUID ejectedItemId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID application1Id = randomUUID();
+        final UUID application2Id = ejectedItemId; // This is the ejected item
+        
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(null)
+                        .withCourtApplications(new ArrayList<>(asList(
+                                uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                        .withId(application1Id)
+                                        .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                        .withIsEjected(true) // Ejected
+                                        .build(),
+                                uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                        .withId(application2Id)
+                                        .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                        .withIsEjected(false) // Not ejected, but this is the ejected item so should be excluded
+                                        .build()
+                        )))
+                        .build())
+                .build()
+        );
+        
+        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        
+        assertThat(result, is(true));
+    }
+    
+    @Test
+    void shouldReturnTrue_WhenLinkedApplicationIsExcludedFromCheck() {
+        final UUID ejectedItemId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID application1Id = randomUUID();
+        final UUID application2Id = randomUUID();
+        
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(null)
+                        .withCourtApplications(new ArrayList<>(asList(
+                                uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                        .withId(application1Id)
+                                        .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                        .withIsEjected(true) // Ejected
+                                        .build(),
+                                uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                        .withId(application2Id)
+                                        .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                        .withIsEjected(false) // Not ejected, but linked to ejected case so should be excluded
+                                        .withLinkedCaseIds(asList(ejectedItemId)) // Linked to the ejected item
+                                        .build()
+                        )))
+                        .build())
+                .build()
+        );
+        
+        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        
+        assertThat(result, is(true));
+    }
+
+    @Test
+    void shouldReturnTrue_WhenAllConditionsAreMet() {
+        validateMagistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(true, true, true);
+    }
+
+    @Test
+    void shouldReturnFalse_WhenCasesAreEjectedButApplicationsAreNot() {
+        validateMagistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(true, false, false);
+    }
+
+    @Test
+    void shouldReturnFalse_WhenApplicationsAreEjectedButCasesAreNot() {
+        validateMagistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(false, true, false);
+    }
+
+    private void validateMagistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(final boolean isCaseEjected, final boolean isApplicationEjected, final boolean expectedResult) {
+        final UUID ejectedItemId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID case1Id = randomUUID();
+        final UUID application1Id = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(new ArrayList<>(asList(
+                                uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case1Id)
+                                        .withDefendants(emptyList())
+                                        .withIsEjected(isCaseEjected) // Ejected
+                                        .build()
+                        )))
+                        .withCourtApplications(new ArrayList<>(asList(
+                                uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                        .withId(application1Id)
+                                        .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                        .withIsEjected(isApplicationEjected) // Ejected
+                                        .build()
+                        )))
+                        .build())
+                .build()
+        );
+
+        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+
+        assertThat(result, CoreMatchers.is(expectedResult));
+    }
+
+    @Test
+    void shouldRemoveCourtRoomRaiseThreeEvent_WhenAllConditionMeet() {
+        final UUID courtRoomIdAssigned = randomUUID();
+        final LocalDate futureStartDate = now().plusDays(5);
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withCourtRoomId(courtRoomIdAssigned)
+                        .withStartDate(futureStartDate)
+                        .withHearingDays(emptyList())
+                        .withListedCases(emptyList())
+                        .build())
+                .build());
+
+        final Stream<Object> result = hearing.removeCourtRoom(hearingId);
+        final List<Object> eventsList = result.collect(Collectors.toList());
+
+        assertThat(eventsList.size(), is(3));
+
+        final HearingUnallocatedCourtroomRemoved eventHearingUnallocatedCourtroomRemoved = (HearingUnallocatedCourtroomRemoved) eventsList.get(0);
+        final CourtRoomRemovedFromHearing eventCourtRoomRemovedFromHearing = (CourtRoomRemovedFromHearing) eventsList.get(1);
+        final SequencesResetOnHearingDays eventSequencesResetOnHearingDays = (SequencesResetOnHearingDays) eventsList.get(2);
+
+        assertThat(eventHearingUnallocatedCourtroomRemoved.getHearingId(), is(hearingId));
+        assertThat(eventSequencesResetOnHearingDays.getHearingId(), is(hearingId));
+        assertThat(eventCourtRoomRemovedFromHearing.getHearingId(), is(hearingId));
+    }
+
+    @Test
+    void shouldNotRaiseHearingUnallocatedCourtroomRemoved_WhenHearingIsDuplicate() {
+        final UUID courtRoomIdAssigned = randomUUID();
+        final LocalDate futureStartDate = now().plusDays(5);
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withCourtRoomId(courtRoomIdAssigned)
+                        .withStartDate(futureStartDate)
+                        .withHearingDays(emptyList())
+                        .withListedCases(emptyList())
+                        .build())
+                .build());
+
+        hearing.apply(HearingMarkedAsDuplicate.hearingMarkedAsDuplicate().withHearingId(hearingId).build());
+
+        final Stream<Object> result = hearing.removeCourtRoom(hearingId);
+        final List<Object> eventsList = result.collect(Collectors.toList());
+
+        assertThat(eventsList.size(), is(0));
+    }
+
+    @Test
+    void shouldNotRaiseHearingUnallocatedCourtroomRemoved_WhenHearingIsDeleted() {
+        final UUID courtRoomIdAssigned = randomUUID();
+        final LocalDate futureStartDate = now().plusDays(5);
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withCourtRoomId(courtRoomIdAssigned)
+                        .withStartDate(futureStartDate)
+                        .withHearingDays(emptyList())
+                        .withListedCases(emptyList())
+                        .build())
+                .build());
+
+        hearing.apply(HearingDeleted.hearingDeleted().withHearingIdToBeDeleted(hearingId).build());
+
+        final Stream<Object> result = hearing.removeCourtRoom(hearingId);
+        final List<Object> eventsList = result.collect(Collectors.toList());
+
+        assertThat(eventsList.size(), is(0));
+    }
+
+    @Test
+    void shouldNotRaiseHearingUnallocatedCourtroomRemoved_WhenNoCourtRoomAssigned() {
+        final LocalDate futureStartDate = now().plusDays(5);
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withStartDate(futureStartDate)
+                        .withHearingDays(emptyList())
+                        .withListedCases(emptyList())
+                        .build())
+                .build());
+
+        final Stream<Object> result = hearing.removeCourtRoom(hearingId);
+        final List<Object> eventsList = result.collect(Collectors.toList());
+
+        assertThat(eventsList.size(), is(0));
+    }
+
+    @Test
+    void shouldRemoveCourtRoomRaiseTwoEvent_WhenJurisdictionTypeIsNotCrown() {
+        final UUID courtRoomIdAssigned = randomUUID();
+        final LocalDate futureStartDate = now().plusDays(5);
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withCourtRoomId(courtRoomIdAssigned)
+                        .withStartDate(futureStartDate)
+                        .withHearingDays(emptyList())
+                        .withListedCases(emptyList())
+                        .build())
+                .build());
+
+        final Stream<Object> result = hearing.removeCourtRoom(hearingId);
+        final List<Object> eventsList = result.collect(Collectors.toList());
+
+        assertThat(eventsList.size(), is(2));
+        final CourtRoomRemovedFromHearing eventCourtRoomRemovedFromHearing = (CourtRoomRemovedFromHearing) eventsList.get(0);
+        final SequencesResetOnHearingDays eventSequencesResetOnHearingDays = (SequencesResetOnHearingDays) eventsList.get(1);
+        assertThat(eventSequencesResetOnHearingDays.getHearingId(), is(hearingId));
+        assertThat(eventCourtRoomRemovedFromHearing.getHearingId(), is(hearingId));
+    }
+
+    @Test
+    void shouldRemoveCourtRoomRaiseTwoEvent_WhenHearingHasResulted() {
+        final UUID courtRoomIdAssigned = randomUUID();
+        final LocalDate futureStartDate = now().plusDays(5);
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withCourtRoomId(courtRoomIdAssigned)
+                        .withStartDate(futureStartDate)
+                        .withHearingDays(emptyList())
+                        .withListedCases(emptyList())
+                        .build())
+                .build());
+
+        hearing.apply(HearingResultStatusUpdated.hearingResultStatusUpdated().withHearingId(hearingId).build());
+
+        final Stream<Object> result = hearing.removeCourtRoom(hearingId);
+        final List<Object> eventsList = result.collect(Collectors.toList());
+
+        assertThat(eventsList.size(), is(2));
+        final CourtRoomRemovedFromHearing eventCourtRoomRemovedFromHearing = (CourtRoomRemovedFromHearing) eventsList.get(0);
+        final SequencesResetOnHearingDays eventSequencesResetOnHearingDays = (SequencesResetOnHearingDays) eventsList.get(1);
+        assertThat(eventSequencesResetOnHearingDays.getHearingId(), is(hearingId));
+        assertThat(eventCourtRoomRemovedFromHearing.getHearingId(), is(hearingId));
+    }
+
+    @Test
+    void shouldRemoveCourtRoomRaiseTwoEvent_WhenStartDateIsInThePast() {
+        final UUID courtRoomIdAssigned = randomUUID();
+        final LocalDate pastStartDate = now().minusDays(5);
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withCourtRoomId(courtRoomIdAssigned)
+                        .withStartDate(pastStartDate)
+                        .withHearingDays(emptyList())
+                        .withListedCases(emptyList())
+                        .build())
+                .build());
+
+        final Stream<Object> result = hearing.removeCourtRoom(hearingId);
+        final List<Object> eventsList = result.collect(Collectors.toList());
+
+        assertThat(eventsList.size(), is(2));
+        final CourtRoomRemovedFromHearing eventCourtRoomRemovedFromHearing = (CourtRoomRemovedFromHearing) eventsList.get(0);
+        final SequencesResetOnHearingDays eventSequencesResetOnHearingDays = (SequencesResetOnHearingDays) eventsList.get(1);
+        assertThat(eventSequencesResetOnHearingDays.getHearingId(), is(hearingId));
+        assertThat(eventCourtRoomRemovedFromHearing.getHearingId(), is(hearingId));
+
+    }
+
+    @Test
+    void shouldRemoveCourtRoomRaiseThreeEvent_WhenStartDateIsToday() {
+        final UUID courtRoomIdAssigned = randomUUID();
+        final LocalDate todayStartDate = now();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withCourtRoomId(courtRoomIdAssigned)
+                        .withStartDate(todayStartDate)
+                        .withHearingDays(emptyList())
+                        .withListedCases(emptyList())
+                        .build())
+                .build());
+
+        final Stream<Object> result = hearing.removeCourtRoom(hearingId);
+        final List<Object> eventsList = result.collect(Collectors.toList());
+
+        assertThat(eventsList.size(), is(3));
+
+        final HearingUnallocatedCourtroomRemoved eventHearingUnallocatedCourtroomRemoved = (HearingUnallocatedCourtroomRemoved) eventsList.get(0);
+        final CourtRoomRemovedFromHearing eventCourtRoomRemovedFromHearing = (CourtRoomRemovedFromHearing) eventsList.get(1);
+        final SequencesResetOnHearingDays eventSequencesResetOnHearingDays = (SequencesResetOnHearingDays) eventsList.get(2);
+
+        assertThat(eventHearingUnallocatedCourtroomRemoved.getHearingId(), is(hearingId));
+        assertThat(eventSequencesResetOnHearingDays.getHearingId(), is(hearingId));
+        assertThat(eventCourtRoomRemovedFromHearing.getHearingId(), is(hearingId));
+    }
+
+    @Test
+    void shouldAddCourtApplicationIdToConfirmedListWhenCourtApplicationAddedForHearing() {
+        final UUID applicationId = randomUUID();
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        applyHearingListedWithMinimalCase(caseId, defendantId, offenceId);
+        hearing.onCourtApplicationAddedForHearing(createCourtApplicationAddedForHearingEvent(applicationId));
+
+        final HearingAllocatedForListingV2 allocatedEvent = getAllocatedHearingEvent();
+
+        assertThat(allocatedEvent, is(notNullValue()));
+        assertThat(allocatedEvent.getCourtApplicationIds(), is(notNullValue()));
+        assertThat(allocatedEvent.getCourtApplicationIds(), hasSize(1));
+        assertThat(allocatedEvent.getCourtApplicationIds(), hasItem(applicationId));
+    }
+
+    @Test
+    void shouldNotAddCourtApplicationIdWhenApplicationIsNull() {
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        applyHearingListedWithMinimalCase(caseId, defendantId, offenceId);
+        hearing.onCourtApplicationAddedForHearing(createCourtApplicationAddedForHearingEvent(null));
+
+        final HearingAllocatedForListingV2 allocatedEvent = getAllocatedHearingEvent();
+
+        assertThat(allocatedEvent, is(notNullValue()));
+        assertThat(allocatedEvent.getCourtApplicationIds(), is(nullValue()));
+    }
+
+    @Test
+    void shouldNotAddDuplicateCourtApplicationIdWhenAlreadyInConfirmedList() {
+        final UUID applicationId = randomUUID();
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        applyHearingListedWithCourtApplicationsAndCase(asList(applicationId), caseId, defendantId, offenceId);
+        hearing.onCourtApplicationAddedForHearing(createCourtApplicationAddedForHearingEvent(applicationId));
+
+        final HearingAllocatedForListingV2 allocatedEvent = getAllocatedHearingEvent();
+
+        assertThat(allocatedEvent, is(notNullValue()));
+        assertThat(allocatedEvent.getCourtApplicationIds(), is(notNullValue()));
+        assertThat(allocatedEvent.getCourtApplicationIds(), hasSize(1));
+        assertThat(allocatedEvent.getCourtApplicationIds(), hasItem(applicationId));
+    }
+
+    @Test
+    void shouldAddMultipleCourtApplicationIdsToConfirmedList() {
+        final UUID applicationId1 = randomUUID();
+        final UUID applicationId2 = randomUUID();
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        applyHearingListedWithMinimalCase(caseId, defendantId, offenceId);
+        hearing.onCourtApplicationAddedForHearing(createCourtApplicationAddedForHearingEvent(applicationId1));
+        hearing.onCourtApplicationAddedForHearing(createCourtApplicationAddedForHearingEvent(applicationId2));
+
+        final HearingAllocatedForListingV2 allocatedEvent = getAllocatedHearingEvent();
+
+        assertThat(allocatedEvent, is(notNullValue()));
+        assertThat(allocatedEvent.getCourtApplicationIds(), is(notNullValue()));
+        assertThat(allocatedEvent.getCourtApplicationIds(), hasSize(2));
+        assertThat(allocatedEvent.getCourtApplicationIds(), hasItems(applicationId1, applicationId2));
+    }
+
+    private void applyBasicHearingListed() {
+        hearing.apply(createBasicHearingListedEvent());
+    }
+
+    private void applyHearingListedWithMinimalCase(final UUID caseId, final UUID defendantId, final UUID offenceId) {
+        hearing.apply(createHearingListedEventWithCase(caseId, defendantId, offenceId));
+    }
+
+    private void applyHearingListedWithCourtApplicationsAndCase(final List<UUID> applicationIds, final UUID caseId, final UUID defendantId, final UUID offenceId) {
+        hearing.apply(createHearingListedEventWithCourtApplicationsAndCase(applicationIds, caseId, defendantId, offenceId));
+    }
+
+    private void applyHearingListedWithCourtApplications(final List<UUID> applicationIds) {
+        hearing.apply(createHearingListedEventWithCourtApplications(applicationIds));
+    }
+
+    private HearingListed createBasicHearingListedEvent() {
+        return HearingListed.hearingListed()
+                .withHearing(createBasicHearingEvent())
+                .build();
+    }
+
+    private HearingListed createHearingListedEventWithCase(final UUID caseId, final UUID defendantId, final UUID offenceId) {
+        return HearingListed.hearingListed()
+                .withHearing(createHearingEventWithCase(caseId, defendantId, offenceId))
+                .build();
+    }
+
+    private HearingListed createHearingListedEventWithCourtApplicationsAndCase(final List<UUID> applicationIds, final UUID caseId, final UUID defendantId, final UUID offenceId) {
+        return HearingListed.hearingListed()
+                .withHearing(createHearingEventWithCourtApplicationsAndCase(applicationIds, caseId, defendantId, offenceId))
+                .build();
+    }
+
+    private HearingListed createHearingListedEventWithCourtApplications(final List<UUID> applicationIds) {
+        return HearingListed.hearingListed()
+                .withHearing(createHearingEventWithCourtApplications(applicationIds))
+                .build();
+    }
+
+    private uk.gov.justice.listing.events.Hearing createBasicHearingEvent() {
+        return createHearingEventWithCourtApplications(emptyList());
+    }
+
+    private uk.gov.justice.listing.events.Hearing createHearingEventWithCase(final UUID caseId, final UUID defendantId, final UUID offenceId) {
+        return uk.gov.justice.listing.events.Hearing.hearing()
+                .withId(hearingId)
+                .withType(uk.gov.justice.listing.events.Type.type().build())
+                .withHearingLanguage(HearingLanguage.ENGLISH)
+                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                .withHearingDays(asList(HearingDay.hearingDay().withCourtScheduleId(randomUUID()).build()))
+                .withCourtRoomId(randomUUID())
+                .withStartDate(LocalDate.now().plusDays(1))
+                .withEndDate(LocalDate.now().plusDays(2))
+                .withListedCases(new ArrayList<>(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                        .withId(caseId)
+                        .withDefendants(asList(Defendant.defendant()
+                                .withId(defendantId)
+                                .withOffences(asList(Offence.offence()
+                                        .withId(offenceId)
+                                        .build()))
+                                .build()))
+                        .build())))
+                .build();
+    }
+
+    private uk.gov.justice.listing.events.Hearing createHearingEventWithCourtApplicationsAndCase(final List<UUID> applicationIds, final UUID caseId, final UUID defendantId, final UUID offenceId) {
+        final List<uk.gov.justice.listing.events.CourtApplication> courtApplications = new ArrayList<>(applicationIds.stream()
+                .map(id -> uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                        .withId(id)
+                        .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                        .build())
+                .collect(Collectors.toList()));
+
+        return uk.gov.justice.listing.events.Hearing.hearing()
+                .withId(hearingId)
+                .withType(uk.gov.justice.listing.events.Type.type().build())
+                .withHearingLanguage(HearingLanguage.ENGLISH)
+                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                .withHearingDays(asList(HearingDay.hearingDay().withCourtScheduleId(randomUUID()).build()))
+                .withCourtRoomId(randomUUID())
+                .withStartDate(LocalDate.now().plusDays(1))
+                .withEndDate(LocalDate.now().plusDays(2))
+                .withListedCases(new ArrayList<>(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                        .withId(caseId)
+                        .withDefendants(asList(Defendant.defendant()
+                                .withId(defendantId)
+                                .withOffences(asList(Offence.offence()
+                                        .withId(offenceId)
+                                        .build()))
+                                .build()))
+                        .build())))
+                .withCourtApplications(courtApplications)
+                .build();
+    }
+
+    private uk.gov.justice.listing.events.Hearing createHearingEventWithCourtApplications(final List<UUID> applicationIds) {
+        if (applicationIds.isEmpty()) {
+            return uk.gov.justice.listing.events.Hearing.hearing()
+                    .withId(hearingId)
+                    .withType(uk.gov.justice.listing.events.Type.type().build())
+                    .withHearingLanguage(HearingLanguage.ENGLISH)
+                    .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                    .withHearingDays(emptyList())
+                    .withListedCases(emptyList())
+                    .build();
+        }
+
+        final List<uk.gov.justice.listing.events.CourtApplication> courtApplications = new ArrayList<>(applicationIds.stream()
+                .map(id -> uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                        .withId(id)
+                        .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                        .build())
+                .collect(Collectors.toList()));
+
+        return uk.gov.justice.listing.events.Hearing.hearing()
+                .withId(hearingId)
+                .withType(uk.gov.justice.listing.events.Type.type().build())
+                .withHearingLanguage(HearingLanguage.ENGLISH)
+                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                .withHearingDays(emptyList())
+                .withListedCases(emptyList())
+                .withCourtApplications(courtApplications)
+                .build();
+    }
+
+    private CourtApplicationAddedForHearing createCourtApplicationAddedForHearingEvent(final UUID applicationId) {
+        final uk.gov.justice.listing.events.CourtApplication courtApplication = applicationId != null
+                ? uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                        .withId(applicationId)
+                        .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                        .build()
+                : null;
+
+        return CourtApplicationAddedForHearing.courtApplicationAddedForHearing()
+                .withHearingId(hearingId)
+                .withCourtApplication(courtApplication)
+                .build();
+    }
+
+    private HearingAllocatedForListingV2 getAllocatedHearingEvent() {
+        final Stream<Object> allocationEvents = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
+        final List<Object> events = allocationEvents.collect(Collectors.toList());
+        if (events.isEmpty()) {
+            return null;
+        }
+        return events.stream()
+                .filter(HearingAllocatedForListingV2.class::isInstance)
+                .map(HearingAllocatedForListingV2.class::cast)
+                .findFirst()
+                .orElse(null);
+    }
+
+
 }

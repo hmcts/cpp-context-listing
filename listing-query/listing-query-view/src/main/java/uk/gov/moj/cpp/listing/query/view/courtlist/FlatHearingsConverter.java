@@ -7,11 +7,15 @@ import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.FlatHearing;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
 public class FlatHearingsConverter {
+
+    public static final String COURT_ROOM_ID = "courtRoomId";
 
     private FlatHearingsConverter() {
         throw new IllegalStateException("Utility class");
@@ -40,7 +44,7 @@ public class FlatHearingsConverter {
 
         return new FlatHearing(LocalDate.parse(caseHearings.getString("weekCommencingStartDate")),
                 caseHearings.getJsonArray("judiciary"),
-                getOptionalUUID(caseHearings, "courtRoomId"),
+                getOptionalUUID(caseHearings, COURT_ROOM_ID),
                 caseHearings, true);
     }
 
@@ -49,9 +53,14 @@ public class FlatHearingsConverter {
 
         for (final JsonObject hearingDay : caseHearings.getJsonArray("hearingDays").getValuesAs(JsonObject.class)) {
 
+            Optional<UUID> courtRoomId = getOptionalUUID(hearingDay, COURT_ROOM_ID);
+            if(!courtRoomId.isPresent()) {
+                courtRoomId = getOptionalUUID(caseHearings, COURT_ROOM_ID);
+            }
+
             flatHearings.add(new FlatHearing(LocalDate.parse(hearingDay.getString("hearingDate")),
                     caseHearings.getJsonArray("judiciary"),
-                    getOptionalUUID(caseHearings, "courtRoomId"),
+                    courtRoomId,
                     caseHearings,
                     false
             ));

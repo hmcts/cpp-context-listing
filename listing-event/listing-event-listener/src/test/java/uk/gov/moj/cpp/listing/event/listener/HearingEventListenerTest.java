@@ -26,6 +26,7 @@ import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingRescheduled;
+import uk.gov.justice.listing.events.HearingResultStatusUpdated;
 import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.TrialVacated;
@@ -78,6 +79,9 @@ public class HearingEventListenerTest {
 
     @Mock
     private HearingAllocatedForListingV2 hearingAllocatedV2;
+
+    @Mock
+    private HearingResultStatusUpdated hearingResultStatusUpdated;
 
     @Mock
     private Hearing hearing;
@@ -532,5 +536,21 @@ public class HearingEventListenerTest {
                 .replace("f0ddeecf-fda8-46f8-a293-c1813e58b478", "f0ddeecf-fda8-46f8-a293-c1813e58b479");
         final JsonNode expectedCasesProperties = objectMapper.readTree(expectedCases1);
         assertThat(actualValue, CoreMatchers.equalTo(expectedCasesProperties));
+    }
+
+
+    @Test
+    public void shouldHandleResultStatusUpdatedConcluded()  {
+        final Envelope<HearingResultStatusUpdated> envelope = (Envelope<HearingResultStatusUpdated>) mock(Envelope.class);
+
+        given(envelope.payload()).willReturn(hearingResultStatusUpdated);
+        given(hearingResultStatusUpdated.getHearingId()).willReturn(HEARING_ID);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+
+        hearingEventListener.hearingResultStatusUpdated(envelope);
+
+        verify(properties).put(eq("resulted"), eq(true));
+        verify(hearingRepository).save(hearing);
     }
 }

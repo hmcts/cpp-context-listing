@@ -107,4 +107,7 @@ subscriptions_descriptor:
         - name: public.listing.create-next-hearing-requested
           schema_uri: http://justice.gov.uk/listing/events/public.listing.create-next-hearing-requested.json
 
+        - name: public.listing.hearing-unallocated-courtroom-removed
+          schema_uri: http://justice.gov.uk/listing/courts/public.listing.hearing-unallocated-courtroom-removed.json
+
       event_source_name: public.event.source
