@@ -354,13 +354,14 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "1 as totalCount, " +
             "h.is_possible_disqualification , " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
-            "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
+            "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id " +
+            "AND (hd.court_centre_id IS NULL OR hd.court_centre_id = cast(cast(?2 as varchar) as uuid)) " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
             "where  " +
             "cast(h.allocated as varchar) = cast(?1 as varchar)  " +
             "and (h.unscheduled is null or h.unscheduled = false) " +
             "and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
-            "and (?2 is null or coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(?2 as varchar) as uuid))  " +
+            "and (?2 is null or h.court_centre_id = cast(cast(?2 as varchar) as uuid))  " +
             "and (?3 is null or coalesce(hd.court_room_id, h.court_room_id) = cast(cast(?3 as varchar) as uuid))  " +
             "and (?4 is null or (lc.authority_id = cast(cast(?4 as varchar) as uuid) or lc.prosecutor_id = cast(cast(?4 as varchar) as uuid)))  " +
             "and (?5 is null or h.type_id = cast(cast(?5 as varchar) as uuid))  " +
@@ -412,12 +413,12 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "count(*) OVER() as totalCount, " +
             "h.is_possible_disqualification , " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
-            "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
+            "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
             "LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
             "where  " +
             "(h.is_vacated_trial is null or h.is_vacated_trial != true) and " +
-            "(?1 is null or coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(?1 as varchar) as uuid))  " +
+            "(?1 is null or h.court_centre_id = cast(cast(?1 as varchar) as uuid))  " +
             "and (?2 is null or coalesce(hd.court_room_id, h.court_room_id) = cast(cast(?2 as varchar) as uuid))  " +
             "  and (lc.is_ejected is null or lc.is_ejected =false) " +
             "  and (ca.is_ejected is null or ca.is_ejected =false) " +
@@ -456,7 +457,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
             "where  " +
             "(h.is_vacated_trial is null or h.is_vacated_trial != true) and " +
-            "(?1 is null or coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(?1 as varchar) as uuid))  " +
+            "(?1 is null or h.court_centre_id = cast(cast(?1 as varchar) as uuid))  " +
             "and (?2 is null or coalesce(hd.court_room_id, h.court_room_id) = cast(cast(?2 as varchar) as uuid))  " +
             "  and (lc.is_ejected is null or lc.is_ejected =false) " +
             "  and (ca.is_ejected is null or ca.is_ejected =false) " +

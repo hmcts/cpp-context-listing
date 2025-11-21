@@ -15,6 +15,8 @@ import javax.json.JsonObject;
 
 public class FlatHearingsConverter {
 
+    public static final String WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
+    public static final String JUDICIARY = "judiciary";
     public static final String COURT_ROOM_ID = "courtRoomId";
 
     private FlatHearingsConverter() {
@@ -36,30 +38,39 @@ public class FlatHearingsConverter {
         return flatHearings;
     }
 
-    private static boolean isWeekCommencing(final JsonObject caseHearings) {
-        return caseHearings.containsKey("weekCommencingStartDate");
+    // New method for JudgeListTemplateAssembler
+    public static List<FlatHearing> generateFlatHearingListForJudgeList(final JsonArray caseHearingsArray) {
+        final List<FlatHearing> flatHearings = new ArrayList<>();
+
+        for (final JsonObject caseHearings : caseHearingsArray.getValuesAs(JsonObject.class)) {
+            if (isWeekCommencing(caseHearings)) {
+                flatHearings.add(getFlatHearingForWeekCommencingCaseHearingForJudgeList(caseHearings));
+            } else {
+                flatHearings.addAll(getFlatHearingsForFixedDateCaseHearingsForJudgeList(caseHearings));
+            }
+        }
+
+        return flatHearings;
     }
 
+    // Original helper methods for RangeSearchConverter
     private static FlatHearing getFlatHearingForWeekCommencingCaseHearing(final JsonObject caseHearings) {
-
-        return new FlatHearing(LocalDate.parse(caseHearings.getString("weekCommencingStartDate")),
-                caseHearings.getJsonArray("judiciary"),
+        return new FlatHearing(LocalDate.parse(caseHearings.getString(WEEK_COMMENCING_START_DATE)),
+                caseHearings.getJsonArray(JUDICIARY),
                 getOptionalUUID(caseHearings, COURT_ROOM_ID),
                 caseHearings, true);
     }
 
-    private static List<FlatHearing> getFlatHearingsForFixedDateCaseHearings(JsonObject caseHearings) {
+    private static List<FlatHearing> getFlatHearingsForFixedDateCaseHearings(final JsonObject caseHearings) {
         final List<FlatHearing> flatHearings = new ArrayList<>();
 
         for (final JsonObject hearingDay : caseHearings.getJsonArray("hearingDays").getValuesAs(JsonObject.class)) {
-
             Optional<UUID> courtRoomId = getOptionalUUID(hearingDay, COURT_ROOM_ID);
             if(!courtRoomId.isPresent()) {
                 courtRoomId = getOptionalUUID(caseHearings, COURT_ROOM_ID);
             }
-
             flatHearings.add(new FlatHearing(LocalDate.parse(hearingDay.getString("hearingDate")),
-                    caseHearings.getJsonArray("judiciary"),
+                    caseHearings.getJsonArray(JUDICIARY),
                     courtRoomId,
                     caseHearings,
                     false
@@ -68,4 +79,35 @@ public class FlatHearingsConverter {
 
         return flatHearings;
     }
+
+    // New helper methods for JudgeListTemplateAssembler
+    private static FlatHearing getFlatHearingForWeekCommencingCaseHearingForJudgeList(final JsonObject caseHearings) {
+        return new FlatHearing(LocalDate.parse(caseHearings.getString(WEEK_COMMENCING_START_DATE)),
+                caseHearings.getJsonArray(JUDICIARY),
+                getOptionalUUID(caseHearings, COURT_ROOM_ID),
+                caseHearings, true);
+    }
+
+    private static List<FlatHearing> getFlatHearingsForFixedDateCaseHearingsForJudgeList(final JsonObject caseHearings) {
+        final List<FlatHearing> flatHearings = new ArrayList<>();
+
+        for (final JsonObject hearingDay : caseHearings.getJsonArray("hearingDays").getValuesAs(JsonObject.class)) {
+
+            flatHearings.add(new FlatHearing(LocalDate.parse(hearingDay.getString("hearingDate")),
+                    caseHearings.getJsonArray(JUDICIARY),
+                    getOptionalUUID(hearingDay, COURT_ROOM_ID),
+                    caseHearings,
+                    false
+            ));
+        }
+
+        return flatHearings;
+    }
+
+    private static boolean isWeekCommencing(final JsonObject caseHearings) {
+        return caseHearings.containsKey(WEEK_COMMENCING_START_DATE);
+    }
+
+
+
 }
