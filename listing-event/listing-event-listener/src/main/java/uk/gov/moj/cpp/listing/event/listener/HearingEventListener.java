@@ -307,6 +307,11 @@ public class HearingEventListener {
     @Handles("listing.events.hearing-result-status-updated")
     public void hearingResultStatusUpdated(final Envelope<HearingResultStatusUpdated> event) {
         final HearingResultStatusUpdated payload = event.payload();
+
+        if(isNull(hearingRepository.findBy(payload.getHearingId()))){
+            return;
+        }
+
         using(hearingRepository)
                 .find(payload.getHearingId())
                 .put("resulted", true)
