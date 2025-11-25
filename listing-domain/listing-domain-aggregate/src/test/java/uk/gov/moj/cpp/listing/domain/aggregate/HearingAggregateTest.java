@@ -5904,5 +5904,135 @@ class HearingAggregateTest {
                 .orElse(null);
     }
 
+    // Unit tests for setHearingResultStatus method
+
+    @Test
+    void shouldReturnHearingResultStatusUpdatedEvent_WhenCurrentHearingEventStateIsNotNull() {
+        // Given
+        final UUID testHearingId = randomUUID();
+        
+        // Initialize hearing with HearingListed event to set currentHearingEventState
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(testHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .build())
+                .build());
+
+        // When
+        final Stream<Object> events = hearing.setHearingResultStatus(testHearingId);
+        final List<Object> eventsList = events.collect(Collectors.toList());
+
+        // Then
+        assertThat(eventsList.size(), is(1));
+        assertThat(eventsList.get(0), CoreMatchers.instanceOf(HearingResultStatusUpdated.class));
+        
+        final HearingResultStatusUpdated event = (HearingResultStatusUpdated) eventsList.get(0);
+        assertThat(event.getHearingId(), is(testHearingId));
+    }
+
+    @Test
+    void shouldReturnEmptyStream_WhenCurrentHearingEventStateIsNull() {
+        // Given
+        final UUID testHearingId = randomUUID();
+        // Hearing aggregate is not initialized, so currentHearingEventState is null
+
+        // When
+        final Stream<Object> events = hearing.setHearingResultStatus(testHearingId);
+        final List<Object> eventsList = events.collect(Collectors.toList());
+
+        // Then
+        assertThat(eventsList.size(), is(0));
+    }
+
+    @Test
+    void shouldSetResultedFlagToTrue_WhenHearingResultStatusUpdatedEventIsApplied() {
+        // Given
+        final UUID testHearingId = randomUUID();
+        
+        // Initialize hearing with HearingListed event
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(testHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .build())
+                .build());
+
+        // When - set hearing result status
+        final Stream<Object> events = hearing.setHearingResultStatus(testHearingId);
+        final List<Object> eventsList = events.collect(Collectors.toList());
+        
+        // Apply the event to verify resulted flag is set
+        eventsList.forEach(event -> hearing.apply(event));
+
+        // Then - verify that resulted flag prevents further operations
+        // Attempting to delete a resulted hearing should return empty stream
+        final Stream<Object> deleteEvents = hearing.deleteHearing(randomUUID(), testHearingId);
+        final List<Object> deleteEventsList = deleteEvents.collect(Collectors.toList());
+        assertThat(deleteEventsList.size(), is(0));
+    }
+
+    @Test
+    void shouldReturnHearingResultStatusUpdatedEvent_WithCorrectHearingId() {
+        // Given
+        final UUID testHearingId = randomUUID();
+        final UUID differentHearingId = randomUUID();
+        
+        // Initialize hearing with HearingListed event
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(testHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .build())
+                .build());
+
+        // When
+        final Stream<Object> events = hearing.setHearingResultStatus(testHearingId);
+        final List<Object> eventsList = events.collect(Collectors.toList());
+
+        // Then
+        assertThat(eventsList.size(), is(1));
+        final HearingResultStatusUpdated event = (HearingResultStatusUpdated) eventsList.get(0);
+        assertThat(event.getHearingId(), is(testHearingId));
+    }
+
+    @Test
+    void shouldReturnEmptyStream_WhenHearingIsDeleted() {
+        // Given
+        final UUID testHearingId = randomUUID();
+        
+        // Initialize hearing
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(testHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .build())
+                .build());
+
+        // Delete the hearing (this sets currentHearingEventState to null)
+        hearing.apply(HearingDeleted.hearingDeleted()
+                .withHearingIdToBeDeleted(testHearingId)
+                .build());
+
+        // When
+        final Stream<Object> events = hearing.setHearingResultStatus(testHearingId);
+        final List<Object> eventsList = events.collect(Collectors.toList());
+
+        // Then
+        assertThat(eventsList.size(), is(0));
+    }
+
 
 }

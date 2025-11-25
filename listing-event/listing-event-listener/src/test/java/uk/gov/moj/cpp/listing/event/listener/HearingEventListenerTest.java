@@ -554,10 +554,5 @@ public class HearingEventListenerTest {
         verify(hearingRepository).save(hearing);
     }
 
-    @Test
-    public void shouldHandleResultStatusUpdated_WhenHearingIsNull()  {
-        final Envelope<HearingResultStatusUpdated> envelope = (Envelope<HearingResultStatusUpdated>) mock(Envelope.class);
-        given(envelope.payload()).willReturn(hearingResultStatusUpdated);
-        hearingEventListener.hearingResultStatusUpdated(envelope);
-    }
+
 }

@@ -3247,10 +3247,13 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> setHearingResultStatus(final UUID hearingId) {
-        return apply(Stream.of(HearingResultStatusUpdated.hearingResultStatusUpdated()
-                .withHearingId(hearingId)
-                .build()
-        ));
+        if(nonNull(this.currentHearingEventState)) {
+            return apply(Stream.of(HearingResultStatusUpdated.hearingResultStatusUpdated()
+                    .withHearingId(hearingId)
+                    .build()
+            ));
+        }
+        return Stream.empty();
     }
 
     private ZonedDateTime getEarliestHearingStartDate() {
