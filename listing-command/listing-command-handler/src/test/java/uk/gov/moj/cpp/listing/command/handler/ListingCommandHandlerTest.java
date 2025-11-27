@@ -182,7 +182,7 @@ import uk.gov.moj.cpp.listing.command.utils.hearing.ExtendHearingUtils;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.common.service.ProvisionalBookingService;
 import uk.gov.moj.cpp.listing.domain.Address;
-import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
+import uk.gov.moj.cpp.listing.domain.CourtApplicationParty;
 import uk.gov.moj.cpp.listing.domain.BailStatus;
 import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
@@ -816,7 +816,7 @@ class ListingCommandHandlerTest {
                 .withParentApplicationId(fromString("9d9a431a-0f12-4386-878a-2bf6c4a0877e"))
                 .withApplicationType("App Type")
                 .withId(fromString("26b856a8-ae01-4aad-814c-7cdff8db19bf"))
-                .withApplicant(ApplicantRespondent.applicantRespondent()
+                .withApplicant(CourtApplicationParty.courtApplicationParty()
                         .withIsRespondent(false)
                         .withId(fromString("22b1078b-9430-4cef-ba46-eea40a129ca8"))
                         .withFirstName("Fred")
@@ -824,7 +824,7 @@ class ListingCommandHandlerTest {
                         .withCourtApplicationPartyType(CourtApplicationPartyType.PERSON)
                         .withAddress(getAddress())
                         .build())
-                .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
+                .withRespondents(singletonList(CourtApplicationParty.courtApplicationParty()
                         .withIsRespondent(true)
                         .withId(fromString("48ddbd0a-31db-4814-b052-aa3ba9afb800"))
                         .withFirstName("Dan")
@@ -3818,7 +3818,7 @@ class ListingCommandHandlerTest {
                 .withParentApplicationId(fromString("9d9a431a-0f12-4386-878a-2bf6c4a0877e"))
                 .withApplicationType("9vBchM49Go")
                 .withId(fromString("26b856a8-ae01-4aad-814c-7cdff8db19bf"))
-                .withApplicant(ApplicantRespondent.applicantRespondent()
+                .withApplicant(CourtApplicationParty.courtApplicationParty()
                         .withId(fromString("22b1078b-9430-4cef-ba46-eea40a129ca8"))
                         .withIsRespondent(false)
                         .withFirstName("David")
@@ -3826,7 +3826,7 @@ class ListingCommandHandlerTest {
                         .withCourtApplicationPartyType(CourtApplicationPartyType.PERSON)
                         .withAddress(getAddress())
                         .build())
-                .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
+                .withRespondents(singletonList(CourtApplicationParty.courtApplicationParty()
                         .withIsRespondent(true)
                         .withFirstName("Luise")
                         .withLastName("Miller")

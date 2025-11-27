@@ -4,7 +4,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @SuppressWarnings({"squid:S1067", "PMD:BeanMembersShouldSerialize"})
-public class ApplicantRespondent {
+public class CourtApplicationParty {
 
   private final UUID id ;
 
@@ -18,9 +18,9 @@ public class ApplicantRespondent {
 
   private final Address address;
 
-  public ApplicantRespondent(final UUID id, final String firstName, final Boolean isRespondent,
-                             final String lastName, final CourtApplicationPartyType courtApplicationPartyType,
-                             final Address address) {
+  public CourtApplicationParty(final UUID id, final String firstName, final Boolean isRespondent,
+                               final String lastName, final CourtApplicationPartyType courtApplicationPartyType,
+                               final Address address) {
     this.id = id;
     this.firstName = firstName;
     this.isRespondent = isRespondent;
@@ -49,8 +49,8 @@ public class ApplicantRespondent {
     return address;
   }
 
-  public static Builder applicantRespondent() {
-    return new ApplicantRespondent.Builder();
+  public static Builder courtApplicationParty() {
+    return new CourtApplicationParty.Builder();
   }
 
   public CourtApplicationPartyType getCourtApplicationPartyType() {
@@ -65,7 +65,7 @@ public class ApplicantRespondent {
     if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
-    final ApplicantRespondent that = (ApplicantRespondent) obj;
+    final CourtApplicationParty that = (CourtApplicationParty) obj;
 
     return java.util.Objects.equals(this.id, that.id) &&
     java.util.Objects.equals(this.firstName, that.firstName) &&
@@ -81,7 +81,7 @@ public class ApplicantRespondent {
 
   @Override
   public String toString() {
-    return "ApplicantRespondent{" +
+    return "CourtApplicationParty{" +
         "id='" + id + "'," +
     	"firstName='" + firstName + "'," +
     	"isRespondent='" + isRespondent + "'," +
@@ -135,8 +135,8 @@ public class ApplicantRespondent {
       return this;
     }
 
-    public ApplicantRespondent build() {
-      return new ApplicantRespondent(id, firstName, isRespondent, lastName, courtApplicationPartyType, address);
+    public CourtApplicationParty build() {
+      return new CourtApplicationParty(id, firstName, isRespondent, lastName, courtApplicationPartyType, address);
     }
   }
 }

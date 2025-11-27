@@ -4,7 +4,7 @@ import uk.gov.moj.cpp.listing.domain.Address;
 
 import java.util.UUID;
 
-public class ApplicantRespondentData {
+public class CourtApplicationPartyData {
 
     private final UUID id;
 
@@ -20,7 +20,7 @@ public class ApplicantRespondentData {
 
     private final Address address;
 
-    public ApplicantRespondentData(final UUID id, String firstName, Boolean respondent, String lastName, final CourtApplicationPartyType courtApplicationPartyType, final LegalEntityDefendantData legalEntityDefendant, final Address address) {
+    public CourtApplicationPartyData(final UUID id, String firstName, Boolean respondent, String lastName, final CourtApplicationPartyType courtApplicationPartyType, final LegalEntityDefendantData legalEntityDefendant, final Address address) {
         this.id = id;
         this.firstName = firstName;
         this.respondent = respondent;

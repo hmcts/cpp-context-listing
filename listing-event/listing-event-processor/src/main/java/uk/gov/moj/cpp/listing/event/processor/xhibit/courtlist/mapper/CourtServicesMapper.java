@@ -93,7 +93,7 @@ public class CourtServicesMapper {
     private static final String JUDICIAL_ID = "judicialId";
     private static final String NONE = "NONE";
     private static final String CPS_PROSECUTOR_CODE = "CPS";
-    private static final List<String> JUDGE_JUDICIARY_TYPES = new ArrayList<>(Arrays.asList("DISTRICT_JUDGE", "CIRCUIT_JUDGE", "RECORDER","DEPUTY_DISTRICT_JUDGE"));
+    private static final List<String> JUDGE_JUDICIARY_TYPES = new ArrayList<>(Arrays.asList("DISTRICT_JUDGE", "CIRCUIT_JUDGE", "RECORDER", "DEPUTY_DISTRICT_JUDGE"));
     private static final String RESTRICT_FROM_COURT_LIST = "restrictFromCourtList";
     private static final ObjectFactory objectFactory = new ObjectFactory();
     private static final int UNMAPPED_COURT_ROOM = 99;
@@ -113,7 +113,7 @@ public class CourtServicesMapper {
 
     private final CourtListGenerationContext context;
 
-    private final ThreadLocalCommonXhibitReferenceDataService threadLocalCommonXhibitReferenceDataService = new  ThreadLocalCommonXhibitReferenceDataService();
+    private final ThreadLocalCommonXhibitReferenceDataService threadLocalCommonXhibitReferenceDataService = new ThreadLocalCommonXhibitReferenceDataService();
 
     private XhibitReferenceDataValidator xhibitReferenceDataValidator = new XhibitReferenceDataValidator();
 
@@ -339,7 +339,7 @@ public class CourtServicesMapper {
                 }
 
                 if (hearingJson.containsKey(APPLICATION_REFERENCE)) {
-                    sittingStructureHearings.getHearing().add(generateHearingStructureForCourtApplication(hearingJson, hearingSequenceNumber++, weekCommencing));
+                     sittingStructureHearings.getHearing().add(generateHearingStructureForCourtApplication(hearingJson, hearingSequenceNumber++, weekCommencing));
                 }
             }
         }
@@ -407,9 +407,13 @@ public class CourtServicesMapper {
         if (!weekCommencing) {
             generateAndSetTimeMarkingNote(hearingJson, hearingStructure);
         }
+        // Map applicant to subject if subject is present in the JSON
+        if (hearingJson.containsKey("subject")) {
+            hearingStructure.setDefendants(generateHearingStructureSubjectForCourtApplication(hearingJson));
+        } else {
+            hearingStructure.setDefendants(generateHearingStructureDefendantsForCourtApplication(hearingJson));
+        }
 
-        // Map applicant to defendant
-        hearingStructure.setDefendants(generateHearingStructureDefendantsForCourtApplication(hearingJson));
         final String listNoteValue = formListNote(hearingJson);
 
         if (StringUtils.isNotEmpty(listNoteValue)) {
@@ -543,6 +547,17 @@ public class CourtServicesMapper {
         final HearingStructure.Defendants defendants = objectFactory.createHearingStructureDefendants();
 
         defendants.getDefendant().add(generateDefendantStructureForApplicant(courtApplication.getJsonObject("applicant"),
+                courtApplication.getString(APPLICATION_REFERENCE)));
+
+        return defendants;
+    }
+
+    private HearingStructure.Defendants generateHearingStructureSubjectForCourtApplication(
+            final JsonObject courtApplication) {
+
+        final HearingStructure.Defendants defendants = objectFactory.createHearingStructureDefendants();
+
+        defendants.getDefendant().add(generateDefendantStructureForApplicant(courtApplication.getJsonObject("subject"),
                 courtApplication.getString(APPLICATION_REFERENCE)));
 
         return defendants;

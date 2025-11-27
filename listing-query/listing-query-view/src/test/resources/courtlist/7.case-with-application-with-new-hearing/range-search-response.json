@@ -1,0 +1,133 @@
+{
+  "hearings": [
+    {
+      "id": "0711dcc1-feec-4f68-b9b4-583252ccba14",
+      "type": {
+        "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
+        "description": "Sentence"
+      },
+      "endDate": "2019-12-16",
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2019-12-16",
+      "courtRoomId": "3b800175-f1b8-30f0-b2a4-2fd86b3e3713",
+      "hearingDays": [
+        {
+          "endTime": "2019-12-16T10:50:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-12-16T10:30:00.000Z",
+          "courtRoomId": "3b800175-f1b8-30f0-b2a4-2fd86b3e3713",
+          "hearingDate": "2019-12-16",
+          "isCancelled": false,
+          "courtCentreId": "e2d7754e-89ba-309f-8da5-08a8283258a7",
+          "durationMinutes": 20
+        }
+      ],
+      "courtCentreId": "e2d7754e-89ba-309f-8da5-08a8283258a7",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [
+        {
+          "roomId": "3b800175-f1b8-30f0-b2a4-2fd86b3e3713",
+          "duration": 20,
+          "startTime": "2019-12-16T10:30:00.000Z",
+          "courtRoomId": 1296,
+          "courtCentreId": "e2d7754e-89ba-309f-8da5-08a8283258a7"
+        }
+      ],
+      "nonSittingDays": [],
+      "publicListNote": "",
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "CROWN",
+      "courtApplications": [
+        {
+          "id": "9641d697-467f-41c4-b2be-adc367215455",
+          "offences": [
+            {
+              "id": "2bcae532-c44e-48bb-8113-105a78329389",
+              "count": 0,
+              "startDate": "2019-06-11",
+              "orderIndex": 1,
+              "offenceCode": "TW01046",
+              "offenceWording": "Test Prosecution charge wording",
+              "statementOfOffence": {
+                "title": "Occupy reserved seat / berth without a valid ticket on the Tyne and Wear Metro",
+                "welshTitle": "Occupy reserved seat / berth without a valid ticket on the Tyne and Wear Metro",
+                "legislation": "Contrary to byelaw 19 and 31(1) of the Tyne and Wear Metro Byelaws made under sections 58 and 62 of the Tyneside Metropolitan Railway Act 1973."
+              }
+            }
+          ],
+          "applicant": {
+            "id": "4464dc2a-8d59-4eed-b0c5-0d943cf19f92",
+            "address": {
+              "address1": "Finance Operations",
+              "address2": "C3 East",
+              "address3": "DVLA",
+              "address4": "Longview Road",
+              "address5": "Swansea",
+              "postcode": "SA6 7JL"
+            },
+            "lastName": "DVLA",
+            "isRespondent": false,
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PROSECUTING_AUTHORITY"
+          },
+          "subject": {
+            "id": "88a8b808-2e8b-40ca-8590-3750cd1f3b34",
+            "address": {
+              "address1": "New Scotland Yard",
+              "address2": "Victoria Embankment",
+              "address3": "London",
+              "postcode": "SW1A 2JL"
+            },
+            "firstName": "Robert12",
+            "lastName": "Smith12",
+            "isRespondent": false,
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PROSECUTING_AUTHORITY"
+          },
+          "respondents": [
+            {
+              "id": "a7c51d98-4def-4328-8775-8675e69fc7a3",
+              "address": {
+                "address1": "King Edward Court",
+                "address2": "Nottingham",
+                "postcode": "NG1 1EL"
+              },
+              "lastName": "CPS-EM",
+              "isRespondent": true,
+              "restrictFromCourtList": false,
+              "courtApplicationPartyType": "PROSECUTING_AUTHORITY"
+            },
+            {
+              "id": "edc625d0-4670-4863-b1bf-19dd7afdd4a6",
+              "address": {
+                "address1": "Cir3VJCL9d"
+              },
+              "lastName": "Olaf",
+              "firstName": "Rolando",
+              "isRespondent": true,
+              "restrictFromCourtList": false,
+              "courtApplicationPartyType": "PERSON_DEFENDANT"
+            }
+          ],
+          "linkedCaseIds": [
+            "1cdcaabe-de61-4f5c-a7da-3efc59f5cdaa"
+          ],
+          "applicationType": "Application within criminal proceedings",
+          "applicationReference": "52GD7078825",
+          "restrictFromCourtList": false,
+          "applicationParticulars": "second one",
+          "restrictCourtApplicationType": false
+        }
+      ],
+      "courtCentreDetails": {
+        "id": "e2d7754e-89ba-309f-8da5-08a8283258a7",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:30:00"
+      },
+      "sendNotificationToParties": false
+    }
+  ]
+}
+

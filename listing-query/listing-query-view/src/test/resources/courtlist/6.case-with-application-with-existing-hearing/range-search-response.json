@@ -1,0 +1,187 @@
+{
+  "hearings": [
+    {
+      "id": "6a28a862-18d2-43ae-b08e-987986c4cdae",
+      "type": {
+        "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+        "description": "Trial"
+      },
+      "endDate": "2019-12-16",
+      "resulted": true,
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2019-12-16",
+      "courtRoomId": "3b800175-f1b8-30f0-b2a4-2fd86b3e3713",
+      "hearingDays": [
+        {
+          "endTime": "2019-12-16T10:20:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-12-16T10:00:00.000Z",
+          "courtRoomId": "3b800175-f1b8-30f0-b2a4-2fd86b3e3713",
+          "hearingDate": "2019-12-16",
+          "isCancelled": false,
+          "courtCentreId": "e2d7754e-89ba-309f-8da5-08a8283258a7",
+          "durationMinutes": 20
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "1cdcaabe-de61-4f5c-a7da-3efc59f5cdaa",
+          "markers": [],
+          "caseStatus": "INACTIVE",
+          "defendants": [
+            {
+              "id": "0cee05b9-0273-40e7-a5f5-23752a45e2b3",
+              "address": {
+                "address1": "Cir3VJCL9d"
+              },
+              "isYouth": false,
+              "lastName": "Olaf",
+              "offences": [
+                {
+                  "id": "2bcae532-c44e-48bb-8113-105a78329389",
+                  "count": 0,
+                  "startDate": "2019-06-11",
+                  "orderIndex": 1,
+                  "offenceCode": "TW01046",
+                  "shadowListed": false,
+                  "offenceWording": "Test Prosecution charge wording",
+                  "seedingHearing": {
+                    "sittingDay": "2025-11-25",
+                    "jurisdictionType": "MAGISTRATES",
+                    "seedingHearingId": "ac864423-cec2-4db6-9c43-089258aa0c04"
+                  },
+                  "statementOfOffence": {
+                    "title": "Occupy reserved seat / berth without a valid ticket on the Tyne and Wear Metro",
+                    "welshTitle": "Occupy reserved seat / berth without a valid ticket on the Tyne and Wear Metro",
+                    "legislation": "Contrary to byelaw 19 and 31(1) of the Tyne and Wear Metro Byelaws made under sections 58 and 62 of the Tyneside Metropolitan Railway Act 1973."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Rolando",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "1999-10-08",
+              "masterDefendantId": "0cee05b9-0273-40e7-a5f5-23752a45e2b3",
+              "proceedingsConcluded": true,
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2025-11-18T10:16:27.380Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "6ae4b163-658b-3ae2-a66d-43401cac2f96",
+            "authorityCode": "DVLA",
+            "caseReference": "52GD7078825"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "e2d7754e-89ba-309f-8da5-08a8283258a7",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [
+        {
+          "roomId": "3b800175-f1b8-30f0-b2a4-2fd86b3e3713",
+          "duration": 20,
+          "startTime": "2019-12-16T10:00:00.000Z",
+          "courtRoomId": 1296,
+          "courtCentreId": "e2d7754e-89ba-309f-8da5-08a8283258a7"
+        }
+      ],
+      "nonSittingDays": [],
+      "publicListNote": "",
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2025-11-25",
+      "courtApplications": [
+        {
+          "id": "89686232-c5be-4706-9e6c-ad0bc8b03456",
+          "offences": [
+            {
+              "id": "2bcae532-c44e-48bb-8113-105a78329389",
+              "count": 0,
+              "startDate": "2019-06-11",
+              "orderIndex": 1,
+              "offenceCode": "TW01046",
+              "offenceWording": "Test Prosecution charge wording",
+              "statementOfOffence": {
+                "title": "Occupy reserved seat / berth without a valid ticket on the Tyne and Wear Metro",
+                "welshTitle": "Occupy reserved seat / berth without a valid ticket on the Tyne and Wear Metro",
+                "legislation": "Contrary to byelaw 19 and 31(1) of the Tyne and Wear Metro Byelaws made under sections 58 and 62 of the Tyneside Metropolitan Railway Act 1973."
+              }
+            }
+          ],
+          "applicant": {
+            "id": "e56449ad-ab49-49ba-850f-4baff306e3b2",
+            "address": {
+              "address1": "Finance Operations",
+              "address2": "C3 East",
+              "address3": "DVLA",
+              "address4": "Longview Road",
+              "address5": "Swansea",
+              "postcode": "SA6 7JL"
+            },
+            "lastName": "DVLA",
+            "isRespondent": false,
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PROSECUTING_AUTHORITY"
+          },
+          "subject": {
+            "id": "88a8b808-2e8b-40ca-8590-3750cd1f3b34",
+            "address": {
+              "address1": "New Scotland Yard",
+              "address2": "Victoria Embankment",
+              "address3": "London",
+              "postcode": "SW1A 2JL"
+            },
+            "firstName": "Robert12",
+            "lastName": "Smith12",
+            "isRespondent": false,
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PROSECUTING_AUTHORITY"
+          },
+          "respondents": [
+            {
+              "id": "1fb1294a-1599-4d9e-a996-ba6f5eae0fc1",
+              "lastName": "CPS-CC",
+              "isRespondent": true,
+              "restrictFromCourtList": false,
+              "courtApplicationPartyType": "PROSECUTING_AUTHORITY"
+            },
+            {
+              "id": "2906b308-0409-4859-b631-f02dbb7eacff",
+              "address": {
+                "address1": "Cir3VJCL9d"
+              },
+              "lastName": "Olaf",
+              "firstName": "Rolando",
+              "isRespondent": true,
+              "restrictFromCourtList": false,
+              "courtApplicationPartyType": "PERSON_DEFENDANT"
+            }
+          ],
+          "linkedCaseIds": [
+            "1cdcaabe-de61-4f5c-a7da-3efc59f5cdaa"
+          ],
+          "applicationType": "Application within criminal proceedings",
+          "applicationReference": "52GD7078825",
+          "restrictFromCourtList": false,
+          "restrictCourtApplicationType": false
+        }
+      ],
+      "estimatedDuration": "20 MINUTES",
+      "courtCentreDetails": {
+        "id": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+        "defaultDuration": 420,
+        "defaultStartTime": "10:00:00"
+      },
+      "sendNotificationToParties": false
+    }
+  ]
+}
+

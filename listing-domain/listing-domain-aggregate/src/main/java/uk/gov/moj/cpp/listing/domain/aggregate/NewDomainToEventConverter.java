@@ -24,7 +24,7 @@ import uk.gov.justice.listing.events.Prosecutor;
 import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.SimpleOffence;
 import uk.gov.justice.listing.events.StatementOfOffence;
-import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
+import uk.gov.moj.cpp.listing.domain.CourtApplicationParty;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
@@ -310,13 +310,14 @@ public class NewDomainToEventConverter {
                 .withLinkedCaseIds(courtApplication.getLinkedCaseIds())
                 .withOffences(buildApplicationOffences(courtApplication.getOffences()))
                 .withApplicationType(courtApplication.getApplicationType())
-                .withApplicant(buildApplicantRespondent(courtApplication.getApplicant()))
+                .withApplicant(buildCourtApplicationParty(courtApplication.getApplicant()))
                 .withRespondents(ofNullable(courtApplication.getRespondents())
                         .map(respondents -> respondents
                                 .stream()
-                                .map(NewDomainToEventConverter::buildApplicantRespondent)
+                                .map(NewDomainToEventConverter::buildCourtApplicationParty)
                                 .collect(toList()))
                         .orElse(null))
+                .withSubject(isNull(courtApplication.getSubject()) ? null : buildCourtApplicationParty(courtApplication.getSubject()))
 
                 .withRestrictFromCourtList(false)
                 .withRestrictCourtApplicationType(false);
@@ -333,7 +334,7 @@ public class NewDomainToEventConverter {
         return builder.build();
     }
 
-    private static uk.gov.justice.listing.events.ApplicantRespondent buildApplicantRespondent(final ApplicantRespondent applicant) {
+    private static uk.gov.justice.listing.events.ApplicantRespondent buildCourtApplicationParty(final CourtApplicationParty applicant) {
         if(null != applicant) {
             return  uk.gov.justice.listing.events.ApplicantRespondent.applicantRespondent()
                     .withId(applicant.getId())

@@ -127,6 +127,45 @@
             ]
           }
         },
+        "subject": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+            },
+            "firstName": {
+              "description": "The person first name",
+              "type": "string"
+            },
+            "lastName": {
+              "description": "The person last name",
+              "type": "string"
+            },
+            "restrictFromCourtList": {
+              "description": "Restrict subject details from listing",
+              "type":"boolean"
+            },
+            "courtApplicationPartyType": {
+              "description": "The type of court application party",
+              "type": "string",
+              "enum": [
+                "PERSON",
+                "ORGANISATION",
+                "PROSECUTING_AUTHORITY",
+                "PERSON_DEFENDANT"
+              ]
+            },
+            "address": {
+              "$ref": "http://justice.gov.uk/core/courts/address.json"
+            }
+          },
+          "required": [
+            "id",
+            "lastName",
+            "isRespondent",
+            "courtApplicationPartyType"
+          ]
+        },
         "restrictFromCourtList": {
           "type":"boolean"
         },

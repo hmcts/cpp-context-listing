@@ -10,7 +10,6 @@ import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.listing.events.Offences;
 import uk.gov.justice.listing.events.ProsecutionCases;
-import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
 
 import java.io.IOException;
 import java.io.InputStream;

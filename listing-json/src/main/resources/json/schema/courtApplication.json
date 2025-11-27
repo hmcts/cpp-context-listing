@@ -26,6 +26,9 @@
     "applicant": {
       "$ref": "http://justice.gov.uk/listing/events/applicantRespondent.json"
     },
+    "subject": {
+      "$ref": "http://justice.gov.uk/listing/events/applicantRespondent.json"
+    },
     "applicationType": {
       "type": "string"
     },

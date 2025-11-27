@@ -109,7 +109,7 @@ import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClien
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
-import uk.gov.moj.cpp.listing.steps.data.ApplicantRespondentData;
+import uk.gov.moj.cpp.listing.steps.data.CourtApplicationPartyData;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
@@ -1693,7 +1693,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                 .build();
     }
 
-    private CourtApplicationParty getApplicant(final ApplicantRespondentData applicant) {
+    private CourtApplicationParty getApplicant(final CourtApplicationPartyData applicant) {
         return CourtApplicationParty.courtApplicationParty()
                 .withId(applicant.getId())
                 .withPersonDetails(Person.person().withLastName(applicant.getLastName())

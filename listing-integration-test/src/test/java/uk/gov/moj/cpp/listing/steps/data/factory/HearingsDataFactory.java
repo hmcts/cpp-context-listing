@@ -19,7 +19,7 @@ import uk.gov.justice.services.test.utils.core.random.BigDecimalGenerator;
 import uk.gov.justice.services.test.utils.core.random.StringGenerator;
 import uk.gov.moj.cpp.listing.domain.Address;
 import uk.gov.moj.cpp.listing.steps.CivilOffenceData;
-import uk.gov.moj.cpp.listing.steps.data.ApplicantRespondentData;
+import uk.gov.moj.cpp.listing.steps.data.CourtApplicationPartyData;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.CaseMarkerData;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
@@ -1301,22 +1301,22 @@ public class HearingsDataFactory {
 
     private static CourtApplicationData randomCourtApplicationData(final UUID linkedCaseId) {
         return new CourtApplicationData(randomUUID(), linkedCaseId, randomUUID(),
-                new ApplicantRespondentData(randomUUID(), STRING.next(), Boolean.FALSE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
-                new ApplicantRespondentData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
+                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.FALSE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
+                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
                 STRING.next(), Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, STRING.next(), randomUUID());
     }
 
     private static CourtApplicationData randomCourtApplicationData(final CourtApplicationData courtApplicationData, final UUID linkedCaseId) {
         return new CourtApplicationData(randomUUID(), linkedCaseId, randomUUID(),
-                new ApplicantRespondentData(randomUUID(), STRING.next(), Boolean.FALSE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
-                new ApplicantRespondentData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
+                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.FALSE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
+                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
                 STRING.next(), Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, STRING.next(), courtApplicationData.getOffenceId());
     }
 
     private static CourtApplicationData randomCourtApplicationDataWithLegalEntity(final UUID linkedCaseId) {
         return new CourtApplicationData(randomUUID(), linkedCaseId, randomUUID(),
-                new ApplicantRespondentData(randomUUID(), STRING.next(), Boolean.FALSE, STRING.next(), CourtApplicationPartyType.PERSON_DEFENDANT, new LegalEntityDefendantData(UUID.randomUUID(), getOrganisationData()), randomAddress()),
-                new ApplicantRespondentData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), null, null, randomAddress()),
+                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.FALSE, STRING.next(), CourtApplicationPartyType.PERSON_DEFENDANT, new LegalEntityDefendantData(UUID.randomUUID(), getOrganisationData()), randomAddress()),
+                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), null, null, randomAddress()),
                 STRING.next(), Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, STRING.next(), randomUUID());
     }
 

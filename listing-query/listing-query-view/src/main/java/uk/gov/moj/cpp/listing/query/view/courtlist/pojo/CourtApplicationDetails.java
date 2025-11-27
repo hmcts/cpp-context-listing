@@ -11,6 +11,8 @@ public class CourtApplicationDetails {
 
     private JsonArray respondents;
 
+    private JsonObject subject;
+
     public String getApplicationReference() {
         return applicationReference;
     }
@@ -33,5 +35,13 @@ public class CourtApplicationDetails {
 
     public void setRespondents(final JsonArray respondents) {
         this.respondents = respondents;
+    }
+
+    public JsonObject getSubject() {
+        return subject;
+    }
+
+    public void setSubject(final JsonObject subject) {
+        this.subject = subject;
     }
 }

@@ -85,7 +85,7 @@ import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
-import uk.gov.moj.cpp.listing.steps.data.ApplicantRespondentData;
+import uk.gov.moj.cpp.listing.steps.data.CourtApplicationPartyData;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -956,7 +956,7 @@ public class ListNextHearingSteps extends AbstractIT {
                 .build();
     }
 
-    private CourtApplicationParty getApplicant(final ApplicantRespondentData applicant) {
+    private CourtApplicationParty getApplicant(final CourtApplicationPartyData applicant) {
         return CourtApplicationParty.courtApplicationParty()
                 .withId(applicant.getId())
                 .withPersonDetails(Person.person().withLastName(applicant.getLastName())

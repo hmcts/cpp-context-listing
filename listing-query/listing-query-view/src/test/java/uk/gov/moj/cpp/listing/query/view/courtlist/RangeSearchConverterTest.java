@@ -25,7 +25,6 @@ import javax.json.JsonObject;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -59,7 +58,9 @@ public class RangeSearchConverterTest {
                 Arguments.of("courtlist/2.fixed-date-multiple-sittings/range-search-response.json", "courtlist/2.fixed-date-multiple-sittings/expected-court-list.json", null),
                 Arguments.of("courtlist/3.wc-unallocated/range-search-response.json", "courtlist/3.wc-unallocated/expected-court-list.json", null),
                 Arguments.of("courtlist/4.case-with-multiple-days/range-search-response.json", "courtlist/4.case-with-multiple-days/expected-court-list.json", "2019-12-27"),
-                Arguments.of("courtlist/5.case-with-multiple-days-ste/range-search-response.json", "courtlist/5.case-with-multiple-days-ste/expected-court-list.json", "2020-02-21")
+                Arguments.of("courtlist/5.case-with-multiple-days-ste/range-search-response.json", "courtlist/5.case-with-multiple-days-ste/expected-court-list.json", "2020-02-21"),
+                Arguments.of("courtlist/6.case-with-application-with-existing-hearing/range-search-response.json", "courtlist/6.case-with-application-with-existing-hearing/expected-court-list.json", "2020-02-21"),
+                Arguments.of("courtlist/7.case-with-application-with-new-hearing/range-search-response.json", "courtlist/7.case-with-application-with-new-hearing/expected-court-list.json", "2020-02-21")
         );
     }
 

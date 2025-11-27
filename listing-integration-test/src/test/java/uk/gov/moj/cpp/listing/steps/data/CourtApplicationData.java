@@ -6,8 +6,8 @@ public class CourtApplicationData {
     private final UUID id;
     private final UUID linkedCaseId;
     private final UUID parentApplicationId;
-    private final ApplicantRespondentData applicant;
-    private final ApplicantRespondentData respondent;
+    private final CourtApplicationPartyData applicant;
+    private final CourtApplicationPartyData respondent;
     private final String type;
     private final Boolean requiresResponse;
     private final Boolean restrictCourtApplicationType;
@@ -16,7 +16,7 @@ public class CourtApplicationData {
     private final String applicationParticulars;
     private final UUID offenceId;
 
-    public CourtApplicationData(UUID id, UUID linkedCaseId, UUID parentApplicationId, ApplicantRespondentData applicant, ApplicantRespondentData respondent, String type, Boolean requiresResponse,
+    public CourtApplicationData(UUID id, UUID linkedCaseId, UUID parentApplicationId, CourtApplicationPartyData applicant, CourtApplicationPartyData respondent, String type, Boolean requiresResponse,
                                 final Boolean restrictCourtApplicationType, final Boolean restrictFromCourtList, final Boolean isEjected, final String applicationParticulars, final UUID offenceId) {
         this.id = id;
         this.linkedCaseId = linkedCaseId;
@@ -44,7 +44,7 @@ public class CourtApplicationData {
         return parentApplicationId;
     }
 
-    public ApplicantRespondentData getApplicant() {
+    public CourtApplicationPartyData getApplicant() {
         return applicant;
     }
 
@@ -52,7 +52,7 @@ public class CourtApplicationData {
         return isEjected;
     }
 
-    public ApplicantRespondentData getRespondent() {
+    public CourtApplicationPartyData getRespondent() {
         return respondent;
     }
 
