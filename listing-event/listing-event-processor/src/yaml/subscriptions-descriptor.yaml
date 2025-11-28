@@ -229,6 +229,9 @@ subscriptions_descriptor:
         - name: public.progression.application-offences-updated
           schema_uri: http://justice.gov.uk/progression/courts/public.progression.application-offences-updated.json
 
+        - name: public.progression.application-laa-reference-updated-for-application
+          schema_uri: http://justice.gov.uk/progression/courts/public.progression.application-laa-reference-updated-for-application.json
+
         - name: public.hearing.hearing-days-cancelled
           schema_uri: http://justice.gov.uk/hearing/courts/hearing-days-cancelled.json
 

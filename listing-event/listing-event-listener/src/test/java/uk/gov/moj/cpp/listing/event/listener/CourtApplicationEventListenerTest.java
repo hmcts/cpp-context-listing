@@ -212,6 +212,72 @@ public class CourtApplicationEventListenerTest {
         verify(hearingSearchSyncService).sync(HEARING_ID);
     }
 
+    @Test
+    public void shouldHandleLaaReferenceUpdateWhenOffenceIdNull() throws Exception {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final List<uk.gov.justice.listing.events.CourtApplication> testCases = singletonList(CourtApplication.courtApplication()
+                .withLinkedCaseIds(singletonList(LINKED_CASE_ID))
+                .withParentApplicationId(LINKED_APPLICATION_ID)
+                .withId(ID)
+                .withApplicationType(APPLICATION_TYPE)
+                .withApplicationParticulars(APPLICATION_PARTICULARS)
+                .withApplicant(ApplicantRespondent.applicantRespondent()
+                        .withFirstName(FIRST_NAME)
+                        .withLastName(LAST_NAME)
+                        .withIsRespondent(false)
+                        .withAddress(APPLICANT_ADDRESS)
+                        .build())
+                .withRespondents(asList(ApplicantRespondent.applicantRespondent()
+                        .withFirstName(FIRST_NAME)
+                        .withLastName(LAST_NAME)
+                        .withIsRespondent(true)
+                        .withAddress(RESPONDENT_ADDRESS)
+                        .build()))
+                .build());
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+
+        final LaaReferenceForApplicationUpdated hearingData = LaaReferenceForApplicationUpdated.laaReferenceForApplicationUpdated()
+                .withApplicationId(ID)
+                .withSubjectId(randomUUID())
+                .withHearingIds(singletonList(HEARING_ID))
+                .withLaaReference(LaaReference.laaReference()
+                        .withEffectiveEndDate(LocalDate.now().toString())
+                        .withApplicationReference("APP-1234")
+                        .withEffectiveStartDate(LocalDate.now().toString())
+                        .withStatusCode("A")
+                        .withStatusDate(LocalDate.now().toString())
+                        .withStatusId(randomUUID())
+                        .withLaaContractNumber("123456")
+                        .build())
+                .build();
+
+        given(laaReferenceForApplicationUpdatedEnvelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(COURT_APPLICATIONS)).willReturn(testCasesProperties);
+
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        courtApplicationEventListener.processLaaReferenceUpdate(laaReferenceForApplicationUpdatedEnvelope);
+
+        verify(properties).replace(any(), objectNodeCaptor.capture());
+
+        assertThat(objectNodeCaptor.getValue().get(0).has("offences"), equalTo(false));
+        final JsonNode laaApplnReference = objectNodeCaptor.getValue().get(0).get("laaApplnReference");
+        assertThat(laaApplnReference.get("effectiveEndDate").asText(), equalTo(hearingData.getLaaReference().getEffectiveEndDate()));
+        assertThat(laaApplnReference.get("applicationReference").asText(), equalTo(hearingData.getLaaReference().getApplicationReference()));
+        assertThat(laaApplnReference.get("effectiveStartDate").asText(), equalTo(hearingData.getLaaReference().getEffectiveStartDate()));
+        assertThat(laaApplnReference.get("statusCode").asText(), equalTo(hearingData.getLaaReference().getStatusCode()));
+        assertThat(laaApplnReference.get("statusDate").asText(), equalTo(hearingData.getLaaReference().getStatusDate()));
+        assertThat(laaApplnReference.get("statusId").asText(), equalTo(hearingData.getLaaReference().getStatusId().toString()));
+
+        verify(hearingRepository).save(hearing);
+        verify(hearingSearchSyncService).sync(HEARING_ID);
+    }
+
 
     @Test
     public void shouldAddCourtApplicationForHearing() {

@@ -4882,7 +4882,7 @@ class HearingAggregateTest {
     }
 
     // Unit tests for magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected method
-    
+
     @Test
     void shouldReturnFalse_WhenCurrentHearingEventStateIsNull() {
         final UUID ejectedItemId = randomUUID();
@@ -4891,12 +4891,12 @@ class HearingAggregateTest {
 
         assertThat(result, is(false));
     }
-    
+
     @Test
     void shouldReturnFalse_WhenJurisdictionTypeIsNotMagistrates() {
         final UUID ejectedItemId = randomUUID();
         final UUID hearingId = randomUUID();
-        
+
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
                         .withId(hearingId)
@@ -4912,17 +4912,17 @@ class HearingAggregateTest {
                         .build())
                 .build()
         );
-        
+
         boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
-        
+
         assertThat(result, is(false));
     }
-    
+
     @Test
     void shouldReturnFalse_WhenStartDateIsInThePast() {
         final UUID ejectedItemId = randomUUID();
         final UUID hearingId = randomUUID();
-        
+
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
                         .withId(hearingId)
@@ -4938,17 +4938,17 @@ class HearingAggregateTest {
                         .build())
                 .build()
         );
-        
+
         boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
-        
+
         assertThat(result, is(false));
     }
-    
+
     @Test
     void shouldReturnFalse_WhenStartDateIsNull() {
         final UUID ejectedItemId = randomUUID();
         final UUID hearingId = randomUUID();
-        
+
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
                         .withId(hearingId)
@@ -4964,17 +4964,17 @@ class HearingAggregateTest {
                         .build())
                 .build()
         );
-        
+
         boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
-        
+
         assertThat(result, is(false));
     }
-    
+
     @Test
     void shouldReturnFalse_WhenHearingIsNotAllocated() {
         final UUID ejectedItemId = randomUUID();
         final UUID hearingId = randomUUID();
-        
+
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
                         .withId(hearingId)
@@ -4990,17 +4990,17 @@ class HearingAggregateTest {
                         .build())
                 .build()
         );
-        
+
         boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
-        
+
         assertThat(result, is(false));
     }
-    
+
     @Test
     void shouldReturnTrue_WhenNoCasesAndNoApplications() {
         final UUID ejectedItemId = randomUUID();
         final UUID hearingId = randomUUID();
-        
+
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
                         .withId(hearingId)
@@ -5018,19 +5018,19 @@ class HearingAggregateTest {
                         .build())
                 .build()
         );
-        
+
         boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
-        
+
         assertThat(result, is(true));
     }
-    
+
     @Test
     void shouldReturnTrue_WhenAllCasesAreEjected() {
         final UUID ejectedItemId = randomUUID();
         final UUID hearingId = randomUUID();
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
-        
+
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
                         .withId(hearingId)
@@ -5059,19 +5059,19 @@ class HearingAggregateTest {
                         .build())
                 .build()
         );
-        
+
         boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
-        
+
         assertThat(result, is(true));
     }
-    
+
     @Test
     void shouldReturnFalse_WhenSomeCasesAreNotEjected() {
         final UUID ejectedItemId = randomUUID();
         final UUID hearingId = randomUUID();
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
-        
+
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
                         .withId(hearingId)
@@ -5100,19 +5100,19 @@ class HearingAggregateTest {
                         .build())
                 .build()
         );
-        
+
         boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
-        
+
         assertThat(result, is(false));
     }
-    
+
     @Test
     void shouldReturnTrue_WhenAllApplicationsAreEjected() {
         final UUID ejectedItemId = randomUUID();
         final UUID hearingId = randomUUID();
         final UUID application1Id = randomUUID();
         final UUID application2Id = randomUUID();
-        
+
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
                         .withId(hearingId)
@@ -5141,9 +5141,9 @@ class HearingAggregateTest {
                         .build())
                 .build()
         );
-        
+
         boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
-        
+
         assertThat(result, is(true));
     }
 
@@ -5233,14 +5233,14 @@ class HearingAggregateTest {
 
         assertThat(result, is(false));
     }
-    
+
     @Test
     void shouldReturnFalse_WhenSomeApplicationsAreNotEjected() {
         final UUID ejectedItemId = randomUUID();
         final UUID hearingId = randomUUID();
         final UUID application1Id = randomUUID();
         final UUID application2Id = randomUUID();
-        
+
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
                         .withId(hearingId)
@@ -5269,19 +5269,19 @@ class HearingAggregateTest {
                         .build())
                 .build()
         );
-        
+
         boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
-        
+
         assertThat(result, is(false));
     }
-    
+
     @Test
     void shouldReturnTrue_WhenEjectedItemIsExcludedFromCaseCheck() {
         final UUID ejectedItemId = randomUUID();
         final UUID hearingId = randomUUID();
         final UUID case1Id = randomUUID();
         final UUID case2Id = ejectedItemId; // This is the ejected item
-        
+
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
                         .withId(hearingId)
@@ -5310,19 +5310,19 @@ class HearingAggregateTest {
                         .build())
                 .build()
         );
-        
+
         boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
-        
+
         assertThat(result, is(true));
     }
-    
+
     @Test
     void shouldReturnTrue_WhenEjectedItemIsExcludedFromApplicationCheck() {
         final UUID ejectedItemId = randomUUID();
         final UUID hearingId = randomUUID();
         final UUID application1Id = randomUUID();
         final UUID application2Id = ejectedItemId; // This is the ejected item
-        
+
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
                         .withId(hearingId)
@@ -5351,19 +5351,19 @@ class HearingAggregateTest {
                         .build())
                 .build()
         );
-        
+
         boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
-        
+
         assertThat(result, is(true));
     }
-    
+
     @Test
     void shouldReturnTrue_WhenLinkedApplicationIsExcludedFromCheck() {
         final UUID ejectedItemId = randomUUID();
         final UUID hearingId = randomUUID();
         final UUID application1Id = randomUUID();
         final UUID application2Id = randomUUID();
-        
+
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
                         .withId(hearingId)
@@ -5393,9 +5393,9 @@ class HearingAggregateTest {
                         .build())
                 .build()
         );
-        
+
         boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
-        
+
         assertThat(result, is(true));
     }
 
@@ -5910,7 +5910,7 @@ class HearingAggregateTest {
     void shouldReturnHearingResultStatusUpdatedEvent_WhenCurrentHearingEventStateIsNotNull() {
         // Given
         final UUID testHearingId = randomUUID();
-        
+
         // Initialize hearing with HearingListed event to set currentHearingEventState
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
@@ -5929,7 +5929,7 @@ class HearingAggregateTest {
         // Then
         assertThat(eventsList.size(), is(1));
         assertThat(eventsList.get(0), CoreMatchers.instanceOf(HearingResultStatusUpdated.class));
-        
+
         final HearingResultStatusUpdated event = (HearingResultStatusUpdated) eventsList.get(0);
         assertThat(event.getHearingId(), is(testHearingId));
     }
@@ -5952,7 +5952,7 @@ class HearingAggregateTest {
     void shouldSetResultedFlagToTrue_WhenHearingResultStatusUpdatedEventIsApplied() {
         // Given
         final UUID testHearingId = randomUUID();
-        
+
         // Initialize hearing with HearingListed event
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
@@ -5967,7 +5967,7 @@ class HearingAggregateTest {
         // When - set hearing result status
         final Stream<Object> events = hearing.setHearingResultStatus(testHearingId);
         final List<Object> eventsList = events.collect(Collectors.toList());
-        
+
         // Apply the event to verify resulted flag is set
         eventsList.forEach(event -> hearing.apply(event));
 
@@ -5983,7 +5983,7 @@ class HearingAggregateTest {
         // Given
         final UUID testHearingId = randomUUID();
         final UUID differentHearingId = randomUUID();
-        
+
         // Initialize hearing with HearingListed event
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
@@ -6009,7 +6009,7 @@ class HearingAggregateTest {
     void shouldReturnEmptyStream_WhenHearingIsDeleted() {
         // Given
         final UUID testHearingId = randomUUID();
-        
+
         // Initialize hearing
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
