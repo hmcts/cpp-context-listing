@@ -108,6 +108,7 @@ public class CourtServicesMapper {
     private static final String LABEL = "label";
     private static final String DEFENDANTS = "defendants";
     private static final String COMMA = ", ";
+    public static final String SUBJECT = "subject";
 
     private final RequestedNameMapper judicialRequestedName = new RequestedNameMapper();
 
@@ -408,7 +409,7 @@ public class CourtServicesMapper {
             generateAndSetTimeMarkingNote(hearingJson, hearingStructure);
         }
         // Map applicant to subject if subject is present in the JSON
-        if (hearingJson.containsKey("subject")) {
+        if (hearingJson.containsKey(SUBJECT)) {
             hearingStructure.setDefendants(generateHearingStructureSubjectForCourtApplication(hearingJson));
         } else {
             hearingStructure.setDefendants(generateHearingStructureDefendantsForCourtApplication(hearingJson));
@@ -557,7 +558,7 @@ public class CourtServicesMapper {
 
         final HearingStructure.Defendants defendants = objectFactory.createHearingStructureDefendants();
 
-        defendants.getDefendant().add(generateDefendantStructureForApplicant(courtApplication.getJsonObject("subject"),
+        defendants.getDefendant().add(generateDefendantStructureForApplicant(courtApplication.getJsonObject(SUBJECT),
                 courtApplication.getString(APPLICATION_REFERENCE)));
 
         return defendants;
@@ -795,7 +796,11 @@ public class CourtServicesMapper {
         casesStructureCase.setHearing(generateHearingTypeStructure(courtApplication));
 
         if (!courtApplication.getBoolean(RESTRICT_FROM_COURT_LIST)) {
-            casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(courtApplication.getJsonObject("applicant"), courtApplication.getString(APPLICATION_REFERENCE)));
+            // Use subject if present, otherwise use applicant
+            final JsonObject partyToUse = courtApplication.containsKey(SUBJECT)
+                    ? courtApplication.getJsonObject(SUBJECT)
+                    : courtApplication.getJsonObject("applicant");
+            casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(partyToUse, courtApplication.getString(APPLICATION_REFERENCE)));
         }
 
         return casesStructureCase;

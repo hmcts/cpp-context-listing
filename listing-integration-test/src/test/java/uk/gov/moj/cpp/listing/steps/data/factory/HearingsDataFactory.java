@@ -238,8 +238,13 @@ public class HearingsDataFactory {
     }
 
     public static List<HearingData> hearingsDataStandaloneApplication() {
-        return manyRandomHearingsStandaloneApplication(2);
+        return manyRandomHearingsStandaloneApplication(2, false);
     }
+
+    public static List<HearingData> hearingsDataStandaloneApplicationWithSubject() {
+        return manyRandomHearingsStandaloneApplication(2, true);
+    }
+
 
     public static List<HearingData> hearingsDataForCasesWithExParte() {
         return manyRandomHearingsWithExParte(2);
@@ -500,11 +505,12 @@ public class HearingsDataFactory {
                 .collect(toList());
     }
 
-    private static List<HearingData> manyRandomHearingsStandaloneApplication(final Integer numberOfHearings) {
+    private static List<HearingData> manyRandomHearingsStandaloneApplication(final Integer numberOfHearings, final boolean withSubject) {
         return IntStream.range(0, numberOfHearings)
-                .mapToObj((int i) -> randomHearingStandaloneApplication())
+                .mapToObj((int i) -> randomHearingStandaloneApplication(withSubject))
                 .collect(toList());
     }
+
 
     public static List<HearingData> hearingsDataWithShadowListedOffences() {
         final UUID courtCentreId = UUID.randomUUID();
@@ -1290,18 +1296,29 @@ public class HearingsDataFactory {
                 singletonList(randomCourtApplicationPartyNeed()), "Carmarthen Magistrates Court");
     }
 
-    private static HearingData randomHearingStandaloneApplication() {
+    private static HearingData randomHearingStandaloneApplication(final boolean withSubject) {
+        final CourtApplicationData courtApplicationData = withSubject
+                ? randomCourtApplicationDataWithSubject(null)
+                : randomCourtApplicationData(null);
         return new HearingData(randomUUID(), randomUUID(), PTP_HEARING_TYPE, LocalDate.now(),
-                null, HEARING_ESTIMATE_MINUTES,ESTIMATED_DURATION,
+                null, HEARING_ESTIMATE_MINUTES, ESTIMATED_DURATION,
                 null, ZonedDateTime.now(), null,
                 null, CROWN_JURISDICTION, STRING.next(),
-                singletonList(randomCourtApplicationData(null)),
+                singletonList(courtApplicationData),
                 singletonList(randomCourtApplicationPartyNeed()), "Carmarthen Magistrates Court");
     }
 
     private static CourtApplicationData randomCourtApplicationData(final UUID linkedCaseId) {
         return new CourtApplicationData(randomUUID(), linkedCaseId, randomUUID(),
                 new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.FALSE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
+                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
+                STRING.next(), Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, STRING.next(), randomUUID());
+    }
+
+    private static CourtApplicationData randomCourtApplicationDataWithSubject(final UUID linkedCaseId) {
+        return new CourtApplicationData(randomUUID(), linkedCaseId, randomUUID(),
+                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.FALSE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
+                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
                 new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
                 STRING.next(), Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, STRING.next(), randomUUID());
     }

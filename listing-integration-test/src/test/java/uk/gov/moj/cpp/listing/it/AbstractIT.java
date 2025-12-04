@@ -36,6 +36,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
 import org.junit.jupiter.api.AfterEach;
 
 import javax.ws.rs.core.MultivaluedHashMap;
@@ -46,6 +47,7 @@ import io.restassured.http.Header;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupUsersGroupPermissionsForApplicationTypeStub;
 
 @SuppressWarnings("WeakerAccess")

@@ -1586,7 +1586,9 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 .withApplicationStatus(ApplicationStatus.LISTED)
                                 .withApplicant(ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
                                 .withRespondents(getRespondents(hearingData))
-                                .withSubject(ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
+                                .withSubject(hearingData.getCourtApplications().get(0).getSubject() != null
+                                        ? ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getSubject())
+                                        : ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
                                 .build()))
                         .withCourtApplicationPartyListingNeeds(hearingData.getCourtApplicationPartyNeeds())
                         .withId(hearingData.getId())
@@ -1890,7 +1892,9 @@ public class ListCourtHearingSteps extends AbstractIT {
                                         .withSummonsRequired(false)
                                         .withNotificationRequired(false)
                                         .build()))
-                                .withSubject(getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
+                                        .withSubject(hearingData.getCourtApplications().get(0).getSubject() != null
+                                        ? ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getSubject())
+                                        : ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
                                 .build()))
                         .withCourtApplicationPartyListingNeeds(hearingData.getCourtApplicationPartyNeeds())
                         .withId(hearingData.getId())
