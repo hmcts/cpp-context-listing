@@ -13,6 +13,7 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -193,6 +194,62 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         assertEquals("2", simpleXpathEngine.evaluate("count(/*[local-name()='WarnedList']/*[local-name()='CourtLists']/*[local-name()='CourtList']/*[local-name()='WithoutFixedDate'])", XMLUnit.buildControlDocument(sentXml)));
         assertEquals("4", simpleXpathEngine.evaluate("count(/*[local-name()='WarnedList']/*[local-name()='CourtLists']/*[local-name()='CourtList']/*[local-name()='WithoutFixedDate']" +
                 "/*[local-name()='Fixture']/*[local-name()='Cases']/*[local-name()='Case'])", XMLUnit.buildControlDocument(sentXml)));
+    }
+
+    public void verifySentPublishedCourtListHearingDataForWarnWithSubject(final String subjectFirstName, final String subjectLastName) throws Exception {
+
+        verifyCourtHeaderWarnList();
+        final String sentXml = getSentXml();
+
+        assertXpathEvaluatesTo(subjectFirstName, "/*[local-name()='WarnedList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='WithFixedDate']/*[local-name()='Fixture']/*[local-name()='Cases']/*[local-name()='Case']/*[local-name()='Defendants']" +
+                "/*[local-name()='Defendant']/*[local-name()='PersonalDetails']/*[local-name()='Name']/*[local-name()='CitizenNameForename']/text()", sentXml);
+
+        assertXpathEvaluatesTo(subjectLastName, "/*[local-name()='WarnedList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='WithFixedDate']/*[local-name()='Fixture']/*[local-name()='Cases']/*[local-name()='Case']/*[local-name()='Defendants']" +
+                "/*[local-name()='Defendant']/*[local-name()='PersonalDetails']/*[local-name()='Name']/*[local-name()='CitizenNameSurname']/text()", sentXml);
+
+        assertXpathEvaluatesTo(subjectFirstName +" "+subjectLastName, "/*[local-name()='WarnedList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='WithFixedDate']/*[local-name()='Fixture']/*[local-name()='Cases']/*[local-name()='Case']/*[local-name()='Defendants']" +
+                "/*[local-name()='Defendant']/*[local-name()='PersonalDetails']/*[local-name()='Name']/*[local-name()='CitizenNameRequestedName']/text()", sentXml);
+    }
+
+    public void verifySentPublishedCourtListHearingDataForFirmWithSubject(final String subjectFirstName, final String subjectLastName) throws Exception {
+
+        verifyCourtHeaderFirmList();
+        final String sentXml = getSentXml();
+
+        assertXpathEvaluatesTo(subjectFirstName, "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='Defendants']" +
+                "/*[local-name()='Defendant']/*[local-name()='PersonalDetails']/*[local-name()='Name']/*[local-name()='CitizenNameForename']/text()", sentXml);
+
+        assertXpathEvaluatesTo(subjectLastName, "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='Defendants']" +
+                "/*[local-name()='Defendant']/*[local-name()='PersonalDetails']/*[local-name()='Name']/*[local-name()='CitizenNameSurname']/text()", sentXml);
+
+        assertXpathEvaluatesTo(subjectFirstName +" "+subjectLastName, "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='Defendants']" +
+                "/*[local-name()='Defendant']/*[local-name()='PersonalDetails']/*[local-name()='Name']/*[local-name()='CitizenNameRequestedName']/text()", sentXml);
+    }
+
+
+    public void verifySentPublishedCourtListHearingDataForDraftWithSubject(final String subjectFirstName, final String subjectLastName) throws Exception {
+
+        verifyCourtHeaderDailyList();
+        final String sentXml = getSentXml();
+
+        assertXpathEvaluatesTo(subjectFirstName, "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='Defendants']" +
+                "/*[local-name()='Defendant']/*[local-name()='PersonalDetails']/*[local-name()='Name']/*[local-name()='CitizenNameForename']/text()", sentXml);
+
+        assertXpathEvaluatesTo(subjectLastName, "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='Defendants']" +
+                "/*[local-name()='Defendant']/*[local-name()='PersonalDetails']/*[local-name()='Name']/*[local-name()='CitizenNameSurname']/text()", sentXml);
+
+        assertXpathEvaluatesTo(subjectFirstName +" "+subjectLastName, "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='Defendants']" +
+                "/*[local-name()='Defendant']/*[local-name()='PersonalDetails']/*[local-name()='Name']/*[local-name()='CitizenNameRequestedName']/text()", sentXml);
+
     }
 
     private void verifyCourtHeader() throws Exception {

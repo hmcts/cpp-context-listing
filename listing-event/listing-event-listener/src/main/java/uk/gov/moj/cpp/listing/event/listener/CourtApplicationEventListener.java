@@ -160,6 +160,7 @@ public class CourtApplicationEventListener {
                     .withApplicationReference(updateCourtApplication.getApplicationReference())
                     .withApplicationParticulars(updateCourtApplication.getApplicationParticulars())
                     .withOffences(updateCourtApplication.getOffences())
+                    .withSubject(updateCourtApplication.getSubject())
                     .build();
 
             courtApplications.replaceAll(courtApplication -> courtApplication.getId()

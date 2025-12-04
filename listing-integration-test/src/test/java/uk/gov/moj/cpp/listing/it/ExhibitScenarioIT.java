@@ -15,6 +15,7 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubUpdateA
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCpCourtRooms;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataXhibitCourtRoomMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 import static uk.gov.moj.cpp.listing.utils.SystemIdMapperStub.stubIdMapperReturningExistingAssociation;
@@ -30,6 +31,8 @@ import uk.gov.moj.cpp.listing.steps.PublishCourtListSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
+import uk.gov.moj.cpp.listing.steps.data.HearingTypeData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
@@ -614,5 +617,132 @@ class ExhibitScenarioIT extends AbstractIT {
         courtListSteps.verifyCourtListRequestedAndIsCorrect(CourtListType.USHERS_MAGISTRATE.name());
     }
 
+    /**
+     * Test: Create a crown allocated hearing with Trail hearing type
+     * The hearing should have one court application with a subject but no prosecution cases or listed cases
+     */
+    @Test
+    void testCrownAllocatedHearingWithSentenceTypeAndCourtApplicationWithSubject() throws Exception {
+        stubUpdateAvailableHearingSlotsService();
+        
+        // Crown court centre and room
+        final UUID crownCourtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+        final UUID crownCourtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
+        final String courtScheduleId = "8e837de0-743a-4a2c-9db3-b2e678c48729";
+        final UUID courtListId = randomUUID();
+        final int courtRoomId = 231;
+        
+        // Create standalone application data
+        final HearingsData standaloneApplicationData = HearingsData.hearingsDataStandaloneApplicationWithSubject();
+        final HearingData standaloneHearing = standaloneApplicationData.getHearingData().get(0);
+        
+        // Use existing hearing type from standalone hearing data
+        final HearingTypeData hearingTypeData = standaloneHearing.getHearingTypeData();
+        
+        // Stub reference data EARLY - before any operations that might initialize the cache
+        stubGetReferenceDataHearingTypes(hearingTypeData.getTypeId());
+        stubOrganisationUnit(crownCourtCentreId);
+        stubGetReferenceDataCourtMappings(new CourtCentreData(crownCourtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, crownCourtRoomUUID, "Leeds Crown Court"));
 
+        // Set hearing data using reflection
+        final LocalDate hearingDate = LocalDate.now();
+        final ZonedDateTime hearingStartTime = ZonedDateTime.now().withHour(10).withMinute(0).withSecond(0).withNano(0);
+        setHearingDataFields(standaloneHearing, hearingTypeData, crownCourtCentreId, crownCourtRoomUUID, hearingDate, hearingStartTime);
+        
+        // Setup listing steps and stubs
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(standaloneApplicationData);
+        stubProvisionalBooking(crownCourtCentreId, crownCourtRoomUUID, courtScheduleId, hearingDate, hearingStartTime);
+        stubListHearingInCourtSessions(standaloneHearing.getId().toString(), courtScheduleId, hearingStartTime);
+        
+        // Submit standalone application for listing
+        listCourtHearingSteps.whenCaseIsSubmittedForListingStandaloneApplication();
+        listCourtHearingSteps.verifyHearingListedFromAPIForStandaloneApplication(ALLOCATED);
+
+        // Stub reference data for publishing
+        stubReferenceDataForPublishing(crownCourtCentreId, courtListId, standaloneHearing, hearingTypeData, courtRoomId);
+
+        // Extract subject information once
+        final String subjectFirstName = standaloneHearing.getCourtApplications().get(0).getSubject().getFirstName();
+        final String subjectLastName = standaloneHearing.getCourtApplications().get(0).getSubject().getLastName();
+
+        // Publish and verify WARN, FIRM, and DRAFT lists
+        publishAndVerifyCourtList(standaloneApplicationData, crownCourtCentreId, PublishCourtListType.WARN, "true", 
+                subjectFirstName, subjectLastName, (steps, firstName, lastName) -> 
+                    steps.verifySentPublishedCourtListHearingDataForWarnWithSubject(firstName, lastName));
+        
+        publishAndVerifyCourtList(standaloneApplicationData, crownCourtCentreId, PublishCourtListType.FIRM, "true", 
+                subjectFirstName, subjectLastName, (steps, firstName, lastName) -> 
+                    steps.verifySentPublishedCourtListHearingDataForFirmWithSubject(firstName, lastName));
+        
+        publishAndVerifyCourtList(standaloneApplicationData, crownCourtCentreId, PublishCourtListType.DRAFT, "false", 
+                subjectFirstName, subjectLastName, (steps, firstName, lastName) -> 
+                    steps.verifySentPublishedCourtListHearingDataForDraftWithSubject(firstName, lastName));
+    }
+
+    private void setHearingDataFields(final HearingData hearing, final HearingTypeData hearingTypeData, 
+                                      final UUID courtCentreId, final UUID courtRoomId, 
+                                      final LocalDate hearingDate, final ZonedDateTime hearingStartTime) {
+        try {
+            setField(hearing, "hearingTypeData", hearingTypeData);
+            setField(hearing, "courtCentreId", courtCentreId);
+            setField(hearing, "courtRoomId", courtRoomId);
+            setField(hearing, "hearingStartDate", hearingDate);
+            setField(hearing, "hearingEndDate", hearingDate);
+            setField(hearing, "hearingStartTime", hearingStartTime);
+            hearing.setName("Leeds Crown Court");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set fields using reflection", e);
+        }
+    }
+
+    private void setField(final Object target, final String fieldName, final Object value) throws Exception {
+        final java.lang.reflect.Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(target, value);
+    }
+
+    private void stubProvisionalBooking(final UUID courtCentreId, final UUID courtRoomId, 
+                                       final String courtScheduleId, final LocalDate hearingDate, 
+                                       final ZonedDateTime hearingStartTime) {
+        final UUID bookingId = randomUUID();
+        final Map<String, String> stubParams = new HashMap<>();
+        stubParams.put("SESSION_DATE", hearingDate.toString());
+        stubParams.put("COURT_CENTRE_ID", courtCentreId.toString());
+        stubParams.put("COURT_SCHEDULE_ID", courtScheduleId);
+        stubParams.put("COURT_ROOM_ID", courtRoomId.toString());
+        stubParams.put("BOOKING_ID", bookingId.toString());
+        stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
+        stubProvisionalBookingWithCustomParams(stubParams);
+    }
+
+    private void stubReferenceDataForPublishing(final UUID crownCourtCentreId, final UUID courtListId, 
+                                               final HearingData hearing, final HearingTypeData hearingTypeData, 
+                                               final int courtRoomId) {
+        stubGetReferenceDataCourtCentreById(crownCourtCentreId);
+        stubIdMapperReturningExistingAssociation(courtListId);
+        stubOrganisationUnit(crownCourtCentreId);
+        stubGetReferenceDataCourtMappings(new CourtCentreData(crownCourtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
+        stubGetReferenceDataCpCourtRooms(hearing.getCourtRoomId(), courtRoomId);
+        stubGetReferenceDataXhibitCourtRoomMappings(hearing.getCourtRoomId());
+        stubGetReferenceDataHearingTypes(hearingTypeData.getTypeId());
+    }
+
+    @FunctionalInterface
+    private interface CourtListVerifier {
+        void verify(PublishCourtListSteps steps, String firstName, String lastName) throws Exception;
+    }
+
+    private void publishAndVerifyCourtList(final HearingsData hearingsData, final UUID courtCentreId, 
+                                          final PublishCourtListType publishType, final String weekCommencing,
+                                          final String subjectFirstName, final String subjectLastName,
+                                          final CourtListVerifier verifier) throws Exception {
+        final JsonObject commandPayload = buildPublishCourtListCommandPayload(courtCentreId, publishType, LocalDate.now());
+        final PublishCourtListSteps steps = new PublishCourtListSteps(hearingsData, commandPayload);
+        
+        steps.createMessageConsumer();
+        steps.acceptCourtListXmlFiles();
+        steps.sendPublishCourtListCommand();
+        steps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, weekCommencing);
+        verifier.verify(steps, subjectFirstName, subjectLastName);
+    }
 }

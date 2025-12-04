@@ -14,7 +14,7 @@ import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.utils.FileUtil;
 import uk.gov.moj.cpp.listing.domain.Address;
-import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
+import uk.gov.moj.cpp.listing.domain.CourtApplicationParty;
 import uk.gov.moj.cpp.listing.domain.BailStatus;
 import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
@@ -308,7 +308,7 @@ public class UnscheduledListingCommandBuilder {
                 .withParentApplicationId(fromString("9d9a431a-0f12-4386-878a-2bf6c4a0877e"))
                 .withApplicationType("App Type")
                 .withId(fromString("26b856a8-ae01-4aad-814c-7cdff8db19bf"))
-                .withApplicant(ApplicantRespondent.applicantRespondent()
+                .withApplicant(CourtApplicationParty.courtApplicationParty()
                         .withIsRespondent(false)
                         .withId(fromString("22b1078b-9430-4cef-ba46-eea40a129ca8"))
                         .withFirstName("Fred")
@@ -316,7 +316,7 @@ public class UnscheduledListingCommandBuilder {
                         .withCourtApplicationPartyType(CourtApplicationPartyType.PERSON)
                         .withAddress(getAddress())
                         .build())
-                .withRespondents(Collections.singletonList(ApplicantRespondent.applicantRespondent()
+                .withRespondents(Collections.singletonList(CourtApplicationParty.courtApplicationParty()
                         .withIsRespondent(true)
                         .withId(fromString("48ddbd0a-31db-4814-b052-aa3ba9afb800"))
                         .withFirstName("Dan")
@@ -335,7 +335,7 @@ public class UnscheduledListingCommandBuilder {
                 .withApplicationType("Application for a sexual offences prevention order")
                 .withId(fromString("bf5e2df3-0c37-490e-8b92-f2ebdd5f6723"))
                 .withLinkedCaseIds(Collections.emptyList())
-                .withApplicant(ApplicantRespondent.applicantRespondent()
+                .withApplicant(CourtApplicationParty.courtApplicationParty()
                         .withIsRespondent(false)
                         .withId(fromString("9f85ccfb-e57d-4339-adb2-4764f5cd1e5f"))
                         .withFirstName("Katelynn")
@@ -348,7 +348,7 @@ public class UnscheduledListingCommandBuilder {
                                 .withPostcode(Optional.of("SA7 0AN"))
                                 .build())
                         .build())
-                .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
+                .withRespondents(singletonList(CourtApplicationParty.courtApplicationParty()
                         .withIsRespondent(true)
                         .withId(fromString("2ada34cf-5fbf-4526-974e-feb073b032bf"))
                         .withFirstName("Renna")

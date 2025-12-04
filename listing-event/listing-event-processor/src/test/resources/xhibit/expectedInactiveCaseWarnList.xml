@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cs:WarnedList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice" xmlns:p2="http://www.govtalk.gov.uk/people/bs7666" xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <cs:DocumentID>
+        <cs:DocumentName>WARN-FILENAME</cs:DocumentName>
+        <cs:UniqueID>UNIQUEID</cs:UniqueID>
+        <cs:DocumentType>WL</cs:DocumentType>
+        <cs:TimeStamp>#TIME_STAMP#</cs:TimeStamp>
+    </cs:DocumentID>
+    <cs:ListHeader>
+        <cs:ListCategory>Criminal</cs:ListCategory>
+        <cs:StartDate>2019-11-04</cs:StartDate>
+        <cs:EndDate>2019-11-05</cs:EndDate>
+        <cs:Version>NOT VERSIONED</cs:Version>
+        <cs:PublishedTime>2018-01-02T13:04:05Z</cs:PublishedTime>
+    </cs:ListHeader>
+    <cs:CrownCourt>
+        <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+        <cs:CourtHouseCode CourtHouseShortName="MOCK">000</cs:CourtHouseCode>
+        <cs:CourtHouseName>MOCK_CROWN_COURTNAME</cs:CourtHouseName>
+    </cs:CrownCourt>
+    <cs:CourtLists>
+        <cs:CourtList>
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>429</cs:CourtHouseCode>
+                <cs:CourtHouseName>LEEDS</cs:CourtHouseName>
+            </cs:CourtHouse>
+            <cs:WithFixedDate HearingType="TRL">
+                <cs:Fixture>
+                    <cs:FixedDate>2025-12-29</cs:FixedDate>
+                    <cs:Cases>
+                        <cs:Case>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
+                            <cs:Hearing HearingType="TRL">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION-TRL</cs:HearingDescription>
+                                <cs:HearingDate>2025-12-29</cs:HearingDate>
+                            </cs:Hearing>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameForename>Cassandre</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>Witting</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Cassandre Witting</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:URN>28DI5950047</cs:URN>
+                                    <cs:Charges>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="CA03012">
+                                            <cs:OffenceStatement>Possess / control TV set with intent another use install without a licence</cs:OffenceStatement>
+                                        </cs:Charge>
+                                    </cs:Charges>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                            <cs:Prosecution ProsecutingAuthority="Other Prosecutor">
+                                <cs:ProsecutingReference>Other Prosecutor</cs:ProsecutingReference>
+                                <cs:ProsecutingOrganisation>
+                                    <cs:OrganisationName>Other Prosecutor</cs:OrganisationName>
+                                </cs:ProsecutingOrganisation>
+                            </cs:Prosecution>
+                        </cs:Case>
+                    </cs:Cases>
+                </cs:Fixture>
+            </cs:WithFixedDate>
+            <cs:WithFixedDate HearingType="TRL">
+                <cs:Fixture>
+                    <cs:FixedDate>2025-12-29</cs:FixedDate>
+                    <cs:Cases>
+                        <cs:Case>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
+                            <cs:Hearing HearingType="TRL">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION-TRL</cs:HearingDescription>
+                                <cs:HearingDate>2025-12-29</cs:HearingDate>
+                            </cs:Hearing>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameForename>Cassandre</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>Witting</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Cassandre Witting</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:URN>28DI5950047</cs:URN>
+                                    <cs:Charges>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="CA03012">
+                                            <cs:OffenceStatement>Possess / control TV set with intent another use install without a licence</cs:OffenceStatement>
+                                        </cs:Charge>
+                                    </cs:Charges>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                            <cs:Prosecution ProsecutingAuthority="Other Prosecutor">
+                                <cs:ProsecutingReference>Other Prosecutor</cs:ProsecutingReference>
+                                <cs:ProsecutingOrganisation>
+                                    <cs:OrganisationName>Other Prosecutor</cs:OrganisationName>
+                                </cs:ProsecutingOrganisation>
+                            </cs:Prosecution>
+                        </cs:Case>
+                    </cs:Cases>
+                </cs:Fixture>
+            </cs:WithFixedDate>
+            <cs:WithFixedDate HearingType="TRL">
+                <cs:Fixture>
+                    <cs:FixedDate>2026-01-02</cs:FixedDate>
+                    <cs:Cases>
+                        <cs:Case>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
+                            <cs:Hearing HearingType="TRL">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION-TRL</cs:HearingDescription>
+                                <cs:HearingDate>2026-01-02</cs:HearingDate>
+                            </cs:Hearing>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameForename>Sonny</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>Fahey</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Sonny Fahey</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:URN>28DI3608136</cs:URN>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Case>
+                    </cs:Cases>
+                </cs:Fixture>
+            </cs:WithFixedDate>
+            <cs:WithFixedDate HearingType="TRL">
+                <cs:Fixture>
+                    <cs:FixedDate>2026-01-02</cs:FixedDate>
+                    <cs:Cases>
+                        <cs:Case>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
+                            <cs:Hearing HearingType="TRL">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION-TRL</cs:HearingDescription>
+                                <cs:HearingDate>2026-01-02</cs:HearingDate>
+                            </cs:Hearing>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameForename>Sonny</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>Fahey</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Sonny Fahey</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:URN>28DI3608136</cs:URN>
+                                    <cs:Charges>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="CA03012">
+                                            <cs:OffenceStatement>Possess / control TV set with intent another use install without a licence</cs:OffenceStatement>
+                                        </cs:Charge>
+                                    </cs:Charges>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                            <cs:Prosecution ProsecutingAuthority="Other Prosecutor">
+                                <cs:ProsecutingReference>Other Prosecutor</cs:ProsecutingReference>
+                                <cs:ProsecutingOrganisation>
+                                    <cs:OrganisationName>Other Prosecutor</cs:OrganisationName>
+                                </cs:ProsecutingOrganisation>
+                            </cs:Prosecution>
+                        </cs:Case>
+                    </cs:Cases>
+                </cs:Fixture>
+            </cs:WithFixedDate>
+        </cs:CourtList>
+        <cs:CourtList>
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>6429</cs:CourtHouseCode>
+                <cs:CourtHouseName>LEEDS CLOTH HALL COURT</cs:CourtHouseName>
+            </cs:CourtHouse>
+        </cs:CourtList>
+        <cs:CourtList>
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>002</cs:CourtHouseCode>
+                <cs:CourtHouseName>MOCKCOURTNAME2</cs:CourtHouseName>
+            </cs:CourtHouse>
+        </cs:CourtList>
+    </cs:CourtLists>
+</cs:WarnedList>

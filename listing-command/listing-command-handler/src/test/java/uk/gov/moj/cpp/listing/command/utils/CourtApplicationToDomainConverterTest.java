@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uk.gov.moj.cpp.listing.domain.CourtApplicationParty;
 
 @ExtendWith(MockitoExtension.class)
 public class CourtApplicationToDomainConverterTest {
@@ -33,7 +34,7 @@ public class CourtApplicationToDomainConverterTest {
     CommandBuilder commandBuilder;
 
     @Test
-    public void shouldConvertCourtApplicationWithApplicantRespondent() {
+    public void shouldConvertCourtApplicationWithCourtApplicationParty() {
 
         final CourtApplication courtApplication = commandBuilder.buildCourtApplication();
         final uk.gov.moj.cpp.listing.domain.CourtApplication actual = converter.convert(courtApplication);
@@ -48,11 +49,14 @@ public class CourtApplicationToDomainConverterTest {
         assertThat(actual.getRespondents().get(2).getLastName(), is(courtApplication.getRespondents().get(2).getOrganisation().getName()));
         assertThat(actual.getRespondents().get(3).getFirstName().get(), is(courtApplication.getRespondents().get(3).getMasterDefendant().getPersonDefendant().getPersonDetails().getFirstName()));
         assertThat(actual.getRespondents().get(3).getLastName(), is(courtApplication.getRespondents().get(3).getMasterDefendant().getPersonDefendant().getPersonDetails().getLastName()));
+        assertThat(actual.getSubject().getFirstName().get(), is(courtApplication.getSubject().getPersonDetails().getFirstName()));
+        assertThat(actual.getSubject().getLastName(), is(courtApplication.getSubject().getPersonDetails().getLastName()));
         checkAddress(actual.getApplicant().getAddress(), courtApplication.getApplicant().getPersonDetails().getAddress());
         checkAddress(actual.getRespondents().get(0).getAddress(), courtApplication.getRespondents().get(0).getPersonDetails().getAddress());
         checkAddress(actual.getRespondents().get(1).getAddress(), courtApplication.getRespondents().get(1).getProsecutingAuthority().getAddress());
         checkAddress(actual.getRespondents().get(2).getAddress(), courtApplication.getRespondents().get(2).getOrganisation().getAddress());
         checkAddress(actual.getRespondents().get(3).getAddress(), courtApplication.getRespondents().get(3).getMasterDefendant().getPersonDefendant().getPersonDetails().getAddress());
+        checkAddress(actual.getSubject().getAddress(), courtApplication.getSubject().getPersonDetails().getAddress());
 
     }
 
@@ -78,6 +82,13 @@ public class CourtApplicationToDomainConverterTest {
         assertThat(actual.getApplicationParticulars().get(), is(courtApplication.getApplicationParticulars()));
         checkAddress(actual.getApplicant().getAddress(), courtApplication.getApplicant().getOrganisation().getAddress());
         checkAddress(actual.getRespondents().get(0).getAddress(), courtApplication.getRespondents().get(0).getPersonDetails().getAddress());
+    }
+
+    @Test
+    public void shouldConvertCourtApplicationWithNullSubject() {
+        final CourtApplication courtApplication = commandBuilder.buildCourtApplicationWithOrganisation();
+        final uk.gov.moj.cpp.listing.domain.CourtApplication actual = converter.convert(courtApplication);
+        assertThat(actual.getSubject(), is((CourtApplicationParty) null));
     }
 
     private void checkAddress(final Address actualAddress, final uk.gov.justice.core.courts.Address address) {

@@ -317,6 +317,27 @@ public class CourtServicesMapperTest {
         assertXml(generatedXml, "xhibit/mapper/expectedFirmListWhenDefendantFirstNameNotProvided.xml");
     }
 
+    @Test
+    public void shouldGenerateDailyListXmlWhenCaseInActive() throws Exception {
+
+        final UUID courtCentreId = context.getParameters().getCourtCentreId();
+
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+
+        final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-case-status-inactive.json")
+                .getJsonArray("courtLists").getValuesAs(JsonObject.class);
+
+        final DailyListMapper dailyListMapper = new DailyListMapper(context, courtListsForPublishing, courtServicesMapper);
+
+        final String generatedXml = xmlUtils.convertToXml(dailyListMapper.generate());
+
+        xmlUtils.validate(generatedXml, "xhibit/xsd/" + PublishCourtListType.FINAL.getSchemaName());
+
+        assertXml(generatedXml, "xhibit/mapper/expectedDailyListWhenCaseStatusIsInActive.xml");
+    }
+
     @Test(expected = InvalidDataException.class)
     public void shouldThrowInvalidDataExceptionWhenDefendantSurNameIsNotProvided() {
 

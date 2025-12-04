@@ -187,6 +187,11 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataStandaloneApplication());
     }
 
+    public static HearingsData hearingsDataStandaloneApplicationWithSubject() {
+        return new HearingsData(HearingsDataFactory.hearingsDataStandaloneApplicationWithSubject());
+    }
+
+
     public static HearingsData hearingsDataWithShadowListedOffences() {
         return new HearingsData(HearingsDataFactory.hearingsDataWithShadowListedOffences());
     }

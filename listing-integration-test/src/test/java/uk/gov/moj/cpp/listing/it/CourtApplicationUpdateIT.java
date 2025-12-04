@@ -1,14 +1,9 @@
 package uk.gov.moj.cpp.listing.it;
 
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
-
+import org.junit.jupiter.api.Test;
 import uk.gov.moj.cpp.listing.steps.CourtApplicationSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
-
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 class CourtApplicationUpdateIT extends AbstractIT {
 
     @Test

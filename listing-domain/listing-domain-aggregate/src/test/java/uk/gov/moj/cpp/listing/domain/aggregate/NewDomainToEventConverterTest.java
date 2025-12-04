@@ -9,7 +9,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.domain.Address.address;
-import static uk.gov.moj.cpp.listing.domain.ApplicantRespondent.applicantRespondent;
+import static uk.gov.moj.cpp.listing.domain.CourtApplicationParty.courtApplicationParty;
 import static uk.gov.moj.cpp.listing.domain.CourtApplication.courtApplication;
 import static uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.PERSON;
 import static uk.gov.moj.cpp.listing.domain.aggregate.NewDomainToEventConverter.buildCourtApplications;
@@ -46,6 +46,42 @@ public class NewDomainToEventConverterTest {
         assertThat(courtApplication.getRespondents().size(), equalTo(courtApplicationBuilt.getRespondents().size()));
         assertThat(courtApplicationBuilt.getRespondents().get(0).getAddress(), is(notNullValue()));
         checkAddress(courtApplication.getRespondents().get(0).getAddress(), courtApplicationBuilt.getRespondents().get(0).getAddress());
+        assertThat(courtApplicationBuilt.getSubject().getAddress(), is(notNullValue()));
+        checkAddress(courtApplication.getSubject().getAddress(), courtApplicationBuilt.getSubject().getAddress());
+    }
+
+    @Test
+    public void shouldBuildCourtApplicationsWithNullSubject() {
+        final CourtApplication courtApplication = courtApplication()
+                .withApplicationParticulars(of(STRING.next()))
+                .withApplicant(courtApplicationParty()
+                        .withCourtApplicationPartyType(PERSON)
+                        .withAddress(address()
+                                .withAddress1(STRING.next())
+                                .withAddress2(of(STRING.next()))
+                                .withAddress3(of(STRING.next()))
+                                .withAddress4(of(STRING.next()))
+                                .withAddress5(of(STRING.next()))
+                                .withPostcode(of(STRING.next()))
+                                .build())
+                        .build())
+                .withRespondents(singletonList(courtApplicationParty()
+                        .withCourtApplicationPartyType(PERSON)
+                        .withAddress(address()
+                                .withAddress1(STRING.next())
+                                .withAddress2(of(STRING.next()))
+                                .withAddress3(of(STRING.next()))
+                                .withAddress4(of(STRING.next()))
+                                .withAddress5(of(STRING.next()))
+                                .withPostcode(of(STRING.next()))
+                                .build())
+                        .build()))
+                .withSubject(null)
+                .build();
+
+        uk.gov.justice.listing.events.CourtApplication courtApplicationBuilt = buildCourtApplications(courtApplication);
+
+        assertThat(courtApplicationBuilt.getSubject(), is((uk.gov.justice.listing.events.ApplicantRespondent) null));
     }
 
     @Test
@@ -246,7 +282,7 @@ public class NewDomainToEventConverterTest {
     private CourtApplication createCourtApplication() {
         return courtApplication()
                 .withApplicationParticulars(of(STRING.next()))
-                .withApplicant(applicantRespondent()
+                .withApplicant(courtApplicationParty()
                         .withCourtApplicationPartyType(PERSON)
                         .withAddress(address()
                                 .withAddress1(STRING.next())
@@ -257,7 +293,7 @@ public class NewDomainToEventConverterTest {
                                 .withPostcode(of(STRING.next()))
                                 .build())
                         .build())
-                .withRespondents(singletonList(applicantRespondent()
+                .withRespondents(singletonList(courtApplicationParty()
                         .withCourtApplicationPartyType(PERSON)
                         .withAddress(address()
                                 .withAddress1(STRING.next())
@@ -268,6 +304,17 @@ public class NewDomainToEventConverterTest {
                                 .withPostcode(of(STRING.next()))
                                 .build())
                         .build()))
+                .withSubject(courtApplicationParty()
+                        .withCourtApplicationPartyType(PERSON)
+                        .withAddress(address()
+                                .withAddress1(STRING.next())
+                                .withAddress2(of(STRING.next()))
+                                .withAddress3(of(STRING.next()))
+                                .withAddress4(of(STRING.next()))
+                                .withAddress5(of(STRING.next()))
+                                .withPostcode(of(STRING.next()))
+                                .build())
+                        .build())
                 .build();
     }
 

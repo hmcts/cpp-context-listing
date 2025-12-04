@@ -259,9 +259,15 @@ public class SittingsPojoBuilder {
 
         courtApplicationDetails.setApplicationReference(courtApplicationJson.getString("applicationReference"));
 
-        courtApplicationDetails.setApplicant(courtApplicationJson.getJsonObject("applicant"));
+        final JsonObject applicant = courtApplicationJson.getJsonObject("applicant");
+        courtApplicationDetails.setApplicant(applicant);
 
         courtApplicationDetails.setRespondents(courtApplicationJson.getJsonArray("respondents"));
+
+        // Set subject only if it is present in JSON
+        if (courtApplicationJson.containsKey("subject")) {
+            courtApplicationDetails.setSubject(courtApplicationJson.getJsonObject("subject"));
+        }
 
         return Optional.of(courtApplicationDetails);
     }
