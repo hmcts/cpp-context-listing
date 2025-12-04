@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.common.xhibit.ThreadLocalCommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMapping;
@@ -23,6 +25,8 @@ import javax.json.JsonObject;
 public class CourtListsBuilder {
 
     private static final String CREST_COURT_SITE_CODE = "crestCourtSiteCode";
+    private static final Logger LOGGER = LoggerFactory.getLogger(CourtListsBuilder.class);
+
 
     private final Map<String, List<FlatHearing>> crestCourtSiteCodeHearingsMap = new ConcurrentHashMap<>();
     private final Map<String, List<Sitting>> crestCourtSiteCodeSittingsMap = new ConcurrentHashMap<>();
@@ -93,6 +97,10 @@ public class CourtListsBuilder {
     private String getCrestCourtSiteCodeForCourtRoom(final UUID courtCentreId, final Optional<UUID> courtRoomUUID) {
         if (!courtRoomUUID.isPresent()) {
             return threadLocalCommonXhibitReferenceDataService.get().getDefaultCrestCourtSiteCode(courtCentreId);
+        }
+        if(LOGGER.isInfoEnabled()) {
+            LOGGER.info("Thread: {} - Processing court room UUID: {} for court centre: {}",
+                    Thread.currentThread().getName(), courtRoomUUID.get(), courtCentreId);
         }
 
         final Optional<CourtRoomMapping> courtRoomMapping = threadLocalCommonXhibitReferenceDataService.get()

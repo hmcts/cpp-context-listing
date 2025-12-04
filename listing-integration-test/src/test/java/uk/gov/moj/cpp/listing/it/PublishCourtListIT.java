@@ -125,11 +125,13 @@ public class PublishCourtListIT extends AbstractIT {
     @Test
     public void publishFinalCourtListsForAllCrownCourts() {
 
-        final UUID courtCentreIdOne = randomUUID();
-        final UUID courtCentreIdTwo = randomUUID();
+        final UUID courtCentreIdOne = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+        final UUID courtCentreIdTwo = fromString("881a3309-d7a7-47ce-9615-3572b2e1c577");
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
         final LocalDate startDate = LocalDate.now();
+        stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreIdOne, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
         stubGetAllCrownCourtCentres(courtCentreIdOne, courtCentreIdTwo);
+        stubOrganisationUnit(courtCentreIdOne);
         stubGetReferenceDataCourtCentreById(courtCentreIdOne);
         stubGetReferenceDataCourtCentreById(courtCentreIdTwo);
         final JsonObject commandAsJson = createObjectBuilder().build();

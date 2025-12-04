@@ -5,7 +5,6 @@ import static org.apache.commons.collections.ListUtils.union;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.AbstractCourtListMapper;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;

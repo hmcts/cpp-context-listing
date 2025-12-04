@@ -225,10 +225,10 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
         verifyCourtCalendarSearch(COURT_CENTRE_ID, null, "2025-08-15", "2025-08-22", null, 8);
 
         // Search for hearings using court calendar endpoint with COURT_ROOM_ID and exactHearingStartDateTime
-        verifyCourtCalendarSearch(COURT_CENTRE_ID, COURT_ROOM_ID, "2025-08-15", "2025-08-22", "2025-08-15T09:30:00.000Z", 1);
+        verifyCourtCalendarSearch(COURT_CENTRE_ID, COURT_ROOM_ID, "2025-08-15", "2025-08-22", "2025-08-15T09:30:07.007Z", 1);
 
         // Search for hearings using court calendar endpoint with COURT_ROOM_ID and WRONG exactHearingStartDateTime
-        verifyCourtCalendarSearch(COURT_CENTRE_ID, COURT_ROOM_ID, "2025-08-15", "2025-08-22", "2025-08-15T10:30:00.000Z", 0);
+        verifyCourtCalendarSearch(COURT_CENTRE_ID, COURT_ROOM_ID, "2025-08-15", "2025-08-22", "2025-08-15T10:30:08.008Z", 0);
 
 
         // perform re-allocation by moving all days including the parent room to room03

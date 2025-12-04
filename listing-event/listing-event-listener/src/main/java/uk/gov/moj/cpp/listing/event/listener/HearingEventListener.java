@@ -21,6 +21,7 @@ import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
 import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingRescheduled;
+import uk.gov.justice.listing.events.HearingResultStatusUpdated;
 import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.ListedCase;
@@ -301,6 +302,16 @@ public class HearingEventListener {
                 .save();
 
         hearingSearchSyncService.sync(hearingId);
+    }
+
+    @Handles("listing.events.hearing-result-status-updated")
+    public void hearingResultStatusUpdated(final Envelope<HearingResultStatusUpdated> event) {
+        final HearingResultStatusUpdated payload = event.payload();
+
+        using(hearingRepository)
+                .find(payload.getHearingId())
+                .put("resulted", true)
+                .save();
     }
 
     private Function<List<HearingDay>, List<HearingDay>> getHearingDaysWithRemoveCourtRoomIdFunction() {

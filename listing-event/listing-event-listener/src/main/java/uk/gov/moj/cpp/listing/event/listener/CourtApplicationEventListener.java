@@ -176,13 +176,23 @@ public class CourtApplicationEventListener {
         final Optional<CourtApplication> origCourtApplicationOptional = courtApplications.stream().filter(ca -> ca.getId().equals(laaReferenceForApplicationUpdated.getApplicationId())).findFirst();
         if (origCourtApplicationOptional.isPresent()) {
             final CourtApplication origCourtApplication = origCourtApplicationOptional.get();
-            final CourtApplication newCourtApplication = CourtApplication.courtApplication()
-                    .withValuesFrom(origCourtApplication)
-                    .withOffences(getUpdatedOffenceWithLaaReference(origCourtApplication.getOffences(), laaReferenceForApplicationUpdated))
-                    .build();
+            CourtApplication newCourtApplication = CourtApplication.courtApplication().build();
+            if (nonNull(laaReferenceForApplicationUpdated.getOffenceId())) {
+                newCourtApplication = CourtApplication.courtApplication()
+                        .withValuesFrom(origCourtApplication)
+                        .withOffences(getUpdatedOffenceWithLaaReference(origCourtApplication.getOffences(), laaReferenceForApplicationUpdated))
+                        .build();
+            } else if(nonNull(laaReferenceForApplicationUpdated.getLaaReference())){ //Breach and POCA applications has no offence. Attach the laa reference to the court application level
+                newCourtApplication = CourtApplication.courtApplication()
+                        .withValuesFrom(origCourtApplication)
+                        .withLaaApplnReference(laaReferenceForApplicationUpdated.getLaaReference())
+                        .build();
+            }
 
+
+            final CourtApplication finalNewCourtApplication = newCourtApplication;
             courtApplications.replaceAll(courtApplication -> courtApplication.getId()
-                    .equals(newCourtApplication.getId()) ? newCourtApplication : courtApplication);
+                    .equals(finalNewCourtApplication.getId()) ? finalNewCourtApplication : courtApplication);
 
         }
         return courtApplications;

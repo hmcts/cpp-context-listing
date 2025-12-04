@@ -42,6 +42,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 public class RangeSearchConverterTest {
 
     private static final UUID COURT_SITE_A_COURT_ROOM_ID = UUID.fromString("5e1c7b54-3bca-3a37-a85a-84510f115b76");
+    private static final UUID COURT_SITE_A_COURT_ROOM_ID_3 = UUID.fromString("3e1c7b54-3bca-3a37-a85a-84510f115b33");
     private static final UUID COURT_SITE_B_COURT_ROOM_ID = UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39");
     private static final UUID UNKNOWN_COURT_SITE_COURT_ROOM_ID = UUID.fromString("6508af42-e4d4-396d-a752-d676ebd38f6d");
 
@@ -85,6 +86,7 @@ public class RangeSearchConverterTest {
 
         final Optional<CourtRoomMapping> courtRoom1 = courtRoom("A");
         final Optional<CourtRoomMapping> courtRoom2 = courtRoom("B");
+        final Optional<CourtRoomMapping> courtRoom3 = courtRoom("A");
 
         final LocalDate startDate = LocalDate.parse("2019-12-16");
         final String pEndDate = StringUtils.isNotBlank(endDate) ? endDate : StringUtils.EMPTY;
@@ -92,6 +94,7 @@ public class RangeSearchConverterTest {
         when(commonXhibitReferenceDataService.getCrestCourtSitesForCrownCourtCentre(courtCentreId)).thenReturn(courtSites);
         when(commonXhibitReferenceDataService.getCourtRoom(eq(courtCentreId), eq(COURT_SITE_A_COURT_ROOM_ID))).thenReturn(courtRoom1);
         when(commonXhibitReferenceDataService.getCourtRoom(eq(courtCentreId), eq(COURT_SITE_B_COURT_ROOM_ID))).thenReturn(courtRoom2);
+        when(commonXhibitReferenceDataService.getCourtRoom(eq(courtCentreId), eq(COURT_SITE_A_COURT_ROOM_ID_3))).thenReturn(courtRoom3);
         when(commonXhibitReferenceDataService.getCourtRoom(eq(courtCentreId), eq(UNKNOWN_COURT_SITE_COURT_ROOM_ID))).thenReturn(Optional.empty());
         when(commonXhibitReferenceDataService.getDefaultCrestCourtSiteCode(courtCentreId)).thenReturn("A");
 

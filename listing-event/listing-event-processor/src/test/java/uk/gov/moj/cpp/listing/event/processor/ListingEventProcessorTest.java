@@ -124,6 +124,7 @@ import uk.gov.justice.listing.events.PublicListingNewDefendantAddedForCourtProce
 import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.justice.listing.events.TrialVacated;
+import uk.gov.justice.progression.courts.ApplicationLaaReferenceUpdatedForApplication;
 import uk.gov.justice.progression.courts.ApplicationOffencesUpdated;
 import uk.gov.justice.progression.courts.CaseLinked;
 import uk.gov.justice.progression.courts.Cases;
@@ -336,7 +337,8 @@ class ListingEventProcessorTest {
     private ArgumentCaptor<DefaultEnvelope<JsonObject>> senderDefaultEnvelopeCaptor;
     @Captor
     private ArgumentCaptor<Envelope<ApplicationOffencesUpdated>> applicationOffencesUpdatedeCaptor;
-
+    @Captor
+    private ArgumentCaptor<Envelope<ApplicationLaaReferenceUpdatedForApplication>> applicationLaaReferenceUpdatedForApplicationCaptor;
     @Captor
     private ArgumentCaptor<String> stringArgumentCaptor;
     @Mock
@@ -976,6 +978,23 @@ class ListingEventProcessorTest {
         verify(sender).send(applicationOffencesUpdatedeCaptor.capture());
         assertThat(applicationOffencesUpdatedeCaptor.getValue().metadata().name(), is("listing.command.update-laa-reference-for-application"));
         assertThat(applicationOffencesUpdatedeCaptor.getValue().payload(), is(applicationOffencesUpdated));
+    }
+
+    @Test
+    public void shouldHandleApplicationLaaReferenceUpdatedForApplication() {
+        final ApplicationLaaReferenceUpdatedForApplication applicationLaaReferenceUpdatedForApplication = ApplicationLaaReferenceUpdatedForApplication.applicationLaaReferenceUpdatedForApplication()
+                .withApplicationId(randomUUID())
+                .withSubjectId(randomUUID())
+                .withLaaReference(LaaReference.laaReference().withStatusId(randomUUID()).build())
+                .build();
+        //given
+        final Envelope<ApplicationLaaReferenceUpdatedForApplication> envelope = Envelope.envelopeFrom(metadataWithRandomUUID("public.progression.application-laa-reference-updated-for-application"), applicationLaaReferenceUpdatedForApplication);
+        //when
+        listingEventProcessor.handleApplicationLaaReferenceUpdatedForApplication(envelope);
+        //then
+        verify(sender).send(applicationLaaReferenceUpdatedForApplicationCaptor.capture());
+        assertThat(applicationLaaReferenceUpdatedForApplicationCaptor.getValue().metadata().name(), is("listing.command.update-laa-reference-for-application"));
+        assertThat(applicationLaaReferenceUpdatedForApplicationCaptor.getValue().payload(), is(applicationLaaReferenceUpdatedForApplication));
     }
 
 

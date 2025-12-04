@@ -56,6 +56,7 @@ import uk.gov.justice.listing.events.OffencesToBeUpdated;
 import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIdsV2;
 import uk.gov.justice.listing.events.PublicListingNewDefendantAddedForCourtProceedings;
 import uk.gov.justice.listing.events.TrialVacated;
+import uk.gov.justice.progression.courts.ApplicationLaaReferenceUpdatedForApplication;
 import uk.gov.justice.progression.courts.ApplicationOffencesUpdated;
 import uk.gov.justice.progression.courts.HearingExtended;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
@@ -700,6 +701,16 @@ public class ListingEventProcessor {
         this.sender.send(Envelope.envelopeFrom(metadataFrom(envelope.metadata()).withName("listing.command.update-laa-reference-for-application"),
                 envelope.payload()));
 
+    }
+
+    @Handles("public.progression.application-laa-reference-updated-for-application")
+    public void handleApplicationLaaReferenceUpdatedForApplication(final Envelope<ApplicationLaaReferenceUpdatedForApplication> envelope) {
+        if (logger.isInfoEnabled()) {
+            logger.info("public.progression.application-laa-reference-updated-for-application event received {}", objectToJsonObjectConverter.convert(envelope.payload()));
+        }
+
+        this.sender.send(Envelope.envelopeFrom(metadataFrom(envelope.metadata()).withName("listing.command.update-laa-reference-for-application"),
+                envelope.payload()));
     }
 
     @Handles(LISTING_EVENTS_CASE_RESULTED_DEFENDANT_PROCEEDINGS_UPDATED)

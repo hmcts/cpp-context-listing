@@ -2623,6 +2623,26 @@ class ListingCommandHandlerTest {
     }
 
     @Test
+    public void shouldUpdateLaaReferenceForCourtApplicationWhenOffenceIdNull() throws Exception {
+        final Metadata metadata = metadataBuilder().withName("listing.command.update-laa-reference-for-application").withId(randomUUID()).build();
+        final UpdateLaaReferenceForApplication updateLaaReferenceForApplication = UpdateLaaReferenceForApplication.updateLaaReferenceForApplication()
+                .withApplicationId(randomUUID())
+                .withSubjectId(randomUUID())
+                .withOffenceId(null)
+                .withLaaReference(LaaReference.laaReference()
+                        .withStatusId(randomUUID())
+                        .build())
+                .build();
+
+        final Envelope<UpdateLaaReferenceForApplication> envelope = envelopeFrom(metadata, updateLaaReferenceForApplication);
+
+        when(anApplication.updateLaaReference(updateLaaReferenceForApplication.getApplicationId(), updateLaaReferenceForApplication.getSubjectId(), updateLaaReferenceForApplication.getOffenceId(), updateLaaReferenceForApplication.getLaaReference())).thenReturn(mock(Stream.class));
+
+        listingCommandHandler.updateLaaReferenceForCourtApplication(envelope);
+        verify(anApplication).updateLaaReference(updateLaaReferenceForApplication.getApplicationId(), updateLaaReferenceForApplication.getSubjectId(), updateLaaReferenceForApplication.getOffenceId(), updateLaaReferenceForApplication.getLaaReference());
+    }
+
+    @Test
     public void handleAddCasesForHearing() throws Exception {
         final JsonEnvelope commandEnvelope = getJsonEnvelopeForAddCaseForHearing();
 

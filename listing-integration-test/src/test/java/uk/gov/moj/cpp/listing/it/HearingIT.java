@@ -521,6 +521,7 @@ class HearingIT extends AbstractIT {
         final ZonedDateTime hearingStartTime = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime();
         final LocalDate hearingDate = hearingStartTime.toLocalDate();
         final UUID courtroomId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId();
+        final UUID hearinId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId();
         final UUID bookingId = randomUUID();
         final String courtScheduleId = "8e837de0-743a-4a2c-9db3-b2e678c48729";
         final UUID courtCentreId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtCentreId();
@@ -542,6 +543,7 @@ class HearingIT extends AbstractIT {
         stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
         updateHearingSteps.whenHearingIsUpdatedForListingHmiEnabled();
         updateHearingSteps.verifyHearingUpdatedWithNoCourtRoomAndUnallocatedWhenQueryingFromAPI();
+        updateHearingSteps.verifyHearingUnallocatedCourtroomRemoveds(hearinId);
     }
 
     @Test
@@ -763,6 +765,50 @@ class HearingIT extends AbstractIT {
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataWithUpdatedJudiciary);
         updateHearingSteps.whenJudiciaryIsChangedForHearings();
         updateHearingSteps.verifyJudiciaryChangedForHearingStatusPublicEvent();
+    }
+
+    @Test
+    void shouldPublishHearingResultedEventAndUpdateHearingWithResultedStatus() throws IOException {
+        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ZonedDateTime hearingStartTime = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime();
+        final LocalDate hearingDate = hearingStartTime.toLocalDate();
+        final UUID courtroomId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId();
+        final UUID bookingId = randomUUID();
+        final String courtScheduleId = "8e837de0-743a-4a2c-9db3-b2e678c48729";
+        final UUID courtCentreId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtCentreId();
+
+        // Setup and submit hearing for listing
+        Map<String, String> stubParams = new HashMap<>();
+        stubParams.put("SESSION_DATE", hearingDate.toString());
+        stubParams.put("COURT_CENTRE_ID", courtCentreId.toString());
+        stubParams.put("COURT_SCHEDULE_ID", courtScheduleId);
+        stubParams.put("COURT_ROOM_ID", courtroomId.toString());
+        stubParams.put("BOOKING_ID", bookingId.toString());
+        stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
+        stubProvisionalBookingWithCustomParams(stubParams);
+        stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(), courtScheduleId,
+                hearingStartTime);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+
+
+        // Update hearing for allocation
+        final UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        stubGetAvailableHearingSlotsWithQueryParams(updateHearingSteps.getUpdatedHearingData());
+        stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
+        updateHearingSteps.whenHearingIsUpdatedForListing();
+
+        // Publish public.events.hearing.hearing-resulted event
+        updateHearingSteps.publishPublicHearingResultedEvent(listCourtHearingSteps.getHearingsData().getHearingData().get(0));
+
+        // Verify entire flow:
+        // 1. Verify listing.events.hearing-result-status-updated event is raised from domain aggregate
+        updateHearingSteps.verifyHearingResultStatusUpdatedEventRaised();
+
+        // 2. Verify hearing is persisted in database with 'resulted' flag set to true
+        updateHearingSteps.verifyHearingResultedInDatabase();
     }
 
 }
