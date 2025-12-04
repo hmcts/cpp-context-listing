@@ -61,6 +61,7 @@ public class CourtListFileGeneratorTest {
     private static final String COURT_LIST_WITH_CASE_HIDDEN_INPUT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-case-hidden.json";
     private static final String COURT_LIST_FOR_COURT_APPLICATION_WHEN_SUBJECT_DETAIL_PRESENT_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-for-court-application-with-subject-detail-present.json";
     private static final String COURT_LIST_FOR_COURT_APPLICATION_WHEN_SUBJECT_DETAIL_ABSENT_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-for-court-application-with-subject-detail-absent.json";
+    private static final String COURT_LIST_FOR_COURT_APPLICATION_INACTIVE_WARN_LIST_JSON_FILE = "/xhibit/mock-data/InactiveWarnList.json";
 
     private UUID courtCentreId1 = fromString("f34a5dba-8c4b-4ec8-8b9a-6af405c00ebf");
     private UUID courtCentreId2 = fromString("f46ddec0-928e-4236-9d1b-142715e8b570");
@@ -102,7 +103,8 @@ public class CourtListFileGeneratorTest {
                 Arguments.of(WARN, COURT_LIST_WITH_CASE_HIDDEN_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithCaseHidden.xml"),
                 Arguments.of(FINAL, RESTRICTED_DAILY_COURT_LIST_WithMultipleCaseConvertedIntoMultipleHearing_JSON_FILE, "xhibit/expectedRestrictedFinalListIeWithMultipleCaseConvertedIntoMultipleHearing.xml"),
                 Arguments.of(FINAL, COURT_LIST_FOR_COURT_APPLICATION_WHEN_SUBJECT_DETAIL_PRESENT_JSON_FILE, "xhibit/expectedCourtApplicationWithSubjectDetailPresentFinalList.xml"),
-                Arguments.of(FIRM, COURT_LIST_FOR_COURT_APPLICATION_WHEN_SUBJECT_DETAIL_ABSENT_JSON_FILE, "xhibit/expectedCourtApplicationWithSubjectDetailAbsentFirmList.xml")
+                Arguments.of(FIRM, COURT_LIST_FOR_COURT_APPLICATION_WHEN_SUBJECT_DETAIL_ABSENT_JSON_FILE, "xhibit/expectedCourtApplicationWithSubjectDetailAbsentFirmList.xml"),
+                Arguments.of(WARN, COURT_LIST_FOR_COURT_APPLICATION_INACTIVE_WARN_LIST_JSON_FILE, "xhibit/expectedInactiveCaseWarnList.xml")
         );
     }
 
