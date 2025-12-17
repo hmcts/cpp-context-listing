@@ -6,6 +6,7 @@ import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedDefendantData.updatedDefendantData;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
 
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateDefendantSteps;
@@ -50,7 +51,7 @@ class DefendantsChangedIT extends AbstractIT {
         final LocalDate hearingDate = hearingStartTime.toLocalDate();
         final UUID courtroomId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId();
         final UUID bookingId = randomUUID();
-        final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+        final UUID courtCentreId = getRandomCourtCenterId();
 
         Map<String, String> stubParams = new HashMap<>();
         stubParams.put("SESSION_DATE", hearingDate.toString());

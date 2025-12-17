@@ -47,6 +47,7 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getCourtCenterName;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
@@ -847,7 +848,7 @@ public class UpdateHearingSteps extends AbstractIT {
         assertThat(jsonResponse.get(publicEventType + ".id"), is(updatedHearingData.getHearingId().toString()));
         assertThat(jsonResponse.get(publicEventType + ".courtCentre.roomId"), is(updatedHearingData.getCourtRoomId().toString()));
         assertThat(jsonResponse.get(publicEventType + ".courtCentre.id"), is(updatedHearingData.getCourtCentreId().toString()));
-        assertThat(jsonResponse.get(publicEventType + ".courtCentre.name"), is("Liverpool Crown Court"));
+        assertThat(jsonResponse.get(publicEventType + ".courtCentre.name"), is(getCourtCenterName(updatedHearingData.getCourtCentreId())));
         assertThat(jsonResponse.get(publicEventType + ".courtApplicationIds[0]"), is(hearingData.getCourtApplications().get(0).getId().toString()));
         assertThat(jsonResponse.get(publicEventType + ".hearingLanguage"), is(updatedHearingData.getHearingLanguage()));
         assertThat(jsonResponse.get(publicEventType + ".type.id"), is(updatedHearingData.getHearingTypData().getTypeId().toString()));
@@ -976,29 +977,30 @@ public class UpdateHearingSteps extends AbstractIT {
     }
 
     public void verifyHearingUpdatedWhenQueryingFromAPI() {
-        final Filter idFilter = filter(where("id").is(hearingData.getId().toString()));
+        final String hearingId = hearingData.getId().toString();
+        final Filter idFilter = filter(where("id").is(hearingId));
         final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
 
         pollForHearing(updatedHearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), new Matcher[]{
 
                 withJsonPath(hearingIdFilter),
-                withJsonPath("$.hearings[0].id",
-                        equalTo(updatedHearingData.getHearingId().toString())),
-                withJsonPath("$.hearings[0].judiciary[0].judicialId",
-                        equalTo(updatedHearingData.getJudiciary().get(0).getJudicialId().toString())),
-                withJsonPath("$.hearings[0].judiciary[0].judicialRoleType.judiciaryType",
-                        equalTo(updatedHearingData.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType())),
-                withJsonPath("$.hearings[0].judiciary[0].isBenchChairman", equalTo(updatedHearingData.getJudiciary().get(0).getIsBenchChairman().orElse(null))),
-                withJsonPath("$.hearings[0].judiciary[0].isDeputy", equalTo(updatedHearingData.getJudiciary().get(0).getIsDeputy().orElse(null))),
-                withJsonPath("$.hearings[0].courtRoomId",
-                        equalTo(updatedHearingData.getCourtRoomId().toString())),
+                withJsonPath("$.hearings[?(@.id=='" + hearingId + "')].id",
+                        hasItem(updatedHearingData.getHearingId().toString())),
+                withJsonPath("$.hearings[?(@.id=='" + hearingId + "')].judiciary[0].judicialId",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getJudicialId().toString())),
+                withJsonPath("$.hearings[?(@.id=='" + hearingId + "')].judiciary[0].judicialRoleType.judiciaryType",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType())),
+                withJsonPath("$.hearings[?(@.id=='" + hearingId + "')].judiciary[0].isBenchChairman", hasItem(updatedHearingData.getJudiciary().get(0).getIsBenchChairman().orElse(null))),
+                withJsonPath("$.hearings[?(@.id=='" + hearingId + "')].judiciary[0].isDeputy", hasItem(updatedHearingData.getJudiciary().get(0).getIsDeputy().orElse(null))),
+                withJsonPath("$.hearings[?(@.id=='" + hearingId + "')].courtRoomId",
+                        hasItem(updatedHearingData.getCourtRoomId().toString())),
 
-                withJsonPath("$.hearings[0].endDate",
-                        equalTo(updatedHearingData.getEndDate())),
-                withJsonPath("$.hearings[0].startDate",
-                        equalTo(updatedHearingData.getStartDate())),
-                withJsonPath("$.hearings[0].nonDefaultDays[0].startTime",
-                        equalTo(fromString(updatedHearingData.getNonDefaultDays().get(0)
+                withJsonPath("$.hearings[?(@.id=='" + hearingId + "')].endDate",
+                        hasItem(updatedHearingData.getEndDate())),
+                withJsonPath("$.hearings[?(@.id=='" + hearingId + "')].startDate",
+                        hasItem(updatedHearingData.getStartDate())),
+                withJsonPath("$.hearings[?(@.id=='" + hearingId + "')].nonDefaultDays[0].startTime",
+                        hasItem(fromString(updatedHearingData.getNonDefaultDays().get(0)
                                 .getStartTime()).format(ZONED_DATE_TIME_FORMAT)))
         });
     }

@@ -1,0 +1,52 @@
+{
+  "id": "9b583616-049b-30f9-a14f-028a53b7cfe8",
+  "oucode": "C05LV00",
+  "oucodeL3Code": "LV",
+  "oucodeL3Name": "Liverpool Crown Court",
+  "oucodeL1Code": "C",
+  "oucodeL1Name": "Crown Courts",
+  "oucodeL2Code": "5",
+  "oucodeL2Name": "Merseyside",
+  "region": "North West",
+  "lja": "1810",
+  "oucodeEffectiveFromDate": "2016-01-01",
+  "address1": "QEII Law Courts",
+  "address2": "Derby Square",
+  "address3": "Liverpool",
+  "postcode": "L2 1XA",
+  "oucodeL3WelshName": "Llys Y Goron Lerpwl",
+  "defaultStartTime": "10:30:00",
+  "defaultDurationHrs": "06:00:00",
+  "lastModified": "2021-10-27T16:05:05.084Z",
+  "cpsEmailAddress": "LiverpoolCrownCourt@cps.gov.uk",
+  "pecsContractorEmail": "liverpoolsjc@geoamey.co.uk",
+  "divisionCode": "4",
+  "courtLocationCode": "0433",
+  "courtId": "433",
+  "courtrooms": [
+    {
+      "id": "1d0199f8-8812-48a2-b13c-837e1c03ff19",
+      "venueName": "DONCASTER COMBINED COURT",
+      "courtroomId": 852,
+      "courtroomName": "Courtroom 02"
+    },
+    {
+      "id": "18982e9c-2475-36a4-a852-09ab720acfc9",
+      "venueName": "AYLESBURY COMBINED COURT",
+      "courtroomId": 3859,
+      "courtroomName": "Courtroom 03"
+    },
+    {
+      "id": "28b922c3-0396-3c68-970f-5b805c7ab1bb",
+      "venueName": "WOOD GREEN COMBINED COURT",
+      "courtroomId": 2874,
+      "courtroomName": "Courtroom 04"
+    },
+    {
+      "id": "02d9847e-00e9-3c6c-b25c-1adbf5355a52",
+      "venueName": "GUILDFORD COMBINED COURT",
+      "courtroomId": 985,
+      "courtroomName": "Courtroom 05",
+      "venueId": 375
+    }]
+}

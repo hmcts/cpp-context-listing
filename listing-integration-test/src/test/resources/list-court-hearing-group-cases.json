@@ -119,7 +119,7 @@
       "courtCentre": {
         "id": "COURT_CENTRE_ID",
         "name": "Preston Crown Court",
-        "roomId": "c59afbdc-afbd-3f0c-a97d-2bd97e475fc5"
+        "roomId": "28b922c3-0396-3c68-970f-5b805c7ab1bb"
       },
       "defendantListingNeeds": [DEFENDANT_LISTING_NEEDS],
       "earliestStartDateTime": "EARLIEST_START_TIME",

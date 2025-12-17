@@ -95,7 +95,7 @@ class RestrictListFromCourtIT extends AbstractIT {
     void shouldPublishCourtListWithHearingsWithDefendantNameMasking() throws Exception {
         final ViewStoreCleaner viewStoreCleaner = new ViewStoreCleaner();
         viewStoreCleaner.cleanViewStoreTables();
-        final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+        final UUID courtCentreId = fromString("9b583616-049b-30f9-a14f-028a53b7cfe8");
         final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
 
         final UUID courtListId = randomUUID();

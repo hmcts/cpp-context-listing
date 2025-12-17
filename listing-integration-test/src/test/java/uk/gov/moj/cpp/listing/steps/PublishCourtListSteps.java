@@ -183,7 +183,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         verifyCourtHeaderFirmList();
         final String sentXml = getSentXml();
         XpathEngine simpleXpathEngine = XMLUnit.newXpathEngine();
-        assertEquals("4", simpleXpathEngine.evaluate("count(/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']/*[local-name()='Sittings'])", XMLUnit.buildControlDocument(sentXml)));
+        assertEquals("1", simpleXpathEngine.evaluate("count(/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']/*[local-name()='Sittings'])", XMLUnit.buildControlDocument(sentXml)));
     }
 
     public void verifySentPublishedCourtListHearingDataForWarn() throws Exception {

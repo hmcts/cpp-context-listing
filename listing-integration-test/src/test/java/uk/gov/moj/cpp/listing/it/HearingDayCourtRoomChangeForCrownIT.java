@@ -11,6 +11,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 
 import uk.gov.moj.cpp.listing.helper.SearchHearingHelper;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -36,11 +38,11 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(HearingDayCourtRoomChangeForCrownIT.class);
 
     private final UUID HEARING_ID = randomUUID();
-    private final UUID COURT_CENTRE_ID = randomUUID(); // Croydon Crown Court
-    private final UUID COURT_ROOM_ID = randomUUID(); // Court Room 1
-    private final UUID COURT_ROOM_ID2 = UUID.fromString("33b7d399-8379-437c-980d-af9487b1198c");
-    private final UUID COURT_ROOM_ID3 = UUID.fromString("2a128f95-5892-4ca9-b6ba-45d027d389e7");
-    private final UUID COURT_ROOM_ID4 = UUID.fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+    private final UUID COURT_CENTRE_ID = getRandomCourtCenterId(); // Croydon Crown Court
+    private final UUID COURT_ROOM_ID = getRandomCourtRoomId(); // Court Room 1
+    private final UUID COURT_ROOM_ID2 = getRandomCourtRoomId(asList(COURT_ROOM_ID));
+    private final UUID COURT_ROOM_ID3 = getRandomCourtRoomId(asList(COURT_ROOM_ID, COURT_ROOM_ID2));
+    private final UUID COURT_ROOM_ID4 = getRandomCourtRoomId(asList(COURT_ROOM_ID, COURT_ROOM_ID2, COURT_ROOM_ID3));
 
     private final String CASE_URN = "CASE_URN_123";
     private final String JURISDICTION_TYPE = CROWN.name();

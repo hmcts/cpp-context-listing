@@ -7,6 +7,7 @@ import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAll
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
@@ -40,7 +41,7 @@ public class ProsecutionCaseIT extends AbstractIT{
     @Test
     public void shouldUpdateProsecutionCase()  {
         String courtScheduleId = "8e837de0-743a-4a2c-9db3-b2e678c48729";
-        final UUID courtCentreId = randomUUID();
+        final UUID courtCentreId = getRandomCourtCenterId();
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         final ZonedDateTime hearingStartTime = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime();

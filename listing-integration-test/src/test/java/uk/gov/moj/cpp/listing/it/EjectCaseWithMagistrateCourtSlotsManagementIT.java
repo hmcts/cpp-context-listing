@@ -16,6 +16,8 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisi
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubUpdateAvailableHearingSlotsService;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyDeleteAvailableHearingSlotsStubCommandInvoked;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyDeleteAvailableHearingSlotsStubCommandIsNeverInvoked;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 
 import uk.gov.moj.cpp.listing.steps.EjectCaseApplicationSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -75,8 +77,8 @@ class EjectCaseWithMagistrateCourtSlotsManagementIT extends AbstractIT {
     
     private TestHearingData createTestHearingWithTwoCases() {
         stubUpdateAvailableHearingSlotsService();
-        final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
-        final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
+        final UUID courtCentreId = getRandomCourtCenterId();
+        final UUID courtRoomUUID = getRandomCourtRoomId();
 
         // Create future dates for the hearing
         final LocalDate futureHearingDate = now().plusDays(7); // 7 days in the future
@@ -95,8 +97,8 @@ class EjectCaseWithMagistrateCourtSlotsManagementIT extends AbstractIT {
 
     private TestHearingData createTestHearingWithOneCase() {
         stubUpdateAvailableHearingSlotsService();
-        final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
-        final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
+        final UUID courtCentreId = getRandomCourtCenterId();
+        final UUID courtRoomUUID = getRandomCourtRoomId();
         
         // Create future dates for the hearing
         final LocalDate futureHearingDate = now().plusDays(7); // 7 days in the future

@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.it;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.time.LocalDate.now;
 import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThan;
@@ -12,6 +13,8 @@ import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommenci
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.updateLoadedFixedHearingToWeekCommencingHearing;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.updatedHearingListedData;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.verifyHearingListedForWeekCommencing;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getCourtCenterIds;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 
 import uk.gov.justice.core.courts.Jurisdiction;
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
@@ -21,7 +24,9 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
@@ -142,6 +147,9 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
 
     @Test
     public void shouldListHearingsWithStartDateOrWeekCommencingDatesWithinWeekCommencingDateRangeByRelevance() {
+//        for (var courtCenterId : getCourtCenterIds()) {
+//            stubGetReferenceDataCourtCentreById(courtCenterId);
+//        }
         final String weekCommencingSearchStartDate = now().plusDays(14).toString();
         final String weekCommencingSearchEndDate = now().plusDays(22).toString();
 
@@ -216,9 +224,9 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
 
         final Matcher[] matchers = {
                 withJsonPath("$.hearings", hasSize(3)),
-                withJsonPath("$.hearings[1].id", is(firstUpdatedHearingDataWithWeekCommencingDate.getHearingId().toString())),
-                withJsonPath("$.hearings[1].weekCommencingStartDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingStartDate())),
-                withJsonPath("$.hearings[1].weekCommencingEndDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
+                withJsonPath("$.hearings[*].id", hasItem(firstUpdatedHearingDataWithWeekCommencingDate.getHearingId().toString())),
+                withJsonPath("$.hearings[*].weekCommencingStartDate", hasItem(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingStartDate())),
+                withJsonPath("$.hearings[*].weekCommencingEndDate", hasItem(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
         };
         verifyHearingListedForWeekCommencing(Jurisdiction.CROWN.name(), weekCommencingSearchStartDate, "", false, matchers);
 

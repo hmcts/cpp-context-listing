@@ -27,29 +27,5 @@
             </cs:CourtHouse>
             <cs:Sittings/>
         </cs:CourtList>
-        <cs:CourtList>
-            <cs:CourtHouse>
-                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
-                <cs:CourtHouseCode>448</cs:CourtHouseCode>
-                <cs:CourtHouseName>PRESTON [THE SESSIONS HOUSE]</cs:CourtHouseName>
-            </cs:CourtHouse>
-            <cs:Sittings/>
-        </cs:CourtList>
-        <cs:CourtList>
-            <cs:CourtHouse>
-                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
-                <cs:CourtHouseCode>751</cs:CourtHouseCode>
-                <cs:CourtHouseName>BARROW-IN-FURNESS</cs:CourtHouseName>
-            </cs:CourtHouse>
-            <cs:Sittings/>
-        </cs:CourtList>
-        <cs:CourtList>
-            <cs:CourtHouse>
-                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
-                <cs:CourtHouseCode>768</cs:CourtHouseCode>
-                <cs:CourtHouseName>LANCASTER</cs:CourtHouseName>
-            </cs:CourtHouse>
-            <cs:Sittings/>
-        </cs:CourtList>
     </cs:CourtLists>
 </cs:FirmList>

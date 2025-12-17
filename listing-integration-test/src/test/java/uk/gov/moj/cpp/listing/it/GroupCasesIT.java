@@ -19,6 +19,7 @@ import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
@@ -59,7 +60,7 @@ public class GroupCasesIT extends AbstractIT {
     private final UUID hearingId = randomUUID();
     private final UUID groupId = randomUUID();
     private final UUID hearingTypeId = randomUUID();
-    private final UUID courtCentreId = randomUUID();
+    private final UUID courtCentreId = getRandomCourtCenterId();
     private final LocalDate startDate = LocalDate.now();
     private LocalTime defaultStartTime = LocalTime.parse("10:00");
     private final ZonedDateTime hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
