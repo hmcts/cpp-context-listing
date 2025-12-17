@@ -26,6 +26,9 @@
     "applicant": {
       "$ref": "http://justice.gov.uk/listing/events/applicantRespondent.json"
     },
+    "subject": {
+      "$ref": "http://justice.gov.uk/listing/events/applicantRespondent.json"
+    },
     "applicationType": {
       "type": "string"
     },
@@ -50,6 +53,10 @@
       "items": {
         "$ref": "http://justice.gov.uk/listing/events/offence.json"
       }
+    },
+    "laaApplnReference": {
+      "description": "A record of legal aid applications for this offence",
+      "$ref": "http://justice.gov.uk/core/courts/laaReference.json"
     }
   },
   "required": [

@@ -15,11 +15,13 @@ public class CourtApplication {
 
   private final UUID parentApplicationId;
 
-  private final ApplicantRespondent applicant;
+  private final CourtApplicationParty applicant;
 
   private final String applicationType;
 
-  private final List<ApplicantRespondent> respondents;
+  private final List<CourtApplicationParty> respondents;
+
+  private final CourtApplicationParty subject;
 
   private final Boolean requiresResponse;
 
@@ -29,9 +31,10 @@ public class CourtApplication {
 
   private final List<Offence> offences;
 
-  public CourtApplication(final UUID id, final List<UUID> linkedCaseIds, final UUID parentApplicationId, final ApplicantRespondent applicant,
-                          final String applicationType, final List<ApplicantRespondent> respondents, final Boolean requiresResponse,
-                          final Optional<String> applicationReference, final Optional<String> applicationParticulars, final List<Offence> offences) {
+  public CourtApplication(final UUID id, final List<UUID> linkedCaseIds, final UUID parentApplicationId, final CourtApplicationParty applicant,
+                          final String applicationType, final List<CourtApplicationParty> respondents, final Boolean requiresResponse,
+                          final Optional<String> applicationReference, final Optional<String> applicationParticulars, final List<Offence> offences,
+                          final CourtApplicationParty subject) {
     this.id = id;
     this.linkedCaseIds = linkedCaseIds;
     this.parentApplicationId = parentApplicationId;
@@ -42,9 +45,10 @@ public class CourtApplication {
     this.applicationReference = applicationReference;
     this.applicationParticulars = applicationParticulars;
     this.offences = offences;
+    this.subject = subject;
   }
 
-  public ApplicantRespondent getApplicant() {
+  public CourtApplicationParty getApplicant() {
     return applicant;
   }
 
@@ -56,7 +60,7 @@ public class CourtApplication {
     return id;
   }
 
-  public List<ApplicantRespondent> getRespondents() {
+  public List<CourtApplicationParty> getRespondents() {
     return respondents;
   }
 
@@ -88,6 +92,10 @@ public class CourtApplication {
     return offences;
   }
 
+  public CourtApplicationParty getSubject() {
+    return subject;
+  }
+
   @Override
   public boolean equals(final Object obj) {
     if (this == obj) {
@@ -106,12 +114,13 @@ public class CourtApplication {
     java.util.Objects.equals(this.parentApplicationId, that.parentApplicationId)&&
     java.util.Objects.equals(this.requiresResponse, that.requiresResponse) &&
     java.util.Objects.equals(this.applicationReference, that.applicationReference) &&
-    java.util.Objects.equals(this.applicationParticulars, that.applicationParticulars);
+    java.util.Objects.equals(this.applicationParticulars, that.applicationParticulars) &&
+    java.util.Objects.equals(this.subject, that.subject);
   }
 
   @Override
   public int hashCode() {
-    return java.util.Objects.hash(applicant, applicationType, id, respondents, linkedCaseIds, parentApplicationId, requiresResponse, applicationReference, applicationParticulars, offences);
+    return java.util.Objects.hash(applicant, applicationType, id, respondents, linkedCaseIds, parentApplicationId, requiresResponse, applicationReference, applicationParticulars, offences, subject);
   }
 
   @Override
@@ -126,17 +135,18 @@ public class CourtApplication {
         "requiresResponse='" + requiresResponse + "'" +
         "applicationReference='" + applicationReference + "'" +
         "applicationParticulars='" + applicationParticulars + "'" +
+        "subject='" + subject + "'" +
     "}";
   }
 
   public static class Builder {
-    private ApplicantRespondent applicant;
+    private CourtApplicationParty applicant;
 
     private String applicationType;
 
     private UUID id;
 
-    private List<ApplicantRespondent> respondents;
+    private List<CourtApplicationParty> respondents;
 
     private List<UUID> linkedCaseIds;
 
@@ -150,7 +160,9 @@ public class CourtApplication {
 
     private List<Offence> offences;
 
-    public Builder withApplicant(final ApplicantRespondent applicant) {
+    private CourtApplicationParty subject;
+
+    public Builder withApplicant(final CourtApplicationParty applicant) {
       this.applicant = applicant;
       return this;
     }
@@ -165,7 +177,7 @@ public class CourtApplication {
       return this;
     }
 
-    public Builder withRespondents(final List<ApplicantRespondent> respondents) {
+    public Builder withRespondents(final List<CourtApplicationParty> respondents) {
       this.respondents = respondents;
       return this;
     }
@@ -200,8 +212,13 @@ public class CourtApplication {
       return this;
     }
 
+    public Builder withSubject(final CourtApplicationParty subject) {
+      this.subject = subject;
+      return this;
+    }
+
     public CourtApplication build() {
-      return new CourtApplication(id, linkedCaseIds, parentApplicationId,  applicant, applicationType,  respondents, requiresResponse, applicationReference, applicationParticulars, offences);
+      return new CourtApplication(id, linkedCaseIds, parentApplicationId,  applicant, applicationType,  respondents, requiresResponse, applicationReference, applicationParticulars, offences, subject);
     }
   }
 }

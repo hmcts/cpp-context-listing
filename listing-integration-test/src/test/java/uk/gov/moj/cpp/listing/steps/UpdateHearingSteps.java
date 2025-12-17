@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.steps;
 
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
@@ -27,21 +28,26 @@ import static uk.gov.justice.services.common.converter.ZonedDateTimes.fromString
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDelayForJms;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.getJsonObject;
 import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.getUUID;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUIDAndName;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilSizeMatch;
+import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
+import static uk.gov.moj.cpp.listing.utils.FileUtil.payloadToObject;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentres;
@@ -49,10 +55,13 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 
+import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingTypeData;
@@ -66,6 +75,8 @@ import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -80,6 +91,7 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.Response;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Filter;
 import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
@@ -143,6 +155,7 @@ public class UpdateHearingSteps extends AbstractIT {
     private static final String EVENT_SELECTED_PUBLIC_HEARING_UPDATED = "public.listing.hearing-updated";
     private static final String EVENT_SELECTED_PUBLIC_VACATED_TRIAL_UPDATED = "public.listing.vacated-trial-updated";
     private static final String EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING = "public.listing.hearing-requested-for-listing";
+    private static final String EVENT_SELECTED_PUBLIC_HEARING_UNALLOCATED_COURTROOM_REMOVED = "public.listing.hearing-unallocated-courtroom-removed";
     private static final String EVENT_SELECTOR_WEEK_COMMENCING_DATES_REMOVED = "listing.events.week-commencing-date-removed-for-hearing";
     private static final String EVENT_SELECTOR_PUBLIC_LIST_NOTE_REMOVED = "listing.events.public-list-note-removed-from-hearing";
     private static final String EVENT_SELECTOR_START_DATE_REMOVED = "listing.events.start-date-removed-for-hearing";
@@ -155,6 +168,8 @@ public class UpdateHearingSteps extends AbstractIT {
     private static final String PUBLIC_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING = "public.listing.hearing-days-changed-for-hearing";
     private static final String EVENT_SELECTED_PUBLIC_JUDICIARY_CHANGED_FOR_HEARING_STATUS = "public.listing.judiciary-changed-for-hearings-status";
     private static final String PUBLIC_LISTING_HEARING_UPDATE_COMPLETED = "public.listing.hearings-update-completed";
+    private static final String EVENT_SELECTED_PUBLIC_HEARING_RESULTED = "public.events.hearing.hearing-resulted";
+    private static final String EVENT_SELECTOR_HEARING_RESULT_STATUS_UPDATED = "listing.events.hearing-result-status-updated";
 
     public static final String FIELD_WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
     public static final String FIELD_WEEK_COMMENCING_DURATION_IN_WEEKS = "weekCommencingDurationInWeeks";
@@ -184,8 +199,13 @@ public class UpdateHearingSteps extends AbstractIT {
     private JmsMessageConsumerClient privateMessageConsumerWeekCommencingDateChanged;
     private JmsMessageConsumerClient privateMessageConsumerHearingRequestedForListing;
     private JmsMessageConsumerClient publicMessageConsumerHearingRequested;
+    private JmsMessageConsumerClient publicMessageConsumerHearingUnallocatedCourtroomRemoved;
 
     private JmsMessageConsumerClient publicMessageConsumerJudiciaryChangedForHearingStatus;
+    private JmsMessageConsumerClient privateMessageConsumerHearingResultStatusUpdated;
+
+    ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+    ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
 
     private String request;
 
@@ -606,8 +626,10 @@ public class UpdateHearingSteps extends AbstractIT {
         publicMessageConsumerHearingRequested = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING);
         privateMessageConsumerHearingRequestedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_REQUESTED_FOR_LISTING);
         publicMessageConsumerHearingRequested = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING);
+        publicMessageConsumerHearingUnallocatedCourtroomRemoved = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_UNALLOCATED_COURTROOM_REMOVED);
         publicEventMessageProducer = publicEvents.createPublicProducer();
         publicMessageConsumerJudiciaryChangedForHearingStatus = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_JUDICIARY_CHANGED_FOR_HEARING_STATUS);
+        privateMessageConsumerHearingResultStatusUpdated = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_RESULT_STATUS_UPDATED);
     }
 
     private void createMessageConsumersForDefendantSplit() {
@@ -898,6 +920,13 @@ public class UpdateHearingSteps extends AbstractIT {
         LOGGER.info("jsonResponse from privateMessageConsumerAllocatedHearingUpdatedForListing: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.getList("prosecutionCaseDefendantsOffenceIds").size(), is(count));
+    }
+
+    public void verifyHearingUnallocatedCourtroomRemoveds(final UUID hearingId) {
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingUnallocatedCourtroomRemoved);
+        LOGGER.info("jsonResponse from publicMessageConsumerHearingUnallocatedCourtroomRemoved: {}", jsonResponse.prettify());
+
+        assertThat(jsonResponse.getUUID("hearingId"), is(hearingId));
     }
 
 
@@ -1442,5 +1471,48 @@ public class UpdateHearingSteps extends AbstractIT {
         LOGGER.info("jsonResponse from publicMessageConsumerHearingSequenced: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("status"), is(SUCCESS));
+    }
+
+    public void publishPublicHearingResultedEvent(final HearingData hearingData) throws IOException {
+
+        JsonObject eventPayload = payloadToObject(
+                getPayload("stub-data/public.events.hearing.hearing-resulted.json")
+                        .replaceAll("%HEARING_ID%", hearingData.getId().toString())
+                        .replaceAll("%DEFENDANT_ID%", hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString())
+                        .replaceAll("%PROSECUTION_CASE_ID%", hearingData.getListedCases().get(0).getCaseId().toString())
+                        .replaceAll("%CASE_URN%", hearingData.getListedCases().get(0).getCaseReference().toString())
+                        .replaceAll("%SHARED_TIME%", ZonedDateTime.now().format(DateTimeFormatter.ISO_INSTANT))
+                        .replaceAll("%HEARING_DAY%", LocalDate.now().toString())
+        );
+
+        sendMessage(publicEventMessageProducer, EVENT_SELECTED_PUBLIC_HEARING_RESULTED, eventPayload,
+                metadataWithRandomUUID(EVENT_SELECTED_PUBLIC_HEARING_RESULTED).build());
+    }
+
+    public void verifyHearingResultStatusUpdatedEventRaised() {
+        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingResultStatusUpdated);
+        LOGGER.info("jsonResponse from privateMessageConsumerHearingResultStatusUpdated: {}", jsonResponse.prettify());
+
+        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
+        assertNotNull(jsonResponse);
+    }
+
+    public void verifyHearingResultedInDatabase() {
+        final String hearingId = updatedHearingData.getHearingId().toString();
+        final String hearingIdFilter = getHearingFilter(hearingId);
+
+        final String payload = pollForHearing(updatedHearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(hearingIdFilter + ".resulted", hasItem(true))
+        });
+
+        final JsonObject payloadAsJsonObject = new StringToJsonObjectConverter().convert(payload);
+        final boolean resulted = payloadAsJsonObject.getJsonArray("hearings").stream()
+                .map(h -> (JsonObject) h)
+                .filter(h -> h.getString("id").equals(hearingId))
+                .findFirst()
+                .map(h -> h.getBoolean("resulted", false))
+                .orElse(false);
+
+        assertThat("Hearing should be marked as resulted in database", resulted, is(true));
     }
 }

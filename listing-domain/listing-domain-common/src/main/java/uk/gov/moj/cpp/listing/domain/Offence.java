@@ -40,11 +40,13 @@ public class Offence {
 
     private String indictmentParticular;
 
+    private CivilOffence civilOffence;
+
     public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording,
                    final String startDate, final StatementOfOffence statementOfOffence, final Optional<CustodyTimeLimit> custodyTimeLimit,
                    final Optional<LaaReference> laaApplnReference, final Optional<String> laidDate, final Optional<Boolean> shadowListed,
                    final Optional<CommittingCourt> committingCourt, final List<ReportingRestriction> reportingRestrictions,
-                   final Optional<SeedingHearing> seedingHearing, final Integer count, final Integer orderIndex, String indictmentParticular) {
+                   final Optional<SeedingHearing> seedingHearing, final Integer count, final Integer orderIndex, String indictmentParticular, CivilOffence civilOffence) {
         this.endDate = endDate;
         this.id = id;
         this.offenceCode = offenceCode;
@@ -61,6 +63,7 @@ public class Offence {
         this.count = count;
         this.orderIndex = orderIndex;
         this.indictmentParticular = indictmentParticular;
+        this.civilOffence = civilOffence;
     }
 
     public Optional<String> getEndDate() {
@@ -127,6 +130,8 @@ public class Offence {
         return indictmentParticular;
     }
 
+    public CivilOffence getCivilOffence() { return civilOffence; }
+
     public static Builder offence() {
         return new Offence.Builder();
     }
@@ -155,12 +160,13 @@ public class Offence {
                 Objects.equals(count, offence.count) &&
                 Objects.equals(orderIndex, offence.orderIndex) &&
                 Objects.equals(seedingHearing, offence.seedingHearing) &&
-                Objects.equals(indictmentParticular, offence.indictmentParticular);
+                Objects.equals(indictmentParticular, offence.indictmentParticular) &&
+                Objects.equals(civilOffence, offence.civilOffence);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions, seedingHearing, count, orderIndex, indictmentParticular);
+        return Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions, seedingHearing, count, orderIndex, indictmentParticular, civilOffence);
     }
 
     @Override
@@ -182,6 +188,7 @@ public class Offence {
                 ", reportingRestrictions=" + reportingRestrictions +
                 ", seedingHearing=" + seedingHearing +
                 ", indictmentParticular=" + indictmentParticular +
+                ", civilOffence=" + civilOffence +
                 '}';
     }
 
@@ -216,6 +223,8 @@ public class Offence {
         private Integer count;
         private Integer orderIndex;
         private String indictmentParticular;
+
+        private CivilOffence civilOffence;
 
         public Builder withEndDate(final Optional<String> endDate) {
             this.endDate = endDate;
@@ -297,8 +306,13 @@ public class Offence {
             return this;
         }
 
+        public Builder withCivilOffence(final CivilOffence civilOffence) {
+            this.civilOffence = civilOffence;
+            return this;
+        }
+
         public Offence build() {
-            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions, seedingHearing, count, orderIndex, indictmentParticular);
+            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions, seedingHearing, count, orderIndex, indictmentParticular, civilOffence);
         }
     }
 }

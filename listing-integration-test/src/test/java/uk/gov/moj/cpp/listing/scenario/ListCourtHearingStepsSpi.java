@@ -64,7 +64,8 @@ public class ListCourtHearingStepsSpi extends AbstractIT {
                 .replaceAll("%%EARLIEST_START_TIME%%", values.get("hearingStartTime"))
                 .replaceAll("ESTIMATED_MINUTES", values.get("estimatedMinutes"))
                 .replaceAll("%%PROSECUTION_CASE_ID%%", values.get("prosecutionCaseId"))
-                .replaceAll("%%HEARING_TYPE_ID%%", values.get("hearingTypeId"));
+                .replaceAll("%%HEARING_TYPE_ID%%", values.get("hearingTypeId"))
+                .replaceAll("%%LISTED_START_DATE_TIME%%", values.get("listedStartDateTime"));
 
         return new StringToJsonObjectConverter().convert(eventPayloadString);
     }

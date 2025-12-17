@@ -18,6 +18,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsData());
     }
 
+    public static HearingsData hearingsDataWithExParteOffence() {
+        return new HearingsData(HearingsDataFactory.hearingsDataForCasesWithExParte());
+    }
+
     public static HearingsData trialHearingsData() {
         return new HearingsData(HearingsDataFactory.trialHearingsData());
     }
@@ -182,6 +186,11 @@ public class HearingsData {
     public static HearingsData hearingsDataStandaloneApplication() {
         return new HearingsData(HearingsDataFactory.hearingsDataStandaloneApplication());
     }
+
+    public static HearingsData hearingsDataStandaloneApplicationWithSubject() {
+        return new HearingsData(HearingsDataFactory.hearingsDataStandaloneApplicationWithSubject());
+    }
+
 
     public static HearingsData hearingsDataWithShadowListedOffences() {
         return new HearingsData(HearingsDataFactory.hearingsDataWithShadowListedOffences());

@@ -246,6 +246,54 @@ public class SittingsPojoBuilderTest {
         assertThat(sittingsMap.get(0).getHearings().get(0).getCourtApplicationDetails().get().getApplicationReference(), is(application1Reference));
         assertThat(sittingsMap.get(0).getHearings().get(1).getCourtApplicationDetails().get().getApplicationReference(), is(application2Reference));
 
+        // Verify subject is not set when subject is not present in JSON
+        assertThat(sittingsMap.get(0).getHearings().get(0).getCourtApplicationDetails().get().getSubject(), nullValue());
+        assertThat(sittingsMap.get(0).getHearings().get(1).getCourtApplicationDetails().get().getSubject(), nullValue());
+
+    }
+
+    @Test
+    public void shouldSetSubjectToProvidedValueWhenSubjectIsExplicitlyProvidedInJson() {
+
+        final UUID courtRoomId = randomUUID();
+        final UUID judicialId = randomUUID();
+        final LocalDate startDate = LocalDate.parse("2023-09-01");
+        final String endDate = "2023-09-01";
+        final String hearingStartTime = "2023-09-01T11:00:00.000Z";
+        final String hearingEndTime = "2020-09-01T12:00:00.000Z";
+        final String applicationReference = STRING.next();
+
+        final JsonObject applicant = Json.createObjectBuilder()
+                .add("id", randomUUID().toString())
+                .add("lastName", "Applicant")
+                .add("isRespondent", false)
+                .add("restrictFromCourtList", false)
+                .add("courtApplicationPartyType", "PERSON")
+                .build();
+
+        final JsonObject subject = Json.createObjectBuilder()
+                .add("id", randomUUID().toString())
+                .add("lastName", "Subject")
+                .add("isRespondent", false)
+                .add("restrictFromCourtList", false)
+                .add("courtApplicationPartyType", "PERSON")
+                .build();
+
+        final JsonObject caseHearings = buildCaseHearingsWithHearingDaysAndApplicationWithSubject("2023-09-01", hearingStartTime, hearingEndTime, courtRoomId, judicialId, applicationReference, applicant, subject);
+        final FlatHearing flatHearing = new FlatHearing(LocalDate.parse("2023-09-01"), caseHearings.getJsonArray("judiciary"),
+                Optional.of(courtRoomId), caseHearings, false);
+        final List<FlatHearing> flatHearings = Arrays.asList(flatHearing);
+        final List<Sitting> sittingsMap = SittingsPojoBuilder.assignFlatHearingsToSittings(flatHearings, startDate, endDate);
+
+        assertThat(sittingsMap.size(), is(1));
+        assertThat(sittingsMap.get(0).getHearings().size(), is(1));
+        assertThat(sittingsMap.get(0).getHearings().get(0).getCourtApplicationDetails().get().getApplicationReference(), is(applicationReference));
+
+        // Verify subject is set to the explicitly provided subject value, not applicant
+        assertThat(sittingsMap.get(0).getHearings().get(0).getCourtApplicationDetails().get().getSubject().getString("lastName"), is("Subject"));
+        assertThat(sittingsMap.get(0).getHearings().get(0).getCourtApplicationDetails().get().getApplicant().getString("lastName"), is("Applicant"));
+        assertThat(sittingsMap.get(0).getHearings().get(0).getCourtApplicationDetails().get().getSubject(), is(subject));
+
     }
 
     private FlatHearing buildFlatHearing(final String startDate, final UUID courtRoomId, final UUID judicialId) {
@@ -359,6 +407,40 @@ public class SittingsPojoBuilderTest {
 
     }
 
+    private JsonObject buildCaseHearingsWithHearingDaysAndApplicationWithSubject(final String hearingDate, final String hearingStartTime,
+                                                                                final String hearingEndTime, final UUID courtRoomId, final UUID judicialId,
+                                                                                final String applicationReference, final JsonObject applicant, final JsonObject subject) {
+
+        final JsonArrayBuilder respondentsArrayBuilder = Json.createArrayBuilder()
+                .add(Json.createObjectBuilder()
+                        .add("id", randomUUID().toString())
+                        .add("lastName", "TestRespondent")
+                        .add("isRespondent", true)
+                        .add("restrictFromCourtList", false)
+                        .add("courtApplicationPartyType", "PERSON"));
+
+        final JsonObjectBuilder applicationJson = Json.createObjectBuilder()
+                .add("applicationReference", applicationReference)
+                .add("restrictFromCourtList", false)
+                .add("applicant", applicant)
+                .add("respondents", respondentsArrayBuilder)
+                .add("subject", subject);
+
+        return Json.createObjectBuilder()
+                .add("courtRoomId", courtRoomId.toString())
+                .add("judiciary", Json.createArrayBuilder().add(
+                        Json.createObjectBuilder().add("judicialId", judicialId.toString()))
+                )
+                .add("courtApplications", Json.createArrayBuilder()
+                        .add(applicationJson))
+                .add("nonDefaultDays", Json.createArrayBuilder()
+                        .add(buildNonDefaultDaysJson()))
+                .add("hearingDays", Json.createArrayBuilder()
+                        .add(buildHearingDaysJson(hearingDate, hearingStartTime, hearingEndTime)))
+                .build();
+
+    }
+
     private JsonObject buildWeekCommencingCaseHearings(final String startDate, final UUID courtRoomId, final UUID judicialId) {
         return Json.createObjectBuilder()
                 .add("weekCommencingStartDate", startDate)
@@ -421,9 +503,26 @@ public class SittingsPojoBuilderTest {
 
     private JsonObjectBuilder buildApplicationJson(final String applicationReferene) {
 
+        final JsonObjectBuilder applicantJson = Json.createObjectBuilder()
+                .add("id", randomUUID().toString())
+                .add("lastName", "TestApplicant")
+                .add("isRespondent", false)
+                .add("restrictFromCourtList", false)
+                .add("courtApplicationPartyType", "PERSON");
+
+        final JsonArrayBuilder respondentsArrayBuilder = Json.createArrayBuilder()
+                .add(Json.createObjectBuilder()
+                        .add("id", randomUUID().toString())
+                        .add("lastName", "TestRespondent")
+                        .add("isRespondent", true)
+                        .add("restrictFromCourtList", false)
+                        .add("courtApplicationPartyType", "PERSON"));
+
         final JsonObjectBuilder applicationDetailsJson = Json.createObjectBuilder();
         applicationDetailsJson.add("applicationReference", applicationReferene);
         applicationDetailsJson.add("restrictFromCourtList", false);
+        applicationDetailsJson.add("applicant", applicantJson);
+        applicationDetailsJson.add("respondents", respondentsArrayBuilder);
 
         return applicationDetailsJson;
 

@@ -68,6 +68,7 @@ import uk.gov.justice.core.courts.ApplicationStatus;
 import uk.gov.justice.core.courts.AssociatedPerson;
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.BreachType;
+import uk.gov.justice.core.courts.CivilOffence;
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.CourtApplicationCase;
 import uk.gov.justice.core.courts.CourtApplicationParty;
@@ -108,7 +109,7 @@ import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClien
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
-import uk.gov.moj.cpp.listing.steps.data.ApplicantRespondentData;
+import uk.gov.moj.cpp.listing.steps.data.CourtApplicationPartyData;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
@@ -1585,7 +1586,9 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 .withApplicationStatus(ApplicationStatus.LISTED)
                                 .withApplicant(ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
                                 .withRespondents(getRespondents(hearingData))
-                                .withSubject(ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
+                                .withSubject(hearingData.getCourtApplications().get(0).getSubject() != null
+                                        ? ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getSubject())
+                                        : ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
                                 .build()))
                         .withCourtApplicationPartyListingNeeds(hearingData.getCourtApplicationPartyNeeds())
                         .withId(hearingData.getId())
@@ -1656,6 +1659,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                                                                 .withLabel("RestrictionApplied")
                                                                                 .withJudicialResultId(JUDICIAL_RESULT_ID)
                                                                                 .withOrderedDate(LocalDate.now().toString()).build()))
+                                                                        .withCivilOffence(CivilOffence.civilOffence().withIsExParte(o.getCivilOffenceData().getExParte()).build())
                                                                         .build())
                                                                 .collect(Collectors.toList()))
                                                         .withProsecutionCaseId(listedCaseData.getCaseId())
@@ -1691,7 +1695,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                 .build();
     }
 
-    private CourtApplicationParty getApplicant(final ApplicantRespondentData applicant) {
+    private CourtApplicationParty getApplicant(final CourtApplicationPartyData applicant) {
         return CourtApplicationParty.courtApplicationParty()
                 .withId(applicant.getId())
                 .withPersonDetails(Person.person().withLastName(applicant.getLastName())
@@ -1888,7 +1892,9 @@ public class ListCourtHearingSteps extends AbstractIT {
                                         .withSummonsRequired(false)
                                         .withNotificationRequired(false)
                                         .build()))
-                                .withSubject(getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
+                                        .withSubject(hearingData.getCourtApplications().get(0).getSubject() != null
+                                        ? ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getSubject())
+                                        : ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
                                 .build()))
                         .withCourtApplicationPartyListingNeeds(hearingData.getCourtApplicationPartyNeeds())
                         .withId(hearingData.getId())

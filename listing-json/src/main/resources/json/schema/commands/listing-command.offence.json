@@ -27,6 +27,9 @@
     "statementOfOffence": {
       "$ref": "http://justice.gov.uk/listing/commands/statementOfOffence.json"
     },
+    "civilOffence": {
+      "$ref": "http://justice.gov.uk/listing/events/civilOffence.json"
+    },
     "custodyTimeLimit": {
       "$ref": "http://justice.gov.uk/listing/commands/custodyTimeLimit.json"
     },

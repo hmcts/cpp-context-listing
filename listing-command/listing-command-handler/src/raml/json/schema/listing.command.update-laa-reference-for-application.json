@@ -19,7 +19,6 @@
   "required": [
     "subjectId",
     "applicationId",
-    "offenceId",
     "laaReference"
   ],
   "additionalProperties": false

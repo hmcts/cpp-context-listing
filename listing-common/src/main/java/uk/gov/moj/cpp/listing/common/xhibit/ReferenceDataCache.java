@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
@@ -50,6 +52,9 @@ public class ReferenceDataCache {
     private final Map<UUID, Judiciary> judiciariesMapCache = new ConcurrentHashMap<>();
 
     private final Map<String, HearingType> hearingTypesCodesMapCache = new ConcurrentHashMap<>();
+
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+
 
     @PostConstruct
     public void initReferenceData() {
@@ -113,8 +118,23 @@ public class ReferenceDataCache {
     }
 
     public List<JsonObject> getCpCourtRoomCache(final UUID courtCentreId) {
-        return cpCourtRoomCache.computeIfAbsent(courtCentreId,
-                key -> referenceDataLoader.getCpCourtRoom(courtCentreId));
+        // Try to read first
+        lock.readLock().lock();
+        try {
+            List<JsonObject> result = cpCourtRoomCache.get(courtCentreId);
+            if (result != null) {
+                return result; // Fast path - multiple readers can do this
+            }
+        } finally {
+            lock.readLock().unlock();
+        }
+        lock.writeLock().lock();
+        try {
+            return cpCourtRoomCache.computeIfAbsent(courtCentreId,
+                    key -> referenceDataLoader.getCpCourtRoom(key));
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     public Optional<HearingType> getHearingTypeCache(final UUID hearingTypeId) {

@@ -9,12 +9,13 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.domain.Address.address;
-import static uk.gov.moj.cpp.listing.domain.ApplicantRespondent.applicantRespondent;
+import static uk.gov.moj.cpp.listing.domain.CourtApplicationParty.courtApplicationParty;
 import static uk.gov.moj.cpp.listing.domain.CourtApplication.courtApplication;
 import static uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.PERSON;
 import static uk.gov.moj.cpp.listing.domain.aggregate.NewDomainToEventConverter.buildCourtApplications;
 
 import uk.gov.moj.cpp.listing.domain.Address;
+import uk.gov.moj.cpp.listing.domain.CivilOffence;
 import uk.gov.moj.cpp.listing.domain.CommittingCourt;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.CourtHouseType;
@@ -45,6 +46,42 @@ public class NewDomainToEventConverterTest {
         assertThat(courtApplication.getRespondents().size(), equalTo(courtApplicationBuilt.getRespondents().size()));
         assertThat(courtApplicationBuilt.getRespondents().get(0).getAddress(), is(notNullValue()));
         checkAddress(courtApplication.getRespondents().get(0).getAddress(), courtApplicationBuilt.getRespondents().get(0).getAddress());
+        assertThat(courtApplicationBuilt.getSubject().getAddress(), is(notNullValue()));
+        checkAddress(courtApplication.getSubject().getAddress(), courtApplicationBuilt.getSubject().getAddress());
+    }
+
+    @Test
+    public void shouldBuildCourtApplicationsWithNullSubject() {
+        final CourtApplication courtApplication = courtApplication()
+                .withApplicationParticulars(of(STRING.next()))
+                .withApplicant(courtApplicationParty()
+                        .withCourtApplicationPartyType(PERSON)
+                        .withAddress(address()
+                                .withAddress1(STRING.next())
+                                .withAddress2(of(STRING.next()))
+                                .withAddress3(of(STRING.next()))
+                                .withAddress4(of(STRING.next()))
+                                .withAddress5(of(STRING.next()))
+                                .withPostcode(of(STRING.next()))
+                                .build())
+                        .build())
+                .withRespondents(singletonList(courtApplicationParty()
+                        .withCourtApplicationPartyType(PERSON)
+                        .withAddress(address()
+                                .withAddress1(STRING.next())
+                                .withAddress2(of(STRING.next()))
+                                .withAddress3(of(STRING.next()))
+                                .withAddress4(of(STRING.next()))
+                                .withAddress5(of(STRING.next()))
+                                .withPostcode(of(STRING.next()))
+                                .build())
+                        .build()))
+                .withSubject(null)
+                .build();
+
+        uk.gov.justice.listing.events.CourtApplication courtApplicationBuilt = buildCourtApplications(courtApplication);
+
+        assertThat(courtApplicationBuilt.getSubject(), is((uk.gov.justice.listing.events.ApplicantRespondent) null));
     }
 
     @Test
@@ -76,6 +113,9 @@ public class NewDomainToEventConverterTest {
         final UUID judicialResultId = randomUUID();
         final String label = "label";
         final LocalDate orderedDate = LocalDate.now().plusDays(-1);
+        final CivilOffence civilOffence = CivilOffence.civilOffence()
+                .withIsExParte(true)
+                .build();
         final Offence offence = Offence.offence()
                 .withLaidDate(of(laidDate))
                 .withId(offenceId)
@@ -116,6 +156,7 @@ public class NewDomainToEventConverterTest {
                         .withLabel(label)
                         .withOrderedDate(of(orderedDate))
                         .build()))
+                .withCivilOffence(civilOffence)
                 .build();
 
         final uk.gov.justice.listing.events.Offence eventOffence = NewDomainToEventConverter.buildOffence(offence);
@@ -160,6 +201,8 @@ public class NewDomainToEventConverterTest {
         assertThat(reportingRestriction.getJudicialResultId(), is(judicialResultId));
         assertThat(reportingRestriction.getLabel(), is(label));
         assertThat(reportingRestriction.getOrderedDate(), is(orderedDate));
+
+        assertThat(civilOffence.getIsExParte(),is(eventOffence.getCivilOffence().getIsExParte()));
 
     }
 
@@ -239,7 +282,7 @@ public class NewDomainToEventConverterTest {
     private CourtApplication createCourtApplication() {
         return courtApplication()
                 .withApplicationParticulars(of(STRING.next()))
-                .withApplicant(applicantRespondent()
+                .withApplicant(courtApplicationParty()
                         .withCourtApplicationPartyType(PERSON)
                         .withAddress(address()
                                 .withAddress1(STRING.next())
@@ -250,7 +293,7 @@ public class NewDomainToEventConverterTest {
                                 .withPostcode(of(STRING.next()))
                                 .build())
                         .build())
-                .withRespondents(singletonList(applicantRespondent()
+                .withRespondents(singletonList(courtApplicationParty()
                         .withCourtApplicationPartyType(PERSON)
                         .withAddress(address()
                                 .withAddress1(STRING.next())
@@ -261,6 +304,17 @@ public class NewDomainToEventConverterTest {
                                 .withPostcode(of(STRING.next()))
                                 .build())
                         .build()))
+                .withSubject(courtApplicationParty()
+                        .withCourtApplicationPartyType(PERSON)
+                        .withAddress(address()
+                                .withAddress1(STRING.next())
+                                .withAddress2(of(STRING.next()))
+                                .withAddress3(of(STRING.next()))
+                                .withAddress4(of(STRING.next()))
+                                .withAddress5(of(STRING.next()))
+                                .withPostcode(of(STRING.next()))
+                                .build())
+                        .build())
                 .build();
     }
 

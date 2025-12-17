@@ -48,9 +48,15 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     private static final String SAMPLE_HEARING_WITH_EJECTED_CASE = "/json/hearingSampleDataWithEjectCaseFlag.json";
     private static final String SAMPLE_HEARING_WITHOUT_EJECTED_CASE = "/json/hearingSampleDataWithoutEjectCaseFlag.json";
     private static final String PUBLIC_LIST = "/json/hearingDataForPublicListWithEjectFlag.json";
+    private static final String PUBLIC_LIST_WITH_EXPARTE_OFFENCES = "/json/hearingDataForPublicListWithExparteOffences.json";
+    private static final String PUBLIC_LIST_WITH_ATLEAST_ONE_CIVIL_EXPARTE_OFFENCES = "/json/hearingDataForPublicListWithAtleastOneCivilExparteOffences.json";
+    private static final String PUBLIC_LIST_WITH_CRIMINAL_CASE_WITH_NO_EXPARTE_OFFENCES = "/json/hearingDataForPublicListWithCriminalCaseWithNoExParte.json";
+    private static final String PUBLIC_LIST_WITH_CIVIL_CASE_WITH_MULTIPLE_OFFENCES_ALL_EXPARTE_FALSE = "/json/hearingDataForCivilCaseWithMultipleOffencesAndAllExParteFalse.json";
+    private static final String PUBLIC_LIST_WITH_EXPARTE_OFFENCES_AND_EJECTED_CASES = "/json/hearingDataForPublicListWithExparteOffencesAndEjectedCases.json";
     private static final String PUBLIC_LIST_MULTIPLE_CASES = "/json/hearingDataForPublicListWithEjectFlagMultiple.json";
     private static final String EXPECTED_PUBLIC_LIST_MULTIPLE_CASES = "src/test/resources/json/expectedHearingDataForPublic.json";
     private static final String ALPHABETICAL_LIST = "/json/hearingDataForAlphabeticalListWithEjectFlag.json";
+    private static final String ALPHABETICAL_LIST_WITH_EJECTFLAG_AND_EXPARTE_OFFENCES = "/json/hearingDataForAlphabeticalListWithEjectFlagAndExParteOffences.json";
     private static final String SAMPLE_HEARING_WITH_2_HEARING_DAYS_IN_DIFFERENT_HEARING_DATE = "/json/hearingSampleDataWith2HearingDaysInDifferentHearingDate.json";
     private static final String SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_DIFFERENT_HEARING_DATE = "/json/hearingSampleDataWith3HearingDaysInDifferentHearingDate.json";
     private static final String SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_THE_SAME_HEARING_DATE = "/json/hearingSampleDataWith3HearingDaysInTheSameHearingDate.json";
@@ -451,6 +457,19 @@ public class HearingJsonListConverterFilterEjectCasesTest {
                 withJsonPath("$[0].hearingsByHearingDate[1].hearing.courtApplications[0].isEjected", equalTo(false))
         )));
     }
+    @Test
+    public void shouldConvertHearingResultForAlphabeticalListWithExParteOffences() throws IOException {
+        final Hearing hearing = createHearing(ALPHABETICAL_LIST_WITH_EJECTFLAG_AND_EXPARTE_OFFENCES);
+
+        final JsonArray hearingJsonArrayAlphabeticalList = converter.convertHearingResultForAlphabeticalList(ImmutableList.of(hearing));
+
+        assertThat(hearingJsonArrayAlphabeticalList.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(1)),
+                withJsonPath("$[0].hearingsByHearingDate", hasSize(2)),
+                withJsonPath("$[0].hearingsByHearingDate[0].hearing.listedCases", hasSize(1)),
+                withJsonPath("$[0].hearingsByHearingDate[0].hearing.listedCases[0].id", equalTo("e4f56b2e-3f36-4782-ab3d-aaca5fbdbd56"))
+        )));
+    }
 
     @Test
     public void shouldDeepCopyHearingAndConvertHearingResultForAlphabeticalList() throws IOException {
@@ -470,6 +489,83 @@ public class HearingJsonListConverterFilterEjectCasesTest {
                 withJsonPath("$[0].hearingsByHearingDate[1].hearing.courtApplications", hasSize(1)),
                 withJsonPath("$[0].hearingsByHearingDate[1].hearing.courtApplications[0].isEjected", equalTo(false))
         )));
+    }
+
+    @Test
+    public void shouldConvertHearingResultForPublicListForCasesWithExParteOffences() throws IOException {
+        //Given
+        final Hearing hearing = createHearing(PUBLIC_LIST_WITH_EXPARTE_OFFENCES);
+        //When
+        final JsonArray hearingJsonArrayPublicList = converter.convertHearingResultForPublicList(hearing);
+
+        assertThat(hearingJsonArrayPublicList.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(1)),
+                withJsonPath("$[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.listedCases", hasSize(1)),
+                withJsonPath("$[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.listedCases[0].id", equalTo("7688fa02-c479-4b42-8980-f3cea9368d1f")),
+                withJsonPath("$[0].hearingsByCourtCentreId[1].hearingsByHearingDate[0].hearing.listedCases", hasSize(2)),
+                withJsonPath("$[0].hearingsByCourtCentreId[1].hearingsByHearingDate[0].hearing.listedCases[0].id", equalTo("a35c2049-5aaa-4c16-aff4-40a22a260157")),
+                withJsonPath("$[0].hearingsByCourtCentreId[1].hearingsByHearingDate[0].hearing.listedCases[1].id", equalTo("7688fa02-c479-4b42-8980-f3cea9368d1g"))
+                )));
+    }
+
+    @Test
+    public void shouldFilterCivilCaseWithAtleastOneExParteForPublicList() throws IOException {
+
+        //Given
+        final Hearing hearing = createHearing(PUBLIC_LIST_WITH_ATLEAST_ONE_CIVIL_EXPARTE_OFFENCES);
+        //When
+        final JsonArray hearingJsonArrayPublicList = converter.convertHearingResultForPublicList(hearing);
+
+        assertThat(hearingJsonArrayPublicList.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(1)),
+                withJsonPath("$[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.listedCases", hasSize(0)))
+        ));
+    }
+
+    @Test
+    public void shouldFilterCriminalCaseWithNoExParteNodeForPublicList() throws IOException {
+
+        //Given
+        final Hearing hearing = createHearing(PUBLIC_LIST_WITH_CRIMINAL_CASE_WITH_NO_EXPARTE_OFFENCES);
+        //When
+        final JsonArray hearingJsonArrayPublicList = converter.convertHearingResultForPublicList(hearing);
+
+        assertThat(hearingJsonArrayPublicList.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(1)),
+                withJsonPath("$[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.listedCases", hasSize(1)),
+                withJsonPath("$[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.listedCases[0].id", equalTo("a35c2049-5aaa-4c16-aff4-40a22a260156"))
+        )));
+    }
+
+    @Test
+    public void shouldFilterCivilCaseWithMultipleOffencesAndAllExParteFalseForPublicList() throws IOException {
+
+        //Given
+        final Hearing hearing = createHearing(PUBLIC_LIST_WITH_CIVIL_CASE_WITH_MULTIPLE_OFFENCES_ALL_EXPARTE_FALSE);
+        //When
+        final JsonArray hearingJsonArrayPublicList = converter.convertHearingResultForPublicList(hearing);
+
+        assertThat(hearingJsonArrayPublicList.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(1)),
+                withJsonPath("$[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.listedCases", hasSize(1)),
+                withJsonPath("$[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.listedCases[0].id", equalTo("a35c2049-5aaa-4c16-aff4-40a22a260156"))
+        )));
+    }
+
+    @Test
+    public void shouldConvertHearingResultForPublicListForCasesWithExParteOffencesAndEjectedCases() throws IOException {
+        //Given
+        final Hearing hearing = createHearing(PUBLIC_LIST_WITH_EXPARTE_OFFENCES_AND_EJECTED_CASES);
+        //When
+        final JsonArray hearingJsonArrayPublicList = converter.convertHearingResultForPublicList(hearing);
+
+        assertThat(hearingJsonArrayPublicList.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(1)),
+                withJsonPath("$[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.listedCases", hasSize(0)),
+                withJsonPath("$[0].hearingsByCourtCentreId[1].hearingsByHearingDate[0].hearing.listedCases", hasSize(1)),
+                withJsonPath("$[0].hearingsByCourtCentreId[1].hearingsByHearingDate[0].hearing.listedCases[0].id", equalTo("a35c2049-5aaa-4c16-aff4-40a22a260157"))
+                )));
+
     }
 
     private Hearing createHearing(final String filePath) throws IOException {

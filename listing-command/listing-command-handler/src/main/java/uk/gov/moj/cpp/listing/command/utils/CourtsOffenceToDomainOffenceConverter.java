@@ -9,6 +9,7 @@ import static java.util.stream.Collectors.toList;
 import uk.gov.justice.core.courts.LaaReference;
 import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
+import uk.gov.moj.cpp.listing.domain.CivilOffence;
 import uk.gov.moj.cpp.listing.domain.CustodyTimeLimit;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.domain.Offence;
@@ -83,6 +84,12 @@ public abstract class CourtsOffenceToDomainOffenceConverter {
                     .map(ReportingRestrictionConverter::courtsToDomain)
                     .collect(toList())
             );
+        }
+
+        if(nonNull(courtOffence.getCivilOffence())){
+            builder.withCivilOffence(CivilOffence.civilOffence()
+                            .withIsExParte(courtOffence.getCivilOffence().getIsExParte())
+                    .build());
         }
 
         return builder.build();

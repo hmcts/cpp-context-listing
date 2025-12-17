@@ -23,13 +23,15 @@
         "sequence": 0,
         "startTime": "2019-12-16T10:07:00.000Z",
         "hearingDate": "2019-12-16",
-        "durationMinutes": 120
+        "durationMinutes": 120,
+        "courtRoomId": "5e1c7b54-3bca-3a37-a85a-84510f115b76"
       }, {
         "endTime": "2020-02-20T17:00:00.000Z",
         "sequence": 0,
         "startTime": "2020-02-20T10:30:00.000Z",
         "hearingDate": "2020-02-20",
-        "durationMinutes": 390
+        "durationMinutes": 390,
+        "courtRoomId": "3e1c7b54-3bca-3a37-a85a-84510f115b33"
       }],
       "listedCases": [{
         "id": "c6a5f01c-e82b-4256-a832-58239ca081e7",

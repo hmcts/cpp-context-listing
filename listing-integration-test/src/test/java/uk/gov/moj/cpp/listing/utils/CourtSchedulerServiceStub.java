@@ -13,6 +13,7 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.ACCEPTED;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
@@ -33,10 +34,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import javax.json.JsonObject;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-
-import org.apache.commons.collections.CollectionUtils;
 import org.awaitility.Awaitility;
 
 import com.github.tomakehurst.wiremock.client.VerificationException;
@@ -80,14 +77,22 @@ public class CourtSchedulerServiceStub {
 
     public static void stubDeleteAvailableHearingSlotsService(final String hearingId) {
         stubFor(WireMock.delete(urlPathMatching(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS + "/" + hearingId))
-                .willReturn(aResponse().withStatus(OK.getStatusCode())));
+                .willReturn(aResponse().withStatus(ACCEPTED.getStatusCode())));
     }
 
     public static void verifyDeleteAvailableHearingSlotsStubCommandInvoked(final String hearingId) {
+        verifyDeleteAvailableHearingSlotsStubCommandInvokedNTimes(hearingId, 1);
+    }
+
+    public static void verifyDeleteAvailableHearingSlotsStubCommandIsNeverInvoked(final String hearingId) {
+        verifyDeleteAvailableHearingSlotsStubCommandInvokedNTimes(hearingId, 0);
+    }
+
+    private static void verifyDeleteAvailableHearingSlotsStubCommandInvokedNTimes(final String hearingId, final int invocationCount) {
         Awaitility.await().atMost(30, SECONDS).pollInterval(1, SECONDS).until(() -> {
             final RequestPatternBuilder requestPatternBuilder = WireMock.deleteRequestedFor(urlPathMatching(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS + "/" + hearingId));
             try {
-                WireMock.verify(WireMock.exactly(1), requestPatternBuilder);
+                WireMock.verify(WireMock.exactly(invocationCount), requestPatternBuilder);
             } catch (VerificationException e) {
                 return false;
             }

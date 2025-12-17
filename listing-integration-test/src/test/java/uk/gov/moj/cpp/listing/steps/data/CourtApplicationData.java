@@ -6,8 +6,9 @@ public class CourtApplicationData {
     private final UUID id;
     private final UUID linkedCaseId;
     private final UUID parentApplicationId;
-    private final ApplicantRespondentData applicant;
-    private final ApplicantRespondentData respondent;
+    private final CourtApplicationPartyData applicant;
+    private final CourtApplicationPartyData respondent;
+    private final CourtApplicationPartyData subject;
     private final String type;
     private final Boolean requiresResponse;
     private final Boolean restrictCourtApplicationType;
@@ -16,13 +17,19 @@ public class CourtApplicationData {
     private final String applicationParticulars;
     private final UUID offenceId;
 
-    public CourtApplicationData(UUID id, UUID linkedCaseId, UUID parentApplicationId, ApplicantRespondentData applicant, ApplicantRespondentData respondent, String type, Boolean requiresResponse,
+    public CourtApplicationData(UUID id, UUID linkedCaseId, UUID parentApplicationId, CourtApplicationPartyData applicant, CourtApplicationPartyData respondent, String type, Boolean requiresResponse,
+                                final Boolean restrictCourtApplicationType, final Boolean restrictFromCourtList, final Boolean isEjected, final String applicationParticulars, final UUID offenceId) {
+        this(id, linkedCaseId, parentApplicationId, applicant, respondent, null, type, requiresResponse, restrictCourtApplicationType, restrictFromCourtList, isEjected, applicationParticulars, offenceId);
+    }
+
+    public CourtApplicationData(UUID id, UUID linkedCaseId, UUID parentApplicationId, CourtApplicationPartyData applicant, CourtApplicationPartyData respondent, CourtApplicationPartyData subject, String type, Boolean requiresResponse,
                                 final Boolean restrictCourtApplicationType, final Boolean restrictFromCourtList, final Boolean isEjected, final String applicationParticulars, final UUID offenceId) {
         this.id = id;
         this.linkedCaseId = linkedCaseId;
         this.parentApplicationId = parentApplicationId;
         this.applicant = applicant;
         this.respondent = respondent;
+        this.subject = subject;
         this.type = type;
         this.requiresResponse = requiresResponse;
         this.restrictCourtApplicationType = restrictCourtApplicationType;
@@ -44,7 +51,7 @@ public class CourtApplicationData {
         return parentApplicationId;
     }
 
-    public ApplicantRespondentData getApplicant() {
+    public CourtApplicationPartyData getApplicant() {
         return applicant;
     }
 
@@ -52,8 +59,12 @@ public class CourtApplicationData {
         return isEjected;
     }
 
-    public ApplicantRespondentData getRespondent() {
+    public CourtApplicationPartyData getRespondent() {
         return respondent;
+    }
+
+    public CourtApplicationPartyData getSubject() {
+        return subject;
     }
 
     public String getType() {

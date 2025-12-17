@@ -1,21 +1,5 @@
 package uk.gov.moj.cpp.listing.it;
 
-import com.google.common.io.Resources;
-import io.restassured.http.Header;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
-import uk.gov.justice.services.integrationtest.utils.jms.JmsResourceManagementExtension;
-import uk.gov.justice.services.test.utils.core.rest.RestClient;
-import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-import java.io.IOException;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.reset;
 import static com.google.common.io.Resources.getResource;
 import static java.nio.charset.Charset.defaultCharset;
@@ -24,8 +8,9 @@ import static java.util.stream.Collectors.joining;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
-import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProsecutionCaseByCaseUrn;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProgressionNotesStubs;
+import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProsecutionCaseByCaseUrn;
+import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupUsersGroupPermissionsForApplicationTypeStub;
 
 import uk.gov.justice.services.integrationtest.utils.jms.JmsResourceManagementExtension;
 import uk.gov.justice.services.test.utils.core.rest.RestClient;
@@ -36,7 +21,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.jupiter.api.AfterEach;
 
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
@@ -46,7 +30,6 @@ import io.restassured.http.Header;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupUsersGroupPermissionsForApplicationTypeStub;
 
 @SuppressWarnings("WeakerAccess")
 @ExtendWith(JmsResourceManagementExtension.class)

@@ -98,6 +98,11 @@ public class SittingsJsonGenerator {
                     .add("applicationReference", courtApplicationDetails.getApplicationReference())
                     .add("applicant", courtApplicationDetails.getApplicant())
                     .add("respondents", courtApplicationDetails.getRespondents());
+
+            // Add subject only if it is present
+            if (courtApplicationDetails.getSubject() != null) {
+                hearingJsonBuilder.add("subject", courtApplicationDetails.getSubject());
+            }
         }
 
         return hearingJsonBuilder.build();

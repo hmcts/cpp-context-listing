@@ -25,7 +25,6 @@ import javax.json.JsonObject;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -43,6 +42,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 public class RangeSearchConverterTest {
 
     private static final UUID COURT_SITE_A_COURT_ROOM_ID = UUID.fromString("5e1c7b54-3bca-3a37-a85a-84510f115b76");
+    private static final UUID COURT_SITE_A_COURT_ROOM_ID_3 = UUID.fromString("3e1c7b54-3bca-3a37-a85a-84510f115b33");
     private static final UUID COURT_SITE_B_COURT_ROOM_ID = UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39");
     private static final UUID UNKNOWN_COURT_SITE_COURT_ROOM_ID = UUID.fromString("6508af42-e4d4-396d-a752-d676ebd38f6d");
 
@@ -59,7 +59,9 @@ public class RangeSearchConverterTest {
                 Arguments.of("courtlist/2.fixed-date-multiple-sittings/range-search-response.json", "courtlist/2.fixed-date-multiple-sittings/expected-court-list.json", null),
                 Arguments.of("courtlist/3.wc-unallocated/range-search-response.json", "courtlist/3.wc-unallocated/expected-court-list.json", null),
                 Arguments.of("courtlist/4.case-with-multiple-days/range-search-response.json", "courtlist/4.case-with-multiple-days/expected-court-list.json", "2019-12-27"),
-                Arguments.of("courtlist/5.case-with-multiple-days-ste/range-search-response.json", "courtlist/5.case-with-multiple-days-ste/expected-court-list.json", "2020-02-21")
+                Arguments.of("courtlist/5.case-with-multiple-days-ste/range-search-response.json", "courtlist/5.case-with-multiple-days-ste/expected-court-list.json", "2020-02-21"),
+                Arguments.of("courtlist/6.case-with-application-with-existing-hearing/range-search-response.json", "courtlist/6.case-with-application-with-existing-hearing/expected-court-list.json", "2020-02-21"),
+                Arguments.of("courtlist/7.case-with-application-with-new-hearing/range-search-response.json", "courtlist/7.case-with-application-with-new-hearing/expected-court-list.json", "2020-02-21")
         );
     }
 
@@ -84,6 +86,7 @@ public class RangeSearchConverterTest {
 
         final Optional<CourtRoomMapping> courtRoom1 = courtRoom("A");
         final Optional<CourtRoomMapping> courtRoom2 = courtRoom("B");
+        final Optional<CourtRoomMapping> courtRoom3 = courtRoom("A");
 
         final LocalDate startDate = LocalDate.parse("2019-12-16");
         final String pEndDate = StringUtils.isNotBlank(endDate) ? endDate : StringUtils.EMPTY;
@@ -91,6 +94,7 @@ public class RangeSearchConverterTest {
         when(commonXhibitReferenceDataService.getCrestCourtSitesForCrownCourtCentre(courtCentreId)).thenReturn(courtSites);
         when(commonXhibitReferenceDataService.getCourtRoom(eq(courtCentreId), eq(COURT_SITE_A_COURT_ROOM_ID))).thenReturn(courtRoom1);
         when(commonXhibitReferenceDataService.getCourtRoom(eq(courtCentreId), eq(COURT_SITE_B_COURT_ROOM_ID))).thenReturn(courtRoom2);
+        when(commonXhibitReferenceDataService.getCourtRoom(eq(courtCentreId), eq(COURT_SITE_A_COURT_ROOM_ID_3))).thenReturn(courtRoom3);
         when(commonXhibitReferenceDataService.getCourtRoom(eq(courtCentreId), eq(UNKNOWN_COURT_SITE_COURT_ROOM_ID))).thenReturn(Optional.empty());
         when(commonXhibitReferenceDataService.getDefaultCrestCourtSiteCode(courtCentreId)).thenReturn("A");
 

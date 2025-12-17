@@ -88,5 +88,21 @@
         }
       }
     }
-  ]
+  ],
+  "subject": {
+    "id": "52ddbd0a-31db-4814-b052-aa3ba9afb800",
+    "personDetails": {
+      "firstName": "Subject",
+      "gender": "MALE",
+      "lastName": "Person",
+      "address": {
+        "address1": "Subject Street",
+        "address2": "Subject Town",
+        "address3": "Subject District",
+        "address4": "Subject City",
+        "address5": "Subject Country",
+        "postcode": "SUB 1EC"
+      }
+    }
+  }
 }

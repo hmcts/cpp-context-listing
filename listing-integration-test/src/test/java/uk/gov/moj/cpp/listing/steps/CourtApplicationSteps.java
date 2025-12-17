@@ -46,6 +46,7 @@ import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClien
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.AddCourtApplicationData;
+import uk.gov.moj.cpp.listing.steps.data.CourtApplicationPartyData;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationUpdateData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -330,6 +331,45 @@ public class CourtApplicationSteps extends AbstractIT {
                 .withAddress4(STRING.next())
                 .withAddress5(STRING.next())
                 .withPostcode(POSTCODE)
+                .build();
+    }
+
+    private CourtApplicationParty getApplicantParty(final CourtApplicationPartyData applicant) {
+        return CourtApplicationParty.courtApplicationParty()
+                .withId(applicant.getId())
+                .withPersonDetails(Person.person()
+                        .withFirstName(applicant.getFirstName())
+                        .withLastName(applicant.getLastName())
+                        .withGender(Gender.FEMALE)
+                        .withAddress(getAddress(applicant.getAddress()))
+                        .build())
+                .withSummonsRequired(false)
+                .withNotificationRequired(false)
+                .build();
+    }
+
+    private CourtApplicationParty getRespondentParty(final CourtApplicationPartyData respondent) {
+        return CourtApplicationParty.courtApplicationParty()
+                .withId(respondent.getId())
+                .withPersonDetails(Person.person()
+                        .withFirstName(respondent.getFirstName())
+                        .withLastName(respondent.getLastName())
+                        .withGender(Gender.MALE)
+                        .withAddress(getAddress(respondent.getAddress()))
+                        .build())
+                .withSummonsRequired(false)
+                .withNotificationRequired(false)
+                .build();
+    }
+
+    private Address getAddress(final uk.gov.moj.cpp.listing.domain.Address address) {
+        return Address.address()
+                .withAddress1(address.getAddress1())
+                .withAddress2(address.getAddress2().orElse(null))
+                .withAddress3(address.getAddress3().orElse(null))
+                .withAddress4(address.getAddress4().orElse(null))
+                .withAddress5(address.getAddress5().orElse(null))
+                .withPostcode(address.getPostcode().orElse(null))
                 .build();
     }
 }

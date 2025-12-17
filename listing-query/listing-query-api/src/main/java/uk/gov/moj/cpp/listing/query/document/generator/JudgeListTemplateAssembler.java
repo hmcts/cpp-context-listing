@@ -115,7 +115,7 @@ public class JudgeListTemplateAssembler {
 
         final JsonObject payload = envelope.payloadAsJsonObject();
 
-        final List<FlatHearing> allFlatHearings = FlatHearingsConverter.generateFlatHearingList(payload.getJsonArray(HEARINGS));
+        final List<FlatHearing> allFlatHearings = FlatHearingsConverter.generateFlatHearingListForJudgeList(payload.getJsonArray(HEARINGS));
 
 
         if (LOGGER.isDebugEnabled()) {

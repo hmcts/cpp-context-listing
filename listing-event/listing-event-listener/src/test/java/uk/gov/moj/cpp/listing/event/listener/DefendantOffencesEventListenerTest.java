@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
 import uk.gov.justice.core.courts.BailStatus;
+import uk.gov.justice.core.courts.CivilOffence;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.ListedCase;
@@ -30,6 +31,9 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+
+import javax.json.JsonObject;
+import javax.json.stream.JsonParser;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -137,6 +141,7 @@ public class DefendantOffencesEventListenerTest {
                                 .withWelshTitle(STRING.next())
                                 .withLegislation(STRING.next())
                                 .build())
+                        .withCivilOffence(CivilOffence.civilOffence().withIsExParte(true).build())
                         .build())
                 .build();
 
@@ -163,6 +168,8 @@ public class DefendantOffencesEventListenerTest {
         assertThat(newListedCase.get("shadowListed").asBoolean(), equalTo(testListedCase.getShadowListed()));
         assertThat(newListedCase.get("defendants").get(0).get("offences").get(0).get("shadowListed").asBoolean(),
                 equalTo(testListedCase.getDefendants().get(0).getOffences().get(0).getShadowListed()));
+        final boolean isExparte = newListedCase.get("defendants").get(0).get("offences").get(0).get("civilOffence").get("isExParte").asBoolean();
+        assertThat(isExparte, equalTo(testListedCase.getDefendants().get(0).getOffences().get(0).getCivilOffence().getIsExParte()));
         verify(hearingRepository).save(hearing);
     }
 
@@ -529,6 +536,7 @@ public class DefendantOffencesEventListenerTest {
                                         .withTitle(STRING.next())
                                         .build())
                                 .withShadowListed(true)
+                                .withCivilOffence(CivilOffence.civilOffence().withIsExParte(true).build())
                                 .build()))
                         .build()))
                 .withId(CASE_ID)
