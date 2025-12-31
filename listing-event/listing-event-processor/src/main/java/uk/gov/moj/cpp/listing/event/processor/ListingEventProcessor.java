@@ -90,6 +90,7 @@ import uk.gov.moj.cpp.listing.event.processor.util.HearingObjectsListingToCoreCo
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -1330,7 +1331,12 @@ public class ListingEventProcessor {
         final List<ProsecutionCase> prosecutionCases = courtDomainHearing.getProsecutionCases();
 
         // Create caseUrns from ProsecutionCase list
-        List<CaseUrns> caseUrns = prosecutionCases.stream()
+        List<CaseUrns> caseUrns = Optional.ofNullable(prosecutionCases)
+                .orElse(Collections.emptyList())
+                .stream()
+                .filter(prosecutionCase -> nonNull(prosecutionCase)
+                        && nonNull(prosecutionCase.getProsecutionCaseIdentifier())
+                        && nonNull(prosecutionCase.getProsecutionCaseIdentifier().getCaseURN()))
                 .map(prosecutionCase -> CaseUrns.caseUrns()
                         .withCaseURN(prosecutionCase.getProsecutionCaseIdentifier().getCaseURN())
                         .build()).toList();
