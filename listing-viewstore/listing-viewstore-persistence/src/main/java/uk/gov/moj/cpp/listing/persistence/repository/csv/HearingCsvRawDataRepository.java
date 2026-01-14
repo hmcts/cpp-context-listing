@@ -1,14 +1,7 @@
 package uk.gov.moj.cpp.listing.persistence.repository.csv;
 
-import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.justice.services.jdbc.persistence.ViewStoreJdbcDataSourceProvider;
-import uk.gov.moj.cpp.listing.persistence.entity.csv.HearingCsvRawData;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.HearingJdbcException;
+import static java.lang.String.format;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -19,9 +12,17 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.sql.DataSource;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
-import static java.lang.String.format;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.jdbc.persistence.ViewStoreJdbcDataSourceProvider;
+import uk.gov.moj.cpp.listing.persistence.entity.csv.HearingCsvRawData;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.HearingJdbcException;
 
 /**
  * Repository for retrieving raw hearing data from the database.
@@ -42,7 +43,7 @@ public class HearingCsvRawDataRepository {
 
     @PostConstruct
     protected void initialiseDataSource() {
-        dataSource = viewStoreJdbcDataSourceProvider.getDataSource();
+        this.dataSource = this.viewStoreJdbcDataSourceProvider.getDataSource();
     }
 
     /**
@@ -93,11 +94,16 @@ public class HearingCsvRawDataRepository {
             WHERE
                 h.jurisdiction_type = 'CROWN'
                 AND h.court_centre_id = CAST(? AS uuid)
-                AND (h.start_date < h.end_date OR h.week_commencing_start_date < h.week_commencing_end_date)
-                AND (
-                    (hd.hearing_date BETWEEN ? AND ?) OR 
-                    (h.week_commencing_start_date BETWEEN ? AND ?) OR 
-                    (h.week_commencing_end_date BETWEEN ? AND ?)
+                AND
+                (
+                  (h.allocated = true and h.start_date < h.end_date and hd.hearing_date BETWEEN ? AND ?)
+                OR (
+                    h.allocated = false and h.estimated_minutes >= 360 and
+                    ( (h.start_date BETWEEN ? AND ?) OR
+                    (h.end_date BETWEEN ? AND ?) OR
+                    (h.week_commencing_start_date BETWEEN ? AND ?) OR
+                    (h.week_commencing_end_date BETWEEN ? AND ?))
+                    )
                 )
             ORDER BY
                 hd.start_time,
@@ -109,7 +115,7 @@ public class HearingCsvRawDataRepository {
             LIMIT ?
             """;
 
-        try (final Connection viewstoreConnection = dataSource.getConnection(); 
+        try (final Connection viewstoreConnection = this.dataSource.getConnection(); 
              final PreparedStatement ps = viewstoreConnection.prepareStatement(query)) {
             
             final Timestamp startDateTimestamp = Timestamp.valueOf(startDate.atStartOfDay());
@@ -122,7 +128,11 @@ public class HearingCsvRawDataRepository {
             ps.setTimestamp(5, endDateTimestamp);
             ps.setTimestamp(6, startDateTimestamp);
             ps.setTimestamp(7, endDateTimestamp);
-            ps.setLong(8, pageSize);
+            ps.setTimestamp(8, startDateTimestamp);
+            ps.setTimestamp(9, endDateTimestamp);
+            ps.setTimestamp(10, startDateTimestamp);
+            ps.setTimestamp(11, endDateTimestamp);
+            ps.setLong(12, pageSize);
 
             try (final ResultSet resultSet = ps.executeQuery()) {
                 while (resultSet.next()) {
@@ -140,13 +150,13 @@ public class HearingCsvRawDataRepository {
                     
                     // Parse JSON properties
                     String propertiesJson = resultSet.getString("properties");
-                    propertyAsJsonNode(propertiesJson, rawData);
+                    this.propertyAsJsonNode(propertiesJson, rawData);
 
                     rawResults.add(rawData);
                 }
             }
         } catch (SQLException e) {
-            throw new HearingJdbcException(format(EXCEPTION_WHILE_EXECUTING_QUERY, query), e);
+            throw new HearingJdbcException(String.format(HearingCsvRawDataRepository.EXCEPTION_WHILE_EXECUTING_QUERY, query), e);
         }
 
         return rawResults;
@@ -155,7 +165,7 @@ public class HearingCsvRawDataRepository {
     private void propertyAsJsonNode(final String propertiesJson, final HearingCsvRawData rawData) {
         if (propertiesJson != null && !propertiesJson.trim().isEmpty()) {
             try {
-                JsonNode properties = objectMapperProducer.objectMapper().readTree(propertiesJson);
+                JsonNode properties = this.objectMapperProducer.objectMapper().readTree(propertiesJson);
                 rawData.setProperties(properties);
             } catch (IOException e) {
                 throw new HearingJdbcException("Failed to parse hearing properties JSON", e);
