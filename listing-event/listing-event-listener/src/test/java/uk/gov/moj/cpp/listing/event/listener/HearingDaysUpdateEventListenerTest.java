@@ -2,12 +2,15 @@ package uk.gov.moj.cpp.listing.event.listener;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
 import static java.util.List.of;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -155,6 +158,206 @@ public class HearingDaysUpdateEventListenerTest {
 
         verify(hearingRepository, times(1)).save(hearing);
         verify(hearingSearchSyncService, times(1)).sync(hearingId);
+    }
+
+    @Test
+    public void testHearingDaysWithoutCourtCentreCorrectedWithNullCourtRoomId() throws JsonProcessingException {
+        // Given: courtRoomId is null, which was causing the NullPointerException
+        final UUID courtCentreId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final List<HearingDay> hearingDays = hearingDays(true, null);
+        
+        // Create hearing days with null courtRoomId
+        HearingDaysWithoutCourtCentreCorrected corrected = HearingDaysWithoutCourtCentreCorrected.hearingDaysWithoutCourtCentreCorrected()
+                .withHearingDays(hearingDays.stream().map(hearingDay -> hearingDay().withValuesFrom(hearingDay)
+                        .withCourtRoomId(null)  // null courtRoomId
+                        .withCourtCentreId(courtCentreId).build()).collect(toList()))
+                .withId(hearingId)
+                .build();
+        final Envelope<HearingDaysWithoutCourtCentreCorrected> listenerEnvelope = envelopeFrom(
+                metadataWithRandomUUID("listing.events.hearing-days-without-court-centre-corrected"),
+                corrected);
+        
+        // Create NonDefaultDay without roomId and courtCentreId to trigger the correction logic
+        final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
+                .withRoomId(null)
+                .withCourtCentreId(null)
+                .withStartTime(ZonedDateTime.now())
+                .withDuration(30)
+                .withSession("MORNING")
+                .build();
+        final List<NonDefaultDay> nonDefaultDays = new ArrayList<>();
+        nonDefaultDays.add(nonDefaultDay);
+        final uk.gov.justice.listing.events.Hearing dbHearingPayload = uk.gov.justice.listing.events.Hearing.hearing().withId(hearingId)
+                .withNonDefaultDays(nonDefaultDays).withHearingDays(hearingDays).build();
+        
+        when(hearingRepository.findBy(hearingId)).thenReturn(hearing);
+        final JsonNode t = objectMapper.valueToTree(dbHearingPayload);
+        when(hearing.getProperties()).thenReturn(t);
+        
+        // When: Should not throw NullPointerException
+        hearingDaysUpdateEventListener.hearingDaysWithoutCourtCentreCorrected(listenerEnvelope);
+        
+        // Then: Verify the method completed successfully and properties were set
+        verify(hearing).setProperties(hearingDaysCaptor.capture());
+        final JsonNode properties = hearingDaysCaptor.getValue();
+        assertThat(properties.toString(), isJson(allOf(
+                withJsonPath("$.hearingDays", hasSize(1)),
+                withJsonPath("$.nonDefaultDays", hasSize(1)),
+                // roomId should not be present since courtRoomId was null
+                withoutJsonPath("$.nonDefaultDays[0].roomId"),
+                // courtCentreId should be set from the event
+                withJsonPath("$.nonDefaultDays[0].courtCentreId", is(courtCentreId.toString()))
+        )));
+    }
+
+    @Test
+    public void testHearingDaysWithoutCourtCentreCorrectedWithNullCourtCentreId() throws JsonProcessingException {
+        // Given: courtCentreId is null
+        final UUID courtRoomId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final List<HearingDay> hearingDays = hearingDays(true, null);
+        
+        HearingDaysWithoutCourtCentreCorrected corrected = HearingDaysWithoutCourtCentreCorrected.hearingDaysWithoutCourtCentreCorrected()
+                .withHearingDays(hearingDays.stream().map(hearingDay -> hearingDay().withValuesFrom(hearingDay)
+                        .withCourtRoomId(courtRoomId)
+                        .withCourtCentreId(null)  // null courtCentreId
+                        .build()).collect(toList()))
+                .withId(hearingId)
+                .build();
+        final Envelope<HearingDaysWithoutCourtCentreCorrected> listenerEnvelope = envelopeFrom(
+                metadataWithRandomUUID("listing.events.hearing-days-without-court-centre-corrected"),
+                corrected);
+        
+        final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
+                .withRoomId(null)
+                .withCourtCentreId(null)
+                .withStartTime(ZonedDateTime.now())
+                .withDuration(30)
+                .withSession("MORNING")
+                .build();
+        final List<NonDefaultDay> nonDefaultDays = new ArrayList<>();
+        nonDefaultDays.add(nonDefaultDay);
+        final uk.gov.justice.listing.events.Hearing dbHearingPayload = uk.gov.justice.listing.events.Hearing.hearing().withId(hearingId)
+                .withNonDefaultDays(nonDefaultDays).withHearingDays(hearingDays).build();
+        
+        when(hearingRepository.findBy(hearingId)).thenReturn(hearing);
+        final JsonNode t = objectMapper.valueToTree(dbHearingPayload);
+        when(hearing.getProperties()).thenReturn(t);
+        
+        // When: Should not throw NullPointerException
+        hearingDaysUpdateEventListener.hearingDaysWithoutCourtCentreCorrected(listenerEnvelope);
+        
+        // Then: Verify the method completed successfully
+        verify(hearing).setProperties(hearingDaysCaptor.capture());
+        final JsonNode properties = hearingDaysCaptor.getValue();
+        assertThat(properties.toString(), isJson(allOf(
+                withJsonPath("$.hearingDays", hasSize(1)),
+                withJsonPath("$.nonDefaultDays", hasSize(1)),
+                // roomId should be set from courtRoomId
+                withJsonPath("$.nonDefaultDays[0].roomId", is(courtRoomId.toString())),
+                // courtCentreId should not be present since it was null in the event
+                withoutJsonPath("$.nonDefaultDays[0].courtCentreId")
+        )));
+    }
+
+    @Test
+    public void testHearingDaysWithoutCourtCentreCorrectedWithBothNull() throws JsonProcessingException {
+        // Given: Both courtRoomId and courtCentreId are null
+        final UUID hearingId = randomUUID();
+        final List<HearingDay> hearingDays = hearingDays(true, null);
+        
+        HearingDaysWithoutCourtCentreCorrected corrected = HearingDaysWithoutCourtCentreCorrected.hearingDaysWithoutCourtCentreCorrected()
+                .withHearingDays(hearingDays.stream().map(hearingDay -> hearingDay().withValuesFrom(hearingDay)
+                        .withCourtRoomId(null)  // null courtRoomId
+                        .withCourtCentreId(null)  // null courtCentreId
+                        .build()).collect(toList()))
+                .withId(hearingId)
+                .build();
+        final Envelope<HearingDaysWithoutCourtCentreCorrected> listenerEnvelope = envelopeFrom(
+                metadataWithRandomUUID("listing.events.hearing-days-without-court-centre-corrected"),
+                corrected);
+        
+        final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
+                .withRoomId(null)
+                .withCourtCentreId(null)
+                .withStartTime(ZonedDateTime.now())
+                .withDuration(30)
+                .withSession("MORNING")
+                .build();
+        final List<NonDefaultDay> nonDefaultDays = new ArrayList<>();
+        nonDefaultDays.add(nonDefaultDay);
+        final uk.gov.justice.listing.events.Hearing dbHearingPayload = uk.gov.justice.listing.events.Hearing.hearing().withId(hearingId)
+                .withNonDefaultDays(nonDefaultDays).withHearingDays(hearingDays).build();
+        
+        when(hearingRepository.findBy(hearingId)).thenReturn(hearing);
+        final JsonNode t = objectMapper.valueToTree(dbHearingPayload);
+        when(hearing.getProperties()).thenReturn(t);
+        
+        // When: Should not throw NullPointerException
+        hearingDaysUpdateEventListener.hearingDaysWithoutCourtCentreCorrected(listenerEnvelope);
+        
+        // Then: Verify the method completed successfully with both values as null
+        verify(hearing).setProperties(hearingDaysCaptor.capture());
+        final JsonNode properties = hearingDaysCaptor.getValue();
+        assertThat(properties.toString(), isJson(allOf(
+                withJsonPath("$.hearingDays", hasSize(1)),
+                withJsonPath("$.nonDefaultDays", hasSize(1)),
+                // Both roomId and courtCentreId should not be present since both were null
+                withoutJsonPath("$.nonDefaultDays[0].roomId"),
+                withoutJsonPath("$.nonDefaultDays[0].courtCentreId")
+        )));
+    }
+
+    @Test
+    public void testHearingDaysWithoutCourtCentreCorrectedWithExistingNonDefaultDayValues() throws JsonProcessingException {
+        // Given: NonDefaultDay already has roomId and courtCentreId, they should be preserved
+        final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
+        final UUID existingRoomId = randomUUID();
+        final String existingCourtCentreId = randomUUID().toString();
+        final UUID hearingId = randomUUID();
+        final List<HearingDay> hearingDays = hearingDays(true, null);
+        
+        HearingDaysWithoutCourtCentreCorrected corrected = HearingDaysWithoutCourtCentreCorrected.hearingDaysWithoutCourtCentreCorrected()
+                .withHearingDays(hearingDays.stream().map(hearingDay -> hearingDay().withValuesFrom(hearingDay)
+                        .withCourtRoomId(courtRoomId)
+                        .withCourtCentreId(courtCentreId).build()).collect(toList()))
+                .withId(hearingId)
+                .build();
+        final Envelope<HearingDaysWithoutCourtCentreCorrected> listenerEnvelope = envelopeFrom(
+                metadataWithRandomUUID("listing.events.hearing-days-without-court-centre-corrected"),
+                corrected);
+        
+        // NonDefaultDay already has values, they should not be overwritten
+        final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
+                .withRoomId(existingRoomId.toString())
+                .withCourtCentreId(existingCourtCentreId)
+                .withStartTime(ZonedDateTime.now())
+                .withDuration(30)
+                .withSession("MORNING")
+                .build();
+        final List<NonDefaultDay> nonDefaultDays = new ArrayList<>();
+        nonDefaultDays.add(nonDefaultDay);
+        final uk.gov.justice.listing.events.Hearing dbHearingPayload = uk.gov.justice.listing.events.Hearing.hearing().withId(hearingId)
+                .withNonDefaultDays(nonDefaultDays).withHearingDays(hearingDays).build();
+        
+        when(hearingRepository.findBy(hearingId)).thenReturn(hearing);
+        final JsonNode t = objectMapper.valueToTree(dbHearingPayload);
+        when(hearing.getProperties()).thenReturn(t);
+        
+        // When
+        hearingDaysUpdateEventListener.hearingDaysWithoutCourtCentreCorrected(listenerEnvelope);
+        
+        // Then: Existing values should be preserved
+        verify(hearing).setProperties(hearingDaysCaptor.capture());
+        final JsonNode properties = hearingDaysCaptor.getValue();
+        assertThat(properties.toString(), isJson(allOf(
+                withJsonPath("$.hearingDays", hasSize(1)),
+                withJsonPath("$.nonDefaultDays", hasSize(1)),
+                withJsonPath("$.nonDefaultDays[0].roomId", is(existingRoomId.toString())),
+                withJsonPath("$.nonDefaultDays[0].courtCentreId", is(existingCourtCentreId))
+        )));
     }
 
     private List<HearingDay> hearingDays(boolean isAnyCancelled, UUID courtScheduleId) {

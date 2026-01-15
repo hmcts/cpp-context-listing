@@ -240,7 +240,7 @@ public class AlphabeticalCourtListService {
             if (isNotBlank(defendant.getString(ORGANISATION_NAME, EMPTY))) {
                 return upperCase(defendant.getString(ORGANISATION_NAME));
             } else {
-                return upperCase(defendant.getString(LAST_NAME)) + "," + SPACE + defendant.getString(FIRST_NAME);
+                return upperCase(defendant.getString(LAST_NAME, EMPTY)) + "," + SPACE + defendant.getString(FIRST_NAME, EMPTY);
             }
         }
     }
