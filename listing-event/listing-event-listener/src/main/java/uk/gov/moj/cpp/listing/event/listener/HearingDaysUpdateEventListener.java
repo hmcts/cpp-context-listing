@@ -156,11 +156,30 @@ public class HearingDaysUpdateEventListener {
     }
 
     private void correctNonDefaultDaysWithoutCourtCentre(final UUID courtCentreId, final UUID courtRoomId, final uk.gov.justice.listing.events.Hearing dbHearing) {
-        dbHearing.getNonDefaultDays().replaceAll(nonDefaultDay -> NonDefaultDay.nonDefaultDay()
-                .withValuesFrom(nonDefaultDay)
-                .withRoomId(null == nonDefaultDay.getRoomId() ? courtRoomId.toString() : nonDefaultDay.getRoomId())
-                .withCourtCentreId(null == nonDefaultDay.getCourtCentreId() ? courtCentreId.toString() : nonDefaultDay.getCourtCentreId())
-                .build());
+        dbHearing.getNonDefaultDays().replaceAll(nonDefaultDay -> {
+            final String roomId = determineRoomId(nonDefaultDay, courtRoomId);
+            final String courtCentreIdValue = determineCourtCentreId(nonDefaultDay, courtCentreId);
+            
+            return NonDefaultDay.nonDefaultDay()
+                    .withValuesFrom(nonDefaultDay)
+                    .withRoomId(roomId)
+                    .withCourtCentreId(courtCentreIdValue)
+                    .build();
+        });
+    }
+
+    private String determineRoomId(final NonDefaultDay nonDefaultDay, final UUID courtRoomId) {
+        if (nonDefaultDay.getRoomId() != null) {
+            return nonDefaultDay.getRoomId();
+        }
+        return nonNull(courtRoomId) ? courtRoomId.toString() : null;
+    }
+
+    private String determineCourtCentreId(final NonDefaultDay nonDefaultDay, final UUID courtCentreId) {
+        if (nonDefaultDay.getCourtCentreId() != null) {
+            return nonDefaultDay.getCourtCentreId();
+        }
+        return nonNull(courtCentreId) ? courtCentreId.toString() : null;
     }
 
     private static JsonObject jsonFromString(final String jsonObjectStr) {

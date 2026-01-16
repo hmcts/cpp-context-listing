@@ -99,7 +99,7 @@ class EjectCaseWithMagistrateCourtSlotsManagementIT extends AbstractIT {
         stubUpdateAvailableHearingSlotsService();
         final UUID courtCentreId = getRandomCourtCenterId();
         final UUID courtRoomUUID = getRandomCourtRoomId();
-        
+
         // Create future dates for the hearing
         final LocalDate futureHearingDate = now().plusDays(7); // 7 days in the future
         final ZonedDateTime futureHearingStartTime = of(futureHearingDate, of(10, 0), UTC); // 10:00 AM UTC

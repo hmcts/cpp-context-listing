@@ -131,6 +131,7 @@ public class PublishCourtListIT extends AbstractIT {
         final UUID courtCentreIdTwo = getRandomCourtCenterId(asList(courtCentreIdOne)); //fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
         final LocalDate startDate = LocalDate.now();
+        stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreIdOne, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
         stubGetAllCrownCourtCentres(courtCentreIdOne, courtCentreIdTwo);
         stubOrganisationUnit(courtCentreIdOne);
         stubGetReferenceDataCourtCentreById(courtCentreIdOne);

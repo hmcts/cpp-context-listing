@@ -96,7 +96,7 @@ public class HearingCsvRawDataRepository {
                 AND h.court_centre_id = CAST(? AS uuid)
                 AND
                 (
-                  (h.allocated = true and h.start_date < h.end_date and hd.hearing_date BETWEEN ? AND ?)
+                  ( (h.start_date < h.end_date or hd.duration_minutes >= 360) and hd.hearing_date BETWEEN ? AND ?)
                 OR (
                     h.allocated = false and h.estimated_minutes >= 360 and
                     ( (h.start_date BETWEEN ? AND ?) OR
