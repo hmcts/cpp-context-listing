@@ -4,7 +4,7 @@
     <parent>
         <artifactId>listing-command</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <version>17.103.136-cct-1981-SNAPSHOT</version>
+        <version>17.103.137-cct-1981-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
