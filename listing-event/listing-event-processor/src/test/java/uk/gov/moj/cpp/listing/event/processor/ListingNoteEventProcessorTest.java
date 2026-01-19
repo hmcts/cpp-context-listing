@@ -17,7 +17,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import org.junit.jupiter.api.Test;
@@ -60,7 +60,7 @@ public class ListingNoteEventProcessorTest {
     public void handlesNoteCreatedForListing() {
         String noteId = randomUUID().toString();
         String courtRoomId = randomUUID().toString();
-        final JsonObject payLoad = Json.createObjectBuilder()
+        final JsonObject payLoad = JsonObjects.createObjectBuilder()
                 .add(NOTE_ID, noteId)
                 .add(COURT_ROOM_ID, courtRoomId)
                 .add(HEARING_DATE, now().toString())
@@ -93,7 +93,7 @@ public class ListingNoteEventProcessorTest {
 
         //given
         UUID notedId = UUID.randomUUID();
-        final JsonObject payLoad = Json.createObjectBuilder()
+        final JsonObject payLoad = JsonObjects.createObjectBuilder()
                 .add("noteId", notedId.toString())
                 .add("noteDescription", "edited note")
                 .build();
@@ -116,7 +116,7 @@ public class ListingNoteEventProcessorTest {
 
     @Test
     public void handlesNoteDeletedForListing() {
-        final JsonObject payLoad = Json.createObjectBuilder()
+        final JsonObject payLoad = JsonObjects.createObjectBuilder()
                 .add("id", randomUUID().toString())
                 .build();
         envelope = JsonEnvelope.envelopeFrom(metadataWithRandomUUIDAndName(), payLoad);

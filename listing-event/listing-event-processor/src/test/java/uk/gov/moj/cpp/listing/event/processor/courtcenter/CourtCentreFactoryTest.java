@@ -13,7 +13,7 @@ import java.io.StringReader;
 import java.time.LocalTime;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import org.junit.jupiter.api.Test;
@@ -67,7 +67,7 @@ public class CourtCentreFactoryTest {
                 .replace("DEFAULT_START_TIME", defaultTime)
                 .replace("DEFAULT_DURATION_HOURS_MINS", defaultDurationHours)
                 .replace("COURT_CENTRE_ID", courtCentreId);
-        return Json.createReader(new StringReader(jsonString)).readObject();
+        return JsonObjects.createReader(new StringReader(jsonString)).readObject();
     }
 
 }

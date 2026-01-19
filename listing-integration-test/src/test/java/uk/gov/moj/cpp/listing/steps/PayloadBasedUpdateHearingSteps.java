@@ -10,8 +10,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParamsForPayloadIT;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
@@ -240,7 +240,7 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 MessageFormat.format(readConfig().getProperty("listing.search.hearings.by.allocated"), isAllocated));
 
-        final String response =  poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
+        final String response =  pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
         JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
         final JsonObject hearingJsonObject = (JsonObject)jsonObject.getJsonArray("hearings").get(0);
         assertThat(hearingJsonObject.getString("id"), is(values.hearingId));
@@ -264,7 +264,7 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 MessageFormat.format(readConfig().getProperty("listing.search.hearings.by.allocated"), true));
 
-        final String response =  poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
+        final String response =  pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
         JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
         final JsonObject hearingJsonObject = (JsonObject)jsonObject.getJsonArray("hearings").get(0);
         assertNotNull(hearingJsonObject.getJsonArray("judiciary"));
@@ -284,7 +284,7 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 MessageFormat.format(readConfig().getProperty("listing.search.hearings.by.allocated"), true));
 
-        final String response =  poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
+        final String response =  pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
         JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
         final JsonObject hearingJsonObject = (JsonObject)jsonObject.getJsonArray("hearings").get(0);
         String updatedCourtRoomId = hearingJsonObject.getString("courtRoomId");
@@ -307,7 +307,7 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 MessageFormat.format(readConfig().getProperty("listing.search.hearings.by.allocated"), expectedAllocated));
 
-        final String response =  poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
+        final String response =  pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
         JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
         final JsonObject hearingJsonObject = (JsonObject)jsonObject.getJsonArray("hearings").get(0);
         assertThat(hearingJsonObject.getString("id"), is(this.payloadValues.hearingId));

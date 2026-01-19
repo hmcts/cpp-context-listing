@@ -15,8 +15,8 @@ import java.util.UUID;
 
 import static java.text.MessageFormat.format;
 import static java.util.UUID.fromString;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -25,10 +25,10 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.*;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.getJsonObject;
 import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.getUUID;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
@@ -100,7 +100,8 @@ public class ListCourtHearingStepsSpi extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.hearings.by.allocated"), true));
 
-        final String response =  poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
+        final String response =  pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()).build())
+                .until(status().is(OK)).getPayload();
         JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
         final JsonObject hearingJsonObject = (JsonObject)jsonObject.getJsonArray("hearings").get(0);
 
@@ -120,7 +121,7 @@ public class ListCourtHearingStepsSpi extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.hearings.by.allocated"), false));
 
-        final String response =  poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
+        final String response =  pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
         JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
         final JsonObject hearingJsonObject = (JsonObject)jsonObject.getJsonArray("hearings").get(0);
 
@@ -139,7 +140,7 @@ public class ListCourtHearingStepsSpi extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.hearings.by.allocated"), false));
 
-        final String response =  poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
+        final String response =  pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
         JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
         final JsonObject hearingJsonObject = (JsonObject)jsonObject.getJsonArray("hearings").get(0);
         JsonArray listedCases = hearingJsonObject.getJsonArray("listedCases");

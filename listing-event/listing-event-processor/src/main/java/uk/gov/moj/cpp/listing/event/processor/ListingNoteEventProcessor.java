@@ -10,7 +10,7 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
@@ -43,7 +43,7 @@ public class ListingNoteEventProcessor {
 
         final CreatedListingNote createdListingNote = jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(), CreatedListingNote.class);
 
-        final JsonObject listingNoteCreatedPublicEventPayload = Json.createObjectBuilder()
+        final JsonObject listingNoteCreatedPublicEventPayload = JsonObjects.createObjectBuilder()
                 .add("id", createdListingNote.getId().toString())
                 .add("date", createdListingNote.getHearingDate())
                 .add("courtRoomId", createdListingNote.getCourtRoomId().toString())

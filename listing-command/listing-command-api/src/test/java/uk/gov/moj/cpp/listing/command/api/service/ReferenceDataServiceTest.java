@@ -20,7 +20,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -96,7 +96,7 @@ public class ReferenceDataServiceTest {
 
         when(enveloper.withMetadataFrom(any(), any())).thenReturn(jsonEnvelopeFunction);
         when(requester.request(command)).thenReturn(response);
-        when(response.payloadAsJsonObject()).thenReturn(Json.createObjectBuilder().build());
+        when(response.payloadAsJsonObject()).thenReturn(JsonObjects.createObjectBuilder().build());
         when(jsonObjectConverter.convert(any(), any())).thenReturn(organisationUnit);
 
         final OrganisationUnit responseOrganisationUnit = referenceDataService.getOrganizationUnitById(courtCentreId, command);

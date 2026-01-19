@@ -18,7 +18,7 @@ import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 
@@ -34,7 +34,7 @@ public class UsersGroupsService {
 
 
     public List<Permission> getUserPermissionForApplicationTypes(final Metadata metadata) {
-        final JsonObject getOrganisationForUserRequest = Json.createObjectBuilder()
+        final JsonObject getOrganisationForUserRequest = JsonObjects.createObjectBuilder()
                 .add(ACTION, ACCESS_TO_STANDALONE_APPLICATION)
                 .build();
         final MetadataBuilder metadataWithActionName = Envelope.metadataFrom(metadata).withName("usersgroups.is-logged-in-user-has-permission-for-action");

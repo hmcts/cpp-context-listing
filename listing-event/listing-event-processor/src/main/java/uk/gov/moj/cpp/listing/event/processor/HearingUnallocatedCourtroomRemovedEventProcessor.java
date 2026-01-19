@@ -10,7 +10,7 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
@@ -39,7 +39,7 @@ public class HearingUnallocatedCourtroomRemovedEventProcessor {
         final HearingUnallocatedCourtroomRemoved hearingUnallocatedCourtroomRemoved =
             jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(), HearingUnallocatedCourtroomRemoved.class);
 
-        final JsonObject hearingUnallocatedCourtroomRemovedPublicEventPayload = Json.createObjectBuilder()
+        final JsonObject hearingUnallocatedCourtroomRemovedPublicEventPayload = JsonObjects.createObjectBuilder()
                 .add("hearingId", hearingUnallocatedCourtroomRemoved.getHearingId().toString())
                 .add("estimatedMinutes", hearingUnallocatedCourtroomRemoved.getEstimatedMinutes())
                 .build();

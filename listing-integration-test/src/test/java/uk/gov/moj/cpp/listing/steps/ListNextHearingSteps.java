@@ -19,7 +19,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
@@ -29,6 +28,7 @@ import static uk.gov.moj.cpp.listing.endpoint.UnscheduledHearingsEndpoint.pollFo
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps.getJsonPathQueryForCaseReference;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps.getJsonPathQueryForDefendantLastName;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
@@ -104,7 +104,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
@@ -212,7 +212,7 @@ public class ListNextHearingSteps extends AbstractIT {
         final List<ProsecutionCase> prosecutionCases = buildProsecutionCases(nextHearing);
 
 
-        final JsonObject listNextHearingsJsonObject = Json.createObjectBuilder()
+        final JsonObject listNextHearingsJsonObject = JsonObjects.createObjectBuilder()
                 .add("hearingId", existedHearingId.toString())
                 .add("prosecutionCases", objectToJsonValueConverter.convert(prosecutionCases))
                 .build();
@@ -245,7 +245,7 @@ public class ListNextHearingSteps extends AbstractIT {
 
 
 
-        final JsonObject listNextHearingsJsonObject = Json.createObjectBuilder()
+        final JsonObject listNextHearingsJsonObject = JsonObjects.createObjectBuilder()
                 .add("hearings", objectToJsonValueConverter.convert(hearings))
                 .add("seedingHearing", objectToJsonValueConverter.convert(
                         SeedingHearing.seedingHearing()
@@ -265,7 +265,7 @@ public class ListNextHearingSteps extends AbstractIT {
         final String deleteNextHearingsUrl = String.format("%s/%s", getBaseUri(), format
                 (readConfig().getProperty(LISTING_API_DELETE_NEXT_HEARINGS), firstHearing.getId()));
 
-        final JsonObject deleteNextHearingsJsonObject = Json.createObjectBuilder()
+        final JsonObject deleteNextHearingsJsonObject = JsonObjects.createObjectBuilder()
                 .add("seedingHearing", objectToJsonValueConverter.convert(
                         SeedingHearing.seedingHearing()
                                 .withSeedingHearingId(firstHearing.getId())
@@ -315,7 +315,7 @@ public class ListNextHearingSteps extends AbstractIT {
                 buildUnscheduledHearingListingNeeds(nextHearing2));
 
 
-        final JsonObject listNextHearingsJsonObject = Json.createObjectBuilder()
+        final JsonObject listNextHearingsJsonObject = JsonObjects.createObjectBuilder()
                 .add("hearings", objectToJsonValueConverter.convert(hearings))
                 .add("seedingHearing", objectToJsonValueConverter.convert(
                         SeedingHearing.seedingHearing()
@@ -356,7 +356,7 @@ public class ListNextHearingSteps extends AbstractIT {
         final List<ProsecutionCase> prosecutionCases = buildProsecutionCases(nextHearing);
 
 
-        final JsonObject listNextHearingsJsonObject = Json.createObjectBuilder()
+        final JsonObject listNextHearingsJsonObject = JsonObjects.createObjectBuilder()
                 .add("prosecutionCases", objectToJsonValueConverter.convert(prosecutionCases))
                 .add("seedingHearing", objectToJsonValueConverter.convert(
                         SeedingHearing.seedingHearing()
@@ -427,7 +427,7 @@ public class ListNextHearingSteps extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), existedHearingsData.getHearingData().get(0).getCourtCentreId(), true));
         final String hearingId = existedHearingsData.getHearingData().get(0).getId().toString();
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(
@@ -442,7 +442,7 @@ public class ListNextHearingSteps extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), existedHearingsData.getHearingData().get(0).getCourtCentreId(), true));
         final String hearingId = existedHearingsData.getHearingData().get(0).getId().toString();
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(
@@ -456,7 +456,7 @@ public class ListNextHearingSteps extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), existedHearingsData.getHearingData().get(0).getCourtCentreId(), true));
         final String hearingId = existedHearingsData.getHearingData().get(0).getId().toString();
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(

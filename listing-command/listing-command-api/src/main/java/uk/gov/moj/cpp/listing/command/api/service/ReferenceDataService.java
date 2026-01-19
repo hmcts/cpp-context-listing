@@ -2,7 +2,7 @@ package uk.gov.moj.cpp.listing.command.api.service;
 
 
 import static java.util.Objects.nonNull;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 
@@ -19,7 +19,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import org.slf4j.Logger;
@@ -89,7 +89,7 @@ public class ReferenceDataService {
 
     public boolean getPoliceFlagForProsecutorId(final JsonEnvelope jsonEnvelope,
                                                 final String prosecutorId) {
-        final JsonObject ouCodeQueryParameter = Json.createObjectBuilder()
+        final JsonObject ouCodeQueryParameter = JsonObjects.createObjectBuilder()
                 .add("id", prosecutorId)
                 .build();
         LOGGER.info("'referencedata.query.prosecutor' request with prosecutorId {}", prosecutorId);

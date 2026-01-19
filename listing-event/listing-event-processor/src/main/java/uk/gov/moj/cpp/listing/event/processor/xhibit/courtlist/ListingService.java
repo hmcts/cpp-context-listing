@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;

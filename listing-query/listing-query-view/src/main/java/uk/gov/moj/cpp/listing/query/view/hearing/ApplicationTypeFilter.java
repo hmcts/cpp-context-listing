@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -72,7 +72,7 @@ public class ApplicationTypeFilter {
                                 .orElse(true) // No restriction if no permission found
                         )
                 )
-                .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add)
+                .collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add)
                 .build();
     }
 

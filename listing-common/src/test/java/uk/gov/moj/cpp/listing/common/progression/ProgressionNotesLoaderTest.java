@@ -16,7 +16,7 @@ import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -57,15 +57,15 @@ class ProgressionNotesLoaderTest {
         applicationId = randomUUID();
         now = ZonedDateTime.now();
         
-        caseNotesResponse = Json.createObjectBuilder()
-                .add("caseNotes", Json.createArrayBuilder()
-                        .add(Json.createObjectBuilder().add("note", "Test case note").add("isPinned", true))
+        caseNotesResponse = JsonObjects.createObjectBuilder()
+                .add("caseNotes", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("note", "Test case note").add("isPinned", true))
                 )
                 .build();
         
-        applicationNotesResponse = Json.createObjectBuilder()
-                .add("applicationNotes", Json.createArrayBuilder()
-                        .add(Json.createObjectBuilder().add("note", "Test application note").add("isPinned", false))
+        applicationNotesResponse = JsonObjects.createObjectBuilder()
+                .add("applicationNotes", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("note", "Test application note").add("isPinned", false))
                 )
                 .build();
         

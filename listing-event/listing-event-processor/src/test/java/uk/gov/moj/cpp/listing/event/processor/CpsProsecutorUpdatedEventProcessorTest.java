@@ -3,8 +3,8 @@ package uk.gov.moj.cpp.listing.event.processor;
 import static com.jayway.jsonassert.impl.matcher.IsCollectionWithSize.hasSize;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -22,7 +22,7 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,9 +54,9 @@ public class CpsProsecutorUpdatedEventProcessorTest {
     public void shouldUpdateProsecutionCaseWithAssociatedHearings() {
 
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("public.progression.events.cps-prosecutor-updated"),
-                Json.createObjectBuilder()
+                JsonObjects.createObjectBuilder()
                         .add("prosecutionCaseId", "34d07e81-9770-4d23-af6f-84f1d7571bd3")
-                        .add("hearingIds", Json.createArrayBuilder()
+                        .add("hearingIds", JsonObjects.createArrayBuilder()
                                 .add("a8448a33-68ab-4b9b-84c2-59cee4fe36f4")
                                 .add("095d7412-ba76-4a15-942d-566d3aeae7c9")
                                 .add("095d7412-ba76-4a15-942d-566d3aeae7c8")
@@ -66,7 +66,7 @@ public class CpsProsecutorUpdatedEventProcessorTest {
                         .add("prosecutionAuthorityReference", "test prosecutionAuthorityReference")
                         .add("prosecutionAuthorityCode", "test prosecutionAuthorityCode")
                         .add("prosecutionAuthorityName", "test prosecutionAuthorityName")
-                        .add("address", Json.createObjectBuilder()
+                        .add("address", JsonObjects.createObjectBuilder()
                                 .add("address1", "41 Manhattan House")
                                 .add("postcode", "MK9 2BQ")
                                 .build())
@@ -105,15 +105,15 @@ public class CpsProsecutorUpdatedEventProcessorTest {
     public void shouldUpdateProsecutionCaseWithoutAssociatedHearings() {
 
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("public.progression.events.cps-prosecutor-updated"),
-                Json.createObjectBuilder()
+                JsonObjects.createObjectBuilder()
                         .add("prosecutionCaseId", "34d07e81-9770-4d23-af6f-84f1d7571bd3")
-                        .add("hearingIds", Json.createArrayBuilder().build())
+                        .add("hearingIds", JsonObjects.createArrayBuilder().build())
                         .add("caseURN", "test Case URN")
                         .add("prosecutionAuthorityId", "test prosecutionAuthorityId")
                         .add("prosecutionAuthorityReference", "test prosecutionAuthorityReference")
                         .add("prosecutionAuthorityCode", "test prosecutionAuthorityCode")
                         .add("prosecutionAuthorityName", "test prosecutionAuthorityName")
-                        .add("address", Json.createObjectBuilder()
+                        .add("address", JsonObjects.createObjectBuilder()
                                 .add("address1", "41 Manhattan House")
                                 .add("postcode", "MK9 2BQ")
                                 .build())

@@ -10,9 +10,10 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.test.utils.core.http.BaseUriProvider.getBaseUri;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.POLL_INTERVAL;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.TIMEOUT_IN_MILLIS;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithOverbookedSlots;
@@ -26,6 +27,7 @@ import uk.gov.justice.services.test.utils.core.rest.RestClient;
 import uk.gov.moj.cpp.listing.steps.NotesSteps;
 import uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 
@@ -145,7 +147,7 @@ class HearingSlotsIT extends AbstractIT {
         stubGetAvailableHearingSlotsWithOverbookedSlots(true);
         listAllStubMappings();
         final RequestParams requestParams = getRequestParams(queryString);
-        final ResponseData responseData = poll(requestParams).until(status().is(OK),
+        final ResponseData responseData = pollWithDefaults(requestParams).until(status().is(OK),
                 payload().isJson(allOf(
                         withJsonPath("$.results", is(446)),
                         withJsonPath("$.pageCount", is(23)),
@@ -183,7 +185,7 @@ class HearingSlotsIT extends AbstractIT {
         stubGetAvailableHearingSlotsWithOverbookedSlots(false);
         listAllStubMappings();
         final RequestParams requestParams = getRequestParams(queryString);
-        final ResponseData responseData = poll(requestParams).until(status().is(OK),
+        final ResponseData responseData = pollWithDefaults(requestParams).until(status().is(OK),
                 payload().isJson(allOf(
                         withJsonPath("$.results", is(0)),
                         withJsonPath("$.pageCount", is(0)),

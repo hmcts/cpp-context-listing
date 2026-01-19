@@ -10,7 +10,6 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.test.utils.core.http.BaseUriProvider.getBaseUri;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
@@ -130,7 +129,7 @@ public class RangeSearchQueryForMagistratesIT extends AbstractIT {
         params.put(EXACT_HEARING_START_DATETIME, instant.toString());
         final String queryString2 = getQueryString(params);
         final RequestParams requestParams2 = getCourtSchedulerRequestParams(queryString2);
-        final ResponseData resp2 = poll(requestParams2).until(status().is(OK),
+        final ResponseData resp2 = pollWithDefaults(requestParams2).until(status().is(OK),
                 payload().isJson(allOf(
                         withJsonPath("$.results", is(1)),
                         withJsonPath("$.pageCount", is(1)),

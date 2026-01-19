@@ -5,7 +5,7 @@ import static java.time.ZonedDateTime.parse;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.function.Function.identity;
-import static javax.json.Json.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static uk.gov.moj.cpp.listing.common.service.HearingIdsResponse.EMPTY_HEARING_ID_RESPONSE;
@@ -30,7 +30,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -392,11 +392,11 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
 
     private JsonObject jsonFromString(final String jsonObjectStr) {
         JsonObject object;
-        try (JsonReader jsonReader = Json.createReader(new StringReader(jsonObjectStr))) {
+        try (JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonObjectStr))) {
             object = jsonReader.readObject();
         }
 
-        final JsonObjectBuilder builder = Json.createObjectBuilder();
+        final JsonObjectBuilder builder = JsonObjects.createObjectBuilder();
         object.forEach((key, value) -> {
             if (!object.isNull(key)) {
                 builder.add(key, object.get(key));
@@ -413,7 +413,7 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
     }
 
     private JsonObject enrich(final JsonObject source, final String judiciaryKey, final JsonArray judiciaryValue) {
-        final JsonObjectBuilder builder = Json.createObjectBuilder();
+        final JsonObjectBuilder builder = JsonObjects.createObjectBuilder();
         builder.add(judiciaryKey, judiciaryValue);
         source.forEach((key, value) -> {
             if (!source.isNull(key)) {

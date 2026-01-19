@@ -12,7 +12,6 @@ import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 import static uk.gov.justice.core.courts.LaaReference.laaReference;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDelayForJms;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;

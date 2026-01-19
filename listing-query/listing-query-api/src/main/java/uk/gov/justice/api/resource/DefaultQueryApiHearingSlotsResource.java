@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -65,7 +65,7 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                 map(e -> (JsonObject) e).
                 map(p -> p.getJsonArray("hearingSlots")).
                 map(this::convertToNotes).
-                orElse(Json.createArrayBuilder().build());
+                orElse(JsonObjects.createArrayBuilder().build());
 
         final JsonObjectBuilder builder = buildJsonBuilderFromJsonObject((JsonObject) response.getEntity());
         builder.add("notes", notes);
@@ -115,7 +115,7 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
     }
 
     private static JsonObjectBuilder buildJsonBuilderFromJsonObject(final JsonObject origin) {
-        final JsonObjectBuilder builder = Json.createObjectBuilder();
+        final JsonObjectBuilder builder = JsonObjects.createObjectBuilder();
         origin.entrySet().forEach( entry -> builder.add(entry.getKey(), entry.getValue()));
         return builder;
     }

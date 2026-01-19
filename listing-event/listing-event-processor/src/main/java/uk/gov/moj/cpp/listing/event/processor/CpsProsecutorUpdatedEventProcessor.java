@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.event.processor;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import org.slf4j.Logger;
@@ -42,7 +42,7 @@ public class CpsProsecutorUpdatedEventProcessor {
         }
 
         final JsonObject inputPayload = event.payloadAsJsonObject();
-        final JsonObject queryPayload = Json.createObjectBuilder().add("caseId", inputPayload.get(PROSECUTION_CASE_ID)).build();
+        final JsonObject queryPayload = JsonObjects.createObjectBuilder().add("caseId", inputPayload.get(PROSECUTION_CASE_ID)).build();
 
         final JsonEnvelope queryResponse = hearingQueryView.searchAllocatedAndUnallocatedHearings(envelopeFrom(metadataFrom(event.metadata())
                 .withName("listing.allocated.and.unallocated.hearings"), queryPayload));
@@ -57,9 +57,9 @@ public class CpsProsecutorUpdatedEventProcessor {
                 LOGGER.info("public.progression.events.cps-prosecutor-updated event received without hearings in listing {}", event.toObfuscatedDebugString());
             }
         }else{
-            final JsonArrayBuilder builder = Json.createArrayBuilder();
+            final JsonArrayBuilder builder = JsonObjects.createArrayBuilder();
             hearingIds.forEach(builder::add);
-            final JsonObject outputPayload = Json.createObjectBuilder().add(PROSECUTION_CASE_ID, inputPayload.get(PROSECUTION_CASE_ID))
+            final JsonObject outputPayload = JsonObjects.createObjectBuilder().add(PROSECUTION_CASE_ID, inputPayload.get(PROSECUTION_CASE_ID))
                     .add("prosecutionAuthorityId", inputPayload.get("prosecutionAuthorityId"))
                     .add("prosecutionAuthorityCode", inputPayload.get("prosecutionAuthorityCode"))
                     .add(HEARINGS_ID, builder.build())

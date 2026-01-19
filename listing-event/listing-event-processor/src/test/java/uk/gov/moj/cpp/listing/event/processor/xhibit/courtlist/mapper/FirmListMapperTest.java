@@ -22,7 +22,7 @@ import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils;
 
 import java.util.List;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
@@ -252,7 +252,7 @@ public class FirmListMapperTest {
     }
 
     private JsonObjectBuilder crestCourtSite() {
-        return Json.createObjectBuilder()
+        return JsonObjects.createObjectBuilder()
                 .add("crestCourtSiteId", "002")
                 .add("crestCourtSiteName", "MOCKCOURTNAME2")
                 .add("courtType", "CROWN_COURT");

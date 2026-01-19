@@ -10,7 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -35,11 +35,11 @@ class HearingResultedEventProcessorTest {
 
     @Test
     void shouldSendCommandWhenHearingIsNotSJP() {
-        JsonObject hearingJson = Json.createObjectBuilder()
+        JsonObject hearingJson = JsonObjects.createObjectBuilder()
                 .add("id", "hearing-id-123")
                 .add("isSJPHearing", false)
                 .build();
-        JsonObject eventPayload = Json.createObjectBuilder()
+        JsonObject eventPayload = JsonObjects.createObjectBuilder()
                 .add("hearing", hearingJson)
                 .build();
 
@@ -57,11 +57,11 @@ class HearingResultedEventProcessorTest {
 
     @Test
     void shouldNotSendCommandWhenHearingIsSJP() {
-        JsonObject hearingJson = Json.createObjectBuilder()
+        JsonObject hearingJson = JsonObjects.createObjectBuilder()
                 .add("id", "hearing-id-123")
                 .add("isSJPHearing", true)
                 .build();
-        JsonObject eventPayload = Json.createObjectBuilder()
+        JsonObject eventPayload = JsonObjects.createObjectBuilder()
                 .add("hearing", hearingJson)
                 .build();
 

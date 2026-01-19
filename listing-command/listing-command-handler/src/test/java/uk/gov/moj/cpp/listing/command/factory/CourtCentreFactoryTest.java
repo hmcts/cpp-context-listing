@@ -14,7 +14,7 @@ import java.time.LocalTime;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import org.junit.jupiter.api.Test;
@@ -103,7 +103,7 @@ public class CourtCentreFactoryTest {
                 .replace("COURT_ROOM_UUID_1", COURT_ROOM_UUID_1.toString())
                 .replace("COURT_ROOM_UUID_2", COURT_ROOM_UUID_2.toString());
 
-        return Json.createReader(new StringReader(jsonString)).readObject();
+        return JsonObjects.createReader(new StringReader(jsonString)).readObject();
     }
 
 }

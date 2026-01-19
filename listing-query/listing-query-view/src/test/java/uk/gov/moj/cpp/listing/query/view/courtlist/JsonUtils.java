@@ -8,7 +8,7 @@ import uk.gov.justice.services.messaging.JsonEnvelopeWriter;
 import java.io.IOException;
 import java.io.StringReader;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
@@ -22,7 +22,7 @@ public class JsonUtils {
 
         final String jsonString = Resources.toString(Resources.getResource(filePath), defaultCharset());
 
-        try (final JsonReader jsonReader = Json.createReader(new StringReader(jsonString))) {
+        try (final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString))) {
             return jsonReader.readObject();
         }
     }

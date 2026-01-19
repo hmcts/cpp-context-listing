@@ -1,12 +1,16 @@
 package uk.gov.moj.cpp.listing.steps;
 
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.equalTo;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 
 import org.apache.http.HttpStatus;
@@ -258,9 +262,8 @@ public class PayloadBasedListNextHearingSteps extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 MessageFormat.format(readConfig().getProperty("listing.search.hearings.by.allocated"), isAllocated));
 
-        final String response =  poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
-        JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
-        assertThat(jsonObject.getJsonArray("hearings").size(), is(numberOfHearings)); //temporary. need to expand assertions
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(status().is(OK),payload().isJson(withJsonPath("$.hearings.length()", equalTo(2))));
 
         // For now, we'll log the verification request
         PayloadBasedListNextHearingSteps.LOGGER.info("Verification would check next hearing ID: {} in court centre: {}", values.hearingId, values.courtCentreId);

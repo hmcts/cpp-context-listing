@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.steps;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.awaitility.Awaitility.await;
@@ -19,7 +19,6 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
@@ -43,8 +42,9 @@ import java.io.StringReader;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ThreadPoolExecutor;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.ws.rs.core.Response;
@@ -181,6 +181,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     public void verifySentPublishedCourtListHearingDataFirmWithSittingTagPresent() throws Exception {
 
         verifyCourtHeaderFirmList();
+        Thread.sleep(1000);
         final String sentXml = getSentXml();
         XpathEngine simpleXpathEngine = XMLUnit.newXpathEngine();
         assertEquals("4", simpleXpathEngine.evaluate("count(/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']/*[local-name()='Sittings'])", XMLUnit.buildControlDocument(sentXml)));
@@ -379,9 +380,9 @@ public class PublishCourtListSteps extends CommonHearingSteps {
 
     private String getSentXml() {
         Optional<String> sentXml = await()
-                .pollDelay(0, MILLISECONDS)
-                .pollInterval(1000, MILLISECONDS)
-                .atMost(60000, MILLISECONDS)
+                .pollDelay(100, MILLISECONDS)
+                .pollInterval(200, MILLISECONDS)
+                .atMost(15000, MILLISECONDS)
                 .until(WebDavStub::getSentXml, Optional::isPresent);
 
         return replaceIndeterminantElements(sentXml.get());
@@ -406,7 +407,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
 
     private JsonObject jsonFromString(final String jsonObjectStr) {
 
-        JsonReader jsonReader = Json.createReader(new StringReader(jsonObjectStr));
+        JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonObjectStr));
         JsonObject object = jsonReader.readObject();
         jsonReader.close();
 
@@ -430,7 +431,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
 
         final String searchCourtListUrl = String.format("%s/%s", getBaseUri(), queryPart);
 
-        poll(requestParams(searchCourtListUrl, MEDIA_TYPE_QUERY_COURT_LIST_STATUS)
+        pollWithDefaults(requestParams(searchCourtListUrl, MEDIA_TYPE_QUERY_COURT_LIST_STATUS)
                 .withHeader(USER_ID, getLoggedInUser()))
                 .until(
                         status().is(OK),

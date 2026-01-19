@@ -1,8 +1,8 @@
 package uk.gov.moj.cpp.listing.event.processor.azure.util;
 
 import static java.util.UUID.randomUUID;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -21,7 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -106,7 +106,7 @@ public class ListingReferenceDataServiceTest {
     }
 
     private JsonObject getPayloadForCourtRooms(String id) {
-        return Json.createObjectBuilder()
+        return JsonObjects.createObjectBuilder()
                 .add("id", id)
                 .add("oucode", "B01LY00")
                 .add("oucodeL3Name", "South Western (Lavender Hill)")

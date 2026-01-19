@@ -231,8 +231,7 @@ public class ListingNoteIT extends AbstractIT {
 
     @AfterEach
     void cleanUp() {
-        viewStoreCleaner.cleanViewStoreTables("listing_notes");
-        viewStoreCleaner.cleanViewStoreTables("hearing");
+        viewStoreCleaner.cleanViewStoreTables("listing_notes","hearing");
     }
 
     private void verifyNoHearingDataAndNoNoteData(List<HearingData> hearingData) {

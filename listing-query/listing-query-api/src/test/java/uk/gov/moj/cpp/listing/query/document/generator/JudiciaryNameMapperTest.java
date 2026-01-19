@@ -4,7 +4,7 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
@@ -54,7 +54,7 @@ public class JudiciaryNameMapperTest {
     }
 
     private JsonObject createJudiciaryWithJudiciaryTitlePrefixOnly() {
-        final JsonObjectBuilder judiciaryBuilder = Json.createObjectBuilder();
+        final JsonObjectBuilder judiciaryBuilder = JsonObjects.createObjectBuilder();
         judiciaryBuilder.add(SURNAME, "AMAKYE");
         judiciaryBuilder.add(TITLE_JUDICIAL_PREFIX, "Her Honour Judge");
         judiciaryBuilder.add(TITLE_PREFIX, "Mrs");
@@ -63,7 +63,7 @@ public class JudiciaryNameMapperTest {
     }
 
     private JsonObject createJudiciaryWithTitlePrefix() {
-        final JsonObjectBuilder judiciaryBuilder = Json.createObjectBuilder();
+        final JsonObjectBuilder judiciaryBuilder = JsonObjects.createObjectBuilder();
         judiciaryBuilder.add(SURNAME, "Barnes");
         judiciaryBuilder.add(TITLE_SUFFIX, "JP");
         judiciaryBuilder.add(TITLE_PREFIX, "Mrs");
@@ -72,7 +72,7 @@ public class JudiciaryNameMapperTest {
     }
 
     private JsonObject createJudiciaryWithJudicialTitlePrefixAndSuffix() {
-        final JsonObjectBuilder judiciaryBuilder = Json.createObjectBuilder();
+        final JsonObjectBuilder judiciaryBuilder = JsonObjects.createObjectBuilder();
         judiciaryBuilder.add(SURNAME, "MCCLEAN");
         judiciaryBuilder.add(TITLE_SUFFIX, "Esq");
         judiciaryBuilder.add(TITLE_PREFIX, "Mrs");
@@ -82,7 +82,7 @@ public class JudiciaryNameMapperTest {
     }
 
     private JsonObject createJudiciaryWithJudicialTitleOnly() {
-        final JsonObjectBuilder judiciaryBuilder = Json.createObjectBuilder();
+        final JsonObjectBuilder judiciaryBuilder = JsonObjects.createObjectBuilder();
         judiciaryBuilder.add(SURNAME, "Fine");
         judiciaryBuilder.add(TITLE_JUDICIAL_PREFIX, "District Judge");
         judiciaryBuilder.add(ID, randomUUID().toString());

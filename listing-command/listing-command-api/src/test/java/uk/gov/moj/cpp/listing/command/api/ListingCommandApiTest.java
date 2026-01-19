@@ -4,8 +4,8 @@ import static java.util.Arrays.asList;
 import static java.util.Optional.of;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createReader;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -83,7 +83,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
@@ -394,7 +394,7 @@ public class ListingCommandApiTest {
         final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
 
         final UUID caseId = randomUUID();
-        final JsonObject prosecutionCases = Json.createObjectBuilder().add("caseId", caseId.toString()).build();
+        final JsonObject prosecutionCases = JsonObjects.createObjectBuilder().add("caseId", caseId.toString()).build();
         final JsonArray prosecutionCasesArray = createArrayBuilder().add(prosecutionCases).build();
         given(payload.getJsonArray("prosecutionCases")).willReturn(prosecutionCasesArray);
         given(jsonObjectConverter.convert(prosecutionCases, ProsecutionCases.class)).willReturn(ProsecutionCases.prosecutionCases().build());
@@ -509,7 +509,7 @@ public class ListingCommandApiTest {
 
         // Mock the object to JSON conversion
         given(objectToJsonValueConverter.convert(any(UpdateHearingForListingEnriched.class)))
-                .willReturn(Json.createObjectBuilder().add("test", "value").build());
+                .willReturn(JsonObjects.createObjectBuilder().add("test", "value").build());
 
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
         
@@ -753,7 +753,7 @@ public class ListingCommandApiTest {
         final ArgumentCaptor<DefaultEnvelope> senderJsonEnvelopeCaptor = forClass(DefaultEnvelope.class);
         final UUID seedHearingId = randomUUID();
         final String sittingDay = LocalDate.now().toString();
-        final JsonObject seedingHearing = Json.createObjectBuilder()
+        final JsonObject seedingHearing = JsonObjects.createObjectBuilder()
                 .add("seedHearingId", seedHearingId.toString())
                 .add("sittingDay", sittingDay)
                 .add("jurisdictionType", "CROWN")

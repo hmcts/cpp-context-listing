@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
 import static java.util.Objects.nonNull;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -34,7 +34,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
@@ -246,7 +246,7 @@ public class NextHearingProcessor {
 
 
     private JsonObject buildListNextHearingCommand(final NextHearingRequested event) {
-        final JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
+        final JsonObjectBuilder jsonObjectBuilder = JsonObjects.createObjectBuilder();
         addStringToJsonObjectNullSafe(jsonObjectBuilder, "adjournedFromDate", Optional.ofNullable(event.getAdjournedFromDate()));
         if (CollectionUtils.isNotEmpty(event.getCourtCentreDetails())) {
             addJsonValueToJsonObjectNullSafe(jsonObjectBuilder, "courtCentresDetails", listToJsonArrayConverter.convert(event.getCourtCentreDetails()));
@@ -261,7 +261,7 @@ public class NextHearingProcessor {
     }
 
     private JsonObject buildListUnscheduledNextHearingCommand(final UnscheduledNextHearingRequested event) {
-        final JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
+        final JsonObjectBuilder jsonObjectBuilder = JsonObjects.createObjectBuilder();
 
         if (CollectionUtils.isNotEmpty(event.getCourtCentreDetails())) {
             addJsonValueToJsonObjectNullSafe(jsonObjectBuilder, "courtCentresDetails", listToJsonArrayConverter.convert(event.getCourtCentreDetails()));
