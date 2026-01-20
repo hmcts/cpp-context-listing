@@ -10,6 +10,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.POLL_INTERVAL;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
@@ -161,7 +162,7 @@ public class CacheRefDataCourtroomIT extends AbstractIT {
     private static UUID findCourtRoomInDbById(UUID roomId) {
         final String queryTemplate = "select id from cache_refdata_courtroom where id = ?";
         final AtomicReference<UUID> courtRoomId = new AtomicReference<>();
-        await().pollInterval(ofSeconds(5)).atMost(30, SECONDS).until(() -> {
+        await().pollInterval(POLL_INTERVAL).atMost(15, SECONDS).until(() -> {
             try (final Connection sjpEventStoreConnection = 
                          testJdbcConnectionProvider.getViewStoreConnection("listing");
                  final PreparedStatement statement =
@@ -186,7 +187,7 @@ public class CacheRefDataCourtroomIT extends AbstractIT {
 
     private static boolean checkCourtRoomIdExists(UUID roomId) {
         final String queryTemplate = "select id from cache_refdata_courtroom where id = ?";
-        await().pollInterval(ofSeconds(5)).atMost(30, SECONDS).until(() -> {
+        await().pollInterval(POLL_INTERVAL).atMost(15, SECONDS).until(() -> {
             try (final Connection sjpEventStoreConnection =
                          testJdbcConnectionProvider.getViewStoreConnection("listing");
                  final PreparedStatement statement =

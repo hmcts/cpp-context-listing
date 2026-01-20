@@ -21,6 +21,7 @@ import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.POLL_INTERVAL;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithForPublishingCourtListsWithoutReportingRestriction;
@@ -181,7 +182,6 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     public void verifySentPublishedCourtListHearingDataFirmWithSittingTagPresent() throws Exception {
 
         verifyCourtHeaderFirmList();
-        Thread.sleep(1000);
         final String sentXml = getSentXml();
         XpathEngine simpleXpathEngine = XMLUnit.newXpathEngine();
         assertEquals("4", simpleXpathEngine.evaluate("count(/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']/*[local-name()='Sittings'])", XMLUnit.buildControlDocument(sentXml)));
@@ -380,9 +380,8 @@ public class PublishCourtListSteps extends CommonHearingSteps {
 
     private String getSentXml() {
         Optional<String> sentXml = await()
-                .pollDelay(100, MILLISECONDS)
-                .pollInterval(200, MILLISECONDS)
-                .atMost(15000, MILLISECONDS)
+                .pollInterval(POLL_INTERVAL)
+                .atMost(5000, MILLISECONDS)
                 .until(WebDavStub::getSentXml, Optional::isPresent);
 
         return replaceIndeterminantElements(sentXml.get());

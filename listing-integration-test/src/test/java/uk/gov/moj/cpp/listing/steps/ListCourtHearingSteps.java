@@ -60,6 +60,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
+import static uk.gov.moj.cpp.listing.utils.Utilities.sleepToBeRefactored;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorizedUserToQueryCaseByDefendantAndHearingDate;
 
 import uk.gov.justice.core.courts.Address;
@@ -472,6 +473,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                 withJsonPath(caseReferenceFilter),
                 withJsonPath(lastNameFilter)
         });
+        sleepToBeRefactored();
     }
 
     /**
