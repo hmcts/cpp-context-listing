@@ -51,7 +51,8 @@ public class AbstractIT {
 
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws InterruptedException {
+        Thread.sleep(200);
         reset();
         setupAsAuthorisedUser(USER_ID_VALUE);
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased();

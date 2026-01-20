@@ -263,7 +263,7 @@ public class PayloadBasedListNextHearingSteps extends AbstractIT {
                 MessageFormat.format(readConfig().getProperty("listing.search.hearings.by.allocated"), isAllocated));
 
         pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
-                .until(status().is(OK),payload().isJson(withJsonPath("$.hearings.length()", equalTo(2))));
+                .until(status().is(OK),payload().isJson(withJsonPath("$.hearings.length()", equalTo(numberOfHearings))));
 
         // For now, we'll log the verification request
         PayloadBasedListNextHearingSteps.LOGGER.info("Verification would check next hearing ID: {} in court centre: {}", values.hearingId, values.courtCentreId);
