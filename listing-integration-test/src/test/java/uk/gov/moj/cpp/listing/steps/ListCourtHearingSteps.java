@@ -33,7 +33,6 @@ import static uk.gov.justice.services.common.converter.LocalDates.to;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
-import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDelayForJms;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.getJsonObject;
@@ -47,6 +46,7 @@ import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingBy
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDelayForJms;
 import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByOrganisationDefendant;
 import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByPersonDefendant;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
@@ -109,8 +109,8 @@ import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClien
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
-import uk.gov.moj.cpp.listing.steps.data.CourtApplicationPartyData;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
+import uk.gov.moj.cpp.listing.steps.data.CourtApplicationPartyData;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -596,7 +596,9 @@ public class ListCourtHearingSteps extends AbstractIT {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.any-allocation.search.hearings"), hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseReference(), isAllocated));
+                format(readConfig().getProperty("listing.any-allocation.search.hearings"),
+                        hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseReference(),
+                        hearingData.getHearingStartDate().toString()));
 
         verifyHearingListedFromWithApiUrl(hearingData, searchHearingUrl);
     }

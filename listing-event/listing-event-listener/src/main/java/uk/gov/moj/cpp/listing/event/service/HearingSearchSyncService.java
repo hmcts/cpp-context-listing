@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -158,7 +159,8 @@ public class HearingSearchSyncService {
             }
             final JsonNode caseReference = caseIdentifierNode.get("caseReference");
             if (caseReference != null) {
-                caseIdentifier.setCaseReference(caseReference.asText());
+                final String caseReferenceValue = caseReference.asText();
+                caseIdentifier.setCaseReference(caseReferenceValue == null ? null : caseReferenceValue.toUpperCase(Locale.ENGLISH));
             }
 
             result.add(getListedCase(listedCasesNode, hearing, i, caseId, caseIdentifier, isEjected));
@@ -245,7 +247,8 @@ public class HearingSearchSyncService {
             courtApplications.setApplicationId(UUID.fromString(reader.getText("id")));
             courtApplications.setApplicationType(reader.getText("applicationType"));
             courtApplications.setParentApplicationId(reader.getUUID("parentApplicationId"));
-            courtApplications.setApplicationReference(reader.getText("applicationReference"));
+            final String applicationReference = reader.getText("applicationReference");
+            courtApplications.setApplicationReference(applicationReference == null ? null : applicationReference.toUpperCase(Locale.ENGLISH));
             courtApplications.setApplicationParticulars(reader.getText("applicationParticulars"));
             courtApplications.setHearing(hearing);
             courtApplications.setEjected(reader.getBoolean(IS_EJECTED));
