@@ -39,11 +39,9 @@ import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
-import uk.gov.moj.cpp.listing.query.view.dto.csv.HearingCsvData;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.entity.query.CaseByDefendant;
@@ -60,6 +58,7 @@ import uk.gov.moj.cpp.listing.query.view.dto.ListedCase;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory;
 import uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria;
+import uk.gov.moj.cpp.listing.query.view.dto.csv.HearingCsvData;
 import uk.gov.moj.cpp.listing.query.view.hearing.ApplicationTypeFilter;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
@@ -465,10 +464,12 @@ public class HearingQueryView {
     @Handles("listing.any-allocation.search.hearings")
     public Envelope<JsonObject> searchHearingsWithAnyAllocationState(final JsonEnvelope query) {
         final String caseUrnQueryParam = query.payloadAsJsonObject().getString(CASE_URN).toUpperCase();
+        final String startDateQueryParam = query.payloadAsJsonObject().getString(START_DATE);
+        final LocalDate startDate = LocalDate.parse(startDateQueryParam);
 
-        LOGGER.info("\n Query params - caseUrn : {} ", caseUrnQueryParam);
+        LOGGER.info("\n Query params - caseUrn : {}, startDate: {} ", caseUrnQueryParam, startDate);
 
-        final List<Hearing> hearings = repository.findHearingsByCaseUrnAndAnyAllocationState(caseUrnQueryParam);
+        final List<Hearing> hearings = repository.findHearingsByCaseUrnAndAnyAllocationState(caseUrnQueryParam, startDate);
 
         return Enveloper.envelop(createObjectBuilder()
                 .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))

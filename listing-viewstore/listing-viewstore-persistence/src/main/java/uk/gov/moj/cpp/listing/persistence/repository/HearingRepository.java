@@ -848,7 +848,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
      * @param caseUrn
      * @return
      */
-    @Query(value = "select distinct h.id, h.properties, " +
+    @Query(value = "select h.id, " +
+            "h.properties, " +
             "h.court_centre_id, " +
             "h.court_room_id, " +
             "h.type_id, " +
@@ -864,14 +865,15 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "1 as totalCount, " +
             "h.is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
             " from hearing h " +
-            " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
-            " LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
-            " where (h.unscheduled is null or h.unscheduled = false) " +
-            "  and ( (?1 is null or UPPER(cast(lc.case_reference as varchar)) = cast(?1 as varchar)) " +
-            "           or (?1 is null or UPPER(cast(ca.application_reference as varchar)) = cast(?1 as varchar))" +
-            "      ) "
+            " where h.unscheduled is not true " +
+            "  and (h.start_date >= :startdate or h.week_commencing_start_date >= :startdate) " +
+            "  and ( " +
+            "    exists (select 1 from listed_cases lc where lc.hearing_id = h.id and lc.case_reference = :caseorapplicationreference) " +
+            "    or exists (select 1 from court_applications ca where ca.hearing_id = h.id and ca.application_reference = :caseorapplicationreference) " +
+            "  )"
             , isNative = true)
-    public abstract List<Hearing> findHearingsByCaseUrnAndAnyAllocationState(String caseUrn);
+    public abstract List<Hearing> findHearingsByCaseUrnAndAnyAllocationState(@QueryParam("caseorapplicationreference") String caseUrn,
+                                                                             @QueryParam("startdate") LocalDate startDate);
 
     /**
      * @param caseUrn

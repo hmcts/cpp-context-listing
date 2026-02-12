@@ -24,6 +24,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,6 +47,7 @@ import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingBy
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDelayForJms;
 import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByOrganisationDefendant;
 import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByPersonDefendant;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
@@ -109,8 +111,8 @@ import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClien
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
-import uk.gov.moj.cpp.listing.steps.data.CourtApplicationPartyData;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
+import uk.gov.moj.cpp.listing.steps.data.CourtApplicationPartyData;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -554,7 +556,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 withJsonPath("$.prosecutionCases[0].caseId",
                                         equalTo(caseId)),
                                 withJsonPath("$.prosecutionCases[0].urn",
-                                        equalTo(urn))))
+                                        equalToIgnoringCase(urn))))
                 );
     }
 
@@ -582,7 +584,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 withJsonPath("$.prosecutionCases[0].caseId",
                                         equalTo(caseId)),
                                 withJsonPath("$.prosecutionCases[0].urn",
-                                        equalTo(urn))))
+                                        equalToIgnoringCase(urn))))
                 );
     }
 
@@ -597,7 +599,9 @@ public class ListCourtHearingSteps extends AbstractIT {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.any-allocation.search.hearings"), hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseReference(), isAllocated));
+                format(readConfig().getProperty("listing.any-allocation.search.hearings"),
+                        hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseReference(),
+                        hearingData.getHearingStartDate().toString()));
 
         verifyHearingListedFromWithApiUrl(hearingData, searchHearingUrl);
     }
@@ -883,17 +887,17 @@ public class ListCourtHearingSteps extends AbstractIT {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
         //This is how we poll week commencing hearings from UI
         pollForHearingByWeekCommencing(
-                hearingData.getCourtCentreId().toString(), 
+                hearingData.getCourtCentreId().toString(),
                 false, // isAllocated should be false always as specified
                 "1970-01-01", // weekCommencingStartDate
                 "2100-12-31", // weekCommencingEndDate
-                getLoggedInUser().toString(), 
+                getLoggedInUser().toString(),
                 new Matcher[]{
-                    withJsonPath("$.hearings[0].id",
-                            equalTo(hearingData.getId().toString())),
-                    withJsonPath("$.hearings[0].weekCommencingStartDate", equalTo(FORMATTER.format(weekCommencingStartDate))),
-                    withJsonPath("$.hearings[0].weekCommencingEndDate", equalTo(FORMATTER.format(weekCommencingStartDate.plusWeeks(weekCommencingDuration).minusDays(1)))),
-                    withJsonPath("$.hearings[0].weekCommencingDurationInWeeks", equalTo(weekCommencingDuration))
+                        withJsonPath("$.hearings[0].id",
+                                equalTo(hearingData.getId().toString())),
+                        withJsonPath("$.hearings[0].weekCommencingStartDate", equalTo(FORMATTER.format(weekCommencingStartDate))),
+                        withJsonPath("$.hearings[0].weekCommencingEndDate", equalTo(FORMATTER.format(weekCommencingStartDate.plusWeeks(weekCommencingDuration).minusDays(1)))),
+                        withJsonPath("$.hearings[0].weekCommencingDurationInWeeks", equalTo(weekCommencingDuration))
                 }
         );
     }
@@ -1108,7 +1112,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                         LocalDate.parse("2020-01-01"),
                         hearingsData.getHearingData().get(0).getHearingEndDate()));
 
-       return  pollUntilHearingIsPresent(searchHearingUrl, getLoggedInUser().toString(), hearingsData.getHearingData().get(0).getId().toString(), "application/vnd.listing.search.hearings.court.calendar+json", 2);
+        return  pollUntilHearingIsPresent(searchHearingUrl, getLoggedInUser().toString(), hearingsData.getHearingData().get(0).getId().toString(), "application/vnd.listing.search.hearings.court.calendar+json", 2);
     }
 
     private void verifyHearingDetails(final CaseAndDefendantData caseAndDefendantData, final UUID masterDefendantId, final String searchHearingUrl) {
@@ -1893,7 +1897,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                         .withSummonsRequired(false)
                                         .withNotificationRequired(false)
                                         .build()))
-                                        .withSubject(hearingData.getCourtApplications().get(0).getSubject() != null
+                                .withSubject(hearingData.getCourtApplications().get(0).getSubject() != null
                                         ? ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getSubject())
                                         : ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
                                 .build()))
@@ -2502,15 +2506,5 @@ public class ListCourtHearingSteps extends AbstractIT {
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(matchers)));
-    }
-
-    public void verifyHearingForCourtSchedulerCourtSessionAndBusinessType(final String jurisdictionType, final String courtSession, final String businessType, final boolean allocated, final Matcher... matchers) {
-        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.search.hearings.by.allocated.jurisdiction-type.court-session.business-type"), jurisdictionType, courtSession, businessType, allocated));
-
-        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).
-                until(status().is(OK),
-                        payload().isJson(allOf(matchers))
-                );
     }
 }

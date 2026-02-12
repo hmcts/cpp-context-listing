@@ -62,10 +62,10 @@ import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-import uk.gov.moj.cpp.listing.persistence.enums.CsvRecordType;
 import uk.gov.moj.cpp.listing.persistence.entity.ListedCases;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.entity.query.CaseByDefendant;
+import uk.gov.moj.cpp.listing.persistence.enums.CsvRecordType;
 import uk.gov.moj.cpp.listing.persistence.repository.CaseByDefendantRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtApplicationRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
@@ -807,8 +807,9 @@ public class HearingQueryViewTest {
 
         final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
         final JsonArray hearingsJsonArray = hearingsJsonArray();
+        final LocalDate startDate = LocalDate.now();
 
-        when(hearingRepository.findHearingsByCaseUrnAndAnyAllocationState("CASEURNVALUE"))
+        when(hearingRepository.findHearingsByCaseUrnAndAnyAllocationState("CASEURNVALUE", startDate))
                 .thenReturn(hearingsJson);
         when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
                 .thenReturn(hearingsJsonArray);
@@ -816,6 +817,7 @@ public class HearingQueryViewTest {
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
                 createObjectBuilder()
                         .add(CASE_URN, "caseUrnValue")
+                        .add(START_DATE_QUERY_PARAMETER, startDate.toString())
                         .build());
 
         final Envelope<JsonObject> results = hearingsQueryView.searchHearingsWithAnyAllocationState(query);
@@ -826,7 +828,7 @@ public class HearingQueryViewTest {
                                 withJsonPath("$.hearings[0].hello", equalTo("world"))
                         ))
                 ));
-        verify(hearingRepository).findHearingsByCaseUrnAndAnyAllocationState(eq("CASEURNVALUE"));
+        verify(hearingRepository).findHearingsByCaseUrnAndAnyAllocationState(eq("CASEURNVALUE"), eq(startDate));
         verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
     }
 
