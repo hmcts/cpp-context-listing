@@ -2,6 +2,14 @@
 
 This document describes the coding standards and patterns to follow when writing or modifying integration tests. These rules are derived from the migration performed on the `dev/PEG-Framework-D-perf` branch relative to `team/sni8349`.
 
+# Latest Integration Test Timing 
+[INFO] --- maven-failsafe-plugin:3.1.2:verify (verify) @ listing-integration-test ---
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  03:45 min
+[INFO] Finished at: 2026-02-12T10:48:00Z
+[INFO] ------------------------------------------------------------------------
 ---
 
 ## 1. Use `JsonObjects` Instead of `javax.json.Json`
