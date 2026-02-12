@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.utils;
 
-import static java.util.Optional.ofNullable;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClientProvider.newPrivateJmsMessageConsumerClientProvider;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClientProvider.newPublicJmsMessageConsumerClientProvider;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClientProvider.newPublicJmsMessageProducerClientProvider;
@@ -51,11 +50,25 @@ public class QueueUtil {
     }
 
     public static JsonPath retrieveMessage(final JmsMessageConsumerClient consumer) {
-        return consumer.retrieveMessageAsJsonPath(RETRIEVE_TIMEOUT).get();
+        final long startTime = System.currentTimeMillis();
+        do {
+            final Optional<JsonPath> message = consumer.retrieveMessageAsJsonPath(RETRIEVE_TIMEOUT);
+            if (message.isPresent()) {
+                return message.get();
+            }
+        } while (MESSAGE_RETRIEVE_TRIAL_TIMEOUT > (System.currentTimeMillis() - startTime));
+        throw new java.util.NoSuchElementException("No JMS message received within " + MESSAGE_RETRIEVE_TRIAL_TIMEOUT + "ms");
     }
 
     public static String retrieveMessageString(final JmsMessageConsumerClient consumer) {
-        return consumer.retrieveMessage(RETRIEVE_TIMEOUT).get();
+        final long startTime = System.currentTimeMillis();
+        do {
+            final Optional<String> message = consumer.retrieveMessage(RETRIEVE_TIMEOUT);
+            if (message.isPresent()) {
+                return message.get();
+            }
+        } while (MESSAGE_RETRIEVE_TRIAL_TIMEOUT > (System.currentTimeMillis() - startTime));
+        throw new java.util.NoSuchElementException("No JMS message received within " + MESSAGE_RETRIEVE_TRIAL_TIMEOUT + "ms");
     }
 
     public JmsMessageProducerClient createPublicProducer() {
@@ -69,10 +82,10 @@ public class QueueUtil {
 
     public static JsonPath retrieveMessage(final JmsMessageConsumerClient consumer, final Matcher matchers) {
         final long startTime = System.currentTimeMillis();
-        JsonPath message;
         do {
-            message = consumer.retrieveMessageAsJsonPath(RETRIEVE_TIMEOUT).get();
-            if (ofNullable(message).isPresent()) {
+            final Optional<JsonPath> optMessage = consumer.retrieveMessageAsJsonPath(RETRIEVE_TIMEOUT);
+            if (optMessage.isPresent()) {
+                final JsonPath message = optMessage.get();
                 if(matchers.matches(message.prettify())){
                     return message;
                 }

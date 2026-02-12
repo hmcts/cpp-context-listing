@@ -178,6 +178,18 @@ public class ListNextHearingSteps extends AbstractIT {
         publicEventAdhocCreated =  publicEvents.createPublicProducer();
     }
 
+    public void clearStaleAllocatedHearingMessages() {
+        clearAllMessages(publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing);
+    }
+
+    public void clearHearingAddedToCaseMessages() {
+        clearAllMessages(publicMessageConsumerHearingAddedToCase);
+    }
+
+    public void waitForCaseEventStreamUpdate(final UUID hearingId) {
+        verifyPublicHearingAddedToCaseInActiveMQ(hearingId);
+    }
+
     public void whenNextHearingSubmittedForListing(final HearingsData hearingsData) {
         final Response response = getResponseNextHearingsSubmittedForListing(hearingsData);
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
