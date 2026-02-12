@@ -136,6 +136,7 @@ public class DefendantEventListener {
                         .withProceedingsConcluded(originalDefendant.getProceedingsConcluded())
                         .withMasterDefendantId(originalDefendant.getMasterDefendantId())
                         .withCourtProceedingsInitiated(originalDefendant.getCourtProceedingsInitiated())
+                        .withIsYouth(originalDefendant.getIsYouth())
                         .build();
 
                 defendants.replaceAll(defendant -> defendant.getId().equals(newDefendant.getId()) ? newDefendant : defendant);

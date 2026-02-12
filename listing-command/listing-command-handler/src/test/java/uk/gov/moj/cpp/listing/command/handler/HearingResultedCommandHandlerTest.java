@@ -14,7 +14,7 @@ import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamEx
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -46,7 +46,7 @@ class HearingResultedCommandHandlerTest {
     @BeforeEach
     void setUp() {
         hearingId = UUID.randomUUID();
-        JsonObject payload = Json.createObjectBuilder()
+        JsonObject payload = JsonObjects.createObjectBuilder()
                 .add("hearingId", hearingId.toString())
                 .build();
         command = mock(JsonEnvelope.class);

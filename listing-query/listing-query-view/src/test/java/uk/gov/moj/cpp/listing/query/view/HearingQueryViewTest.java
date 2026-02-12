@@ -9,8 +9,8 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.apache.deltaspike.core.util.ArraysUtils.asSet;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -97,7 +97,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
@@ -294,8 +294,8 @@ public class HearingQueryViewTest {
         final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
         final JsonArray hearingsJsonArray = hearingsJsonArray();
 
-        Json.createArrayBuilder()
-                .add(Json.createObjectBuilder()
+        JsonObjects.createArrayBuilder()
+                .add(JsonObjects.createObjectBuilder()
                         .add("hello", "world"))
                 .build();
 
@@ -348,8 +348,8 @@ public class HearingQueryViewTest {
         final List<Hearing> hearingsFilteredJson = singletonList(hearingsJson.get(0));
         final JsonArray hearingsJsonArray = hearingsJsonArray();
 
-        Json.createArrayBuilder()
-                .add(Json.createObjectBuilder()
+        JsonObjects.createArrayBuilder()
+                .add(JsonObjects.createObjectBuilder()
                         .add("hello", "world"))
                 .build();
 
@@ -392,8 +392,8 @@ public class HearingQueryViewTest {
         final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
         final JsonArray hearingsJsonArray = hearingsJsonArray();
 
-        Json.createArrayBuilder()
-                .add(Json.createObjectBuilder()
+        JsonObjects.createArrayBuilder()
+                .add(JsonObjects.createObjectBuilder()
                         .add("hello", "world"))
                 .build();
 
@@ -1148,7 +1148,7 @@ public class HearingQueryViewTest {
     public void shouldGetAllPublishedCourtLists() {
 
         final List<PublishedCourtList> publishedCourtLists = new ArrayList<>();
-        final JsonObject expectedPayload = Json.createObjectBuilder().build();
+        final JsonObject expectedPayload = JsonObjects.createObjectBuilder().build();
 
         when(publishedCourtListRepository.findAll()).thenReturn(publishedCourtLists);
         when(publishedCourtListToJsonConverter.convert(publishedCourtLists)).thenReturn(expectedPayload);
@@ -1186,7 +1186,7 @@ public class HearingQueryViewTest {
                         .add("endDate", endDate)
                         .build());
 
-        final JsonObject courtListResponsePayload = Json.createObjectBuilder()
+        final JsonObject courtListResponsePayload = JsonObjects.createObjectBuilder()
                 .add("courtCentreId", courtCentreId.toString())
                 .build();
 
@@ -1225,7 +1225,7 @@ public class HearingQueryViewTest {
 
         final JsonObject courtListJson = createObjectBuilder().build();
 
-        final JsonObject expectedPayload = Json.createObjectBuilder()
+        final JsonObject expectedPayload = JsonObjects.createObjectBuilder()
                 .add("courtListJson", courtListJson)
                 .build();
 
@@ -1268,7 +1268,7 @@ public class HearingQueryViewTest {
                 uk.gov.justice.listing.event.PublishCourtListType.valueOf(publishCourtListType.name()),
                 startDate);
 
-        final JsonObject emptyCourtListJson = Json.createObjectBuilder().build();
+        final JsonObject emptyCourtListJson = JsonObjects.createObjectBuilder().build();
 
         when(publishedCourtListRepository.findBy(primaryKey)).thenReturn(null);
         when(courtListService.emptyCourtList(courtCentreId)).thenReturn(emptyCourtListJson);
@@ -1566,8 +1566,8 @@ public class HearingQueryViewTest {
     }
 
     private JsonArray hearingsJsonArray() {
-        return Json.createArrayBuilder()
-                .add(Json.createObjectBuilder()
+        return JsonObjects.createArrayBuilder()
+                .add(JsonObjects.createObjectBuilder()
                         .add("hello", "world"))
                 .build();
     }

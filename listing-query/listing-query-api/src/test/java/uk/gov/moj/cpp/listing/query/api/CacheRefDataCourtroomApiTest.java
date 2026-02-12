@@ -15,7 +15,7 @@ import uk.gov.moj.cpp.listing.query.view.service.CacheRefDataCourtroomLoader;
 
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -57,7 +57,7 @@ class CacheRefDataCourtroomApiTest {
 
     @Test
     public void shouldAddRefDataCourtroom() {
-        final JsonObject payload = Json.createObjectBuilder()
+        final JsonObject payload = JsonObjects.createObjectBuilder()
                 .add(ID, UUID.randomUUID().toString())
                 .add(COURTROOM_NAME, COURTROOM_NAME_VALUE)
                 .build();
@@ -72,7 +72,7 @@ class CacheRefDataCourtroomApiTest {
 
     @Test
     public void shouldCloseRefDataCourtroom() {
-        final JsonObject payload = Json.createObjectBuilder()
+        final JsonObject payload = JsonObjects.createObjectBuilder()
                 .add(ID, UUID.randomUUID().toString())
                 .build();
         final JsonEnvelope envelope = envelopeFrom(metadataWithRandomUUIDAndName(), payload);

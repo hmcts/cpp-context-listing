@@ -25,7 +25,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -110,7 +110,7 @@ public class ListingNoteCommandHandlerTest {
     private JsonEnvelope getJsonEnvelopeForDeleteNote() {
         final String jsonString = FileUtil.givenPayload("/test-data/listing.command.delete-note.json").toString();
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.delete-listing-note", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -120,7 +120,7 @@ public class ListingNoteCommandHandlerTest {
     private JsonEnvelope getJsonEnvelopeForCreateNote() {
         final String jsonString = FileUtil.givenPayload("/test-data/listing.command.create-note.json").toString();
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.create-listing-note", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -133,7 +133,7 @@ public class ListingNoteCommandHandlerTest {
 
     private JsonEnvelope getEnvelopeForEditNoteForListing(final UUID noteId, final String noteDescription) {
         final String requestBody = "{\"noteId\":\"" + noteId + "\",\"noteDescription\":\"" + noteDescription + "\"}";
-        final JsonReader jsonReader = Json.createReader(new StringReader(requestBody));
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
         return createEnvelope("listing.command.edit-listing-note", jsonReader.readObject());
     }
 

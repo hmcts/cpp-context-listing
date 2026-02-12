@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonReader;
 
 public class UnscheduledListingCommandBuilder {
@@ -196,7 +196,7 @@ public class UnscheduledListingCommandBuilder {
                 .replace("WEEK_COMMENCING_START_DATE", WEEK_COMMENCING_START_DATE.toString())
                 .replace("WEEK_COMMENCING_DURATION", WEEK_COMMENCING_DURATION.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.list-unscheduled-court-hearing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -228,7 +228,7 @@ public class UnscheduledListingCommandBuilder {
                 .replace("WEEK_COMMENCING_START_DATE", WEEK_COMMENCING_START_DATE.toString())
                 .replace("WEEK_COMMENCING_DURATION", WEEK_COMMENCING_DURATION.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.list-unscheduled-next-hearing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);

@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -263,7 +263,7 @@ public class SittingsPojoBuilderTest {
         final String hearingEndTime = "2020-09-01T12:00:00.000Z";
         final String applicationReference = STRING.next();
 
-        final JsonObject applicant = Json.createObjectBuilder()
+        final JsonObject applicant = JsonObjects.createObjectBuilder()
                 .add("id", randomUUID().toString())
                 .add("lastName", "Applicant")
                 .add("isRespondent", false)
@@ -271,7 +271,7 @@ public class SittingsPojoBuilderTest {
                 .add("courtApplicationPartyType", "PERSON")
                 .build();
 
-        final JsonObject subject = Json.createObjectBuilder()
+        final JsonObject subject = JsonObjects.createObjectBuilder()
                 .add("id", randomUUID().toString())
                 .add("lastName", "Subject")
                 .add("isRespondent", false)
@@ -354,16 +354,16 @@ public class SittingsPojoBuilderTest {
     }
 
     private JsonObject buildCaseHearingsWithHearingDays(final String hearingDate, final String hearingStartTime, final String hearingEndTime, final UUID courtRoomId, final UUID judicialId) {
-        return Json.createObjectBuilder()
+        return JsonObjects.createObjectBuilder()
                 .add("courtRoomId", courtRoomId.toString())
-                .add("judiciary", Json.createArrayBuilder().add(
-                        Json.createObjectBuilder().add("judicialId", judicialId.toString()))
+                .add("judiciary", JsonObjects.createArrayBuilder().add(
+                        JsonObjects.createObjectBuilder().add("judicialId", judicialId.toString()))
                 )
-                .add("listedCases", Json.createArrayBuilder()
+                .add("listedCases", JsonObjects.createArrayBuilder()
                         .add(buildCaseDetailsJson()))
-                .add("nonDefaultDays", Json.createArrayBuilder()
+                .add("nonDefaultDays", JsonObjects.createArrayBuilder()
                         .add(buildNonDefaultDaysJson()))
-                .add("hearingDays", Json.createArrayBuilder()
+                .add("hearingDays", JsonObjects.createArrayBuilder()
                         .add(buildHearingDaysJson(hearingDate, hearingStartTime, hearingEndTime)))
                 .build();
     }
@@ -372,17 +372,17 @@ public class SittingsPojoBuilderTest {
                                                                         final String hearingEndTime, final UUID courtRoomId, final UUID judicialId,
                                                                         final String defendant1FirstName, final String defendant1lastName, final String case1Reference,
                                                                         final String defendant2FirstName, final String defendant2LastName, final String case2Reference) {
-        return Json.createObjectBuilder()
+        return JsonObjects.createObjectBuilder()
                 .add("courtRoomId", courtRoomId.toString())
-                .add("judiciary", Json.createArrayBuilder().add(
-                        Json.createObjectBuilder().add("judicialId", judicialId.toString()))
+                .add("judiciary", JsonObjects.createArrayBuilder().add(
+                        JsonObjects.createObjectBuilder().add("judicialId", judicialId.toString()))
                 )
-                .add("listedCases", Json.createArrayBuilder()
+                .add("listedCases", JsonObjects.createArrayBuilder()
                         .add(buildCaseDetailsJsonWithDefendant(defendant1FirstName, defendant1lastName, case1Reference))
                         .add(buildCaseDetailsJsonWithDefendant(defendant2FirstName, defendant2LastName, case2Reference)))
-                .add("nonDefaultDays", Json.createArrayBuilder()
+                .add("nonDefaultDays", JsonObjects.createArrayBuilder()
                         .add(buildNonDefaultDaysJson()))
-                .add("hearingDays", Json.createArrayBuilder()
+                .add("hearingDays", JsonObjects.createArrayBuilder()
                         .add(buildHearingDaysJson(hearingDate, hearingStartTime, hearingEndTime)))
                 .build();
     }
@@ -391,17 +391,17 @@ public class SittingsPojoBuilderTest {
                                                                                final String hearingEndTime, final UUID courtRoomId, final UUID judicialId,
                                                                                final String applicationReference1, final String applicationReference2) {
 
-        return Json.createObjectBuilder()
+        return JsonObjects.createObjectBuilder()
                 .add("courtRoomId", courtRoomId.toString())
-                .add("judiciary", Json.createArrayBuilder().add(
-                        Json.createObjectBuilder().add("judicialId", judicialId.toString()))
+                .add("judiciary", JsonObjects.createArrayBuilder().add(
+                        JsonObjects.createObjectBuilder().add("judicialId", judicialId.toString()))
                 )
-                .add("courtApplications", Json.createArrayBuilder()
+                .add("courtApplications", JsonObjects.createArrayBuilder()
                         .add(buildApplicationJson(applicationReference1))
                         .add(buildApplicationJson(applicationReference2)))
-                .add("nonDefaultDays", Json.createArrayBuilder()
+                .add("nonDefaultDays", JsonObjects.createArrayBuilder()
                         .add(buildNonDefaultDaysJson()))
-                .add("hearingDays", Json.createArrayBuilder()
+                .add("hearingDays", JsonObjects.createArrayBuilder()
                         .add(buildHearingDaysJson(hearingDate, hearingStartTime, hearingEndTime)))
                 .build();
 
@@ -411,63 +411,63 @@ public class SittingsPojoBuilderTest {
                                                                                 final String hearingEndTime, final UUID courtRoomId, final UUID judicialId,
                                                                                 final String applicationReference, final JsonObject applicant, final JsonObject subject) {
 
-        final JsonArrayBuilder respondentsArrayBuilder = Json.createArrayBuilder()
-                .add(Json.createObjectBuilder()
+        final JsonArrayBuilder respondentsArrayBuilder = JsonObjects.createArrayBuilder()
+                .add(JsonObjects.createObjectBuilder()
                         .add("id", randomUUID().toString())
                         .add("lastName", "TestRespondent")
                         .add("isRespondent", true)
                         .add("restrictFromCourtList", false)
                         .add("courtApplicationPartyType", "PERSON"));
 
-        final JsonObjectBuilder applicationJson = Json.createObjectBuilder()
+        final JsonObjectBuilder applicationJson = JsonObjects.createObjectBuilder()
                 .add("applicationReference", applicationReference)
                 .add("restrictFromCourtList", false)
                 .add("applicant", applicant)
                 .add("respondents", respondentsArrayBuilder)
                 .add("subject", subject);
 
-        return Json.createObjectBuilder()
+        return JsonObjects.createObjectBuilder()
                 .add("courtRoomId", courtRoomId.toString())
-                .add("judiciary", Json.createArrayBuilder().add(
-                        Json.createObjectBuilder().add("judicialId", judicialId.toString()))
+                .add("judiciary", JsonObjects.createArrayBuilder().add(
+                        JsonObjects.createObjectBuilder().add("judicialId", judicialId.toString()))
                 )
-                .add("courtApplications", Json.createArrayBuilder()
+                .add("courtApplications", JsonObjects.createArrayBuilder()
                         .add(applicationJson))
-                .add("nonDefaultDays", Json.createArrayBuilder()
+                .add("nonDefaultDays", JsonObjects.createArrayBuilder()
                         .add(buildNonDefaultDaysJson()))
-                .add("hearingDays", Json.createArrayBuilder()
+                .add("hearingDays", JsonObjects.createArrayBuilder()
                         .add(buildHearingDaysJson(hearingDate, hearingStartTime, hearingEndTime)))
                 .build();
 
     }
 
     private JsonObject buildWeekCommencingCaseHearings(final String startDate, final UUID courtRoomId, final UUID judicialId) {
-        return Json.createObjectBuilder()
+        return JsonObjects.createObjectBuilder()
                 .add("weekCommencingStartDate", startDate)
                 .add("weekCommencingEndDate", "2019-12-15")
                 .add("courtRoomId", courtRoomId.toString())
-                .add("judiciary", Json.createArrayBuilder().add(
-                        Json.createObjectBuilder().add("judicialId", judicialId.toString()))
+                .add("judiciary", JsonObjects.createArrayBuilder().add(
+                        JsonObjects.createObjectBuilder().add("judicialId", judicialId.toString()))
                 )
-                .add("listedCases", Json.createArrayBuilder()
+                .add("listedCases", JsonObjects.createArrayBuilder()
                         .add(buildCaseDetailsJson()))
-                .add("nonDefaultDays", Json.createArrayBuilder()
+                .add("nonDefaultDays", JsonObjects.createArrayBuilder()
                         .add(buildNonDefaultDaysJson()))
                 .build();
     }
 
     private JsonObject buildWeekCommencingCaseHearingsWithVideoLink(final String startDate, final UUID courtRoomId, final UUID judicialId, final boolean hasVideoLink, final String publicListNote) {
 
-        final JsonObjectBuilder hearing = Json.createObjectBuilder()
+        final JsonObjectBuilder hearing = JsonObjects.createObjectBuilder()
                 .add("weekCommencingStartDate", startDate)
                 .add("weekCommencingEndDate", "2019-12-15")
                 .add("courtRoomId", courtRoomId.toString())
-                .add("judiciary", Json.createArrayBuilder().add(
-                        Json.createObjectBuilder().add("judicialId", judicialId.toString()))
+                .add("judiciary", JsonObjects.createArrayBuilder().add(
+                        JsonObjects.createObjectBuilder().add("judicialId", judicialId.toString()))
                 )
-                .add("listedCases", Json.createArrayBuilder()
+                .add("listedCases", JsonObjects.createArrayBuilder()
                         .add(buildCaseDetailsJson()))
-                .add("nonDefaultDays", Json.createArrayBuilder()
+                .add("nonDefaultDays", JsonObjects.createArrayBuilder()
                         .add(buildNonDefaultDaysJson()))
                 .add("hasVideoLink", hasVideoLink);
         if (nonNull(publicListNote)) {
@@ -478,7 +478,7 @@ public class SittingsPojoBuilderTest {
     }
 
     private JsonObjectBuilder buildCaseDetailsJson() {
-        final JsonObjectBuilder caseDetailsJson = Json.createObjectBuilder();
+        final JsonObjectBuilder caseDetailsJson = JsonObjects.createObjectBuilder();
 
         caseDetailsJson.add("restrictFromCourtList", false);
 
@@ -486,10 +486,10 @@ public class SittingsPojoBuilderTest {
     }
 
     private JsonObjectBuilder buildCaseDetailsJsonWithDefendant(final String defendantFirstName, final String defendantLastName, final String caseReference) {
-        final JsonObjectBuilder caseDetailsJson = Json.createObjectBuilder();
-        final JsonObjectBuilder caseIdentifierJson = Json.createObjectBuilder();
-        final JsonArrayBuilder defendantsArrayBuilder = Json.createArrayBuilder();
-        final JsonObjectBuilder defendantJson = Json.createObjectBuilder();
+        final JsonObjectBuilder caseDetailsJson = JsonObjects.createObjectBuilder();
+        final JsonObjectBuilder caseIdentifierJson = JsonObjects.createObjectBuilder();
+        final JsonArrayBuilder defendantsArrayBuilder = JsonObjects.createArrayBuilder();
+        final JsonObjectBuilder defendantJson = JsonObjects.createObjectBuilder();
         caseDetailsJson.add("restrictFromCourtList", false);
         caseIdentifierJson.add("caseReference", caseReference);
         caseDetailsJson.add("caseIdentifier", caseIdentifierJson);
@@ -503,22 +503,22 @@ public class SittingsPojoBuilderTest {
 
     private JsonObjectBuilder buildApplicationJson(final String applicationReferene) {
 
-        final JsonObjectBuilder applicantJson = Json.createObjectBuilder()
+        final JsonObjectBuilder applicantJson = JsonObjects.createObjectBuilder()
                 .add("id", randomUUID().toString())
                 .add("lastName", "TestApplicant")
                 .add("isRespondent", false)
                 .add("restrictFromCourtList", false)
                 .add("courtApplicationPartyType", "PERSON");
 
-        final JsonArrayBuilder respondentsArrayBuilder = Json.createArrayBuilder()
-                .add(Json.createObjectBuilder()
+        final JsonArrayBuilder respondentsArrayBuilder = JsonObjects.createArrayBuilder()
+                .add(JsonObjects.createObjectBuilder()
                         .add("id", randomUUID().toString())
                         .add("lastName", "TestRespondent")
                         .add("isRespondent", true)
                         .add("restrictFromCourtList", false)
                         .add("courtApplicationPartyType", "PERSON"));
 
-        final JsonObjectBuilder applicationDetailsJson = Json.createObjectBuilder();
+        final JsonObjectBuilder applicationDetailsJson = JsonObjects.createObjectBuilder();
         applicationDetailsJson.add("applicationReference", applicationReferene);
         applicationDetailsJson.add("restrictFromCourtList", false);
         applicationDetailsJson.add("applicant", applicantJson);
@@ -531,7 +531,7 @@ public class SittingsPojoBuilderTest {
 
 
     private JsonObjectBuilder buildNonDefaultDaysJson() {
-        final JsonObjectBuilder nonDefaultDaysJson = Json.createObjectBuilder();
+        final JsonObjectBuilder nonDefaultDaysJson = JsonObjects.createObjectBuilder();
 
         nonDefaultDaysJson.add("startTime", "2019-12-17T09:57:18.807Z");
 
@@ -539,7 +539,7 @@ public class SittingsPojoBuilderTest {
     }
 
     private JsonObjectBuilder buildHearingDaysJson(final String hearingDate, final String hearingStartTime, final String hearingEndTime) {
-        final JsonObjectBuilder hearingDaysJson = Json.createObjectBuilder();
+        final JsonObjectBuilder hearingDaysJson = JsonObjects.createObjectBuilder();
 
         hearingDaysJson.add("startTime", "2020-10-05T11:00:00.000Z");
         hearingDaysJson.add("endTime", "2020-10-05T12:00:00.000Z");

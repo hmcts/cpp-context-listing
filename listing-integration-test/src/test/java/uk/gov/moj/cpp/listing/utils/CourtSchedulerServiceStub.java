@@ -18,6 +18,7 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.POLL_INTERVAL;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 
 import java.io.IOException;
@@ -89,7 +90,7 @@ public class CourtSchedulerServiceStub {
     }
 
     private static void verifyDeleteAvailableHearingSlotsStubCommandInvokedNTimes(final String hearingId, final int invocationCount) {
-        Awaitility.await().atMost(30, SECONDS).pollInterval(1, SECONDS).until(() -> {
+        Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
             final RequestPatternBuilder requestPatternBuilder = WireMock.deleteRequestedFor(urlPathMatching(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS + "/" + hearingId));
             try {
                 WireMock.verify(WireMock.exactly(invocationCount), requestPatternBuilder);

@@ -45,7 +45,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObjectBuilder;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -272,7 +272,7 @@ public class RemoveCaseFromGroupCasesCommandHandlerTest {
     }
 
     private JsonEnvelope getJsonEnvelopeForRemoveCommand(final UUID groupId, final UUID masterCaseId, final ProsecutionCase removedCase, final ProsecutionCase newGroupMaster) {
-        JsonObjectBuilder builder = Json.createObjectBuilder()
+        JsonObjectBuilder builder = JsonObjects.createObjectBuilder()
                 .add("groupId", groupId.toString())
                 .add("masterCaseId", masterCaseId.toString())
                 .add("removedCase", objectToJsonObjectConverter.convert(removedCase));

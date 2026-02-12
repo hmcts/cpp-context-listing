@@ -8,8 +8,8 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -186,7 +186,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -1152,9 +1152,9 @@ class ListingEventProcessorTest {
         final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), defendantAddedToCourtProceedingsJsonObject);
 
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("public.progression.events.cps-prosecutor-updated"),
-                Json.createObjectBuilder()
+                JsonObjects.createObjectBuilder()
                         .add("prosecutionCaseId", "34d07e81-9770-4d23-af6f-84f1d7571bd3")
-                        .add("hearingIds", Json.createArrayBuilder()
+                        .add("hearingIds", JsonObjects.createArrayBuilder()
                                 .add("a8448a33-68ab-4b9b-84c2-59cee4fe36f4")
                                 .add("095d7412-ba76-4a15-942d-566d3aeae7c9")
                                 .add("095d7412-ba76-4a15-942d-566d3aeae7c8")
@@ -1164,7 +1164,7 @@ class ListingEventProcessorTest {
                         .add("prosecutionAuthorityReference", "test prosecutionAuthorityReference")
                         .add("prosecutionAuthorityCode", "test prosecutionAuthorityCode")
                         .add("prosecutionAuthorityName", "test prosecutionAuthorityName")
-                        .add("address", Json.createObjectBuilder()
+                        .add("address", JsonObjects.createObjectBuilder()
                                 .add("address1", "41 Manhattan House")
                                 .add("postcode", "MK9 2BQ")
                                 .build())
@@ -1198,9 +1198,9 @@ class ListingEventProcessorTest {
         final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), defendantAddedToCourtProceedingsJsonObject);
 
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("public.progression.events.cps-prosecutor-updated"),
-                Json.createObjectBuilder()
+                JsonObjects.createObjectBuilder()
                         .add("prosecutionCaseId", "34d07e81-9770-4d23-af6f-84f1d7571bd3")
-                        .add("hearingIds", Json.createArrayBuilder()
+                        .add("hearingIds", JsonObjects.createArrayBuilder()
                                 .add("a8448a33-68ab-4b9b-84c2-59cee4fe36f4")
                                 .add("095d7412-ba76-4a15-942d-566d3aeae7c9")
                                 .add("095d7412-ba76-4a15-942d-566d3aeae7c8")
@@ -1210,7 +1210,7 @@ class ListingEventProcessorTest {
                         .add("prosecutionAuthorityReference", "test prosecutionAuthorityReference")
                         .add("prosecutionAuthorityCode", "test prosecutionAuthorityCode")
                         .add("prosecutionAuthorityName", "test prosecutionAuthorityName")
-                        .add("address", Json.createObjectBuilder()
+                        .add("address", JsonObjects.createObjectBuilder()
                                 .add("address1", "41 Manhattan House")
                                 .add("postcode", "MK9 2BQ")
                                 .build())
@@ -1393,7 +1393,7 @@ class ListingEventProcessorTest {
     public void shouldHandleEventsCaseEjectedForAllHearingsAndPassToCommandHandler() {
 
         final JsonObject ejectCaseForAllHearingObject = createObjectBuilder()
-                .add(HEARING_IDS, Json.createArrayBuilder().add(HEARING_ID.toString()).build())
+                .add(HEARING_IDS, JsonObjects.createArrayBuilder().add(HEARING_ID.toString()).build())
                 .add(PROSECUTION_CASE_ID, CASE_ID.toString())
                 .add(REMOVAL_REASON, "removal Reason")
                 .build();
@@ -1418,7 +1418,7 @@ class ListingEventProcessorTest {
     public void shouldHandleEventsApplicationEjectedForAllHearingsAndPassToCommandHandler() {
 
         final JsonObject ejectApplicationForAllHearingObject = createObjectBuilder()
-                .add(HEARING_IDS, Json.createArrayBuilder().add(HEARING_ID.toString()).build())
+                .add(HEARING_IDS, JsonObjects.createArrayBuilder().add(HEARING_ID.toString()).build())
                 .add(FIELD_APPLICATION_ID, APPLICATION_ID.toString())
                 .add(REMOVAL_REASON, "removal Reason")
                 .build();
@@ -1607,7 +1607,7 @@ class ListingEventProcessorTest {
         final JsonObject eventPayload = createObjectBuilder()
                 .add("defendantId", DEFENDANT_ID.toString())
                 .add("caseId", CASE_ID.toString())
-                .add("hearingIds", Json.createArrayBuilder().add(HEARING_ID.toString()).build())
+                .add("hearingIds", JsonObjects.createArrayBuilder().add(HEARING_ID.toString()).build())
                 .add(LEGAL_AID_STATUS, "Granted")
                 .build();
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.defendant-legalaid-status-updated"),
@@ -1850,15 +1850,15 @@ class ListingEventProcessorTest {
         final String offence2Id = randomUUID().toString();
         final JsonObject hearingMarkedAsDuplicate = createObjectBuilder()
                 .add("hearingId", hearingId)
-                .add("prosecutionCaseIds", Json.createArrayBuilder()
+                .add("prosecutionCaseIds", JsonObjects.createArrayBuilder()
                         .add(case1Id)
                         .add(case2Id)
                         .build())
-                .add("defendantIds", Json.createArrayBuilder()
+                .add("defendantIds", JsonObjects.createArrayBuilder()
                         .add(defendant1Id)
                         .add(defendant2Id)
                         .build())
-                .add("offenceIds", Json.createArrayBuilder()
+                .add("offenceIds", JsonObjects.createArrayBuilder()
                         .add(offence1Id)
                         .add(offence2Id)
                         .build())
@@ -1889,7 +1889,7 @@ class ListingEventProcessorTest {
 
         final JsonObject hearingMarkedAsDuplicate = createObjectBuilder()
                 .add("hearingId", hearingId.toString())
-                .add("caseIds", Json.createArrayBuilder()
+                .add("caseIds", JsonObjects.createArrayBuilder()
                         .add(case1Id.toString())
                         .add(case2Id.toString())
                         .build())

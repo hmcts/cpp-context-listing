@@ -14,7 +14,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import java.util.UUID;
 
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 public class ListingReferenceDataService {
@@ -25,7 +25,7 @@ public class ListingReferenceDataService {
     private Requester requester;
 
     public JsonEnvelope getPayLoadForCourtRoom(final JsonEnvelope jsonEnvelope, final String courtCentreId) {
-        final JsonObject ouCodeQueryParameter = Json.createObjectBuilder()
+        final JsonObject ouCodeQueryParameter = JsonObjects.createObjectBuilder()
                 .add("id", courtCentreId)
                 .build();
 

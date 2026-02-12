@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -49,10 +49,10 @@ public class CreateNextHearingRequestedEventProcessorTest {
     }
 
     private JsonEnvelope listingEventCreateNewHearingRequested() {
-        final JsonObject payload = Json.createObjectBuilder()
-                .add("createNextHearing", Json.createObjectBuilder()
+        final JsonObject payload = JsonObjects.createObjectBuilder()
+                .add("createNextHearing", JsonObjects.createObjectBuilder()
                                 .add("committingCourt", "Birmingham Crown Court")
-                                .add("hearing", Json.createObjectBuilder().build())
+                                .add("hearing", JsonObjects.createObjectBuilder().build())
                         .build())
                 .build();
         return envelopeFrom(metadataWithRandomUUIDAndName(), payload);

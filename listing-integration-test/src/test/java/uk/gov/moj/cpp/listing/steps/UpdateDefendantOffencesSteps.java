@@ -12,7 +12,6 @@ import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 import static uk.gov.justice.core.courts.LaaReference.laaReference;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDelayForJms;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
@@ -110,6 +109,14 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
 
 
     public UpdateDefendantOffencesSteps(UUID caseId, HearingData hearingData, UpdatedOffenceData updatedOffenceData, UUID offenceIdToBeDeleted) {
+        this(caseId, hearingData, updatedOffenceData, offenceIdToBeDeleted, true);
+    }
+
+    /**
+     * @param createConsumers if false, only the producer is created (use when you only need to send events
+     *                        and will verify via REST API polling rather than JMS message consumers)
+     */
+    public UpdateDefendantOffencesSteps(UUID caseId, HearingData hearingData, UpdatedOffenceData updatedOffenceData, UUID offenceIdToBeDeleted, boolean createConsumers) {
         this.caseId = caseId;
         this.hearingData = hearingData;
         this.listedCaseData = hearingData.getListedCases().get(0);
@@ -121,15 +128,18 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
         this.offenceIdToBeDeleted = offenceIdToBeDeleted;
 
         publicEventDefendantOffencesUpdated = publicEvents.createPublicProducer();
-        publicEventMessageConsumerDefendantOffencesUpdated = publicEvents.createPublicConsumer(PUBLIC_EVENT_PROGRESSION_OFFENCES_FOR_DEFENDANT_CHANGED);
 
-        privateEventMessageOffencesToBeUpdated = privateEvents.createPrivateConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_UPDATED);
-        privateEventMessageOffencesToBeDeleted = privateEvents.createPrivateConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_DELETED);
-        privateEventMessageOffencesToBeAdded = privateEvents.createPrivateConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_ADDED);
+        if (createConsumers) {
+            publicEventMessageConsumerDefendantOffencesUpdated = publicEvents.createPublicConsumer(PUBLIC_EVENT_PROGRESSION_OFFENCES_FOR_DEFENDANT_CHANGED);
 
-        privateEventsMessageOffenceUpdated = privateEvents.createPrivateConsumer(EVENT_SELECTOR_OFFENCES_UPDATED);
-        privateEventsMessageOffenceAdded = privateEvents.createPrivateConsumer(EVENT_SELECTOR_OFFENCES_ADDED);
-        privateEventsMessageOffenceDeleted = privateEvents.createPrivateConsumer(EVENT_SELECTOR_OFFENCES_DELETED);
+            privateEventMessageOffencesToBeUpdated = privateEvents.createPrivateConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_UPDATED);
+            privateEventMessageOffencesToBeDeleted = privateEvents.createPrivateConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_DELETED);
+            privateEventMessageOffencesToBeAdded = privateEvents.createPrivateConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_ADDED);
+
+            privateEventsMessageOffenceUpdated = privateEvents.createPrivateConsumer(EVENT_SELECTOR_OFFENCES_UPDATED);
+            privateEventsMessageOffenceAdded = privateEvents.createPrivateConsumer(EVENT_SELECTOR_OFFENCES_ADDED);
+            privateEventsMessageOffenceDeleted = privateEvents.createPrivateConsumer(EVENT_SELECTOR_OFFENCES_DELETED);
+        }
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }

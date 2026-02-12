@@ -27,7 +27,7 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
@@ -87,7 +87,7 @@ public class DefaultQueryApiHearingsDownloadHearingCsvReportResource implements 
     LOGGER.info("Downloading hearing CSV report for courtCentreId: {}, startDate: {}, numberOfWeeks: {}",
             courtCentreId, startDate, numberOfWeeks);
 
-    final JsonObjectBuilder builder = Json.createObjectBuilder();
+    final JsonObjectBuilder builder = JsonObjects.createObjectBuilder();
     final JsonEnvelope csvQuery = envelopeFrom(
             metadataBuilder()
                     .withId(randomUUID())

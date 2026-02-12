@@ -15,7 +15,7 @@ import uk.gov.moj.cpp.listing.it.AbstractIT;
 
 import java.util.List;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
 
@@ -36,8 +36,8 @@ public class RemoveOffencesFromHearingSteps extends AbstractIT {
 
     public void whenRaisedOffencesRemovedPublicEvent(final String hearingId, final List<String> offences) {
         this.hearingId = hearingId;
-        final JsonObjectBuilder builder = Json.createObjectBuilder().add("hearingId", hearingId);
-        final JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+        final JsonObjectBuilder builder = JsonObjects.createObjectBuilder().add("hearingId", hearingId);
+        final JsonArrayBuilder arrayBuilder = JsonObjects.createArrayBuilder();
         offences.forEach(arrayBuilder::add);
         builder.add("offenceIds", arrayBuilder.build());
 

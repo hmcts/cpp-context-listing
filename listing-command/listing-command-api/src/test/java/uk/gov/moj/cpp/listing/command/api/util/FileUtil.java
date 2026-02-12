@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 import java.io.InputStream;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
@@ -30,7 +30,7 @@ public class FileUtil {
     }
     public static JsonObject givenPayload(final String filePath) {
         try (InputStream inputStream = FileUtil.class.getResourceAsStream(filePath)) {
-            JsonReader jsonReader = Json.createReader(inputStream);
+            JsonReader jsonReader = JsonObjects.createReader(inputStream);
             JsonObject var4 = jsonReader.readObject();
             return var4;
         } catch (IOException e) {

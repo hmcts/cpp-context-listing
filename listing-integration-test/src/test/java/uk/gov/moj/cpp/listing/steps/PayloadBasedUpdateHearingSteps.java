@@ -1,17 +1,20 @@
 package uk.gov.moj.cpp.listing.steps;
 
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParamsForPayloadIT;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
@@ -231,22 +234,17 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
      */
     private void verifyHearingUpdatedFromAPI(PayloadGenerator.PayloadValues values, boolean isAllocated) {
         PayloadBasedUpdateHearingSteps.LOGGER.info("Verifying hearing updated from API for hearing: {}, allocated: {}", this.hearingIdToUpdate, isAllocated);
-        
-        // This would need to poll the search API and verify the hearing exists with updated values
-        // using the generated values from the payload
-        // The actual implementation would be similar to the existing method
-        // but would use the hearingIdToUpdate and the new values from the payload
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 MessageFormat.format(readConfig().getProperty("listing.search.hearings.by.allocated"), isAllocated));
 
-        final String response =  poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
-        JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
-        final JsonObject hearingJsonObject = (JsonObject)jsonObject.getJsonArray("hearings").get(0);
-        assertThat(hearingJsonObject.getString("id"), is(values.hearingId));
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(withJsonPath("$.hearings[0].id", is(values.hearingId)))
+                );
 
-        // For now, we'll log the verification request
-        PayloadBasedUpdateHearingSteps.LOGGER.info("Verification would check updated hearing ID: {} with new court centre: {}", this.hearingIdToUpdate, values.courtCentreId);
+        PayloadBasedUpdateHearingSteps.LOGGER.info("Verified updated hearing ID: {} with new court centre: {}", this.hearingIdToUpdate, values.courtCentreId);
     }
     
     /**
@@ -258,16 +256,18 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
         }
         
         PayloadBasedUpdateHearingSteps.LOGGER.info("Verifying judiciary assigned to hearing: {}", this.hearingIdToUpdate);
-        
-        // This would verify that the judiciary information is present in the hearing
-        // by polling the search API and checking for judiciary details
+
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 MessageFormat.format(readConfig().getProperty("listing.search.hearings.by.allocated"), true));
 
-        final String response =  poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
-        JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
-        final JsonObject hearingJsonObject = (JsonObject)jsonObject.getJsonArray("hearings").get(0);
-        assertNotNull(hearingJsonObject.getJsonArray("judiciary"));
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings[0].id", is(this.hearingIdToUpdate)),
+                                withJsonPath("$.hearings[0].judiciary")
+                        ))
+                );
     }
     /**
      * Verify that judiciary was assigned to the hearing
@@ -279,14 +279,16 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
 
         PayloadBasedUpdateHearingSteps.LOGGER.info("Verifying CourtRoom updated for hearing: {}", this.hearingIdToUpdate);
 
-        // This would verify that the courtroom information is present in the hearing
-        // by polling the search API and checking for courtroom details
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 MessageFormat.format(readConfig().getProperty("listing.search.hearings.by.allocated"), true));
 
-        final String response =  poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
+        final String response = pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(withJsonPath("$.hearings[0].id", is(this.hearingIdToUpdate)))
+                ).getPayload();
         JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
-        final JsonObject hearingJsonObject = (JsonObject)jsonObject.getJsonArray("hearings").get(0);
+        final JsonObject hearingJsonObject = (JsonObject) jsonObject.getJsonArray("hearings").get(0);
         String updatedCourtRoomId = hearingJsonObject.getString("courtRoomId");
         assertNotEquals(originalCourtRoomId, updatedCourtRoomId);
 
@@ -301,16 +303,15 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
         }
         
         PayloadBasedUpdateHearingSteps.LOGGER.info("Verifying hearing allocation status changed to: {} for hearing: {}", expectedAllocated, this.hearingIdToUpdate);
-        
-        // This would verify that the hearing allocation status is as expected
-        // by polling the search API and checking the hearing details
+
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 MessageFormat.format(readConfig().getProperty("listing.search.hearings.by.allocated"), expectedAllocated));
 
-        final String response =  poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
-        JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
-        final JsonObject hearingJsonObject = (JsonObject)jsonObject.getJsonArray("hearings").get(0);
-        assertThat(hearingJsonObject.getString("id"), is(this.payloadValues.hearingId));
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(withJsonPath("$.hearings[0].id", is(this.payloadValues.hearingId)))
+                );
     }
     
     /**

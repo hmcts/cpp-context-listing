@@ -1,8 +1,8 @@
 package uk.gov.moj.cpp.listing.event.service;
 
 import static java.util.Arrays.asList;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -50,7 +50,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -430,7 +430,7 @@ public class HearingSearchSyncServiceTest {
 
         // Parse a JsonObject into a JSON string
         StringWriter stringWriter = new StringWriter();
-        try (JsonWriter jsonWriter = Json.createWriter(stringWriter)) {
+        try (JsonWriter jsonWriter = JsonObjects.createWriter(stringWriter)) {
             jsonWriter.writeObject(jsonObject);
         }
         String json = stringWriter.toString();

@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -66,9 +66,9 @@ public class ProsecutionCaseIT extends AbstractIT{
         List<String> prosecutionIdList = hearingsData.getHearingData().stream().flatMap(h -> h.getListedCases().stream()).map(lc -> lc.getCaseId().toString()).toList();
 
 
-        JsonObject payload = Json.createObjectBuilder()
+        JsonObject payload = JsonObjects.createObjectBuilder()
                 .add("prosecutionCaseId", prosecutionIdList.get(0))
-                .add("hearingIds", Json.createArrayBuilder()
+                .add("hearingIds", JsonObjects.createArrayBuilder()
                         .add(idList.get(0))
                         .build())
                 .add("caseURN", "test Case URN")
@@ -76,7 +76,7 @@ public class ProsecutionCaseIT extends AbstractIT{
                 .add("prosecutionAuthorityReference", "test prosecutionAuthorityReference")
                 .add("prosecutionAuthorityCode", hearingsData.getHearingData().get(0).getListedCases().get(0).getAuthorityCode())
                 .add("prosecutionAuthorityName", "test prosecutionAuthorityName")
-                .add("address", Json.createObjectBuilder()
+                .add("address", JsonObjects.createObjectBuilder()
                         .add("address1", "41 Manhattan House")
                         .add("postcode", "MK9 2BQ")
                         .build())

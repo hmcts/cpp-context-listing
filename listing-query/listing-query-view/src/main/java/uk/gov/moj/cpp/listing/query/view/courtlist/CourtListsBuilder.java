@@ -17,7 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.PreDestroy;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -70,7 +70,7 @@ public class CourtListsBuilder {
     }
 
     public JsonArray buildCourtListsArray(final UUID courtCentreId) {
-        final JsonArrayBuilder courtListArray = Json.createArrayBuilder();
+        final JsonArrayBuilder courtListArray = JsonObjects.createArrayBuilder();
 
         for (final Map.Entry<String, List<Sitting>> entry : crestCourtSiteCodeSittingsMap.entrySet()) {
             final String crestCourtSiteCode = entry.getKey();
@@ -112,7 +112,7 @@ public class CourtListsBuilder {
 
     private JsonObject courtSiteCourtList(final JsonObject crestCourtSiteJson, final List<Sitting> sittings) {
 
-        return Json.createObjectBuilder()
+        return JsonObjects.createObjectBuilder()
                 .add("crestCourtSite", crestCourtSiteJson)
                 .add("sittings", SittingsJsonGenerator.buildSittingsJson(sittings))
                 .build();

@@ -11,8 +11,8 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
@@ -33,7 +33,7 @@ import static uk.gov.justice.core.courts.Organisation.organisation;
 import static uk.gov.justice.services.common.converter.LocalDates.to;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDelayForJms;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.getJsonObject;
@@ -62,6 +62,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
+import static uk.gov.moj.cpp.listing.utils.Utilities.sleepToBeRefactored;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorizedUserToQueryCaseByDefendantAndHearingDate;
 
 import uk.gov.justice.core.courts.Address;
@@ -166,6 +167,7 @@ public class ListCourtHearingSteps extends AbstractIT {
     private static final String MEDIA_TYPE_SEARCH_BY_ORGANISATION_DEFENDANT_AND_HEARING_DATE = "application/vnd.listing.get.cases-by-organisation-defendant+json";
 
     private static final String EVENT_SELECTED_HEARING_UPDATED_TO_CASE = "listing.events.hearing-updated-to-case";
+    private static final String EVENT_SELECTED_HEARING_PARTIALLY_UPDATED = "listing.events.hearing-partially-updated";
     private static final String PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED = "public.listing.hearing-confirmed";
     private static final String PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED = "public.progression.events.hearing-extended";
     private static final String PUBLIC_LISTING_HEARING_LISTED = "public.listing.hearing-listed";
@@ -473,6 +475,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                 withJsonPath(caseReferenceFilter),
                 withJsonPath(lastNameFilter)
         });
+        sleepToBeRefactored();
     }
 
     /**
@@ -511,7 +514,7 @@ public class ListCourtHearingSteps extends AbstractIT {
     public void verifyHearingDayCourtScheduledUpdated(final UUID updatedCourtScheduleId) {
         final UUID hearingId = hearingsData.getHearingData().get(0).getId();
         final String url = generateUrlForFindingAHearingById(hearingId.toString());
-        final ResponseData resp = poll(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
+        final ResponseData resp = pollWithDefaults(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(status().is(OK),
                         payload().isJson(
                                 allOf(withJsonPath("$.id", equalTo(hearingId.toString())),
@@ -546,7 +549,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         setupAsAuthorizedUserToQueryCaseByDefendantAndHearingDate(getLoggedInUser());
         stubDefenceQueryApiForSearchCasesByPersonDefendant(caseId, defendantId);
 
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_BY_PERSON_DEFENDANT_AND_HEARING_DATE).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_BY_PERSON_DEFENDANT_AND_HEARING_DATE).withHeader(USER_ID, getLoggedInUser()))
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(
@@ -574,7 +577,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         stubDefenceQueryApiForSearchCasesByOrganisationDefendant(caseId, defendantId);
         setupAsAuthorizedUserToQueryCaseByDefendantAndHearingDate(getLoggedInUser());
 
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_BY_ORGANISATION_DEFENDANT_AND_HEARING_DATE).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_BY_ORGANISATION_DEFENDANT_AND_HEARING_DATE).withHeader(USER_ID, getLoggedInUser()))
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(
@@ -1026,7 +1029,7 @@ public class ListCourtHearingSteps extends AbstractIT {
 
         final String url = generateUrlForFindingAHearingById(dataForFirstHearing.getId().toString());
 
-        poll(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(status().is(OK),
                         payload().isJson(
                                 allOf(
@@ -1113,7 +1116,7 @@ public class ListCourtHearingSteps extends AbstractIT {
     }
 
     private void verifyHearingDetails(final CaseAndDefendantData caseAndDefendantData, final UUID masterDefendantId, final String searchHearingUrl) {
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(status().is(OK),
                         payload().isJson(allOf(
                                 withJsonPath("$.hearings[0].id",
@@ -1166,7 +1169,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                         caseAndDefendantData.getSearchCriteria(),
                         caseAndDefendantData.getJurisdictionTypeQueryParam()));
 
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(status().is(OK),
                         payload().isJson(allOf(
                                 withJsonPath("$.hearings[0].id",
@@ -1227,7 +1230,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                         caseAndDefendantData.getJurisdictionTypeQueryParam(),
                         "true"));
 
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(status().is(OK),
                         payload().isJson(allOf(
                                 withJsonPath("$.hearings.size()", is(2)),
@@ -1306,7 +1309,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                         caseAndDefendantData.getSearchCriteria(),
                         caseAndDefendantData.getJurisdictionTypeQueryParam()));
 
-        poll(requestParams(searchHearingUrlForCrown, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrlForCrown, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(status().is(OK),
                         payload().isJson(allOf(
                                 withJsonPath("$.hearings[0].id",
@@ -1356,7 +1359,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                 format(readConfig().getProperty("listing.available.search.hearings-defendant.ids"),
                         masterDefendantId.toString()));
 
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(status().is(OK),
                         payload().isJson(allOf(
                                 withJsonPath("$.hearings[0].id",
@@ -1410,7 +1413,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                 format(readConfig().getProperty("listing.available.search.hearings-defendant.ids"),
                         masterDefendantId.toString()));
 
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(status().is(OK),
                         payload().isJson(allOf(
                                 withJsonPath("$.hearings.size()",
@@ -1444,7 +1447,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                 format(readConfig().getProperty("listing.range.search.hearings.by.week.commencing"),
                         to(hearingData.getHearingStartDate()), to(hearingData.getHearingStartDate().plusDays(7)), hearingData.getCourtCentreId(), ALLOCATED));
 
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(status().is(OK),
                         payload().isJson(allOf(
                                 withJsonPath("$.hearings.size()", equalTo(1)),
@@ -1459,7 +1462,7 @@ public class ListCourtHearingSteps extends AbstractIT {
 
         final String url = generateUrlForFindingAHearingById("4e6d8d78-fa61-4102-8d14-2042df85faab");
 
-        poll(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(status().is(Response.Status.NOT_FOUND),
                         payload());
 
@@ -1471,7 +1474,7 @@ public class ListCourtHearingSteps extends AbstractIT {
 
         final String url = generateUrlForFindingAHearingById(invalidId);
 
-        poll(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(status().is(Response.Status.BAD_REQUEST),
                         payload().isJson(allOf(withJsonPath("$.error",
                                 equalTo("Please ensure that the id is a valid UUID.")))));
@@ -2499,7 +2502,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.hearings.by.allocated"), UNALLOCATED));
 
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(matchers)));
