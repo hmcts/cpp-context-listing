@@ -330,6 +330,72 @@ public class DefendantEventListenerTest {
         verify(hearingRepository).save(hearing);
     }
 
+    @Test
+    public void shouldPreserveIsYouthFieldWhenUpdatingDefendantLegalAidStatus() throws Exception {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final Boolean expectedIsYouth = Boolean.TRUE;
+        final List<ListedCase> testCases = createListedCasesWithIsYouth(CASE_ID, DEFENDANT_ID, expectedIsYouth);
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+        final Envelope<DefendantLegalaidStatusUpdatedForHearing> envelope = (Envelope<DefendantLegalaidStatusUpdatedForHearing>) mock(Envelope.class);
+        final DefendantLegalaidStatusUpdatedForHearing defendantLegalaidStatusData = DefendantLegalaidStatusUpdatedForHearing.defendantLegalaidStatusUpdatedForHearing()
+                .withDefendantId(DEFENDANT_ID)
+                .withHearingId(HEARING_ID)
+                .withCaseId(CASE_ID)
+                .withLegalAidStatus("Granted")
+                .build();
+        given(envelope.payload()).willReturn(defendantLegalaidStatusData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        defendantEventListener.defendantLegalStatusUpdatedForHearing(envelope);
+
+        verify(properties).replace(any(), objectNodeCaptor.capture());
+
+        final JsonNode updatedDefendant = objectNodeCaptor.getValue().get(0).get("defendants").get(0);
+        assertThat(updatedDefendant.get("isYouth").asBoolean(), equalTo(expectedIsYouth));
+        assertThat(updatedDefendant.get("legalAidStatus").asText(), equalTo("Granted"));
+
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldPreserveIsYouthFieldAsFalseWhenUpdatingDefendantLegalAidStatus() throws Exception {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final Boolean expectedIsYouth = Boolean.FALSE;
+        final List<ListedCase> testCases = createListedCasesWithIsYouth(CASE_ID, DEFENDANT_ID, expectedIsYouth);
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+        final Envelope<DefendantLegalaidStatusUpdatedForHearing> envelope = (Envelope<DefendantLegalaidStatusUpdatedForHearing>) mock(Envelope.class);
+        final DefendantLegalaidStatusUpdatedForHearing defendantLegalaidStatusData = DefendantLegalaidStatusUpdatedForHearing.defendantLegalaidStatusUpdatedForHearing()
+                .withDefendantId(DEFENDANT_ID)
+                .withHearingId(HEARING_ID)
+                .withCaseId(CASE_ID)
+                .withLegalAidStatus("Refused")
+                .build();
+        given(envelope.payload()).willReturn(defendantLegalaidStatusData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        defendantEventListener.defendantLegalStatusUpdatedForHearing(envelope);
+
+        verify(properties).replace(any(), objectNodeCaptor.capture());
+
+        final JsonNode updatedDefendant = objectNodeCaptor.getValue().get(0).get("defendants").get(0);
+        assertThat(updatedDefendant.get("isYouth").asBoolean(), equalTo(expectedIsYouth));
+        assertThat(updatedDefendant.get("legalAidStatus").asText(), equalTo("Refused"));
+
+        verify(hearingRepository).save(hearing);
+    }
+
     private List<ListedCase> createListedCases(final UUID caseId, final UUID defendantId) {
         return singletonList(ListedCase.listedCase()
                 .withCaseIdentifier(CaseIdentifier.caseIdentifier()
@@ -340,6 +406,32 @@ public class DefendantEventListenerTest {
                 .withDefendants(singletonList(Defendant.defendant()
                         .withSpecificRequirements(null)
                         .withId(defendantId)
+                        .withBailStatus(new BailStatus.Builder().withCode("C").withId(fromString("12e69486-4d01-3403-a50a-7419ca040635")).withDescription("Custody or remanded into custody").build())
+                        .withOffences(singletonList(Offence.offence()
+                                .withId(randomUUID())
+                                .withOffenceCode(STRING.next())
+                                .withStartDate(LocalDates.to(LocalDate.now()))
+                                .withStatementOfOffence(StatementOfOffence.statementOfOffence()
+                                        .withLegislation(STRING.next())
+                                        .withTitle(STRING.next())
+                                        .build())
+                                .build()))
+                        .build()))
+                .withId(caseId)
+                .build());
+    }
+
+    private List<ListedCase> createListedCasesWithIsYouth(final UUID caseId, final UUID defendantId, final Boolean isYouth) {
+        return singletonList(ListedCase.listedCase()
+                .withCaseIdentifier(CaseIdentifier.caseIdentifier()
+                        .withAuthorityCode(STRING.next())
+                        .withAuthorityId(randomUUID())
+                        .withCaseReference(STRING.next())
+                        .build())
+                .withDefendants(singletonList(Defendant.defendant()
+                        .withSpecificRequirements(null)
+                        .withId(defendantId)
+                        .withIsYouth(isYouth)
                         .withBailStatus(new BailStatus.Builder().withCode("C").withId(fromString("12e69486-4d01-3403-a50a-7419ca040635")).withDescription("Custody or remanded into custody").build())
                         .withOffences(singletonList(Offence.offence()
                                 .withId(randomUUID())
