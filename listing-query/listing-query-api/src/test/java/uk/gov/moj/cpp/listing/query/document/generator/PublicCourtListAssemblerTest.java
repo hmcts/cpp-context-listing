@@ -6,6 +6,7 @@ import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createReader;
@@ -15,8 +16,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,6 +28,11 @@ import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderF
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.STANDARD;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.USHERS_CROWN;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.USHERS_MAGISTRATE;
+
+import java.util.Optional;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
@@ -122,6 +130,8 @@ public class PublicCourtListAssemblerTest {
     @BeforeEach
     public void setup() {
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
+        lenient().when(referenceDataService.getHearingTypesIdWelshDescriptionMap(any(JsonEnvelope.class)))
+                .thenReturn(emptyMap());
     }
 
     @Test
@@ -370,6 +380,153 @@ public class PublicCourtListAssemblerTest {
     }
 
     @Test
+    public void shouldReturnEmptyWhenNoHearings() {
+        final JsonEnvelope envelope = buildJsonEnvelope(convertToJsonObject("{\"hearings\":[]}"));
+
+        final Optional<JsonObject> result = publicListService.assemble(envelope, COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), PUBLIC, TRUE);
+
+        assertFalse(result.isPresent());
+    }
+
+    @Test
+    public void shouldBuildDataForStandardCourtListType() {
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails(NOT_WELSH));
+        when(referenceDataService.getJudiciariesByIdList(eq(singletonList(JUDICIARY_ID)), any(JsonEnvelope.class)))
+                .thenReturn(generateJudiciaryEnvelope());
+        when(judiciaryNameMapper.getName(any(JsonObject.class))).thenReturn("Mr Recorder Ainsworth suffix");
+
+        final JsonObject publicListData = publicListService.assemble(buildRequestEnvelope(), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), STANDARD, TRUE).get();
+
+        assertThat(publicListData.getString("listType"), is(STANDARD.toString().toLowerCase()));
+        assertThat(publicListData.getString("courtCentreName"), is(COURT_CENTRE_NAME));
+        assertThat(publicListData.getJsonArray("hearingDates").size(), is(2));
+    }
+
+    @Test
+    public void shouldBuildDataForUshersMagistrateCourtListType() {
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails(NOT_WELSH));
+        when(referenceDataService.getJudiciariesByIdList(eq(singletonList(JUDICIARY_ID)), any(JsonEnvelope.class)))
+                .thenReturn(generateJudiciaryEnvelope());
+        when(judiciaryNameMapper.getName(any(JsonObject.class))).thenReturn("Mr Recorder Ainsworth suffix");
+
+        final JsonObject publicListData = publicListService.assemble(buildRequestEnvelope(), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), USHERS_MAGISTRATE, TRUE).get();
+
+        assertThat(publicListData.getString("listType"), is(USHERS_MAGISTRATE.toString().toLowerCase()));
+        assertThat(publicListData.getString("courtCentreName"), is(COURT_CENTRE_NAME));
+    }
+
+    @Test
+    public void shouldBuildDataForUshersCrownCourtListType() {
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails(NOT_WELSH));
+        when(referenceDataService.getJudiciariesByIdList(eq(singletonList(JUDICIARY_ID)), any(JsonEnvelope.class)))
+                .thenReturn(generateJudiciaryEnvelope());
+        when(judiciaryNameMapper.getName(any(JsonObject.class))).thenReturn("Mr Recorder Ainsworth suffix");
+
+        final JsonObject publicListData = publicListService.assemble(buildRequestEnvelope(), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), USHERS_CROWN, TRUE).get();
+
+        assertThat(publicListData.getString("listType"), is(USHERS_CROWN.toString().toLowerCase()));
+        assertThat(publicListData.getString("courtCentreName"), is(COURT_CENTRE_NAME));
+    }
+
+    @Test
+    public void shouldBuildDataWithProsecutorTypeFromAuthorityCodeWhenProsecutorAbsent() {
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails(NOT_WELSH));
+        when(referenceDataService.getJudiciariesByIdList(eq(singletonList(JUDICIARY_ID)), any(JsonEnvelope.class)))
+                .thenReturn(generateJudiciaryEnvelope());
+        when(judiciaryNameMapper.getName(any(JsonObject.class))).thenReturn("Mr Recorder Ainsworth suffix");
+
+        final JsonObject publicListData = publicListService.assemble(buildRequestEnvelope(), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), PUBLIC, TRUE).get();
+
+        final JsonObject hearing = publicListData.getJsonArray("hearingDates").getJsonObject(0)
+                .getJsonArray("courtRooms").getJsonObject(0)
+                .getJsonArray("timeslots").getJsonObject(0)
+                .getJsonArray("hearings").getJsonObject(0);
+        assertThat(hearing.getString("prosecutorType"), is("GytGt7BqP4"));
+    }
+
+    @Test
+    public void shouldBuildDataForCourtApplicationWithRestrictedApplicationType() {
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails(NOT_WELSH));
+        when(referenceDataService.getJudiciariesByIdList(eq(singletonList(JUDICIARY_ID)), any(JsonEnvelope.class)))
+                .thenReturn(generateJudiciaryEnvelope());
+
+        final String payloadWithRestrictedAppType = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getOnlyApplicationHearingPublicCourtListData.json")
+                .replace("JUDICIARY_ID", JUDICIARY_ID.toString())
+                .replace("\"restrictCourtApplicationType\": false", "\"restrictCourtApplicationType\": true");
+        final JsonEnvelope envelope = buildJsonEnvelope(convertToJsonObject(payloadWithRestrictedAppType));
+
+        final JsonObject publicListData = publicListService.assemble(envelope, COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.PUBLIC, TRUE).get();
+
+        assertThat(publicListData.getString("listType"), is(PUBLIC.toString().toLowerCase()));
+        final JsonObject defendant = publicListData.getJsonArray("hearingDates").getJsonObject(0)
+                .getJsonArray("courtRooms").getJsonObject(0)
+                .getJsonArray("timeslots").getJsonObject(0)
+                .getJsonArray("hearings").getJsonObject(0)
+                .getJsonArray("defendants").getJsonObject(0);
+        assertThat(defendant.getJsonArray("offences").size(), is(0));
+    }
+
+    @Test
+    public void shouldBuildDataForLegalEntityRestrictedDefendant() {
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails(NOT_WELSH));
+        when(referenceDataService.getJudiciariesByIdList(eq(singletonList(JUDICIARY_ID)), any(JsonEnvelope.class)))
+                .thenReturn(generateJudiciaryEnvelope());
+        when(judiciaryNameMapper.getName(any(JsonObject.class))).thenReturn("Mr Recorder Ainsworth suffix");
+
+        final String payloadWithRestrictedLegalEntity = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getCourtListContentForPublicList.json")
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"")
+                .replace("\"arrestSummonsNumber\": \"REF456\"\n                          }\n                        }", "\"arrestSummonsNumber\": \"REF456\"\n                          },\n                        \"restrictFromCourtList\": true,\n                        \"organisationName\": \"Acme Corp\"\n                        }");
+        final JsonEnvelope envelope = buildJsonEnvelope(convertToJsonObject(payloadWithRestrictedLegalEntity));
+
+        final JsonObject publicListData = publicListService.assemble(envelope, COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.PUBLIC, TRUE).get();
+
+        final JsonObject defendant = publicListData.getJsonArray("hearingDates").getJsonObject(0)
+                .getJsonArray("courtRooms").getJsonObject(0)
+                .getJsonArray("timeslots").getJsonObject(0)
+                .getJsonArray("hearings").getJsonObject(0)
+                .getJsonArray("defendants").getJsonObject(0);
+        assertThat(defendant.getString("organisationName"), is(DEFENDANT_STRING));
+        assertThat(defendant.getString("welshOrganisationName"), is(WELSH_DEFENDANT_STRING));
+    }
+
+    @Test
+    public void shouldBuildDataWithOffenceContainingMaxPenaltyAndAdjournedDetails() {
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails(NOT_WELSH));
+        when(referenceDataService.getJudiciariesByIdList(eq(singletonList(JUDICIARY_ID)), any(JsonEnvelope.class)))
+                .thenReturn(generateJudiciaryEnvelope());
+        when(judiciaryNameMapper.getName(any(JsonObject.class))).thenReturn("Mr Recorder Ainsworth suffix");
+
+        final String maxPenalty = "6 months";
+        final String convictedOn = "2020-01-15";
+        final String adjournedDate = "2021-02-20";
+        final String adjournedHearingType = "Trial";
+        final String payloadWithOffenceDetails = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getCourtListContentForPublicList.json")
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"")
+                .replace("\"listingNumber\" : 1", "\"listingNumber\" : 1, \"maxPenalty\": \"" + maxPenalty + "\", \"convictedOn\": \"" + convictedOn + "\", \"adjournedDate\": \"" + adjournedDate + "\", \"adjournedHearingType\": \"" + adjournedHearingType + "\"");
+        final JsonEnvelope envelope = buildJsonEnvelope(convertToJsonObject(payloadWithOffenceDetails));
+
+        final JsonObject publicListData = publicListService.assemble(envelope, COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), PUBLIC, TRUE).get();
+
+        final JsonObject offence = publicListData.getJsonArray("hearingDates").getJsonObject(0)
+                .getJsonArray("courtRooms").getJsonObject(0)
+                .getJsonArray("timeslots").getJsonObject(0)
+                .getJsonArray("hearings").getJsonObject(0)
+                .getJsonArray("defendants").getJsonObject(0)
+                .getJsonArray("offences").getJsonObject(0);
+        assertThat(offence.getString("maxPenalty"), is(maxPenalty));
+        assertThat(offence.getString("convictedOn"), is(convictedOn));
+        assertThat(offence.getString("adjournedDate"), is(adjournedDate));
+        assertThat(offence.getString("adjournedHearingType"), is(adjournedHearingType));
+    }
+
+    @Test
     public void shouldBuildDataForWelshPublicCourtList() {
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails(IS_WELSH));
@@ -449,6 +606,12 @@ public class PublicCourtListAssemblerTest {
 
         final JsonObject offence = defendant.getJsonArray("offences").getJsonObject(0);
         assertThat(offence.getString("offenceTitle"), is(OFFENCE_TITLE));
+        if (offence.containsKey("offenceCode")) {
+            assertThat(offence.getString("offenceCode"), is("yGRsfUEVpn"));
+        }
+        if (offence.containsKey("listingNumber")) {
+            assertThat(offence.getInt("listingNumber"), is(1));
+        }
     }
 
     private void assertBulkPublicCourtListPayload(JsonObject publicListData, boolean checkJudiciary) {

@@ -146,6 +146,13 @@
                     "2019-07-21",
                     "2019-07-22"
                   ]
+                },
+                {
+                  "id": "a1b2c3d4-5678-90ab-cdef-111111111111",
+                  "lastName": "SurnameOnly",
+                  "defendants": [
+                    "DEFENDANT_ID1"
+                  ]
                 }
               ],
               "listedCases": [

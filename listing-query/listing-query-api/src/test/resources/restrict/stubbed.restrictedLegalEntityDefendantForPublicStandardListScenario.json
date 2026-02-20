@@ -119,7 +119,8 @@
                         "description": "Unconditional Bail"
                       },
                       "defenceOrganisation": "TestOne",
-                      "restrictFromCourtList": true
+                      "restrictFromCourtList": true,
+                      "shadowListed": true
                     },
                     {
                       "id": "86c38cef-cdbb-46d8-96a5-9b31845e95cc",

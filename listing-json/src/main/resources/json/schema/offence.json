@@ -58,6 +58,21 @@
     "listingNumber" : {
       "type": "integer"
     },
+    "maxPenalty": {
+      "type": "string"
+    },
+    "alcoholReadingAmount": {
+      "type": "string"
+    },
+    "convictedOn": {
+      "type": "string"
+    },
+    "adjournedDate": {
+      "type": "string"
+    },
+    "adjournedHearingType": {
+      "type": "string"
+    },
     "indictmentParticular": {
       "type": "string"
     },

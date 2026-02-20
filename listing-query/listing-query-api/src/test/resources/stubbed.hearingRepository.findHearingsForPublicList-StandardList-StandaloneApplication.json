@@ -223,6 +223,12 @@
                       "firstName": "Hattie",
                       "isRespondent": true,
                       "courtApplicationPartyType": "PERSON"
+                    },
+                    {
+                      "id": "16139251-90e6-11e9-ad85-e79bbff93e5f",
+                      "lastName": "Acme Corporation",
+                      "isRespondent": true,
+                      "courtApplicationPartyType": "ORGANISATION"
                     }
                   ],
                   "applicationType": "Application type",
