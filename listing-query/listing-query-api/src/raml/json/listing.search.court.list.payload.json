@@ -47,6 +47,9 @@
                         "address5": "SHCRTjkAtr",
                         "postcode": "CR1 4BX"
                       },
+                      "personDefendant": {
+                        "arrestSummonsNumber": "4dX1QIweKc"
+                      },
                       "offences": [
                         {
                           "id": "bdd3a894-f08c-4818-9ff6-4928039c4a8b",
@@ -83,6 +86,9 @@
                         "address4": "z5DCPvsw4m",
                         "address5": "NMLISYMPbk",
                         "postcode": "CR1 4BX"
+                      },
+                      "personDefendant": {
+                        "arrestSummonsNumber": "4dX1QIweKc"
                       },
                       "offences": [
                         {
@@ -137,6 +143,9 @@
                         "address5": "ai49ZeYjHy",
                         "postcode": "CR1 4BX"
                       },
+                      "personDefendant": {
+                        "arrestSummonsNumber": "4dX1QIweKc"
+                      },
                       "offences": [
                         {
                           "id": "65c8c54b-6d42-4ca7-9fc9-e029d713359e",
@@ -173,6 +182,9 @@
                         "address4": "cxX9vzDsq8",
                         "address5": "mJrPeojKhj",
                         "postcode": "CR1 4BX"
+                      },
+                      "personDefendant": {
+                        "arrestSummonsNumber": "4dX1QIweKc"
                       },
                       "offences": [
                         {
@@ -280,6 +292,9 @@
                         "address5": "SHCRTjkAtr",
                         "postcode": "CR1 4BX"
                       },
+                      "personDefendant": {
+                        "arrestSummonsNumber": "4dX1QIweKc"
+                      },
                       "offences": [
                         {
                           "id": "bdd3a894-f08c-4818-9ff6-4928039c4a8b",
@@ -316,6 +331,9 @@
                         "address4": "z5DCPvsw4m",
                         "address5": "NMLISYMPbk",
                         "postcode": "CR1 4BX"
+                      },
+                      "personDefendant": {
+                        "arrestSummonsNumber": "4dX1QIweKc"
                       },
                       "offences": [
                         {
@@ -370,6 +388,9 @@
                         "address5": "ai49ZeYjHy",
                         "postcode": "CR1 4BX"
                       },
+                      "personDefendant": {
+                        "arrestSummonsNumber": "4dX1QIweKc"
+                      },
                       "offences": [
                         {
                           "id": "65c8c54b-6d42-4ca7-9fc9-e029d713359e",
@@ -406,6 +427,9 @@
                         "address4": "cxX9vzDsq8",
                         "address5": "mJrPeojKhj",
                         "postcode": "CR1 4BX"
+                      },
+                      "personDefendant": {
+                        "arrestSummonsNumber": "4dX1QIweKc"
                       },
                       "offences": [
                         {

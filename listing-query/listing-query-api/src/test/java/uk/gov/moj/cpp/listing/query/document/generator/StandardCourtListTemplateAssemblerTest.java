@@ -203,6 +203,7 @@ public class StandardCourtListTemplateAssemblerTest {
 
         Defendant actualDefendant = actualHearing.getDefendants().get(0);
         assertDefendant(actualDefendant,2);
+        assertThat(actualDefendant.getArrestSummonsNumber(), is("REF123"));
         assertOffence(actualDefendant.getOffences().get(0));
 
         assertThat(actualTimeslot.getHearings().get(0).getSequence(), lessThan(actualTimeslot.getHearings().get(1).getSequence()));

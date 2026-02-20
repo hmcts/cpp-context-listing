@@ -34,6 +34,8 @@ public class Defendant {
 
     private List<Counsel> defenceCounsels;
 
+    private PersonDefendant personDefendant;
+
     public String getOrganisationName() {
         return organisationName;
     }
@@ -90,6 +92,17 @@ public class Defendant {
         return reportingRestrictions;
     }
 
+    public PersonDefendant getPersonDefendant() {
+        return personDefendant;
+    }
+
+    /**
+     * Convenience accessor for arrest summons number from nested personDefendant.
+     */
+    public String getArrestSummonsNumber() {
+        return personDefendant != null ? personDefendant.getArrestSummonsNumber() : null;
+    }
+
     public static Defendant.Builder defendant() {
         return new Defendant.Builder();
     }
@@ -109,6 +122,7 @@ public class Defendant {
         private List<Counsel> prosecutionCounsels;
         private List<Counsel> defenceCounsels;
         private Set<ReportingRestriction> reportingRestrictions;
+        private PersonDefendant personDefendant;
 
         private Builder() {
         }
@@ -182,6 +196,11 @@ public class Defendant {
             return this;
         }
 
+        public Defendant.Builder withPersonDefendant(final PersonDefendant personDefendant) {
+            this.personDefendant = personDefendant;
+            return this;
+        }
+
         public Defendant build() {
             final Defendant defendant = new Defendant();
             defendant.organisationName = organisationName;
@@ -198,6 +217,7 @@ public class Defendant {
             defendant.defenceCounsels = defenceCounsels;
             defendant.reportingRestrictions = reportingRestrictions;
             defendant.id = id;
+            defendant.personDefendant = personDefendant;
             return defendant;
         }
     }

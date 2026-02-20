@@ -166,7 +166,6 @@ public class ListCourtHearingSteps extends AbstractIT {
     private static final String MEDIA_TYPE_SEARCH_BY_ORGANISATION_DEFENDANT_AND_HEARING_DATE = "application/vnd.listing.get.cases-by-organisation-defendant+json";
 
     private static final String EVENT_SELECTED_HEARING_UPDATED_TO_CASE = "listing.events.hearing-updated-to-case";
-    private static final String EVENT_SELECTED_HEARING_PARTIALLY_UPDATED = "listing.events.hearing-partially-updated";
     private static final String PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED = "public.listing.hearing-confirmed";
     private static final String PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED = "public.progression.events.hearing-extended";
     private static final String PUBLIC_LISTING_HEARING_LISTED = "public.listing.hearing-listed";
@@ -512,7 +511,7 @@ public class ListCourtHearingSteps extends AbstractIT {
     public void verifyHearingDayCourtScheduledUpdated(final UUID updatedCourtScheduleId) {
         final UUID hearingId = hearingsData.getHearingData().get(0).getId();
         final String url = generateUrlForFindingAHearingById(hearingId.toString());
-        final ResponseData resp = poll(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
+        poll(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(status().is(OK),
                         payload().isJson(
                                 allOf(withJsonPath("$.id", equalTo(hearingId.toString())),

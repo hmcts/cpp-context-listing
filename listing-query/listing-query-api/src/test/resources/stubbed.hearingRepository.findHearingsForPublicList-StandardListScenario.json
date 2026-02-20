@@ -122,7 +122,10 @@
                       "dateOfBirth": "DATE_OF_BIRTH",
                       "defenceOrganisation": "TestOne",
                       "restrictFromCourtList": true,
-                      "defenceOrganisation": "ABC LTD."
+                      "defenceOrganisation": "ABC LTD.",
+                      "personDefendant": {
+                        "arrestSummonsNumber": "REF123"
+                      }
                     },
                     {
                       "id": "86c38cef-cdbb-46d8-96a5-9b31845e95cc",
@@ -308,7 +311,10 @@
                         "description": "Unconditional Bail"
                       },
                       "dateOfBirth": "1983-05-23",
-                      "defenceOrganisation": "ABC LTD"
+                      "defenceOrganisation": "ABC LTD",
+                      "personDefendant": {
+                        "arrestSummonsNumber": "REF123"
+                      }
                     },
                     {
                       "id": "62f5ef7d-a2f6-4590-afb0-9ebee70672ba",

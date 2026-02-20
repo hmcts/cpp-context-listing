@@ -49,6 +49,7 @@ import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Counsel;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.CourtRoom;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Defendant;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Hearing;
+import uk.gov.moj.cpp.listing.query.document.generator.courtlist.PersonDefendant;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.HearingDate;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Offence;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.ReportingRestriction;
@@ -146,6 +147,8 @@ public class StandardPublicCourtListTemplateAssembler {
     private static final String HEARING_STRING = "Hearing";
     private static final String ADJOURNED_HEARING_DATE = "adjournedFromDate";
     private static final String ADDRESS = "address";
+    private static final String PERSON_DEFENDANT_JSON = "personDefendant";
+    private static final String ARREST_SUMMONS_NUMBER = "arrestSummonsNumber";
     private static final String COURT_APPLICATIONS = "courtApplications";
     private static final String APPLICATION_REFERENCE = "applicationReference";
     private static final String APPLICANT = "applicant";
@@ -516,6 +519,10 @@ public class StandardPublicCourtListTemplateAssembler {
         final boolean isGroupMaster = listedCase.getBoolean(IS_GROUP_MASTER, false);
         final Defendant.Builder builder = Defendant.defendant();
         builder.withId(fromString(defendant.getString(ID)));
+        final String arrestSummonsNumber = getArrestSummonsNumber(defendant, listedCase);
+        if (arrestSummonsNumber != null && !arrestSummonsNumber.isBlank()) {
+            builder.withPersonDefendant(PersonDefendant.personDefendant().withArrestSummonsNumber(arrestSummonsNumber).build());
+        }
         final Set<ReportingRestriction> reportingRestrictions = new HashSet<>();
         final String legalEntityDefendant = defendant.getString(ORGANISATION_NAME, BLANK_STRING);
         if (defendantRestricted) {
@@ -549,6 +556,22 @@ public class StandardPublicCourtListTemplateAssembler {
         }
 
         return builder.build();
+    }
+
+    private String getArrestSummonsNumber(final JsonObject defendant, final JsonObject listedCase) {
+        if (nonNull(defendant) && defendant.containsKey(PERSON_DEFENDANT_JSON)) {
+            final JsonObject personDefendant = defendant.getJsonObject(PERSON_DEFENDANT_JSON);
+            if (nonNull(personDefendant) && personDefendant.containsKey(ARREST_SUMMONS_NUMBER)) {
+                return personDefendant.getString(ARREST_SUMMONS_NUMBER, BLANK_STRING);
+            }
+        }
+        if (nonNull(listedCase) && listedCase.containsKey(PERSON_DEFENDANT_JSON)) {
+            final JsonObject personDefendant = listedCase.getJsonObject(PERSON_DEFENDANT_JSON);
+            if (nonNull(personDefendant) && personDefendant.containsKey(ARREST_SUMMONS_NUMBER)) {
+                return personDefendant.getString(ARREST_SUMMONS_NUMBER, BLANK_STRING);
+            }
+        }
+        return null;
     }
 
     private void setDefendantDetails(final JsonObject hearingJson, final JsonObject defendant, final String dateOfBirth, final boolean isGroupMaster, final Defendant.Builder builder) {

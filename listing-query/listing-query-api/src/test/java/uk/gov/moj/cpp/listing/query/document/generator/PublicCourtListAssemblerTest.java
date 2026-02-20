@@ -443,6 +443,9 @@ public class PublicCourtListAssemblerTest {
         final JsonObject defendant = hearing.getJsonArray("defendants").getJsonObject(0);
         assertThat(defendant.getString("firstName"), is(FIRST_NAME1));
         assertThat(defendant.getString("surname"), is(LAST_NAME1));
+        if (defendant.containsKey("personDefendant")) {
+            assertThat(defendant.getJsonObject("personDefendant").getString("arrestSummonsNumber"), is("REF456"));
+        }
 
         final JsonObject offence = defendant.getJsonArray("offences").getJsonObject(0);
         assertThat(offence.getString("offenceTitle"), is(OFFENCE_TITLE));
