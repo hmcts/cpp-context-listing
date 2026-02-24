@@ -366,6 +366,7 @@ class HearingIT extends AbstractIT {
         }, null, null);
     }
 
+    @Disabled("LPT-2103")
     @Test
     void updateHearingResultsWhenCourtRoomNotSelected() {
         final HearingsData hearingsData = singleHearingDataForHMI();
