@@ -68,6 +68,10 @@
     "nationalityDescription": {
       "type": "string"
     },
+    "arrestSummonsNumber": {
+      "description": "The arrest summons number for the person defendant",
+      "type": "string"
+    },
     "address": {
       "$ref": "http://justice.gov.uk/core/courts/address.json"
     },

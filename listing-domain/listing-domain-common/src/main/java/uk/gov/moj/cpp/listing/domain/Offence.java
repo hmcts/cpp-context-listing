@@ -42,11 +42,20 @@ public class Offence {
 
     private CivilOffence civilOffence;
 
+    private final Optional<Integer> listingNumber;
+    private final Optional<String> maxPenalty;
+    private final Optional<String> alcoholReadingAmount;
+    private final Optional<String> convictedOn;
+    private final Optional<String> adjournedDate;
+    private final Optional<String> adjournedHearingType;
+
     public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording,
                    final String startDate, final StatementOfOffence statementOfOffence, final Optional<CustodyTimeLimit> custodyTimeLimit,
                    final Optional<LaaReference> laaApplnReference, final Optional<String> laidDate, final Optional<Boolean> shadowListed,
                    final Optional<CommittingCourt> committingCourt, final List<ReportingRestriction> reportingRestrictions,
-                   final Optional<SeedingHearing> seedingHearing, final Integer count, final Integer orderIndex, String indictmentParticular, CivilOffence civilOffence) {
+                   final Optional<SeedingHearing> seedingHearing, final Integer count, final Integer orderIndex, String indictmentParticular, CivilOffence civilOffence,
+                   final Optional<Integer> listingNumber, final Optional<String> maxPenalty, final Optional<String> alcoholReadingAmount,
+                   final Optional<String> convictedOn, final Optional<String> adjournedDate, final Optional<String> adjournedHearingType) {
         this.endDate = endDate;
         this.id = id;
         this.offenceCode = offenceCode;
@@ -64,6 +73,12 @@ public class Offence {
         this.orderIndex = orderIndex;
         this.indictmentParticular = indictmentParticular;
         this.civilOffence = civilOffence;
+        this.listingNumber = listingNumber;
+        this.maxPenalty = maxPenalty;
+        this.alcoholReadingAmount = alcoholReadingAmount;
+        this.convictedOn = convictedOn;
+        this.adjournedDate = adjournedDate;
+        this.adjournedHearingType = adjournedHearingType;
     }
 
     public Optional<String> getEndDate() {
@@ -132,6 +147,30 @@ public class Offence {
 
     public CivilOffence getCivilOffence() { return civilOffence; }
 
+    public Optional<Integer> getListingNumber() {
+        return listingNumber;
+    }
+
+    public Optional<String> getMaxPenalty() {
+        return maxPenalty;
+    }
+
+    public Optional<String> getAlcoholReadingAmount() {
+        return alcoholReadingAmount;
+    }
+
+    public Optional<String> getConvictedOn() {
+        return convictedOn;
+    }
+
+    public Optional<String> getAdjournedDate() {
+        return adjournedDate;
+    }
+
+    public Optional<String> getAdjournedHearingType() {
+        return adjournedHearingType;
+    }
+
     public static Builder offence() {
         return new Offence.Builder();
     }
@@ -161,12 +200,18 @@ public class Offence {
                 Objects.equals(orderIndex, offence.orderIndex) &&
                 Objects.equals(seedingHearing, offence.seedingHearing) &&
                 Objects.equals(indictmentParticular, offence.indictmentParticular) &&
-                Objects.equals(civilOffence, offence.civilOffence);
+                Objects.equals(civilOffence, offence.civilOffence) &&
+                Objects.equals(listingNumber, offence.listingNumber) &&
+                Objects.equals(maxPenalty, offence.maxPenalty) &&
+                Objects.equals(alcoholReadingAmount, offence.alcoholReadingAmount) &&
+                Objects.equals(convictedOn, offence.convictedOn) &&
+                Objects.equals(adjournedDate, offence.adjournedDate) &&
+                Objects.equals(adjournedHearingType, offence.adjournedHearingType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions, seedingHearing, count, orderIndex, indictmentParticular, civilOffence);
+        return Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions, seedingHearing, count, orderIndex, indictmentParticular, civilOffence, listingNumber, maxPenalty, alcoholReadingAmount, convictedOn, adjournedDate, adjournedHearingType);
     }
 
     @Override
@@ -189,6 +234,12 @@ public class Offence {
                 ", seedingHearing=" + seedingHearing +
                 ", indictmentParticular=" + indictmentParticular +
                 ", civilOffence=" + civilOffence +
+                ", listingNumber=" + listingNumber +
+                ", maxPenalty=" + maxPenalty +
+                ", alcoholReadingAmount=" + alcoholReadingAmount +
+                ", convictedOn=" + convictedOn +
+                ", adjournedDate=" + adjournedDate +
+                ", adjournedHearingType=" + adjournedHearingType +
                 '}';
     }
 
@@ -225,6 +276,13 @@ public class Offence {
         private String indictmentParticular;
 
         private CivilOffence civilOffence;
+
+        private Optional<Integer> listingNumber = empty();
+        private Optional<String> maxPenalty = empty();
+        private Optional<String> alcoholReadingAmount = empty();
+        private Optional<String> convictedOn = empty();
+        private Optional<String> adjournedDate = empty();
+        private Optional<String> adjournedHearingType = empty();
 
         public Builder withEndDate(final Optional<String> endDate) {
             this.endDate = endDate;
@@ -311,8 +369,38 @@ public class Offence {
             return this;
         }
 
+        public Builder withListingNumber(final Optional<Integer> listingNumber) {
+            this.listingNumber = listingNumber;
+            return this;
+        }
+
+        public Builder withMaxPenalty(final Optional<String> maxPenalty) {
+            this.maxPenalty = maxPenalty;
+            return this;
+        }
+
+        public Builder withAlcoholReadingAmount(final Optional<String> alcoholReadingAmount) {
+            this.alcoholReadingAmount = alcoholReadingAmount;
+            return this;
+        }
+
+        public Builder withConvictedOn(final Optional<String> convictedOn) {
+            this.convictedOn = convictedOn;
+            return this;
+        }
+
+        public Builder withAdjournedDate(final Optional<String> adjournedDate) {
+            this.adjournedDate = adjournedDate;
+            return this;
+        }
+
+        public Builder withAdjournedHearingType(final Optional<String> adjournedHearingType) {
+            this.adjournedHearingType = adjournedHearingType;
+            return this;
+        }
+
         public Offence build() {
-            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions, seedingHearing, count, orderIndex, indictmentParticular, civilOffence);
+            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions, seedingHearing, count, orderIndex, indictmentParticular, civilOffence, listingNumber, maxPenalty, alcoholReadingAmount, convictedOn, adjournedDate, adjournedHearingType);
         }
     }
 }
