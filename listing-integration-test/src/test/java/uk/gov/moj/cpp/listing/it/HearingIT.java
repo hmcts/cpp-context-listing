@@ -596,7 +596,7 @@ class HearingIT extends AbstractIT {
                 listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime());
         final UUID courtCentreId = getRandomCourtCenterId();
         final UUID courtScheduleId1 = UUID.fromString("d4b9299c-c6c6-3747-8dac-01ca82239c27");
-        final UUID hearingId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId();
+        listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId();
         final ZonedDateTime hearingStartTime = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime();
         final LocalDate hearingDate = hearingStartTime.toLocalDate();
         final UUID courtroomId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId();
