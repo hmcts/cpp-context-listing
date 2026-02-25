@@ -529,7 +529,9 @@ public class StandardPublicCourtListTemplateAssembler {
         builder.withId(fromString(defendant.getString(ID)));
         final String arrestSummonsNumber = getArrestSummonsNumber(defendant, listedCase);
         if (arrestSummonsNumber != null && !arrestSummonsNumber.isBlank()) {
-            builder.withPersonDefendant(PersonDefendant.personDefendant().withArrestSummonsNumber(arrestSummonsNumber).build());
+            builder.withPersonDefendant(PersonDefendant.personDefendant()
+                    .withArrestSummonsNumber(arrestSummonsNumber)
+                    .build());
         }
         final Set<ReportingRestriction> reportingRestrictions = new HashSet<>();
         final String legalEntityDefendant = defendant.getString(ORGANISATION_NAME, BLANK_STRING);
@@ -571,6 +573,12 @@ public class StandardPublicCourtListTemplateAssembler {
             final JsonObject personDefendant = defendant.getJsonObject(PERSON_DEFENDANT_JSON);
             if (nonNull(personDefendant) && personDefendant.containsKey(ARREST_SUMMONS_NUMBER)) {
                 return personDefendant.getString(ARREST_SUMMONS_NUMBER, BLANK_STRING);
+            }
+        }
+        if (nonNull(defendant) && defendant.containsKey(ARREST_SUMMONS_NUMBER)) {
+            final String value = defendant.getString(ARREST_SUMMONS_NUMBER, BLANK_STRING);
+            if (!value.isBlank()) {
+                return value;
             }
         }
         if (nonNull(listedCase) && listedCase.containsKey(PERSON_DEFENDANT_JSON)) {
@@ -642,20 +650,32 @@ public class StandardPublicCourtListTemplateAssembler {
             builder.withOffenceCode(offence.getString(OFFENCE_CODE, BLANK_STRING));
         }
         if (offence.containsKey(MAX_PENALTY)) {
-            builder.withMaxPenalty(offence.getString(MAX_PENALTY, BLANK_STRING));
+            final String maxPenalty = offence.getString(MAX_PENALTY, BLANK_STRING);
+            if (!maxPenalty.isBlank()) {
+                builder.withMaxPenalty(maxPenalty);
+            }
         }
-        final String alcoholReading = getAlcoholReadingAmount(offence);
-        if (alcoholReading != null) {
-            builder.withAlcoholReadingAmount(alcoholReading);
+        final String alcoholReadingAmount = getAlcoholReadingAmount(offence);
+        if (alcoholReadingAmount != null && !alcoholReadingAmount.isBlank()) {
+            builder.withAlcoholReadingAmount(alcoholReadingAmount);
         }
         if (offence.containsKey(CONVICTED_ON)) {
-            builder.withConvictedOn(offence.getString(CONVICTED_ON, BLANK_STRING));
+            final String convictedOn = offence.getString(CONVICTED_ON, BLANK_STRING);
+            if (!convictedOn.isBlank()) {
+                builder.withConvictedOn(convictedOn);
+            }
         }
         if (offence.containsKey(ADJOURNED_DATE)) {
-            builder.withAdjournedDate(offence.getString(ADJOURNED_DATE, BLANK_STRING));
+            final String adjournedDate = offence.getString(ADJOURNED_DATE, BLANK_STRING);
+            if (!adjournedDate.isBlank()) {
+                builder.withAdjournedDate(adjournedDate);
+            }
         }
         if (offence.containsKey(ADJOURNED_HEARING_TYPE)) {
-            builder.withAdjournedHearingType(offence.getString(ADJOURNED_HEARING_TYPE, BLANK_STRING));
+            final String adjournedHearingType = offence.getString(ADJOURNED_HEARING_TYPE, BLANK_STRING);
+            if (!adjournedHearingType.isBlank()) {
+                builder.withAdjournedHearingType(adjournedHearingType);
+            }
         }
 
         return builder.build();

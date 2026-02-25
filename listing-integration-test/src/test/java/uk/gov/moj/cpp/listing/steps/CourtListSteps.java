@@ -42,6 +42,28 @@ public class CourtListSteps extends AbstractIT {
     private static final String MEDIA_TYPE_SEARCH_COURT_LIST = "application/vnd.listing.search.court.list+json";
     private static final String MEDIA_TYPE_SEARCH_COURT_LIST_PAYLOAD = "application/vnd.listing.search.court.list.payload+json";
 
+    private static final String FIRST_HEARING_FIRST_DEFENDANT = "$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0]";
+
+    /**
+     * Matchers for the 7 properties on application/vnd.listing.search.court.list.payload+json.
+     * Used to verify that after listing.command.list-court-hearing, these fields are persisted and
+     * returned by the query API: offence.listingNumber, offence.maxPenalty,
+     * offence.alcoholReadingAmount (from offenceFacts), offence.convictedOn, offence.adjournedDate,
+     * offence.adjournedHearingType, personDefendant.arrestSummonsNumber.
+     * Asserts these are present and not null when test data provides them.
+     */
+    public static Matcher<?>[] sevenNewCourtListPayloadPropertyMatchers() {
+        return new Matcher<?>[]{
+                withJsonPath(FIRST_HEARING_FIRST_DEFENDANT + ".offences[0].listingNumber", notNullValue()),
+                withJsonPath(FIRST_HEARING_FIRST_DEFENDANT + ".offences[0].maxPenalty", notNullValue()),
+                withJsonPath(FIRST_HEARING_FIRST_DEFENDANT + ".offences[0].alcoholReadingAmount", notNullValue()),
+                withJsonPath(FIRST_HEARING_FIRST_DEFENDANT + ".offences[0].convictedOn", notNullValue()),
+                withJsonPath(FIRST_HEARING_FIRST_DEFENDANT + ".offences[0].adjournedDate", notNullValue()),
+                withJsonPath(FIRST_HEARING_FIRST_DEFENDANT + ".offences[0].adjournedHearingType", notNullValue()),
+                withJsonPath(FIRST_HEARING_FIRST_DEFENDANT + ".personDefendant.arrestSummonsNumber", notNullValue())
+        };
+    }
+
     public CourtListSteps() { }
 
     public CourtListSteps(final UpdatedHearingData updatedHearingData) {

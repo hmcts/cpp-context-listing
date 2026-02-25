@@ -93,6 +93,7 @@ import uk.gov.justice.core.courts.Marker;
 import uk.gov.justice.core.courts.MasterDefendant;
 import uk.gov.justice.core.courts.Offence;
 import uk.gov.justice.core.courts.OffenceActiveOrder;
+import uk.gov.justice.core.courts.OffenceFacts;
 import uk.gov.justice.core.courts.Person;
 import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
@@ -1638,29 +1639,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                                                 .withPerson(getPerson(d))
                                                                 .build()))
                                                         .withOffences(d.getOffences().stream()
-                                                                .map(o -> Offence.offence()
-                                                                        .withCount(OFFENCE_COUNT)
-                                                                        .withId(o.getOffenceId())
-                                                                        .withOffenceCode(STRING.next())
-                                                                        .withOffenceDefinitionId(randomUUID())
-                                                                        .withWording(STRING.next())
-                                                                        .withStartDate(LocalDate.now().toString())
-                                                                        .withOrderIndex(OFFENCE_ORDER_INDEX)
-                                                                        .withOffenceTitle(o.getStatementOfOffenceTitle())
-                                                                        .withOffenceLegislation(OFFENCE_LEGISLATION)
-                                                                        .withLaaApplnReference(
-                                                                                LaaReference.laaReference()
-                                                                                        .withApplicationReference(STRING.next())
-                                                                                        .withStatusCode(STRING.next())
-                                                                                        .withStatusDate((format(LocalDate.now().toString())))
-                                                                                        .withStatusDescription(STRING.next())
-                                                                                        .withStatusId(randomUUID()).build())
-                                                                        .withReportingRestrictions(List.of(ReportingRestriction.reportingRestriction().withId(randomUUID())
-                                                                                .withLabel("RestrictionApplied")
-                                                                                .withJudicialResultId(JUDICIAL_RESULT_ID)
-                                                                                .withOrderedDate(LocalDate.now().toString()).build()))
-                                                                        .withCivilOffence(CivilOffence.civilOffence().withIsExParte(o.getCivilOffenceData().getExParte()).build())
-                                                                        .build())
+                                                                .map(o -> buildOffenceForListCourtHearing(o))
                                                                 .collect(Collectors.toList()))
                                                         .withProsecutionCaseId(listedCaseData.getCaseId())
                                                         .build())
@@ -2032,7 +2011,43 @@ public class ListCourtHearingSteps extends AbstractIT {
                 .build();
     }
 
+    private Offence buildOffenceForListCourtHearing(final OffenceData o) {
+        return Offence.offence()
+                .withCount(OFFENCE_COUNT)
+                .withId(o.getOffenceId())
+                .withOffenceCode(STRING.next())
+                .withOffenceDefinitionId(randomUUID())
+                .withWording(STRING.next())
+                .withStartDate(LocalDate.now().toString())
+                .withOrderIndex(OFFENCE_ORDER_INDEX)
+                .withOffenceTitle(o.getStatementOfOffenceTitle())
+                .withOffenceLegislation(OFFENCE_LEGISLATION)
+                .withLaaApplnReference(
+                        LaaReference.laaReference()
+                                .withApplicationReference(STRING.next())
+                                .withStatusCode(STRING.next())
+                                .withStatusDate((format(LocalDate.now().toString())))
+                                .withStatusDescription(STRING.next())
+                                .withStatusId(randomUUID()).build())
+                .withReportingRestrictions(List.of(ReportingRestriction.reportingRestriction().withId(randomUUID())
+                        .withLabel("RestrictionApplied")
+                        .withJudicialResultId(JUDICIAL_RESULT_ID)
+                        .withOrderedDate(LocalDate.now().toString()).build()))
+                .withCivilOffence(CivilOffence.civilOffence().withIsExParte(o.getCivilOffenceData().getExParte()).build())
+                .withListingNumber(o.getListingNumber())
+                .withMaxPenalty(o.getMaxPenalty())
+                .withOffenceFacts(o.getAlcoholReadingAmount() != null && !o.getAlcoholReadingAmount().isBlank()
+                        ? OffenceFacts.offenceFacts().withAlcoholReadingAmount(Integer.valueOf(o.getAlcoholReadingAmount())).build()
+                        : null)
+                .withConvictionDate(o.getConvictedOn())
+                .withLastAdjournDate(o.getAdjournedDate())
+                .withLastAdjournedHearingType(o.getAdjournedHearingType())
+                .build();
+    }
+
     private PersonDefendant gerPersonDefendant(final DefendantData d) {
+        final String arrestSummonsNumber = (d.getArrestSummonsNumber() != null && !d.getArrestSummonsNumber().isBlank())
+                ? d.getArrestSummonsNumber() : null;
         return PersonDefendant.personDefendant()
                 .withBailStatus(new BailStatus.Builder().withCode(d.getBailStatus().getCode()).withDescription(d.getBailStatus().getDescription()).withId(d.getBailStatus().getId()).build())
                 .withPersonDetails(Person.person()
@@ -2050,6 +2065,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 .build())
                         .withDateOfBirth(LocalDate.now().minusYears(21).toString())
                         .build())
+                .withArrestSummonsNumber(arrestSummonsNumber)
                 .build();
     }
 
