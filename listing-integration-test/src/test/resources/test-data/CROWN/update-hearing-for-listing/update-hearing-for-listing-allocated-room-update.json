@@ -1,0 +1,41 @@
+{
+    "courtCentreId": "1e6f8561-2dff-3161-b7b3-6dcd679e7c65",
+    "courtRoomId": "a0f7a73e-e99d-3e93-b0f1-f86fcfdab315",
+    "endDate": "2026-02-06",
+    "hearingLanguage": "ENGLISH",
+    "jurisdictionType": "CROWN",
+    "nonDefaultDays": [
+        {
+            "courtCentreId": "1e6f8561-2dff-3161-b7b3-6dcd679e7c65",
+            "roomId": "a0f7a73e-e99d-3e93-b0f1-f86fcfdab315",
+            "startTime": "2026-02-06T10:00:00.000Z",
+            "duration": 20
+        }
+    ],
+    "nonSittingDays": [],
+    "startDate": "2026-02-06",
+    "publicListNote": "",
+    "hasVideoLink": false,
+    "type": {
+        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+        "description": "First hearing"
+    },
+    "sendNotificationToParties": false,
+    "judiciary": [],
+    "prosecutionCases": [
+        {
+            "caseId": "5f3b26ad-2c5f-4bcc-b43d-81f5b9312a30",
+            "defendants": [
+                {
+                    "defendantId": "9d204bfa-c22a-4fe7-b011-14d10ab99ffe",
+                    "offences": [
+                        {
+                            "offenceId": "bbd3e6b4-cf3f-4b5c-8850-75917694b37d"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "hearingId": "2cdfa174-a970-401e-80d1-a72fbfae4c35"
+}
