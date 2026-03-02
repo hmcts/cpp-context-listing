@@ -107,7 +107,6 @@ public class NewDomainToEventConverter {
                 .withId(d.getId())
                 .withMasterDefendantId(d.getMasterDefendantId().orElse(null))
                 .withCourtProceedingsInitiated(d.getCourtProceedingsInitiated().orElse(null))
-                .withArrestSummonsNumber(d.getArrestSummonsNumber().orElse(null))
                 .withCustodyTimeLimit(d.getCustodyTimeLimit().orElse(null))
                 .withDateOfBirth(d.getDateOfBirth().orElse(null))
                 .withFirstName(d.getFirstName().orElse(null))
@@ -231,13 +230,7 @@ public class NewDomainToEventConverter {
                 .withRestrictFromCourtList(false)
                 .withLaaApplnReference(offence.getLaaApplnReference().isPresent() ? buildLaaReference(offence.getLaaApplnReference().get()) : null)
                 .withLaidDate(offence.getLaidDate().orElse(null))
-                .withShadowListed(offence.getShadowListed().orElse(null))
-                .withListingNumber(offence.getListingNumber().orElse(null))
-                .withMaxPenalty(offence.getMaxPenalty().orElse(null))
-                .withAlcoholReadingAmount(offence.getAlcoholReadingAmount().orElse(null))
-                .withConvictedOn(offence.getConvictedOn().orElse(null))
-                .withAdjournedDate(offence.getAdjournedDate().orElse(null))
-                .withAdjournedHearingType(offence.getAdjournedHearingType().orElse(null));
+                .withShadowListed(offence.getShadowListed().orElse(null));
 
         if(nonNull(offence.getSeedingHearing()) && offence.getSeedingHearing().isPresent()) {
             builder.withSeedingHearing(buildSeedingHearing(offence.getSeedingHearing().get()).get());

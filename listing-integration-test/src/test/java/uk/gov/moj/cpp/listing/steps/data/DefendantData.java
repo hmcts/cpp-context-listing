@@ -24,7 +24,6 @@ public class DefendantData {
     private Boolean isYouth;
     private Boolean proceedingsConcluded;
     private String listingReason;
-    private String arrestSummonsNumber;
 
     public DefendantData(final UUID defendantId, final String firstName,
                          final String lastName, final LocalDate dateOfBirth,
@@ -115,14 +114,6 @@ public class DefendantData {
 
     public String getListingReason() {
         return listingReason;
-    }
-
-    public String getArrestSummonsNumber() {
-        return arrestSummonsNumber;
-    }
-
-    public void setArrestSummonsNumber(final String arrestSummonsNumber) {
-        this.arrestSummonsNumber = arrestSummonsNumber;
     }
 
     public void copyDefendantData(DefendantData defendantData) {

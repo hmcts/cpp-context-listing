@@ -36,6 +36,7 @@ import java.util.UUID;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 public class CourtListIT extends AbstractIT {
 
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -54,7 +55,6 @@ public class CourtListIT extends AbstractIT {
     @BeforeEach
     public void setupStepsForCourtList() {
         firstHearing = HearingsData.hearingsData();
-        populateSevenCourtListPayloadFieldsOnFirstDefendantFirstOffence(firstHearing);
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearing);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(UNALLOCATED);
@@ -172,16 +172,6 @@ public class CourtListIT extends AbstractIT {
         courtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithJmsDelay(STANDARD, "BenchAndStandardCourtList", new Matcher[0]);
     }
 
-    /**
-     * Verifies that after listing.command.list-court-hearing the 7 new fields are persisted and
-     * returned by the query API (listing.search.court.list.payload).
-     */
-    @Test
-    public void courtListPayloadReturnsSevenNewProperties() {
-        courtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithJmsDelay(STANDARD, "BenchAndStandardCourtList",
-                CourtListSteps.sevenNewCourtListPayloadPropertyMatchers());
-    }
-
     @Test
 
     public void generatePrisonCourtList() {
@@ -203,34 +193,6 @@ public class CourtListIT extends AbstractIT {
 
     public void generateBenchList() {
         courtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithJmsDelay(BENCH, "BenchAndStandardCourtList", new Matcher[0]);
-    }
-
-    /**
-     * Populates the 7 fields on the first defendant/first offence so that after list-court-hearing
-     * they are persisted and verified via the query API: offence.listingNumber, offence.maxPenalty,
-     * offence.offenceFacts.alcoholReadingAmount, offence.convictedOn, offence.adjournedDate,
-     * offence.adjournedHearingType, personDefendant.arrestSummonsNumber.
-     */
-    private void populateSevenCourtListPayloadFieldsOnFirstDefendantFirstOffence(final HearingsData hearingsData) {
-        if (hearingsData.getHearingData().isEmpty()
-                || hearingsData.getHearingData().get(0).getListedCases().isEmpty()) {
-            return;
-        }
-        final ListedCaseData firstListedCase = hearingsData.getHearingData().get(0).getListedCases().get(0);
-        if (firstListedCase.getDefendants().isEmpty()) {
-            return;
-        }
-        final DefendantData firstDefendant = firstListedCase.getDefendants().get(0);
-        firstDefendant.setArrestSummonsNumber("REF456");
-        if (!firstDefendant.getOffences().isEmpty()) {
-            final OffenceData firstOffence = firstDefendant.getOffences().get(0);
-            firstOffence.setListingNumber(1);
-            firstOffence.setMaxPenalty("S:Ultd Fine");
-            firstOffence.setAlcoholReadingAmount("50");
-            firstOffence.setConvictedOn("2024-01-15");
-            firstOffence.setAdjournedDate("2025-02-01");
-            firstOffence.setAdjournedHearingType("Sentence");
-        }
     }
 
 }

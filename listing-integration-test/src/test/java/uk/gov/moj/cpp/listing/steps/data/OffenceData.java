@@ -30,13 +30,6 @@ public class OffenceData {
     private String indictmentParticular;
     private CivilOffenceData civilOffenceData;
 
-    private Integer listingNumber;
-    private String maxPenalty;
-    private String alcoholReadingAmount;
-    private String convictedOn;
-    private String adjournedDate;
-    private String adjournedHearingType;
-
     public OffenceData(final UUID offenceId, final String offenceCode,
                        final LocalDate startDate, final LocalDate endDate, final String statementOfOffenceTitle,
                        final String statementOfOffenceTitleWelsh, final String offenceWording,
@@ -169,54 +162,6 @@ public class OffenceData {
         this.civilOffenceData = civilOffenceData;
     }
 
-    public Integer getListingNumber() {
-        return listingNumber;
-    }
-
-    public void setListingNumber(final Integer listingNumber) {
-        this.listingNumber = listingNumber;
-    }
-
-    public String getMaxPenalty() {
-        return maxPenalty;
-    }
-
-    public void setMaxPenalty(final String maxPenalty) {
-        this.maxPenalty = maxPenalty;
-    }
-
-    public String getAlcoholReadingAmount() {
-        return alcoholReadingAmount;
-    }
-
-    public void setAlcoholReadingAmount(final String alcoholReadingAmount) {
-        this.alcoholReadingAmount = alcoholReadingAmount;
-    }
-
-    public String getConvictedOn() {
-        return convictedOn;
-    }
-
-    public void setConvictedOn(final String convictedOn) {
-        this.convictedOn = convictedOn;
-    }
-
-    public String getAdjournedDate() {
-        return adjournedDate;
-    }
-
-    public void setAdjournedDate(final String adjournedDate) {
-        this.adjournedDate = adjournedDate;
-    }
-
-    public String getAdjournedHearingType() {
-        return adjournedHearingType;
-    }
-
-    public void setAdjournedHearingType(final String adjournedHearingType) {
-        this.adjournedHearingType = adjournedHearingType;
-    }
-
     public void copyOffenceData(OffenceData offenceData) {
         this.count = offenceData.getCount();
         this.custodyTimeLimit = offenceData.getCustodyTimeLimit();
@@ -235,11 +180,5 @@ public class OffenceData {
         this.statementOfOffenceTitle = offenceData.getStatementOfOffenceTitle();
         this.statementOfOffenceTitleWelsh = offenceData.getStatementOfOffenceTitleWelsh();
         this.civilOffenceData = offenceData.getCivilOffenceData();
-        this.listingNumber = offenceData.getListingNumber();
-        this.maxPenalty = offenceData.getMaxPenalty();
-        this.alcoholReadingAmount = offenceData.getAlcoholReadingAmount();
-        this.convictedOn = offenceData.getConvictedOn();
-        this.adjournedDate = offenceData.getAdjournedDate();
-        this.adjournedHearingType = offenceData.getAdjournedHearingType();
     }
 }

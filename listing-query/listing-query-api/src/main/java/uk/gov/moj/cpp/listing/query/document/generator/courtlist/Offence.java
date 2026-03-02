@@ -10,12 +10,6 @@ public class Offence {
     private String welshOffenceTitle;
     private String offenceWording;
     private Integer listingNumber;
-    private String offenceCode;
-    private String maxPenalty;
-    private String alcoholReadingAmount;
-    private String convictedOn;
-    private String adjournedDate;
-    private String adjournedHearingType;
 
     public String getOffenceTitle() {
         return offenceTitle;
@@ -37,30 +31,6 @@ public class Offence {
         return listingNumber;
     }
 
-    public String getOffenceCode() {
-        return offenceCode;
-    }
-
-    public String getMaxPenalty() {
-        return maxPenalty;
-    }
-
-    public String getAlcoholReadingAmount() {
-        return alcoholReadingAmount;
-    }
-
-    public String getConvictedOn() {
-        return convictedOn;
-    }
-
-    public String getAdjournedDate() {
-        return adjournedDate;
-    }
-
-    public String getAdjournedHearingType() {
-        return adjournedHearingType;
-    }
-
     public static Offence.Builder offence() {
         return new Offence.Builder();
     }
@@ -72,12 +42,6 @@ public class Offence {
         private String welshOffenceTitle;
         private String offenceWording;
         private Integer listingNumber;
-        private String offenceCode;
-        private String maxPenalty;
-        private String alcoholReadingAmount;
-        private String convictedOn;
-        private String adjournedDate;
-        private String adjournedHearingType;
 
         private Builder() {
         }
@@ -106,37 +70,6 @@ public class Offence {
             this.listingNumber = listingNumber;
             return this;
         }
-
-        public Builder withOffenceCode(String offenceCode) {
-            this.offenceCode = offenceCode;
-            return this;
-        }
-
-        public Builder withMaxPenalty(String maxPenalty) {
-            this.maxPenalty = maxPenalty;
-            return this;
-        }
-
-        public Builder withAlcoholReadingAmount(String alcoholReadingAmount) {
-            this.alcoholReadingAmount = alcoholReadingAmount;
-            return this;
-        }
-
-        public Builder withConvictedOn(String convictedOn) {
-            this.convictedOn = convictedOn;
-            return this;
-        }
-
-        public Builder withAdjournedDate(String adjournedDate) {
-            this.adjournedDate = adjournedDate;
-            return this;
-        }
-
-        public Builder withAdjournedHearingType(String adjournedHearingType) {
-            this.adjournedHearingType = adjournedHearingType;
-            return this;
-        }
-
         public Offence build() {
             final Offence offence = new Offence();
             offence.offenceTitle = this.offenceTitle;
@@ -144,12 +77,6 @@ public class Offence {
             offence.offenceWording = this.offenceWording;
             offence.id = this.id;
             offence.listingNumber = this.listingNumber;
-            offence.offenceCode = this.offenceCode;
-            offence.maxPenalty = this.maxPenalty;
-            offence.alcoholReadingAmount = this.alcoholReadingAmount;
-            offence.convictedOn = this.convictedOn;
-            offence.adjournedDate = this.adjournedDate;
-            offence.adjournedHearingType = this.adjournedHearingType;
             return offence;
         }
     }
@@ -162,7 +89,6 @@ public class Offence {
                 ", offenceWording='" + offenceWording + '\'' +
                 ", id='" + id + '\'' +
                 ", listingNumber='" + listingNumber + '\'' +
-                ", offenceCode='" + offenceCode + '\'' +
                 '}';
     }
 

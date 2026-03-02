@@ -3719,7 +3719,6 @@ class ListingCommandHandlerTest {
                 .withSpecificRequirements(of("Screen"))
                 .withIsYouth(of(Boolean.TRUE))
                 .withNationalityDescription(empty())
-                .withArrestSummonsNumber(of("arrest123"))
                 .withAddress(of(Address
                         .address()
                         .withAddress1("22")
@@ -3740,7 +3739,6 @@ class ListingCommandHandlerTest {
                         .withOffenceWording("No Travel Card")
                         .withLaaApplnReference(empty())
                         .withSeedingHearing(empty())
-                        .withAlcoholReadingAmount(of("111"))
                         .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                                 .withWelshTitle("a title in Welsh")
                                 .withWelshLegislation(of("legislation in Welsh"))

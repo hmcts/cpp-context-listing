@@ -11,8 +11,6 @@ import java.util.UUID;
 
 @SuppressWarnings({"squid:S00107", "squid:S00121", "squid:S1067", "squid:S2065", "PMD.BeanMembersShouldSerialize"})
 public class Defendant {
-    private Optional<String> arrestSummonsNumber;
-
     private Optional<BailStatus> bailStatus;
 
     private Optional<String> custodyTimeLimit;
@@ -51,8 +49,7 @@ public class Defendant {
     private final transient Optional<Address> address;
 
     @SuppressWarnings({"squid:S00107", "squid:S1067"})
-    public Defendant(final Optional<String> arrestSummonsNumber, final Optional<BailStatus> bailStatus, final Optional<String> custodyTimeLimit, final Optional<String> dateOfBirth, final Optional<String> datesToAvoid, final Optional<String> defenceOrganisation, final Optional<String> firstName, final Optional<HearingLanguageNeeds> hearingLanguageNeeds, final UUID id, final Optional<UUID> masterDefendantId, final Optional<ZonedDateTime> courtProceedingsInitiated, final Optional<String> lastName, final UUID prosecutionCaseId, final List<Offence> offences, final Optional<String> organisationName, final Optional<String> specificRequirements, final Optional<Boolean> isYouth, final Optional<String> nationalityDescription, final Optional<Address> address) {
-        this.arrestSummonsNumber = arrestSummonsNumber;
+    public Defendant(final Optional<BailStatus> bailStatus, final Optional<String> custodyTimeLimit, final Optional<String> dateOfBirth, final Optional<String> datesToAvoid, final Optional<String> defenceOrganisation, final Optional<String> firstName, final Optional<HearingLanguageNeeds> hearingLanguageNeeds, final UUID id, final Optional<UUID> masterDefendantId, final Optional<ZonedDateTime> courtProceedingsInitiated, final Optional<String> lastName, final UUID prosecutionCaseId, final List<Offence> offences, final Optional<String> organisationName, final Optional<String> specificRequirements, final Optional<Boolean> isYouth, final Optional<String> nationalityDescription, final Optional<Address> address) {
         this.bailStatus = bailStatus;
         this.custodyTimeLimit = custodyTimeLimit;
         this.dateOfBirth = dateOfBirth;
@@ -75,10 +72,6 @@ public class Defendant {
 
     public static Builder defendant() {
         return new Defendant.Builder();
-    }
-
-    public Optional<String> getArrestSummonsNumber() {
-        return arrestSummonsNumber.isPresent() ? arrestSummonsNumber : empty();
     }
 
     public Optional<BailStatus> getBailStatus() {
@@ -161,8 +154,7 @@ public class Defendant {
         if (!(o instanceof Defendant))
             return false;
         final Defendant defendant = (Defendant) o;
-        return Objects.equals(arrestSummonsNumber, defendant.arrestSummonsNumber) &&
-                Objects.equals(bailStatus, defendant.bailStatus) &&
+        return Objects.equals(bailStatus, defendant.bailStatus) &&
                 Objects.equals(custodyTimeLimit, defendant.custodyTimeLimit) &&
                 Objects.equals(dateOfBirth, defendant.dateOfBirth) &&
                 Objects.equals(datesToAvoid, defendant.datesToAvoid) &&
@@ -182,14 +174,13 @@ public class Defendant {
 
     @Override
     public int hashCode() {
-        return Objects.hash(arrestSummonsNumber, bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, masterDefendantId, courtProceedingsInitiated, lastName, prosecutionCaseId, offences, organisationName, specificRequirements, isYouth);
+        return Objects.hash(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, masterDefendantId, courtProceedingsInitiated, lastName, prosecutionCaseId, offences, organisationName, specificRequirements, isYouth);
     }
 
     @Override
     public String toString() {
         return "Defendant{" +
-                "arrestSummonsNumber=" + arrestSummonsNumber +
-                ", bailStatus=" + bailStatus +
+                "bailStatus=" + bailStatus +
                 ", custodyTimeLimit=" + custodyTimeLimit +
                 ", dateOfBirth=" + dateOfBirth +
                 ", datesToAvoid=" + datesToAvoid +
@@ -212,7 +203,6 @@ public class Defendant {
 
     @SuppressWarnings("pmd:BeanMembersShouldSerialize")
     public static final class Builder {
-        private Optional<String> arrestSummonsNumber = empty();
         private Optional<BailStatus> bailStatus = empty();
         private Optional<String> custodyTimeLimit = empty();
         private Optional<String> dateOfBirth = empty();
@@ -233,11 +223,6 @@ public class Defendant {
         private transient Optional<Address> address = empty();
 
         private Builder() {
-        }
-
-        public Builder withArrestSummonsNumber(final Optional<String> arrestSummonsNumber) {
-            this.arrestSummonsNumber = arrestSummonsNumber;
-            return this;
         }
 
         public Builder withBailStatus(final Optional<BailStatus> bailStatus) {
@@ -334,7 +319,7 @@ public class Defendant {
         }
 
         public Defendant build() {
-            return new Defendant(arrestSummonsNumber, bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, masterDefendantId, courtProceedingsInitiated, lastName, prosecutionCaseId, offences, organisationName, specificRequirements, isYouth, nationalityDescription, address);
+            return new Defendant(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, masterDefendantId, courtProceedingsInitiated, lastName, prosecutionCaseId, offences, organisationName, specificRequirements, isYouth, nationalityDescription, address);
         }
     }
 }

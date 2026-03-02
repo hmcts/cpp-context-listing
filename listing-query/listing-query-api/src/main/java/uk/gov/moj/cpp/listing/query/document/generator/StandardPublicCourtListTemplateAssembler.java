@@ -49,7 +49,6 @@ import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Counsel;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.CourtRoom;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Defendant;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Hearing;
-import uk.gov.moj.cpp.listing.query.document.generator.courtlist.PersonDefendant;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.HearingDate;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Offence;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.ReportingRestriction;
@@ -123,14 +122,6 @@ public class StandardPublicCourtListTemplateAssembler {
     private static final String OFFENCE_WORDING = "offenceWording";
     private static final String TITLE = "title";
     private static final String STATEMENT_OF_OFFENCE = "statementOfOffence";
-    private static final String OFFENCE_CODE = "offenceCode";
-    private static final String LISTING_NUMBER = "listingNumber";
-    private static final String MAX_PENALTY = "maxPenalty";
-    private static final String ALCOHOL_READING_AMOUNT = "alcoholReadingAmount";
-    private static final String OFFENCE_FACTS = "offenceFacts";
-    private static final String CONVICTED_ON = "convictedOn";
-    private static final String ADJOURNED_DATE = "adjournedDate";
-    private static final String ADJOURNED_HEARING_TYPE = "adjournedHearingType";
     private static final String OFFENCES = "offences";
     private static final String LISTED_CASES = "listedCases";
     private static final String SEQUENCE = "sequence";
@@ -155,8 +146,6 @@ public class StandardPublicCourtListTemplateAssembler {
     private static final String HEARING_STRING = "Hearing";
     private static final String ADJOURNED_HEARING_DATE = "adjournedFromDate";
     private static final String ADDRESS = "address";
-    private static final String PERSON_DEFENDANT_JSON = "personDefendant";
-    private static final String ARREST_SUMMONS_NUMBER = "arrestSummonsNumber";
     private static final String COURT_APPLICATIONS = "courtApplications";
     private static final String APPLICATION_REFERENCE = "applicationReference";
     private static final String APPLICANT = "applicant";
@@ -527,12 +516,6 @@ public class StandardPublicCourtListTemplateAssembler {
         final boolean isGroupMaster = listedCase.getBoolean(IS_GROUP_MASTER, false);
         final Defendant.Builder builder = Defendant.defendant();
         builder.withId(fromString(defendant.getString(ID)));
-        final String arrestSummonsNumber = getArrestSummonsNumber(defendant, listedCase);
-        if (arrestSummonsNumber != null && !arrestSummonsNumber.isBlank()) {
-            builder.withPersonDefendant(PersonDefendant.personDefendant()
-                    .withArrestSummonsNumber(arrestSummonsNumber)
-                    .build());
-        }
         final Set<ReportingRestriction> reportingRestrictions = new HashSet<>();
         final String legalEntityDefendant = defendant.getString(ORGANISATION_NAME, BLANK_STRING);
         if (defendantRestricted) {
@@ -566,28 +549,6 @@ public class StandardPublicCourtListTemplateAssembler {
         }
 
         return builder.build();
-    }
-
-    private String getArrestSummonsNumber(final JsonObject defendant, final JsonObject listedCase) {
-        if (nonNull(defendant) && defendant.containsKey(PERSON_DEFENDANT_JSON)) {
-            final JsonObject personDefendant = defendant.getJsonObject(PERSON_DEFENDANT_JSON);
-            if (nonNull(personDefendant) && personDefendant.containsKey(ARREST_SUMMONS_NUMBER)) {
-                return personDefendant.getString(ARREST_SUMMONS_NUMBER, BLANK_STRING);
-            }
-        }
-        if (nonNull(defendant) && defendant.containsKey(ARREST_SUMMONS_NUMBER)) {
-            final String value = defendant.getString(ARREST_SUMMONS_NUMBER, BLANK_STRING);
-            if (!value.isBlank()) {
-                return value;
-            }
-        }
-        if (nonNull(listedCase) && listedCase.containsKey(PERSON_DEFENDANT_JSON)) {
-            final JsonObject personDefendant = listedCase.getJsonObject(PERSON_DEFENDANT_JSON);
-            if (nonNull(personDefendant) && personDefendant.containsKey(ARREST_SUMMONS_NUMBER)) {
-                return personDefendant.getString(ARREST_SUMMONS_NUMBER, BLANK_STRING);
-            }
-        }
-        return null;
     }
 
     private void setDefendantDetails(final JsonObject hearingJson, final JsonObject defendant, final String dateOfBirth, final boolean isGroupMaster, final Defendant.Builder builder) {
@@ -643,56 +604,8 @@ public class StandardPublicCourtListTemplateAssembler {
             builder.withOffenceWording(offence.getString(OFFENCE_WORDING, BLANK_STRING));
             builder.withId(fromString(offence.getString(ID)));
         }
-        if (offence.containsKey(LISTING_NUMBER) && !offence.isNull(LISTING_NUMBER)) {
-            builder.withListingNumber(offence.getInt(LISTING_NUMBER));
-        }
-        if (offence.containsKey(OFFENCE_CODE)) {
-            builder.withOffenceCode(offence.getString(OFFENCE_CODE, BLANK_STRING));
-        }
-        if (offence.containsKey(MAX_PENALTY)) {
-            final String maxPenalty = offence.getString(MAX_PENALTY, BLANK_STRING);
-            if (!maxPenalty.isBlank()) {
-                builder.withMaxPenalty(maxPenalty);
-            }
-        }
-        final String alcoholReadingAmount = getAlcoholReadingAmount(offence);
-        if (alcoholReadingAmount != null && !alcoholReadingAmount.isBlank()) {
-            builder.withAlcoholReadingAmount(alcoholReadingAmount);
-        }
-        if (offence.containsKey(CONVICTED_ON)) {
-            final String convictedOn = offence.getString(CONVICTED_ON, BLANK_STRING);
-            if (!convictedOn.isBlank()) {
-                builder.withConvictedOn(convictedOn);
-            }
-        }
-        if (offence.containsKey(ADJOURNED_DATE)) {
-            final String adjournedDate = offence.getString(ADJOURNED_DATE, BLANK_STRING);
-            if (!adjournedDate.isBlank()) {
-                builder.withAdjournedDate(adjournedDate);
-            }
-        }
-        if (offence.containsKey(ADJOURNED_HEARING_TYPE)) {
-            final String adjournedHearingType = offence.getString(ADJOURNED_HEARING_TYPE, BLANK_STRING);
-            if (!adjournedHearingType.isBlank()) {
-                builder.withAdjournedHearingType(adjournedHearingType);
-            }
-        }
 
         return builder.build();
-    }
-
-    private String getAlcoholReadingAmount(final JsonObject offence) {
-        if (offence.containsKey(ALCOHOL_READING_AMOUNT)) {
-            return offence.getString(ALCOHOL_READING_AMOUNT, BLANK_STRING);
-        }
-        if (offence.containsKey(OFFENCE_FACTS)) {
-            final JsonObject offenceFacts = offence.getJsonObject(OFFENCE_FACTS);
-            if (nonNull(offenceFacts) && offenceFacts.containsKey(ALCOHOL_READING_AMOUNT)) {
-                final Object value = offenceFacts.get(ALCOHOL_READING_AMOUNT);
-                return value == null ? null : value.toString();
-            }
-        }
-        return null;
     }
 
     private List<ReportingRestriction> getReportingRestriction(final JsonObject offences) {

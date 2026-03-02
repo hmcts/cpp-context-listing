@@ -47,7 +47,6 @@ public class CourtToEventConverter {
                 .withId(d.getId())
                 .withMasterDefendantId(d.getMasterDefendantId())
                 .withCourtProceedingsInitiated(d.getCourtProceedingsInitiated())
-                .withArrestSummonsNumber(nonNull(d.getPersonDefendant()) ? d.getPersonDefendant().getArrestSummonsNumber() : null)
                 .withDateOfBirth(getDateOfBirth(personDetail))
                 .withFirstName(getFirstName(personDetail))
                 .withLastName(getLastName(personDetail))
@@ -70,7 +69,6 @@ public class CourtToEventConverter {
                 .withId(d.getId())
                 .withMasterDefendantId(d.getMasterDefendantId().orElse(null))
                 .withCourtProceedingsInitiated(d.getCourtProceedingsInitiated().orElse(null))
-                .withArrestSummonsNumber(d.getArrestSummonsNumber().orElse(null))
                 .withCustodyTimeLimit(d.getCustodyTimeLimit().orElse(null))
                 .withDateOfBirth(d.getDateOfBirth().orElse(null))
                 .withFirstName(d.getFirstName().orElse(null))
@@ -130,13 +128,7 @@ public class CourtToEventConverter {
                 .withLaaApplnReference(getLaaApplnReference(o))
                 .withLaidDate(o.getLaidDate().orElse(null))
                 .withSeedingHearing(nonNull(o.getSeedingHearing()) && o.getSeedingHearing().isPresent() ? buildSeedingHearing(o.getSeedingHearing().get()) : null)
-                .withShadowListed(o.getShadowListed().orElse(null))
-                .withListingNumber(o.getListingNumber().orElse(null))
-                .withMaxPenalty(o.getMaxPenalty().orElse(null))
-                .withAlcoholReadingAmount(o.getAlcoholReadingAmount().orElse(null))
-                .withConvictedOn(o.getConvictedOn().orElse(null))
-                .withAdjournedDate(o.getAdjournedDate().orElse(null))
-                .withAdjournedHearingType(o.getAdjournedHearingType().orElse(null));
+                .withShadowListed(o.getShadowListed().orElse(null));
 
         if (nonNull(o.getCommittingCourt()) && o.getCommittingCourt().isPresent()) {
             builder.withCommittingCourt(buildCommittingCourt(o.getCommittingCourt().get()));
@@ -232,7 +224,6 @@ public class CourtToEventConverter {
                 .withId(d.getId())
                 .withMasterDefendantId(d.getMasterDefendantId())
                 .withCourtProceedingsInitiated(d.getCourtProceedingsInitiated())
-                .withArrestSummonsNumber(nonNull(d.getPersonDefendant()) ? d.getPersonDefendant().getArrestSummonsNumber() : null)
                 .withDateOfBirth(getDateOfBirth(personDetail))
                 .withFirstName(getFirstName(personDetail))
                 .withLastName(getLastName(personDetail))
@@ -289,13 +280,7 @@ public class CourtToEventConverter {
                 .withLaaApplnReference(buildLaaReference(ofNullable(o.getLaaApplnReference())))
                 .withLaidDate(o.getLaidDate())
                 .withSeedingHearing(nonNull(o.getSeedingHearing()) ? buildSeedingHearing(o.getSeedingHearing()) : null)
-                .withShadowListed(isNotEmpty(shadowListedOffences) && shadowListedOffences.contains(o.getId()))
-                .withListingNumber(o.getListingNumber())
-                .withMaxPenalty(o.getMaxPenalty())
-                .withAlcoholReadingAmount(nonNull(o.getOffenceFacts()) && nonNull(o.getOffenceFacts().getAlcoholReadingAmount()) ? String.valueOf(o.getOffenceFacts().getAlcoholReadingAmount()) : null)
-                .withConvictedOn(o.getConvictionDate())
-                .withAdjournedDate(o.getLastAdjournDate())
-                .withAdjournedHearingType(o.getLastAdjournedHearingType());
+                .withShadowListed(isNotEmpty(shadowListedOffences) && shadowListedOffences.contains(o.getId()));
 
         if (!isNull(o.getReportingRestrictions()) && !o.getReportingRestrictions().isEmpty()) {
             builder.withReportingRestrictions(o.getReportingRestrictions().stream()
@@ -320,13 +305,7 @@ public class CourtToEventConverter {
                 .withLaaApplnReference(buildLaaReference(ofNullable(o.getLaaApplnReference())))
                 .withLaidDate(o.getLaidDate())
                 .withSeedingHearing(nonNull(o.getSeedingHearing()) ? buildSeedingHearing(o.getSeedingHearing()) : null)
-                .withShadowListed(isNotEmpty(shadowListedOffences) && shadowListedOffences.contains(o.getId()))
-                .withListingNumber(o.getListingNumber())
-                .withMaxPenalty(o.getMaxPenalty())
-                .withAlcoholReadingAmount(nonNull(o.getOffenceFacts()) && nonNull(o.getOffenceFacts().getAlcoholReadingAmount()) ? String.valueOf(o.getOffenceFacts().getAlcoholReadingAmount()) : null)
-                .withConvictedOn(o.getConvictionDate())
-                .withAdjournedDate(o.getLastAdjournDate())
-                .withAdjournedHearingType(o.getLastAdjournedHearingType());
+                .withShadowListed(isNotEmpty(shadowListedOffences) && shadowListedOffences.contains(o.getId()));
 
         if (!isNull(o.getReportingRestrictions()) && !o.getReportingRestrictions().isEmpty()) {
             builder.withReportingRestrictions(o.getReportingRestrictions().stream()

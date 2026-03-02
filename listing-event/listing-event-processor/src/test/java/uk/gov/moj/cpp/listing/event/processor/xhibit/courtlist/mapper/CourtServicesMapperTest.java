@@ -192,12 +192,9 @@ public class CourtServicesMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("2ec286ec-615c-33ee-ac2e-41810135863f"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("2ec286ec-615c-33ee-ac2e-418101358632"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb1"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb2"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("27bbb5dc-6124-3281-950f-2890d27c9b0d"))).thenReturn(0);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
@@ -216,12 +213,9 @@ public class CourtServicesMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("2ec286ec-615c-33ee-ac2e-41810135863f"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("2ec286ec-615c-33ee-ac2e-418101358632"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb1"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb2"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("27bbb5dc-6124-3281-950f-2890d27c9b0d"))).thenReturn(0);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-videolink.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
@@ -241,12 +235,9 @@ public class CourtServicesMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("2ec286ec-615c-33ee-ac2e-41810135863f"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("2ec286ec-615c-33ee-ac2e-418101358632"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb1"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb2"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("27bbb5dc-6124-3281-950f-2890d27c9b0d"))).thenReturn(0);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-videolink.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
@@ -266,12 +257,9 @@ public class CourtServicesMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("2ec286ec-615c-33ee-ac2e-41810135863f"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("2ec286ec-615c-33ee-ac2e-418101358632"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb1"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb2"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("27bbb5dc-6124-3281-950f-2890d27c9b0d"))).thenReturn(0);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-videolink.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
@@ -290,12 +278,9 @@ public class CourtServicesMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("2ec286ec-615c-33ee-ac2e-41810135863f"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("2ec286ec-615c-33ee-ac2e-418101358632"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb1"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb2"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("27bbb5dc-6124-3281-950f-2890d27c9b0d"))).thenReturn(0);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
         final JsonObject judiciary = givenPayload("/xhibit/mock-data/referencedata.query.judiciaries.titleJudicialPrefixNotThere.json");
         when(commonXhibitReferenceDataService.getJudiciary(any())).thenReturn(judiciary);
 
@@ -316,8 +301,9 @@ public class CourtServicesMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("2ec286ec-615c-33ee-ac2e-41810135863f"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"))).thenReturn(0);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-defendant-firstname-not-provided.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
@@ -336,8 +322,9 @@ public class CourtServicesMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("2ec286ec-615c-33ee-ac2e-41810135863f"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"))).thenReturn(0);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-case-status-inactive.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
@@ -356,8 +343,9 @@ public class CourtServicesMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("2ec286ec-615c-33ee-ac2e-41810135863f"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"))).thenReturn(0);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-defendant-surname-not-provided.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
@@ -372,8 +360,9 @@ public class CourtServicesMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("2ec286ec-615c-33ee-ac2e-41810135863f"))).thenReturn(0);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"))).thenReturn(0);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-defendant-firstname-and-surname-not-provided.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
