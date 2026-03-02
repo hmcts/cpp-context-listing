@@ -234,7 +234,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         privateMessageConsumerHearingDayScheduleUpdated = null;
         this.hearingsData = hearingsData;
 
-        publicEventHearingListed = publicEvents.createPrivateConsumer(PUBLIC_LISTING_HEARING_LISTED);
+        publicEventHearingListed = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_LISTED);
         publicMessageConsumerHearingPartiallyUpdated = publicEvents.createPrivateConsumer(PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
