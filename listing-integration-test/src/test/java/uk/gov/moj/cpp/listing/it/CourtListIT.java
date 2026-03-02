@@ -46,8 +46,8 @@ public class CourtListIT extends AbstractIT {
     public static final String PRISON = "Prison";
     public static final String JUDGE = "Judge";
     public static final String BENCH = "Bench";
-    final UUID COURT_CENTRE_ID =  getRandomCourtCenterId();
-    final UUID HEARING_TYPE_ID = getRandomCourtRoomId();
+    private static final UUID COURT_CENTRE_ID = getRandomCourtCenterId();
+    private static final UUID HEARING_TYPE_ID = fromString("52edf232-3c09-4c74-a6ad-737985c2e662");
 
     private CourtListSteps courtListSteps;
     private HearingsData firstHearing;
