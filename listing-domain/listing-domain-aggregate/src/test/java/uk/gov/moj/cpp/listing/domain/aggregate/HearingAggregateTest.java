@@ -6119,7 +6119,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    void shouldNotAllocateCrownHearingWhenHearingDaysMissCourtScheduleIds() {
+    void shouldAllocateCrownHearingWhenHearingDaysMissCourtScheduleIds() {
         final UUID crownHearingId = randomUUID();
         final UUID crownCourtRoomId = randomUUID();
 
@@ -6133,7 +6133,7 @@ class HearingAggregateTest {
                                 HearingDay.hearingDay()
                                         .withHearingDate(LocalDate.now().plusDays(5))
                                         .withIsDraft(false)
-                                        .build()))  // no courtScheduleId
+                                        .build()))  // no courtScheduleId — legacy behavior still allocates
                         .withCourtRoomId(crownCourtRoomId)
                         .withStartDate(LocalDate.now().plusDays(5))
                         .withEndDate(LocalDate.now().plusDays(5))
@@ -6154,12 +6154,13 @@ class HearingAggregateTest {
         final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
         final List<Object> allocationEvents = allocationStream.toList();
 
-        // Should NOT allocate because no courtScheduleIds
-        assertThat(allocationEvents.size(), is(0));
+        // Legacy: hearings without courtScheduleIds still allocate based on basic criteria
+        assertThat(allocationEvents.size(), is(1));
+        assertTrue(allocationEvents.get(0) instanceof HearingAllocatedForListingV2);
     }
 
     @Test
-    void shouldNotAllocateCrownHearingWhenHearingDaysEmpty() {
+    void shouldAllocateCrownHearingWhenHearingDaysEmpty() {
         final UUID crownHearingId = randomUUID();
         final UUID crownCourtRoomId = randomUUID();
 
@@ -6190,8 +6191,9 @@ class HearingAggregateTest {
         final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
         final List<Object> allocationEvents = allocationStream.toList();
 
-        // Should NOT allocate because hearingDays is empty
-        assertThat(allocationEvents.size(), is(0));
+        // Legacy: empty hearingDays without courtScheduleIds still allocate based on basic criteria
+        assertThat(allocationEvents.size(), is(1));
+        assertTrue(allocationEvents.get(0) instanceof HearingAllocatedForListingV2);
     }
 
     // ─── CROWN vacate-trial slot payback tests ───────────────────────────

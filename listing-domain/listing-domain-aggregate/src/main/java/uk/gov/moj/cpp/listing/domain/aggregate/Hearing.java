@@ -1960,10 +1960,17 @@ public class Hearing implements Aggregate {
     }
 
     private boolean canAllocateForCrown() {
-        return currentlyAssigned(this.hearingLanguage) && currentlyAssigned(this.jurisdictionType) && JurisdictionType.CROWN.equals(this.jurisdictionType)
-                && currentlyAssigned(this.courtRoomId) && currentlyAssigned(this.endDate) && currentlyAssigned(this.startDate)
-                && hasCourtScheduleIds(this.hearingDays)
-                && noneHasDraftSession(this.hearingDays);
+        final boolean basicCriteria = currentlyAssigned(this.hearingLanguage) && currentlyAssigned(this.jurisdictionType) && JurisdictionType.CROWN.equals(this.jurisdictionType)
+                && currentlyAssigned(this.courtRoomId) && currentlyAssigned(this.endDate) && currentlyAssigned(this.startDate);
+        if (!basicCriteria) {
+            return false;
+        }
+        // If hearing days have court schedule IDs, ensure none are from draft sessions
+        if (hasCourtScheduleIds(this.hearingDays)) {
+            return noneHasDraftSession(this.hearingDays);
+        }
+        // Legacy: hearings without court schedule IDs allocate based on basic criteria
+        return true;
     }
 
     private boolean noneHasDraftSession(final List<HearingDay> hearingDays) {
