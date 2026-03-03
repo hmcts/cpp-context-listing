@@ -193,6 +193,12 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     .toList();
 
             final List<CourtSchedule> sessions = fetchCourtSchedulesByIds(courtScheduleIds);
+
+            if (isEmpty(sessions)) {
+                LOGGER.warn("CROWN single-day update: failed to fetch court schedules for hearingId {}. Returning unchanged.", hearing.getHearingId());
+                return hearing;
+            }
+
             final boolean allNonDraft = sessions.stream().noneMatch(CourtSchedule::isDraft);
             final List<HearingDay> sanityCheckedDays = sanityCheckAndEnrichCrown(hearing.getHearingDays(), sessions, hearing.getHearingId());
 
@@ -433,6 +439,11 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 .toList();
 
         final List<CourtSchedule> sessions = fetchCourtSchedulesByIds(courtScheduleIds);
+
+        if (isEmpty(sessions)) {
+            LOGGER.warn("CROWN single-day: failed to fetch court schedules for hearingId {}. Returning unchanged.", hearing.getId());
+            return new EnrichmentResult(hearing.getHearingDays(), new ArrayList<>());
+        }
 
         final boolean allNonDraft = sessions.stream().noneMatch(CourtSchedule::isDraft);
 

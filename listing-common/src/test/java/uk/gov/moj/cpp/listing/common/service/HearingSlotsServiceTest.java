@@ -425,4 +425,149 @@ class HearingSlotsServiceTest {
             assertThat(e.getMessage(), is("Params for search application/vnd.courtscheduler.search.book.hearing.slots+json is null ...."));
         }
     }
+
+    // ─── multiDaySearchAndBook tests ─────────────────────────────────────
+
+    @Test
+    public void shouldMultiDaySearchAndBookSuccessfully() throws Exception {
+        // Given
+        Map<String, String> params = new HashMap<>();
+        params.put("courtScheduleId", UUID.randomUUID().toString());
+        params.put("durationInMinutes", "1080");
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
+
+        try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
+            mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.build()).thenReturn(httpClient);
+            when(httpClient.execute(any(HttpGet.class))).thenReturn(httpResponse);
+            when(httpResponse.getStatusLine()).thenReturn(statusLine);
+            when(statusLine.getStatusCode()).thenReturn(Response.Status.OK.getStatusCode());
+            when(httpResponse.getEntity()).thenReturn(mock(org.apache.http.HttpEntity.class));
+            when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(javax.json.JsonObject.class));
+
+            // When
+            Response response = hearingSlotsService.multiDaySearchAndBook(params);
+
+            // Then
+            assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+            verify(httpClient).execute(httpGetCaptor.capture());
+            HttpGet capturedGet = httpGetCaptor.getValue();
+            String uri = capturedGet.getURI().toString();
+            assertThat(uri.startsWith(BASE_URI + "/multidaysearchandbook/hearingslots?"), is(true));
+        }
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenMultiDaySearchAndBookParamsAreNull() {
+        // Given
+        Map<String, String> params = null;
+
+        // When/Then
+        try {
+            hearingSlotsService.multiDaySearchAndBook(params);
+        } catch (DataValidationException e) {
+            assertThat(e.getMessage(), is("Params for search application/vnd.courtscheduler.multiday.searchandbook.hearing.slots+json is null ...."));
+        }
+    }
+
+    @Test
+    public void shouldHandleMultiDaySearchAndBookErrorResponse() throws Exception {
+        // Given
+        Map<String, String> params = new HashMap<>();
+        params.put("courtScheduleId", UUID.randomUUID().toString());
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
+
+        try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
+            mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.build()).thenReturn(httpClient);
+            when(httpClient.execute(any(HttpGet.class))).thenReturn(httpResponse);
+            when(httpResponse.getStatusLine()).thenReturn(statusLine);
+            when(statusLine.getStatusCode()).thenReturn(Response.Status.BAD_REQUEST.getStatusCode());
+            when(httpResponse.getEntity()).thenReturn(mock(org.apache.http.HttpEntity.class));
+
+            // When
+            Response response = hearingSlotsService.multiDaySearchAndBook(params);
+
+            // Then
+            assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+        }
+    }
+
+    // ─── listHearingInCourtSessions tests ────────────────────────────────
+
+    @Test
+    public void shouldListHearingInCourtSessionsSuccessfully() throws Exception {
+        // Given
+        Object payload = Map.of("hearingSlots", "data");
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
+        when(objectMapper.writeValueAsString(payload)).thenReturn("{\"hearingSlots\":\"data\"}");
+
+        try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class);
+             MockedStatic<EntityUtils> entityUtilsMockedStatic = Mockito.mockStatic(EntityUtils.class)) {
+            mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.build()).thenReturn(httpClient);
+            when(httpClient.execute(any(HttpPut.class))).thenReturn(httpResponse);
+            when(httpResponse.getStatusLine()).thenReturn(statusLine);
+            when(statusLine.getStatusCode()).thenReturn(Response.Status.OK.getStatusCode());
+            org.apache.http.HttpEntity entity = mock(org.apache.http.HttpEntity.class);
+            when(httpResponse.getEntity()).thenReturn(entity);
+            entityUtilsMockedStatic.when(() -> EntityUtils.toString(entity)).thenReturn("{\"result\":\"success\"}");
+            when(stringToJsonObjectConverter.convert("{\"result\":\"success\"}")).thenReturn(mock(javax.json.JsonObject.class));
+
+            // When
+            Response response = hearingSlotsService.listHearingInCourtSessions(payload);
+
+            // Then
+            assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+            verify(httpClient).execute(httpPutCaptor.capture());
+            HttpPut capturedPut = httpPutCaptor.getValue();
+            assertThat(capturedPut.getURI().toString(), is(BASE_URI + "/list/hearingslots"));
+        }
+    }
+
+    @Test
+    public void shouldHandleListHearingInCourtSessionsErrorResponse() throws Exception {
+        // Given
+        Object payload = Map.of("hearingSlots", "data");
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
+        when(objectMapper.writeValueAsString(payload)).thenReturn("{\"hearingSlots\":\"data\"}");
+
+        try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class);
+             MockedStatic<EntityUtils> entityUtilsMockedStatic = Mockito.mockStatic(EntityUtils.class)) {
+            mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.build()).thenReturn(httpClient);
+            when(httpClient.execute(any(HttpPut.class))).thenReturn(httpResponse);
+            when(httpResponse.getStatusLine()).thenReturn(statusLine);
+            when(statusLine.getStatusCode()).thenReturn(Response.Status.BAD_REQUEST.getStatusCode());
+            org.apache.http.HttpEntity entity = mock(org.apache.http.HttpEntity.class);
+            when(httpResponse.getEntity()).thenReturn(entity);
+            entityUtilsMockedStatic.when(() -> EntityUtils.toString(entity)).thenReturn("error message");
+
+            // When
+            Response response = hearingSlotsService.listHearingInCourtSessions(payload);
+
+            // Then
+            assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+        }
+    }
+
+    @Test
+    public void shouldHandleListHearingInCourtSessionsIOException() throws Exception {
+        // Given
+        Object payload = Map.of("hearingSlots", "data");
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
+        when(objectMapper.writeValueAsString(payload)).thenReturn("{\"hearingSlots\":\"data\"}");
+
+        try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
+            mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.build()).thenReturn(httpClient);
+            when(httpClient.execute(any(HttpPut.class))).thenThrow(new IOException("Connection refused"));
+
+            // When
+            Response response = hearingSlotsService.listHearingInCourtSessions(payload);
+
+            // Then
+            assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+        }
+    }
 }
