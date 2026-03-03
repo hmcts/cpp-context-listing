@@ -6034,5 +6034,257 @@ class HearingAggregateTest {
         assertThat(eventsList.size(), is(0));
     }
 
+    // ─── CROWN allocation with courtScheduleIds and isDraft tests ────────
 
+    @Test
+    void shouldAllocateCrownHearingWhenAllHearingDaysHaveCourtScheduleIdsAndNoneAreDraft() {
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withCourtScheduleId(randomUUID())
+                                        .withHearingDate(LocalDate.now().plusDays(5))
+                                        .withIsDraft(false)
+                                        .build()))
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(240)
+                        .withEstimatedDuration("240 minutes")
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(randomUUID())
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withOffences(Arrays.asList(Offence.offence()
+                                                .withId(randomUUID())
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
+        final List<Object> allocationEvents = allocationStream.toList();
+
+        assertThat(allocationEvents.size(), is(1));
+        assertTrue(allocationEvents.get(0) instanceof HearingAllocatedForListingV2);
+    }
+
+    @Test
+    void shouldNotAllocateCrownHearingWhenAnyHearingDayIsDraft() {
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withCourtScheduleId(randomUUID())
+                                        .withHearingDate(LocalDate.now().plusDays(5))
+                                        .withIsDraft(true)  // draft session
+                                        .build()))
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(240)
+                        .withEstimatedDuration("240 minutes")
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(randomUUID())
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withOffences(Arrays.asList(Offence.offence()
+                                                .withId(randomUUID())
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
+        final List<Object> allocationEvents = allocationStream.toList();
+
+        // Should NOT allocate because isDraft=true
+        assertThat(allocationEvents.size(), is(0));
+    }
+
+    @Test
+    void shouldNotAllocateCrownHearingWhenHearingDaysMissCourtScheduleIds() {
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withHearingDate(LocalDate.now().plusDays(5))
+                                        .withIsDraft(false)
+                                        .build()))  // no courtScheduleId
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(240)
+                        .withEstimatedDuration("240 minutes")
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(randomUUID())
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withOffences(Arrays.asList(Offence.offence()
+                                                .withId(randomUUID())
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
+        final List<Object> allocationEvents = allocationStream.toList();
+
+        // Should NOT allocate because no courtScheduleIds
+        assertThat(allocationEvents.size(), is(0));
+    }
+
+    @Test
+    void shouldNotAllocateCrownHearingWhenHearingDaysEmpty() {
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(240)
+                        .withEstimatedDuration("240 minutes")
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(randomUUID())
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withOffences(Arrays.asList(Offence.offence()
+                                                .withId(randomUUID())
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
+        final List<Object> allocationEvents = allocationStream.toList();
+
+        // Should NOT allocate because hearingDays is empty
+        assertThat(allocationEvents.size(), is(0));
+    }
+
+    // ─── CROWN vacate-trial slot payback tests ───────────────────────────
+
+    @Test
+    void shouldEmitAvailableSlotsForHearingFreedWhenVacatingCrownTrialWithCourtScheduleIds() {
+        final UUID crownHearingId = randomUUID();
+        final UUID vacatingTrialReasonId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withCourtScheduleId(randomUUID())
+                                        .withHearingDate(LocalDate.now().plusDays(5))
+                                        .withIsDraft(false)
+                                        .build()))
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(240)
+                        .withEstimatedDuration("240 minutes")
+                        .build())
+                .build());
+
+        final Stream<Object> events = hearing.hearingVacateTrial(Optional.of(vacatingTrialReasonId));
+        final List<Object> eventsList = events.toList();
+
+        // Should emit both HearingTrialVacated + AvailableSlotsForHearingFreed
+        assertThat(eventsList.size(), is(2));
+        assertTrue(eventsList.stream().anyMatch(e -> e instanceof uk.gov.justice.listing.events.HearingTrialVacated));
+        assertTrue(eventsList.stream().anyMatch(e -> e instanceof AvailableSlotsForHearingFreed));
+    }
+
+    @Test
+    void shouldNotEmitAvailableSlotsForHearingFreedWhenVacatingCrownTrialWithoutCourtScheduleIds() {
+        final UUID crownHearingId = randomUUID();
+        final UUID vacatingTrialReasonId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withHearingDate(LocalDate.now().plusDays(5))
+                                        .build()))  // no courtScheduleId
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(240)
+                        .build())
+                .build());
+
+        final Stream<Object> events = hearing.hearingVacateTrial(Optional.of(vacatingTrialReasonId));
+        final List<Object> eventsList = events.toList();
+
+        // Should only emit HearingTrialVacated (no slot freed because no courtScheduleIds)
+        assertThat(eventsList.size(), is(1));
+        assertTrue(eventsList.get(0) instanceof uk.gov.justice.listing.events.HearingTrialVacated);
+    }
+
+    @Test
+    void shouldNotEmitAvailableSlotsForHearingFreedWhenVacatingCrownTrialWithoutReason() {
+        final UUID crownHearingId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withCourtScheduleId(randomUUID())
+                                        .withHearingDate(LocalDate.now().plusDays(5))
+                                        .build()))
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(240)
+                        .build())
+                .build());
+
+        final Stream<Object> events = hearing.hearingVacateTrial(Optional.empty());  // no reason
+        final List<Object> eventsList = events.toList();
+
+        // Should only emit HearingTrialVacated (no slot freed because vacatingTrialReasonId is empty)
+        assertThat(eventsList.size(), is(1));
+        assertTrue(eventsList.get(0) instanceof uk.gov.justice.listing.events.HearingTrialVacated);
+    }
 }

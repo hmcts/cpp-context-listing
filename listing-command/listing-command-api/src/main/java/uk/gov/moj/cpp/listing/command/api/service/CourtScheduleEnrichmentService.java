@@ -86,6 +86,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     }
 
     public UpdateHearingForListing enrichWithCourtSchedules(final UpdateHearingForListing updateHearingForListing, final JsonEnvelope envelope) {
+        if (JurisdictionType.CROWN.equals(updateHearingForListing.getJurisdictionType())) {
+            return enrichCrownUpdateHearing(updateHearingForListing);
+        }
         //HearingDays courtscheduleId provided in payload, we can list them directly
         List<HearingDay> hearingDaysWithCourScheduleId = new ArrayList<>();
 
@@ -121,6 +124,102 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         }
         // If neither exists, don't call withJudiciary at all (no blank lists)
         
+        return hearingBuilder.build();
+    }
+
+    private UpdateHearingForListing enrichCrownUpdateHearing(final UpdateHearingForListing hearing) {
+        LOGGER.info("CROWN update enrichment for hearingId: {}", hearing.getHearingId());
+
+        final boolean anyHearingDayHasCourtScheduleId = !isEmpty(hearing.getHearingDays())
+                && hearing.getHearingDays().stream().anyMatch(d -> nonNull(d.getCourtScheduleId()));
+        if (!anyHearingDayHasCourtScheduleId) {
+            LOGGER.info("CROWN update: no courtScheduleIds on hearingDays for hearingId {}. Skipping court schedule enrichment.", hearing.getHearingId());
+            return hearing;
+        }
+
+        final int totalDuration = hearing.getHearingDays().stream()
+                .mapToInt(d -> d.getDurationMinutes() != null ? d.getDurationMinutes() : 0)
+                .sum();
+        final boolean isMultiDay = totalDuration > HearingDurationEnrichmentService.MINUTES_IN_DAY;
+
+        EnrichmentResult enrichmentResult;
+        if (isMultiDay) {
+            final HearingDay firstDay = hearing.getHearingDays().stream()
+                    .filter(d -> nonNull(d.getCourtScheduleId()))
+                    .findFirst().orElse(null);
+
+            if (firstDay == null) {
+                LOGGER.error("CROWN multi-day update: no courtScheduleId on hearingDays for hearingId {}", hearing.getHearingId());
+                return hearing;
+            }
+
+            final List<CourtSchedule> sessions = multiDaySearchAndBook(
+                    firstDay.getCourtScheduleId().toString(),
+                    totalDuration,
+                    hearing.getHearingId().toString());
+
+            if (isEmpty(sessions)) {
+                LOGGER.warn("CROWN multi-day update: no sessions found for hearingId {}.", hearing.getHearingId());
+                return hearing;
+            }
+
+            final int daysNeeded = sessions.size();
+            final int durationPerDay = totalDuration / daysNeeded;
+            final List<HearingDay> expandedDays = sessions.stream().map(session -> HearingDay.hearingDay()
+                    .withCourtCentreId(fromString(session.getCourtHouseId()))
+                    .withCourtScheduleId(fromString(session.getCourtScheduleId()))
+                    .withCourtRoomId(fromString(session.getCourtRoomId()))
+                    .withStartTime(nonNull(session.getHearingStartTime()) ? ZonedDateTime.parse(session.getHearingStartTime()) : null)
+                    .withHearingDate(session.getSessionDate())
+                    .withDurationMinutes(durationPerDay)
+                    .withIsDraft(session.isDraft())
+                    .build()
+            ).toList();
+
+            final boolean allNonDraft = sessions.stream().noneMatch(CourtSchedule::isDraft);
+            if (!allNonDraft) {
+                LOGGER.warn("CROWN multi-day update: isDraft=true sessions for hearingId {}. HearingDays will carry isDraft=true.", hearing.getHearingId());
+                return UpdateHearingForListing.updateHearingForListing()
+                        .withValuesFrom(hearing)
+                        .withHearingDays(expandedDays)
+                        .build();
+            }
+
+            enrichmentResult = listHearingSessionsAndExtractData(hearing.getHearingId(), expandedDays);
+        } else {
+            final List<String> courtScheduleIds = hearing.getHearingDays().stream()
+                    .filter(d -> nonNull(d.getCourtScheduleId()))
+                    .map(d -> d.getCourtScheduleId().toString())
+                    .toList();
+
+            final List<CourtSchedule> sessions = fetchCourtSchedulesByIds(courtScheduleIds);
+            final boolean allNonDraft = sessions.stream().noneMatch(CourtSchedule::isDraft);
+            final List<HearingDay> sanityCheckedDays = sanityCheckAndEnrichCrown(hearing.getHearingDays(), sessions, hearing.getHearingId());
+
+            if (!allNonDraft) {
+                LOGGER.warn("CROWN single-day update: isDraft=true sessions for hearingId {}. HearingDays will carry isDraft=true.", hearing.getHearingId());
+                return UpdateHearingForListing.updateHearingForListing()
+                        .withValuesFrom(hearing)
+                        .withHearingDays(sanityCheckedDays)
+                        .build();
+            }
+
+            enrichmentResult = listHearingSessionsAndExtractData(hearing.getHearingId(), sanityCheckedDays);
+        }
+
+        final List<HearingDay> enrichedHearingDays = enrichmentResult.getHearingDays();
+        final List<JudicialRole> enrichedJudiciaries = enrichmentResult.getJudiciaries();
+
+        UpdateHearingForListing.Builder hearingBuilder = UpdateHearingForListing.updateHearingForListing()
+                .withValuesFrom(hearing)
+                .withHearingDays(enrichedHearingDays);
+
+        if (isNotEmpty(hearing.getJudiciary())) {
+            hearingBuilder.withJudiciary(hearing.getJudiciary());
+        } else if (isNotEmpty(enrichedJudiciaries)) {
+            hearingBuilder.withJudiciary(convertJudicialRoleDomainToCore(enrichedJudiciaries));
+        }
+
         return hearingBuilder.build();
     }
 
@@ -164,8 +263,11 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         if (needsCourtScheduleEnrichment(hearing)) {
             EnrichmentResult enrichmentResult;
 
+            if (JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
+                enrichmentResult = handleCrownEnrichment(hearing);
+            }
             // Case 1: All nondefault days have courtScheduleId
-            if (allHearingDaysHaveCourtScheduleId(hearing)) {
+            else if (allHearingDaysHaveCourtScheduleId(hearing)) {
                 enrichmentResult = handleDirectListingCase(hearing);
             }
             // Case 2: Has booking reference (provisional booking)
@@ -313,6 +415,176 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         return new AllocationResult(hearingDaysBySearchAndBook, judicialRolesBySearchAndBook);
     }
 
+    private EnrichmentResult handleCrownEnrichment(final HearingListingNeeds hearing) {
+        final boolean isMultiDay = nonNull(hearing.getEstimatedMinutes())
+                && hearing.getEstimatedMinutes() > HearingDurationEnrichmentService.MINUTES_IN_DAY;
+        if (isMultiDay) {
+            return handleCrownMultiDayEnrichment(hearing);
+        }
+        return handleCrownSingleDayEnrichment(hearing);
+    }
+
+    private EnrichmentResult handleCrownSingleDayEnrichment(final HearingListingNeeds hearing) {
+        LOGGER.info("CROWN single-day enrichment for hearingId: {}", hearing.getId());
+
+        final List<String> courtScheduleIds = hearing.getHearingDays().stream()
+                .filter(d -> nonNull(d.getCourtScheduleId()))
+                .map(d -> d.getCourtScheduleId().toString())
+                .toList();
+
+        final List<CourtSchedule> sessions = fetchCourtSchedulesByIds(courtScheduleIds);
+
+        final boolean allNonDraft = sessions.stream().noneMatch(CourtSchedule::isDraft);
+
+        final List<HearingDay> sanityCheckedDays = sanityCheckAndEnrichCrown(hearing.getHearingDays(), sessions, hearing.getId());
+
+        if (!allNonDraft) {
+            LOGGER.warn("CROWN single-day: isDraft=true sessions for hearingId {}. HearingDays will carry isDraft=true, allocation decided by aggregate.", hearing.getId());
+            return new EnrichmentResult(sanityCheckedDays, new ArrayList<>());
+        }
+
+        return listHearingSessionsAndExtractData(hearing.getId(), sanityCheckedDays);
+    }
+
+    private EnrichmentResult handleCrownMultiDayEnrichment(final HearingListingNeeds hearing) {
+        LOGGER.info("CROWN multi-day enrichment for hearingId: {}", hearing.getId());
+
+        final HearingDay firstDay = hearing.getHearingDays().stream()
+                .filter(d -> nonNull(d.getCourtScheduleId()))
+                .findFirst().orElse(null);
+
+        if (firstDay == null) {
+            LOGGER.error("CROWN multi-day: no courtScheduleId on hearingDays for hearingId {}", hearing.getId());
+            return new EnrichmentResult(hearing.getHearingDays(), new ArrayList<>());
+        }
+
+        final List<CourtSchedule> sessions = multiDaySearchAndBook(
+                firstDay.getCourtScheduleId().toString(),
+                hearing.getEstimatedMinutes(),
+                hearing.getId().toString());
+
+        if (isEmpty(sessions)) {
+            LOGGER.warn("CROWN multi-day: no consecutive sessions found for hearingId {}. Unallocated.", hearing.getId());
+            return new EnrichmentResult(hearing.getHearingDays(), new ArrayList<>());
+        }
+
+        final List<HearingDay> expandedDays = buildHearingDaysFromMultiDaySessions(sessions, hearing);
+
+        final boolean allNonDraft = sessions.stream().noneMatch(CourtSchedule::isDraft);
+        if (!allNonDraft) {
+            LOGGER.warn("CROWN multi-day: isDraft=true sessions for hearingId {}. HearingDays will carry isDraft=true, allocation decided by aggregate.", hearing.getId());
+            return new EnrichmentResult(expandedDays, new ArrayList<>());
+        }
+
+        return listHearingSessionsAndExtractData(hearing.getId(), expandedDays);
+    }
+
+    private List<CourtSchedule> fetchCourtSchedulesByIds(final List<String> courtScheduleIds) {
+        final Map<String, String> params = new HashMap<>();
+        params.put("courtScheduleIds", String.join(",", courtScheduleIds));
+        final Response response = hearingSlotsService.getCourtSchedulesById(params);
+
+        if (!isSuccess(response)) {
+            LOGGER.error("fetchCourtSchedulesByIds failed with status {}", response.getStatus());
+            return new ArrayList<>();
+        }
+
+        final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
+        if (responseJson == null || responseJson.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        final JsonArray schedulesArray = responseJson.getJsonArray("courtSchedules");
+        if (schedulesArray == null || schedulesArray.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        final List<CourtSchedule> schedules = new ArrayList<>();
+        for (int i = 0; i < schedulesArray.size(); i++) {
+            final CourtSchedule cs = jsonObjectConverter.convert(schedulesArray.getJsonObject(i), CourtSchedule.class);
+            schedules.add(cs);
+        }
+        return schedules;
+    }
+
+    private List<CourtSchedule> multiDaySearchAndBook(final String courtScheduleId, final Integer durationInMinutes, final String hearingId) {
+        final Map<String, String> params = new HashMap<>();
+        params.put("courtScheduleId", courtScheduleId);
+        params.put("durationInMinutes", String.valueOf(durationInMinutes));
+        params.put("hearingId", hearingId);
+        final Response response = hearingSlotsService.multiDaySearchAndBook(params);
+
+        if (!isSuccess(response)) {
+            LOGGER.error("multiDaySearchAndBook failed with status {} for hearingId {}", response.getStatus(), hearingId);
+            return new ArrayList<>();
+        }
+
+        final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
+        if (responseJson == null || responseJson.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        final JsonArray schedulesArray = responseJson.getJsonArray("courtSchedules");
+        if (schedulesArray == null || schedulesArray.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        final List<CourtSchedule> schedules = new ArrayList<>();
+        for (int i = 0; i < schedulesArray.size(); i++) {
+            final CourtSchedule cs = jsonObjectConverter.convert(schedulesArray.getJsonObject(i), CourtSchedule.class);
+            schedules.add(cs);
+        }
+        return schedules;
+    }
+
+    private List<HearingDay> sanityCheckAndEnrichCrown(final List<HearingDay> hearingDays, final List<CourtSchedule> sessions, final UUID hearingId) {
+        final Map<String, CourtSchedule> sessionsById = sessions.stream()
+                .collect(Collectors.toMap(CourtSchedule::getCourtScheduleId, s -> s));
+
+        return hearingDays.stream().map(hd -> {
+            if (isNull(hd.getCourtScheduleId())) {
+                return hd;
+            }
+            final CourtSchedule session = sessionsById.get(hd.getCourtScheduleId().toString());
+            if (session == null) {
+                LOGGER.error("CROWN sanity: no session for courtScheduleId {} hearingId {}", hd.getCourtScheduleId(), hearingId);
+                return hd;
+            }
+            if (nonNull(hd.getHearingDate()) && !hd.getHearingDate().equals(session.getSessionDate())) {
+                LOGGER.error("CROWN sanity: hearingDate={} but sessionDate={} for hearingId {}. Using scheduler value.",
+                        hd.getHearingDate(), session.getSessionDate(), hearingId);
+            }
+            final HearingDay.Builder builder = HearingDay.hearingDay()
+                    .withValuesFrom(hd)
+                    .withHearingDate(session.getSessionDate())
+                    .withCourtRoomId(fromString(session.getCourtRoomId()))
+                    .withIsDraft(session.isDraft());
+            if (nonNull(session.getCourtHouseId())) {
+                builder.withCourtCentreId(fromString(session.getCourtHouseId()));
+            }
+            if (nonNull(session.getHearingStartTime())) {
+                builder.withStartTime(ZonedDateTime.parse(session.getHearingStartTime()));
+            }
+            return builder.build();
+        }).toList();
+    }
+
+    private List<HearingDay> buildHearingDaysFromMultiDaySessions(final List<CourtSchedule> sessions, final HearingListingNeeds hearing) {
+        final int daysNeeded = sessions.size();
+        final int durationPerDay = hearing.getEstimatedMinutes() / daysNeeded;
+
+        return sessions.stream().map(session -> HearingDay.hearingDay()
+                .withCourtCentreId(fromString(session.getCourtHouseId()))
+                .withCourtScheduleId(fromString(session.getCourtScheduleId()))
+                .withCourtRoomId(fromString(session.getCourtRoomId()))
+                .withStartTime(nonNull(session.getHearingStartTime()) ? ZonedDateTime.parse(session.getHearingStartTime()) : null)
+                .withHearingDate(session.getSessionDate())
+                .withDurationMinutes(durationPerDay)
+                .withIsDraft(session.isDraft())
+                .build()
+        ).toList();
+    }
+
     private List<HearingDay> generateHearingDaysFromCourtSchedule(final List<HearingDay> hearingDays, final List<CourtSchedule> courtScheduleList, final HearingListingNeeds hearing) {
         final List<HearingDay> hearingDaysUpdatedByCourtSchedules = new ArrayList<>();
         final Map<LocalDate, HearingDay> hearingDaysMapByDate = hearingDays.stream().collect(Collectors.toMap(HearingDay::getHearingDate, HearingDay -> HearingDay));
@@ -339,7 +611,22 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     }
 
     static boolean needsCourtScheduleEnrichment(final HearingListingNeeds hearing) {
-        return hearing.getJurisdictionType().equals(JurisdictionType.MAGISTRATES) && (!isEmpty(hearing.getNonDefaultDays()) || nonNull(hearing.getBookingReference()) || nonNull(hearing.getBookedSlots()) || isCandidateForAllocation(hearing));
+        if (JurisdictionType.MAGISTRATES.equals(hearing.getJurisdictionType())) {
+            return !isEmpty(hearing.getNonDefaultDays()) || nonNull(hearing.getBookingReference())
+                    || nonNull(hearing.getBookedSlots()) || isCandidateForAllocation(hearing);
+        }
+        if (JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
+            return isCrownFixedDateWithCourtScheduleId(hearing);
+        }
+        return false;
+    }
+
+    private static boolean isCrownFixedDateWithCourtScheduleId(final HearingListingNeeds hearing) {
+        if (nonNull(hearing.getWeekCommencingDate())) {
+            return false;
+        }
+        return !isEmpty(hearing.getHearingDays())
+                && hearing.getHearingDays().stream().anyMatch(d -> nonNull(d.getCourtScheduleId()));
     }
 
 

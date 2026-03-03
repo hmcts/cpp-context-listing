@@ -53,6 +53,9 @@ public class HearingSlotsService {
     private static final String COUTRT_SCHEDULER_HEARING_IDS = "application/vnd.courtscheduler.get.hearing.ids+json";
     private static final String COURTSCHEDULER_SEARCH_BOOK_COURTSCHEDULES = "application/vnd.courtscheduler.search.book.hearing.slots+json";
 
+    private static final String MULTIDAY_SEARCH_BOOK_RESOURCE = "/multidaysearchandbook/hearingslots";
+    private static final String COURTSCHEDULER_MULTIDAY_SEARCH_BOOK = "application/vnd.courtscheduler.multiday.searchandbook.hearing.slots+json";
+
     private static final String CJS_CPP_UID = "CJSCPPUID";
     @Inject
     @Value(key = "courtscheduler.base.url", defaultValue = "http://localhost:8080/listingcourtscheduler-api/rest/courtscheduler")
@@ -115,6 +118,10 @@ public class HearingSlotsService {
 
     public Response getCourtSchedulesById(final Map<String, String> params) {
         return query(COURTSCHEDULES_RESOURCE, COURTSCHEDULER_SEARCH_COURTSCHEDULES_BY_ID, params);
+    }
+
+    public Response multiDaySearchAndBook(final Map<String, String> params) {
+        return query(MULTIDAY_SEARCH_BOOK_RESOURCE, COURTSCHEDULER_MULTIDAY_SEARCH_BOOK, params);
     }
 
     public void delete(final UUID hearingId) {
