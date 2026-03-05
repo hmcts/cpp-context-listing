@@ -93,6 +93,9 @@ public class Hearing implements JsonEntity {
     @Type( type = "jsonb-node" )
     private JsonNode properties;
 
+    @Column(name = "estimated_minutes")
+    private Integer estimatedMinutes;
+
     @Column(updatable = false, insertable = false)
     private Long totalCount;
 
@@ -139,6 +142,7 @@ public class Hearing implements JsonEntity {
                    final Set<CourtApplications> courtApplications,
                    final UUID typeOfListId,
                    final JsonNode properties,
+                   final Integer estimatedMinutes,
                    final Boolean isPossibleDisqualification,
                    final Long hearingDayCount,
                    final Long hearingDayPosition,
@@ -160,6 +164,7 @@ public class Hearing implements JsonEntity {
         this.setCourtApplications(courtApplications);
         this.typeOfListId = typeOfListId;
         this.properties = properties;
+        this.estimatedMinutes = estimatedMinutes;
         this.isPossibleDisqualification = isPossibleDisqualification;
         this.hearingDayCount = hearingDayCount;
         this.hearingDayPosition = hearingDayPosition;
@@ -184,6 +189,14 @@ public class Hearing implements JsonEntity {
 
     public void setProperties(JsonNode properties) {
         this.properties = properties;
+    }
+
+    public Integer getEstimatedMinutes() {
+        return estimatedMinutes;
+    }
+
+    public void setEstimatedMinutes(Integer estimatedMinutes) {
+        this.estimatedMinutes = estimatedMinutes;
     }
 
     public UUID getCourtCentreId() {
@@ -409,6 +422,7 @@ public class Hearing implements JsonEntity {
         private Set<CourtApplications> courtApplications = new HashSet<>();
         private UUID typeOfListId;
         private JsonNode properties;
+        private Integer estimatedMinutes;
         private Boolean isPossibleDisqualification;
         private Long hearingDayCount;
         private Long hearingDayPosition;
@@ -518,6 +532,11 @@ public class Hearing implements JsonEntity {
             return this;
         }
 
+        public HearingBuilder withEstimatedMinutes(Integer estimatedMinutes) {
+            this.estimatedMinutes = estimatedMinutes;
+            return this;
+        }
+
         public HearingBuilder withIsPossibleDisqualification(Boolean isPossibleDisqualification) {
             this.isPossibleDisqualification = isPossibleDisqualification;
             return this;
@@ -541,7 +560,7 @@ public class Hearing implements JsonEntity {
         public Hearing build() {
             return new Hearing(id, courtCentreId, courtRoomId, isVacatedTrial, unscheduled, typeId, jurisdictionType,
                     weekCommencingStartDate, weekCommencingEndDate, startDate, endDate, hearingDays, listedCases, allocated,
-                    courtApplications, typeOfListId, properties, isPossibleDisqualification, hearingDayCount, hearingDayPosition, hearingDate);
+                    courtApplications, typeOfListId, properties, estimatedMinutes, isPossibleDisqualification, hearingDayCount, hearingDayPosition, hearingDate);
         }
     }
 }

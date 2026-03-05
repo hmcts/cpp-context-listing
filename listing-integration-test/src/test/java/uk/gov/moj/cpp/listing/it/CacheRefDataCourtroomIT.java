@@ -13,6 +13,7 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
@@ -62,7 +63,7 @@ public class CacheRefDataCourtroomIT extends AbstractIT {
     private static final String REFERENCE_DATA_EVENT_COURTROOM_CLOSED_JSON = "public.referencedata.event.courtroom-closed.json";
     private static final String PUBLIC_REFERENCE_COURTROOM_ADDED = "public.referencedata.event.courtroom-added";
     private static final String PUBLIC_REFERENCE_COURTROOM_CLOSED = "public.referencedata.event.courtroom-closed";
-    private final UUID roomId = randomUUID();
+    private final UUID roomId = getRandomCourtRoomId();
     private final String roomName = "Courtroom 06";
     private final StringToJsonObjectConverter stringToJsonObjectConverter = new StringToJsonObjectConverter();
     private JmsMessageProducerClient publicMessageProducer;
@@ -82,7 +83,7 @@ public class CacheRefDataCourtroomIT extends AbstractIT {
     void shouldAddCourtRoom() throws JsonProcessingException {
         new RefDataCourtRoomCacheStep().assertRefreshCache();
         addNewCourtRoomDetails();
-        assertThat(countCacheItemsInDb(), is(5));
+        assertThat(countCacheItemsInDb(), is(4));
     }
 
 
@@ -103,7 +104,7 @@ public class CacheRefDataCourtroomIT extends AbstractIT {
                         .build());
         final boolean isRoomIdExists = checkCourtRoomIdExists(roomId);
         assertThat(isRoomIdExists, is(false));
-        assertThat(countCacheItemsInDb(), is(4));
+        assertThat(countCacheItemsInDb(), is(3));
     }
 
     @Test

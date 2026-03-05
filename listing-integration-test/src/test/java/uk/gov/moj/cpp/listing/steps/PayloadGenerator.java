@@ -14,8 +14,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static java.util.Arrays.asList;
 import static java.util.Objects.nonNull;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 
 /**
  * Utility class for loading JSON test data files and replacing placeholders with dynamic values
@@ -42,7 +45,7 @@ public class PayloadGenerator {
             }
             
             JsonNode originalNode = objectMapper.readTree(inputStream);
-            Map<String, String> placeholderValues = generateDynamicValues();
+            Map<String, String> placeholderValues = generateDynamicValues(null);
             
             JsonNode processedNode = replacePlaceholders(originalNode, placeholderValues);
             
@@ -57,14 +60,19 @@ public class PayloadGenerator {
     /**
      * Generates dynamic values for common placeholders
      */
-    private static Map<String, String> generateDynamicValues() {
+    private static Map<String, String> generateDynamicValues(Map<String, String> exceptionValues) {
         Map<String, String> values = new HashMap<>();
         
         // Generate UUIDs for common placeholders
         values.put("%%HEARING_ID%%", UUID.randomUUID().toString());
         values.put("%%HEARING_TYPE_ID%%", UUID.randomUUID().toString());
-        values.put("%%COURT_CENTRE_ID%%", UUID.randomUUID().toString());
-        values.put("%%COURT_ROOM_ID%%", UUID.randomUUID().toString());
+        values.put("%%COURT_CENTRE_ID%%", getRandomCourtCenterId().toString());
+        if (exceptionValues != null && exceptionValues.containsKey("originalCourtRoomId")) {
+            values.put("%%COURT_ROOM_ID%%", getRandomCourtRoomId(asList(UUID.fromString(exceptionValues.get("originalCourtRoomId")))).toString());
+        } else {
+            values.put("%%COURT_ROOM_ID%%", getRandomCourtRoomId().toString());
+        }
+
         values.put("%%COURTSCHEDULE_ID%%", UUID.randomUUID().toString());
         
         // Generate jurisdiction types
@@ -115,7 +123,7 @@ public class PayloadGenerator {
             JsonNode originalNode = objectMapper.readTree(inputStream);
             
             // Start with default values and override with custom ones
-            Map<String, String> placeholderValues = generateDynamicValues();
+            Map<String, String> placeholderValues = generateDynamicValues(customValues);
             placeholderValues.putAll(customValues);
             
             JsonNode processedNode = replacePlaceholders(originalNode, placeholderValues);

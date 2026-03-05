@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet author="listing" id="027-add-estimated-minutes-column" logicalFilePath="027-add-estimated-minutes-column.xml">
+        <addColumn tableName="hearing">
+            <column name="estimated_minutes" type="INTEGER"/>
+        </addColumn>
+        
+        <sql>
+            UPDATE hearing
+            SET estimated_minutes = (properties->>'estimatedMinutes')::INTEGER
+            WHERE properties->>'estimatedMinutes' IS NOT NULL
+            AND (properties->>'estimatedMinutes') ~ '^[0-9]+$';
+        </sql>
+        
+        <rollback>
+            <dropColumn tableName="hearing" columnName="estimated_minutes"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

@@ -9,6 +9,8 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocation;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 
@@ -33,7 +35,6 @@ import java.util.UUID;
 
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class CourtListIT extends AbstractIT {
@@ -45,8 +46,8 @@ public class CourtListIT extends AbstractIT {
     public static final String PRISON = "Prison";
     public static final String JUDGE = "Judge";
     public static final String BENCH = "Bench";
-    final UUID COURT_CENTRE_ID = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
-    final UUID HEARING_TYPE_ID = fromString("52edf232-3c09-4c74-a6ad-737985c2e662");
+    private static final UUID COURT_CENTRE_ID = getRandomCourtCenterId();
+    private static final UUID HEARING_TYPE_ID = fromString("52edf232-3c09-4c74-a6ad-737985c2e662");
 
     private CourtListSteps courtListSteps;
     private HearingsData firstHearing;

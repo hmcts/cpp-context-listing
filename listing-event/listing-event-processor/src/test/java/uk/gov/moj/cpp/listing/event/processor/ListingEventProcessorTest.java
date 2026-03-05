@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -54,6 +55,7 @@ import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PUBLI
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PUBLIC_EVENT_HEARING_UPDATED;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PUBLIC_EVENT_VACATED_TRIAL_UPDATED;
 
+import org.mockito.Mockito;
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.CourtApplication;
@@ -394,6 +396,10 @@ class ListingEventProcessorTest {
         given(addHearingToCaseCommandCollectionConverter.convert(hearingListed)).willReturn(singletonList(addHearingToCaseCommand));
         given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed)).
                 willReturn(singletonList(addApplicationToHearingCommand));
+        uk.gov.justice.core.courts.Hearing mockHearing = mock(uk.gov.justice.core.courts.Hearing.class);
+        given(hearingListingToCoreConverter.convert(any())).willReturn(mockHearing);
+        given(mockHearing.getType()).willReturn(mock(uk.gov.justice.core.courts.HearingType.class));
+
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
                 forClass(JsonEnvelope.class);
 
@@ -419,6 +425,10 @@ class ListingEventProcessorTest {
         given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed2)).
                 willReturn(singletonList(addApplicationToHearingCommand));
 
+        uk.gov.justice.core.courts.Hearing mockHearing = mock(uk.gov.justice.core.courts.Hearing.class);
+        given(hearingListingToCoreConverter.convert(any())).willReturn(mockHearing);
+        given(mockHearing.getType()).willReturn(mock(uk.gov.justice.core.courts.HearingType.class));
+
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
                 forClass(JsonEnvelope.class);
 
@@ -439,6 +449,11 @@ class ListingEventProcessorTest {
         given(hearingListed.getHearing()).willReturn(hearing);
         given(addHearingToCaseCommandCollectionConverter.convert(hearingListed)).willReturn(singletonList(addHearingToCaseCommand));
         given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed)).willReturn(singletonList(addApplicationToHearingCommand));
+
+        uk.gov.justice.core.courts.Hearing mockHearing = mock(uk.gov.justice.core.courts.Hearing.class);
+        given(hearingListingToCoreConverter.convert(any())).willReturn(mockHearing);
+        given(mockHearing.getType()).willReturn(mock(uk.gov.justice.core.courts.HearingType.class));
+
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
                 forClass(JsonEnvelope.class);
 
@@ -464,6 +479,10 @@ class ListingEventProcessorTest {
         given(addHearingToCaseCommandCollectionConverter.convert(hearingListed2)).willReturn(singletonList(addHearingToCaseCommand));
         given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed2)).
                 willReturn(singletonList(addApplicationToHearingCommand));
+        uk.gov.justice.core.courts.Hearing mockHearing = mock(uk.gov.justice.core.courts.Hearing.class);
+        given(hearingListingToCoreConverter.convert(any())).willReturn(mockHearing);
+        given(mockHearing.getType()).willReturn(mock(uk.gov.justice.core.courts.HearingType.class));
+
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
                 forClass(JsonEnvelope.class);
         //when
@@ -472,6 +491,153 @@ class ListingEventProcessorTest {
         //then
         verify(sender, times(4)).send(senderJsonEnvelopeCaptor.capture());
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(2).metadata().name(), is("public.listing.hearing-listed"));
+    }
+
+    @Test
+    public void shouldHandleHearingListedEventMessageWhenProsecutionCasesIsNull() {
+        //Given
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectConverter.convert(payload, HearingListed.class)).willReturn(hearingListed);
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+
+        given(hearingListed.getHearing()).willReturn(hearing);
+        given(addHearingToCaseCommandCollectionConverter.convert(hearingListed)).willReturn(emptyList());
+        given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed)).willReturn(emptyList());
+
+        uk.gov.justice.core.courts.Hearing mockHearing = mock(uk.gov.justice.core.courts.Hearing.class);
+        uk.gov.justice.core.courts.HearingType mockHearingType = mock(uk.gov.justice.core.courts.HearingType.class);
+        given(hearingListingToCoreConverter.convert(any())).willReturn(mockHearing);
+        given(mockHearing.getType()).willReturn(mockHearingType);
+        given(mockHearingType.getDescription()).willReturn("Test Hearing Type");
+        given(mockHearing.getId()).willReturn(randomUUID());
+        given(mockHearing.getProsecutionCases()).willReturn(null);
+
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = forClass(JsonEnvelope.class);
+
+        //when
+        listingEventProcessor.handleHearingListedMessage(envelope);
+
+        //then
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+        final List<JsonEnvelope> capturedEnvelopes = senderJsonEnvelopeCaptor.getAllValues();
+        assertThat(capturedEnvelopes.get(0).metadata().name(), is("public.listing.hearing-listed"));
+        assertThat(capturedEnvelopes.get(1).metadata().name(), is("public.listing.court-application-added-for-hearing"));
+        
+        // Verify the public event payload has empty caseUrns
+        final JsonObject publicEventPayload = capturedEnvelopes.get(0).payloadAsJsonObject();
+        assertThat(publicEventPayload.getJsonArray("caseUrns"), is(notNullValue()));
+        assertThat(publicEventPayload.getJsonArray("caseUrns").size(), is(0));
+    }
+
+    @Test
+    public void shouldHandleHearingListedEventMessageWhenProsecutionCasesIsEmpty() {
+        //Given
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectConverter.convert(payload, HearingListed.class)).willReturn(hearingListed);
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+
+        given(hearingListed.getHearing()).willReturn(hearing);
+        given(addHearingToCaseCommandCollectionConverter.convert(hearingListed)).willReturn(emptyList());
+        given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed)).willReturn(emptyList());
+
+        uk.gov.justice.core.courts.Hearing mockHearing = mock(uk.gov.justice.core.courts.Hearing.class);
+        uk.gov.justice.core.courts.HearingType mockHearingType = mock(uk.gov.justice.core.courts.HearingType.class);
+        given(hearingListingToCoreConverter.convert(any())).willReturn(mockHearing);
+        given(mockHearing.getType()).willReturn(mockHearingType);
+        given(mockHearingType.getDescription()).willReturn("Test Hearing Type");
+        given(mockHearing.getId()).willReturn(randomUUID());
+        given(mockHearing.getProsecutionCases()).willReturn(emptyList());
+
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = forClass(JsonEnvelope.class);
+
+        //when
+        listingEventProcessor.handleHearingListedMessage(envelope);
+
+        //then
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+        final List<JsonEnvelope> capturedEnvelopes = senderJsonEnvelopeCaptor.getAllValues();
+        assertThat(capturedEnvelopes.get(0).metadata().name(), is("public.listing.hearing-listed"));
+        assertThat(capturedEnvelopes.get(1).metadata().name(), is("public.listing.court-application-added-for-hearing"));
+        
+        // Verify the public event payload has empty caseUrns
+        final JsonObject publicEventPayload = capturedEnvelopes.get(0).payloadAsJsonObject();
+        assertThat(publicEventPayload.getJsonArray("caseUrns"), is(notNullValue()));
+        assertThat(publicEventPayload.getJsonArray("caseUrns").size(), is(0));
+    }
+
+    @Test
+    public void shouldHandleHearingListedEventMessageWhenProsecutionCaseIsNull() {
+        //Given
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectConverter.convert(payload, HearingListed.class)).willReturn(hearingListed);
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+
+        given(hearingListed.getHearing()).willReturn(hearing);
+        given(addHearingToCaseCommandCollectionConverter.convert(hearingListed)).willReturn(emptyList());
+        given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed)).willReturn(emptyList());
+
+        uk.gov.justice.core.courts.Hearing mockHearing = mock(uk.gov.justice.core.courts.Hearing.class);
+        uk.gov.justice.core.courts.HearingType mockHearingType = mock(uk.gov.justice.core.courts.HearingType.class);
+        uk.gov.justice.core.courts.ProsecutionCase nullProsecutionCase = null;
+        given(hearingListingToCoreConverter.convert(any())).willReturn(mockHearing);
+        given(mockHearing.getType()).willReturn(mockHearingType);
+        given(mockHearingType.getDescription()).willReturn("Test Hearing Type");
+        given(mockHearing.getId()).willReturn(randomUUID());
+        given(mockHearing.getProsecutionCases()).willReturn(singletonList(nullProsecutionCase));
+
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = forClass(JsonEnvelope.class);
+
+        //when
+        listingEventProcessor.handleHearingListedMessage(envelope);
+
+        //then
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+        final List<JsonEnvelope> capturedEnvelopes = senderJsonEnvelopeCaptor.getAllValues();
+        assertThat(capturedEnvelopes.get(0).metadata().name(), is("public.listing.hearing-listed"));
+        assertThat(capturedEnvelopes.get(1).metadata().name(), is("public.listing.court-application-added-for-hearing"));
+        
+        // Verify the public event payload has empty caseUrns (null prosecution case is filtered out)
+        final JsonObject publicEventPayload = capturedEnvelopes.get(0).payloadAsJsonObject();
+        assertThat(publicEventPayload.getJsonArray("caseUrns"), is(notNullValue()));
+        assertThat(publicEventPayload.getJsonArray("caseUrns").size(), is(0));
+    }
+
+    @Test
+    public void shouldHandleHearingListedEventMessageWhenProsecutionCaseIdentifierIsNull() {
+        //Given
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectConverter.convert(payload, HearingListed.class)).willReturn(hearingListed);
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+
+        given(hearingListed.getHearing()).willReturn(hearing);
+        given(addHearingToCaseCommandCollectionConverter.convert(hearingListed)).willReturn(emptyList());
+        given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed)).willReturn(emptyList());
+
+        uk.gov.justice.core.courts.Hearing mockHearing = mock(uk.gov.justice.core.courts.Hearing.class);
+        uk.gov.justice.core.courts.HearingType mockHearingType = mock(uk.gov.justice.core.courts.HearingType.class);
+        uk.gov.justice.core.courts.ProsecutionCase mockProsecutionCase = mock(uk.gov.justice.core.courts.ProsecutionCase.class);
+        given(hearingListingToCoreConverter.convert(any())).willReturn(mockHearing);
+        given(mockHearing.getType()).willReturn(mockHearingType);
+        given(mockHearingType.getDescription()).willReturn("Test Hearing Type");
+        given(mockHearing.getId()).willReturn(randomUUID());
+        given(mockHearing.getProsecutionCases()).willReturn(singletonList(mockProsecutionCase));
+        given(mockProsecutionCase.getProsecutionCaseIdentifier()).willReturn(null);
+
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = forClass(JsonEnvelope.class);
+
+        //when
+        listingEventProcessor.handleHearingListedMessage(envelope);
+
+        //then
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+        final List<JsonEnvelope> capturedEnvelopes = senderJsonEnvelopeCaptor.getAllValues();
+        assertThat(capturedEnvelopes.get(0).metadata().name(), is("public.listing.hearing-listed"));
+        assertThat(capturedEnvelopes.get(1).metadata().name(), is("public.listing.court-application-added-for-hearing"));
+        
+        // Verify the public event payload has empty caseUrns (prosecution case with null identifier is filtered out)
+        final JsonObject publicEventPayload = capturedEnvelopes.get(0).payloadAsJsonObject();
+        assertThat(publicEventPayload.getJsonArray("caseUrns"), is(notNullValue()));
+        assertThat(publicEventPayload.getJsonArray("caseUrns").size(), is(0));
     }
 
     @Test

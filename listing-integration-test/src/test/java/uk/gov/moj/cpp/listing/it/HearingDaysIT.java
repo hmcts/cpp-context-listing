@@ -10,6 +10,7 @@ import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
+import static org.codehaus.groovy.runtime.InvokerHelper.asList;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -22,6 +23,8 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHea
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
@@ -91,10 +94,10 @@ public class HearingDaysIT extends AbstractIT {
         hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
         hearingId = randomUUID();
         caseId = randomUUID();
-        courtCentreId = randomUUID();
-        courtRoomId = randomUUID();
+        courtCentreId = getRandomCourtCenterId();
+        courtRoomId = getRandomCourtRoomId();
         caseUrn = "TVL16116BT1UU";
-        otherCourtCentreId = randomUUID();
+        otherCourtCentreId = getRandomCourtCenterId(asList(courtCentreId));
         otherCourtRoomId = randomUUID();
 
         final HearingsData hearingsData = HearingsData.singleHearingsDataWithAllocationDataAndJudiciary();
@@ -169,8 +172,8 @@ public class HearingDaysIT extends AbstractIT {
         startDate = LocalDate.now();
         hearingId = randomUUID();
         caseId = randomUUID();
-        courtCentreId = randomUUID();
-        courtRoomId = randomUUID();
+        courtCentreId = getRandomCourtCenterId();
+        courtRoomId = getRandomCourtRoomId();
         caseUrn = "TVL16116BT1UU";
         hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
 
