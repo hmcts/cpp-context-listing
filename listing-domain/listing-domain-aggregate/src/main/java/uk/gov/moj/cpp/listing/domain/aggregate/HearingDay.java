@@ -31,7 +31,9 @@ public class HearingDay implements Serializable {
 
     private final UUID courtRoomId;
 
-    public HearingDay(final Integer durationMinutes, final ZonedDateTime endTime, final LocalDate hearingDate, final Integer sequence, final ZonedDateTime startTime, final UUID courtScheduleId, final Boolean isCancelled, final UUID courtCentreId, final UUID courtRoomId) {
+    private final Boolean isDraft;
+
+    public HearingDay(final Integer durationMinutes, final ZonedDateTime endTime, final LocalDate hearingDate, final Integer sequence, final ZonedDateTime startTime, final UUID courtScheduleId, final Boolean isCancelled, final UUID courtCentreId, final UUID courtRoomId, final Boolean isDraft) {
         this.durationMinutes = durationMinutes;
         this.endTime = endTime;
         this.hearingDate = hearingDate;
@@ -41,6 +43,7 @@ public class HearingDay implements Serializable {
         this.isCancelled = isCancelled;
         this.courtCentreId = courtCentreId;
         this.courtRoomId = courtRoomId;
+        this.isDraft = isDraft;
     }
 
     public Integer getDurationMinutes() {
@@ -79,6 +82,10 @@ public class HearingDay implements Serializable {
         return courtRoomId;
     }
 
+    public Boolean isDraft() {
+        return isNull(isDraft) ? FALSE : isDraft;
+    }
+
     public static Builder hearingDay() {
         return new Builder();
     }
@@ -100,12 +107,13 @@ public class HearingDay implements Serializable {
                 Objects.equals(getStartTime(), that.getStartTime()) &&
                 Objects.equals(isCancelled(), that.isCancelled()) &&
                 Objects.equals(getCourtCentreId(), that.getCourtCentreId()) &&
-                Objects.equals(getCourtRoomId(), that.getCourtRoomId());
+                Objects.equals(getCourtRoomId(), that.getCourtRoomId()) &&
+                Objects.equals(isDraft(), that.isDraft());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getCourtScheduleId(), getDurationMinutes(), getEndTime(), getHearingDate(), getSequence(), getStartTime(), isCancelled(), getCourtCentreId(), getCourtRoomId());
+        return Objects.hash(getCourtScheduleId(), getDurationMinutes(), getEndTime(), getHearingDate(), getSequence(), getStartTime(), isCancelled(), getCourtCentreId(), getCourtRoomId(), isDraft());
     }
 
     @Override
@@ -120,6 +128,7 @@ public class HearingDay implements Serializable {
                 ", isCancelled=" + isCancelled +
                 ", courtCentreId=" + courtCentreId +
                 ", courtRoomId=" + courtRoomId +
+                ", isDraft=" + isDraft +
                 '}';
     }
 
@@ -143,6 +152,8 @@ public class HearingDay implements Serializable {
         private UUID courtCentreId;
 
         private UUID courtRoomId;
+
+        private Boolean isDraft;
 
         public Builder withDurationMinutes(final Integer durationMinutes) {
             this.durationMinutes = durationMinutes;
@@ -189,6 +200,11 @@ public class HearingDay implements Serializable {
             return this;
         }
 
+        public Builder withIsDraft(final Boolean isDraft) {
+            this.isDraft = isDraft;
+            return this;
+        }
+
         public HearingDay.Builder withValuesFrom(HearingDay hearingDay) {
             this.courtCentreId = hearingDay.getCourtCentreId();
             this.courtRoomId = hearingDay.getCourtRoomId();
@@ -199,12 +215,13 @@ public class HearingDay implements Serializable {
             this.isCancelled = hearingDay.isCancelled();
             this.sequence = hearingDay.getSequence();
             this.startTime = hearingDay.getStartTime();
+            this.isDraft = hearingDay.isDraft();
 
             return this;
         }
 
         public HearingDay build() {
-            return new HearingDay(durationMinutes, endTime, hearingDate, sequence, startTime, courtScheduleId, isCancelled, courtCentreId, courtRoomId);
+            return new HearingDay(durationMinutes, endTime, hearingDate, sequence, startTime, courtScheduleId, isCancelled, courtCentreId, courtRoomId, isDraft);
         }
     }
 }

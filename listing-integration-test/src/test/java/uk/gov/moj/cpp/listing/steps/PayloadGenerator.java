@@ -25,16 +25,28 @@ public class PayloadGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(PayloadGenerator.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
     
+    public static final String MAGS = "MAGS";
+    public static final String CROWN = "CROWN";
+
     /**
-     * Loads a JSON file from test-data directory and replaces placeholders with dynamic values
-     * 
-     * @param scenario the scenario folder name (e.g., "list-court-hearing")
-     * @param testCase the test case file name (e.g., "adhoc_hearing_creation")
-     * @return JsonNode with placeholders replaced
+     * Loads a JSON file from test-data directory and replaces placeholders with dynamic values.
+     * Defaults to MAGS court type.
      */
     public static JsonNode loadPayloadWithDynamicValues(String scenario, String testCase) {
+        return loadPayloadWithDynamicValues(MAGS, scenario, testCase);
+    }
+
+    /**
+     * Loads a JSON file from test-data/{courtType} directory and replaces placeholders with dynamic values.
+     *
+     * @param courtType the court type folder (MAGS or CROWN)
+     * @param scenario  the scenario folder name (e.g., "list-court-hearing")
+     * @param testCase  the test case file name (e.g., "adhoc_hearing_creation")
+     * @return JsonNode with placeholders replaced
+     */
+    public static JsonNode loadPayloadWithDynamicValues(String courtType, String scenario, String testCase) {
         try {
-            String resourcePath = String.format("/test-data/%s/%s.json", scenario, testCase);
+            String resourcePath = String.format("/test-data/%s/%s/%s.json", courtType, scenario, testCase);
             InputStream inputStream = PayloadGenerator.class.getResourceAsStream(resourcePath);
             
             if (inputStream == null) {
@@ -101,11 +113,18 @@ public class PayloadGenerator {
     }
     
     /**
-     * Allows custom placeholder values to be provided
+     * Allows custom placeholder values to be provided. Defaults to MAGS court type.
      */
     public static JsonNode loadPayloadWithCustomValues(String scenario, String testCase, Map<String, String> customValues) {
+        return loadPayloadWithCustomValues(MAGS, scenario, testCase, customValues);
+    }
+
+    /**
+     * Allows custom placeholder values to be provided for a specific court type.
+     */
+    public static JsonNode loadPayloadWithCustomValues(String courtType, String scenario, String testCase, Map<String, String> customValues) {
         try {
-            String resourcePath = String.format("/test-data/%s/%s.json", scenario, testCase);
+            String resourcePath = String.format("/test-data/%s/%s/%s.json", courtType, scenario, testCase);
             InputStream inputStream = PayloadGenerator.class.getResourceAsStream(resourcePath);
             
             if (inputStream == null) {

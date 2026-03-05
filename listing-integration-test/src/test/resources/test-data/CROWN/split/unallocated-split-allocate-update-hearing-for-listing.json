@@ -1,0 +1,42 @@
+{
+    "courtCentreId": "89592405-c29b-3706-b1d3-b1dd3a08b227",
+    "courtRoomId": "d0624ee3-9198-3c8b-94d6-42fb197ebe5e",
+    "endDate": "2026-03-30",
+    "hearingLanguage": "ENGLISH",
+    "jurisdictionType": "CROWN",
+    "nonDefaultDays": [
+        {
+            "courtCentreId": "89592405-c29b-3706-b1d3-b1dd3a08b227",
+            "roomId": "d0624ee3-9198-3c8b-94d6-42fb197ebe5e",
+            "startTime": "2026-03-30T09:00:00.000Z",
+            "duration": 20
+        }
+    ],
+    "nonSittingDays": [],
+    "startDate": "2026-03-30",
+    "publicListNote": "",
+    "hasVideoLink": false,
+    "type": {
+        "id": "633224da-6db3-4df5-8097-62cee52f7a61",
+        "description": "Bail Application"
+    },
+    "sendNotificationToParties": false,
+    "judiciary": [],
+    "prosecutionCases": [
+        {
+            "caseId": "1fe80cf3-4274-4633-b821-4373d9bf0211",
+            "defendants": [
+                {
+                    "defendantId": "eacb5261-483a-452b-8853-a087ace0da62",
+                    "offences": [
+                        {
+                            "offenceId": "47e267ae-1d42-49d7-aa03-e023117a9180"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "splitHearing": "unallocated",
+    "hearingId": "70728bc1-8d0a-4b24-a286-5a595098a1c3"
+}

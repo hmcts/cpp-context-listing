@@ -1237,7 +1237,9 @@ public class Hearing implements Aggregate {
                 .withVacatedTrialReasonId(vacatingTrialReasonId.orElse(null))
                 .build());
 
-        if (MAGISTRATES == jurisdictionType && vacatingTrialReasonId.isPresent()) {
+        if ((MAGISTRATES == jurisdictionType || JurisdictionType.CROWN.equals(jurisdictionType))
+                && vacatingTrialReasonId.isPresent()
+                && hasCourtScheduleIds(this.hearingDays)) {
             eventsStream = concat(eventsStream, Stream.of(availableSlotsForHearingFreed().withHearingId(this.hearingId).build()));
         }
         return apply(eventsStream);
@@ -1958,8 +1960,23 @@ public class Hearing implements Aggregate {
     }
 
     private boolean canAllocateForCrown() {
-        return currentlyAssigned(this.hearingLanguage) && currentlyAssigned(this.jurisdictionType) && JurisdictionType.CROWN.equals(this.jurisdictionType)
+        final boolean basicCriteria = currentlyAssigned(this.hearingLanguage) && currentlyAssigned(this.jurisdictionType) && JurisdictionType.CROWN.equals(this.jurisdictionType)
                 && currentlyAssigned(this.courtRoomId) && currentlyAssigned(this.endDate) && currentlyAssigned(this.startDate);
+        if (!basicCriteria) {
+            return false;
+        }
+        // If hearing days have court schedule IDs, ensure none are from draft sessions
+        if (hasCourtScheduleIds(this.hearingDays)) {
+            return noneHasDraftSession(this.hearingDays);
+        }
+        // Legacy: hearings without court schedule IDs allocate based on basic criteria
+        return true;
+    }
+
+    private boolean noneHasDraftSession(final List<HearingDay> hearingDays) {
+        return isNotEmpty(hearingDays) &&
+                hearingDays.stream()
+                        .noneMatch(HearingDay::isDraft);
     }
 
     private boolean canAllocateForMags() {
@@ -2362,6 +2379,7 @@ public class Hearing implements Aggregate {
                         .withCourtScheduleId(cd.getCourtScheduleId())
                         .withCourtRoomId(cd.getCourtRoomId())
                         .withCourtCentreId(cd.getCourtCentreId())
+                        .withIsDraft(cd.getIsDraft())
                         .build())
                 .collect(toList());
     }
@@ -2380,6 +2398,7 @@ public class Hearing implements Aggregate {
                             .withCourtScheduleId(cd.getCourtScheduleId())
                             .withCourtRoomId(existingHearingDay !=null? existingHearingDay.getCourtRoomId(): cd.getCourtRoomId())
                             .withCourtCentreId(existingHearingDay !=null? existingHearingDay.getCourtCentreId(): cd.getCourtCentreId())
+                            .withIsDraft(cd.getIsDraft())
                             .build();
                 })
                 .collect(toList());
@@ -2824,6 +2843,7 @@ public class Hearing implements Aggregate {
                         .withIsCancelled(cd.getIsCancelled())
                         .withCourtCentreId(cd.getCourtCentreId())
                         .withCourtRoomId(cd.getCourtRoomId())
+                        .withIsDraft(cd.getIsDraft())
                         .build())
                 .collect(toList());
     }
@@ -2848,6 +2868,7 @@ public class Hearing implements Aggregate {
                 .withIsCancelled(cd.isCancelled())
                 .withCourtCentreId(cd.getCourtCentreId())
                 .withCourtRoomId(cd.getCourtRoomId())
+                .withIsDraft(cd.isDraft())
                 .build();
     }
 
@@ -2863,6 +2884,7 @@ public class Hearing implements Aggregate {
                         .withIsCancelled(cd.isCancelled())
                         .withCourtCentreId(cd.getCourtCentreId())
                         .withCourtRoomId(cd.getCourtRoomId())
+                        .withIsDraft(cd.isDraft())
                         .build())
                 .collect(toList());
     }
@@ -3400,9 +3422,10 @@ public class Hearing implements Aggregate {
     }
 
     private HearingDay buildHearingDayWithCancelledStatus(final HearingDay hearingDayInAggregate, final boolean cancelled) {
-        return new HearingDay(hearingDayInAggregate.getDurationMinutes(), hearingDayInAggregate.getEndTime(), hearingDayInAggregate.getHearingDate(),
-                hearingDayInAggregate.getSequence(), hearingDayInAggregate.getStartTime(), hearingDayInAggregate.getCourtScheduleId(), cancelled,
-                hearingDayInAggregate.getCourtCentreId(), hearingDayInAggregate.getCourtRoomId());
+        return HearingDay.hearingDay()
+                .withValuesFrom(hearingDayInAggregate)
+                .withIsCancelled(cancelled)
+                .build();
     }
 
     private ZonedDateTime getEarliestStartDate() {
