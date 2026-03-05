@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.it;
 
 import com.jayway.jsonpath.ReadContext;
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +51,23 @@ class PayloadBasedListNextHearingIT extends AbstractIT {
 
         PayloadBasedListNextHearingIT.LOGGER.info("Test completed successfully with first hearing: {} and next hearing: {}", 
                    firstHearingValues.hearingId, nextHearingValues.hearingId);
+    }
+
+    @Test
+    void shouldListNextHearingsUsingAdhocHearingCreationWithPublicEvent() {
+        // First, create an initial hearing using adhoc hearing creation scenario
+        PayloadBasedListCourtHearingSteps listCourtHearingSteps = new PayloadBasedListCourtHearingSteps();
+        PayloadGenerator.PayloadValues firstHearingValues = listCourtHearingSteps.whenListCourtHearingSubmittedWithAdhocHearingCreation();
+
+        // Verify the first hearing was listed
+        listCourtHearingSteps.verifyHearingListedFromAPI(AbstractIT.ALLOCATED);
+
+        // Now create next hearings using adjournment crown fixed date scenario
+        PayloadBasedListNextHearingSteps listNextHearingSteps = new PayloadBasedListNextHearingSteps(firstHearingValues.hearingId);
+        PayloadGenerator.PayloadValues nextHearingValues = listNextHearingSteps.whenListNextHearingSubmittedWithAdjournmentCrownFixedDateWithPublicEvent();
+
+        // Verify the next hearing was listed
+        listNextHearingSteps.verifyNextHearingListedFromAPI(AbstractIT.ALLOCATED,2);
     }
     
     @Test
@@ -143,9 +159,52 @@ class PayloadBasedListNextHearingIT extends AbstractIT {
         PayloadBasedListNextHearingIT.LOGGER.info("Test completed successfully with magistrates hearing: {} and next hearing: {}", 
                    firstHearingValues.hearingId, nextHearingValues.hearingId);
     }
-    
+
     @Test
-    
+    void shouldCreateNextHearingForMagistratesJurisdictionWithPublicEvent() {
+        // First, create an initial hearing using MCC without court schedule allocated scenario
+
+        PayloadBasedListCourtHearingSteps listCourtHearingSteps = new PayloadBasedListCourtHearingSteps();
+        PayloadGenerator.PayloadValues firstHearingValues = listCourtHearingSteps.whenListCourtHearingSubmittedWithMccWithoutCourtScheduleAllocated();
+
+        // Verify the first hearing was listed
+        listCourtHearingSteps.verifyHearingListedFromAPI(AbstractIT.ALLOCATED);
+
+        // Now create next hearings for magistrates using adjournment mags scenario
+        PayloadBasedListNextHearingSteps listNextHearingSteps = new PayloadBasedListNextHearingSteps(firstHearingValues.hearingId,firstHearingValues);
+
+        stubListHearingInCourtSessions(firstHearingValues.hearingId,
+                "8e837de0-743a-4a2c-9db3-b2e678c48729",
+                ZonedDateTime.now(ZoneOffset.UTC)
+                        .withHour(9)
+                        .withMinute(0)
+                        .withSecond(0)
+                        .withNano(0)
+                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
+        final ZonedDateTime hearingStartTime = listNextHearingSteps.getPayloadValues().hearingStartTime;
+        final LocalDate hearingDate = LocalDate.parse(listNextHearingSteps.getPayloadValues().hearingDate);
+        final String courtCentreId = listNextHearingSteps.getPayloadValues().courtCentreId;
+        final String courtroomId = listNextHearingSteps.getPayloadValues().courtRoomId;
+
+        final String courtScheduleId = "8e837de0-743a-4a2c-9db3-b2e678c48729";
+        final String bookingId = "20576fdd-4415-4bac-8948-07aa3b8d9b08";
+
+        Map<String, String> stubParams = new HashMap<>();
+        stubParams.put("SESSION_DATE", hearingDate.toString());
+        stubParams.put("COURT_CENTRE_ID", courtCentreId);
+        stubParams.put("COURT_SCHEDULE_ID", courtScheduleId);
+        stubParams.put("COURT_ROOM_ID", courtroomId);
+        stubParams.put("BOOKING_ID", bookingId);
+        stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
+        stubProvisionalBookingWithCustomParams(stubParams);
+
+        PayloadGenerator.PayloadValues nextHearingValues = listNextHearingSteps.whenListNextHearingSubmittedWithAdjournmentMagistratesWithPublicEvent();
+
+        // Verify the next hearing was listed
+        listNextHearingSteps.verifyNextHearingListedFromAPI(AbstractIT.ALLOCATED,2);
+    }
+
+    @Test
     void shouldCreateUnscheduledNextHearing() {
         // First, create an initial hearing using SPI two defendants unallocated scenario
         PayloadBasedListCourtHearingSteps listCourtHearingSteps = new PayloadBasedListCourtHearingSteps();

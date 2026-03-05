@@ -37,8 +37,8 @@ import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
-import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
+import uk.gov.moj.cpp.listing.common.courtcentre.CourtCentreFactory;
+import uk.gov.moj.cpp.listing.common.service.HearingEnrichmentOrchestrator;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.VacateTrialEnriched;
 

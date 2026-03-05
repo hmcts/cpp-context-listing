@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.steps;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -11,7 +12,9 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
 import org.apache.http.HttpStatus;
 import org.hamcrest.MatcherAssert;
@@ -19,7 +22,9 @@ import org.hamcrest.MatcherAssert;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.utils.PropertyUtil;
+import uk.gov.moj.cpp.listing.utils.QueueUtil;
 import uk.gov.moj.cpp.listing.utils.ReferenceDataStub;
 
 import java.text.MessageFormat;
@@ -61,7 +66,9 @@ public class PayloadBasedListNextHearingSteps extends AbstractIT {
     private PayloadGenerator.PayloadValues payloadValues;
     private String requestPayload;
     private String seedingHearingId; // The hearing ID that seeds the next hearings
-    
+
+    private final JmsMessageProducerClient jmsMessageProducerClient = publicEvents.createPublicProducer();
+
     public PayloadBasedListNextHearingSteps(String seedingHearingId) {
         this.seedingHearingId = seedingHearingId;
         this.givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
@@ -84,7 +91,11 @@ public class PayloadBasedListNextHearingSteps extends AbstractIT {
     public PayloadGenerator.PayloadValues whenListNextHearingSubmittedWithAdjournmentCrownFixedDate() {
         return this.whenListNextHearingSubmittedWithScenario("list-next-hearings-v2", "adjorunment_crown_fixed_date");
     }
-    
+
+    public PayloadGenerator.PayloadValues whenListNextHearingSubmittedWithAdjournmentCrownFixedDateWithPublicEvent() {
+        return this.whenListNextHearingSubmittedWithScenarioWithPublicEvent("list-next-hearings-v2", "adjorunment_crown_fixed_date");
+    }
+
     /**
      * Submit next hearing request using adjournment crown week commencing scenario
      */
@@ -98,7 +109,11 @@ public class PayloadBasedListNextHearingSteps extends AbstractIT {
     public PayloadGenerator.PayloadValues whenListNextHearingSubmittedWithAdjournmentMagistrates() {
         return this.whenListNextHearingSubmittedWithScenario("list-next-hearings-v2", "adjournment_mags");
     }
-    
+
+    public PayloadGenerator.PayloadValues whenListNextHearingSubmittedWithAdjournmentMagistratesWithPublicEvent() {
+        return this.whenListNextHearingSubmittedWithScenarioWithPublicEvent("list-next-hearings-v2", "adjournment_mags");
+    }
+
     /**
      * Submit unscheduled next hearing request using adjournment crown unscheduled scenario
      */
@@ -119,7 +134,11 @@ public class PayloadBasedListNextHearingSteps extends AbstractIT {
     public PayloadGenerator.PayloadValues whenListNextHearingSubmittedWithScenario(String scenario, String testCase) {
         return this.whenListNextHearingSubmittedWithScenario(scenario, testCase, new HashMap<>());
     }
-    
+
+    public PayloadGenerator.PayloadValues whenListNextHearingSubmittedWithScenarioWithPublicEvent(String scenario, String testCase) {
+        return this.whenListNextHearingSubmittedWithScenarioWithPublicEvent(scenario, testCase, new HashMap<>());
+    }
+
     /**
      * Generic method to submit list next hearing request with custom scenario, test case, and custom values
      */
@@ -154,12 +173,47 @@ public class PayloadBasedListNextHearingSteps extends AbstractIT {
             PayloadBasedListNextHearingSteps.LOGGER.info("Generated values: {}", this.payloadValues);
             
             return this.payloadValues;
-            
+
         } catch (Exception e) {
             throw new RuntimeException("Failed to submit list next hearing request", e);
         }
     }
-    
+
+    public PayloadGenerator.PayloadValues whenListNextHearingSubmittedWithScenarioWithPublicEvent(String scenario, String testCase, Map<String, String> customValues) {
+        try {
+            // Add seeding hearing ID to custom values
+            customValues.put("%%SEEDING_HEARING_ID%%", this.seedingHearingId);
+
+            // Load payload with dynamic values
+            JsonNode payload = PayloadGenerator.loadPayloadWithCustomValues(scenario, testCase, customValues);
+
+            // Extract values for verification
+            this.payloadValues = PayloadGenerator.extractValues(payload);
+
+            // Setup stubs with generated values
+            this.setupStubsForNextHearing(this.payloadValues);
+
+            // Convert JsonNode to string for the REST call
+            String payloadString = PayloadBasedListNextHearingSteps.objectMapper.writeValueAsString(payload);
+            this.requestPayload = payloadString;
+
+            // Make the API call
+            QueueUtil.sendMessage(
+                    jmsMessageProducerClient,
+                    "public.progression.next-hearings-listed",
+                    stringToJsonObjectConverter.convert(payloadString),
+                    metadataOf(randomUUID(), "public.progression.next-hearings-listed").withUserId(randomUUID().toString()).build());
+
+            PayloadBasedListNextHearingSteps.LOGGER.info("Successfully submitted list next hearing request for scenario with public event: {}/{}", scenario, testCase);
+            PayloadBasedListNextHearingSteps.LOGGER.info("Generated values with public event: {}", this.payloadValues);
+
+            return this.payloadValues;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to submit list next hearing request", e);
+        }
+    }
+
     /**
      * Generic method to submit list unscheduled next hearing request
      */

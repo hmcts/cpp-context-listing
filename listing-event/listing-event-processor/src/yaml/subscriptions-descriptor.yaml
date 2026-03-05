@@ -280,4 +280,7 @@ subscriptions_descriptor:
         - name: public.referencedata.event.courtroom-closed
           schema_uri: http://cpp.moj.gov.uk/referencedata/event/public.referencedata.event.courtroom-closed.json
 
+        - name : public.progression.next-hearings-listed
+          schema_uri: http://justice.gov.uk/progression/courts/public.progression.next-hearings-listed.json
+
       event_source_name: public.event.source
