@@ -2,8 +2,8 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit;
 
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static javax.json.JsonValue.ValueType.ARRAY;
 import static javax.json.JsonValue.ValueType.OBJECT;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -187,7 +187,7 @@ public class PublishCourtListCommandSender {
             LOGGER.info("There are not sitting/hearing to be published for courtListId {}", requestParameters.getCourtListId());
             return;
         }
-        final  JsonArrayBuilder finalCourtListArrayBuilder = Json.createArrayBuilder();
+        final  JsonArrayBuilder finalCourtListArrayBuilder = JsonObjects.createArrayBuilder();
         courtListsList.stream()
                 .map(courtListObject -> objectToJsonObjectConverter.convert(courtListObject))
                 .forEach(finalCourtListArrayBuilder::add);
@@ -210,7 +210,7 @@ public class PublishCourtListCommandSender {
         final JsonArrayBuilder courtListJsonArray = courtListJson.getJsonArray(COURT_LISTS).getValuesAs(JsonObject.class).stream()
                 .filter(courtList -> courtList.containsKey(SITTINGS))
                 .flatMap(courtList -> courtList.getJsonArray(SITTINGS).getValuesAs(JsonObject.class).stream())
-                .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
+                .collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
         return (JsonArray) mapListingDefendantToCore(courtListJsonArray.build(), new HashMap<>(), envelope);
     }
 
@@ -287,7 +287,7 @@ public class PublishCourtListCommandSender {
                 .map(defendant -> hearingListingToCoreConverter.convert(jsonObjectConverter.convert(defendant, Defendant.class),
                         caseIdByDefendantId.get(fromString(defendant.getString("id")))))
                 .map(defendant -> objectToJsonObjectConverter.convert(defendant))
-                .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
+                .collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
     }
 
     private void sendCommandWith(final String commandName, final UUID streamId, final JsonObject payload) {

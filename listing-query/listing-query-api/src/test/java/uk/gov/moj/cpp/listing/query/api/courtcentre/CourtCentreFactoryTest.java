@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.query.api.courtcentre;
 
-import static javax.json.Json.createReader;
+import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.BDDMockito.given;

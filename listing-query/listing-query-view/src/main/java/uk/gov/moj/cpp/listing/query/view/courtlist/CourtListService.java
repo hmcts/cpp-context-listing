@@ -11,7 +11,7 @@ import java.util.UUID;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 
@@ -51,15 +51,15 @@ public class CourtListService {
 
         final List<JsonObject> courtSites = commonXhibitReferenceDataService.getCrestCourtSitesForCrownCourtCentre(courtCentreId);
 
-        final JsonArrayBuilder courtListsBuilder = Json.createArrayBuilder();
+        final JsonArrayBuilder courtListsBuilder = JsonObjects.createArrayBuilder();
 
-        courtSites.forEach(courtSiteJson -> courtListsBuilder.add(Json.createObjectBuilder()
+        courtSites.forEach(courtSiteJson -> courtListsBuilder.add(JsonObjects.createObjectBuilder()
                 .add("crestCourtSite", courtSiteJson)
-                .add("sittings", Json.createArrayBuilder().build())
+                .add("sittings", JsonObjects.createArrayBuilder().build())
                 .build())
         );
 
-        return Json.createObjectBuilder()
+        return JsonObjects.createObjectBuilder()
                 .add("courtCentreId", courtCentreId.toString())
                 .add("courtLists", courtListsBuilder)
                 .build();

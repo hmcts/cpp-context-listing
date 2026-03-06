@@ -11,8 +11,8 @@ import static java.util.Optional.ofNullable;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -230,7 +230,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -806,7 +806,7 @@ class ListingCommandHandlerTest {
                 .replace("PROVISIONAL_SESS_DATE", PROVISIONAL_SESSION_DATE)
                 .replace("PROVISIONAL_COURT_HOUSE_ID", COURT_CENTRE_ID.toString())
                 .replace("PROVISIONAL_ROOM_ID", COURT_ROOM_ID.toString());
-        final JsonReader jsonReader = Json.createReader(new StringReader(jsonProvisionalSlotString));
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonProvisionalSlotString));
         return jsonReader.readObject();
     }
 
@@ -933,7 +933,7 @@ class ListingCommandHandlerTest {
         when(hearing.getCurrentHearingEventState()).thenReturn(getSampleStoredHearing());
         when(hearing.assignPublicListNote(PUBLIC_LIST_NOTE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
         when(courtCentreFactory.getCourtRoomNumber(any(), any())).thenReturn(Optional.of(1));
 
         listingCommandHandler.updateHearingsForListing(commandEnvelope);
@@ -1010,7 +1010,7 @@ class ListingCommandHandlerTest {
         when(hearing.getCurrentHearingEventState()).thenReturn(getSampleStoredHearing());
         when(hearing.assignPublicListNote(PUBLIC_LIST_NOTE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
         when(courtCentreFactory.getCourtRoomNumber(any(), any())).thenReturn(Optional.of(1));
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
@@ -1269,7 +1269,7 @@ class ListingCommandHandlerTest {
         when(hearingFactory.getHearingById(any(), any())).thenReturn(getSampleStoredHearing());
         when(hearing.assignPublicListNote(any(), eq(HEARING_ID_1))).thenReturn(mock(Stream.class));
         when(hearing.assignVideoLink(anyBoolean(), eq(HEARING_ID_1))).thenReturn(mock(Stream.class));
-        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").build());
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
@@ -1298,7 +1298,7 @@ class ListingCommandHandlerTest {
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
-        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
 
 
@@ -2267,7 +2267,7 @@ class ListingCommandHandlerTest {
         final String jsonString = givenPayload("/test-data/listing.command.publish-court-list.json").toString()
                 .replace("COURT_CENTRE_ID", courtCentreId.toString());
 
-        final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
         final JsonEnvelope commandEnvelope = createEnvelope("listing.command.publish-court-list", jsonReader.readObject());
         listingCommandHandler.publishCourtList(commandEnvelope);
         verify(publishCourtListRequestAggregate).recordCourtListRequested(any(UUID.class), any(UUID.class), any(LocalDate.class), any(LocalDate.class), any(PublishCourtListType.class), any(ZonedDateTime.class), eq(null));
@@ -2511,7 +2511,7 @@ class ListingCommandHandlerTest {
     public void shouldRemovePartiallyMergedOffencesFromOriginalHearing() throws EventStreamException {
         final UUID hearingIdToBeUpdated = randomUUID();
 
-        final JsonObject payload = Json.createObjectBuilder()
+        final JsonObject payload = JsonObjects.createObjectBuilder()
                 .add("hearingIdToBeUpdated", hearingIdToBeUpdated.toString())
                 .add("prosecutionCasesToRemove", createArrayBuilder())
                 .build();
@@ -2735,19 +2735,19 @@ class ListingCommandHandlerTest {
 
     private JsonEnvelope getEnvelopeForVacateTrial(final UUID reason) {
         final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"vacatedTrialReasonId\":\"" + reason + "\"}";
-        final JsonReader jsonReader = Json.createReader(new StringReader(requestBody));
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
         return createEnvelope("listing.command.vacate-trial-enriched", jsonReader.readObject());
     }
 
     private JsonEnvelope getEnvelopeForHearingVacateTrial(final UUID reason) {
         final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"vacatedTrialReasonId\":\"" + reason + "\"}";
-        final JsonReader jsonReader = Json.createReader(new StringReader(requestBody));
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
         return createEnvelope("listing.command.hearing-vacate-trial", jsonReader.readObject());
     }
 
     private JsonEnvelope getEnvelopeForHearingVacateTrialWithoutReason() {
         final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\"}";
-        final JsonReader jsonReader = Json.createReader(new StringReader(requestBody));
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
         return createEnvelope("listing.command.hearing-vacate-trial", jsonReader.readObject());
     }
 
@@ -2765,7 +2765,7 @@ class ListingCommandHandlerTest {
     private JsonEnvelope getJsonEnvelopeForAddCaseForHearing() {
         final String jsonString = givenPayload("/test-data/listing.command.add-cases-to-hearing.json").toString();
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.add-cases-to-hearing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -2781,7 +2781,7 @@ class ListingCommandHandlerTest {
                 .replace("HEARING_DATE_2", HEARING_DATE_2);
 
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.sequence-hearings", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -2814,7 +2814,7 @@ class ListingCommandHandlerTest {
                 .replace("WEEK_COMMENCING_START_DATE", WEEK_COMMENCING_START_DATE.toString())
                 .replace("WEEK_COMMENCING_DURATION", WEEK_COMMENCING_DURATION.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.list-court-hearing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -2843,7 +2843,7 @@ class ListingCommandHandlerTest {
                 .replace("WEEK_COMMENCING_START_DATE", WEEK_COMMENCING_START_DATE.toString())
                 .replace("WEEK_COMMENCING_DURATION", WEEK_COMMENCING_DURATION.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.list-court-hearing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -2879,7 +2879,7 @@ class ListingCommandHandlerTest {
                 .replace("SLOT_COURT_ROOM_ID", String.valueOf(SLOT_COURT_ROOM_ID));
 
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.list-court-hearing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -2907,7 +2907,7 @@ class ListingCommandHandlerTest {
                 .replace("LISTED_START_TIME", LISTED_START_TIME);
 
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.list-court-hearing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -2923,7 +2923,7 @@ class ListingCommandHandlerTest {
                 .replace("USER_ID_1", USER_ID_1.toString())
                 .replace("USER_ID_2", USER_ID_2.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.change-judiciary-for-hearing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -2937,7 +2937,7 @@ class ListingCommandHandlerTest {
                 .replace("COURT_APPLICATION_ID_1", COURT_APPLICATION_ID.toString())
                 .replace("COURT_APPLICATION_TYPE_1", COURT_APPLICATION_TYPE);
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.restrict-court-list", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -2951,7 +2951,7 @@ class ListingCommandHandlerTest {
                 .replace("REMOVAL_REASON", "SomeReason");
 
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.eject-case-or-application", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -2965,7 +2965,7 @@ class ListingCommandHandlerTest {
                 .replace("REMOVAL_REASON", "SomeReason");
 
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.eject-case-or-application", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -2977,7 +2977,7 @@ class ListingCommandHandlerTest {
                 .replace("CASE_ID", CASE_ID.toString())
                 .replace("DEFENDANT_ID1", DEFENDANT_ID1.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.update-case-defendant-details", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -3011,7 +3011,7 @@ class ListingCommandHandlerTest {
                 .replace("DELETED_OFFENCE_ID3", DELETED_OFFENCE_ID3.toString())
                 .replace("DELETED_OFFENCE_ID4", DELETED_OFFENCE_ID4.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.update-case-defendant-details", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -3024,7 +3024,7 @@ class ListingCommandHandlerTest {
                 .replace("HEARING_ID", HEARING_ID_1.toString())
                 .replace("DEFENDANT_ID", DEFENDANT_ID1.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.update-case-defendant-details", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -3037,7 +3037,7 @@ class ListingCommandHandlerTest {
                 .replace("HEARING_ID", HEARING_ID_1.toString())
                 .replace("DEFENDANT_ID", DEFENDANT_ID1.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.add-defendants-to-court-proceedings", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -3053,7 +3053,7 @@ class ListingCommandHandlerTest {
 
 
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.add-defendants-to-court-proceedings", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -3066,7 +3066,7 @@ class ListingCommandHandlerTest {
                 .replace("CASE_ID", CASE_ID.toString())
                 .replace("CASE_URN", URN);
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.update-linked-cases", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -3079,7 +3079,7 @@ class ListingCommandHandlerTest {
                 .replace("CASE_URN", URN)
                 .replace("HEARING_ID", HEARING_ID_1.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.update-linked-case-in-hearing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -3091,7 +3091,7 @@ class ListingCommandHandlerTest {
                 .replace("CASE_ID", CASE_ID.toString())
                 .replace("HEARING_ID_1", HEARING_ID_1.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.update-case-markers", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -3149,7 +3149,7 @@ class ListingCommandHandlerTest {
                 .replace("COURT_SCHEDULE_ID_1", COURT_SCHEDULE_ID_1.toString())
                 .replace("COURT_SCHEDULE_ID_2", COURT_SCHEDULE_ID_2.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.update-hearing-for-listing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -3184,7 +3184,7 @@ class ListingCommandHandlerTest {
                 .replace("COURT_SCHEDULE_ID_1", COURT_SCHEDULE_ID_1.toString())
                 .replace("COURT_SCHEDULE_ID_2", COURT_SCHEDULE_ID_2.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.update-hearing-for-listing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -3213,7 +3213,7 @@ class ListingCommandHandlerTest {
                 .replace("JUDICIAL_ID", JUDICIAL_ID_1.toString())
                 .replace("JUDICIAL_ROLE_TYPE", JUDICIAL_ROLE_TYPE)
                 .replace("AUTHORITY_ID", AUTHORITY_ID.toString());
-        final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
         return createEnvelope("listing.command.update-hearing-for-listing", jsonReader.readObject());
     }
 
@@ -3239,7 +3239,7 @@ class ListingCommandHandlerTest {
                 .replace("START_DATE", START_DATE.toString())
                 .replace("END_DATE", END_DATE);
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.update-offences-for-hearing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -3258,7 +3258,7 @@ class ListingCommandHandlerTest {
                 .replace("END_DATE", END_DATE)
                 .replace("LAA_STATUS_ID", LAA_STATUS_ID.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.update-offences-for-hearing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -3273,7 +3273,7 @@ class ListingCommandHandlerTest {
                 .replace("DELETED_OFFENCE_ID1", DELETED_OFFENCE_ID1.toString())
                 .replace("DELETED_OFFENCE_ID2", DELETED_OFFENCE_ID2.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.delete-offences-for-hearing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -3290,7 +3290,7 @@ class ListingCommandHandlerTest {
                 .replace("START_DATE", START_DATE.toString())
                 .replace("END_DATE", END_DATE);
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.add-offences-for-hearing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -3302,7 +3302,7 @@ class ListingCommandHandlerTest {
                 .replace("HEARING_ID_1", HEARING_ID_1.toString())
                 .replace("HEARING_ID_2", HEARING_ID_2.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.update-court-application-for-hearings", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -3313,7 +3313,7 @@ class ListingCommandHandlerTest {
         final String jsonString = givenPayload("/test-data/listing.command.add-court-application-for-hearing.json").toString()
                 .replace("HEARING_ID", HEARING_ID_1.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.add-court-application-for-hearing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -4120,7 +4120,7 @@ class ListingCommandHandlerTest {
                 .replace("START_DATE", START_DATE.toString())
                 .replace("END_DATE", END_DATE);
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.add-offences-for-hearing-including-ctl", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -4226,7 +4226,7 @@ class ListingCommandHandlerTest {
 
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
-        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
         when(hearing.updateUnallocatedHearingPartially(any(), any(), any())).thenReturn(Stream.of(new Object()));
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
 
@@ -4243,7 +4243,7 @@ class ListingCommandHandlerTest {
 
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
-        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
         when(hearing.updateUnallocatedHearingPartially(any(), any(), any())).thenReturn(Stream.of(new Object()));
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
 

@@ -4,7 +4,7 @@ import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 
 import java.io.StringReader;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
@@ -22,7 +22,7 @@ public class HearingToJsonConverter {
 
     private static JsonObject jsonFromString(final String rawJson) {
         JsonObject object;
-        try (JsonReader jsonReader = Json.createReader(new StringReader(rawJson))) {
+        try (JsonReader jsonReader = JsonObjects.createReader(new StringReader(rawJson))) {
             object = jsonReader.readObject();
             return object;
         }

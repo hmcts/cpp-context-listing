@@ -9,7 +9,7 @@ import static org.hamcrest.Matchers.hasSize;
 
 import java.util.stream.IntStream;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
@@ -33,6 +33,6 @@ public class JsonArrayCollectorTest {
     }
 
     private JsonObject testJsonObject(int itemNumber) {
-        return Json.createObjectBuilder().add("hello-" + itemNumber, "world-" + itemNumber).build();
+        return JsonObjects.createObjectBuilder().add("hello-" + itemNumber, "world-" + itemNumber).build();
     }
 }

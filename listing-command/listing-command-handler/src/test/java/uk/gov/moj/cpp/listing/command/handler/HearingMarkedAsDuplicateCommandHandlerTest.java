@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
 
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,7 +36,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -99,7 +99,7 @@ public class HearingMarkedAsDuplicateCommandHandlerTest {
                 .replace("CASE2_ID", case2Id.toString());
 
 
-        final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
         final JsonEnvelope commandEnvelope = createEnvelope("listing.command.mark-hearing-as-duplicate", jsonReader.readObject());
 
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearingAggregate);
@@ -141,7 +141,7 @@ public class HearingMarkedAsDuplicateCommandHandlerTest {
                 .replace("CASE_ID", caseId.toString());
 
 
-        final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
         final JsonEnvelope commandEnvelope = createEnvelope("listing.command.mark-hearing-as-duplicate-for-case", jsonReader.readObject());
 
         when(aggregateService.get(eventStream, Case.class)).thenReturn(caseAggregate);

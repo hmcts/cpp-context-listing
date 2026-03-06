@@ -19,7 +19,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
@@ -110,7 +110,7 @@ public class NonDefaultDaysForHearingEventListenerTest {
     }
 
     private JsonObject createTestJsonObject() {
-        try (final JsonReader jsonReader =  Json.createReader(new StringReader("{\"test\": \"test\"}"))) {
+        try (final JsonReader jsonReader =  JsonObjects.createReader(new StringReader("{\"test\": \"test\"}"))) {
             return jsonReader.readObject();
         }
     }

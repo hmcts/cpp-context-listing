@@ -11,7 +11,7 @@ import uk.gov.moj.cpp.listing.persistence.enums.CsvRecordType;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -46,15 +46,15 @@ class ProgressionNotesCacheTest {
         caseId = randomUUID();
         applicationId = randomUUID();
         
-        caseNotes = Json.createObjectBuilder()
-                .add("caseNotes", Json.createArrayBuilder()
-                        .add(Json.createObjectBuilder().add("note", "Test case note").add("isPinned", true))
+        caseNotes = JsonObjects.createObjectBuilder()
+                .add("caseNotes", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("note", "Test case note").add("isPinned", true))
                 )
                 .build();
         
-        applicationNotes = Json.createObjectBuilder()
-                .add("applicationNotes", Json.createArrayBuilder()
-                        .add(Json.createObjectBuilder().add("note", "Test application note").add("isPinned", false))
+        applicationNotes = JsonObjects.createObjectBuilder()
+                .add("applicationNotes", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("note", "Test application note").add("isPinned", false))
                 )
                 .build();
         

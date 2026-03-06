@@ -37,7 +37,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.persistence.EntityNotFoundException;
@@ -277,7 +277,7 @@ public class ExtendHearingForHearingListener {
         } catch (final JsonProcessingException jpe) {
             LOGGER.error("Hearing with id {} could not be updated. Could not parse stored hearing json.", hearingIdToBeUpdated, jpe);
         }
-        try (final JsonReader reader = Json.createReader(new StringReader(valueAsString))) {
+        try (final JsonReader reader = JsonObjects.createReader(new StringReader(valueAsString))) {
             hearingJson = reader.readObject();
         }
         return jsonObjectConverter.convert(hearingJson, ListedCase.class);
@@ -292,7 +292,7 @@ public class ExtendHearingForHearingListener {
         } catch (final JsonProcessingException jpe) {
             LOGGER.error("Hearing with id {} could not be updated. Could not parse stored hearing json.", hearingIdToBeUpdated, jpe);
         }
-        try (final JsonReader reader = Json.createReader(new StringReader(valueAsString))) {
+        try (final JsonReader reader = JsonObjects.createReader(new StringReader(valueAsString))) {
             hearingJson = reader.readObject();
         }
         return jsonObjectConverter.convert(hearingJson, DefenceCounsel.class);

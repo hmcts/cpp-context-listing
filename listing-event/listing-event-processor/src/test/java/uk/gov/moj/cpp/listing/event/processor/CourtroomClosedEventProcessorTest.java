@@ -11,7 +11,7 @@ import uk.gov.moj.cpp.listing.query.view.CacheRefDataCourtroomView;
 
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ class CourtroomClosedEventProcessorTest {
     public void shouldCloseReferenceDataCourtRoom() {
 
         UUID roomId = UUID.randomUUID();
-        final JsonObject payload = Json.createObjectBuilder()
+        final JsonObject payload = JsonObjects.createObjectBuilder()
                 .add("id", roomId.toString())
                 .build();
 

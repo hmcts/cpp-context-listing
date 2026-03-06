@@ -972,7 +972,7 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         givenVariousHearings("46DI277164");
 
         //when
-        final List<Hearing> actualHearings = hearingRepository.findHearingsByCaseUrnAndAnyAllocationState("46DI277164");
+        final List<Hearing> actualHearings = hearingRepository.findHearingsByCaseUrnAndAnyAllocationState("46DI277164", START_DATE);
 
         //then
         assertThat(actualHearings.size(), is(3));

@@ -10,7 +10,7 @@ import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.Sitting;
 
 import java.util.List;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -24,7 +24,7 @@ public class SittingsJsonGenerator {
 
     public static JsonArrayBuilder buildSittingsJson(final List<Sitting> sittings) {
 
-        final JsonArrayBuilder sittingsBuilder = Json.createArrayBuilder();
+        final JsonArrayBuilder sittingsBuilder = JsonObjects.createArrayBuilder();
 
         sittings.forEach(s -> sittingsBuilder.add(buildSittingJson(s)));
 
@@ -33,7 +33,7 @@ public class SittingsJsonGenerator {
 
     private static JsonObject buildSittingJson(final Sitting sitting) {
 
-        final JsonObjectBuilder sittingJson = Json.createObjectBuilder()
+        final JsonObjectBuilder sittingJson = JsonObjects.createObjectBuilder()
                 .add("sittingDate", sitting.getSittingKey().getSittingDate().toString())
                 .add("weekCommencing", sitting.isWeekCommencing());
 
@@ -48,7 +48,7 @@ public class SittingsJsonGenerator {
 
     private static JsonArrayBuilder buildHearingsJsonArray(final List<Hearing> hearings) {
 
-        final JsonArrayBuilder hearingsArray = Json.createArrayBuilder();
+        final JsonArrayBuilder hearingsArray = JsonObjects.createArrayBuilder();
 
         hearings.forEach(h -> hearingsArray.add(buildHearingJson(h)));
 
@@ -57,7 +57,7 @@ public class SittingsJsonGenerator {
 
     private static JsonObject buildHearingJson(final Hearing hearing) {
 
-        final JsonObjectBuilder hearingJsonBuilder = Json.createObjectBuilder()
+        final JsonObjectBuilder hearingJsonBuilder = JsonObjects.createObjectBuilder()
                 .add("startTime", hearing.getStartTime().toString())
                 .add("hearingType", hearing.getHearingType())
                 .add("restrictFromCourtList", hearing.isRestrictFromCourtList())

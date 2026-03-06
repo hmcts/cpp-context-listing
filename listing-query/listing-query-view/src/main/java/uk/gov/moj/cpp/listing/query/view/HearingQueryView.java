@@ -14,8 +14,8 @@ import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toSet;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.contains;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
@@ -39,11 +39,9 @@ import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
-import uk.gov.moj.cpp.listing.query.view.dto.csv.HearingCsvData;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.entity.query.CaseByDefendant;
@@ -60,6 +58,7 @@ import uk.gov.moj.cpp.listing.query.view.dto.ListedCase;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory;
 import uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria;
+import uk.gov.moj.cpp.listing.query.view.dto.csv.HearingCsvData;
 import uk.gov.moj.cpp.listing.query.view.hearing.ApplicationTypeFilter;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
@@ -86,7 +85,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -316,7 +315,7 @@ public class HearingQueryView {
         if (caseIdQueryParam == null && applicationIdQueryParam == null) {
             return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                     createObjectBuilder()
-                            .add(HEARINGS, Json.createArrayBuilder().build())
+                            .add(HEARINGS, JsonObjects.createArrayBuilder().build())
             );
         }
         if (nonNull(applicationIdQueryParam)) {
@@ -465,10 +464,12 @@ public class HearingQueryView {
     @Handles("listing.any-allocation.search.hearings")
     public Envelope<JsonObject> searchHearingsWithAnyAllocationState(final JsonEnvelope query) {
         final String caseUrnQueryParam = query.payloadAsJsonObject().getString(CASE_URN).toUpperCase();
+        final String startDateQueryParam = query.payloadAsJsonObject().getString(START_DATE);
+        final LocalDate startDate = LocalDate.parse(startDateQueryParam);
 
-        LOGGER.info("\n Query params - caseUrn : {} ", caseUrnQueryParam);
+        LOGGER.info("\n Query params - caseUrn : {}, startDate: {} ", caseUrnQueryParam, startDate);
 
-        final List<Hearing> hearings = repository.findHearingsByCaseUrnAndAnyAllocationState(caseUrnQueryParam);
+        final List<Hearing> hearings = repository.findHearingsByCaseUrnAndAnyAllocationState(caseUrnQueryParam, startDate);
 
         return Enveloper.envelop(createObjectBuilder()
                 .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))

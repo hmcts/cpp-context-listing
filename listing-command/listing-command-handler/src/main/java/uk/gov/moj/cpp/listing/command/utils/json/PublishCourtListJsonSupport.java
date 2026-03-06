@@ -5,7 +5,7 @@ import uk.gov.moj.cpp.listing.command.fields.PublishCourtListFields;
 
 import java.time.format.DateTimeFormatter;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonValue;
 
 public class PublishCourtListJsonSupport {
@@ -18,7 +18,7 @@ public class PublishCourtListJsonSupport {
 
     public static JsonValue asJson(final PublishCourtList publishCourtList) {
         final String requestedTimeAsOptionalString = null != publishCourtList.getRequestedTime() ? publishCourtList.getRequestedTime().format(DATE_FORMAT_ZONED_DATE_AND_TIME) : null;
-        return Json.createObjectBuilder()
+        return JsonObjects.createObjectBuilder()
                 .add(PublishCourtListFields.COURT_CENTRE_ID.getInternalName(), publishCourtList.getCourtCentreId().toString())
                 .add(PublishCourtListFields.START_DATE.getInternalName(), publishCourtList.getStartDate().format(DATE_FORMAT_DATE_ONLY))
                 .add(PublishCourtListFields.END_DATE.getInternalName(), publishCourtList.getEndDate().format(DATE_FORMAT_DATE_ONLY))

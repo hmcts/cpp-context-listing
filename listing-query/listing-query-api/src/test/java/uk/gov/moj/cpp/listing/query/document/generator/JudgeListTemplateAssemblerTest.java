@@ -2,7 +2,7 @@ package uk.gov.moj.cpp.listing.query.document.generator;
 
 import static java.util.Locale.UK;
 import static java.util.UUID.randomUUID;
-import static javax.json.Json.createReader;
+import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;

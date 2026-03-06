@@ -6,7 +6,7 @@ import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.time.LocalDate.parse;
 import static java.time.ZoneOffset.UTC;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -15,10 +15,10 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.common.converter.ZonedDateTimes.fromString;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
@@ -34,7 +34,7 @@ import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -134,7 +134,7 @@ public class SequenceHearingSteps extends AbstractIT {
         Map<LocalDate, Integer> sequencedDays = sequenceHearingData.getSequencedDays();
 
         final JsonObjectBuilder builder = createObjectBuilder();
-        JsonArrayBuilder hearingDays = Json.createArrayBuilder();
+        JsonArrayBuilder hearingDays = JsonObjects.createArrayBuilder();
 
         for (Map.Entry<LocalDate, Integer> entry : sequencedDays.entrySet()) {
             hearingDays.add(createObjectBuilder()
@@ -142,7 +142,7 @@ public class SequenceHearingSteps extends AbstractIT {
                     .add("sequence", entry.getValue())
             );
         }
-        builder.add("hearings", Json.createArrayBuilder().add(
+        builder.add("hearings", JsonObjects.createArrayBuilder().add(
                 createObjectBuilder()
                         .add("id", hearingId.toString())
                         .add("sequenceHearingDays", hearingDays)));
@@ -164,7 +164,7 @@ public class SequenceHearingSteps extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.hearings.by.allocated.court-centre-id.court-room-id.search-date"), ALLOCATED, courtCentreId, courtRoomId, searchDate));
 
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(matchers)));

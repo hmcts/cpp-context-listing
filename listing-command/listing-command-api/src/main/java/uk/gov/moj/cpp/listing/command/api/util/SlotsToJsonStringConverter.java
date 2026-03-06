@@ -1,8 +1,8 @@
 package uk.gov.moj.cpp.listing.command.api.util;
 
 import static java.util.Objects.nonNull;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.UTC;
 import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.toIsoString;
 

@@ -12,8 +12,8 @@ import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static javax.ws.rs.core.Response.Status;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.OK;
@@ -23,7 +23,6 @@ import static uk.gov.justice.services.common.converter.LocalDates.to;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClientProvider.newPublicJmsMessageProducerClientProvider;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
@@ -51,7 +50,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -230,7 +229,7 @@ public class CancelHearingSteps extends AbstractIT {
     }
 
     private void verifyHearingNotFound(final String searchHearingsUrl, final String mediaType) {
-        poll(requestParams(searchHearingsUrl, mediaType).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingsUrl, mediaType).withHeader(USER_ID, getLoggedInUser()).build())
                 .until(
                         status().is(OK),
                         payload().isJson(
@@ -239,7 +238,7 @@ public class CancelHearingSteps extends AbstractIT {
     }
 
     private void verifyResponseReceived(final String searchHearingsUrl, final String mediaType, final Status expectedStatus) {
-        poll(requestParams(searchHearingsUrl, mediaType).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingsUrl, mediaType).withHeader(USER_ID, getLoggedInUser()).build())
                 .until(status().is(expectedStatus));
     }
 
@@ -249,7 +248,7 @@ public class CancelHearingSteps extends AbstractIT {
                         .add("hearingDate", to(hearingDay.getSittingDay().toLocalDate()))
                         .add("sequence", integer(100).next())
                 )
-                .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add)
+                .collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add)
                 .build();
 
         this.nonCancelledHearingDaysWithNewSequence = hearingDays;

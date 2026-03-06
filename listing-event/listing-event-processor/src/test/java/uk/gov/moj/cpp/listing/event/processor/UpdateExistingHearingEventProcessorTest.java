@@ -31,7 +31,7 @@ import java.util.Collections;
 import java.util.UUID;
 
 import javax.json.JsonObject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 
 
 import org.junit.jupiter.api.Test;
@@ -204,7 +204,7 @@ public class UpdateExistingHearingEventProcessorTest {
     @Test
     public void shouldCallCommand(){
         final String hearingId = randomUUID().toString();
-        JsonObject relatedHearingUpdatedforAdhocHearing = Json.createObjectBuilder()
+        JsonObject relatedHearingUpdatedforAdhocHearing = JsonObjects.createObjectBuilder()
                 .add("hearingId", hearingId)
                 .build();
 

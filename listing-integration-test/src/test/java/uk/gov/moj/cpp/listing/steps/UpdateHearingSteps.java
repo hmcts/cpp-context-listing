@@ -8,8 +8,8 @@ import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static javax.ws.rs.core.Response.Status.ACCEPTED;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
@@ -27,8 +27,8 @@ import static org.junit.Assert.assertNull;
 import static uk.gov.justice.services.common.converter.ZonedDateTimes.fromString;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDelayForJms;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
@@ -86,7 +86,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -276,7 +276,7 @@ public class UpdateHearingSteps extends AbstractIT {
         addNullableStringField(builder, "priority", Optional.ofNullable(updatedHearingData.getPriority()));
         if (isNotEmpty(updatedHearingData.getSpecialRequirements())) {
             builder.add("specialRequirements", updatedHearingData.getSpecialRequirements().stream()
-                    .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add).build());
+                    .collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add).build());
         }
 
         return builder;
@@ -292,7 +292,7 @@ public class UpdateHearingSteps extends AbstractIT {
         Optional.ofNullable(updatedHearingData.getWeekCommencingDurationInWeeks()).filter(value -> !nullFields.contains(FIELD_WEEK_COMMENCING_DURATION_IN_WEEKS)).ifPresent(durationInWeeks -> builder.add(FIELD_WEEK_COMMENCING_DURATION_IN_WEEKS, durationInWeeks));
         Optional.ofNullable(updatedHearingData.getWeekCommencingEndDate()).filter(value -> !nullFields.contains(FIELD_WEEK_COMMENCING_END_DATE)).ifPresent(weekCommencingEndDate -> builder.add(FIELD_WEEK_COMMENCING_END_DATE, weekCommencingEndDate));
         Optional.ofNullable(updatedHearingData.getNonDefaultDays()).filter(value -> !nullFields.contains("nonDefaultDays")).ifPresent(nonDefaultDayData -> {
-            JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+            JsonArrayBuilder arrayBuilder = JsonObjects.createArrayBuilder();
             nonDefaultDayData.forEach(data -> {
                 arrayBuilder.add(createObjectBuilder().add("startTime", data.getStartTime()).add("duration", data.getDuration().get()));
             });
@@ -324,7 +324,7 @@ public class UpdateHearingSteps extends AbstractIT {
         addNullableStringField(builder, "priority", Optional.ofNullable(updatedHearingData.getPriority()));
         if (isNotEmpty(updatedHearingData.getSpecialRequirements())) {
             builder.add("specialRequirements", updatedHearingData.getSpecialRequirements().stream()
-                    .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add).build());
+                    .collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add).build());
         }
 
         return builder;
@@ -422,7 +422,7 @@ public class UpdateHearingSteps extends AbstractIT {
     }
 
     private static JsonArray prepareJsonStringArray(final List<String> strings) {
-        final JsonArrayBuilder builder = Json.createArrayBuilder();
+        final JsonArrayBuilder builder = JsonObjects.createArrayBuilder();
         if (strings != null && !strings.isEmpty()) {
             strings.forEach(builder::add);
         }
@@ -448,17 +448,17 @@ public class UpdateHearingSteps extends AbstractIT {
                                                     final JsonObjectBuilder offenceBuilder = createObjectBuilder();
                                                     offenceBuilder.add("offenceId", o.getOffenceId().toString());
                                                     return offenceBuilder;
-                                                }).collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
+                                                }).collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
 
                                         defendantBuilder.add("offences", offenceArrayBuilder);
                                         return defendantBuilder;
 
-                                    }).collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
+                                    }).collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
 
                             caseBuilder.add("defendants", defendantArrayBuilder);
                             return caseBuilder;
                         }
-                ).collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add).build();
+                ).collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add).build();
     }
 
     private static JsonArray prepareJsonProsecutionCasesForSplitDefendant(final List<ListedCaseData> listedCaseDataList) {
@@ -476,14 +476,14 @@ public class UpdateHearingSteps extends AbstractIT {
                                                 final JsonObjectBuilder offenceBuilder = createObjectBuilder();
                                                 offenceBuilder.add("offenceId", o.getOffenceId().toString());
                                                 return offenceBuilder;
-                                            }).collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add)).build()));
+                                            }).collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add)).build()));
                             return caseBuilder;
                         }
-                ).collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add).build();
+                ).collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add).build();
     }
 
     private static JsonArray prepareJsonHearingIdArray(final UUID hearingId) {
-        final JsonArrayBuilder builder = Json.createArrayBuilder();
+        final JsonArrayBuilder builder = JsonObjects.createArrayBuilder();
         builder.add(hearingId.toString());
         return builder.build();
 
@@ -502,9 +502,9 @@ public class UpdateHearingSteps extends AbstractIT {
                         addOptionalBooleanField(builder, FIELD_IS_BENCH_CHAIRMAN, ndd.getIsBenchChairman());
                         return builder;
                     })
-                    .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
+                    .collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
         }
-        return Json.createArrayBuilder();
+        return JsonObjects.createArrayBuilder();
     }
 
     private static JsonObjectBuilder prepareJudicialRoleType(final JudicialRoleTypeData judicialRoleType) {
@@ -541,7 +541,7 @@ public class UpdateHearingSteps extends AbstractIT {
                     addOptionalBooleanField(nonDefaultDayBuilder, FIELD_VIRTUAL_FLAG_VALUE, ndd.getVirtual());
                     return nonDefaultDayBuilder;
                 })
-                .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
+                .collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
     }
 
     private static JsonArrayBuilder prepareJsonNonDefaultDaysForSplit(final List<NonDefaultDayData> nonDefaultDays) {
@@ -570,7 +570,7 @@ public class UpdateHearingSteps extends AbstractIT {
 
                     return nonDefaultDayBuilder;
                 })
-                .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
+                .collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
     }
 
     private static void addNullableStringField(final JsonObjectBuilder builder, final String fieldName, final String value) {
@@ -1041,7 +1041,7 @@ public class UpdateHearingSteps extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty(LISTING_QUERY_HEARING), hearingId));
 
-        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARING).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARING).withHeader(USER_ID, getLoggedInUser()))
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(

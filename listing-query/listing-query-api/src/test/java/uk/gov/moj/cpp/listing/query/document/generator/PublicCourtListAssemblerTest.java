@@ -8,7 +8,7 @@ import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
-import static javax.json.Json.createReader;
+import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;

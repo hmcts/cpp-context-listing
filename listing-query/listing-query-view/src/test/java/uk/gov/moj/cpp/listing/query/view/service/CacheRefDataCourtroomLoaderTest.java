@@ -15,7 +15,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.CacheRefDataCourtroomReposi
 
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,7 +46,7 @@ public class CacheRefDataCourtroomLoaderTest {
     @Test
     void shouldAddCourtroomWhenCourtroomAddedEventReceived() {
         UUID roomId = UUID.randomUUID();
-        final JsonObject payload = Json.createObjectBuilder()
+        final JsonObject payload = JsonObjects.createObjectBuilder()
                 .add(ID, roomId.toString())
                 .add(COURTROOM_NAME, COURTROOM_NAME_VALUE)
                 .build();
@@ -62,7 +62,7 @@ public class CacheRefDataCourtroomLoaderTest {
     void shouldCloseCourtRoomWhenCourtroomClosedEventReceived() {
 
         UUID roomId = UUID.randomUUID();
-        final JsonObject payload = Json.createObjectBuilder()
+        final JsonObject payload = JsonObjects.createObjectBuilder()
                 .add(ID, roomId.toString())
                 .add(COURTROOM_NAME, COURTROOM_NAME_VALUE)
                 .build();
