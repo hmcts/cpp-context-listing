@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
@@ -217,20 +217,20 @@ public class CourtListFileGeneratorTest {
     }
 
     private JsonObject emptyCourtList(final UUID courtCentreId) {
-        return Json.createObjectBuilder()
+        return JsonObjects.createObjectBuilder()
                 .add("courtCentreId", courtCentreId.toString())
-                .add("courtLists", Json.createArrayBuilder()
+                .add("courtLists", JsonObjects.createArrayBuilder()
                         .add(
-                                Json.createObjectBuilder()
+                                JsonObjects.createObjectBuilder()
                                         .add("crestCourtSite", crestCourtSite())
-                                        .add("sittings", Json.createArrayBuilder().build())
+                                        .add("sittings", JsonObjects.createArrayBuilder().build())
                                         .build()
                         ).build()
                 ).build();
     }
 
     private JsonObjectBuilder crestCourtSite() {
-        return Json.createObjectBuilder()
+        return JsonObjects.createObjectBuilder()
                 .add("crestCourtSiteId", "002")
                 .add("crestCourtSiteName", "MOCKCOURTNAME2")
                 .add("courtType", "CROWN_COURT");

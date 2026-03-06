@@ -14,7 +14,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import java.io.StringReader;
 import java.util.function.Consumer;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import org.junit.jupiter.api.Test;
@@ -108,6 +108,6 @@ public class HearingCounselEventProcessorTest {
     }
 
     private JsonObject toJsonObject(final String value) {
-        return Json.createReader(new StringReader(value)).readObject();
+        return JsonObjects.createReader(new StringReader(value)).readObject();
     }
 }

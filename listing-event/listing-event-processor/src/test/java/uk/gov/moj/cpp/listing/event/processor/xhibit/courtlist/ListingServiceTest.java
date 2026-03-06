@@ -2,7 +2,7 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
 import static java.time.LocalDate.parse;
 import static java.util.UUID.randomUUID;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -19,7 +19,7 @@ import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -59,7 +59,7 @@ public class ListingServiceTest {
     @BeforeEach
     public void before() {
         final JsonObject hearing = createObjectBuilder().add("id", "HEARINGID").build();
-        final JsonObject payload = createObjectBuilder().add("hearings", Json.createArrayBuilder().add(hearing)).build();
+        final JsonObject payload = createObjectBuilder().add("hearings", JsonObjects.createArrayBuilder().add(hearing)).build();
         inputEnvelope = envelopeFrom(metadataBuilder().withName("listing").withId(randomUUID()), createObjectBuilder());
 
         final JsonEnvelope responseEnvelope = envelopeFrom(metadataBuilder().withName("listing.courtlist").withId(randomUUID()), payload);

@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.command.api.service;
 
+import uk.gov.justice.services.messaging.JsonObjects;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -111,9 +113,9 @@ class CourtScheduleEnrichmentServiceTest {
         // Mock search response (first available slot). Shape must match getFirstAvailableSlot()
         final String bookedCourtScheduleId = java.util.UUID.randomUUID().toString();
         final javax.json.JsonObject searchJson =
-                javax.json.Json.createObjectBuilder()
-                        .add("hearingSlots", javax.json.Json.createArrayBuilder()
-                                .add(javax.json.Json.createObjectBuilder()
+                JsonObjects.createObjectBuilder()
+                        .add("hearingSlots", JsonObjects.createArrayBuilder()
+                                .add(JsonObjects.createObjectBuilder()
                                         .add("courtScheduleId", bookedCourtScheduleId)
                                         .add("courtRoomId", courtRoomId.toString())
                                         .add("sessionStartTime", "2020-01-01T09:00:00Z")))
@@ -127,15 +129,15 @@ class CourtScheduleEnrichmentServiceTest {
 
         // Stub SlotsToJsonStringConverter so getUpdateSlotsPayload() never sees nulls
         when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(org.mockito.ArgumentMatchers.anyList()))
-                .thenReturn(javax.json.Json.createArrayBuilder()
+                .thenReturn(JsonObjects.createArrayBuilder()
                         .add(bookedCourtScheduleId)
                         .build());
 
         // Mock list response used by combineSearchAndBookResponseAndListResponse()
         final javax.json.JsonObject listJson =
-                javax.json.Json.createObjectBuilder()
-                        .add("hearings", javax.json.Json.createArrayBuilder()
-                                .add(javax.json.Json.createObjectBuilder()
+                JsonObjects.createObjectBuilder()
+                        .add("hearings", JsonObjects.createArrayBuilder()
+                                .add(JsonObjects.createObjectBuilder()
                                         .add("courtScheduleId", bookedCourtScheduleId)
                                         .add("hearingStartTime", "2020-01-01T09:00:00Z")
                                         .add("duration", 30)))
@@ -220,9 +222,9 @@ class CourtScheduleEnrichmentServiceTest {
         // Mock search response (first available slot)
         final String bookedCourtScheduleId = java.util.UUID.randomUUID().toString();
         final javax.json.JsonObject searchJson =
-                javax.json.Json.createObjectBuilder()
-                        .add("hearingSlots", javax.json.Json.createArrayBuilder()
-                                .add(javax.json.Json.createObjectBuilder()
+                JsonObjects.createObjectBuilder()
+                        .add("hearingSlots", JsonObjects.createArrayBuilder()
+                                .add(JsonObjects.createObjectBuilder()
                                         .add("courtScheduleId", bookedCourtScheduleId)
                                         .add("courtRoomId", courtRoomId.toString())
                                         .add("sessionStartTime", "2020-01-01T09:00:00Z")))
@@ -236,13 +238,13 @@ class CourtScheduleEnrichmentServiceTest {
 
         // Ensure payload building doesn't see nulls
         when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(org.mockito.ArgumentMatchers.anyList()))
-                .thenReturn(javax.json.Json.createArrayBuilder().add(bookedCourtScheduleId).build());
+                .thenReturn(JsonObjects.createArrayBuilder().add(bookedCourtScheduleId).build());
 
         // Mock list response used by combineSearchAndBookResponseAndListResponse()
         final javax.json.JsonObject listJson =
-                javax.json.Json.createObjectBuilder()
-                        .add("hearings", javax.json.Json.createArrayBuilder()
-                                .add(javax.json.Json.createObjectBuilder()
+                JsonObjects.createObjectBuilder()
+                        .add("hearings", JsonObjects.createArrayBuilder()
+                                .add(JsonObjects.createObjectBuilder()
                                         .add("courtScheduleId", bookedCourtScheduleId)
                                         .add("hearingStartTime", "2020-01-01T09:00:00Z")
                                         .add("duration", 30)))

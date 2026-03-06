@@ -13,7 +13,7 @@ public class ViewStoreCleaner {
                 "hearing");
     }
 
-    public void cleanViewStoreTables(String tableName) {
-        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, tableName);
+    public void cleanViewStoreTables(String tableName, String... tableNames) {
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, tableName, tableNames);
     }
 }

@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.query.view.dto;
 
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;

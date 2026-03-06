@@ -35,7 +35,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import org.hamcrest.Matchers;
@@ -404,7 +404,7 @@ public class CommonXhibitReferenceDataServiceTest {
 
         final JsonObject courtRoomMappingJson = givenPayload("/mock-data/referencedata.query.cp-xhibit-courtroom-mappings.json");
         final CourtRoomMappingsList courtRoomMappingsList = jsonObjectConverter.convert(courtRoomMappingJson, CourtRoomMappingsList.class);
-        final JsonObject cpCourtRoom = Json.createObjectBuilder()
+        final JsonObject cpCourtRoom = JsonObjects.createObjectBuilder()
                 .add("id", courtRoomId.toString())
                 .add("courtroomId", 1234)
                 .build();

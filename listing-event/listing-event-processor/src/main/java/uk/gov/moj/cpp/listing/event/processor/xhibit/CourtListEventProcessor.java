@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit;
 
-import static javax.json.Json.createReader;
+import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 
 import uk.gov.justice.listing.event.CourtListExportRequested;

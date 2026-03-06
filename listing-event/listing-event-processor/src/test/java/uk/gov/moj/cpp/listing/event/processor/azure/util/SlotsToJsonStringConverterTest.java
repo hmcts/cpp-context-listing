@@ -4,8 +4,8 @@ import static com.jayway.jsonassert.JsonAssert.with;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -38,7 +38,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -247,7 +247,7 @@ public class SlotsToJsonStringConverterTest {
     }
 
     private JsonObject getPayloadForCourtRooms(final String id) {
-        return Json.createObjectBuilder()
+        return JsonObjects.createObjectBuilder()
                 .add("id", id)
                 .add("oucode", "B01LY00")
                 .add("oucodeL3Name", "South Western (Lavender Hill)")

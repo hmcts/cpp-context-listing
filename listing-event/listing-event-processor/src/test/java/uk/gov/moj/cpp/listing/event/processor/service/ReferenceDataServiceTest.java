@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.event.processor.service;
 
 import static java.util.UUID.randomUUID;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,7 +28,7 @@ import java.time.LocalTime;
 import java.util.UUID;
 import java.util.function.Function;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
@@ -86,7 +86,7 @@ public class ReferenceDataServiceTest {
         final UUID courtCentreId = randomUUID();
         final UUID orgId = randomUUID();
 
-        final JsonObject jsonObject = Json.createObjectBuilder()
+        final JsonObject jsonObject = JsonObjects.createObjectBuilder()
                 .add("id", orgId.toString())
                 .add("address1", orgId.toString())
                 .build();

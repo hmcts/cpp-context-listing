@@ -1,15 +1,14 @@
 package uk.gov.moj.cpp.listing.event.service;
 
 import static java.util.Arrays.asList;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItems;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,11 +45,12 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -88,9 +88,9 @@ public class HearingSearchSyncServiceTest {
     private UUID authorityId1 = UUID.randomUUID();
     private UUID authorityId2 = UUID.randomUUID();
     private String authCode1 = "AUTH_CODE_1";
-    private String caseRef1 = "CASE_REF_1";
+    private String caseRef1 = "case_ref_1";
     private String authCode2 = "AUTH_CODE_2";
-    private String caseRef2 = "CASE_REF_2";
+    private String caseRef2 = "case_ref_2";
     private String startDate = "2021-03-01";
     private String endDate = "2021-03-02";
     private UUID typeOfListId = UUID.randomUUID();
@@ -149,7 +149,7 @@ public class HearingSearchSyncServiceTest {
         final ListedCases listedCases2 = actual.getListedCases().stream().filter(c -> c.getCaseId().equals(caseId2)).findFirst().orElse(null);
         assertThat(listedCases2, is(notNullValue()));
         assertThat(listedCases2.getCaseIdentifier().getAuthorityCode(), is(authCode2));
-        assertThat(listedCases2.getCaseIdentifier().getCaseReference(), is(caseRef2));
+        assertThat(listedCases2.getCaseIdentifier().getCaseReference(), is(caseRef2.toUpperCase(Locale.ENGLISH)));
         assertThat(listedCases2.getProsecutor().getProsecutorId(), is(prosecutorId2));
         assertThat(listedCases2.getProsecutor().getProsecutorCode(), is(prosecutorCode2));
         final List<String> caseUrns2 = listedCases2.getLinkedCases()
@@ -182,7 +182,7 @@ public class HearingSearchSyncServiceTest {
         assertThat(listedCases1, is(notNullValue()));
         assertThat(listedCases1.getCaseIdentifier().getAuthorityId(), is(authorityId1));
         assertThat(listedCases1.getCaseIdentifier().getAuthorityCode(), is(authCode1));
-        assertThat(listedCases1.getCaseIdentifier().getCaseReference(), is(caseRef1));
+        assertThat(listedCases1.getCaseIdentifier().getCaseReference(), is(caseRef1.toUpperCase(Locale.ENGLISH)));
         assertThat(listedCases1.getProsecutor().getProsecutorId(), is(prosecutorId1));
         assertThat(listedCases1.getProsecutor().getProsecutorCode(), is(prosecutorCode1));
     }
@@ -191,7 +191,7 @@ public class HearingSearchSyncServiceTest {
         assertThat(courtApplication.getApplicationId(), is(applicationId1));
         assertThat(courtApplication.getApplicationType(), is("applicationType"));
         assertThat(courtApplication.getParentApplicationId(), is(parentApplicationId1));
-        assertThat(courtApplication.getApplicationReference(), is("applicationReference"));
+        assertThat(courtApplication.getApplicationReference(), is("APPLICATIONREFERENCE"));
         assertThat(courtApplication.getApplicationParticulars(), is("applicationParticulars"));
         assertThat(courtApplication.getEjected(), is(true));
     }
@@ -430,7 +430,7 @@ public class HearingSearchSyncServiceTest {
 
         // Parse a JsonObject into a JSON string
         StringWriter stringWriter = new StringWriter();
-        try (JsonWriter jsonWriter = Json.createWriter(stringWriter)) {
+        try (JsonWriter jsonWriter = JsonObjects.createWriter(stringWriter)) {
             jsonWriter.writeObject(jsonObject);
         }
         String json = stringWriter.toString();

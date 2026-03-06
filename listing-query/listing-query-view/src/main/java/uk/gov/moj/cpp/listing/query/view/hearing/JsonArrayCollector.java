@@ -8,7 +8,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -17,7 +17,7 @@ public class JsonArrayCollector implements Collector<JsonObject, JsonArrayBuilde
 
     @Override
     public Supplier<JsonArrayBuilder> supplier() {
-        return Json::createArrayBuilder;
+        return JsonObjects::createArrayBuilder;
     }
 
     @Override

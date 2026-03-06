@@ -8,10 +8,10 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
@@ -20,7 +20,7 @@ import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 public class DeleteCourtApplicationHearingSteps extends AbstractIT {
@@ -32,7 +32,7 @@ public class DeleteCourtApplicationHearingSteps extends AbstractIT {
     }
 
     public void whenRaisedCourtApplicationHearingPublicEvent(final String hearingId, final String applicationId) {
-        final JsonObject payload = Json.createObjectBuilder()
+        final JsonObject payload = JsonObjects.createObjectBuilder()
                 .add("hearingId", hearingId)
                 .add("applicationId", applicationId)
                 .build();
@@ -48,7 +48,7 @@ public class DeleteCourtApplicationHearingSteps extends AbstractIT {
                 format(readConfig().getProperty("listing.range.search.hearings"),
                         courtCentreId, false));
 
-        poll(requestParams(searchHearingUrl, "application/vnd.listing.search.hearings+json").withHeader(USER_ID, getLoggedInUser()))
+        pollWithDefaults(requestParams(searchHearingUrl, "application/vnd.listing.search.hearings+json").withHeader(USER_ID, getLoggedInUser()).build())
                 .until(
                         status().is(OK),
                         payload().isJson(not(withJsonPath("$.hearings[0].id", equalTo(hearingId)))));

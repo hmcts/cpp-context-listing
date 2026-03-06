@@ -12,7 +12,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
@@ -46,10 +46,10 @@ public class HearingSequencedEventProcessorTest {
     @Test
     public void shouldHandleHearingSequencedEvent() {
         UUID id = UUID.randomUUID();
-        final JsonObject seq1JsonObject = Json.createObjectBuilder().add(HEARING_DATE, "2025-01-08").add(SEQUENCE, "1").build();
-        final JsonObject seq2JsonObject = Json.createObjectBuilder().add(HEARING_DATE, "2025-01-10").add(SEQUENCE, "2").build();
-        final JsonArray seqJsonArr = Json.createArrayBuilder().add(seq1JsonObject).add(seq2JsonObject).build();
-        final JsonObject payLoad = Json.createObjectBuilder()
+        final JsonObject seq1JsonObject = JsonObjects.createObjectBuilder().add(HEARING_DATE, "2025-01-08").add(SEQUENCE, "1").build();
+        final JsonObject seq2JsonObject = JsonObjects.createObjectBuilder().add(HEARING_DATE, "2025-01-10").add(SEQUENCE, "2").build();
+        final JsonArray seqJsonArr = JsonObjects.createArrayBuilder().add(seq1JsonObject).add(seq2JsonObject).build();
+        final JsonObject payLoad = JsonObjects.createObjectBuilder()
                 .add(ID, id.toString())
                 .add(SEQUENCE_HEARING_DAYS, seqJsonArr)
                 .build();

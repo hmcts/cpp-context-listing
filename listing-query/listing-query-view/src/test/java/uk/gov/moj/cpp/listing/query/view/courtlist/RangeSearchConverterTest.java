@@ -20,7 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import org.apache.commons.lang3.StringUtils;
@@ -111,7 +111,7 @@ public class RangeSearchConverterTest {
     }
 
     private JsonObject buildCourtSite(final String crestCourtSiteCode) {
-        return Json.createObjectBuilder()
+        return JsonObjects.createObjectBuilder()
                 .add("crestCourtSiteId", "001")
                 .add("crestCourtSiteCode", crestCourtSiteCode)
                 .add("crestCourtSiteName", "SITENAME " + crestCourtSiteCode)

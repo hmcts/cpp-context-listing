@@ -9,7 +9,7 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
@@ -25,13 +25,13 @@ public class JsonUtilsTest {
     private static final String TO_DATE = "2017-08-15";
 
     private static JsonObject createPayload(final String key, final String value) {
-        return Json.createObjectBuilder()
+        return JsonObjects.createObjectBuilder()
                 .add(key, value)
                 .build();
     }
 
     private static JsonObject createEmptyPayload() {
-        return Json.createObjectBuilder()
+        return JsonObjects.createObjectBuilder()
                 .build();
     }
 
@@ -57,8 +57,8 @@ public class JsonUtilsTest {
     @Test
     public void shouldGetStringFromArray() {
         final String expected = "ASBOGranted";
-        final JsonObject jsonObject = Json.createObjectBuilder()
-                .add("caseMarkers", Json.createArrayBuilder().add(createPayload("caseMarker", expected)))
+        final JsonObject jsonObject = JsonObjects.createObjectBuilder()
+                .add("caseMarkers", JsonObjects.createArrayBuilder().add(createPayload("caseMarker", expected)))
                 .build();
 
         final String caseMarker = JsonUtils.getStringFromArray(jsonObject, "caseMarkers", 0, "caseMarker");
@@ -77,7 +77,7 @@ public class JsonUtilsTest {
 
     @Test
     public void shouldReturnEmptyStringForJsonNull() throws Exception {
-        final JsonObject jsonNull = Json.createObjectBuilder().add("id", JsonValue.NULL).build();
+        final JsonObject jsonNull = JsonObjects.createObjectBuilder().add("id", JsonValue.NULL).build();
 
         final String result = JsonUtils.getString(jsonNull, "id");
 
@@ -125,7 +125,7 @@ public class JsonUtilsTest {
     @Test
     public void shouldGetIntAsString() throws Exception {
         final int expected = 2;
-        final JsonObject jsonObject = Json.createObjectBuilder().add("version", expected).build();
+        final JsonObject jsonObject = JsonObjects.createObjectBuilder().add("version", expected).build();
 
         final String result = JsonUtils.getIntAsString(jsonObject, "version");
 
@@ -135,7 +135,7 @@ public class JsonUtilsTest {
     @Test
     public void shouldGetInteger() {
         final Integer expected = 2;
-        final JsonObject jsonObject = Json.createObjectBuilder().add("version", expected).build();
+        final JsonObject jsonObject = JsonObjects.createObjectBuilder().add("version", expected).build();
 
         final Optional<Integer> result = JsonUtils.getInteger(jsonObject, "version");
 
@@ -145,7 +145,7 @@ public class JsonUtilsTest {
     @Test
     public void shouldGetIntegerReturnEmptyResult() {
         final Integer expected = 2;
-        final JsonObject jsonObject = Json.createObjectBuilder().add("version", expected).build();
+        final JsonObject jsonObject = JsonObjects.createObjectBuilder().add("version", expected).build();
 
         final Optional<Integer> result = JsonUtils.getInteger(jsonObject, "version2");
 
