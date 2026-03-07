@@ -141,9 +141,7 @@ public class HearingQueryApi {
 
     @Handles("listing.search.court.list.payload")
     public JsonEnvelope searchHearingsForCourtListPayload(final JsonEnvelope query) {
-        
-        LOGGER.info("===========TODO================DELETE-THIS====== listing.search.court.list.payload params: {}", query.payloadAsJsonObject());
-        
+
 
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
         final String courtRoomId = query.payloadAsJsonObject().getString(COURT_ROOM_ID, null);
@@ -163,16 +161,12 @@ public class HearingQueryApi {
                 courtListPayload.forEach(builder::add);
                 builder.add("templateName", templateName);
                 final JsonObject responsePayload = builder.build();
-                
-                LOGGER.info("===========TODO================DELETE-THIS====== listing.search.court.list.payload response: {}", responsePayload);
-                
+
                 return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.court.list.payload"), responsePayload);
             }
         }
         final JsonObject emptyResponse = createObjectBuilder().build();
-        
-        LOGGER.info("===========TODO================DELETE-THIS====== listing.search.court.list.payload response: {}", emptyResponse);
-        
+
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.court.list.payload"), emptyResponse);
     }
 
