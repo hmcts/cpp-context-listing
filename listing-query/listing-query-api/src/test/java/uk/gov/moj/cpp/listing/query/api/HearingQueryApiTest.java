@@ -286,7 +286,7 @@ public class HearingQueryApiTest {
 
         final JsonEnvelope courtListContent = mock(JsonEnvelope.class);
         when(hearingQueryView.getCourtListContent(query)).thenReturn(courtListContent);
-        when(standardPublicCourtListAssembler.assemble(any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(boolean.class))).thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
+        when(standardPublicCourtListAssembler.assemble(any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(boolean.class), any(boolean.class))).thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
         when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.empty());
         final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
 
@@ -306,7 +306,7 @@ public class HearingQueryApiTest {
                         .add(LIST_ID, USHERS_MAGISTRATE.toString())
                         .build());
 
-        when(standardPublicCourtListAssembler.assemble(any(), any(String.class), any(String.class), any(CourtListType.class), any(boolean.class))).thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
+        when(standardPublicCourtListAssembler.assemble(any(), any(String.class), any(String.class), any(CourtListType.class), any(boolean.class), any(boolean.class))).thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
         final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
 
         assertThat(returnedEnvelope.payloadAsJsonObject().getString("id"), is("id1"));
@@ -325,7 +325,7 @@ public class HearingQueryApiTest {
                         .add(LIST_ID, ONLINE_PUBLIC.toString())
                         .build());
 
-        when(standardPublicCourtListAssembler.assemble(any(), any(String.class), any(String.class), any(CourtListType.class), any(boolean.class))).thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
+        when(standardPublicCourtListAssembler.assemble(any(), any(String.class), any(String.class), any(CourtListType.class), any(boolean.class), any(boolean.class))).thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
         when(referenceDataService.isHearingLanguageWelsh(any(), any(String.class))).thenReturn(Optional.empty());
         final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
 
@@ -347,7 +347,7 @@ public class HearingQueryApiTest {
 
         final JsonEnvelope queryResponse = mock(JsonEnvelope.class);
         when(hearingQueryView.getCourtListContent(query)).thenReturn(queryResponse);
-        when(standardPublicCourtListAssembler.assemble(any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(boolean.class))).thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
+        when(standardPublicCourtListAssembler.assemble(any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(boolean.class), any(boolean.class))).thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
         when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.of(true));
         final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
 
@@ -367,7 +367,7 @@ public class HearingQueryApiTest {
                         .add(LIST_ID, PRISON.toString())
                         .build());
 
-        when(standardPublicCourtListAssembler.assemble(any(), any(), any(), any(), any())).thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
+        when(standardPublicCourtListAssembler.assemble(any(), any(), any(), any(), any(), any(boolean.class))).thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
         when(referenceDataService.isHearingLanguageWelsh(any(), any())).thenReturn(Optional.of(true));
         final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
 

@@ -137,7 +137,7 @@ public class DefaultQueryApiCourtlistResourceTest {
         when(hearingQueryView.getCourtListContent(any(JsonEnvelope.class))).thenReturn(documentDetails);
         when(documentGeneratorClient.generateDocument(any(JsonObject.class), any(String.class))).thenReturn(documentResponseBinary);
         when(standardCourtListTemplateAssembler.assemble(
-                any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(Boolean.class)))
+                any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(Boolean.class), any(boolean.class)))
                 .thenReturn(Optional.of(Json.createObjectBuilder().build()));
         when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.ofNullable(false));
 
@@ -156,7 +156,7 @@ public class DefaultQueryApiCourtlistResourceTest {
         when(hearingQueryView.getCourtListContent(any(JsonEnvelope.class))).thenReturn(documentDetails);
         when(documentGeneratorClient.generateDocument(any(JsonObject.class), any(String.class))).thenReturn(documentResponseBinary);
         when(standardCourtListTemplateAssembler.assemble(
-                any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(Boolean.class)))
+                any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(Boolean.class), any(boolean.class)))
                 .thenReturn(Optional.of(Json.createObjectBuilder().build()));
         when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.ofNullable(false));
 

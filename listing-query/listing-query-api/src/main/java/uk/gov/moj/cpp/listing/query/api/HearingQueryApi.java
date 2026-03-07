@@ -49,6 +49,7 @@ public class HearingQueryApi {
     private static final String COURT_CENTRE_IDS = "courtCentreIds";
     private static final String COURT_ROOM_ID = "courtRoomId";
     public static final String RESTRICTED = "restricted";
+    public static final String INCLUDE_APPLICATIONS = "includeApplications";
     private static final String LIST_ID = "listId";
     private static final String OU_L2_CODE = "oucodeL2Code";
     private static final String FIRST_NAME = "firstName";
@@ -144,11 +145,12 @@ public class HearingQueryApi {
         final String courtRoomId = query.payloadAsJsonObject().getString(COURT_ROOM_ID, null);
         final String listId = query.payloadAsJsonObject().getString(LIST_ID);
         final boolean restricted = Optional.ofNullable(query.payloadAsJsonObject().get(RESTRICTED)).map(restrictedJson -> Boolean.valueOf(restrictedJson.toString())).orElse(false);
+        final boolean includeApplications = Optional.ofNullable(query.payloadAsJsonObject().get(INCLUDE_APPLICATIONS)).map(includeApplicationsJson -> Boolean.valueOf(includeApplicationsJson.toString())).orElse(false);
         final Optional<CourtListType> courtListType = CourtListType.valueFor(listId);
 
         if(courtListType.isPresent()) {
             final JsonEnvelope queryResponse = hearingQueryView.getCourtListContent(query);
-            final Optional<JsonObject> courtListData = standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType.get(), restricted);
+            final Optional<JsonObject> courtListData = standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType.get(), restricted, includeApplications);
             if (courtListData.isPresent()) {
                 final JsonObject courtListPayload = courtListData.get();
                 final boolean isWelsh = referenceDataService.isHearingLanguageWelsh(queryResponse, courtCentreId).orElse(false);

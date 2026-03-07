@@ -143,7 +143,7 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
             return judgeListTemplateAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType, startDate);
         }
 
-        return standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType, restricted);
+        return standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType, restricted, false);
     }
 
     private String getTemplateName(final CourtListType courtListType, boolean welsh) {
