@@ -141,6 +141,10 @@ public class HearingQueryApi {
 
     @Handles("listing.search.court.list.payload")
     public JsonEnvelope searchHearingsForCourtListPayload(final JsonEnvelope query) {
+        
+        LOGGER.info("===========TODO================DELETE-THIS====== listing.search.court.list.payload params: {}", query.payloadAsJsonObject());
+        
+
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
         final String courtRoomId = query.payloadAsJsonObject().getString(COURT_ROOM_ID, null);
         final String listId = query.payloadAsJsonObject().getString(LIST_ID);
@@ -158,10 +162,18 @@ public class HearingQueryApi {
                 final JsonObjectBuilder builder = Json.createObjectBuilder();
                 courtListPayload.forEach(builder::add);
                 builder.add("templateName", templateName);
-                return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.court.list.payload"), builder);
+                final JsonObject responsePayload = builder.build();
+                
+                LOGGER.info("===========TODO================DELETE-THIS====== listing.search.court.list.payload response: {}", responsePayload);
+                
+                return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.court.list.payload"), responsePayload);
             }
         }
-        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.court.list.payload"), createObjectBuilder());
+        final JsonObject emptyResponse = createObjectBuilder().build();
+        
+        LOGGER.info("===========TODO================DELETE-THIS====== listing.search.court.list.payload response: {}", emptyResponse);
+        
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.court.list.payload"), emptyResponse);
     }
 
     @Handles("listing.search.hearing")
