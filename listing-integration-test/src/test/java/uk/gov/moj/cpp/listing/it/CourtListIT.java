@@ -89,11 +89,30 @@ public class CourtListIT extends AbstractIT {
     }
 
     @Test
-
     public void generatePublicCourtWhenHearingAdjourned() throws IOException {
         HearingsData nextHearing = HearingsData.nextHearingsData(firstHearing.getHearingData());
         final ListNextHearingSteps listNextHearingSteps1 = new ListNextHearingSteps(firstHearing.getHearingData().get(0));
         listNextHearingSteps1.whenNextHearingSubmittedForListing(nextHearing);
+        listNextHearingSteps1.verifyHearingListedFromAPIWithJmsDelay(nextHearing);
+
+        UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForAllocation(nextHearing.getHearingData().get(0).getId());
+
+        final UpdateHearingSteps updateHearingSteps2 = new UpdateHearingSteps(nextHearing, updatedHearingDataForAllocation);
+        stubGetAvailableHearingSlotsWithQueryParams(updateHearingSteps2.getUpdatedHearingData());
+        stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps2.getUpdatedHearingData());
+        updateHearingSteps2.whenHearingIsUpdatedForListing();
+        updateHearingSteps2.verifyHearingAllocatedWhenQueryingFromAPIWithJmsDelay();
+        updateHearingSteps2.verifyPublicEventHearingChangesSaved();
+        courtListSteps = new CourtListSteps(updatedHearingDataForAllocation);
+
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithJmsDelay(PUBLIC, "PublicCourtListEnglishWelsh", new Matcher[0]);
+    }
+
+    @Test
+    public void generatePublicCourtWhenHearingAdjournedWithPublicEvent() throws IOException {
+        HearingsData nextHearing = HearingsData.nextHearingsData(firstHearing.getHearingData());
+        final ListNextHearingSteps listNextHearingSteps1 = new ListNextHearingSteps(firstHearing.getHearingData().get(0));
+        listNextHearingSteps1.whenRaisePublicEventToNextHearingSubmittedForListing(nextHearing);
         listNextHearingSteps1.verifyHearingListedFromAPIWithJmsDelay(nextHearing);
 
         UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForAllocation(nextHearing.getHearingData().get(0).getId());

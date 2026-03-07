@@ -1,9 +1,10 @@
-package uk.gov.moj.cpp.listing.command.api.service;
+package uk.gov.moj.cpp.listing.common.service;
 
 import static java.util.Objects.isNull;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
-import static uk.gov.moj.cpp.listing.command.api.service.HearingDaysEnrichmentService.isWeekCommencingHearing;
-import static uk.gov.moj.cpp.listing.command.api.service.HearingDurationEnrichmentService.DEFAULT_MIN;
+import static uk.gov.moj.cpp.listing.common.service.HearingDaysEnrichmentService.isWeekCommencingHearing;
+import static uk.gov.moj.cpp.listing.common.service.HearingDurationEnrichmentService.DEFAULT_MIN;
+
 
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.WeekCommencingDate;
@@ -12,6 +13,7 @@ import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+
 
 import java.time.LocalDate;
 import java.util.ArrayList;

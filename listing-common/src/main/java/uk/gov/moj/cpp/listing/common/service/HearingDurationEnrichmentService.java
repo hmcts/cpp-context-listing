@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.command.api.service;
+package uk.gov.moj.cpp.listing.common.service;
 
 import static java.util.Objects.isNull;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
@@ -7,8 +7,8 @@ import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
 import static uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
 import static uk.gov.justice.listing.commands.HearingListingNeeds.hearingListingNeeds;
 import static uk.gov.justice.listing.commands.UpdateHearingForListing.updateHearingForListing;
-import static uk.gov.moj.cpp.listing.command.api.service.HearingDaysEnrichmentService.isWeekCommencingHearing;
-import static uk.gov.moj.cpp.listing.command.api.util.NonDefaultDayConverter.convertCoreNonDefaultDaysToHearingDays;
+import static uk.gov.moj.cpp.listing.common.service.HearingDaysEnrichmentService.isWeekCommencingHearing;
+import static uk.gov.moj.cpp.listing.common.util.NonDefaultDayConverter.convertCoreNonDefaultDaysToHearingDays;
 
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.NonDefaultDay;
@@ -17,7 +17,8 @@ import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.command.api.courtcentre.HearingTypeFactory;
+import uk.gov.moj.cpp.listing.common.courtcentre.HearingTypeFactory;
+
 
 import java.util.Collections;
 import java.util.List;
@@ -183,7 +184,7 @@ public class HearingDurationEnrichmentService implements EnrichmentService {
         return isNull(nonDefaultDay.getDuration()) || nonDefaultDay.getDuration() == 0 || nonDefaultDay.getDuration() == 1;
     }
 
-    static boolean hasEmptyOrZeroDurationForHearingDays(uk.gov.justice.listing.commands.HearingDay hearingDay) {
+    static boolean hasEmptyOrZeroDurationForHearingDays(HearingDay hearingDay) {
         return isNull(hearingDay.getDurationMinutes()) || hearingDay.getDurationMinutes() == 0 || hearingDay.getDurationMinutes() == 1;
     }
 

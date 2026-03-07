@@ -1,9 +1,8 @@
-package uk.gov.moj.cpp.listing.command.api.service;
+package uk.gov.moj.cpp.listing.common.service;
 
 import static java.util.UUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.mock;
 
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
@@ -23,7 +22,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.junit.jupiter.api.Disabled;
 
 /**
  * Unit tests for HearingDaysEnrichmentService to verify defaultStartTime functionality

@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.command.api.service;
+package uk.gov.moj.cpp.listing.common.service;
 
 
 import static java.util.Objects.nonNull;

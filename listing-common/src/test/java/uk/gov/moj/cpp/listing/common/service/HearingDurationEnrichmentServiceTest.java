@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.command.api.service;
+package uk.gov.moj.cpp.listing.common.service;
 
 import static java.util.UUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,7 +16,7 @@ import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.command.api.courtcentre.HearingTypeFactory;
+import uk.gov.moj.cpp.listing.common.courtcentre.HearingTypeFactory;
 
 import java.time.ZonedDateTime;
 import java.util.Arrays;
