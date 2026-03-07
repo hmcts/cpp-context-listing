@@ -29,13 +29,12 @@ import java.util.List;
 import java.util.UUID;
 
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 
-public class ListCourtWeekCommencingHearingIT extends AbstractIT {
+class ListCourtWeekCommencingHearingIT extends AbstractIT {
     private final static String WEEK_COMMENCING_END_DATE_FOR_ONE_WEEK = LocalDate.now().plusDays(7L).toString();
     private final static String WEEK_COMMENCING_END_DATE_FOR_TWO_WEEKS = LocalDate.now().plusDays(14L).toString();
 

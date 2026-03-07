@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.event.processor.command;
 
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 
 import uk.gov.justice.listing.events.HearingMarkedForPartialUpdate;
 

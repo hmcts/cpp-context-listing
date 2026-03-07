@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import uk.gov.moj.cpp.listing.common.xhibit.exception.InvalidReferenceDataException;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
@@ -24,7 +24,7 @@ public class XhibitReferenceDataValidatorTest {
     public void shouldThrowErrorWhenValidatePayload() {
 
 
-        final JsonObject payload = Json.createObjectBuilder()
+        final JsonObject payload = JsonObjects.createObjectBuilder()
                 .add("firstName", "Joe")
                 .add("lastName", "")
                 .build();
@@ -53,14 +53,14 @@ public class XhibitReferenceDataValidatorTest {
 
     @Test
     public void shouldThrowErrorWhenValidateJsonArrayIsEmpty() {
-        assertThrows(InvalidReferenceDataException.class, () -> xhibitReferenceDataValidator.validateJsonArray("lastName", Json.createArrayBuilder().build()));
+        assertThrows(InvalidReferenceDataException.class, () -> xhibitReferenceDataValidator.validateJsonArray("lastName", JsonObjects.createArrayBuilder().build()));
     }
 
     @Test
     public void shouldValidateJsonArray() {
 
-        final JsonArray jsonArray = Json.createArrayBuilder()
-                .add(Json.createObjectBuilder()
+        final JsonArray jsonArray = JsonObjects.createArrayBuilder()
+                .add(JsonObjects.createObjectBuilder()
                         .add("firstName", "Joe")
                         .add("lastName", "Smith")
 

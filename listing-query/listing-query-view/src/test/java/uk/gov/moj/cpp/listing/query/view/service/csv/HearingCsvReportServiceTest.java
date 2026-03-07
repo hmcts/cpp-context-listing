@@ -10,7 +10,7 @@ import uk.gov.moj.cpp.listing.common.xhibit.ReferenceDataCache;
 import uk.gov.moj.cpp.listing.domain.referencedata.Judiciary;
 import uk.gov.moj.cpp.listing.persistence.enums.CsvRecordType;
 import uk.gov.moj.cpp.listing.common.progression.ProgressionNotesCache;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -271,17 +271,17 @@ class HearingCsvReportServiceTest {
                 .thenReturn(Optional.of(judiciary));
 
         // Mock progression service responses
-        final JsonObject caseNotes1 = Json.createObjectBuilder()
-                .add("caseNotes", Json.createArrayBuilder()
-                        .add(Json.createObjectBuilder().add("note", "Important note for case 1").add("isPinned", true))
-                        .add(Json.createObjectBuilder().add("note", "General note for case 1").add("isPinned", false))
+        final JsonObject caseNotes1 = JsonObjects.createObjectBuilder()
+                .add("caseNotes", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("note", "Important note for case 1").add("isPinned", true))
+                        .add(JsonObjects.createObjectBuilder().add("note", "General note for case 1").add("isPinned", false))
                 )
                 .build();
         
-        final JsonObject caseNotes2 = Json.createObjectBuilder()
-                .add("caseNotes", Json.createArrayBuilder()
-                        .add(Json.createObjectBuilder().add("note", "Critical note for case 2").add("isPinned", true))
-                        .add(Json.createObjectBuilder().add("note", "Additional note for case 2").add("isPinned", false))
+        final JsonObject caseNotes2 = JsonObjects.createObjectBuilder()
+                .add("caseNotes", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("note", "Critical note for case 2").add("isPinned", true))
+                        .add(JsonObjects.createObjectBuilder().add("note", "Additional note for case 2").add("isPinned", false))
                 )
                 .build();
 
@@ -352,17 +352,17 @@ class HearingCsvReportServiceTest {
                 .thenReturn(Optional.of(judiciary));
 
         // Mock progression service responses for applications
-        final JsonObject applicationNotes1 = Json.createObjectBuilder()
-                .add("applicationNotes", Json.createArrayBuilder()
-                        .add(Json.createObjectBuilder().add("note", "Important application note 1").add("isPinned", true))
-                        .add(Json.createObjectBuilder().add("note", "General application note 1").add("isPinned", false))
+        final JsonObject applicationNotes1 = JsonObjects.createObjectBuilder()
+                .add("applicationNotes", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("note", "Important application note 1").add("isPinned", true))
+                        .add(JsonObjects.createObjectBuilder().add("note", "General application note 1").add("isPinned", false))
                 )
                 .build();
         
-        final JsonObject applicationNotes2 = Json.createObjectBuilder()
-                .add("applicationNotes", Json.createArrayBuilder()
-                        .add(Json.createObjectBuilder().add("note", "Critical application note 2").add("isPinned", true))
-                        .add(Json.createObjectBuilder().add("note", "Additional application note 2").add("isPinned", false))
+        final JsonObject applicationNotes2 = JsonObjects.createObjectBuilder()
+                .add("applicationNotes", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("note", "Critical application note 2").add("isPinned", true))
+                        .add(JsonObjects.createObjectBuilder().add("note", "Additional application note 2").add("isPinned", false))
                 )
                 .build();
 

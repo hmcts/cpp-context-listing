@@ -20,6 +20,7 @@ import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsum
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.POLL_INTERVAL;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.*;
@@ -66,7 +67,6 @@ public class ListingNoteIT extends AbstractIT {
     private static final String PUBLIC_LISTING_CREATED_LISTING_NOTE = "public.listing.created-listing-note";
     private static final String PUBLIC_LISTING_DELETED_LISTING_NOTE = "public.listing.deleted-listing-note";
     private static final int DELAY = 0;
-    private static final int POLL_INTERVAL = 800;
     private static final int TIMEOUT = 5;
     public static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
@@ -232,8 +232,7 @@ public class ListingNoteIT extends AbstractIT {
 
     @AfterEach
     void cleanUp() {
-        viewStoreCleaner.cleanViewStoreTables("listing_notes");
-        viewStoreCleaner.cleanViewStoreTables("hearing");
+        viewStoreCleaner.cleanViewStoreTables("listing_notes","hearing");
     }
 
     private void verifyNoHearingDataAndNoNoteData(List<HearingData> hearingData) {
@@ -345,8 +344,8 @@ public class ListingNoteIT extends AbstractIT {
         try {
             with().pollDelay(DELAY, MILLISECONDS)
                     .and()
-                    .pollInterval(POLL_INTERVAL, MILLISECONDS)
-                    .await().atMost(TIMEOUT, TimeUnit.SECONDS)
+                    .pollInterval(POLL_INTERVAL)
+                    .atMost(TIMEOUT, TimeUnit.SECONDS)
                     .until(() -> getNoteById(noteId, editedNoteDescription, connection));
         } catch (ConditionTimeoutException e) {
             throw e;
@@ -358,8 +357,8 @@ public class ListingNoteIT extends AbstractIT {
         try {
             with().pollDelay(DELAY, MILLISECONDS)
                     .and()
-                    .pollInterval(POLL_INTERVAL, MILLISECONDS)
-                    .await().atMost(TIMEOUT, TimeUnit.SECONDS)
+                    .pollInterval(POLL_INTERVAL)
+                    .atMost(TIMEOUT, TimeUnit.SECONDS)
                     .until(() -> {
                         noteByCourtRoomIdAndDate.set(getNoteByCourtRoomIdAndDate(courtRoomId, date, connection));
                         return noteByCourtRoomIdAndDate.get() != null;

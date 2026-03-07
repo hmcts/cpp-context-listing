@@ -33,7 +33,7 @@ import java.util.UUID;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
@@ -87,7 +87,7 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
         final Optional<CourtListType> courtListType = CourtListType.valueFor(listId);
         if (courtListType.isPresent()) {
             final JsonObjectBuilder builder =
-                    NullAwareJsonObjectBuilder.wrap(Json.createObjectBuilder());
+                    NullAwareJsonObjectBuilder.wrap(JsonObjects.createObjectBuilder());
             final JsonEnvelope documentQuery = envelopeFrom(
                     metadataBuilder()
                             .withId(randomUUID())

@@ -486,7 +486,11 @@ protocols: [ HTTP, HTTPS ]
         caseUrn:
           type: string
           required: true
-          description: Comma seperated specific case urns
+          description: Specific case urn
+        startDate:
+          description: hearing start date to include from
+          type: date
+          required: true
       responses:
             200:
                 description: OK

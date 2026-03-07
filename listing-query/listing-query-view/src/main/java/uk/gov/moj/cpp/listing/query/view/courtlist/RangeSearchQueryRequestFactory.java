@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist;
 
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.moj.cpp.listing.domain.JurisdictionType.CROWN;
 
 import uk.gov.justice.services.core.enveloper.Enveloper;

@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist;
 
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 
 import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.FlatHearing;

@@ -59,31 +59,17 @@ public class AbstractIT {
         setupProgressionNotesStubs();
         setupUsersGroupPermissionsForApplicationTypeStub();
         databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
-        databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
-        databaseCleaner.cleanStreamStatusTable(CONTEXT_NAME);
-        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing");
-        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing_days");
-        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "listing_notes");
-        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "cache_refdata_courtroom");
-        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "court_list_publish_status");
-        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "published_court_list");
-
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "stream_status",
+                "stream_buffer", "hearing", "hearing_days", "listing_notes", "cache_refdata_courtroom", "court_list_publish_status", "published_court_list");
     }
 
     @AfterEach
     void tearDown() {
-        reset();
+//        reset();
         USER_CONTEXT.remove();
-        databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
-        databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
-        databaseCleaner.cleanStreamStatusTable(CONTEXT_NAME);
-        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing");
-        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing_days");
-        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "listing_notes");
-        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "cache_refdata_courtroom");
-        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "court_list_publish_status");
-        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "published_court_list");
-
+//        databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
+//        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "stream_status",
+//                "stream_buffer", "hearing", "hearing_days", "listing_notes", "cache_refdata_courtroom", "court_list_publish_status", "published_court_list");
     }
 
     protected void givenAUserHasLoggedInAsAListingOfficer(final UUID validUserId) {

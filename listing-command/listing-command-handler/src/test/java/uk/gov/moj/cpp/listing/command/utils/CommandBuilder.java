@@ -11,7 +11,7 @@ import java.io.StringReader;
 import java.util.List;
 
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
@@ -53,7 +53,7 @@ public class CommandBuilder {
                 .replace("EARLIEST_START_TIME", EARLIEST_START_TIME)
                 .replace("LISTED_START_TIME", LISTED_START_TIME);
 
-        final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
         return jsonObjectToObjectConverter.convert(jsonReader.readObject(), HearingListingNeeds.class);
     }
 

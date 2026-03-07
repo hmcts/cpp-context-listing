@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.command.handler;
 import static java.time.ZonedDateTime.parse;
 import static java.util.Optional.of;
 import static java.util.UUID.fromString;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;

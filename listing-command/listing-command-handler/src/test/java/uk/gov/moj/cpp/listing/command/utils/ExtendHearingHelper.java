@@ -20,7 +20,7 @@ import java.io.StringReader;
 import java.util.UUID;
 
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
@@ -40,7 +40,7 @@ public class ExtendHearingHelper {
                 .replace("CASE_ID1", caseId1.toString())
                 .replace("CASE_URN1", urn1);
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             final JsonEnvelope jsonEnvelope = createEnvelope("listing.command.extend-hearing-for-hearing-enriched", jsonReader.readObject());
             final JsonObject jsonObject = jsonEnvelope.payloadAsJsonObject();
 
@@ -57,7 +57,7 @@ public class ExtendHearingHelper {
                 .replace("CASE_ID1", caseId1.toString())
                 .replace("CASE_URN1", urn1);
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             final JsonEnvelope jsonEnvelope = createEnvelope("listing.command.extend-hearing-for-hearing-enriched", jsonReader.readObject());
             final JsonObject jsonObject = jsonEnvelope.payloadAsJsonObject();
 
@@ -94,7 +94,7 @@ public class ExtendHearingHelper {
                 .replace("OFF_ID3", off3.toString())
                 .replace("OFF_ID4", off4.toString());
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             final JsonEnvelope jsonEnvelope = createEnvelope("listing.command.extend-hearing-for-hearing-enriched", jsonReader.readObject());
             final JsonObject jsonObject = jsonEnvelope.payloadAsJsonObject();
 
@@ -121,7 +121,7 @@ public class ExtendHearingHelper {
 
         final Hearing unallocatedHearingPersisted;
         try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
             final JsonEnvelope jsonEnvelope = createEnvelope("listing.command.extend-hearing-for-hearing-enriched", jsonReader.readObject());
             final JsonObject jsonObject = jsonEnvelope.payloadAsJsonObject();
             unallocatedHearingPersisted = jsonObjectToObjectConverter.convert(jsonObject, Hearing.class);
@@ -135,7 +135,7 @@ public class ExtendHearingHelper {
 
     public static JsonEnvelope getEnvelopeForExtendWholeHearing(final UUID hearingID1, final UUID hearingID2) {
         final String requestBody = "{\"allocatedHearingId\":\"" + hearingID1.toString() + "\",\"unAllocatedHearingId\":\"" + hearingID2.toString() + "\"}";
-        final JsonReader jsonReader = Json.createReader(new StringReader(requestBody));
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
         return createEnvelope("listing.command.extend-hearing-for-hearing-enriched", jsonReader.readObject());
     }
 
@@ -163,7 +163,7 @@ public class ExtendHearingHelper {
                 .replaceAll("OFF_ID3", offId3)
                 .replaceAll("OFF_ID4", offId4);
 
-        final JsonReader jsonReader = Json.createReader(new StringReader(requestBody));
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
         return createEnvelope("listing.command.extend-hearing-for-hearing-enriched", jsonReader.readObject());
     }
 }

@@ -4,7 +4,7 @@ import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.lang.Boolean.TRUE;
 import static java.time.LocalDate.now;
 import static java.util.UUID.randomUUID;
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_DISPOSITION;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static org.apache.http.HttpStatus.SC_OK;
@@ -40,7 +40,7 @@ import uk.gov.moj.cpp.systemusers.ServiceContextSystemUserProvider;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 import javax.ws.rs.core.MultivaluedHashMap;
@@ -117,7 +117,7 @@ public class DefaultQueryApiCourtlistResourceTest {
         when(documentGeneratorClient.generateDocument(any(JsonObject.class), any(String.class))).thenReturn(documentResponseBinary);
         when(alphabeticalCourtListService.buildAlphabeticalCourtListData(
                 any(JsonEnvelope.class), any(String.class)))
-                .thenReturn(Optional.of(Json.createObjectBuilder().build()));
+                .thenReturn(Optional.of(JsonObjects.createObjectBuilder().build()));
 
         when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.ofNullable(false));
 
@@ -138,7 +138,7 @@ public class DefaultQueryApiCourtlistResourceTest {
         when(documentGeneratorClient.generateDocument(any(JsonObject.class), any(String.class))).thenReturn(documentResponseBinary);
         when(standardCourtListTemplateAssembler.assemble(
                 any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(Boolean.class), any(boolean.class)))
-                .thenReturn(Optional.of(Json.createObjectBuilder().build()));
+                .thenReturn(Optional.of(JsonObjects.createObjectBuilder().build()));
         when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.ofNullable(false));
 
         final Response documentContentResponse = endpointHandler.getCourtList(COURT_CENTRE_ID, COURT_ROOM_ID, LIST_ID_STANDARD, START_DATE, END_DATE, TRUE, UUID.randomUUID());
@@ -157,7 +157,7 @@ public class DefaultQueryApiCourtlistResourceTest {
         when(documentGeneratorClient.generateDocument(any(JsonObject.class), any(String.class))).thenReturn(documentResponseBinary);
         when(standardCourtListTemplateAssembler.assemble(
                 any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(Boolean.class), any(boolean.class)))
-                .thenReturn(Optional.of(Json.createObjectBuilder().build()));
+                .thenReturn(Optional.of(JsonObjects.createObjectBuilder().build()));
         when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.ofNullable(false));
 
         final Response documentContentResponse = endpointHandler.getCourtList(COURT_CENTRE_ID, COURT_ROOM_ID, LIST_ID_BENCH, START_DATE, END_DATE, TRUE, UUID.randomUUID());
@@ -176,7 +176,7 @@ public class DefaultQueryApiCourtlistResourceTest {
         when(documentGeneratorClient.generateDocument(any(JsonObject.class), any(String.class))).thenReturn(documentResponseBinary);
         when(judgeListTemplateAssembler.assemble(
                 any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), anyString()))
-                .thenReturn(Optional.of(Json.createObjectBuilder().build()));
+                .thenReturn(Optional.of(JsonObjects.createObjectBuilder().build()));
         when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.ofNullable(false));
 
         final Response documentContentResponse = endpointHandler.getCourtList(COURT_CENTRE_ID, COURT_ROOM_ID, LIST_ID_JUDGE, START_DATE, END_DATE, TRUE, UUID.randomUUID());

@@ -98,6 +98,6 @@ class RemoveOffencesFromHearingIT extends AbstractIT {
                 "Expected steps.verifyEventOffenceAddedInActiveMQ() to throw, but it didn't"
         );
 
-        assertTrue(thrown.getMessage().contains("No value present"));
+        assertTrue(thrown.getMessage().contains("No JMS message received"));
     }
 }

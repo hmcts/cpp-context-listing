@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -70,7 +70,7 @@ public class PublishedCourtListToJsonConverterTest {
         assertThat(courtListJson.getString("courtCentreId"), is(courtCentreId.toString()));
         assertThat(courtListJson.getString("publishCourtListType"), is(WARN.name()));
         assertThat(courtListJson.getString("startDate"), is(startDate.toString()));
-        assertThat(courtListJson.getJsonObject("courtListJson"), is(Json.createObjectBuilder().build()));
+        assertThat(courtListJson.getJsonObject("courtListJson"), is(JsonObjects.createObjectBuilder().build()));
         assertThat(courtListJson.getString("lastUpdated"), is(lastUpdated.toString()));
         assertThat(courtListJson.getString("lastExported"), is(lastExported.toString()));
     }

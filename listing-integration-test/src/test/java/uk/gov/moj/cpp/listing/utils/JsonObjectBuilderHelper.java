@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.utils;
 
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_COURT_CENTRE_ID;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_COURT_ROOM_ID;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_COURT_SCHEDULE_ID;
@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
@@ -143,11 +143,11 @@ public class JsonObjectBuilderHelper {
 
                     return nonDefaultDayBuilder;
                 })
-                .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
+                .collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
     }
 
     private static JsonArray prepareJsonStringArray(final List<String> strings) {
-        JsonArrayBuilder builder = Json.createArrayBuilder();
+        JsonArrayBuilder builder = JsonObjects.createArrayBuilder();
         if (strings != null && !strings.isEmpty()) {
             strings.forEach(builder::add);
         }
@@ -167,9 +167,9 @@ public class JsonObjectBuilderHelper {
 
                         return builder;
                     })
-                    .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
+                    .collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
         }
-        return Json.createArrayBuilder();
+        return JsonObjects.createArrayBuilder();
     }
 
     private static JsonObjectBuilder prepareJudicialRoleType(final JudicialRoleTypeData judicialRoleType) {

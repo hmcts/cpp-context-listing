@@ -27,7 +27,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import java.util.UUID;
 
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,7 +71,7 @@ public class CaseRemovedFromGroupCasesEventProcessorTest {
     @Test
     public void processPublicEventCaseRemovedFromGroup() {
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("public.progression.case-removed-from-group-cases"),
-                Json.createObjectBuilder()
+                JsonObjects.createObjectBuilder()
                         .add("groupId", GROUP_ID.toString())
                         .add("masterCaseId", MASTER_CASE_ID.toString())
                         .add("removedCase", objectToJsonObjectConverter.convert(getProsecutionCase(GROUP_ID, CASE_ID, Boolean.FALSE, Boolean.FALSE)))
@@ -102,7 +102,7 @@ public class CaseRemovedFromGroupCasesEventProcessorTest {
     @Test
     public void processPublicEventCaseRemovedFromGroup_WithOnlyMandatoryFields() {
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("public.progression.case-removed-from-group-cases"),
-                Json.createObjectBuilder()
+                JsonObjects.createObjectBuilder()
                         .add("groupId", GROUP_ID.toString())
                         .add("masterCaseId", MASTER_CASE_ID.toString())
                         .add("removedCase", objectToJsonObjectConverter.convert(getProsecutionCase(GROUP_ID, CASE_ID, Boolean.FALSE, Boolean.FALSE)))

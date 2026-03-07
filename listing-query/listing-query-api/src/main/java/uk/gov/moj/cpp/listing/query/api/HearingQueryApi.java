@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.query.api;
 
-import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static uk.gov.justice.services.core.annotation.Component.QUERY_API;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
@@ -31,7 +31,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
-import javax.json.Json;
+import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonString;
@@ -157,7 +157,7 @@ public class HearingQueryApi {
                 final JsonObject courtListPayload = courtListData.get();
                 final boolean isWelsh = referenceDataService.isHearingLanguageWelsh(queryResponse, courtCentreId).orElse(false);
                 final String templateName = getTemplateName(courtListType.get(), isWelsh);
-                final JsonObjectBuilder builder = Json.createObjectBuilder();
+                final JsonObjectBuilder builder = JsonObjects.createObjectBuilder();
                 courtListPayload.forEach(builder::add);
                 builder.add("templateName", templateName);
                 final JsonObject responsePayload = builder.build();
