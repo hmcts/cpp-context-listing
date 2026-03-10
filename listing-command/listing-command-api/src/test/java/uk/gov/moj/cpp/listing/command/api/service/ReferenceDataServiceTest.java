@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.common.service;
+package uk.gov.moj.cpp.listing.command.api.service;
 
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.is;

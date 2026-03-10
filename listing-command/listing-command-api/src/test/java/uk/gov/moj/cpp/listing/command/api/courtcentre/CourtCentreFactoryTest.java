@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.common.courtcentre;
+package uk.gov.moj.cpp.listing.command.api.courtcentre;
 
 import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -9,9 +9,8 @@ import static org.mockito.BDDMockito.given;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-
-import uk.gov.moj.cpp.listing.common.service.ReferenceDataService;
-import uk.gov.moj.cpp.listing.common.utils.FileUtil;
+import uk.gov.moj.cpp.listing.command.api.service.ReferenceDataService;
+import uk.gov.moj.cpp.listing.command.api.util.FileUtil;
 
 import java.io.StringReader;
 import java.time.LocalTime;

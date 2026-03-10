@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.common.service;
+package uk.gov.moj.cpp.listing.command.api.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

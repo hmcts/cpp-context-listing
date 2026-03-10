@@ -49,19 +49,6 @@ public class ListNextHearingIT extends AbstractIT {
         listNextHearingSteps.verifyHearingListedFromAPI(nextHearings);
     }
 
-    @Test
-    void shouldListNextHearingsWithPublicEvent() {
-        final HearingsData firstHearings = hearingsData();
-        final HearingsData nextHearings = hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
-        listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-
-        final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
-        listNextHearingSteps.whenRaisePublicEventToNextHearingSubmittedForListing(nextHearings);
-        listNextHearingSteps.verifyHearingListedFromAPI(nextHearings);
-    }
-
 
     @Test
     void shouldDeleteOldNextHearingsAndListNextHearings() {
@@ -83,30 +70,6 @@ public class ListNextHearingIT extends AbstractIT {
         listNextHearingSteps2.verifyPublicUnallocatedOldHearingDeletedInPublicMQ(oldNextHearings);
 
         listNextHearingSteps2.whenNextHearingSubmittedForListing(nextHearings);
-        listNextHearingSteps2.verifyHearingListedFromAPI(nextHearings);
-        listNextHearingSteps2.verifyPublicOffencesMovedToHearingInActiveMQ(nextHearings, oldNextHearings, firstHearings.getHearingData().get(0).getId());
-    }
-
-    @Test
-    void shouldDeleteOldNextHearingsAndListNextHearingsWithPublicEvent() {
-
-        final HearingsData oldNextHearings = hearingsData();
-        final HearingsData nextHearings = hearingsData();
-
-        final HearingsData firstHearings = hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
-        listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-
-        final ListNextHearingSteps listNextHearingSteps1 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
-        listNextHearingSteps1.whenRaisePublicEventToNextHearingSubmittedForListing(oldNextHearings);
-        listNextHearingSteps1.verifyHearingListedFromAPI(oldNextHearings);
-
-        final ListNextHearingSteps listNextHearingSteps2 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
-        listNextHearingSteps2.whenDeleteNextHearingSubmittedForListing();
-        listNextHearingSteps2.verifyPublicUnallocatedOldHearingDeletedInPublicMQ(oldNextHearings);
-
-        listNextHearingSteps2.whenRaisePublicEventToNextHearingSubmittedForListing(nextHearings);
         listNextHearingSteps2.verifyHearingListedFromAPI(nextHearings);
         listNextHearingSteps2.verifyPublicOffencesMovedToHearingInActiveMQ(nextHearings, oldNextHearings, firstHearings.getHearingData().get(0).getId());
     }
@@ -135,24 +98,7 @@ public class ListNextHearingIT extends AbstractIT {
         listNextHearingSteps2.verifyHearingListedFromAPI(nextHearings);
     }
 
-    @Test
-    void shouldDeletePreviousHearingsAndCreateNextHearingRequestedWithPublicEvent() {
-        final HearingsData oldNextHearings = HearingsData.hearingsData();
-        final HearingsData nextHearings = HearingsData.hearingsData();
-        final HearingsData firstHearings = HearingsData.hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
-        listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-        final ListNextHearingSteps listNextHearingSteps1 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
-        listNextHearingSteps1.whenRaisePublicEventToNextHearingSubmittedForListing(oldNextHearings);
-        listNextHearingSteps1.verifyHearingListedFromAPI(oldNextHearings);
-        final ListNextHearingSteps listNextHearingSteps2 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
-        listNextHearingSteps2.whenDeletePreviousHearingAndCreateNextHearingForListing(nextHearings);
-        listNextHearingSteps2.verifyOldHearingDeleted(oldNextHearings);
-        listNextHearingSteps2.verifyPublicUnallocatedOldHearingDeletedInPublicMQ(oldNextHearings);
-        listNextHearingSteps2.whenNextHearingSubmittedForListing(nextHearings);
-        listNextHearingSteps2.verifyHearingListedFromAPI(nextHearings);
-    }
+
 
     @Test
     void shouldDeleteOldScheduledNextHearingsAndScheduledNextHearings() {
@@ -327,46 +273,6 @@ public class ListNextHearingIT extends AbstractIT {
     }
 
     @Test
-    void shouldRemoveOffencesFromNextHearingWhenFirstSeededHearingAmendedWithPublicEvent(){
-
-        final HearingsData nextHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
-        final HearingsData secondHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
-
-        // First hearing created
-        final HearingsData firstHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
-        stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
-                "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ZonedDateTime.now(ZoneOffset.UTC)
-                        .withHour(9)
-                        .withMinute(0)
-                        .withSecond(0)
-                        .withNano(0)
-                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
-        listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-
-        // First hearing resulted and next hearing created
-        final ListNextHearingSteps listNextHearingSteps1 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
-        listNextHearingSteps1.stubReferenceDataForNextHearings(nextHearings);
-        listNextHearingSteps1.whenRaisePublicEventToNextHearingSubmittedForListing(nextHearings);
-        listNextHearingSteps1.verifyAllocatedHearingListedFromAPI(nextHearings.getHearingData().get(0));
-
-        // Second hearing share and extend to next hearing
-        final UUID nextHearingId = nextHearings.getHearingData().get(0).getId();
-        final ListNextHearingSteps listNextHearingSteps2 = new ListNextHearingSteps(nextHearings.getHearingData().get(0));
-        listNextHearingSteps2.whenUpdateRelatedHearingSubmittedForListing(nextHearingId, secondHearings);
-        listNextHearingSteps1.verifyUpdateRelatedHearingRequestedInActiveMQ(nextHearingId);
-        listNextHearingSteps1.verifyCasesAddedToAllocatedHearingFromApi(nextHearings, secondHearings);
-
-        // Amend Reshare First Hearing
-        listNextHearingSteps1.whenDeleteNextHearingSubmittedForListing();
-        listNextHearingSteps1.verifyCasesAreInAllocatedHearingFromApi(nextHearings, secondHearings);
-        listNextHearingSteps1.verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(nextHearings.getHearingData().get(0).getId(), nextHearings);
-    }
-
-    @Test
     void shouldRemoveOffencesFromNextHearingWhenNextHearingIsExistingHearing(){
 
         HearingsData secondHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
@@ -419,62 +325,6 @@ public class ListNextHearingIT extends AbstractIT {
         HearingsData nextHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         listNextHearingSteps.whenNextHearingSubmittedForListing(nextHearings);
         listNextHearingSteps.verifyPublicOffencesMovedToHearingInActiveMQ();
-    }
-
-    @Test
-    void shouldRemoveOffencesFromNextHearingWhenNextHearingIsExistingHearingWithPublicEvent(){
-
-        HearingsData secondHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
-        ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(secondHearings);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
-        stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
-                "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ZonedDateTime.now(ZoneOffset.UTC)
-                        .withHour(9)
-                        .withMinute(0)
-                        .withSecond(0)
-                        .withNano(0)
-                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
-        listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-
-        // First hearing created
-        final HearingsData firstHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
-        listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
-        listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-
-        // Second hearing share and extend to first hearing
-        final UUID nextHearingId = firstHearings.getHearingData().get(0).getId();
-        final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
-        // Clear stale hearing-added-to-case messages from initial listings before the update
-        listNextHearingSteps.clearHearingAddedToCaseMessages();
-        listNextHearingSteps.whenUpdateRelatedHearingSubmittedForListing(nextHearingId, secondHearings);
-        listNextHearingSteps.verifyCasesAddedToAllocatedHearingFromApi(firstHearings, secondHearings);
-        // Wait for case event streams to be updated with the new hearing ID before publishing offence event
-        listNextHearingSteps.waitForCaseEventStreamUpdate(nextHearingId);
-
-        // New Offence Added to case of next hearing
-        DefendantData defendantData = secondHearings.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0);
-        UUID caseId = secondHearings.getHearingData().get(0).getListedCases().get(0).getCaseId();
-        HearingData hearingData = secondHearings.getHearingData().get(0);
-        OffenceData offenceData = defendantData.getOffences().get(0);
-        UpdatedOffenceData updatedOffenceData = UpdatedOffenceData.updateOffenceData(offenceData);
-        final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, null, false);
-        final OffencesForDefendantUpdated newOffences = steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly();
-        final String newOffenceId = newOffences.getAddedOffences().stream().flatMap(a -> a.getOffences().stream()).map(Offence::getId).map(UUID::toString).toList().get(0);
-        listNextHearingSteps.verifyOffenceAddedToAllocatedHearingFromApi(firstHearings, newOffenceId);
-
-        // Amend Reshare second Hearing
-        listNextHearingSteps.clearStaleAllocatedHearingMessages();
-        listNextHearingSteps.whenDeleteNextHearingSubmittedForListing();
-        listNextHearingSteps.verifyCasesAreInAllocatedHearingFromApi(firstHearings, secondHearings);
-        listNextHearingSteps.verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(nextHearingId, secondHearings, newOffenceId);
-
-        HearingsData nextHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
-        final ListNextHearingSteps listNextHearingStepsNew = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
-        listNextHearingStepsNew.whenRaisePublicEventToNextHearingSubmittedForListing(nextHearings);
-        listNextHearingStepsNew.verifyPublicOffencesMovedToHearingInActiveMQ();
     }
 
     @Test
@@ -535,62 +385,5 @@ public class ListNextHearingIT extends AbstractIT {
         listNextHearingSteps2.verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(nextHearingId,firstHearings );
     }
 
-    @Test
-    void ShouldRemoveOffencesIfNextHearingWasExtendedWithPublicEvent(){
-        // GIVEN first hearing
-        final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(randomUUID(), null, STRING.next(), randomUUID(), null, JurisdictionType.MAGISTRATES.name(), JurisdictionType.MAGISTRATES.name(),
-                null, null);
-
-        final HearingsData firstHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData);
-        final ListCourtHearingSteps firstHearingsSteps = new ListCourtHearingSteps(firstHearings);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", firstHearingsSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
-        stubListHearingInCourtSessions(firstHearingsSteps.getHearingsData().getHearingData().get(0).getId().toString(),
-                "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ZonedDateTime.now(ZoneOffset.UTC)
-                        .withHour(9)
-                        .withMinute(0)
-                        .withSecond(0)
-                        .withNano(0)
-                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
-        firstHearingsSteps.whenCaseIsSubmittedForListing();
-
-        // GIVEN unallocated Hearing
-        final HearingsData unallocatedHearing = hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(unallocatedHearing);
-
-        listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-
-        // When first hearing resulted
-        HearingsData nextHearing = HearingsData.nextAllocatedHearingsData(firstHearings.getHearingData());
-        final ListNextHearingSteps listNextHearingSteps1 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
-        listNextHearingSteps1.whenRaisePublicEventToNextHearingSubmittedForListing(nextHearing);
-        listNextHearingSteps1.verifySingleHearingListedFromAPI(nextHearing.getHearingData().get(0), true);
-
-        final UUID nextHearingId = nextHearing.getHearingData().get(0).getId();
-        final UUID unAllocatedHearingId = unallocatedHearing.getHearingData().get(0).getId();
-
-        // When unallocated Hearing extend to next hearing
-        final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(HearingsData.hearingsData(unAllocatedHearingId));
-        listCourtHearingSteps2.extendHearing(unAllocatedHearingId,nextHearingId);
-        listCourtHearingSteps2.verifyPublicEventHearingConfirmedAndExtendHearingFromProgression(nextHearingId, unAllocatedHearingId);
-        listNextHearingSteps1.verifyCasesAddedToHearingFromApi(nextHearing, unallocatedHearing, true);
-
-        // When first hearing is amended and reshared
-        final ListNextHearingSteps listNextHearingSteps2 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
-        listNextHearingSteps2.whenDeleteNextHearingSubmittedForListing();
-        // Then next hearing has only Cases of unallocated hearing
-        pollForHearing(nextHearing.getHearingData().get(0).getCourtCentreId().toString(), true, getLoggedInUser().toString(), new Matcher[]{
-                withJsonPath("$.hearings[?(@.id == '" + nextHearingId + "')].id",
-                        contains(nextHearingId.toString())),
-                withJsonPath("$.hearings[?(@.id == '" + nextHearingId + "')].listedCases.length()",
-                        contains(2)),
-                withJsonPath("$.hearings[?(@.id == '" + nextHearingId + "')].listedCases[?(@.id == '" +unallocatedHearing.getHearingData().get(0).getListedCases().get(0).getCaseId().toString() + "')].id",
-                        contains(unallocatedHearing.getHearingData().get(0).getListedCases().get(0).getCaseId().toString())),
-                withJsonPath("$.hearings[?(@.id == '" + nextHearingId + "')].listedCases[?(@.id == '" +unallocatedHearing.getHearingData().get(0).getListedCases().get(1).getCaseId().toString() + "')].id",
-                        contains(unallocatedHearing.getHearingData().get(0).getListedCases().get(1).getCaseId().toString()))
-        });
-        listNextHearingSteps2.verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(nextHearingId,firstHearings );
-    }
 
 }

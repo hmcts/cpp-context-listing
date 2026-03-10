@@ -1,7 +1,7 @@
-package uk.gov.moj.cpp.listing.common.courtcentre;
+package uk.gov.moj.cpp.listing.command.api.courtcentre;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.common.service.ReferenceDataService;
+import uk.gov.moj.cpp.listing.command.api.service.ReferenceDataService;
 
 import java.util.HashMap;
 import java.util.Map;

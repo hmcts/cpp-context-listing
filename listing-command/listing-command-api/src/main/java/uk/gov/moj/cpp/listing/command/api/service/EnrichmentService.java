@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.common.service;
+package uk.gov.moj.cpp.listing.command.api.service;
 
 import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;

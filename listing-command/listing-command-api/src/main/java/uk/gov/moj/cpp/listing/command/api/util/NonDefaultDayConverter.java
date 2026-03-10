@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.common.util;
+package uk.gov.moj.cpp.listing.command.api.util;
 
 import static java.util.Objects.nonNull;
 
@@ -13,9 +13,9 @@ import java.util.UUID;
 public class NonDefaultDayConverter {
 
     public static List<NonDefaultDay> convertNonDefaultDaysCoreToCommand(final List<uk.gov.justice.core.courts.NonDefaultDay> nonDefaultDays) {
-        List<NonDefaultDay> nonDefaultDaysList = new ArrayList<>();
+        List<uk.gov.justice.listing.commands.NonDefaultDay> nonDefaultDaysList = new ArrayList<>();
         for (uk.gov.justice.core.courts.NonDefaultDay nonDefaultDay : nonDefaultDays) {
-            nonDefaultDaysList.add(NonDefaultDay.nonDefaultDay()
+            nonDefaultDaysList.add(uk.gov.justice.listing.commands.NonDefaultDay.nonDefaultDay()
                     .withCourtCentreId(nonDefaultDay.getCourtCentreId())
                     .withCourtRoomId(nonDefaultDay.getCourtRoomId())
                     .withStartTime(nonDefaultDay.getStartTime())

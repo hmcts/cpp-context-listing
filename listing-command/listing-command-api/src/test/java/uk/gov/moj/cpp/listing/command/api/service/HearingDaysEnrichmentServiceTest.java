@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.common.service;
+package uk.gov.moj.cpp.listing.command.api.service;
 
 
 import static java.util.Collections.emptyList;
@@ -21,7 +21,7 @@ import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.common.courtcentre.HearingTypeFactory;
+import uk.gov.moj.cpp.listing.command.api.courtcentre.HearingTypeFactory;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -238,7 +238,7 @@ class HearingDaysEnrichmentServiceTest {
     @Test
     public void shouldEnrichHearingDaysFromNonDefaultDays() {
         // Given
-        List<NonDefaultDay> nonDefaultDays = Arrays.asList(
+        List<uk.gov.justice.core.courts.NonDefaultDay> nonDefaultDays = Arrays.asList(
                 createNonDefaultDay(LocalDate.now(), "AM"),
                 createNonDefaultDay(LocalDate.now().plusDays(1), "AM")
         );
