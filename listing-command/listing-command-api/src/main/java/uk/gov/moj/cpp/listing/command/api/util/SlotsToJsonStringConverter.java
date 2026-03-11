@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.common.util;
+package uk.gov.moj.cpp.listing.command.api.util;
 
 import static java.util.Objects.nonNull;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
@@ -14,6 +14,7 @@ import uk.gov.moj.cpp.listing.domain.SlotDetail;
 import uk.gov.moj.cpp.listing.domain.builder.SlotDetailBuilder;
 import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 

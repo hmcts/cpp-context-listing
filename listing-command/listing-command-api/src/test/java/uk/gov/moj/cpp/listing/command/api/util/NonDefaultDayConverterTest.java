@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.common.utils;
+package uk.gov.moj.cpp.listing.command.api.util;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -10,7 +10,6 @@ import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.UTC;
 import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.NonDefaultDay;
-import uk.gov.moj.cpp.listing.common.util.NonDefaultDayConverter;
 
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
@@ -47,7 +46,7 @@ class NonDefaultDayConverterTest {
         nonDefaultDays.add(nonDefaultDay);
 
         // When
-        List<NonDefaultDay> result = NonDefaultDayConverter.convertNonDefaultDaysCoreToCommand(nonDefaultDays);
+        List<uk.gov.justice.listing.commands.NonDefaultDay> result = NonDefaultDayConverter.convertNonDefaultDaysCoreToCommand(nonDefaultDays);
 
         // Then
         assertThat(result, hasSize(1));

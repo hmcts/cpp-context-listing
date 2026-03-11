@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.common.service;
+package uk.gov.moj.cpp.listing.command.api.service;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -8,9 +8,10 @@ import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static uk.gov.moj.cpp.listing.common.service.HearingDaysEnrichmentService.log;
+import static uk.gov.moj.cpp.listing.command.api.service.HearingDaysEnrichmentService.log;
 
 import uk.gov.justice.core.courts.CourtCentre;
+import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.commands.HearingDay;
@@ -19,11 +20,11 @@ import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.common.courtcentre.CourtCentreFactory;
-import uk.gov.moj.cpp.listing.common.util.SlotsToJsonStringConverter;
+import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
+import uk.gov.moj.cpp.listing.command.api.util.SlotsToJsonStringConverter;
+import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.CourtSchedule;
 import uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse;
-import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 import uk.gov.moj.cpp.listing.domain.ListUpdateHearing;
 import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;

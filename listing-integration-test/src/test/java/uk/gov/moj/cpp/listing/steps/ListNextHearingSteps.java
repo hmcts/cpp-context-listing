@@ -195,10 +195,6 @@ public class ListNextHearingSteps extends AbstractIT {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
-    public void whenRaisePublicEventToNextHearingSubmittedForListing(final HearingsData hearingsData) {
-        raisePublicEventToNextHearingsSubmittedForListing(hearingsData);
-    }
-
 
     public void whenDeleteNextHearingSubmittedForListing() {
         final Response response = getResponseDeleteNextHearingsSubmittedForListing();
@@ -275,35 +271,6 @@ public class ListNextHearingSteps extends AbstractIT {
 
         return restClient.postCommand(listNextHearingUrl, MEDIA_TYPE_LIST_NEXT_HEARINGS,
                 request, getLoggedInHeader());
-    }
-
-    private void raisePublicEventToNextHearingsSubmittedForListing(final HearingsData hearingsData) {
-        final HearingData nextHearing1 = hearingsData.getHearingData().get(0);
-        final List<HearingListingNeeds> hearings = new ArrayList<>();
-        hearings.add( buildHearingListingNeeds(nextHearing1));
-
-        if( hearingsData.getHearingData().size() ==2){
-            final HearingData nextHearing2 = hearingsData.getHearingData().get(1);
-            hearings.add(buildHearingListingNeeds(nextHearing2));
-        }
-
-        final JsonObject listNextHearingsJsonObject = JsonObjects.createObjectBuilder()
-                .add("hearings", objectToJsonValueConverter.convert(hearings))
-                .add("seedingHearing", objectToJsonValueConverter.convert(
-                        SeedingHearing.seedingHearing()
-                                .withSeedingHearingId(firstHearing.getId())
-                                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueOf(firstHearing.getJurisdictionType()))
-                                .withSittingDay(firstHearing.getHearingStartDate().toString())
-                                .build()))
-                .build();
-
-        request = listNextHearingsJsonObject.toString();
-        
-        QueueUtil.sendMessage(
-                publicEventAdhocCreated,
-                "public.progression.next-hearings-listed",
-                listNextHearingsJsonObject,
-                metadataOf(randomUUID(), "public.progression.next-hearings-listed").withUserId(randomUUID().toString()).build());
     }
 
     public Response getResponseDeleteNextHearingsSubmittedForListing() {

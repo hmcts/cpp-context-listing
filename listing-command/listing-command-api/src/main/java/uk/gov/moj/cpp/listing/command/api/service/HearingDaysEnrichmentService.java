@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.common.service;
+package uk.gov.moj.cpp.listing.command.api.service;
 
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
@@ -7,8 +7,9 @@ import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
-import static uk.gov.moj.cpp.listing.common.util.NonDefaultDayConverter.convertBookedSlotsToHearingDays;
-import static uk.gov.moj.cpp.listing.common.util.NonDefaultDayConverter.convertCoreNonDefaultDaysToHearingDays;
+import static uk.gov.moj.cpp.listing.command.api.ListingCommandApi.getCourtCentreId;
+import static uk.gov.moj.cpp.listing.command.api.util.NonDefaultDayConverter.convertBookedSlotsToHearingDays;
+import static uk.gov.moj.cpp.listing.command.api.util.NonDefaultDayConverter.convertCoreNonDefaultDaysToHearingDays;
 import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.getUtcLocalTimeForDate;
 
 import uk.gov.justice.core.courts.JurisdictionType;
@@ -468,9 +469,5 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
         enrichByNonDefaultDaysIfPresent(hearingListingNeeds, builder);
         enrichCandidate(hearingListingNeeds, builder);
         return builder.build().getHearingDays();
-    }
-
-    public static UUID getCourtCentreId(final UpdateHearingForListing updateHearingForListing) {
-        return nonNull(updateHearingForListing.getSelectedCourtCentre()) ? updateHearingForListing.getSelectedCourtCentre().getId() : updateHearingForListing.getCourtCentreId();
     }
 }

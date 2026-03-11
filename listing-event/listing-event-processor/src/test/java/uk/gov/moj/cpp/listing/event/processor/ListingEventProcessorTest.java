@@ -84,8 +84,6 @@ import uk.gov.justice.listing.courts.DefendantsAddedToCourtProceedings;
 import uk.gov.justice.listing.courts.DeletedOffences;
 import uk.gov.justice.listing.courts.HearingConfirmed;
 import uk.gov.justice.listing.courts.HearingUpdated;
-import uk.gov.justice.listing.courts.ListNextHearingsEnrichedV2;
-import uk.gov.justice.listing.courts.ListNextHearingsV2;
 import uk.gov.justice.listing.courts.OffencesForDefendantUpdated;
 import uk.gov.justice.listing.courts.UpdatedOffences;
 import uk.gov.justice.listing.events.AllocatedHearingExtendedForListing;
@@ -151,7 +149,6 @@ import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 import uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
-import uk.gov.moj.cpp.listing.common.service.HearingEnrichmentOrchestrator;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.SlotDetail;
@@ -378,9 +375,6 @@ class ListingEventProcessorTest {
     @Mock
     private Logger logger;
 
-    @Mock
-    private HearingEnrichmentOrchestrator hearingEnrichmentOrchestrator;
-
     @InjectMocks
     private ListingEventProcessor listingEventProcessor;
 
@@ -500,39 +494,6 @@ class ListingEventProcessorTest {
     }
 
     @Test
-    public void shouldIssueListNextHearingsEnrichedCommand() {
-
-        final ListNextHearingsV2 listNextHearings = mock(ListNextHearingsV2.class);
-        final UUID seedingHearingId = randomUUID();
-        final String sittingDay = LocalDate.now().toString();
-        final ArgumentCaptor<ListNextHearingsEnrichedV2> payloadCaptor = forClass(ListNextHearingsEnrichedV2.class);
-
-        //given
-        when(envelope.payloadAsJsonObject()).thenReturn(payload);
-        when(envelope.metadata()).thenReturn(metadataWithRandomUUIDAndName().build());
-        when(jsonObjectConverter.convert(payload, ListNextHearingsV2.class)).thenReturn(listNextHearings);
-        when(listNextHearings.getSeedingHearing()).thenReturn(uk.gov.justice.core.courts.SeedingHearing.seedingHearing()
-                .withSittingDay(sittingDay)
-                .withSeedingHearingId(seedingHearingId)
-                .withJurisdictionType(JurisdictionType.CROWN)
-                .build());
-
-        final JsonValue finalPayload = mock(JsonValue.class);
-        when(objectToJsonValueConverter.convert(payloadCaptor.capture())).thenReturn(finalPayload);
-
-        //when
-        listingEventProcessor.listNextHearings(envelope);
-
-        //then
-        final ListNextHearingsEnrichedV2 value = payloadCaptor.getValue();
-        assertThat(value, notNullValue(ListNextHearingsEnrichedV2.class));
-        assertThat(value.getListNextHearings(), notNullValue());
-        final uk.gov.justice.core.courts.SeedingHearing seedingHearing = value.getSeedingHearing();
-        assertThat(seedingHearing.getSeedingHearingId(), is(seedingHearingId));
-        assertThat(seedingHearing.getSittingDay(), is(sittingDay));
-
-    }
-    @Test
     public void shouldHandleHearingListedEventMessageWhenProsecutionCasesIsNull() {
         //Given
         given(envelope.payloadAsJsonObject()).willReturn(payload);
@@ -561,7 +522,7 @@ class ListingEventProcessorTest {
         final List<JsonEnvelope> capturedEnvelopes = senderJsonEnvelopeCaptor.getAllValues();
         assertThat(capturedEnvelopes.get(0).metadata().name(), is("public.listing.hearing-listed"));
         assertThat(capturedEnvelopes.get(1).metadata().name(), is("public.listing.court-application-added-for-hearing"));
-
+        
         // Verify the public event payload has empty caseUrns
         final JsonObject publicEventPayload = capturedEnvelopes.get(0).payloadAsJsonObject();
         assertThat(publicEventPayload.getJsonArray("caseUrns"), is(notNullValue()));
@@ -597,7 +558,7 @@ class ListingEventProcessorTest {
         final List<JsonEnvelope> capturedEnvelopes = senderJsonEnvelopeCaptor.getAllValues();
         assertThat(capturedEnvelopes.get(0).metadata().name(), is("public.listing.hearing-listed"));
         assertThat(capturedEnvelopes.get(1).metadata().name(), is("public.listing.court-application-added-for-hearing"));
-
+        
         // Verify the public event payload has empty caseUrns
         final JsonObject publicEventPayload = capturedEnvelopes.get(0).payloadAsJsonObject();
         assertThat(publicEventPayload.getJsonArray("caseUrns"), is(notNullValue()));
@@ -634,7 +595,7 @@ class ListingEventProcessorTest {
         final List<JsonEnvelope> capturedEnvelopes = senderJsonEnvelopeCaptor.getAllValues();
         assertThat(capturedEnvelopes.get(0).metadata().name(), is("public.listing.hearing-listed"));
         assertThat(capturedEnvelopes.get(1).metadata().name(), is("public.listing.court-application-added-for-hearing"));
-
+        
         // Verify the public event payload has empty caseUrns (null prosecution case is filtered out)
         final JsonObject publicEventPayload = capturedEnvelopes.get(0).payloadAsJsonObject();
         assertThat(publicEventPayload.getJsonArray("caseUrns"), is(notNullValue()));
@@ -672,7 +633,7 @@ class ListingEventProcessorTest {
         final List<JsonEnvelope> capturedEnvelopes = senderJsonEnvelopeCaptor.getAllValues();
         assertThat(capturedEnvelopes.get(0).metadata().name(), is("public.listing.hearing-listed"));
         assertThat(capturedEnvelopes.get(1).metadata().name(), is("public.listing.court-application-added-for-hearing"));
-
+        
         // Verify the public event payload has empty caseUrns (prosecution case with null identifier is filtered out)
         final JsonObject publicEventPayload = capturedEnvelopes.get(0).payloadAsJsonObject();
         assertThat(publicEventPayload.getJsonArray("caseUrns"), is(notNullValue()));

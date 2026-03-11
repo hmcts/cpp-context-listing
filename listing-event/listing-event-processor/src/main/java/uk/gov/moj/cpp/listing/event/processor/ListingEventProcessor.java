@@ -21,16 +21,12 @@ import uk.gov.justice.core.courts.Hearing;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.listing.commands.AddApplicationToHearingCommand;
 import uk.gov.justice.listing.commands.AddHearingToCaseCommand;
-import uk.gov.justice.listing.commands.CourtCentreDetails;
-import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.commands.LinkedToCases;
 import uk.gov.justice.listing.commands.UpdateLinkedCaseInHearing;
 import uk.gov.justice.listing.courts.CaseUrns;
 import uk.gov.justice.listing.courts.HearingChangesSaved;
 import uk.gov.justice.listing.courts.HearingConfirmed;
 import uk.gov.justice.listing.courts.HearingUpdated;
-import uk.gov.justice.listing.courts.ListNextHearingsEnrichedV2;
-import uk.gov.justice.listing.courts.ListNextHearingsV2;
 import uk.gov.justice.listing.courts.UpdateHearingToCaseCommand;
 import uk.gov.justice.listing.events.AllocatedHearingExtendedForListing;
 import uk.gov.justice.listing.events.AllocatedHearingExtendedForListingV2;
@@ -73,8 +69,6 @@ import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.common.courtcentre.CourtCentreFactory;
-import uk.gov.moj.cpp.listing.common.service.HearingEnrichmentOrchestrator;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.event.processor.command.AddCourtApplicationToHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.AddDefendantsForCourtProceedingsCommand;
@@ -96,11 +90,9 @@ import uk.gov.moj.cpp.listing.event.processor.util.HearingObjectsListingToCoreCo
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -211,7 +203,6 @@ public class ListingEventProcessor {
     private static final String LISTING_COMMAND_ADD_CASES_TO_HEARING = "listing.command.add-cases-to-hearing";
     private static final String PRIVATE_EVENT_ALLOCATED_HEARING_EXTENDED_FOR_HEARING = "listing.events.allocated-hearing-extended-for-listing";
     private static final String PRIVATE_EVENT_ALLOCATED_HEARING_EXTENDED_FOR_HEARING_V2 = "listing.events.allocated-hearing-extended-for-listing-v2";
-    private static final String LISTING_COMMAND_LIST_NEXT_HEARINGS_ENRICHED = "listing.command.list-next-hearings-enriched-v2";
 
     private static final String PUBLIC_EVENT_HEARING_DAYS_CANCELLED = "public.hearing.hearing-days-cancelled";
     private static final String COMMAND_CANCEL_HEARING_DAYS = "listing.command.cancel-hearing-days";
@@ -298,32 +289,6 @@ public class ListingEventProcessor {
 
     @Inject
     private HearingSlotsService hearingSlotsService;
-
-    @Inject
-    private CourtCentreFactory courtCentreFactory;
-
-    @Inject
-    private HearingEnrichmentOrchestrator hearingEnrichmentOrchestrator;
-
-    @Handles("public.progression.next-hearings-listed")
-    public void listNextHearings(final JsonEnvelope envelope) {
-        final JsonObject payload = envelope.payloadAsJsonObject();
-        final ListNextHearingsV2 listNextHearings = jsonObjectConverter.convert(payload, ListNextHearingsV2.class);
-        final List<HearingListingNeeds> enrichedHearings = hearingEnrichmentOrchestrator.enrichListCourtHearing(listNextHearings.getHearings(), envelope);
-        final Set<CourtCentreDetails> courtCentres = getCourtCentreDetails(envelope, enrichedHearings);
-
-        final ListNextHearingsEnrichedV2 listNextHearingsEnriched = ListNextHearingsEnrichedV2.listNextHearingsEnrichedV2()
-                .withCourtCentresDetails(new ArrayList<>(courtCentres))
-                .withListNextHearings(ListNextHearingsV2.listNextHearingsV2()
-                        .withValuesFrom(listNextHearings)
-                        .withHearings(enrichedHearings).build())
-                .withAdjournedFromDate(listNextHearings.getAdjournedFromDate())
-                .withSeedingHearing(listNextHearings.getSeedingHearing())
-                .build();
-
-        sender.send(Envelope.envelopeFrom(Envelope.metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_LIST_NEXT_HEARINGS_ENRICHED),
-                objectToJsonValueConverter.convert(listNextHearingsEnriched)));
-    }
 
     @Handles(PRIVATE_EVENT_HEARING_LISTED)
     public void handleHearingListedMessage(final JsonEnvelope envelope) {
@@ -1394,11 +1359,4 @@ public class ListingEventProcessor {
         sender.send(envelopeFrom(metadataFrom(jsonEnvelope.metadata()).withId(randomUUID()).withName("public.listing.court-application-added-for-hearing"), jsonEnvelope.payloadAsJsonObject()));
     }
 
-    private Set<CourtCentreDetails> getCourtCentreDetails(final JsonEnvelope envelope, final List<HearingListingNeeds> hearingListingNeeds) {
-        final Set<CourtCentreDetails> courtCentres = new HashSet<>();
-        hearingListingNeeds.forEach(
-                hln -> courtCentres.add(courtCentreFactory.getCourtCentre(hln.getCourtCentre().getId(), envelope))
-        );
-        return courtCentres;
-    }
 }

@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.common.utils;
+package uk.gov.moj.cpp.listing.command.api.util;
 
 import static com.jayway.jsonassert.JsonAssert.with;
 import static java.util.UUID.randomUUID;
@@ -12,7 +12,6 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
-import uk.gov.moj.cpp.listing.common.util.SlotsToJsonStringConverter;
 import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 
 import java.time.LocalDate;

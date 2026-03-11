@@ -1,13 +1,10 @@
-package uk.gov.moj.cpp.listing.common.courtcentre;
+package uk.gov.moj.cpp.listing.command.api.courtcentre;
 
 import static java.util.UUID.fromString;
 
 import uk.gov.justice.listing.commands.CourtCentreDetails;
-import uk.gov.justice.listing.courts.Courtrooms;
-import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.common.service.ReferenceDataService;
-import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
+import uk.gov.moj.cpp.listing.command.api.service.ReferenceDataService;
 
 import java.time.LocalTime;
 import java.util.HashMap;
@@ -23,6 +20,10 @@ import javax.json.JsonObject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import uk.gov.justice.listing.courts.Courtrooms;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 
 public class CourtCentreFactory {
     private static final Logger LOGGER = LoggerFactory.getLogger(CourtCentreFactory.class);
