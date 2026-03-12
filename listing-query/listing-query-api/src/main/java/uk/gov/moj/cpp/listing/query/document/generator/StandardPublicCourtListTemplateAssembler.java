@@ -149,6 +149,7 @@ public class StandardPublicCourtListTemplateAssembler {
     private static final String COURT_APPLICATIONS = "courtApplications";
     private static final String APPLICATION_REFERENCE = "applicationReference";
     private static final String APPLICANT = "applicant";
+    private static final String SUBJECT = "subject";
     private static final String COURT_APPLICATION_PARTY_TYPE = "courtApplicationPartyType";
     private static final String RESTRICT_COURT_APPLICATION_TYPE = "restrictCourtApplicationType";
     private static final String APPLICATION_TYPE = "applicationType";
@@ -338,7 +339,7 @@ public class StandardPublicCourtListTemplateAssembler {
         }
         if (hasCourtApplications && (includeApplications || !hasListedCases)) {
             final List<Hearing> hearings = hearingJson.getJsonArray(COURT_APPLICATIONS).getValuesAs(JsonObject.class).stream()
-                    .map(courtApplication -> createHearingFromCourtApplication(hearingJson, hearingStartTime, sequence, courtApplication, restrictedListRequired, hearingTypesIdWelshDescriptionMap))
+                    .map(courtApplication -> createHearingFromCourtApplication(hearingJson, hearingStartTime, sequence, courtApplication, restrictedListRequired, hearingTypesIdWelshDescriptionMap, includeApplications))
                     .filter(hearing -> isNotEmpty(hearing.getDefendants()))
                     .collect(toList());
             unsortedListMultimap.computeIfAbsent(startTimestamp.toLocalDateTime(), k -> new ArrayList<>()).addAll(hearings);
@@ -430,7 +431,7 @@ public class StandardPublicCourtListTemplateAssembler {
     }
 
     private Hearing createHearingFromCourtApplication(final JsonObject hearingJson, final String hearingStartTime, final Integer sequence,
-                                                      final JsonObject courtApplication, final boolean restrictedListRequired, final Map<String, String> hearingTypesIdWelshDescriptionMap) {
+                                                      final JsonObject courtApplication, final boolean restrictedListRequired, final Map<String, String> hearingTypesIdWelshDescriptionMap, final boolean includeApplications) {
         final String hearingType = hearingJson.getJsonObject(TYPE).getString(DESCRIPTION);
         final String hearingPublicListNote = hearingJson.getString(HEARING_PUBLIC_LIST_NOTE, "");
         final String hearingWelshType = hearingTypesIdWelshDescriptionMap.get(hearingJson.getJsonObject(TYPE).getString(ID));
@@ -439,6 +440,12 @@ public class StandardPublicCourtListTemplateAssembler {
         final boolean restrictedByCase = courtApplication.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE);
         final boolean caseRestricted = restrictedByCase && restrictedListRequired;
         final String adjournedHearingDate = hearingJson.getString(ADJOURNED_HEARING_DATE, BLANK_STRING);
+
+        final Defendant subjectDefendant = includeApplications && courtApplication.containsKey(SUBJECT)
+                ? createDefendantEquivalentFromCourtApplication(courtApplication, courtApplication.getJsonObject(SUBJECT),
+                courtApplication.getJsonObject(SUBJECT).getBoolean(RESTRICT_FROM_COURT_LIST, FALSE) && restrictedListRequired, EMPTY, restrictedListRequired)
+                : null;
+
         return Hearing.hearing()
                 .withHearingPublicListNote(caseRestricted ? EMPTY : hearingPublicListNote)
                 .withCaseNumber(caseRestricted ? EMPTY : courtApplication.getString(APPLICATION_REFERENCE))
@@ -449,6 +456,7 @@ public class StandardPublicCourtListTemplateAssembler {
                 .withReportingRestrictionReason(caseRestricted ? EMPTY : reportingRestrictionReason)
                 .withWelshReportingRestrictionReason(caseRestricted ? EMPTY : welshReportingRestrictionReason)
                 .withDefendants(caseRestricted ? emptyList() : createDefendantsEquivalentFromCourtApplication(courtApplication, restrictedListRequired))
+                .withSubject(subjectDefendant)
                 .withStartTime(hearingStartTime)
                 .withAdjournedHearingDate(adjournedHearingDate)
                 .withId(fromString(hearingJson.getString(ID)))

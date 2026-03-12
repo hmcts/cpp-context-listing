@@ -326,6 +326,8 @@ protocols: [ HTTP, HTTPS ]
       200:
         body:
           application/vnd.listing.search.court.list.payload+json:
+            example: !include json/listing.search.court.list.payload.json
+            schema: !include json/schema/listing.search.court.list.payload.json
 
 /courtListPublishStatus/{courtCentreId}:
   description: get status of latest publish court list document
