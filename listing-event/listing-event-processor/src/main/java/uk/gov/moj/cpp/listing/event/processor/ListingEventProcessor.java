@@ -1341,21 +1341,24 @@ public class ListingEventProcessor {
                         .withCaseURN(prosecutionCase.getProsecutionCaseIdentifier().getCaseURN())
                         .build()).toList();
 
-        final uk.gov.justice.listing.courts.HearingListed courtHearingListed = uk.gov.justice.listing.courts.HearingListed.
-                hearingListed()
-                .withHearingId(courtDomainHearing.getId())
-                .withHearingType(courtDomainHearing.getType().getDescription())
-                .withCaseUrns(caseUrns)
-                .build();
+        if (caseUrns != null && !caseUrns.isEmpty()) {
+            final uk.gov.justice.listing.courts.HearingListed courtHearingListed = uk.gov.justice.listing.courts.HearingListed.
+                    hearingListed()
+                    .withHearingId(courtDomainHearing.getId())
+                    .withHearingType(courtDomainHearing.getType().getDescription())
+                    .withCaseUrns(caseUrns)
+                    .build();
 
-        final JsonEnvelope publicEvent = envelopeFrom(metadataFrom(jsonEnvelope.metadata()).withName(PUBLIC_LISTING_HEARING_LISTED),
-                objectToJsonObjectConverter.convert(courtHearingListed));
+            final JsonEnvelope publicEvent = envelopeFrom(metadataFrom(jsonEnvelope.metadata()).withName(PUBLIC_LISTING_HEARING_LISTED),
+                    objectToJsonObjectConverter.convert(courtHearingListed));
 
-        if (logger.isDebugEnabled()) {
-            logger.debug(LOG_PUBLISHING, PUBLIC_LISTING_HEARING_LISTED, publicEvent.metadata());
+            if (logger.isDebugEnabled()) {
+                logger.debug(LOG_PUBLISHING, PUBLIC_LISTING_HEARING_LISTED, publicEvent.metadata());
+            }
+
+            sender.send(publicEvent);
         }
 
-        sender.send(publicEvent);
         sender.send(envelopeFrom(metadataFrom(jsonEnvelope.metadata()).withId(randomUUID()).withName("public.listing.court-application-added-for-hearing"), jsonEnvelope.payloadAsJsonObject()));
     }
 
