@@ -15,6 +15,8 @@ import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingData
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.randomJudicialRole;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCpCourtRooms;
@@ -56,8 +58,8 @@ public class HearingCsvReportIT extends AbstractIT {
     public void initialize() {
         final ViewStoreCleaner viewStoreCleaner = new ViewStoreCleaner();
         viewStoreCleaner.cleanViewStoreTables();
-        final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
-        final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
+        final UUID courtCentreId = getRandomCourtCenterId();
+        final UUID courtRoomUUID = getRandomCourtRoomId();
         final int courtRoomId = 231;
 
         stubGetReferenceDataCourtCentreById(courtCentreId);

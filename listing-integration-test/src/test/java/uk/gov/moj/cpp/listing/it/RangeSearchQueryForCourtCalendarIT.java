@@ -10,6 +10,7 @@ import static uk.gov.moj.cpp.listing.it.SearchAvailableHearingIT.CASE_IN_HEARING
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithCourtCenterForMagistrate;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
 
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
@@ -43,10 +44,10 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
 
     private static final String CONTEXT_NAME = "listing";
     private static final Map<UUID, String> COURT_ROOMS = new LinkedHashMap<>() {{
-        put(fromString("f8254db1-1683-483e-afb3-b87fde5a0a24"), "Courtroom 01");
-        put(fromString("f8254db1-1683-483e-afb3-b87fde5a0a23"), "Courtroom 03");
-        put(fromString("f8254db1-1683-483e-afb3-b87fde5a0a21"), "Courtroom 04");
-        put(fromString("f8254db1-1683-483e-afb3-b87fde5a0a22"), "Courtroom 05");
+        put(fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19"), "Courtroom 01");
+        put(fromString("18982e9c-2475-36a4-a852-09ab720acfc9"), "Courtroom 03");
+        put(fromString("28b922c3-0396-3c68-970f-5b805c7ab1bb"), "Courtroom 04");
+        put(fromString("02d9847e-00e9-3c6c-b25c-1adbf5355a52"), "Courtroom 05");
     }};
 
     private final DatabaseCleaner databaseCleaner = new DatabaseCleaner();
@@ -59,7 +60,7 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
 
     @Test
     public void hearingCanBeSearchedForUsingDifferentCombinationsOfParametersForMagsCourtCalendar() throws JsonProcessingException {
-        final UUID magsCourtCenterId = randomUUID();
+        final UUID magsCourtCenterId = getRandomCourtCenterId();
         final List<TestData> testDataList = new ArrayList<>();
         IntStream.range(0, 7).forEach(i ->
         {
@@ -94,7 +95,7 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
     public void shouldRangeSearchCourtCalendarForCrown() throws JsonProcessingException {
 
         final String jurisdictionType = JurisdictionType.CROWN.name();
-        final UUID crownCourtCenterId = randomUUID();
+        final UUID crownCourtCenterId = getRandomCourtCenterId();
         final List<TestData> testDataList = new ArrayList<>();
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps();

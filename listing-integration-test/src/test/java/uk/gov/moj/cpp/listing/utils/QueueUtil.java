@@ -20,7 +20,7 @@ import java.util.Optional;
 
 public class QueueUtil {
 
-    private static final long RETRIEVE_TIMEOUT = 1000;
+    private static final long RETRIEVE_TIMEOUT = 10000;//1sec makes HearingIT.updateHearingResultsWhenCourtRoomNotSelected:375
     private static final long MESSAGE_RETRIEVE_TRIAL_TIMEOUT = 10000;
 
     public static final QueueUtil publicEvents = new QueueUtil();

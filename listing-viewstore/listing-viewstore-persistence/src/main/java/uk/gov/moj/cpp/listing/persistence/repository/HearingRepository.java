@@ -61,6 +61,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
+            "h.estimated_minutes, " +
             "count(1) OVER() as totalCount, " +
             "h.is_possible_disqualification ,  " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
@@ -117,6 +118,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.properties->>'allocated' as allocated, " +
             "h.type_of_list_id, " +
+            "h.estimated_minutes, " +
             "1 as totalCount, " +
             "h.is_possible_disqualification , " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h INNER JOIN hearing_days hd on hd.hearing_id = h.id  " +
@@ -170,6 +172,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
+            "h.estimated_minutes, " +
             "count(*) OVER() as totalCount, " +
             "h.is_possible_disqualification , " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
@@ -238,6 +241,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
+            "h.estimated_minutes, " +
             "count(*) OVER() as totalCount, " +
             "h.is_possible_disqualification , " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
@@ -301,6 +305,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
+            "h.estimated_minutes, " +
             "count(*) OVER() as totalCount, " +
             "h.is_possible_disqualification , " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
@@ -351,6 +356,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.properties ->>'allocated' as allocated, " +
             "h.type_of_list_id, " +
+            "h.estimated_minutes, " +
             "1 as totalCount, " +
             "h.is_possible_disqualification , " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
@@ -410,6 +416,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
+            "h.estimated_minutes, " +
             "count(*) OVER() as totalCount, " +
             "h.is_possible_disqualification , " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
@@ -449,6 +456,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
+            "h.estimated_minutes, " +
             "count(*) OVER() as totalCount, " +
             "h.is_possible_disqualification , " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
@@ -610,6 +618,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "null as allocated, " +
             "null as type_of_list_id, " +
             "null as totalCount, " +
+            "null as estimated_minutes, " +
             "null as is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS + ", " +
             "(select row_to_json(combinedJudiciaryAndHearings) as properties from " +
             "   (select * from " +
@@ -663,6 +672,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "null as allocated, " +
             "null as type_of_list_id, " +
             "null as totalCount, " +
+            "null as estimated_minutes, " +
             "null as is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS + ", " +
             "(select jsonb_agg(hrngByCourtCentreId) as \"properties\" from " +
             "(select h.hearingDate as \"hearingDate\", " +
@@ -690,6 +700,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
+            "h.estimated_minutes, " +
             "count(*) OVER() as totalCount, " +
             "h.is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
             " from hearing h " +
@@ -739,6 +750,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
+            "h.estimated_minutes, " +
             "1 as totalCount, " +
             "h.is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
@@ -807,6 +819,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
+            "h.estimated_minutes, " +
             "1 as totalCount, " +
             "h.is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
             "from hearing h " +
@@ -862,6 +875,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
+            "h.estimated_minutes, " +
             "1 as totalCount, " +
             "h.is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
             " from hearing h " +
@@ -894,6 +908,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
+            "h.estimated_minutes, " +
             "count(*) OVER() as totalCount, " +
             "h.is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
             " from hearing h" +
@@ -934,6 +949,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "null as allocated, " +
             "null as type_of_list_id, " +
             "null as totalCount, " +
+            "null as estimated_minutes, " +
             "null as is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
             " from ( " +
             " select distinct h.id as id, h.properties as properties, h.start_date as startDate, h.end_date as endDate " +
@@ -966,6 +982,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "null as allocated, " +
             "null as type_of_list_id, " +
             "null as totalCount, " +
+            "null as estimated_minutes, " +
             "null as is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
             " from ( " +
             " select distinct h.id as id, h.properties as properties, h.start_date as startDate, h.end_date as endDate " +

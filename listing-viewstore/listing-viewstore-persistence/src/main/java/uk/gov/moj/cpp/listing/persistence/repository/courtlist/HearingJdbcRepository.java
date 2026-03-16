@@ -2,9 +2,6 @@ package uk.gov.moj.cpp.listing.persistence.repository.courtlist;
 
 import static java.lang.String.format;
 
-import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.justice.services.jdbc.persistence.ViewStoreJdbcDataSourceProvider;
-import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Date;
@@ -16,6 +13,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.PostConstruct;
@@ -23,8 +21,13 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.sql.DataSource;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.StringUtils;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.jdbc.persistence.ViewStoreJdbcDataSourceProvider;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 @SuppressWarnings({"java:S107", "java:S2077", "java:S1192"})
 @ApplicationScoped
 public class HearingJdbcRepository {
@@ -46,6 +49,7 @@ public class HearingJdbcRepository {
             h.week_commencing_end_date, 
             h.allocated, 
             h.type_of_list_id, 
+            h.estimated_minutes,
             count(1) OVER() as totalCount, 
             h.is_possible_disqualification, """ + NULL_FLAT_HEARING_FIELDS + """
             from hearing h 
@@ -92,6 +96,7 @@ public class HearingJdbcRepository {
                 "h.week_commencing_end_date, " +
                 "h.allocated, " +
                 "h.type_of_list_id, " +
+                "h.estimated_minutes, " +
                 "h.is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
                 "from hearing h " +
                 "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
@@ -357,6 +362,7 @@ public class HearingJdbcRepository {
         final Date hdd = resultSet.getDate("hearing_date");
         final LocalDate hearingDate = hdd ==null? null :  hdd.toLocalDate();
         final boolean isPossibleDisqualification = resultSet.getBoolean("is_possible_disqualification");
+        final Integer estimatedMinutes = resultSet.getObject("estimated_minutes") != null ? resultSet.getInt("estimated_minutes") : null;
         final Hearing hearing = new Hearing(id, properties);
         hearing.setCourtCentreId(courtCentreId);
         hearing.setCourtRoomId(courtRoomId);
@@ -370,6 +376,10 @@ public class HearingJdbcRepository {
         hearing.setWeekCommencingEndDate(weekCommencingEndDate);
         hearing.setAllocated(allocated);
         hearing.setTypeOfListId(typeOfListId);
+        if (Objects.nonNull(estimatedMinutes)){
+            hearing.setEstimatedMinutes(estimatedMinutes);
+        }
+
         hearing.setTotalCount(totalCount);
         hearing.setPossibleDisqualification(isPossibleDisqualification);
         hearing.setHearingDayCount(hearingDayCount);
@@ -406,6 +416,7 @@ public class HearingJdbcRepository {
             h.week_commencing_end_date, 
             h.allocated, 
             h.type_of_list_id, 
+            h.estimated_minutes,
             h.is_possible_disqualification, 
             (select count(1) from hearing_days hd2 where hd2.hearing_id =h.id) as hearing_day_count, 
             (select array_position(ARRAY_AGG(hd3.hearing_date ORDER BY hd3.hearing_date, hd3.start_time, hd3.sequence),hd.hearing_date) from hearing_days hd3 where hd3.hearing_id =h.id ) as hearing_day_position, 

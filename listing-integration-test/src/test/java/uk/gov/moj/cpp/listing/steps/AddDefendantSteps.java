@@ -16,6 +16,8 @@ import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.CourtCentre;
@@ -195,9 +197,9 @@ public class AddDefendantSteps extends AbstractIT {
 
         return ListHearingRequest.listHearingRequest()
                 .withCourtCentre(CourtCentre.courtCentre()
-                        .withId(UUID.randomUUID())
+                        .withId(getRandomCourtCenterId())
                         .withName("Carmarthen Magistrates Court")
-                        .withRoomId(UUID.randomUUID())
+                        .withRoomId(getRandomCourtRoomId())
                         .build())
                 .withHearingType(HearingType.hearingType()
                         .withDescription("Sentence").withId(UUID.randomUUID()).build())

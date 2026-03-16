@@ -18,10 +18,12 @@ import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.Hearing;
+import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.listing.commands.AddApplicationToHearingCommand;
 import uk.gov.justice.listing.commands.AddHearingToCaseCommand;
 import uk.gov.justice.listing.commands.LinkedToCases;
 import uk.gov.justice.listing.commands.UpdateLinkedCaseInHearing;
+import uk.gov.justice.listing.courts.CaseUrns;
 import uk.gov.justice.listing.courts.HearingChangesSaved;
 import uk.gov.justice.listing.courts.HearingConfirmed;
 import uk.gov.justice.listing.courts.HearingUpdated;
@@ -88,6 +90,7 @@ import uk.gov.moj.cpp.listing.event.processor.util.HearingObjectsListingToCoreCo
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -1325,19 +1328,37 @@ public class ListingEventProcessor {
         final HearingListed listingHearingListed = jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(), HearingListed.class);
 
         final Hearing courtDomainHearing = hearingListingToCoreConverter.convert(listingHearingListed.getHearing());
-        final uk.gov.justice.listing.courts.HearingListed courtHearingListed = uk.gov.justice.listing.courts.HearingListed.
-                hearingListed().
-                withHearing(courtDomainHearing).
-                build();
+        final List<ProsecutionCase> prosecutionCases = courtDomainHearing.getProsecutionCases();
 
-        final JsonEnvelope publicEvent = envelopeFrom(metadataFrom(jsonEnvelope.metadata()).withName(PUBLIC_LISTING_HEARING_LISTED),
-                objectToJsonObjectConverter.convert(courtHearingListed));
+        // Create caseUrns from ProsecutionCase list
+        List<CaseUrns> caseUrns = Optional.ofNullable(prosecutionCases)
+                .orElse(Collections.emptyList())
+                .stream()
+                .filter(prosecutionCase -> nonNull(prosecutionCase)
+                        && nonNull(prosecutionCase.getProsecutionCaseIdentifier())
+                        && nonNull(prosecutionCase.getProsecutionCaseIdentifier().getCaseURN()))
+                .map(prosecutionCase -> CaseUrns.caseUrns()
+                        .withCaseURN(prosecutionCase.getProsecutionCaseIdentifier().getCaseURN())
+                        .build()).toList();
 
-        if (logger.isDebugEnabled()) {
-            logger.debug(LOG_PUBLISHING, PUBLIC_LISTING_HEARING_LISTED, publicEvent.metadata());
+        if (caseUrns != null && !caseUrns.isEmpty()) {
+            final uk.gov.justice.listing.courts.HearingListed courtHearingListed = uk.gov.justice.listing.courts.HearingListed.
+                    hearingListed()
+                    .withHearingId(courtDomainHearing.getId())
+                    .withHearingType(courtDomainHearing.getType().getDescription())
+                    .withCaseUrns(caseUrns)
+                    .build();
+
+            final JsonEnvelope publicEvent = envelopeFrom(metadataFrom(jsonEnvelope.metadata()).withName(PUBLIC_LISTING_HEARING_LISTED),
+                    objectToJsonObjectConverter.convert(courtHearingListed));
+
+            if (logger.isDebugEnabled()) {
+                logger.debug(LOG_PUBLISHING, PUBLIC_LISTING_HEARING_LISTED, publicEvent.metadata());
+            }
+
+            sender.send(publicEvent);
         }
 
-        sender.send(publicEvent);
         sender.send(envelopeFrom(metadataFrom(jsonEnvelope.metadata()).withId(randomUUID()).withName("public.listing.court-application-added-for-hearing"), jsonEnvelope.payloadAsJsonObject()));
     }
 

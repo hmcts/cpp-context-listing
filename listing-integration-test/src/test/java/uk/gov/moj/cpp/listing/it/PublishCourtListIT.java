@@ -4,6 +4,7 @@ import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
+import static org.codehaus.groovy.runtime.InvokerHelper.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
@@ -17,6 +18,7 @@ import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearin
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetAllCrownCourtCentres;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
@@ -125,8 +127,8 @@ public class PublishCourtListIT extends AbstractIT {
     @Test
     public void publishFinalCourtListsForAllCrownCourts() {
 
-        final UUID courtCentreIdOne = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
-        final UUID courtCentreIdTwo = fromString("881a3309-d7a7-47ce-9615-3572b2e1c577");
+        final UUID courtCentreIdOne = getRandomCourtCenterId();
+        final UUID courtCentreIdTwo = getRandomCourtCenterId(asList(courtCentreIdOne)); //fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
         final LocalDate startDate = LocalDate.now();
         stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreIdOne, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));

@@ -57,6 +57,7 @@ import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getCourtCenterName;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
@@ -235,7 +236,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         privateMessageConsumerHearingDayScheduleUpdated = null;
         this.hearingsData = hearingsData;
 
-        publicEventHearingListed = publicEvents.createPrivateConsumer(PUBLIC_LISTING_HEARING_LISTED);
+        publicEventHearingListed = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_LISTED);
         publicMessageConsumerHearingPartiallyUpdated = publicEvents.createPrivateConsumer(PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
@@ -592,7 +593,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         final JsonPath jsonResponse = retrieveMessage(publicEventHearingListed);
         LOGGER.info("jsonResponse from publicEventHearingListed: {}", jsonResponse.prettify());
 
-        assertThat(jsonResponse.get("hearing.id"), is(hearingsData.getHearingData().get(0).getId().toString()));
+        assertThat(jsonResponse.get("hearingId"), is(hearingsData.getHearingData().get(0).getId().toString()));
     }
 
     public void verifyHearingListedWithAnyAllocationFromAPI(final boolean isAllocated) {
@@ -2339,7 +2340,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         assertThat(jsonResponse.get("confirmedHearing.id"), is(hearingData.getId().toString()));
         assertThat(jsonResponse.get("confirmedHearing.courtCentre.roomId"), is(hearingData.getCourtRoomId().toString()));
         assertThat(jsonResponse.get("confirmedHearing.courtCentre.id"), is(hearingData.getCourtCentreId().toString()));
-        assertThat(jsonResponse.get("confirmedHearing.courtCentre.name"), is("Liverpool Crown Court"));
+        assertThat(jsonResponse.get("confirmedHearing.courtCentre.name"), is(getCourtCenterName(hearingData.getCourtCentreId())));
         assertThat(jsonResponse.get("confirmedHearing.courtApplicationIds[0]"), is(hearingData.getCourtApplications().get(0).getId().toString()));
     }
 
