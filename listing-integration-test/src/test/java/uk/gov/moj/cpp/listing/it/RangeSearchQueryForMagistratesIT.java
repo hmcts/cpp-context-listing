@@ -22,6 +22,8 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHea
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.payloadToObject;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.services.test.utils.core.http.RequestParams;
@@ -68,8 +70,8 @@ public class RangeSearchQueryForMagistratesIT extends AbstractIT {
         final CaseAndDefendantData caseAndDefendantData2 = new CaseAndDefendantData(hearingId2, null, caseUrn2, masterDefendantId2, CASE_AND_MATCHED_DEFENDANTS, null, jurisdictionTypeMags,
                 caseUrnForLinkedCases2, caseUrnForLinkedCases2);
         stubGetHearingIds(false);
-        final UUID courtCentreId = randomUUID();
-        final UUID courtRoomId = randomUUID();
+        final UUID courtCentreId = getRandomCourtCenterId();
+        final UUID courtRoomId = getRandomCourtRoomId();
         ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData1, courtCentreId, courtRoomId));
         LocalDate hearingDate = LocalDate.of(2020, 5, 21);
         listCourtHearingSteps1.createListingNotes(hearingDate, "note 1");
@@ -215,8 +217,8 @@ public class RangeSearchQueryForMagistratesIT extends AbstractIT {
         final CaseAndDefendantData caseAndDefendantData2 =
                 new CaseAndDefendantData(randomUUID(), null, caseUrn2, masterDefendantId2, CASE_AND_MATCHED_DEFENDANTS, null, jurisdictionTypeMags, caseUrnForLinkedCases2, caseUrnForLinkedCases2);
 
-        final UUID courtCentreId = randomUUID();
-        final UUID courtRoomId = randomUUID();
+        final UUID courtCentreId = getRandomCourtCenterId();
+        final UUID courtRoomId = getRandomCourtRoomId();
         ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData1, courtCentreId, courtRoomId));
         stubListHearingInCourtSessions(listCourtHearingSteps1.getHearingsData().getHearingData().get(0).getId().toString(),
                 courtScheduleId, listCourtHearingSteps1.getHearingsData().getHearingData().get(0).getHearingStartTime());

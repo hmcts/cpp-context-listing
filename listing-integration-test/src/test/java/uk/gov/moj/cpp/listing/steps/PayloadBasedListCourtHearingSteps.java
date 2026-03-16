@@ -159,7 +159,7 @@ public class PayloadBasedListCourtHearingSteps extends AbstractIT {
     private void setupStubsForHearing(PayloadGenerator.PayloadValues values) {
         if (values.courtCentreId != null) {
             UUID courtCentreId = UUID.fromString(values.courtCentreId);
-            UUID courtRoomId = values.courtRoomId != null ? UUID.fromString(values.courtRoomId) : UUID.randomUUID();
+            UUID courtRoomId = values.courtRoomId != null ? UUID.fromString(values.courtRoomId) : getRandomCourtRoomId();
             
             CourtCentreData courtCentreData = new CourtCentreData(
                     courtCentreId, 

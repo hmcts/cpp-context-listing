@@ -38,6 +38,7 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHea
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedulesWithJudiciaries;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubUpdateAvailableHearingSlotsService;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoom;
 
@@ -300,7 +301,7 @@ class HearingIT extends AbstractIT {
 
     @Test
     void updateHearingResultsInUpdatedListingAndUpdateSlotDetails() throws IOException {
-        final UUID courtCentreId = randomUUID();
+        final UUID courtCentreId = getRandomCourtCenterId();
 
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, CROWN_JURISDICTION);
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
@@ -384,7 +385,7 @@ class HearingIT extends AbstractIT {
 
     @Test
     void updateHearingResultsInUpdatedListingAndUpdateSlotDetailsFromHmi() throws IOException {
-        final UUID courtCentreId = randomUUID();
+        final UUID courtCentreId = getRandomCourtCenterId();
 
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, MAGISTRATES_JURISDICTION);
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
@@ -420,7 +421,7 @@ class HearingIT extends AbstractIT {
 
     @Test
     void updateHearingResultsInUpdatedListingAndUpdateSlotDetailsWithNoJudiciaryAndGetJudiciaryInfoFromRotaSL() throws IOException {
-        final UUID courtCentreId = randomUUID();
+        final UUID courtCentreId = getRandomCourtCenterId();
         stubGetReferenceDataCourtCentreById(courtCentreId);
 
 
@@ -472,7 +473,7 @@ class HearingIT extends AbstractIT {
     @Test
     @Disabled("Will be fixed with SPRDT-179")
     void shouldAllocatingHearingForMagsWithoutCourtScheduleIdAndAutomaticallyUpdateMissingCourtScheduleId() {
-        final UUID courtCentreId = randomUUID();
+        final UUID courtCentreId = getRandomCourtCenterId();
         final UUID courtScheduleId1 = UUID.fromString("d4b9299c-c6c6-3747-8dac-01ca82239c27");
 
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, MAGISTRATES_JURISDICTION);
@@ -592,7 +593,7 @@ class HearingIT extends AbstractIT {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(), "d4b9299c-c6c6-3747-8dac-01ca82239c27",
                 listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime());
-        final UUID courtCentreId = randomUUID();
+        final UUID courtCentreId = getRandomCourtCenterId();
         final UUID courtScheduleId1 = UUID.fromString("d4b9299c-c6c6-3747-8dac-01ca82239c27");
         final UUID hearingId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId();
         final ZonedDateTime hearingStartTime = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime();

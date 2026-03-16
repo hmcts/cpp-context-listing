@@ -7,6 +7,7 @@ import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataForWeekCommencing;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingData;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithWeekCommencingDate;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
@@ -33,9 +34,9 @@ public class ListCourtHearingStepsWithWeekCommencing {
         final UUID sixthFixedHearingId = randomUUID();
         final UUID seventhFixedHearingId = randomUUID();
 
-        final UUID firstCourtRoomId = randomUUID();
-        final UUID secondCourtRoomId = randomUUID();
-        final UUID thirdCourtRoomId = randomUUID();
+        final UUID firstCourtRoomId = getRandomCourtRoomId();
+        final UUID secondCourtRoomId = getRandomCourtRoomId(asList(firstCourtRoomId));
+        final UUID thirdCourtRoomId = getRandomCourtRoomId(asList(firstCourtRoomId, secondCourtRoomId));
 
         final LocalDate firstFixedHearingStartDate = now().plusDays(1);
         final LocalDate secondFixedHearingStartDate = now();

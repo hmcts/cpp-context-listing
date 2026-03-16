@@ -26,6 +26,7 @@ import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAll
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.*;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 
 import org.junit.jupiter.api.*;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
@@ -90,7 +91,7 @@ public class ListingNoteIT extends AbstractIT {
     void shouldCreateNoteForListing() {
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
         final LocalDate date = now();
-        final UUID courtRoomId = randomUUID();
+        final UUID courtRoomId = getRandomCourtRoomId();
         final JmsMessageConsumerClient messageConsumerClientPublicForCreateNote = newPublicJmsMessageConsumerClientProvider()
                 .withEventNames( PUBLIC_LISTING_CREATED_LISTING_NOTE).getMessageConsumerClient();
 
@@ -193,7 +194,7 @@ public class ListingNoteIT extends AbstractIT {
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
 
         //Given 1 : No Hearing data but Note data exist for given courtRoom and date
-        UUID courtRoomId = randomUUID();
+        UUID courtRoomId = getRandomCourtRoomId();
         LocalDate startDate = now();
         notesSteps.createNoteForListing(courtRoomId, startDate.toString(), NOTE_DESCRIPTION);
         UUID noteId = verifyNoteExists(courtRoomId, startDate);
@@ -324,7 +325,7 @@ public class ListingNoteIT extends AbstractIT {
     }
 
     private UUID createRandomNote(final LocalDate date) {
-        final UUID courtRoomId = randomUUID();
+        final UUID courtRoomId = getRandomCourtRoomId();
 
         notesSteps.createNoteForListing(courtRoomId, date.toString(), NOTE_DESCRIPTION);
         return verifyNoteExists(courtRoomId, date);

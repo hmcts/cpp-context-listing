@@ -7,6 +7,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.util.Arrays.stream;
+import static java.util.Collections.emptyList;
+import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
@@ -18,6 +20,10 @@ import uk.gov.justice.service.wiremock.testutil.InternalEndpointMockUtils;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.json.JsonArrayBuilder;
@@ -49,6 +55,61 @@ public class ReferenceDataStub {
     private static final String REFERENCE_DATA_OU_COURTROOMS_MEDIA_TYPE = "application/vnd.referencedata.ou-courtrooms+json";
     private static final String REFERENCE_DATA_PROSECUTOR_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/prosecutors/%s";
     private static final String REFERENCE_DATA_PROSECUTOR_MEDIA_TYPE = "application/vnd.referencedata.query.prosecutor+json";
+
+    private static final Map<UUID, String> COURT_CENTER_IDS = new HashMap<>(){{
+        put(fromString("9b583616-049b-30f9-a14f-028a53b7cfe8"), "Liverpool Crown Court");
+        put(fromString("e3e762ed-8271-3454-b59b-8a13f7cc8870"), "Manchester Crown Court");
+        put(fromString("8de7f2e2-5705-3be5-af9a-321a891ab708"), "Newcastle upon Tyne Crown Court");
+        put(fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08"), "Preston Crown Court");
+    }};
+
+    public static final Map<UUID, Integer> COURT_ROOM_IDS = new HashMap<>(){{
+        put(fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19"), 1962);
+        put(fromString("18982e9c-2475-36a4-a852-09ab720acfc9"), 1963);
+        put(fromString("28b922c3-0396-3c68-970f-5b805c7ab1bb"), 1964);
+        put(fromString("02d9847e-00e9-3c6c-b25c-1adbf5355a52"), 1965);
+
+    }};
+
+    public static List<UUID> getCourtCenterIds() {
+        return new ArrayList<>(COURT_CENTER_IDS.keySet());
+    }
+
+    public static String getCourtCenterName(UUID courtCenterId) {
+        return COURT_CENTER_IDS.get(courtCenterId);
+    }
+
+    public static UUID getRandomCourtCenterId() {
+        return getRandomCourtCenterId(emptyList());
+    }
+
+    public static UUID getRandomCourtCenterId(List<UUID> exceptionList) {
+        var availableList = new ArrayList<>(COURT_CENTER_IDS.keySet());
+        availableList.removeAll(exceptionList);
+
+        if (availableList.isEmpty()) {
+            throw new IllegalStateException("No available court centers after exclusions");
+        }
+
+        var index = (int)(Math.random() * availableList.size());
+        return availableList.get(index);
+    }
+
+    public static UUID getRandomCourtRoomId() {
+        return getRandomCourtRoomId(emptyList());
+    }
+
+    public static UUID getRandomCourtRoomId(List<UUID> exceptionList) {
+        var availableList = new ArrayList<>(COURT_ROOM_IDS.keySet());
+        availableList.removeAll(exceptionList);
+
+        if (availableList.isEmpty()) {
+            throw new IllegalStateException("No available court id after exclusions");
+        }
+
+        int randomIndex = (int)(Math.random() * availableList.size());
+        return availableList.get(randomIndex);
+    }
 
     public static void stubGetReferenceDataCourtMappings(final CourtCentreData courtReferenceData) {
         InternalEndpointMockUtils.stubPingFor("referencedata-service");
@@ -107,7 +168,7 @@ public class ReferenceDataStub {
                 .replace("COURT_CENTRE_ID", courtReferenceData.getCourtCentreId().toString())
                 .replace("DEFAULT_START_TIME", courtReferenceData.getDefaultStartTime().toString())
                 .replace("DEFAULT_DURATION_HOURS_MINS", courtReferenceData.getDefaultDurationHoursMins())
-                .replace("COURT_ROOM_ID", courtReferenceData.getCourtRoomId() != null ? courtReferenceData.getCourtRoomId().toString() : randomUUID().toString());
+                .replace("COURT_ROOM_ID", courtReferenceData.getCourtRoomId() != null ? courtReferenceData.getCourtRoomId().toString() : getRandomCourtRoomId().toString());
 
         stubFor(get(urlPathMatching(REFERENCE_DATA_COURT_CENTRE_QUERY_URL))
                 .willReturn(aResponse().withStatus(SC_OK)
@@ -124,7 +185,7 @@ public class ReferenceDataStub {
                             .replace("COURT_CENTRE_ID", cc.getCourtCentreId().toString())
                             .replace("DEFAULT_START_TIME", cc.getDefaultStartTime().toString())
                             .replace("DEFAULT_DURATION_HOURS_MINS", cc.getDefaultDurationHoursMins())
-                            .replace("COURT_ROOM_ID", cc.getCourtRoomId() != null ? cc.getCourtRoomId().toString() : randomUUID().toString());
+                            .replace("COURT_ROOM_ID", cc.getCourtRoomId() != null ? cc.getCourtRoomId().toString() : getRandomCourtRoomId().toString());
                     jsonArrBuilder.add(createReader(new java.io.StringReader(payload)).readObject());
                 });
         final JsonObject rootJsonObj = createObjectBuilder().add("organisationunits", jsonArrBuilder.build()).build();
@@ -158,7 +219,7 @@ public class ReferenceDataStub {
                 .replace("COURT_CENTRE_ID", courtReferenceData.getCourtCentreId().toString())
                 .replace("DEFAULT_START_TIME", courtReferenceData.getDefaultStartTime().toString())
                 .replace("DEFAULT_DURATION_HOURS_MINS", courtReferenceData.getDefaultDurationHoursMins())
-                .replace("COURT_ROOM_ID", courtReferenceData.getCourtRoomId() != null ? courtReferenceData.getCourtRoomId().toString() : randomUUID().toString());
+                .replace("COURT_ROOM_ID", courtReferenceData.getCourtRoomId() != null ? courtReferenceData.getCourtRoomId().toString() : getRandomCourtRoomId().toString());
 
         stubFor(get(urlPathMatching(urlPath))
                 .willReturn(aResponse().withStatus(SC_OK)
@@ -187,7 +248,7 @@ public class ReferenceDataStub {
 
         final String urlPath = String.format(REFERENCE_DATA_ORGANISATION_UNIT_QUERY_URL, courtCentreId.toString());
 
-        String payload = getPayload("stub-data/referencedata.query.organisation-unit.json")
+        String payload = getPayload("stub-data/referencedata.query.organisation-unit-" + courtCentreId + ".json")
                 .replace("COURT_CENTRE_ID", courtCentreId.toString());
 
         stubFor(get(urlPathMatching(urlPath))

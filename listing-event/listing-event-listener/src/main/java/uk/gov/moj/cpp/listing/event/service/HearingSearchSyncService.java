@@ -54,6 +54,7 @@ public class HearingSearchSyncService {
     public static final String TYPE_OF_LIST ="typeOfList";
     private static final String IS_EJECTED = "isEjected";
     private static final String IS_POSSIBLE_DISQUALIFICATION = "isPossibleDisqualification";
+    private static final String ESTIMATED_MINUTES = "estimatedMinutes";
     public static final String IS_GROUP_PROCEEDINGS = "isGroupProceedings";
     public static final String IS_CIVIL = "isCivil";
     public static final String GROUP_ID = "groupId";
@@ -97,6 +98,11 @@ public class HearingSearchSyncService {
             hearing.setTypeOfListId(reader.get(TYPE_OF_LIST).getUUID(ID));
         }
         hearing.setPossibleDisqualification(reader.getBoolean(IS_POSSIBLE_DISQUALIFICATION));
+
+        final Integer estimatedMinutes = reader.getInteger(ESTIMATED_MINUTES);
+        if(nonNull(estimatedMinutes) && estimatedMinutes > 0) {
+            hearing.setEstimatedMinutes(estimatedMinutes);
+        }
 
 
         final JsonNodeUpdater jsonNodeUpdater = JsonNodeUpdater

@@ -6,6 +6,8 @@ import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 
 import uk.gov.justice.listing.events.Defendants;
 import uk.gov.justice.listing.events.Offences;
@@ -196,8 +198,8 @@ public class UpdatedHearingData {
 
     private static UpdatedHearingData updatedHearingDataForAllocationWithVirtual(final UUID hearingId, final List<JudicialRoleData> judiciary, final Boolean virtual) {
 
-        final UUID courtCentreId = randomUUID();
-        final UUID roomId = randomUUID();
+        final UUID courtCentreId = getRandomCourtCenterId();
+        final UUID roomId = getRandomCourtRoomId();
 
         final LocalDate startDate = nextOrSameWorkingDay(LocalDate.now());
         final ZonedDateTime startTimeWithZone = ZonedDateTime.of(startDate, DEFAULT_START_TIME, UTC);
@@ -279,8 +281,8 @@ public class UpdatedHearingData {
         final LocalDate startDate = LocalDate.parse(endDate);
         final ZonedDateTime startTimeWithZone = ZonedDateTime.parse("2020-04-23T11:32:41.587Z");
         final List<String> nonSittingDays = singletonList(startDate.plusDays(1).toString());
-        final UUID courtRoomId = randomUUID();
-        final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = getRandomCourtRoomId();
+        final UUID courtCentreId = getRandomCourtCenterId();
 
 
         final List<NonDefaultDayData> nonDefaultDays = singletonList(new NonDefaultDayData(startTimeWithZone.toString(), of(15), of(courtCentreId).map(UUID::toString), of(courtRoomId).map(UUID::toString)));
@@ -307,8 +309,8 @@ public class UpdatedHearingData {
         final LocalDate startDate = LocalDate.parse(endDate);
         final ZonedDateTime startTimeWithZone = ZonedDateTime.parse("2020-04-23T11:32:41.587Z");
         final List<String> nonSittingDays = singletonList(startDate.plusDays(1).toString());
-        final UUID courtRoomId = randomUUID();
-        final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = getRandomCourtRoomId();
+        final UUID courtCentreId = getRandomCourtCenterId();
         final UUID courtScheduleId = randomUUID();
 
 
@@ -326,7 +328,7 @@ public class UpdatedHearingData {
     public static UpdatedHearingData updatedHearingData(final HearingData hearingData, final LocalDate startDate) {
         final LocalTime startTime = LocalTime.of(10, 0);
         final String endDate = startDate.toString();
-        final UUID courtRoomId = randomUUID();
+        final UUID courtRoomId = getRandomCourtRoomId();
         final UUID courtCentreId = hearingData.getCourtCentreId();
         final List<JudicialRoleData> judiciary = singletonList(new JudicialRoleData(of(true), of(false), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "CIRCUIT_JUDGE")));
 
@@ -413,7 +415,7 @@ public class UpdatedHearingData {
     }
 
     public static UpdatedHearingData updatedHearingDataWithWeekCommencingDate(final HearingData hearingData, final String weekCommencingStartDate, final String weekCommencingEndDate, final int weekCommencingDurationInWeeks) {
-        final UUID courtRoomId = randomUUID();
+        final UUID courtRoomId = getRandomCourtRoomId();
         final UUID courtCentreId = hearingData.getCourtCentreId();
 
         return new UpdatedHearingData(hearingData.getId(), courtCentreId, hearingData.getName(), courtRoomId, hearingData.getHearingTypeData(),

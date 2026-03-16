@@ -130,6 +130,9 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
             if (nonNull(this.payloadValues)) {//this is to prevent overriding by dynamic values
                 customValues.put("%%COURT_CENTRE_ID%%", payloadValues.courtCentreId);
                 customValues.put("%%COURT_SCHEDULE_ID%%", payloadValues.courtScheduleId);
+                if (nonNull(payloadValues.courtRoomId)){
+                    customValues.put("originalCourtRoomId", payloadValues.courtRoomId);
+                }
             }
 
             // Load payload with dynamic values
