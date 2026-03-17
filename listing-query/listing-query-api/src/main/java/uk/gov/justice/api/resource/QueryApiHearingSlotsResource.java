@@ -1,5 +1,24 @@
 package uk.gov.justice.api.resource;
 
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.AVAILABLE_DURATION_MINS;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.BUSINESS_TYPE;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.CONSECUTIVE_DAYS;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.COURT_ROOM_ID;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.COURT_ROOM_NUMBER;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.COURT_SESSION;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.HEARING_START_TIME;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.IS_SLOT_BASED;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.IS_WEEK_COMMENCING;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.OUCODE;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.OU_L2_CODE;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.PAGE_NUMBER;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.PAGE_SIZE;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.PANEL;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.SESSION_END_DATE;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.SESSION_START_DATE;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.SHOW_OVERBOOKED_SLOTS;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.STATUS;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -8,22 +27,6 @@ import javax.ws.rs.core.Response;
 
 @Path("hearingSlots")
 public interface QueryApiHearingSlotsResource {
-    String PANEL = "panel";
-    String SESSION_START_DATE = "sessionStartDate";
-    String SESSION_END_DATE = "sessionEndDate";
-    String HEARING_START_TIME = "hearingStartTime";
-    String OU_L2_CODE = "oucodeL2Code";
-    String OUCODE = "ouCode";
-    String COURT_ROOM_ID = "courtRoomId";
-    String COURT_ROOM_NUMBER = "courtRoomNumber";
-    String BUSINESS_TYPE = "businessType";
-    String COURT_SESSION = "courtSession";
-    String IS_SLOT_BASED = "isSlotBased";
-    String SHOW_OVERBOOKED_SLOTS = "showOverbookedSlots";
-    String PAGE_SIZE = "pageSize";
-    String PAGE_NUMBER = "pageNumber";
-    String AVAILABLE_DURATION_MINS = "availableDurationMins";
-    String DURATION = "duration";
 
     @GET
     @Produces("application/vnd.listing.search.hearing.slots+json")
@@ -41,5 +44,8 @@ public interface QueryApiHearingSlotsResource {
                              @QueryParam(SHOW_OVERBOOKED_SLOTS) Boolean showOverbookedSlots,
                              @QueryParam(PAGE_SIZE) String pageSize,
                              @QueryParam(PAGE_NUMBER) String pageNumber,
-                             @QueryParam(AVAILABLE_DURATION_MINS) Integer availableDurationMins);
+                             @QueryParam(AVAILABLE_DURATION_MINS) Integer availableDurationMins,
+                             @QueryParam(STATUS) String status,
+                             @QueryParam(CONSECUTIVE_DAYS) Integer consecutiveDays,
+                             @QueryParam(IS_WEEK_COMMENCING) Boolean isWeekCommencing);
 }

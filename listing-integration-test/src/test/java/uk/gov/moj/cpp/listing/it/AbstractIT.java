@@ -6,6 +6,7 @@ import static java.nio.charset.Charset.defaultCharset;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.joining;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubDeleteAvailableHearingSlotsServiceForAnyHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProgressionNotesStubs;
@@ -55,6 +56,7 @@ public class AbstractIT {
         reset();
         setupAsAuthorisedUser(USER_ID_VALUE);
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased();
+        stubDeleteAvailableHearingSlotsServiceForAnyHearing();
         setupProsecutionCaseByCaseUrn();
         setupProgressionNotesStubs();
         setupUsersGroupPermissionsForApplicationTypeStub();

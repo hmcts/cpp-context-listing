@@ -736,7 +736,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldCreateAllocatedHearingDeletedWithoutFreeingSlotsOfNonMagistratesJurisdiction() {
+    public void shouldCreateAllocatedHearingDeletedAndFreeSlotsForCrownJurisdiction() {
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
         final UUID defendant1Id = randomUUID();
@@ -787,13 +787,14 @@ class HearingAggregateTest {
 
         final Stream<Object> events = hearing.deleteHearing(seedingHearingId, hearingId);
         final List<Object> eventsList = events.collect(Collectors.toList());
-        assertThat(eventsList.size(), is(1));
+        assertThat(eventsList.size(), is(2));
 
         final AllocatedHearingDeleted unallocatedHearingDeleted = (AllocatedHearingDeleted) eventsList.get(0);
 
         assertThat(unallocatedHearingDeleted.getHearingId(), is(hearingId));
         assertThat(unallocatedHearingDeleted.getCaseIds().size(), is(2));
         assertThat(unallocatedHearingDeleted.getCaseIds(), hasItems(case1Id, case2Id));
+        assertTrue(eventsList.get(1) instanceof AvailableSlotsForHearingFreed);
     }
 
     @Test
@@ -960,7 +961,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final AllocatedHearingDeleted allocatedHearingDeleted = (AllocatedHearingDeleted) deleteHearingEventsList.get(0);
 
@@ -987,7 +988,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -1022,7 +1023,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -4500,7 +4501,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -4545,7 +4546,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -4595,7 +4596,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -4634,7 +4635,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -4668,7 +4669,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final AllocatedHearingDeleted offencesRemovedFromHearing = (AllocatedHearingDeleted) deleteHearingEventsList.get(0);
 
@@ -4701,7 +4702,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -4742,7 +4743,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -4784,7 +4785,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final AllocatedHearingDeleted offencesRemovedFromHearing = (AllocatedHearingDeleted) deleteHearingEventsList.get(0);
 
@@ -4825,7 +4826,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -4869,7 +4870,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -6233,7 +6234,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    void shouldNotEmitAvailableSlotsForHearingFreedWhenVacatingCrownTrialWithoutCourtScheduleIds() {
+    void shouldEmitAvailableSlotsForHearingFreedWhenVacatingCrownTrial() {
         final UUID crownHearingId = randomUUID();
         final UUID vacatingTrialReasonId = randomUUID();
 
@@ -6256,9 +6257,10 @@ class HearingAggregateTest {
         final Stream<Object> events = hearing.hearingVacateTrial(Optional.of(vacatingTrialReasonId));
         final List<Object> eventsList = events.toList();
 
-        // Should only emit HearingTrialVacated (no slot freed because no courtScheduleIds)
-        assertThat(eventsList.size(), is(1));
-        assertTrue(eventsList.get(0) instanceof uk.gov.justice.listing.events.HearingTrialVacated);
+        // Should emit both HearingTrialVacated + AvailableSlotsForHearingFreed for Crown jurisdiction
+        assertThat(eventsList.size(), is(2));
+        assertTrue(eventsList.stream().anyMatch(e -> e instanceof uk.gov.justice.listing.events.HearingTrialVacated));
+        assertTrue(eventsList.stream().anyMatch(e -> e instanceof AvailableSlotsForHearingFreed));
     }
 
     @Test

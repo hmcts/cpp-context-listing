@@ -1,9 +1,6 @@
 package uk.gov.justice.api.resource;
 
-import static java.util.UUID.fromString;
-import static java.util.stream.Collectors.toMap;
-import static uk.gov.justice.services.common.converter.LocalDates.from;
-
+import org.apache.http.HttpStatus;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.core.annotation.Adapter;
 import uk.gov.justice.services.core.annotation.Component;
@@ -11,20 +8,21 @@ import uk.gov.moj.cpp.listing.common.NoteUUIDService;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 import javax.inject.Inject;
 import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.Response;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import org.apache.http.HttpStatus;
+import static java.util.UUID.fromString;
+import static java.util.stream.Collectors.toMap;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.*;
+import static uk.gov.justice.services.common.converter.LocalDates.from;
 
 @SuppressWarnings({"squid:S1612"})
 @Adapter(Component.QUERY_API)
@@ -54,9 +52,22 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                                     final Boolean showOverbookedSlots,
                                     final String pageSize,
                                     final String pageNumber,
-                                    final Integer availableDurationMins) {
+                                    final Integer availableDurationMins,
+                                    final String status,
+                                    final Integer consecutiveDays,
+                                    final Boolean isWeekCommencing) {
 
-        final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, hearingStartTime, oucodeL2Code, ouCode, courtRoomId, courtRoomNumber, businessType, courtSession, isSlotBased, showOverbookedSlots, pageSize, pageNumber, availableDurationMins);
+        if (Boolean.TRUE.equals(isWeekCommencing)) {
+            final JsonObject emptyPayload = JsonObjects.createObjectBuilder()
+                    .add("results", 0)
+                    .add("pageCount", 0)
+                    .add("hearingSlots", JsonObjects.createArrayBuilder())
+                    .add("notes", JsonObjects.createArrayBuilder())
+                    .build();
+            return Response.ok(emptyPayload).build();
+        }
+
+        final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, hearingStartTime, oucodeL2Code, ouCode, courtRoomId, courtRoomNumber, businessType, courtSession, isSlotBased, showOverbookedSlots, pageSize, pageNumber, availableDurationMins, status, consecutiveDays, isWeekCommencing);
         final Response response = courtSchedulerServiceAdapter.hearingSlotsSearch(params);
         if(response.getStatusInfo().getStatusCode() != HttpStatus.SC_OK ){
             return response;
@@ -88,7 +99,10 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                                                final Boolean showOverbookedSlots,
                                                final String pageSize,
                                                final String pageNumber,
-                                               final Integer availableDurationMins) {
+                                               final Integer availableDurationMins,
+                                               final String status,
+                                               final Integer consecutiveDays,
+                                               final Boolean isWeekCommencing) {
         final Map<String, String> params = new HashMap<>();
         params.put(PANEL, panel);
         params.put(SESSION_START_DATE, sessionStartDate);
@@ -110,6 +124,13 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
         params.put(PAGE_NUMBER, pageNumber);
         if(availableDurationMins != null)
             params.put(DURATION, String.valueOf(availableDurationMins));
+        params.put(STATUS, status != null ? status : "ALL");
+        if(consecutiveDays != null) {
+            params.put(CONSECUTIVE_DAYS, String.valueOf(consecutiveDays));
+        }
+        if(isWeekCommencing != null) {
+            params.put(IS_WEEK_COMMENCING, String.valueOf(isWeekCommencing));
+        }
 
         return params.entrySet().stream().filter(entry -> entry.getValue() != null).collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
@@ -122,8 +143,8 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
 
     private  JsonArray convertToNotes(JsonArray hearings){
         final List<NoteUUIDService.ListingNotesCollection> notes = hearings.stream().map(h -> (JsonObject) h).
-                map( h -> new NoteUUIDService.ListingNotesCollection(fromString(h.getString("courtRoomId")), from(h.getString("sessionDate")))).
-                collect(Collectors.toList());
+                map( h -> new NoteUUIDService.ListingNotesCollection(fromString(h.getString("courtRoomId")), from(h.getString("sessionDate"))))
+                .toList();
         return listToJsonArrayConverter.convert(notesService.findNotes(notes));
     }
 }
