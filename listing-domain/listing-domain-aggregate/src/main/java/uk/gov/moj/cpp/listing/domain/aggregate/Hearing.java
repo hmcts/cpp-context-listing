@@ -1237,9 +1237,7 @@ public class Hearing implements Aggregate {
                 .withVacatedTrialReasonId(vacatingTrialReasonId.orElse(null))
                 .build());
 
-        if ((MAGISTRATES == jurisdictionType || JurisdictionType.CROWN.equals(jurisdictionType))
-                && vacatingTrialReasonId.isPresent()
-                && hasCourtScheduleIds(this.hearingDays)) {
+        if ((MAGISTRATES == jurisdictionType || JurisdictionType.CROWN == jurisdictionType) && vacatingTrialReasonId.isPresent()) {
             eventsStream = concat(eventsStream, Stream.of(availableSlotsForHearingFreed().withHearingId(this.hearingId).build()));
         }
         return apply(eventsStream);
@@ -1436,7 +1434,7 @@ public class Hearing implements Aggregate {
                         .withCaseIds(caseIds)
                         .build());
 
-                if (MAGISTRATES == jurisdictionType) {
+                if (MAGISTRATES == jurisdictionType || JurisdictionType.CROWN == jurisdictionType) {
                     eventStreamBuilder.add(availableSlotsForHearingFreed()
                             .withHearingId(hearingId).build());
                 }
@@ -3324,7 +3322,7 @@ public class Hearing implements Aggregate {
                 .withSeededOffences(offencesSeededBySeedingHearing.stream().toList())
                 .build());
 
-        if (isAllocated() && MAGISTRATES == jurisdictionType) {
+        if (isAllocated() && (MAGISTRATES == jurisdictionType || JurisdictionType.CROWN == jurisdictionType)) {
             eventStreamBuilder.add(availableSlotsForHearingFreed()
                     .withHearingId(hearingId).build());
         }

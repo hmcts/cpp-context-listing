@@ -167,6 +167,21 @@ public class CourtSchedulerServiceAdapter {
         return hearingSlotResponse;
     }
 
+    public Response validateSessionAvailability(final Map<String, String> queryParams) {
+        final Response response = hearingSlotsService.validateSessionAvailability(queryParams);
+
+        if (HttpStatus.SC_OK == response.getStatus()) {
+            return response;
+        }
+
+        String responsePayload = "";
+        if (response.hasEntity()) {
+            responsePayload = response.getEntity().toString();
+        }
+        LOGGER.error("validateSessionAvailability from courtscheduler returned an error : {} with status {}", responsePayload, response.getStatus());
+        return response;
+    }
+
     public HearingIdsResponse getCourtSchedulerHearings(final String ouCode,
                                                         final Optional<String> courtSessionOptional,
                                                         final String courtRoomId, final String startDate,

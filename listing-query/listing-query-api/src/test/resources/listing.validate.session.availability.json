@@ -1,0 +1,31 @@
+{
+  "results": 10,
+  "pageCount": 23,
+  "hearingSlots": [
+    {
+      "courtScheduleId": "0205eb29-5d01-4779-a8c1-3038bc39dc09",
+      "listingProfileId": "CS2398863",
+      "ouCode": "B01LY00",
+      "courtRoomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+      "courtRoomNumber": 2331,
+      "courtHouseName": "Lavender Hill Magistrates' Court",
+      "courtRoomName": "Courtroom 02",
+      "operationalUnit": "1",
+      "businessType": "G1T",
+      "panel": "ADULT",
+      "courtSession": "AD",
+      "sessionDate": "2020-06-01",
+      "maxSlots": 10,
+      "maxDuration": 0,
+      "availableSlots": 5,
+      "availableDuration": 0,
+      "judiciaries": [],
+      "slotStartTimes": [
+        {
+          "hearingStartTime": "2020-06-01T09:00:00.000Z",
+          "count": 5
+        }
+      ]
+    }
+  ]
+}

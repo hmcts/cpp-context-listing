@@ -48,10 +48,12 @@ public class HearingSlotsService {
     private static final String COURTSCHEDULES_RESOURCE = "/courtschedule/search.court-schedules-by-id";
     private static final String COURTSCHEDULER_LIST_HEARING_IN_COURT_SESSIONS = "application/vnd.courtscheduler.list.hearings-in-court-sessions+json";
     private static final String COURTSCHEDULER_GET_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.get.hearing.slots+json";
+    private static final String VALIDATE_SESSION_AVAILABILITY_RESOURCE = "/validate/session-availability";
     private static final String COURTSCHEDULER_SEARCH_COURTSCHEDULES_BY_ID = "application/vnd.courtscheduler.search.courtschedules.by.id+json";
     private static final String COURTSCHEDULER_DELETE_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.remove.hearing.slots+json";
     private static final String COUTRT_SCHEDULER_HEARING_IDS = "application/vnd.courtscheduler.get.hearing.ids+json";
     private static final String COURTSCHEDULER_SEARCH_BOOK_COURTSCHEDULES = "application/vnd.courtscheduler.search.book.hearing.slots+json";
+    private static final String COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE = "application/vnd.courtscheduler.validate.session.availability+json";
 
     private static final String MULTIDAY_SEARCH_BOOK_RESOURCE = "/multidaysearchandbook/hearingslots";
     private static final String COURTSCHEDULER_MULTIDAY_SEARCH_BOOK = "application/vnd.courtscheduler.multiday.searchandbook.hearing.slots+json";
@@ -69,6 +71,10 @@ public class HearingSlotsService {
 
     public Response search(final Map<String, String> params) {
         return query(HEARING_RESOURCE, COURTSCHEDULER_GET_HEARING_SLOTS_TYPE, params);
+    }
+
+    public Response validateSessionAvailability(final Map<String, String> params) {
+        return query(VALIDATE_SESSION_AVAILABILITY_RESOURCE, COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE, params);
     }
 
     public Response searchBookSlots(final Map<String, String> params) {

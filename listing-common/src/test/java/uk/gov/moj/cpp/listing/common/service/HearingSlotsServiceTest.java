@@ -75,7 +75,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldSearchSuccessfully() throws Exception {
+    void shouldSearchSuccessfully() throws Exception {
         // Given
         Map<String, String> params = new HashMap<>();
         params.put("key", "value");
@@ -102,7 +102,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldDeleteSuccessfully() throws Exception {
+    void shouldDeleteSuccessfully() throws Exception {
         // Given
         when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
 
@@ -124,7 +124,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldGetCourtSchedulerHearingIdsSuccessfully() throws Exception {
+    void shouldGetCourtSchedulerHearingIdsSuccessfully() throws Exception {
         // Given
         Map<String, String> params = new HashMap<>();
         params.put("key", "value");
@@ -151,7 +151,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldThrowExceptionWhenSearchParamsAreNull() {
+    void shouldThrowExceptionWhenSearchParamsAreNull() {
         // Given
         Map<String, String> params = null;
 
@@ -164,7 +164,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldHandleHttpErrorResponse() throws Exception {
+    void shouldHandleHttpErrorResponse() throws Exception {
         // Given
         Map<String, String> params = new HashMap<>();
         params.put("key", "value");
@@ -190,7 +190,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldHandleIOException() throws Exception {
+    void shouldHandleIOException() throws Exception {
         // Given
         Map<String, String> params = new HashMap<>();
         params.put("key", "value");
@@ -210,7 +210,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldGetCourtSchedulesByIdSuccessfully() throws Exception {
+    void shouldGetCourtSchedulesByIdSuccessfully() throws Exception {
         // Given
         Map<String, String> params = new HashMap<>();
         params.put("key", "value");
@@ -237,7 +237,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldThrowExceptionWhenGetCourtSchedulesByIdParamsAreNull() {
+    void shouldThrowExceptionWhenGetCourtSchedulesByIdParamsAreNull() {
         // Given
         Map<String, String> params = null;
 
@@ -250,7 +250,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldHandleGetCourtSchedulesByIdError() throws Exception {
+    void shouldHandleGetCourtSchedulesByIdError() throws Exception {
         // Given
         Map<String, String> params = new HashMap<>();
         params.put("key", "value");
@@ -273,7 +273,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldHandleDeleteError() throws Exception {
+    void shouldHandleDeleteError() throws Exception {
         // Given
         when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
 
@@ -295,7 +295,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldHandleDeleteIOException() throws Exception {
+    void shouldHandleDeleteIOException() throws Exception {
         // Given
         when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
 
@@ -315,7 +315,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldHandleResponseEntityConversionError() throws Exception {
+    void shouldHandleResponseEntityConversionError() throws Exception {
         // Given
         Map<String, String> params = new HashMap<>();
         params.put("key", "value");
@@ -343,7 +343,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldHandleMultipleQueryParameters() throws Exception {
+    void shouldHandleMultipleQueryParameters() throws Exception {
         // Given
         Map<String, String> params = new HashMap<>();
         params.put("key1", "value1");
@@ -371,7 +371,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldHandleSystemUserProviderError() {
+    void shouldHandleSystemUserProviderError() {
         // Given
         Map<String, String> params = new HashMap<>();
         params.put("key", "value");
@@ -387,7 +387,7 @@ class HearingSlotsServiceTest {
 
 
     @Test
-    public void shouldSearchAndBookSlotsSuccessfully() throws Exception {
+    void shouldSearchAndBookSlotsSuccessfully() throws Exception {
         // Given
         Map<String, String> params = new HashMap<>();
         params.put("key", "value");
@@ -414,7 +414,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldThrowExceptionWhenSearchAndBookParamsAreNull() {
+    void shouldThrowExceptionWhenSearchAndBookParamsAreNull() {
         // Given
         Map<String, String> params = null;
 
@@ -426,14 +426,15 @@ class HearingSlotsServiceTest {
         }
     }
 
-    // ─── multiDaySearchAndBook tests ─────────────────────────────────────
+    // ─── validateSessionAvailability tests ──────────────────────────────
 
     @Test
-    public void shouldMultiDaySearchAndBookSuccessfully() throws Exception {
+    void shouldValidateSessionAvailabilitySuccessfully() throws Exception {
         // Given
         Map<String, String> params = new HashMap<>();
-        params.put("courtScheduleId", UUID.randomUUID().toString());
-        params.put("durationInMinutes", "1080");
+        params.put("panel", "ADULT");
+        params.put("sessionStartDate", "2017-10-11");
+        params.put("sessionEndDate", "2020-10-11");
         when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
@@ -446,57 +447,36 @@ class HearingSlotsServiceTest {
             when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(javax.json.JsonObject.class));
 
             // When
-            Response response = hearingSlotsService.multiDaySearchAndBook(params);
+            Response response = hearingSlotsService.validateSessionAvailability(params);
 
             // Then
             assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
             verify(httpClient).execute(httpGetCaptor.capture());
             HttpGet capturedGet = httpGetCaptor.getValue();
-            String uri = capturedGet.getURI().toString();
-            assertThat(uri.startsWith(BASE_URI + "/multidaysearchandbook/hearingslots?"), is(true));
+            assertThat(capturedGet.getURI().toString(), org.hamcrest.CoreMatchers.startsWith(BASE_URI + "/validate/session-availability?"));
+            assertThat(capturedGet.getURI().toString(), org.hamcrest.CoreMatchers.containsString("panel=ADULT"));
+            assertThat(capturedGet.getURI().toString(), org.hamcrest.CoreMatchers.containsString("sessionStartDate=2017-10-11"));
+            assertThat(capturedGet.getURI().toString(), org.hamcrest.CoreMatchers.containsString("sessionEndDate=2020-10-11"));
         }
     }
 
     @Test
-    public void shouldThrowExceptionWhenMultiDaySearchAndBookParamsAreNull() {
+    void shouldThrowExceptionWhenValidateSessionAvailabilityParamsAreNull() {
         // Given
         Map<String, String> params = null;
 
         // When/Then
         try {
-            hearingSlotsService.multiDaySearchAndBook(params);
+            hearingSlotsService.validateSessionAvailability(params);
         } catch (DataValidationException e) {
-            assertThat(e.getMessage(), is("Params for search application/vnd.courtscheduler.multiday.searchandbook.hearing.slots+json is null ...."));
-        }
-    }
-
-    @Test
-    public void shouldHandleMultiDaySearchAndBookErrorResponse() throws Exception {
-        // Given
-        Map<String, String> params = new HashMap<>();
-        params.put("courtScheduleId", UUID.randomUUID().toString());
-        when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
-
-        try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
-            mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
-            when(httpClientBuilder.build()).thenReturn(httpClient);
-            when(httpClient.execute(any(HttpGet.class))).thenReturn(httpResponse);
-            when(httpResponse.getStatusLine()).thenReturn(statusLine);
-            when(statusLine.getStatusCode()).thenReturn(Response.Status.BAD_REQUEST.getStatusCode());
-            when(httpResponse.getEntity()).thenReturn(mock(org.apache.http.HttpEntity.class));
-
-            // When
-            Response response = hearingSlotsService.multiDaySearchAndBook(params);
-
-            // Then
-            assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+            assertThat(e.getMessage(), is("Params for search application/vnd.courtscheduler.validate.session.availability+json is null ...."));
         }
     }
 
     // ─── listHearingInCourtSessions tests ────────────────────────────────
 
     @Test
-    public void shouldListHearingInCourtSessionsSuccessfully() throws Exception {
+    void shouldListHearingInCourtSessionsSuccessfully() throws Exception {
         // Given
         Object payload = Map.of("hearingSlots", "data");
         when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
@@ -526,7 +506,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldHandleListHearingInCourtSessionsErrorResponse() throws Exception {
+    void shouldHandleListHearingInCourtSessionsErrorResponse() throws Exception {
         // Given
         Object payload = Map.of("hearingSlots", "data");
         when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
@@ -552,7 +532,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldHandleListHearingInCourtSessionsIOException() throws Exception {
+    void shouldHandleListHearingInCourtSessionsIOException() throws Exception {
         // Given
         Object payload = Map.of("hearingSlots", "data");
         when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));

@@ -52,7 +52,9 @@ public class CourtSchedulerServiceStub {
 
     private static final String PROVISIONAL_BOOKING = "/provisionalBooking";
     private static final String HEARING_SLOTS = "/hearingslots";
+    private static final String VALIDATE_SESSION_AVAILABILITY = "/validate/session-availability";
     private static final String COURTSCHEDULER_GET_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.get.hearing.slots+json";
+    private static final String COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE = "application/vnd.courtscheduler.validate.session.availability+json";
     public static final String COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE = "application/vnd.courtscheduler.get.provisional.booking+json";
     public static final String ROTASL_GET_HEARING_SLOTS_RESPONSE_JSON_WITH_JUDICIARIES = "stub-data/rotasl.get.hearing.slots.with-judiciaries.json";
     public static final String LISTING_GET_HEARING_SLOTS_RESPONSE_JSON_WITH_JUDICIARIES_AND_SLOTTIMES = "stub-data/listing.get.hearing.slots.with-judiciaries-and-slotstarttimes.json";
@@ -81,6 +83,11 @@ public class CourtSchedulerServiceStub {
                 .willReturn(aResponse().withStatus(ACCEPTED.getStatusCode())));
     }
 
+    public static void stubDeleteAvailableHearingSlotsServiceForAnyHearing() {
+        stubFor(WireMock.delete(urlPathMatching(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS + "/.*"))
+                .willReturn(aResponse().withStatus(ACCEPTED.getStatusCode())));
+    }
+
     public static void verifyDeleteAvailableHearingSlotsStubCommandInvoked(final String hearingId) {
         verifyDeleteAvailableHearingSlotsStubCommandInvokedNTimes(hearingId, 1);
     }
@@ -99,6 +106,39 @@ public class CourtSchedulerServiceStub {
             }
             return true;
         });
+    }
+
+    public static void stubValidateSessionAvailability(boolean isEmpty) {
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + VALIDATE_SESSION_AVAILABILITY)))
+                .withQueryParam("sessionStartDate", matching("2017-10-11"))
+                .withQueryParam("pageNumber", matching("1"))
+                .withQueryParam("pageSize", matching("20"))
+                .withQueryParam("panel", matching("ADULT"))
+                .withQueryParam("oucodeL2Code", matching("Z01KR05"))
+                .withQueryParam("sessionEndDate", matching("2020-10-11"))
+                .withHeader("Accept", containing(COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(isEmpty ? LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON : LISTING_SEARCH_HEARING_SLOTS_JSON))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    public static void stubValidateSessionAvailabilityWithConsecutiveDays() {
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + VALIDATE_SESSION_AVAILABILITY)))
+                .withQueryParam("sessionStartDate", matching("2017-10-11"))
+                .withQueryParam("pageNumber", matching("1"))
+                .withQueryParam("pageSize", matching("20"))
+                .withQueryParam("panel", matching("ADULT"))
+                .withQueryParam("oucodeL2Code", matching("Z01KR05"))
+                .withQueryParam("sessionEndDate", matching("2020-10-11"))
+                .withQueryParam("status", matching("FINAL"))
+                .withQueryParam("consecutiveDays", matching("2"))
+                .withQueryParam("isWeekCommencing", matching("false"))
+                .withHeader("Accept", containing(COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(LISTING_SEARCH_HEARING_SLOTS_JSON))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
     }
 
     public static void stubGetAvailableHearingSlots(boolean isEmpty) {
@@ -121,6 +161,28 @@ public class CourtSchedulerServiceStub {
                 .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_SLOTS_JSON))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    public static void stubGetAvailableHearingSlotsWithStatusConsecutiveDaysAndWeekCommencing(boolean isEmpty) {
+        stubGetAvailableHearingSlotsWithStatusConsecutiveDaysAndWeekCommencing(isEmpty, false);
+    }
+
+    public static void stubGetAvailableHearingSlotsWithStatusConsecutiveDaysAndWeekCommencing(boolean isEmpty, boolean isWeekCommencing) {
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
+                .withQueryParam("sessionStartDate", matching("2017-10-11"))
+                .withQueryParam("pageNumber", matching("1"))
+                .withQueryParam("pageSize", matching("20"))
+                .withQueryParam("panel", matching("ADULT"))
+                .withQueryParam("oucodeL2Code", matching("Z01KR05"))
+                .withQueryParam("sessionEndDate", matching("2020-10-11"))
+                .withQueryParam("status", matching("FINAL"))
+                .withQueryParam("consecutiveDays", matching("2"))
+                .withQueryParam("isWeekCommencing", matching(String.valueOf(isWeekCommencing)))
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(isEmpty ? CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON : CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_SLOTS_JSON))
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
@@ -791,6 +853,110 @@ public class CourtSchedulerServiceStub {
                 .withQueryParam("isPolice", matching("true|false"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    public static void stubSearchBookHearingSlotsWithBusinessType(final String hearingId, final String courtCentreId,
+                                                                  final String hearingDate, final ZonedDateTime hearingStartTime,
+                                                                  final String businessType, final String courtRoomId,
+                                                                  final Integer durationInMinutes) {
+        final String payload = "{\n" +
+                "  \"hearingSlots\": {\n" +
+                "      \"hearingId\": \"" + hearingId + "\",\n" +
+                "      \"courtScheduleId\": \"" + UUID.randomUUID() + "\",\n" +
+                "      \"courtRoomId\": \"" + (courtRoomId != null ? courtRoomId : courtCentreId) + "\",\n" +
+                "      \"hearingDate\": \"" + hearingDate + "\",\n" +
+                "      \"hearingSessionDateSearchCutOff\": \"" + hearingDate + "\",\n" +
+                "      \"hearingStartTime\": \"" + hearingStartTime.toString() + "\",\n" +
+                "      \"duration\": " + (durationInMinutes != null ? durationInMinutes : 20) + "\n" +
+                "  }\n" +
+                "}";
+
+        com.github.tomakehurst.wiremock.client.MappingBuilder mappingBuilder = get(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/searchlist/hearingslots")))
+                .withHeader("Accept", containing("application/vnd.courtscheduler.search.book.hearing.slots+json"))
+                .withQueryParam("hearingId", matching(hearingId))
+                .withQueryParam("courtCentreId", matching(courtCentreId))
+                .withQueryParam("hearingDate", matching(hearingDate))
+                .withQueryParam("businessType", matching(businessType))
+                .withQueryParam("durationInMinutes", matching(String.valueOf(durationInMinutes != null ? durationInMinutes : 20)))
+                .withQueryParam("isPolice", matching("true|false"));
+
+        if (courtRoomId != null) {
+            mappingBuilder = mappingBuilder.withQueryParam("courtRoomId", matching(courtRoomId));
+        }
+        if (hearingStartTime != null) {
+            mappingBuilder = mappingBuilder.withQueryParam("hearingStartTime", matching(hearingStartTime.toString()));
+        }
+
+        stubFor(mappingBuilder
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(payload)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    public static void stubSearchBookHearingSlotsForDraftSessions(final String hearingId, final String courtCentreId,
+                                                                  final String hearingDate, final ZonedDateTime hearingStartTime,
+                                                                  final String courtRoomId, final Integer durationInMinutes) {
+        final String payload = "{\n" +
+                "  \"hearingSlots\": {\n" +
+                "      \"hearingId\": \"" + hearingId + "\",\n" +
+                "      \"courtScheduleId\": \"" + UUID.randomUUID() + "\",\n" +
+                "      \"courtRoomId\": \"" + (courtRoomId != null ? courtRoomId : courtCentreId) + "\",\n" +
+                "      \"hearingDate\": \"" + hearingDate + "\",\n" +
+                "      \"hearingSessionDateSearchCutOff\": \"" + hearingDate + "\",\n" +
+                "      \"hearingStartTime\": \"" + (hearingStartTime != null ? hearingStartTime.toString() : "") + "\",\n" +
+                "      \"duration\": " + (durationInMinutes != null ? durationInMinutes : 20) + ",\n" +
+                "      \"isDraft\": true\n" +
+                "  }\n" +
+                "}";
+
+        com.github.tomakehurst.wiremock.client.MappingBuilder mappingBuilder = get(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/searchlist/hearingslots")))
+                .withHeader("Accept", containing("application/vnd.courtscheduler.search.book.hearing.slots+json"))
+                .withQueryParam("hearingId", matching(hearingId))
+                .withQueryParam("courtCentreId", matching(courtCentreId))
+                .withQueryParam("hearingDate", matching(hearingDate))
+                .withQueryParam("durationInMinutes", matching(String.valueOf(durationInMinutes != null ? durationInMinutes : 20)))
+                .withQueryParam("isPolice", matching("true|false"));
+
+        if (courtRoomId != null) {
+            mappingBuilder = mappingBuilder.withQueryParam("courtRoomId", matching(courtRoomId));
+        }
+        if (hearingStartTime != null) {
+            mappingBuilder = mappingBuilder.withQueryParam("hearingStartTime", matching(hearingStartTime.toString()));
+        }
+
+        stubFor(mappingBuilder
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(payload)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    public static void stubGetCourtSchedulesByIdWithDraftStatus(final List<String> courtScheduleIds, final boolean isDraft) {
+        final StringBuilder hearingSlotsJson = new StringBuilder();
+        hearingSlotsJson.append("{\n");
+        hearingSlotsJson.append("  \"hearingSlots\": [\n");
+
+        for (int i = 0; i < courtScheduleIds.size(); i++) {
+            if (i > 0) {
+                hearingSlotsJson.append(",\n");
+            }
+            hearingSlotsJson.append("    {\n");
+            hearingSlotsJson.append("      \"courtScheduleId\": \"").append(courtScheduleIds.get(i)).append("\",\n");
+            hearingSlotsJson.append("      \"isDraft\": ").append(isDraft).append("\n");
+            hearingSlotsJson.append("    }");
+        }
+
+        hearingSlotsJson.append("\n  ]\n");
+        hearingSlotsJson.append("}");
+
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/courtschedule/search.court-schedules-by-id")))
+                .withQueryParam("courtScheduleIds", matching(".*"))
+                .withHeader("Accept", containing("application/vnd.courtscheduler.search.courtschedules.by.id+json"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(hearingSlotsJson.toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }

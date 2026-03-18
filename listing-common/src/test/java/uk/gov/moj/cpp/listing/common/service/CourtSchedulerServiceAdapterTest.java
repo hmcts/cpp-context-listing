@@ -36,7 +36,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class CourtSchedulerServiceAdapterTest {
+class CourtSchedulerServiceAdapterTest {
 
     @InjectMocks
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
@@ -54,7 +54,7 @@ public class CourtSchedulerServiceAdapterTest {
     private JsonObjectToObjectConverter jsonObjectConverter;
 
     @Test
-    public void shouldGetJudicialRoles() {
+    void shouldGetJudicialRoles() {
         final String startDate = LocalDate.now().toString();
         final String ouCode = "B01LY00";
         final Optional<String> courtSessionOptional = Optional.of("AM");
@@ -84,7 +84,7 @@ public class CourtSchedulerServiceAdapterTest {
     }
 
     @Test
-    public void shouldGetEmptyListIfThereIsNoMatchingJudicialRolesInRotaSL() {
+    void shouldGetEmptyListIfThereIsNoMatchingJudicialRolesInRotaSL() {
         final String startDate = LocalDate.now().toString();
         final String ouCode = "B01LY00";
         final Optional<String> courtSessionOptional = Optional.of("AM");
@@ -101,7 +101,7 @@ public class CourtSchedulerServiceAdapterTest {
     }
 
     @Test
-    public void shouldGetHearingSlotResponse() {
+    void shouldGetHearingSlotResponse() {
         final String startDate = LocalDate.now().toString();
         final String ouCode = "B01LY00";
         final String courtRoomId = "a91a93e6-d704-3cf1-9f20-e267b5a7eeeb";
@@ -112,9 +112,9 @@ public class CourtSchedulerServiceAdapterTest {
         when(response.getEntity()).thenReturn(hearingSlotsResponse);
         when(hearingSlotsService.search(anyMap())).thenReturn(response);
 
-        final Response response = courtSchedulerServiceAdapter.getHearingSlotResponse(startDate, startDate, ouCode, courtRoomId);
+        final Response slotResponse = courtSchedulerServiceAdapter.getHearingSlotResponse(startDate, startDate, ouCode, courtRoomId);
 
-        final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
+        final JsonObject responseJson = objectToJsonObjectConverter.convert(slotResponse.getEntity());
         final JsonObject object = responseJson.getJsonArray("hearingSlots").getValuesAs(JsonObject.class).get(0);
 
         assertThat(object.getString("panel"), is("YOUTH"));
@@ -122,7 +122,7 @@ public class CourtSchedulerServiceAdapterTest {
     }
 
     @Test
-    public void shouldGetPanelInfoIfNotPresentInPayload() {
+    void shouldGetPanelInfoIfNotPresentInPayload() {
         final Optional<String> panelInfoFromPayload = empty();
 
         final LocalDate startDate = LocalDate.of(2021, 6, 21);
@@ -144,7 +144,7 @@ public class CourtSchedulerServiceAdapterTest {
     }
 
     @Test
-    public void shouldGetPanelInfoIfPresentInPayload() {
+    void shouldGetPanelInfoIfPresentInPayload() {
         final Optional<String> panelInfoFromPayload = of("ADULT");
 
         final LocalDate startDate = LocalDate.of(2021, 6, 21);
@@ -160,7 +160,7 @@ public class CourtSchedulerServiceAdapterTest {
     }
 
     @Test
-    public void shouldReturnEmptyPanelInfoIfNotPresentInPayloadAndGettingErrorFromRotaApi() {
+    void shouldReturnEmptyPanelInfoIfNotPresentInPayloadAndGettingErrorFromRotaApi() {
         final Optional<String> panelInfoFromPayload = empty();
 
         final LocalDate startDate = LocalDate.of(2021, 6, 21);
@@ -178,7 +178,7 @@ public class CourtSchedulerServiceAdapterTest {
     }
 
     @Test
-    public void shouldReturnEmptyPanelInfoIfNotPresentInPayloadAndGettingEmptyPayloadFromRotaApi() {
+    void shouldReturnEmptyPanelInfoIfNotPresentInPayloadAndGettingEmptyPayloadFromRotaApi() {
         final Optional<String> panelInfoFromPayload = empty();
 
         final LocalDate startDate = LocalDate.of(2021, 6, 21);
@@ -199,7 +199,7 @@ public class CourtSchedulerServiceAdapterTest {
     }
 
     @Test
-    public void shouldGetHearingIds() {
+    void shouldGetHearingIds() {
         final String courtCentreId = UUID.randomUUID().toString();
         final Optional<String> courtSessionOptional = Optional.of("AD");
         final String courtRoomId = UUID.randomUUID().toString();
@@ -220,5 +220,38 @@ public class CourtSchedulerServiceAdapterTest {
         assertThat(finalResp.getUuids().size(), is(4));
         assertThat(finalResp.getPageCount(), is(1L));
         assertThat(finalResp.getResults(), is(4L));
+    }
+
+    @Test
+    void shouldValidateSessionAvailability() {
+        final JsonObject validateResponse = givenPayload("/mock-data/azure.rotasl.getHearingSlots.stub-data.json");
+        final java.util.Map<String, String> params = new java.util.HashMap<>();
+        params.put("panel", "ADULT");
+        params.put("sessionStartDate", "2017-10-11");
+        params.put("sessionEndDate", "2020-10-11");
+
+        when(hearingSlotsService.validateSessionAvailability(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(validateResponse);
+
+        final Response result = courtSchedulerServiceAdapter.validateSessionAvailability(params);
+
+        assertThat(result.getStatus(), is(HttpStatus.SC_OK));
+        assertThat(result.getEntity(), is(validateResponse));
+    }
+
+    @Test
+    void shouldReturnErrorResponseWhenValidateSessionAvailabilityFails() {
+        final java.util.Map<String, String> params = new java.util.HashMap<>();
+        params.put("panel", "ADULT");
+
+        when(hearingSlotsService.validateSessionAvailability(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_BAD_REQUEST);
+        when(response.hasEntity()).thenReturn(true);
+        when(response.getEntity()).thenReturn("Validation failed");
+
+        final Response result = courtSchedulerServiceAdapter.validateSessionAvailability(params);
+
+        assertThat(result.getStatus(), is(HttpStatus.SC_BAD_REQUEST));
     }
 }

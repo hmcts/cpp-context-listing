@@ -403,6 +403,10 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
     private void enrichCandidate(HearingListingNeeds hearing, HearingListingNeeds.Builder builder) {
         if (noHearingDaysPopulatedonPriorSteps(builder)) {
             final ZonedDateTime startTime = nonNull(hearing.getListedStartDateTime()) ? hearing.getListedStartDateTime() : hearing.getEarliestStartDateTime();
+            if (isNull(startTime)) {
+                LOGGER.warn("Cannot enrich hearing days for hearing {}: both listedStartDateTime and earliestStartDateTime are null", hearing.getId());
+                return;
+            }
             LOGGER.info("enriching HearingDays by By AllocationCandidate hearingid: {}", hearing.getId());
             builder.withHearingDays(List.of(HearingDay.hearingDay()
                     .withHearingDate(startTime.toLocalDate())
@@ -454,10 +458,6 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
 
     static UUID getCourtRoomId(final UpdateHearingForListing updateHearingForListing) {
         return nonNull(updateHearingForListing.getSelectedCourtCentre()) ? updateHearingForListing.getSelectedCourtCentre().getCourtRoomId() : updateHearingForListing.getCourtRoomId();
-    }
-
-    private List<String> enrichNonSittingDaysForCrown(HearingListingNeeds hearingListingNeeds) {
-        return null;
     }
 
     private List<LocalDate> enrichNonSittingDaysForCrown(UpdateHearingForListing updateHearingForListing) {
