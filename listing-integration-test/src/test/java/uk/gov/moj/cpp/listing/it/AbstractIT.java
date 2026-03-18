@@ -8,6 +8,7 @@ import static java.util.stream.Collectors.joining;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubDeleteAvailableHearingSlotsServiceForAnyHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
+import uk.gov.moj.cpp.listing.it.util.ArtemisQueuePurger;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProgressionNotesStubs;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProsecutionCaseByCaseUrn;
@@ -53,6 +54,7 @@ public class AbstractIT {
 
     @BeforeEach
     void setUp() {
+        ArtemisQueuePurger.purgeAllListingQueues();
         reset();
         setupAsAuthorisedUser(USER_ID_VALUE);
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased();
