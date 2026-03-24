@@ -474,6 +474,129 @@ class HearingSlotsServiceTest {
         }
     }
 
+    @Test
+    void shouldThrowExceptionWhenValidateSessionAvailabilityPayloadIsEmpty() {
+        // Given
+        javax.json.JsonObject emptyPayload = javax.json.Json.createObjectBuilder().build();
+
+        // When/Then
+        try {
+            hearingSlotsService.validateSessionAvailability(emptyPayload);
+        } catch (DataValidationException e) {
+            assertThat(e.getMessage(), is("Payload for application/vnd.courtscheduler.validate.session.availability+json is null or empty ...."));
+        }
+    }
+
+    @Test
+    void shouldHandlePostErrorResponse() throws Exception {
+        // Given
+        javax.json.JsonObject payload = javax.json.Json.createObjectBuilder()
+                .add("courtScheduleIdList", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")))
+                .add("duration", 30)
+                .build();
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
+
+        try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
+            mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.build()).thenReturn(httpClient);
+            when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
+            when(httpResponse.getStatusLine()).thenReturn(statusLine);
+            when(statusLine.getStatusCode()).thenReturn(Response.Status.BAD_REQUEST.getStatusCode());
+            when(httpResponse.getEntity()).thenReturn(mock(org.apache.http.HttpEntity.class));
+
+            // When
+            Response response = hearingSlotsService.validateSessionAvailability(payload);
+
+            // Then
+            assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+        }
+    }
+
+    @Test
+    void shouldHandleIOExceptionWhenValidatingSessionAvailability() throws Exception {
+        // Given
+        javax.json.JsonObject payload = javax.json.Json.createObjectBuilder()
+                .add("courtScheduleIdList", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")))
+                .add("duration", 30)
+                .build();
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
+
+        try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
+            mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.build()).thenReturn(httpClient);
+            when(httpClient.execute(any(HttpPost.class))).thenThrow(new IOException("Connection refused"));
+
+            // When
+            Response response = hearingSlotsService.validateSessionAvailability(payload);
+
+            // Then
+            assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+        }
+    }
+
+    @Test
+    void shouldHandleNullEntityInPostResponse() throws Exception {
+        // Given
+        javax.json.JsonObject payload = javax.json.Json.createObjectBuilder()
+                .add("courtScheduleIdList", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")))
+                .add("duration", 30)
+                .build();
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
+
+        try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
+            mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.build()).thenReturn(httpClient);
+            when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
+            when(httpResponse.getStatusLine()).thenReturn(statusLine);
+            when(statusLine.getStatusCode()).thenReturn(Response.Status.OK.getStatusCode());
+            when(httpResponse.getEntity()).thenReturn(null);
+
+            // When
+            Response response = hearingSlotsService.validateSessionAvailability(payload);
+
+            // Then
+            assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+        }
+    }
+
+    @Test
+    void shouldConvertNonBlankPostResponseBody() throws Exception {
+        // Given
+        javax.json.JsonObject payload = javax.json.Json.createObjectBuilder()
+                .add("courtScheduleIdList", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")))
+                .add("duration", 30)
+                .build();
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
+
+        try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class);
+             MockedStatic<EntityUtils> entityUtilsMockedStatic = Mockito.mockStatic(EntityUtils.class)) {
+            mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.build()).thenReturn(httpClient);
+            when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
+            when(httpResponse.getStatusLine()).thenReturn(statusLine);
+            when(statusLine.getStatusCode()).thenReturn(Response.Status.OK.getStatusCode());
+            org.apache.http.HttpEntity entity = mock(org.apache.http.HttpEntity.class);
+            when(httpResponse.getEntity()).thenReturn(entity);
+            entityUtilsMockedStatic.when(() -> EntityUtils.toString(entity)).thenReturn("{\"available\":true}");
+            when(stringToJsonObjectConverter.convert("{\"available\":true}")).thenReturn(mock(javax.json.JsonObject.class));
+
+            // When
+            Response response = hearingSlotsService.validateSessionAvailability(payload);
+
+            // Then
+            assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+            verify(stringToJsonObjectConverter).convert("{\"available\":true}");
+        }
+    }
+
     // ─── listHearingInCourtSessions tests ────────────────────────────────
 
     @Test
