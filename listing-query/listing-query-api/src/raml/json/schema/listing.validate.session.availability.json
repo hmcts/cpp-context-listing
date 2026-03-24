@@ -21,9 +21,6 @@
     },
     "duration": {
       "type": "integer"
-    },
-    "consecutiveDays": {
-      "type": "integer"
     }
   },
   "required": [

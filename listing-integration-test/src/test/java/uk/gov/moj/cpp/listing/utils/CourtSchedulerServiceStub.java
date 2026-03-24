@@ -119,13 +119,11 @@ public class CourtSchedulerServiceStub {
                 ));
     }
 
-    public static void stubValidateSessionAvailabilityWithConsecutiveDays() {
+    public static void stubValidateSessionAvailabilityFailure() {
         stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + VALIDATE_SESSION_AVAILABILITY)))
                 .withHeader("Content-Type", containing(COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE))
-                .withRequestBody(containing("courtScheduleId"))
-                .withRequestBody(containing("consecutiveDays"))
-                .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody("{}")
+                .willReturn(aResponse().withStatus(BAD_REQUEST.getStatusCode())
+                        .withBody("{\"validationResult\":{\"status\":\"FAILURE\",\"validationError\":\"duration is required\"}}")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
