@@ -23,6 +23,7 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -65,6 +66,8 @@ class HearingSlotsServiceTest {
     private ArgumentCaptor<HttpPut> httpPutCaptor;
     @Captor
     private ArgumentCaptor<HttpDelete> httpDeleteCaptor;
+    @Captor
+    private ArgumentCaptor<HttpPost> httpPostCaptor;
 
     @InjectMocks
     private HearingSlotsService hearingSlotsService;
@@ -431,45 +434,43 @@ class HearingSlotsServiceTest {
     @Test
     void shouldValidateSessionAvailabilitySuccessfully() throws Exception {
         // Given
-        Map<String, String> params = new HashMap<>();
-        params.put("panel", "ADULT");
-        params.put("sessionStartDate", "2017-10-11");
-        params.put("sessionEndDate", "2020-10-11");
+        javax.json.JsonObject params = javax.json.Json.createObjectBuilder()
+                .add("courtScheduleIdList", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")))
+                .add("duration", 30)
+                .build();
         when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
-            when(httpClient.execute(any(HttpGet.class))).thenReturn(httpResponse);
+            when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
             when(statusLine.getStatusCode()).thenReturn(Response.Status.OK.getStatusCode());
             when(httpResponse.getEntity()).thenReturn(mock(org.apache.http.HttpEntity.class));
-            when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(javax.json.JsonObject.class));
 
             // When
             Response response = hearingSlotsService.validateSessionAvailability(params);
 
             // Then
             assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-            verify(httpClient).execute(httpGetCaptor.capture());
-            HttpGet capturedGet = httpGetCaptor.getValue();
-            assertThat(capturedGet.getURI().toString(), org.hamcrest.CoreMatchers.startsWith(BASE_URI + "/validate/session-availability?"));
-            assertThat(capturedGet.getURI().toString(), org.hamcrest.CoreMatchers.containsString("panel=ADULT"));
-            assertThat(capturedGet.getURI().toString(), org.hamcrest.CoreMatchers.containsString("sessionStartDate=2017-10-11"));
-            assertThat(capturedGet.getURI().toString(), org.hamcrest.CoreMatchers.containsString("sessionEndDate=2020-10-11"));
+            verify(httpClient).execute(httpPostCaptor.capture());
+            HttpPost capturedPost = httpPostCaptor.getValue();
+            assertThat(capturedPost.getURI().toString(), is(BASE_URI + "/validate-session-availability"));
         }
     }
 
     @Test
     void shouldThrowExceptionWhenValidateSessionAvailabilityParamsAreNull() {
         // Given
-        Map<String, String> params = null;
+        javax.json.JsonObject params = null;
 
         // When/Then
         try {
             hearingSlotsService.validateSessionAvailability(params);
         } catch (DataValidationException e) {
-            assertThat(e.getMessage(), is("Params for search application/vnd.courtscheduler.validate.session.availability+json is null ...."));
+            assertThat(e.getMessage(), is("Payload for application/vnd.courtscheduler.validate.session.availability+json is null or empty ...."));
         }
     }
 

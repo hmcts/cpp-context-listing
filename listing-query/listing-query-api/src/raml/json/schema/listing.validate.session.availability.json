@@ -3,23 +3,31 @@
   "id": "http://justice.gov.uk/listing/query/listing.validate.session.availability.json",
   "type": "object",
   "properties": {
-    "results": {
-      "type": "integer"
-    },
-    "pageCount": {
-      "type": "integer"
-    },
-    "hearingSlots": {
+    "courtScheduleIdList": {
       "type": "array",
+      "minItems": 1,
       "items": {
-        "$ref": "http://justice.gov.uk/listing/events/court-schedule.json"
+        "type": "object",
+        "properties": {
+          "courtScheduleId": {
+            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          }
+        },
+        "required": [
+          "courtScheduleId"
+        ],
+        "additionalProperties": false
       }
+    },
+    "duration": {
+      "type": "integer"
+    },
+    "consecutiveDays": {
+      "type": "integer"
     }
   },
-  "additionalProperties": false,
   "required": [
-    "results",
-    "pageCount",
-    "hearingSlots"
-  ]
+    "courtScheduleIdList"
+  ],
+  "additionalProperties": false
 }

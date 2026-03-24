@@ -1,17 +1,16 @@
 package uk.gov.justice.api.resource;
 
-import static java.util.stream.Collectors.toMap;
-import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.*;
-
 import uk.gov.justice.services.core.annotation.Adapter;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.inject.Inject;
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonValue;
 import javax.ws.rs.core.Response;
+
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.*;
 
 @Adapter(Component.QUERY_API)
 public class DefaultQueryApiSessionAvailabilityValidationResource implements QueryApiSessionAvailabilityValidationResource {
@@ -20,64 +19,63 @@ public class DefaultQueryApiSessionAvailabilityValidationResource implements Que
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
 
     @Override
-    public Response validateSessionAvailability(final String panel,
-                                                final String sessionStartDate,
-                                                final String sessionEndDate,
-                                                final String hearingStartTime,
-                                                final String oucodeL2Code,
-                                                final String ouCode,
-                                                final String courtRoomId,
-                                                final String courtRoomNumber,
-                                                final String businessType,
-                                                final String courtSession,
-                                                final Boolean isSlotBased,
-                                                final Boolean showOverbookedSlots,
-                                                final String pageSize,
-                                                final String pageNumber,
-                                                final Integer availableDurationMins,
-                                                final String status,
-                                                final Integer consecutiveDays,
-                                                final Boolean isWeekCommencing) {
+    public Response validateSessionAvailability(final JsonObject requestPayload) {
+        if (requestPayload == null || requestPayload.isEmpty()) {
+            return badRequest("Request payload is required");
+        }
+
         final SessionAvailabilityValidationParams validationParams = new SessionAvailabilityValidationParams(
-                panel, sessionStartDate, sessionEndDate, hearingStartTime,
-                oucodeL2Code, ouCode, courtRoomId, courtRoomNumber, businessType, courtSession,
-                isSlotBased, showOverbookedSlots, pageSize, pageNumber, availableDurationMins,
-                status, consecutiveDays, isWeekCommencing);
-        final Map<String, String> params = buildParamsMap(validationParams);
-        return courtSchedulerServiceAdapter.validateSessionAvailability(params);
+                requestPayload.getJsonArray(COURT_SCHEDULE_ID_LIST),
+                optionalInt(requestPayload, DURATION),
+                optionalInt(requestPayload, CONSECUTIVE_DAYS)
+        );
+
+        if (validationParams.courtScheduleIdList() == null || validationParams.courtScheduleIdList().isEmpty()) {
+            return badRequest("courtScheduleIdList must contain at least one element");
+        }
+
+        final JsonObject downStreamRequest;
+        if (validationParams.consecutiveDays() != null) {
+            if (validationParams.courtScheduleIdList().size() != 1) {
+                return badRequest("When consecutiveDays is provided, courtScheduleIdList must contain exactly one element");
+            }
+            final String courtScheduleId = getCourtScheduleId(validationParams.courtScheduleIdList().get(0));
+            if (courtScheduleId == null || courtScheduleId.isBlank()) {
+                return badRequest("courtScheduleIdList[0].courtScheduleId is required");
+            }
+            downStreamRequest = Json.createObjectBuilder()
+                    .add(COURT_SCHEDULE_ID, courtScheduleId)
+                    .add(CONSECUTIVE_DAYS, validationParams.consecutiveDays())
+                    .build();
+        } else {
+            if (validationParams.duration() == null) {
+                return badRequest("duration must be provided when consecutiveDays is not supplied");
+            }
+            downStreamRequest = Json.createObjectBuilder()
+                    .add(COURT_SCHEDULE_ID_LIST, validationParams.courtScheduleIdList())
+                    .add(DURATION, validationParams.duration())
+                    .build();
+        }
+        return courtSchedulerServiceAdapter.validateSessionAvailability(downStreamRequest);
     }
 
-    private Map<String, String> buildParamsMap(final SessionAvailabilityValidationParams p) {
-        final Map<String, String> params = new HashMap<>();
-        params.put(PANEL, p.panel());
-        params.put(SESSION_START_DATE, p.sessionStartDate());
-        params.put(SESSION_END_DATE, p.sessionEndDate());
-        params.put(HEARING_START_TIME, p.hearingStartTime());
-        params.put(OU_L2_CODE, p.oucodeL2Code());
-        params.put(OUCODE, p.ouCode());
-        params.put(COURT_ROOM_ID, p.courtRoomId());
-        params.put(COURT_ROOM_NUMBER, p.courtRoomNumber());
-        params.put(BUSINESS_TYPE, p.businessType());
-        params.put(COURT_SESSION, p.courtSession());
-        if (p.isSlotBased() != null) {
-            params.put(IS_SLOT_BASED, String.valueOf(p.isSlotBased()));
-        }
-        if (p.showOverbookedSlots() != null) {
-            params.put(SHOW_OVERBOOKED_SLOTS, String.valueOf(p.showOverbookedSlots()));
-        }
-        params.put(PAGE_SIZE, p.pageSize());
-        params.put(PAGE_NUMBER, p.pageNumber());
-        if (p.availableDurationMins() != null) {
-            params.put(DURATION, String.valueOf(p.availableDurationMins()));
-        }
-        params.put(STATUS, p.status() != null ? p.status() : "ALL");
-        if (p.consecutiveDays() != null) {
-            params.put(CONSECUTIVE_DAYS, String.valueOf(p.consecutiveDays()));
-        }
-        if (p.isWeekCommencing() != null) {
-            params.put(IS_WEEK_COMMENCING, String.valueOf(p.isWeekCommencing()));
-        }
+    private static Integer optionalInt(final JsonObject jsonObject, final String key) {
+        return jsonObject.containsKey(key) && !jsonObject.isNull(key) ? jsonObject.getInt(key) : null;
+    }
 
-        return params.entrySet().stream().filter(entry -> entry.getValue() != null).collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+    private static String getCourtScheduleId(final JsonValue jsonValue) {
+        if (!(jsonValue instanceof JsonObject jsonObject) || !jsonObject.containsKey(COURT_SCHEDULE_ID) || jsonObject.isNull(COURT_SCHEDULE_ID)) {
+            return null;
+        }
+        return jsonObject.getString(COURT_SCHEDULE_ID, null);
+    }
+
+    private static Response badRequest(final String message) {
+        final JsonObject entity = Json.createObjectBuilder()
+                .add(VALIDATION_RESULT, Json.createObjectBuilder()
+                        .add(VALIDATION_STATUS, FAILURE)
+                        .add(VALIDATION_ERROR, message))
+                .build();
+        return Response.status(Response.Status.BAD_REQUEST).entity(entity).build();
     }
 }

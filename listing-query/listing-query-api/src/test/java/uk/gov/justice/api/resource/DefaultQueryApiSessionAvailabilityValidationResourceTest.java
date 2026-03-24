@@ -7,11 +7,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
-import uk.gov.moj.cpp.listing.query.api.util.FileUtil;
-
-import java.util.Map;
 
 import javax.json.JsonObject;
+import javax.json.Json;
 import javax.ws.rs.core.Response;
 
 import org.junit.jupiter.api.Test;
@@ -25,8 +23,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DefaultQueryApiSessionAvailabilityValidationResourceTest {
 
-    private static final String VALIDATE_RESPONSE_JSON = "listing.validate.session.availability.json";
-
     @Mock
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
 
@@ -34,44 +30,26 @@ class DefaultQueryApiSessionAvailabilityValidationResourceTest {
     private DefaultQueryApiSessionAvailabilityValidationResource resource;
 
     @Captor
-    private ArgumentCaptor<Map<String, String>> paramsCaptor;
+    private ArgumentCaptor<JsonObject> payloadCaptor;
 
     @Test
     void shouldCallAdapterAndReturnValidateSessionAvailabilityResponse() {
-        final JsonObject responseEntity = new uk.gov.justice.services.common.converter.StringToJsonObjectConverter()
-                .convert(FileUtil.getPayload(VALIDATE_RESPONSE_JSON));
+        final JsonObject requestPayload = Json.createObjectBuilder()
+                .add("courtScheduleIdList", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder().add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")))
+                .add("duration", 30)
+                .build();
+        final JsonObject responseEntity = Json.createObjectBuilder().build();
         final Response adapterResponse = Response.status(Response.Status.OK).entity(responseEntity).build();
 
-        when(courtSchedulerServiceAdapter.validateSessionAvailability(any(Map.class))).thenReturn(adapterResponse);
+        when(courtSchedulerServiceAdapter.validateSessionAvailability(any(JsonObject.class))).thenReturn(adapterResponse);
 
-        final Response result = resource.validateSessionAvailability(
-                "ADULT",
-                "2017-10-11",
-                "2020-10-11",
-                null,
-                "Z01KR05",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                "20",
-                "1",
-                null,
-                null,
-                null,
-                null);
+        final Response result = resource.validateSessionAvailability(requestPayload);
 
-        verify(courtSchedulerServiceAdapter).validateSessionAvailability(paramsCaptor.capture());
-        final Map<String, String> params = paramsCaptor.getValue();
-        assertEquals("ADULT", params.get("panel"));
-        assertEquals("2017-10-11", params.get("sessionStartDate"));
-        assertEquals("2020-10-11", params.get("sessionEndDate"));
-        assertEquals("20", params.get("pageSize"));
-        assertEquals("1", params.get("pageNumber"));
-        assertEquals("ALL", params.get("status"));
+        verify(courtSchedulerServiceAdapter).validateSessionAvailability(payloadCaptor.capture());
+        final JsonObject payload = payloadCaptor.getValue();
+        assertNotNull(payload.getJsonArray("courtScheduleIdList"));
+        assertEquals(30, payload.getInt("duration"));
 
         assertNotNull(result);
         assertEquals(Response.Status.OK.getStatusCode(), result.getStatus());
@@ -79,37 +57,45 @@ class DefaultQueryApiSessionAvailabilityValidationResourceTest {
     }
 
     @Test
-    void shouldPassConsecutiveDaysStatusAndIsWeekCommencingToAdapter() {
-        final JsonObject responseEntity = new uk.gov.justice.services.common.converter.StringToJsonObjectConverter()
-                .convert(FileUtil.getPayload(VALIDATE_RESPONSE_JSON));
-        when(courtSchedulerServiceAdapter.validateSessionAvailability(any(Map.class)))
-                .thenReturn(Response.status(Response.Status.OK).entity(responseEntity).build());
+    void shouldTransformSingletonArrayToConsecutiveDaysPayload() {
+        final JsonObject requestPayload = Json.createObjectBuilder()
+                .add("courtScheduleIdList", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder().add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")))
+                .add("consecutiveDays", 2)
+                .build();
 
-        resource.validateSessionAvailability(
-                "ADULT",
-                "2017-10-11",
-                "2020-10-11",
-                null,
-                "Z01KR05",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                "20",
-                "1",
-                30,
-                "FINAL",
-                2,
-                false);
+        when(courtSchedulerServiceAdapter.validateSessionAvailability(any(JsonObject.class)))
+                .thenReturn(Response.status(Response.Status.OK).entity(Json.createObjectBuilder().build()).build());
 
-        verify(courtSchedulerServiceAdapter).validateSessionAvailability(paramsCaptor.capture());
-        final Map<String, String> params = paramsCaptor.getValue();
-        assertEquals("FINAL", params.get("status"));
-        assertEquals("2", params.get("consecutiveDays"));
-        assertEquals("false", params.get("isWeekCommencing"));
-        assertEquals("30", params.get("duration"));
+        resource.validateSessionAvailability(requestPayload);
+
+        verify(courtSchedulerServiceAdapter).validateSessionAvailability(payloadCaptor.capture());
+        final JsonObject payload = payloadCaptor.getValue();
+        assertEquals("f8254db1-1683-483e-afb3-b87fde5a0a26", payload.getString("courtScheduleId"));
+        assertEquals(2, payload.getInt("consecutiveDays"));
+    }
+
+    @Test
+    void shouldRejectWhenConsecutiveDaysHasMultipleCourtScheduleIds() {
+        final JsonObject requestPayload = Json.createObjectBuilder()
+                .add("courtScheduleIdList", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder().add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26"))
+                        .add(Json.createObjectBuilder().add("courtScheduleId", "9e4932f7-97b2-3010-b942-ddd2624e4dd8")))
+                .add("consecutiveDays", 2)
+                .build();
+
+        final Response response = resource.validateSessionAvailability(requestPayload);
+        assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+    }
+
+    @Test
+    void shouldRejectWhenDurationAndConsecutiveDaysAreMissing() {
+        final JsonObject requestPayload = Json.createObjectBuilder()
+                .add("courtScheduleIdList", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder().add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")))
+                .build();
+
+        final Response response = resource.validateSessionAvailability(requestPayload);
+        assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     }
 }

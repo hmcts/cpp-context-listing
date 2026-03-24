@@ -52,7 +52,7 @@ public class CourtSchedulerServiceStub {
 
     private static final String PROVISIONAL_BOOKING = "/provisionalBooking";
     private static final String HEARING_SLOTS = "/hearingslots";
-    private static final String VALIDATE_SESSION_AVAILABILITY = "/validate/session-availability";
+    private static final String VALIDATE_SESSION_AVAILABILITY = "/validate-session-availability";
     private static final String COURTSCHEDULER_GET_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.get.hearing.slots+json";
     private static final String COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE = "application/vnd.courtscheduler.validate.session.availability+json";
     public static final String COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE = "application/vnd.courtscheduler.get.provisional.booking+json";
@@ -108,35 +108,24 @@ public class CourtSchedulerServiceStub {
         });
     }
 
-    public static void stubValidateSessionAvailability(boolean isEmpty) {
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + VALIDATE_SESSION_AVAILABILITY)))
-                .withQueryParam("sessionStartDate", matching("2017-10-11"))
-                .withQueryParam("pageNumber", matching("1"))
-                .withQueryParam("pageSize", matching("20"))
-                .withQueryParam("panel", matching("ADULT"))
-                .withQueryParam("oucodeL2Code", matching("Z01KR05"))
-                .withQueryParam("sessionEndDate", matching("2020-10-11"))
-                .withHeader("Accept", containing(COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE))
+    public static void stubValidateSessionAvailability() {
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + VALIDATE_SESSION_AVAILABILITY)))
+                .withHeader("Content-Type", containing(COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE))
+                .withRequestBody(containing("courtScheduleIdList"))
+                .withRequestBody(containing("duration"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(getPayload(isEmpty ? LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON : LISTING_SEARCH_HEARING_SLOTS_JSON))
+                        .withBody("{}")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
     public static void stubValidateSessionAvailabilityWithConsecutiveDays() {
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + VALIDATE_SESSION_AVAILABILITY)))
-                .withQueryParam("sessionStartDate", matching("2017-10-11"))
-                .withQueryParam("pageNumber", matching("1"))
-                .withQueryParam("pageSize", matching("20"))
-                .withQueryParam("panel", matching("ADULT"))
-                .withQueryParam("oucodeL2Code", matching("Z01KR05"))
-                .withQueryParam("sessionEndDate", matching("2020-10-11"))
-                .withQueryParam("status", matching("FINAL"))
-                .withQueryParam("consecutiveDays", matching("2"))
-                .withQueryParam("isWeekCommencing", matching("false"))
-                .withHeader("Accept", containing(COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE))
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + VALIDATE_SESSION_AVAILABILITY)))
+                .withHeader("Content-Type", containing(COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE))
+                .withRequestBody(containing("courtScheduleId"))
+                .withRequestBody(containing("consecutiveDays"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(getPayload(LISTING_SEARCH_HEARING_SLOTS_JSON))
+                        .withBody("{}")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }

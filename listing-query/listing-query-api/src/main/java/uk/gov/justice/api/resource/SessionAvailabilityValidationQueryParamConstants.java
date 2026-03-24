@@ -21,6 +21,12 @@ public final class SessionAvailabilityValidationQueryParamConstants {
     public static final String STATUS = "status";
     public static final String CONSECUTIVE_DAYS = "consecutiveDays";
     public static final String IS_WEEK_COMMENCING = "isWeekCommencing";
+    public static final String COURT_SCHEDULE_ID = "courtScheduleId";
+    public static final String COURT_SCHEDULE_ID_LIST = "courtScheduleIdList";
+    public static final String VALIDATION_RESULT = "validationResult";
+    public static final String VALIDATION_STATUS = "status";
+    public static final String VALIDATION_ERROR = "validationError";
+    public static final String FAILURE = "FAILURE";
 
     private SessionAvailabilityValidationQueryParamConstants() {
         // utility class

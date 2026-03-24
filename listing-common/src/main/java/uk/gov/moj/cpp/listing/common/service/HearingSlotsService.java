@@ -11,13 +11,14 @@ import uk.gov.moj.cpp.listing.domain.exception.DataValidationException;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.json.Json;
+import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +27,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
@@ -43,12 +45,12 @@ public class HearingSlotsService {
     public static final String HEARING_DATE = "hearingDate";
 
     private static final String HEARING_RESOURCE = "/hearingslots";
+    private static final String VALIDATE_SESSION_AVAILABILITY_RESOURCE = "/validate-session-availability";
     private static final String COURTSCHEDULER_LIST_HEARING_IN_COURT_SESSIONS_RESOURCE = "/list/hearingslots";
     private static final String HEARING_SEARCH_BOOK_RESOURCE = "/searchlist/hearingslots";
     private static final String COURTSCHEDULES_RESOURCE = "/courtschedule/search.court-schedules-by-id";
     private static final String COURTSCHEDULER_LIST_HEARING_IN_COURT_SESSIONS = "application/vnd.courtscheduler.list.hearings-in-court-sessions+json";
     private static final String COURTSCHEDULER_GET_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.get.hearing.slots+json";
-    private static final String VALIDATE_SESSION_AVAILABILITY_RESOURCE = "/validate/session-availability";
     private static final String COURTSCHEDULER_SEARCH_COURTSCHEDULES_BY_ID = "application/vnd.courtscheduler.search.courtschedules.by.id+json";
     private static final String COURTSCHEDULER_DELETE_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.remove.hearing.slots+json";
     private static final String COUTRT_SCHEDULER_HEARING_IDS = "application/vnd.courtscheduler.get.hearing.ids+json";
@@ -73,8 +75,8 @@ public class HearingSlotsService {
         return query(HEARING_RESOURCE, COURTSCHEDULER_GET_HEARING_SLOTS_TYPE, params);
     }
 
-    public Response validateSessionAvailability(final Map<String, String> params) {
-        return query(VALIDATE_SESSION_AVAILABILITY_RESOURCE, COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE, params);
+    public Response validateSessionAvailability(final JsonObject payload) {
+        return post(VALIDATE_SESSION_AVAILABILITY_RESOURCE, COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE, payload);
     }
 
     public Response searchBookSlots(final Map<String, String> params) {
@@ -87,7 +89,7 @@ public class HearingSlotsService {
         }
 
         try {
-            final HttpPut httpPut = new HttpPut(new URL(baseUri + COURTSCHEDULER_LIST_HEARING_IN_COURT_SESSIONS_RESOURCE).toString());
+            final HttpPut httpPut = new HttpPut(new URIBuilder(baseUri + COURTSCHEDULER_LIST_HEARING_IN_COURT_SESSIONS_RESOURCE).build());
             httpPut.addHeader(CONTENT_TYPE, COURTSCHEDULER_LIST_HEARING_IN_COURT_SESSIONS);
             httpPut.addHeader(CJS_CPP_UID, getUserId().toString());
 
@@ -113,7 +115,7 @@ public class HearingSlotsService {
                         .entity(entityBodyAsString)
                         .build();
             }
-        } catch (IOException ex) {
+        } catch (URISyntaxException | IOException ex) {
             LOGGER.error("Exception thrown on trying to Update Hearing Slots", ex);
             return Response
                     .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
@@ -136,7 +138,7 @@ public class HearingSlotsService {
         }
 
         try {
-            final HttpDelete httpDelete = new HttpDelete(new URL(baseUri + HEARING_RESOURCE + "/" + hearingId.toString()).toString());
+            final HttpDelete httpDelete = new HttpDelete(new URIBuilder(baseUri + HEARING_RESOURCE + "/" + hearingId).build());
             httpDelete.addHeader(CONTENT_TYPE, COURTSCHEDULER_DELETE_HEARING_SLOTS_TYPE);
             httpDelete.addHeader(CJS_CPP_UID, getUserId().toString());
 
@@ -151,7 +153,7 @@ public class HearingSlotsService {
                         httpResponse.getStatusLine().getStatusCode());
             }
 
-        } catch (IOException ex) {
+        } catch (URISyntaxException | IOException ex) {
             LOGGER.error("Exception thrown on trying to Delete Hearing Slots", ex);
         }
     }
@@ -189,13 +191,11 @@ public class HearingSlotsService {
         }
 
         try {
-            final HttpGet httpGet = new HttpGet(new URL(baseUri + urlPath).toString());
+            final URIBuilder uriBuilder = new URIBuilder(baseUri + urlPath);
+            params.forEach(uriBuilder::addParameter);
+            final HttpGet httpGet = new HttpGet(uriBuilder.build());
             httpGet.addHeader(ACCEPT, acceptHeader);
             httpGet.addHeader(CJS_CPP_UID, getUserId().toString());
-
-            final URIBuilder uriBuilder = new URIBuilder(httpGet.getURI());
-            params.forEach(uriBuilder::addParameter);
-            httpGet.setURI(uriBuilder.build());
 
             final HttpResponse httpResponse = execute(httpGet);
 
@@ -217,6 +217,51 @@ public class HearingSlotsService {
             }
         } catch (URISyntaxException | IOException ex) {
             LOGGER.error("Exception thrown on trying to Retrieving %s".formatted(acceptHeader), ex);
+            return Response
+                    .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+                    .entity(ex.getMessage())
+                    .build();
+        }
+    }
+
+    private Response post(final String urlPath, final String contentTypeHeader, final JsonObject payload) {
+        if (LOGGER.isInfoEnabled() && Objects.nonNull(payload)) {
+            LOGGER.info("{} in CourtScheduler S & L with payload '{}'", contentTypeHeader, payload);
+        }
+        if (payload == null || payload.isEmpty()) {
+            throw new DataValidationException("Payload for %s is null or empty ....".formatted(contentTypeHeader));
+        }
+        try {
+            final HttpPost httpPost = new HttpPost(new URIBuilder(baseUri + urlPath).build());
+            httpPost.addHeader(CONTENT_TYPE, contentTypeHeader);
+            httpPost.addHeader(ACCEPT, "application/json");
+            httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
+            httpPost.setEntity(new StringEntity(payload.toString()));
+
+            final HttpResponse httpResponse = execute(httpPost);
+            final String responseBody = httpResponse.getEntity() == null ? "" : EntityUtils.toString(httpResponse.getEntity());
+            final Object entity = responseBody == null || responseBody.isBlank()
+                    ? Json.createObjectBuilder().build()
+                    : stringToJsonObjectConverter.convert(responseBody);
+
+            if (isOk(httpResponse)) {
+                if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info("Retrieve {} successfully", contentTypeHeader);
+                }
+                return Response
+                        .status(Response.Status.fromStatusCode(httpResponse.getStatusLine().getStatusCode()))
+                        .entity(entity)
+                        .build();
+            } else {
+                LOGGER.error("Retrieve {} failed with status code:{}", contentTypeHeader,
+                        httpResponse.getStatusLine().getStatusCode());
+                return Response
+                        .status(Response.Status.fromStatusCode(httpResponse.getStatusLine().getStatusCode()))
+                        .entity(entity)
+                        .build();
+            }
+        } catch (URISyntaxException | IOException ex) {
+            LOGGER.error("Exception thrown on trying to Retrieving %s".formatted(contentTypeHeader), ex);
             return Response
                     .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
                     .entity(ex.getMessage())
