@@ -6,6 +6,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.common.utils.FileUtil.givenPayload;
@@ -225,12 +226,14 @@ class CourtSchedulerServiceAdapterTest {
     @Test
     void shouldValidateSessionAvailability() {
         final JsonObject validateResponse = givenPayload("/mock-data/azure.rotasl.getHearingSlots.stub-data.json");
-        final java.util.Map<String, String> params = new java.util.HashMap<>();
-        params.put("panel", "ADULT");
-        params.put("sessionStartDate", "2017-10-11");
-        params.put("sessionEndDate", "2020-10-11");
+        final JsonObject params = javax.json.Json.createObjectBuilder()
+                .add("courtScheduleIdList", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")))
+                .add("duration", 30)
+                .build();
 
-        when(hearingSlotsService.validateSessionAvailability(anyMap())).thenReturn(response);
+        when(hearingSlotsService.validateSessionAvailability(any(JsonObject.class))).thenReturn(response);
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.getEntity()).thenReturn(validateResponse);
 
@@ -242,10 +245,14 @@ class CourtSchedulerServiceAdapterTest {
 
     @Test
     void shouldReturnErrorResponseWhenValidateSessionAvailabilityFails() {
-        final java.util.Map<String, String> params = new java.util.HashMap<>();
-        params.put("panel", "ADULT");
+        final JsonObject params = javax.json.Json.createObjectBuilder()
+                .add("courtScheduleIdList", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")))
+                .add("duration", 30)
+                .build();
 
-        when(hearingSlotsService.validateSessionAvailability(anyMap())).thenReturn(response);
+        when(hearingSlotsService.validateSessionAvailability(any(JsonObject.class))).thenReturn(response);
         when(response.getStatus()).thenReturn(HttpStatus.SC_BAD_REQUEST);
         when(response.hasEntity()).thenReturn(true);
         when(response.getEntity()).thenReturn("Validation failed");

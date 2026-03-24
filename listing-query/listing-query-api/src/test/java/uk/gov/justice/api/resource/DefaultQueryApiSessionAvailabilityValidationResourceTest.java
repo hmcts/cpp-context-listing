@@ -1,16 +1,12 @@
 package uk.gov.justice.api.resource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
-import uk.gov.moj.cpp.listing.query.api.util.FileUtil;
 
-import java.util.Map;
-
+import javax.json.Json;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
@@ -25,8 +21,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DefaultQueryApiSessionAvailabilityValidationResourceTest {
 
-    private static final String VALIDATE_RESPONSE_JSON = "listing.validate.session.availability.json";
-
     @Mock
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
 
@@ -34,82 +28,44 @@ class DefaultQueryApiSessionAvailabilityValidationResourceTest {
     private DefaultQueryApiSessionAvailabilityValidationResource resource;
 
     @Captor
-    private ArgumentCaptor<Map<String, String>> paramsCaptor;
+    private ArgumentCaptor<JsonObject> payloadCaptor;
 
     @Test
-    void shouldCallAdapterAndReturnValidateSessionAvailabilityResponse() {
-        final JsonObject responseEntity = new uk.gov.justice.services.common.converter.StringToJsonObjectConverter()
-                .convert(FileUtil.getPayload(VALIDATE_RESPONSE_JSON));
-        final Response adapterResponse = Response.status(Response.Status.OK).entity(responseEntity).build();
+    void shouldForwardPayloadToAdapterAndReturnResponse() {
+        final JsonObject requestPayload = Json.createObjectBuilder()
+                .add("courtScheduleIdList", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder().add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")))
+                .add("duration", 30)
+                .build();
+        final Response adapterResponse = Response.status(Response.Status.OK).entity(Json.createObjectBuilder().build()).build();
 
-        when(courtSchedulerServiceAdapter.validateSessionAvailability(any(Map.class))).thenReturn(adapterResponse);
+        when(courtSchedulerServiceAdapter.validateSessionAvailability(requestPayload)).thenReturn(adapterResponse);
 
-        final Response result = resource.validateSessionAvailability(
-                "ADULT",
-                "2017-10-11",
-                "2020-10-11",
-                null,
-                "Z01KR05",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                "20",
-                "1",
-                null,
-                null,
-                null,
-                null);
+        final Response result = resource.validateSessionAvailability(requestPayload);
 
-        verify(courtSchedulerServiceAdapter).validateSessionAvailability(paramsCaptor.capture());
-        final Map<String, String> params = paramsCaptor.getValue();
-        assertEquals("ADULT", params.get("panel"));
-        assertEquals("2017-10-11", params.get("sessionStartDate"));
-        assertEquals("2020-10-11", params.get("sessionEndDate"));
-        assertEquals("20", params.get("pageSize"));
-        assertEquals("1", params.get("pageNumber"));
-        assertEquals("ALL", params.get("status"));
-
-        assertNotNull(result);
+        verify(courtSchedulerServiceAdapter).validateSessionAvailability(payloadCaptor.capture());
+        assertEquals(requestPayload, payloadCaptor.getValue());
         assertEquals(Response.Status.OK.getStatusCode(), result.getStatus());
-        assertNotNull(result.getEntity());
     }
 
     @Test
-    void shouldPassConsecutiveDaysStatusAndIsWeekCommencingToAdapter() {
-        final JsonObject responseEntity = new uk.gov.justice.services.common.converter.StringToJsonObjectConverter()
-                .convert(FileUtil.getPayload(VALIDATE_RESPONSE_JSON));
-        when(courtSchedulerServiceAdapter.validateSessionAvailability(any(Map.class)))
-                .thenReturn(Response.status(Response.Status.OK).entity(responseEntity).build());
+    void shouldReturnAdapterErrorResponseUnchanged() {
+        final JsonObject requestPayload = Json.createObjectBuilder()
+                .add("courtScheduleIdList", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder().add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")))
+                .build();
+        final JsonObject errorBody = Json.createObjectBuilder()
+                .add("validationResult", Json.createObjectBuilder()
+                        .add("status", "FAILURE")
+                        .add("validationError", "duration is required"))
+                .build();
+        final Response adapterResponse = Response.status(Response.Status.BAD_REQUEST).entity(errorBody).build();
 
-        resource.validateSessionAvailability(
-                "ADULT",
-                "2017-10-11",
-                "2020-10-11",
-                null,
-                "Z01KR05",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                "20",
-                "1",
-                30,
-                "FINAL",
-                2,
-                false);
+        when(courtSchedulerServiceAdapter.validateSessionAvailability(requestPayload)).thenReturn(adapterResponse);
 
-        verify(courtSchedulerServiceAdapter).validateSessionAvailability(paramsCaptor.capture());
-        final Map<String, String> params = paramsCaptor.getValue();
-        assertEquals("FINAL", params.get("status"));
-        assertEquals("2", params.get("consecutiveDays"));
-        assertEquals("false", params.get("isWeekCommencing"));
-        assertEquals("30", params.get("duration"));
+        final Response result = resource.validateSessionAvailability(requestPayload);
+
+        assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), result.getStatus());
+        assertEquals(errorBody, result.getEntity());
     }
 }

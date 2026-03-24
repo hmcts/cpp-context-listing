@@ -167,8 +167,8 @@ public class CourtSchedulerServiceAdapter {
         return hearingSlotResponse;
     }
 
-    public Response validateSessionAvailability(final Map<String, String> queryParams) {
-        final Response response = hearingSlotsService.validateSessionAvailability(queryParams);
+    public Response validateSessionAvailability(final JsonObject requestPayload) {
+        final Response response = hearingSlotsService.validateSessionAvailability(requestPayload);
 
         if (HttpStatus.SC_OK == response.getStatus()) {
             return response;

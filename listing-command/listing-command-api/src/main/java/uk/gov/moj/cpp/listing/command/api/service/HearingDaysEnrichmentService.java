@@ -422,10 +422,6 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
         return isEmpty(builder.build().getHearingDays());
     }
 
-    private List<uk.gov.justice.core.courts.NonDefaultDay> enrichNonDefaultDaysForCrown(HearingListingNeeds hearingListingNeeds) {
-        return null;
-    }
-
     private List<NonDefaultDay> enrichNonDefaultDaysForCrown(UpdateHearingForListing updateHearingForListing, List<LocalDate> nonSittingDays) {
         List<NonDefaultDay> validNonDefaultDays = getValidNonDefaultDays(updateHearingForListing.getNonDefaultDays(), updateHearingForListing.getStartDate(), updateHearingForListing.getEndDate(), nonSittingDays);
         return enrichValidNonDefaultDays(updateHearingForListing, validNonDefaultDays);
