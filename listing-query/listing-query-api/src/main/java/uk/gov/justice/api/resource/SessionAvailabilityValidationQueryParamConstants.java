@@ -19,8 +19,6 @@ public final class SessionAvailabilityValidationQueryParamConstants {
     public static final String AVAILABLE_DURATION_MINS = "availableDurationMins";
     public static final String DURATION = "duration";
     public static final String STATUS = "status";
-    public static final String CONSECUTIVE_DAYS = "consecutiveDays";
-    public static final String IS_WEEK_COMMENCING = "isWeekCommencing";
     public static final String COURT_SCHEDULE_ID = "courtScheduleId";
     public static final String JURISDICTION = "jurisdiction";
     public static final String COURT_SCHEDULE_ID_LIST = "courtScheduleIdList";
