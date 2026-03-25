@@ -9,6 +9,7 @@ import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryPara
 import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.HEARING_START_TIME;
 import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.IS_SLOT_BASED;
 import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.IS_WEEK_COMMENCING;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.JURISDICTION;
 import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.OUCODE;
 import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.OU_L2_CODE;
 import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.PAGE_NUMBER;
@@ -47,5 +48,6 @@ public interface QueryApiHearingSlotsResource {
                              @QueryParam(AVAILABLE_DURATION_MINS) Integer availableDurationMins,
                              @QueryParam(STATUS) String status,
                              @QueryParam(CONSECUTIVE_DAYS) Integer consecutiveDays,
-                             @QueryParam(IS_WEEK_COMMENCING) Boolean isWeekCommencing);
+                             @QueryParam(IS_WEEK_COMMENCING) Boolean isWeekCommencing,
+                             @QueryParam(JURISDICTION) String jurisdiction);
 }
