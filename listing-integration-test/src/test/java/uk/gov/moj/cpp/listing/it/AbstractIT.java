@@ -112,6 +112,7 @@ public class AbstractIT {
         params.put("sessionEndDate", "2020-10-11");
         params.put("pageSize", "20");
         params.put("pageNumber", "1");
+        params.put("jurisdiction", "MAGISTRATES");
 
         return params;
     }

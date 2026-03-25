@@ -101,7 +101,8 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 20,
                 null,
                 null,
-                null);
+                null,
+                "MAGISTRATES");
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
         verify(notesService).findNotes(any(List.class));
@@ -136,7 +137,8 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 20,
                 null,
                 null,
-                null);
+                null,
+                "MAGISTRATES");
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
         verify(notesService).findNotes(any(List.class));
@@ -170,7 +172,8 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 20,
                 null,
                 null,
-                null);
+                null,
+                "MAGISTRATES");
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
         verify(notesService).findNotes(any(List.class));
@@ -214,13 +217,15 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 20,
                 "FINAL",
                 3,
-                false);
+                false,
+                "MAGISTRATES");
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(paramsCaptor.capture());
         final Map<String, String> params = paramsCaptor.getValue();
         assertEquals("FINAL", params.get("status"));
         assertEquals("3", params.get("consecutiveDays"));
         assertEquals("false", params.get("isWeekCommencing"));
+        assertEquals("MAGISTRATES", params.get("jurisdiction"));
     }
 
     @Test
@@ -242,6 +247,7 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 null,
                 "20",
                 "1",
+                null,
                 null,
                 null,
                 null,
@@ -274,12 +280,14 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 null,
                 null,
                 null,
+                null,
                 null);
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(paramsCaptor.capture());
         final Map<String, String> params = paramsCaptor.getValue();
         assertNull(params.get("consecutiveDays"));
         assertNull(params.get("isWeekCommencing"));
+        assertNull(params.get("jurisdiction"));
     }
 
     @Test
@@ -301,7 +309,8 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 null,
                 null,
                 null,
-                true);
+                true,
+                null);
 
         verifyNoInteractions(courtSchedulerServiceAdapter);
         verifyNoInteractions(notesService);

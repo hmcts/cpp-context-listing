@@ -436,6 +436,11 @@ protocols: [ HTTP, HTTPS ]
             description: Whether the request is for week commencing
             type: boolean
             required: false
+        jurisdiction:
+            description: Jurisdiction type
+            type: string
+            required: false
+            enum: [CROWN, MAGISTRATES]
     responses:
         200:
             description: OK
