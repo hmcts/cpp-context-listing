@@ -4,10 +4,8 @@ import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.common.converter.LocalDates.from;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
@@ -100,8 +98,6 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 "1",
                 20,
                 null,
-                null,
-                null,
                 "MAGISTRATES");
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
@@ -136,8 +132,6 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 "1",
                 20,
                 null,
-                null,
-                null,
                 "MAGISTRATES");
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
@@ -171,8 +165,6 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 "1",
                 20,
                 null,
-                null,
-                null,
                 "MAGISTRATES");
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
@@ -196,7 +188,7 @@ class DefaultQueryApiHearingSlotsResourceTest {
     }
 
     @Test
-    void searchHearingSlots_passesStatusConsecutiveDaysAndIsWeekCommencingToAdapter() {
+    void searchHearingSlots_passesStatusAndJurisdictionToAdapter() {
         when(courtSchedulerServiceAdapter.hearingSlotsSearch(any(Map.class))).thenReturn(response);
         when(notesService.findNotes(any(List.class))).thenReturn(new ArrayList());
 
@@ -216,15 +208,11 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 "1",
                 20,
                 "FINAL",
-                3,
-                false,
                 "MAGISTRATES");
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(paramsCaptor.capture());
         final Map<String, String> params = paramsCaptor.getValue();
         assertEquals("FINAL", params.get("status"));
-        assertEquals("3", params.get("consecutiveDays"));
-        assertEquals("false", params.get("isWeekCommencing"));
         assertEquals("MAGISTRATES", params.get("jurisdiction"));
     }
 
@@ -249,77 +237,11 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 "1",
                 null,
                 null,
-                null,
-                null,
                 null);
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(paramsCaptor.capture());
         final Map<String, String> params = paramsCaptor.getValue();
         assertEquals("ALL", params.get("status"));
-    }
-
-    @Test
-    void searchHearingSlots_omitsConsecutiveDaysAndIsWeekCommencingWhenNull() {
-        when(courtSchedulerServiceAdapter.hearingSlotsSearch(any(Map.class))).thenReturn(response);
-        when(notesService.findNotes(any(List.class))).thenReturn(new ArrayList());
-
-        queryApiHearingSlotsResource.getHearingSlots("ADULT",
-                "2017-10-11",
-                "2020-10-11",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                "20",
-                "1",
-                null,
-                null,
-                null,
-                null,
-                null);
-
-        verify(courtSchedulerServiceAdapter).hearingSlotsSearch(paramsCaptor.capture());
-        final Map<String, String> params = paramsCaptor.getValue();
-        assertNull(params.get("consecutiveDays"));
-        assertNull(params.get("isWeekCommencing"));
-        assertNull(params.get("jurisdiction"));
-    }
-
-    @Test
-    void searchHearingSlots_returnsEmptyResultsWithoutCallingAdapterWhenIsWeekCommencingTrue() {
-        Response result = queryApiHearingSlotsResource.getHearingSlots("ADULT",
-                "2017-10-11",
-                "2020-10-11",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                "20",
-                "1",
-                null,
-                null,
-                null,
-                true,
-                null);
-
-        verifyNoInteractions(courtSchedulerServiceAdapter);
-        verifyNoInteractions(notesService);
-        assertEquals(Response.Status.OK.getStatusCode(), result.getStatus());
-        JsonObject payload = (JsonObject) result.getEntity();
-        assertEquals(0, payload.getInt("results"));
-        assertEquals(0, payload.getInt("pageCount"));
-        assertEquals(0, payload.getJsonArray("hearingSlots").size());
-        assertEquals(0, payload.getJsonArray("notes").size());
     }
 
     private JsonObject createJsonObject() {

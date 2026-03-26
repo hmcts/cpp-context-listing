@@ -153,28 +153,6 @@ public class CourtSchedulerServiceStub {
                 ));
     }
 
-    public static void stubGetAvailableHearingSlotsWithStatusConsecutiveDaysAndWeekCommencing(boolean isEmpty) {
-        stubGetAvailableHearingSlotsWithStatusConsecutiveDaysAndWeekCommencing(isEmpty, false);
-    }
-
-    public static void stubGetAvailableHearingSlotsWithStatusConsecutiveDaysAndWeekCommencing(boolean isEmpty, boolean isWeekCommencing) {
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
-                .withQueryParam("sessionStartDate", matching("2017-10-11"))
-                .withQueryParam("pageNumber", matching("1"))
-                .withQueryParam("pageSize", matching("20"))
-                .withQueryParam("panel", matching("ADULT"))
-                .withQueryParam("oucodeL2Code", matching("Z01KR05"))
-                .withQueryParam("sessionEndDate", matching("2020-10-11"))
-                .withQueryParam("status", matching("FINAL"))
-                .withQueryParam("consecutiveDays", matching("2"))
-                .withQueryParam("isWeekCommencing", matching(String.valueOf(isWeekCommencing)))
-                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
-                .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(getPayload(isEmpty ? CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON : CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_SLOTS_JSON))
-                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
-                ));
-    }
-
     public static void stubGetAvailableHearingSlotsWithOverbookedSlots(boolean showOverbookedSlots) {
         stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
                 .withQueryParam("sessionStartDate", matching("2017-10-11"))

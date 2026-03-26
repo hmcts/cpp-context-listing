@@ -54,21 +54,9 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                                     final String pageNumber,
                                     final Integer availableDurationMins,
                                     final String status,
-                                    final Integer consecutiveDays,
-                                    final Boolean isWeekCommencing,
                                     final String jurisdiction) {
 
-        if (Boolean.TRUE.equals(isWeekCommencing)) {
-            final JsonObject emptyPayload = JsonObjects.createObjectBuilder()
-                    .add("results", 0)
-                    .add("pageCount", 0)
-                    .add("hearingSlots", JsonObjects.createArrayBuilder())
-                    .add("notes", JsonObjects.createArrayBuilder())
-                    .build();
-            return Response.ok(emptyPayload).build();
-        }
-
-        final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, hearingStartTime, oucodeL2Code, ouCode, courtRoomId, courtRoomNumber, businessType, courtSession, isSlotBased, showOverbookedSlots, pageSize, pageNumber, availableDurationMins, status, consecutiveDays, isWeekCommencing, jurisdiction);
+        final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, hearingStartTime, oucodeL2Code, ouCode, courtRoomId, courtRoomNumber, businessType, courtSession, isSlotBased, showOverbookedSlots, pageSize, pageNumber, availableDurationMins, status, jurisdiction);
         final Response response = courtSchedulerServiceAdapter.hearingSlotsSearch(params);
         if(response.getStatusInfo().getStatusCode() != HttpStatus.SC_OK ){
             return response;
@@ -102,8 +90,6 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                                                final String pageNumber,
                                                final Integer availableDurationMins,
                                                final String status,
-                                               final Integer consecutiveDays,
-                                               final Boolean isWeekCommencing,
                                                final String jurisdiction) {
         final Map<String, String> params = new HashMap<>();
         params.put(PANEL, panel);
@@ -127,12 +113,6 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
         if(availableDurationMins != null)
             params.put(DURATION, String.valueOf(availableDurationMins));
         params.put(STATUS, status != null ? status : "ALL");
-        if(consecutiveDays != null) {
-            params.put(CONSECUTIVE_DAYS, String.valueOf(consecutiveDays));
-        }
-        if(isWeekCommencing != null) {
-            params.put(IS_WEEK_COMMENCING, String.valueOf(isWeekCommencing));
-        }
         params.put(JURISDICTION, jurisdiction);
 
         return params.entrySet().stream().filter(entry -> entry.getValue() != null).collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
