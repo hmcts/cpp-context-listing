@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.it;
 import static java.time.LocalDate.now;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingData;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithWeekCommencingDate;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
@@ -49,6 +50,10 @@ public class WeekCommencingHearingIT extends AbstractIT {
         weekCommencingHearingSteps.verifyHearingUpdatedWithWeekCommencingDateAndUnallocatedWhenQueryingFromAPI();
 
         final UpdatedHearingData updatedHearingDataForUnallocation = updatedHearingData(hearingsData.getHearingData().get(0));
+
+        stubListHearingInCourtSessions(hearingsData.getHearingData().get(0).getId().toString(),
+                "8e837de0-743a-4a2c-9db3-b2e678c48729",
+                hearingsData.getHearingData().get(0).getHearingStartTime());
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForUnallocation);
         updateHearingSteps.whenHearingIsUpdatedForListing();
