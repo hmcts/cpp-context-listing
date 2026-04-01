@@ -1576,7 +1576,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    void shouldBeAbleToEjectApplicationAndNoSlotsForHearingFreedForCrown() {
+    void shouldBeAbleToEjectApplicationAndAvailableSlotsForHearingFreedForCrown() {
 
         final UUID applicationId = randomUUID();
         final UUID hearingId = randomUUID();
@@ -1590,6 +1590,7 @@ class HearingAggregateTest {
                         .withJurisdictionType(CROWN)
                         .withHearingDays(emptyList())
                         .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
                         .withStartDate(LocalDate.now().plusDays(1))
                         .withEstimatedMinutes(30)
                         .withEstimatedDuration("30 minutes")
@@ -1605,11 +1606,55 @@ class HearingAggregateTest {
 
         var listedHearing = hearing.ejectApplication(hearingId, applicationId, removalReason).toList();
 
-        assertThat(listedHearing, hasSize(1));
+        assertThat(listedHearing, hasSize(2));
 
-        var applicationEjected = (ApplicationEjected)listedHearing.get(0);
+        var availableSlotsForHearingFreed = (AvailableSlotsForHearingFreed)listedHearing.get(0);
+        var applicationEjected = (ApplicationEjected)listedHearing.get(1);
 
+        assertThat(availableSlotsForHearingFreed.getHearingId(), is(hearingId));
         assertThat(applicationEjected.getHearingId(), is(hearingId));
+    }
+
+    @Test
+    void shouldBeAbleToEjectCaseAndAvailableSlotsForHearingFreedForCrown() {
+
+        final UUID caseId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final String removalReason = "removal reason";
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(CROWN)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(new ArrayList<>(
+                                asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(caseId)
+                                        .withDefendants(emptyList())
+                                        .withIsEjected(true)
+                                        .build()
+                                )
+                        ))
+                        .build())
+                .build()
+        );
+
+        var listedHearing = hearing.ejectCase(hearingId, caseId, removalReason).toList();
+
+        assertThat(listedHearing, hasSize(2));
+
+        var availableSlotsForHearingFreed = (AvailableSlotsForHearingFreed) listedHearing.get(0);
+        var caseEjected = (CaseEjected) listedHearing.get(1);
+
+        assertThat(availableSlotsForHearingFreed.getHearingId(), is(hearingId));
+        assertThat(caseEjected.getHearingId(), is(hearingId));
     }
 
     @Test
@@ -4894,7 +4939,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    void shouldReturnFalse_WhenJurisdictionTypeIsNotMagistrates() {
+    void shouldReturnTrue_WhenJurisdictionTypeIsCrownAndOtherConditionsMatch() {
         final UUID ejectedItemId = randomUUID();
         final UUID hearingId = randomUUID();
 
@@ -4903,7 +4948,7 @@ class HearingAggregateTest {
                         .withId(hearingId)
                         .withType(uk.gov.justice.listing.events.Type.type().build())
                         .withHearingLanguage(HearingLanguage.ENGLISH)
-                        .withJurisdictionType(CROWN) // Not MAGISTRATES
+                        .withJurisdictionType(CROWN)
                         .withHearingDays(emptyList())
                         .withCourtRoomId(randomUUID())
                         .withAllocated(true)
@@ -4916,7 +4961,7 @@ class HearingAggregateTest {
 
         boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
-        assertThat(result, is(false));
+        assertThat(result, is(true));
     }
 
     @Test

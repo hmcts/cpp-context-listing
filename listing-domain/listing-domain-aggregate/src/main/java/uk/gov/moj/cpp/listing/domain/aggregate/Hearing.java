@@ -1712,7 +1712,8 @@ public class Hearing implements Aggregate {
         }
 
 
-        if (!uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES.equals(this.currentHearingEventState.getJurisdictionType())) {
+        if (!(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES.equals(this.currentHearingEventState.getJurisdictionType())
+                || uk.gov.justice.core.courts.JurisdictionType.CROWN.equals(this.currentHearingEventState.getJurisdictionType()))) {
             return false;
         }
 
