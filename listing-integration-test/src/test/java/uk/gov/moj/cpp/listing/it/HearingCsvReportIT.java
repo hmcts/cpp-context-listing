@@ -2,14 +2,13 @@ package uk.gov.moj.cpp.listing.it;
 
 import static java.text.MessageFormat.format;
 import static java.util.Collections.emptyList;
-import static java.util.UUID.fromString;
+import static javax.ws.rs.core.Response.Status.OK;
 import static org.codehaus.groovy.runtime.InvokerHelper.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.emptyString;
-import static javax.ws.rs.core.Response.Status.OK;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingDataWithJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.randomJudicialRole;
@@ -22,6 +21,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCpCourtRooms;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataXhibitCourtRoomMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
+
 import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
@@ -29,15 +29,18 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.UUID;
+
+import javax.ws.rs.core.Response;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import javax.ws.rs.core.Response;
 
 /**
  * Integration test for hearing CSV report download endpoint.
@@ -142,7 +145,10 @@ public class HearingCsvReportIT extends AbstractIT {
         assertThat(csvContent, containsString("RestrictionApplied"));
         assertThat(csvContent, containsString("C - Description"));
         assertThat(csvContent, Matchers.stringContainsInOrder("1 of 4","2 of 4","3 of 4","4 of 4"));
-        assertThat(csvContent, Matchers.stringContainsInOrder("T10:30:00Z"));
+        final LocalTime utcTime = ZonedDateTime.of(LocalDate.now(), LocalTime.of(10, 30), ZoneId.of("Europe/London"))
+                .withZoneSameInstant(ZoneOffset.UTC).toLocalTime();
+        final String expectedUtcTime = String.format("T%02d:%02d:00Z", utcTime.getHour(), utcTime.getMinute());
+        assertThat(csvContent, Matchers.stringContainsInOrder(expectedUtcTime));
 
     }
 
