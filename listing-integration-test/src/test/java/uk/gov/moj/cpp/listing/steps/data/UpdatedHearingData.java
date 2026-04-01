@@ -333,10 +333,12 @@ public class UpdatedHearingData {
         final List<JudicialRoleData> judiciary = singletonList(new JudicialRoleData(of(true), of(false), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "CIRCUIT_JUDGE")));
 
         final ZonedDateTime startTimeWithZone = ZonedDateTime.of(startDate, startTime, UTC);
+        final Optional<String> courtScheduleIdForDay = JURISDICTION_TYPE_CROWN.equals(hearingData.getJurisdictionType())
+                ? of(COURT_SCHEDULE_ID) : empty();
         final List<NonDefaultDayData> nonDefaultDays = singletonList(
                 new NonDefaultDayData(startTimeWithZone.format(DATE_TIME_FORMAT),
                                       of(DURATION),
-                                      empty(),
+                                      courtScheduleIdForDay,
                                       of(2),
                                       empty(),
                                       empty(),

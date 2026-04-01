@@ -7,6 +7,7 @@ import static uk.gov.moj.cpp.listing.steps.data.HearingsData.notHmiEnabledHearin
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROWN_JURISDICTION;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubDeleteAvailableHearingSlotsService;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetCourtSchedulesByIdWithDraftStatus;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyDeleteAvailableHearingSlotsStubCommandInvoked;
@@ -142,6 +143,7 @@ class VacateHearingIT extends AbstractIT {
         final String hearingId = hearingsData.getHearingData().get(0).getId().toString();
         final String courtScheduleId = "8e837de0-743a-4a2c-9db3-b2e678c48729";
 
+        stubGetCourtSchedulesByIdWithDraftStatus(java.util.Collections.singletonList(courtScheduleId), false);
         stubListHearingInCourtSessions(hearingId, courtScheduleId,
                 hearingsData.getHearingData().get(0).getHearingStartTime());
         listCourtHearingSteps.whenCaseIsSubmittedForListing();

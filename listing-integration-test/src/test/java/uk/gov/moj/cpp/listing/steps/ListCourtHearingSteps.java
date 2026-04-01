@@ -177,6 +177,7 @@ public class ListCourtHearingSteps extends AbstractIT {
     private static final String PUBLIC_LISTING_HEARING_CHANGES_SAVED = "public.listing.hearing-changes-saved";
     private static final String PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING = "public.listing.court-application-added-for-hearing";
     private static final String LISTING_EVENTS_HEARING_DAY_COURT_SCHEDULE_UPDATED = "listing.events.hearing-day-court-schedule-updated";
+    static final String CROWN_COURT_SCHEDULE_ID = "8e837de0-743a-4a2c-9db3-b2e678c48729";
 
     protected static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
@@ -1696,8 +1697,22 @@ public class ListCourtHearingSteps extends AbstractIT {
                         .withType(getHearingType(hearingData))
                         .withReportingRestrictionReason(hearingData.getReportingRestrictionReason())
                         .withIsGroupProceedings(false)
+                        .withNonDefaultDays(buildCrownNonDefaultDays(hearingData))
                         .build())).build();
 
+    }
+
+    private List<uk.gov.justice.core.courts.NonDefaultDay> buildCrownNonDefaultDays(final HearingData hearingData) {
+        if (!"CROWN".equals(hearingData.getJurisdictionType()) || hearingData.getCourtRoomId() == null) {
+            return null;
+        }
+        return singletonList(uk.gov.justice.core.courts.NonDefaultDay.nonDefaultDay()
+                .withCourtScheduleId(CROWN_COURT_SCHEDULE_ID)
+                .withCourtCentreId(hearingData.getCourtCentreId().toString())
+                .withRoomId(hearingData.getCourtRoomId().toString())
+                .withDuration(hearingData.getHearingEstimateMinutes())
+                .withStartTime(hearingData.getHearingStartTime() != null ? hearingData.getHearingStartTime() : java.time.ZonedDateTime.now())
+                .build());
     }
 
     private Person getPerson(final DefendantData d) {
