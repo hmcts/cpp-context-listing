@@ -136,15 +136,22 @@ class VacateHearingIT extends AbstractIT {
     }
 
     @Test
-    void shouldVacateCrownCourtHearingAndNotAttemptToFreeHearingSlots() {
+    void shouldVacateCrownCourtHearingAndFreeHearingSlots() {
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(CROWN_JURISDICTION);
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final String hearingId = hearingsData.getHearingData().get(0).getId().toString();
+        final String courtScheduleId = "8e837de0-743a-4a2c-9db3-b2e678c48729";
+
+        stubListHearingInCourtSessions(hearingId, courtScheduleId,
+                hearingsData.getHearingData().get(0).getHearingStartTime());
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
+        stubDeleteAvailableHearingSlotsService(hearingId);
         final VacatingTrialSteps vacatingTrialSteps = new VacatingTrialSteps(hearingsData);
         vacatingTrialSteps.whenPublicEventHearingTrialVacatedIsPublished();
         vacatingTrialSteps.verifyVacatedTrialWhenQueryingFromAPI();
+        verifyDeleteAvailableHearingSlotsStubCommandInvoked(hearingId);
     }
 
     @ParameterizedTest

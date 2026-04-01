@@ -535,6 +535,7 @@ class HearingIT extends AbstractIT {
         stubParams.put("BOOKING_ID", bookingId.toString());
         stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
         stubProvisionalBookingWithCustomParams(stubParams);
+        stubListHearingInCourtSessions(hearinId.toString(), courtScheduleId, hearingStartTime);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
