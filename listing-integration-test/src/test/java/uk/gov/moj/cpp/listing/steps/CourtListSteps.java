@@ -148,7 +148,7 @@ public class CourtListSteps extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.court.list.payload-court-room-id"), courtCenterId,
                         startDate, listId, endDate, courtRoomId));
-        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_COURT_LIST_PAYLOAD).withHeader(USER_ID, getLoggedInUser()))
+        pollWithDelayForJms(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_COURT_LIST_PAYLOAD).withHeader(USER_ID, getLoggedInUser()).build())
                 .until(status().is(OK), payload().isJson(allOf(allocatedMatchers)));
     }
 
