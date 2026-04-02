@@ -1621,6 +1621,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                         .build())
                         .withProsecutionCases(hearingData.getListedCases().stream()
                                 .map(lc -> ProsecutionCase.prosecutionCase().withId(lc.getCaseId())
+                                        .withIsCivil(lc.getCivil())
                                         .withInitiationCode(InitiationCode.C)
                                         .withProsecutionCaseIdentifier(ProsecutionCaseIdentifier.prosecutionCaseIdentifier()
                                                 .withProsecutionAuthorityCode(lc.getAuthorityCode())

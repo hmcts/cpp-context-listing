@@ -7,11 +7,13 @@ import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
 
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.listing.query.view.dto.ProsecutionCase;
 
 import java.util.Optional;
@@ -33,17 +35,22 @@ public class ProgressionService {
     private static final String PROGRESSION_QUERY_CASE_EXISTS_BY_CASEURN = "progression.query.case-exist-by-caseurn";
     private static final String PROGRESSION_QUERY_CASE_NOTES = "progression.query.case-notes";
     private static final String PROGRESSION_QUERY_APPLICATION_NOTES = "progression.query.application-notes";
+    private static final String CASE_ID = "caseId";
+
 
     @Inject
     @ServiceComponent(QUERY_API)
     private Requester requester;
 
     @Inject
+    private JsonObjectToObjectConverter jsonObjectToObjectConverter;
+
+    @Inject
     private UtcClock utcClock;
 
     public ProsecutionCase getProsecutionCaseDetails(final UUID caseId) {
         final JsonObject query = createObjectBuilder()
-                .add("caseId", caseId.toString())
+                .add(CASE_ID, caseId.toString())
                 .build();
 
         final JsonEnvelope jsonEnvelope = envelopeFrom(
@@ -70,6 +77,16 @@ public class ProgressionService {
         }
 
         return Optional.of(response.payloadAsJsonObject());
+    }
+
+    public uk.gov.justice.core.courts.ProsecutionCase getProsecutionCaseByCaseId(final JsonEnvelope envelope, final String caseId) {
+        final Metadata metadataWithActionName = metadataFrom(envelope.metadata()).withName(PROGRESSION_CASE_DETAILS).build();
+        final JsonObject requestParameter = createObjectBuilder()
+                .add(CASE_ID, caseId)
+                .build();
+        final JsonEnvelope requestEnvelope = envelopeFrom(metadataWithActionName, requestParameter);
+        final Envelope<JsonObject> response = requester.requestAsAdmin(requestEnvelope, JsonObject.class);
+        return jsonObjectToObjectConverter.convert(response.payload().getJsonObject("prosecutionCase"), uk.gov.justice.core.courts.ProsecutionCase.class);
     }
 
 }
