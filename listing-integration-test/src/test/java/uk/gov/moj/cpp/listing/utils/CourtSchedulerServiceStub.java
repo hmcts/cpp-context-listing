@@ -902,6 +902,54 @@ public class CourtSchedulerServiceStub {
                 ));
     }
 
+    /**
+     * Registers low-priority catch-all stubs for all court-scheduler endpoints.
+     * These prevent 60s timeouts when the enrichment service makes calls that
+     * don't match any specific stub. Individual test stubs (default priority 5)
+     * take precedence over these (priority 10).
+     */
+    public static void stubCourtSchedulerCatchAll() {
+        // GET /searchlist/hearingslots — searchBookSlots
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/searchlist/hearingslots")))
+                .atPriority(10)
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody("{\"hearingSlots\":{}}")
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+
+        // GET /hearingslots — search (available hearing slots)
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
+                .atPriority(10)
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody("{\"hearingSlots\":[]}")
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+
+        // GET /courtschedule/search.court-schedules-by-id
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/courtschedule/search.court-schedules-by-id")))
+                .atPriority(10)
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody("{\"hearingSlots\":[]}")
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+
+        // GET /multidaysearchandbook/hearingslots
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/multidaysearchandbook/hearingslots")))
+                .atPriority(10)
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody("{\"hearingSlots\":{}}")
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+
+        // PUT /list/hearingslots — listHearingInCourtSessions
+        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
+                .atPriority(10)
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody("{\"hearings\":[]}")
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+
+        // POST /hearingslots — updateAvailableHearingSlots
+        stubFor(WireMock.post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
+                .atPriority(10)
+                .willReturn(aResponse().withStatus(NO_CONTENT.getStatusCode())));
+    }
+
     public static void stubGetCourtSchedulesByIdWithDraftStatus(final List<String> courtScheduleIds, final boolean isDraft) {
         final StringBuilder hearingSlotsJson = new StringBuilder();
         hearingSlotsJson.append("{\n");
