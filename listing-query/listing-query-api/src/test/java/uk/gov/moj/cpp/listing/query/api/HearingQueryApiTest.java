@@ -4,12 +4,11 @@ import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.time.LocalDate.now;
 import static java.util.Arrays.stream;
 import static java.util.Objects.nonNull;
+import static java.util.Optional.of;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
-import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.apache.commons.io.FileUtils.readLines;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -25,6 +24,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.metadata;
@@ -34,7 +36,10 @@ import static uk.gov.moj.cpp.listing.domain.CourtListType.PRISON;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.USHERS_MAGISTRATE;
 
+import uk.gov.justice.core.courts.CourtApplication;
+import uk.gov.justice.core.courts.CourtApplicationType;
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
@@ -45,18 +50,23 @@ import uk.gov.moj.cpp.listing.common.xhibit.ReferenceDataLoader;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
 import uk.gov.moj.cpp.listing.query.api.service.ReferenceDataService;
+import uk.gov.moj.cpp.listing.query.api.util.FileUtil;
 import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
+import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
 import java.io.File;
+import java.io.StringReader;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonReader;
 import javax.json.JsonValue;
 
 import com.google.common.collect.ImmutableList;
@@ -116,6 +126,12 @@ public class HearingQueryApiTest {
     @Mock
     Requester requester;
 
+    @Mock
+    private ProgressionService progressionService;
+
+    @Mock
+    private JsonObjectToObjectConverter jsonObjectToObjectConverter;
+
     @Captor
     private ArgumentCaptor<JsonEnvelope> requesterCaptor;
 
@@ -145,7 +161,7 @@ public class HearingQueryApiTest {
                         || line.contains(LISTING_COTR_SEARCH_HEARING)
                         || line.contains(LISTING_SEARCH_BY_PERSON_DEFENDANT)
                         || line.contains(LISTING_SEARCH_BY_ORGANISATION_DEFENDANT)
-                        )
+                )
                 .map(line -> line.replaceAll(NAME, "").trim())
                 .collect(toList());
 
@@ -375,6 +391,23 @@ public class HearingQueryApiTest {
         assertThat(returnedEnvelope.payloadAsJsonObject().getString("templateName"), is("PrisonCourtList"));
     }
 
+    @Test
+    public void shouldGetEmptyResponseWhenCourtListTypeIsEmpty() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
+                        .withName("listing.search.court.list.payload"),
+                createObjectBuilder()
+                        .add(COURT_CENTRE_ID, randomUUID().toString())
+                        .add(COURT_ROOM_ID, randomUUID().toString())
+                        .add(LIST_ID, "")
+                        .build());
+        
+        final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
+
+        assertThat(returnedEnvelope.payloadAsJsonObject().size(), is(0));
+    }
+
 
     @Test
     public void shouldGetCasesByPersonDefendantWithIsCivilAndIsGroupMemberFlagTRUE() {
@@ -578,4 +611,189 @@ public class HearingQueryApiTest {
             assertThat(jsonObject.containsKey("isGroupMember"), is(false));
         }
     }
+
+
+    @Test
+    public void shouldEnrichHearingsWithApplicationTypeCode() {
+        final UUID applicationId1 = fromString("7ab2ed6a-bf9a-4539-848b-48012032c97c");
+        final UUID applicationId2 = fromString("170fec9f-b8a3-4e64-92ce-ed051cfd405e");
+        final String applicationTypeCode = "TYPE_CODE";
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(randomUUID())
+                        .withName("listing.search.hearings"),
+                createObjectBuilder().build());
+
+        final JsonEnvelope viewResponse = envelopeFrom(
+                metadataBuilder()
+                        .withId(randomUUID())
+                        .withName("listing.search.hearings"), returnAsJsonObject("listing.search.hearings-enriched.json")
+                );
+
+        when(hearingQueryView.searchHearings(query)).thenReturn(viewResponse);
+
+        final JsonObject appDetails = createObjectBuilder()
+                .add("courtApplication", createObjectBuilder().build())
+                .build();
+
+        when(progressionService.getApplicationDetails(viewResponse, applicationId1)).thenReturn(of(appDetails));
+        when(progressionService.getApplicationDetails(viewResponse, applicationId2)).thenReturn(of(appDetails));
+
+        final CourtApplication courtApplication = mock(CourtApplication.class);
+        final CourtApplicationType type = mock(CourtApplicationType.class);
+        when(type.getCode()).thenReturn(applicationTypeCode);
+        when(courtApplication.getType()).thenReturn(type);
+        when(jsonObjectToObjectConverter.convert(any(JsonObject.class), eq(CourtApplication.class))).thenReturn(courtApplication);
+
+        final JsonEnvelope result = hearingQueryApi.searchHearings(query);
+
+        final JsonObject expectedPayload = returnAsJsonObject("expected/listing.search.hearings-enriched.json");
+        assertThat(result.payloadAsJsonObject(), equalTo(expectedPayload));
+
+    }
+
+    @Test
+    public void shouldNotEnrichHearingsWithApplicationTypeCodeWhenNoApplicationOnHearing() {
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(randomUUID())
+                        .withName("listing.search.hearings"),
+                createObjectBuilder().build());
+
+        final JsonEnvelope viewResponse = envelopeFrom(
+                metadataBuilder()
+                        .withId(randomUUID())
+                        .withName("listing.search.hearings"), returnAsJsonObject("listing.search.hearings-enriched-no-application.json")
+        );
+
+        when(hearingQueryView.searchHearings(query)).thenReturn(viewResponse);
+
+        final JsonEnvelope result = hearingQueryApi.searchHearings(query);
+
+        final JsonObject expectedPayload = returnAsJsonObject("expected/listing.search.hearings-enriched-no-application.json");
+        assertThat(result.payloadAsJsonObject(), equalTo(expectedPayload));
+
+    }
+
+    @Test
+    public void shouldNotEnrichHearingsWithApplicationTypeCodeWhenNoHearing() {
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(randomUUID())
+                        .withName("listing.search.hearings"),
+                createObjectBuilder().build());
+
+        final JsonEnvelope viewResponse = envelopeFrom(
+                metadataBuilder()
+                        .withId(randomUUID())
+                        .withName("listing.search.hearings"), returnAsJsonObject("listing.search.hearings-enriched-no-hearing.json")
+        );
+
+        when(hearingQueryView.searchHearings(query)).thenReturn(viewResponse);
+
+        final JsonEnvelope result = hearingQueryApi.searchHearings(query);
+
+        final JsonObject expectedPayload = returnAsJsonObject("expected/listing.search.hearings-enriched-no-hearing.json");
+        assertThat(result.payloadAsJsonObject(), equalTo(expectedPayload));
+
+    }
+
+
+    @Test
+    public void shouldEnrichCourtCalendarHearingsWithApplicationTypeCode() {
+        final UUID applicationId1 = fromString("b731f138-5ee3-4601-8cba-2b9b5f58c855");
+        final UUID applicationId2 = fromString("9ddaff06-36f0-4c17-add9-82e84571f0fe");
+        final String applicationTypeCode = "TYPE_CODE";
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(randomUUID())
+                        .withName("listing.range.search.hearings.court.calendar"),
+                createObjectBuilder().build());
+
+        final JsonEnvelope viewResponse = envelopeFrom(
+                metadataBuilder()
+                        .withId(randomUUID())
+                        .withName("listing.range.search.hearings.court.calendar"), returnAsJsonObject("listing.search.hearings.court.calendar.json")
+        );
+
+        when(hearingQueryView.rangeSearchHearingsForCourtCalendar(query)).thenReturn(viewResponse);
+
+        final JsonObject appDetails = createObjectBuilder()
+                .add("courtApplication", createObjectBuilder().build())
+                .build();
+
+        when(progressionService.getApplicationDetails(viewResponse, applicationId1)).thenReturn(of(appDetails));
+        when(progressionService.getApplicationDetails(viewResponse, applicationId2)).thenReturn(of(appDetails));
+
+        final CourtApplication courtApplication = mock(CourtApplication.class);
+        final CourtApplicationType type = mock(CourtApplicationType.class);
+        when(type.getCode()).thenReturn(applicationTypeCode);
+        when(courtApplication.getType()).thenReturn(type);
+        when(jsonObjectToObjectConverter.convert(any(JsonObject.class), eq(CourtApplication.class))).thenReturn(courtApplication);
+
+        final JsonEnvelope result = hearingQueryApi.rangeSearchHearingsForCourtCalendar(query);
+
+        final JsonObject expectedPayload = returnAsJsonObject("expected/listing.search.hearings.court.calendar.json");
+        assertThat(result.payloadAsJsonObject(), equalTo(expectedPayload));
+    }
+
+    @Test
+    public void shouldNotEnrichCourtCalendarHearingsWithApplicationTypeCodeWhenNoApplicationOnHearing() {
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(randomUUID())
+                        .withName("listing.search.hearings"),
+                createObjectBuilder().build());
+
+        final JsonEnvelope viewResponse = envelopeFrom(
+                metadataBuilder()
+                        .withId(randomUUID())
+                        .withName("listing.search.hearings"), returnAsJsonObject("listing.search.hearings.court.calendar-no-application.json")
+        );
+
+        when(hearingQueryView.searchHearings(query)).thenReturn(viewResponse);
+
+        final JsonEnvelope result = hearingQueryApi.searchHearings(query);
+
+        final JsonObject expectedPayload = returnAsJsonObject("expected/listing.search.hearings.court.calendar-no-application.json");
+        assertThat(result.payloadAsJsonObject(), equalTo(expectedPayload));
+
+    }
+
+    @Test
+    public void shouldNotEnrichCourtCalendarHearingsWithApplicationTypeCodeWhenNoHearing() {
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(randomUUID())
+                        .withName("listing.search.hearings"),
+                createObjectBuilder().build());
+
+        final JsonEnvelope viewResponse = envelopeFrom(
+                metadataBuilder()
+                        .withId(randomUUID())
+                        .withName("listing.search.hearings"), returnAsJsonObject("listing.search.hearings.court.calendar-no-hearing.json")
+        );
+
+        when(hearingQueryView.searchHearings(query)).thenReturn(viewResponse);
+
+        final JsonEnvelope result = hearingQueryApi.searchHearings(query);
+
+        final JsonObject expectedPayload = returnAsJsonObject("expected/listing.search.hearings.court.calendar-no-hearing.json");
+        assertThat(result.payloadAsJsonObject(), equalTo(expectedPayload));
+
+    }
+
+    private JsonObject returnAsJsonObject(final String expectedJsonPath) {
+        final String payload = FileUtil.getPayload(expectedJsonPath);
+        try (JsonReader jsonReader = createReader(new StringReader(payload))) {
+            return jsonReader.readObject();
+        }
+    }
+
 }

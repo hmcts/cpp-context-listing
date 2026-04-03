@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.query.view.service;
 import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.justice.services.core.annotation.Component.QUERY_API;
+import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
@@ -33,6 +34,7 @@ public class ProgressionService {
 
     private static final String PROGRESSION_CASE_DETAILS = "progression.query.prosecutioncase";
     private static final String PROGRESSION_QUERY_CASE_EXISTS_BY_CASEURN = "progression.query.case-exist-by-caseurn";
+    public static final String SEARCH_APPLICATION = "progression.query.application-only";
     private static final String PROGRESSION_QUERY_CASE_NOTES = "progression.query.case-notes";
     private static final String PROGRESSION_QUERY_APPLICATION_NOTES = "progression.query.application-notes";
     private static final String CASE_ID = "caseId";
@@ -77,6 +79,19 @@ public class ProgressionService {
         }
 
         return Optional.of(response.payloadAsJsonObject());
+    }
+
+    public Optional<JsonObject> getApplicationDetails(final JsonEnvelope jsonEnvelope, UUID applicationId) {
+
+        final JsonObject payload = createObjectBuilder()
+                .add("applicationId", applicationId.toString())
+                .build();
+
+        final Envelope<JsonObject> requestEnvelope = envelop(payload)
+                .withName(SEARCH_APPLICATION)
+                .withMetadataFrom(jsonEnvelope);
+
+        return Optional.ofNullable(requester.request(requestEnvelope, JsonObject.class).payload());
     }
 
     public uk.gov.justice.core.courts.ProsecutionCase getProsecutionCaseByCaseId(final JsonEnvelope envelope, final String caseId) {
