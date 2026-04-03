@@ -18,6 +18,7 @@ import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.Hearing;
+import uk.gov.justice.core.courts.InitiationCode;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.listing.commands.AddApplicationToHearingCommand;
 import uk.gov.justice.listing.commands.AddHearingToCaseCommand;
@@ -87,6 +88,7 @@ import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCo
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateUnallocatedHearingPartiallyCommandConverter;
 import uk.gov.moj.cpp.listing.event.processor.factory.PublicHearingPartiallyUpdatedFactory;
 import uk.gov.moj.cpp.listing.event.processor.util.HearingObjectsListingToCoreConverter;
+import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -290,6 +292,9 @@ public class ListingEventProcessor {
     @Inject
     private HearingSlotsService hearingSlotsService;
 
+    @Inject
+    private ProgressionService progressionService;
+
     @Handles(PRIVATE_EVENT_HEARING_LISTED)
     public void handleHearingListedMessage(final JsonEnvelope envelope) {
         if (logger.isDebugEnabled()) {
@@ -429,15 +434,14 @@ public class ListingEventProcessor {
             logger.debug(EVENT_PAYLOAD_DEBUG_STRING, PRIVATE_EVENT_HEARING_ALLOCATED_FOR_LISTING_V2, envelope.toObfuscatedDebugString());
         }
 
-        final HearingConfirmed hearingConfirmed = getHearingConfirmedV2(envelope);
+        HearingConfirmed hearingConfirmed = getHearingConfirmedV2(envelope);
         final HearingAllocatedForListingV2 hearingAllocatedForListing = getHearingAllocatedForListingV2(envelope);
         final List<ProsecutionCaseDefendantOffenceIdsV2> prosecutionCaseDefendantOffenceIds = hearingAllocatedForListing.getProsecutionCaseDefendantsOffenceIds();
         final UUID hearingId = hearingAllocatedForListing.getHearingId();
-
+        hearingConfirmed = updateSendNotificationFlagForNonSummonCivilCaseCreation(envelope, hearingConfirmed);
         publishHearingConfirmedPublicEvent(envelope, hearingConfirmed);
         sendChangeNextHearingDayIfHearingIsSeeded(envelope, prosecutionCaseDefendantOffenceIds, hearingId);
         publishHearingChangesSavedPublicEvent(envelope, hearingAllocatedForListing.getHearingId());
-
     }
 
     @Handles(PRIVATE_EVENT_ALLOCATED_HEARING_UPDATED_FOR_LISTING)
@@ -1360,6 +1364,30 @@ public class ListingEventProcessor {
         }
 
         sender.send(envelopeFrom(metadataFrom(jsonEnvelope.metadata()).withId(randomUUID()).withName("public.listing.court-application-added-for-hearing"), jsonEnvelope.payloadAsJsonObject()));
+    }
+
+    private HearingConfirmed updateSendNotificationFlagForNonSummonCivilCaseCreation(final JsonEnvelope envelope, final HearingConfirmed hearingConfirmed) {
+        if (isNotEmpty(hearingConfirmed.getConfirmedHearing().getProsecutionCases())) {
+            final ConfirmedProsecutionCase confirmedProsecutionCase = hearingConfirmed.getConfirmedHearing().getProsecutionCases().get(0);
+            final boolean isCivil = nonNull(confirmedProsecutionCase.getIsCivil()) && confirmedProsecutionCase.getIsCivil();
+            boolean isSummonCase;
+            if (isCivil && !isBulkCase(confirmedProsecutionCase)) {
+                final ProsecutionCase prosecutionCase = progressionService.getProsecutionCaseByCaseId(envelope, confirmedProsecutionCase.getId().toString());
+                isSummonCase = nonNull(prosecutionCase.getInitiationCode()) && InitiationCode.S == prosecutionCase.getInitiationCode();
+                if (!isSummonCase) {
+                    return HearingConfirmed.hearingConfirmed()
+                            .withValuesFrom(hearingConfirmed)
+                            .withSendNotificationToParties(true)
+                            .build();
+                }
+            }
+        }
+        return hearingConfirmed;
+    }
+
+    private boolean isBulkCase(final ConfirmedProsecutionCase confirmedProsecutionCase) {
+        return (nonNull(confirmedProsecutionCase.getIsGroupMaster()) && confirmedProsecutionCase.getIsGroupMaster()) ||
+                (nonNull(confirmedProsecutionCase.getIsGroupMember()) && confirmedProsecutionCase.getIsGroupMember());
     }
 
 }

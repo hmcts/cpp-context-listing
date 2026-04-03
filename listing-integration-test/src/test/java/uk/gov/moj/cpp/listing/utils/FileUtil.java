@@ -1,14 +1,17 @@
 package uk.gov.moj.cpp.listing.utils;
 
 import static java.nio.charset.Charset.defaultCharset;
-import static uk.gov.justice.services.messaging.JsonObjects.createReader;
+import static javax.json.Json.createReader;
+import static org.apache.commons.io.FileUtils.readFileToString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 
 import javax.json.JsonObject;
 import javax.json.JsonReader;
@@ -38,6 +41,15 @@ public class FileUtil {
         try ( final InputStream inputStream = new ByteArrayInputStream(payload.getBytes()) ) {
             final JsonReader jsonReader = createReader(inputStream);
             return jsonReader.readObject();
+        }
+    }
+
+    public static String resourceToString(final String path) {
+        try {
+            return readFileToString(new File("src/test/resources/" + path));
+        } catch (final IOException e) {
+            fail("Error consuming file from location " + path);
+            throw new UncheckedIOException(e);
         }
     }
 }

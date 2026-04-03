@@ -143,6 +143,11 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(numberOfHearings));
     }
 
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate_CivilCase(final Integer numberOfHearings) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate_CivilCase(numberOfHearings));
+    }
+
+
     public static HearingsData hearingsDataWithPossibleDisqualification() {
         return new HearingsData(HearingsDataFactory.singleHearingsDataWithPossibleDisqualification());
     }

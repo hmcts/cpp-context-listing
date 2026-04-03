@@ -1,23 +1,34 @@
 package uk.gov.moj.cpp.listing.query.view.service;
 
 import static java.util.UUID.randomUUID;
+import static javax.json.Json.createObjectBuilder;
 import static org.codehaus.groovy.runtime.InvokerHelper.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
+import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
 
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.core.requester.Requester;
+import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory;
 import uk.gov.moj.cpp.listing.query.view.dto.LinkedApplicationsSummary;
 import uk.gov.moj.cpp.listing.query.view.dto.ProsecutionCase;
 
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
+import javax.json.JsonObject;
+
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,6 +46,12 @@ public class ProgressionServiceTest {
 
     @Mock
     private UtcClock utcClock;
+
+    @Mock
+    private JsonObjectToObjectConverter jsonObjectToObjectConverter;
+
+    @Mock
+    private uk.gov.justice.core.courts.ProsecutionCase prosecutionCase;
 
 
     @Test
@@ -55,6 +72,21 @@ public class ProgressionServiceTest {
 
         assertThat(prosecutionCaseDetails.getLinkedApplicationsSummary(), hasSize(1));
         assertThat(prosecutionCaseDetails.getLinkedApplicationsSummary().get(0).getApplicationId(), is(applicationId));
+    }
+
+    @Test
+    public void shouldGetProsecutionCaseByCaseId(){
+        final JsonEnvelope envelope = JsonEnvelope.envelopeFrom(
+                MetadataBuilderFactory.metadataWithRandomUUIDAndName(),
+                createObjectBuilder().build());
+        final String caseId = UUID.randomUUID().toString();
+        final Envelope<JsonObject> result = Envelope.envelopeFrom(metadataBuilder().withName("progression.query.prosecutioncase")
+                .withId(randomUUID()), createObjectBuilder().add("caseId", caseId)
+                .build());
+        when(requester.requestAsAdmin(any(), eq(JsonObject.class))).thenReturn(result);
+        given(jsonObjectToObjectConverter.convert(any(), any())).willReturn(prosecutionCase);
+        final uk.gov.justice.core.courts.ProsecutionCase response = progressionService.getProsecutionCaseByCaseId(envelope, caseId);
+        assertNotNull(response);
     }
 
 }
