@@ -41,6 +41,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrown;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
 
 import uk.gov.justice.core.courts.Address;
@@ -191,6 +192,12 @@ public class ListNextHearingSteps extends AbstractIT {
     }
 
     public void whenNextHearingSubmittedForListing(final HearingsData hearingsData) {
+        hearingsData.getHearingData().stream()
+                .filter(hd -> "CROWN".equals(hd.getJurisdictionType()) && hd.getCourtRoomId() != null)
+                .forEach(hd -> stubSearchBookHearingSlotsForCrown(
+                        hd.getId().toString(),
+                        hd.getCourtCentreId().toString(),
+                        hd.getCourtRoomId().toString()));
         final Response response = getResponseNextHearingsSubmittedForListing(hearingsData);
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
@@ -356,6 +363,12 @@ public class ListNextHearingSteps extends AbstractIT {
         hearingsData.getHearingData().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
         hearingsData.getHearingData().stream().filter(hd -> hd.getJudiciary() != null)
                 .forEach(hearingData -> stubGetReferenceDataJudiciaries(hearingData.getJudiciary().get(0).getJudicialId()));
+        hearingsData.getHearingData().stream()
+                .filter(hd -> "CROWN".equals(hd.getJurisdictionType()) && hd.getCourtRoomId() != null)
+                .forEach(hd -> stubSearchBookHearingSlotsForCrown(
+                        hd.getId().toString(),
+                        hd.getCourtCentreId().toString(),
+                        hd.getCourtRoomId().toString()));
     }
 
     private Response getResponseUpdatedRelatedHearingSubmittedForListing(final UUID existedHearingId, final HearingsData hearingsData) {

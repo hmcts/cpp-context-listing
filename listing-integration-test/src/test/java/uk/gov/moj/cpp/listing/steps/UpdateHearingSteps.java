@@ -40,6 +40,7 @@ import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilSizeMatch;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrown;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.payloadToObject;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
@@ -645,6 +646,12 @@ public class UpdateHearingSteps extends AbstractIT {
         stubGetReferenceDataCourtCentre(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court"));
         stubGetReferenceDataCourtCentreById(updatedHearingData.getCourtCentreId());
         stubGetReferenceDataHearingTypes(updatedHearingData.getHearingTypData().getTypeId());
+        if ("CROWN".equals(updatedHearingData.getJurisdictionType()) && updatedHearingData.getCourtRoomId() != null) {
+            stubSearchBookHearingSlotsForCrown(
+                    hearingData.getId().toString(),
+                    updatedHearingData.getCourtCentreId().toString(),
+                    updatedHearingData.getCourtRoomId().toString());
+        }
         final String updateHearingUrl = String.format("%s/%s", getBaseUri(), format
                 (readConfig().getProperty(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING), updatedHearingData.getHearingId()));
 

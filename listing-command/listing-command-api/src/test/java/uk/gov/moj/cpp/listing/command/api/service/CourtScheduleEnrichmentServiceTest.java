@@ -321,6 +321,42 @@ class CourtScheduleEnrichmentServiceTest {
         assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(false));
     }
 
+    @Test
+    void shouldNeedEnrichmentForCrownAllocationCandidateWithoutCourtScheduleIds() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withListedStartDateTime(ZonedDateTime.now())
+                .withCourtCentre(CourtCentre.courtCentre().withId(UUID.randomUUID()).withRoomId(UUID.randomUUID()).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.now())
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(true));
+    }
+
+    @Test
+    void shouldNotNeedEnrichmentForCrownWeekCommencingEvenIfAllocationCandidate() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withListedStartDateTime(ZonedDateTime.now())
+                .withCourtCentre(CourtCentre.courtCentre().withId(UUID.randomUUID()).withRoomId(UUID.randomUUID()).build())
+                .withWeekCommencingDate(WeekCommencingDate.weekCommencingDate()
+                        .withStartDate(LocalDate.now().toString())
+                        .withDuration(1)
+                        .build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.now())
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(false));
+    }
+
     // ─── CROWN single-day enrichment tests ───────────────────────────────
 
     @Test

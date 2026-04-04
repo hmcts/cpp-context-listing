@@ -200,6 +200,9 @@ public class PayloadBasedListCourtHearingSteps extends AbstractIT {
             stubListHearingInCourtSessions(values.hearingId, values.courtScheduleId,values.hearingStartTime);
             stubGetProsecutorPoliceFlag(UUID.fromString(values.prosecutorId));
             stubSearchBookHearingSlots(values.hearingId,values.courtCentreId,values.hearingDate,values.hearingStartTime);
+            if ("CROWN".equals(values.jurisdictionType) && values.courtRoomId != null) {
+                stubSearchBookHearingSlotsForCrown(values.hearingId, values.courtCentreId, values.courtRoomId);
+            }
         }
         
         // Add more stub setups as needed based on the payload content

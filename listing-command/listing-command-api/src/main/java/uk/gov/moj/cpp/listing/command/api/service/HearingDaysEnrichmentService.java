@@ -462,6 +462,7 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
 
     private List<HearingDay> enrichHearingDaysForCrown(HearingListingNeeds hearingListingNeeds) {
         HearingListingNeeds.Builder builder = HearingListingNeeds.hearingListingNeeds().withValuesFrom(hearingListingNeeds);
+        enrichByBookedSlotsIfPresent(hearingListingNeeds, builder);
         enrichByNonDefaultDaysIfPresent(hearingListingNeeds, builder);
         enrichCandidate(hearingListingNeeds, builder);
         return builder.build().getHearingDays();

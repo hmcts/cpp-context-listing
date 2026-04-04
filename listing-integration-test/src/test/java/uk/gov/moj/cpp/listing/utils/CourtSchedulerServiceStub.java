@@ -902,6 +902,28 @@ public class CourtSchedulerServiceStub {
                 ));
     }
 
+    public static void stubSearchBookHearingSlotsForCrown(final String hearingId, final String courtCentreId,
+                                                            final String courtRoomId) {
+        final String payload = "{\n" +
+                "  \"hearingSlots\": {\n" +
+                "      \"hearingId\": \"" + hearingId + "\",\n" +
+                "      \"courtScheduleId\": \"" + UUID.randomUUID() + "\",\n" +
+                "      \"courtRoomId\": \"" + courtRoomId + "\",\n" +
+                "      \"hearingDate\": \"" + LocalDate.now().plusDays(5) + "\",\n" +
+                "      \"hearingStartTime\": \"" + ZonedDateTime.now(java.time.ZoneOffset.UTC).plusDays(5).withHour(10).withMinute(0).withSecond(0).withNano(0) + "\",\n" +
+                "      \"duration\": 30\n" +
+                "  }\n" +
+                "}";
+
+        stubFor(get(WireMock.urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + "/searchlist/hearingslots")))
+                .withQueryParam("hearingId", matching(hearingId))
+                .withQueryParam("courtCentreId", matching(courtCentreId))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(payload)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
     /**
      * Registers low-priority catch-all stubs for all court-scheduler endpoints.
      * These prevent 60s timeouts when the enrichment service makes calls that
