@@ -133,6 +133,10 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         final boolean anyHearingDayHasCourtScheduleId = !isEmpty(hearing.getHearingDays())
                 && hearing.getHearingDays().stream().anyMatch(d -> nonNull(d.getCourtScheduleId()));
         if (!anyHearingDayHasCourtScheduleId) {
+            if (isCandidateForAllocation(hearing)) {
+                LOGGER.info("CROWN update: no courtScheduleIds but allocation candidate for hearingId {}. Searching and booking.", hearing.getHearingId());
+                return handleCrownUpdateSearchAndBook(hearing);
+            }
             LOGGER.info("CROWN update: no courtScheduleIds on hearingDays for hearingId {}. Skipping court schedule enrichment.", hearing.getHearingId());
             return hearing;
         }
@@ -229,10 +233,70 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         return hearingBuilder.build();
     }
 
+    private UpdateHearingForListing handleCrownUpdateSearchAndBook(final UpdateHearingForListing hearing) {
+        List<HearingDay> hearingDaysWithCourtScheduleId = new ArrayList<>();
+        List<JudicialRole> judicialRolesBySearchAndBook = new ArrayList<>();
+
+        hearing.getHearingDays().forEach(hearingDay -> {
+            if (isNull(hearingDay.getCourtScheduleId())) {
+                final String hearingDate = nonNull(hearingDay.getHearingDate())
+                        ? hearingDay.getHearingDate().toString()
+                        : hearing.getStartDate().toString();
+                final String startTime = nonNull(hearingDay.getStartTime())
+                        ? DateAndTimeUtils.toIsoString(hearingDay.getStartTime())
+                        : null;
+                final UUID courtRoomId = nonNull(hearingDay.getCourtRoomId())
+                        ? hearingDay.getCourtRoomId()
+                        : hearing.getCourtRoomId();
+                HearingSlotSearchResponse hearingSlotSearchResponse = searchAndBookSlots(
+                        hearing.getHearingId().toString(),
+                        hearing.getCourtCentreId().toString(),
+                        hearingDate,
+                        nonNull(courtRoomId) ? courtRoomId.toString() : null,
+                        nonNull(hearing.getEndDate()) ? hearing.getEndDate().toString() : null,
+                        startTime,
+                        hearingDay.getDurationMinutes(),
+                        false
+                );
+                if (hearingSlotSearchResponse == null) {
+                    hearingDaysWithCourtScheduleId.add(hearingDay);
+                } else {
+                    // Only take courtScheduleId from searchAndBook; preserve hearing day's original courtRoomId/courtCentreId/dates
+                    hearingDaysWithCourtScheduleId.add(HearingDay.hearingDay()
+                            .withValuesFrom(hearingDay)
+                            .withCourtScheduleId(fromString(hearingSlotSearchResponse.courtScheduleId()))
+                            .build());
+                    if (hearingSlotSearchResponse.judiciaries() != null && !hearingSlotSearchResponse.judiciaries().isEmpty()) {
+                        judicialRolesBySearchAndBook.addAll(hearingSlotSearchResponse.judiciaries());
+                    }
+                }
+            } else {
+                hearingDaysWithCourtScheduleId.add(hearingDay);
+            }
+        });
+
+        if (hearingDaysWithCourtScheduleId.stream().allMatch(d -> isNull(d.getCourtScheduleId()))) {
+            LOGGER.warn("CROWN update searchAndBook: no slots found for hearingId {}. Returning unchanged.", hearing.getHearingId());
+            return hearing;
+        }
+
+        UpdateHearingForListing.Builder hearingBuilder = UpdateHearingForListing.updateHearingForListing()
+                .withValuesFrom(hearing)
+                .withHearingDays(hearingDaysWithCourtScheduleId);
+
+        if (isNotEmpty(hearing.getJudiciary())) {
+            hearingBuilder.withJudiciary(hearing.getJudiciary());
+        } else if (isNotEmpty(judicialRolesBySearchAndBook)) {
+            hearingBuilder.withJudiciary(convertJudicialRoleDomainToCore(judicialRolesBySearchAndBook));
+        }
+
+        return hearingBuilder.build();
+    }
+
     public static boolean isCandidateForAllocation(final HearingListingNeeds hearing) {
         //This is derived from Hearing aggregate canAllocate()
         boolean hasValidStartDateTime = nonNull(hearing.getListedStartDateTime()) || nonNull(hearing.getEarliestStartDateTime());
-        boolean hasAssignedCourtRoom = nonNull(hearing.getCourtCentre().getRoomId());
+        boolean hasAssignedCourtRoom = nonNull(hearing.getCourtCentre()) && nonNull(hearing.getCourtCentre().getRoomId());
         boolean hasJurisdictionType = nonNull(hearing.getJurisdictionType());
 
 
@@ -269,20 +333,25 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         if (needsCourtScheduleEnrichment(hearing)) {
             EnrichmentResult enrichmentResult;
 
-            if (JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
+            if (JurisdictionType.CROWN.equals(hearing.getJurisdictionType()) && anyHearingDayHasCourtScheduleId(hearing)) {
                 enrichmentResult = handleCrownEnrichment(hearing);
             }
             // Case 1: All nondefault days have courtScheduleId
             else if (allHearingDaysHaveCourtScheduleId(hearing)) {
                 enrichmentResult = handleDirectListingCase(hearing);
             }
-            // Case 2: Has booking reference (provisional booking)
-            else if (nonNull(hearing.getBookingReference())) {
-                enrichmentResult = handleProvisionalBookingCase(hearing);
-            }
-            // Case 3: Has booked slots with courtScheduleId
+            // Case 2: Has booked slots with courtScheduleId (Crown or MAGS)
             else if (hasBookedSlotsWithCourtScheduleId(hearing)) {
                 enrichmentResult = handleBookedSlotsCase(hearing);
+            }
+            // Crown without courtScheduleIds: go directly to searchAndBook, skip provisional booking
+            else if (JurisdictionType.CROWN.equals(hearing.getJurisdictionType()) && isCandidateForAllocation(hearing)) {
+                LOGGER.info("CROWN hearing without courtScheduleIds, searching and booking for hearingId: {}", hearing.getId());
+                enrichmentResult = handleAllocationCandidate(hearing, envelope);
+            }
+            // Case 3: Has booking reference (provisional booking) — MAGS only at this point
+            else if (nonNull(hearing.getBookingReference())) {
+                enrichmentResult = handleProvisionalBookingCase(hearing);
             }
             // Case 4: Is candidate for allocation
             else if (isCandidateForAllocation(hearing)) {
@@ -383,6 +452,12 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                         .noneMatch(day -> isNull(day.getCourtScheduleId()));
     }
 
+    private boolean anyHearingDayHasCourtScheduleId(HearingListingNeeds hearing) {
+        return !isEmpty(hearing.getHearingDays()) &&
+                hearing.getHearingDays().stream()
+                        .anyMatch(day -> nonNull(day.getCourtScheduleId()));
+    }
+
     private boolean hasBookedSlotsWithCourtScheduleId(HearingListingNeeds hearing) {
         return isNotEmpty(hearing.getBookedSlots()) &&
                 hearing.getBookedSlots().stream()
@@ -393,16 +468,22 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         List<HearingDay> hearingDaysBySearchAndBook = new ArrayList<>();
         List<JudicialRole> judicialRolesBySearchAndBook = new ArrayList<>();
 
+        final ZonedDateTime effectiveStartDateTime = nonNull(hearing.getListedStartDateTime())
+                ? hearing.getListedStartDateTime()
+                : hearing.getEarliestStartDateTime();
+
         hearing.getHearingDays().forEach(hearingDay -> {
             if (isNull(hearingDay.getCourtScheduleId())) {
-                boolean isPolice = isPolice(hearing, envelope);
+                boolean isPolice = JurisdictionType.CROWN.equals(hearing.getJurisdictionType())
+                        ? false
+                        : isPolice(hearing, envelope);
                 HearingSlotSearchResponse hearingSlotSearchResponse = searchAndBookSlots(
                         hearing.getId().toString(),
                         hearing.getCourtCentre().getId().toString(),
-                        hearing.getListedStartDateTime().toLocalDate().toString(),
+                        effectiveStartDateTime.toLocalDate().toString(),
                         hearing.getCourtCentre().getRoomId().toString(),
                         hearing.getEndDate(),
-                        DateAndTimeUtils.toIsoString(hearing.getListedStartDateTime()),
+                        DateAndTimeUtils.toIsoString(effectiveStartDateTime),
                         hearing.getEstimatedMinutes(),
                         isPolice
                 );
@@ -627,7 +708,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     || nonNull(hearing.getBookedSlots()) || isCandidateForAllocation(hearing);
         }
         if (JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
-            return isCrownFixedDateWithCourtScheduleId(hearing);
+            return isCrownFixedDateWithCourtScheduleId(hearing)
+                    || (isNull(hearing.getWeekCommencingDate()) && isCandidateForAllocation(hearing));
         }
         return false;
     }

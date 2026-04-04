@@ -1133,7 +1133,10 @@ public class HearingsDataFactory {
 
     private static HearingData createRandomHearingWithBookedSlot(final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles) {
         final List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
+        final UUID courtCentreId = getRandomCourtCenterId();
         final List<RotaSlot> bookedSlots = Arrays.asList(RotaSlot.rotaSlot()
+                .withCourtCentreId(courtCentreId.toString())
+                .withRoomId(courtRoomId.toString())
                 .withCourtRoomId(SLOT_COURT_ROOM_ID)
                 .withDuration(SLOT_DURATION)
                 .withCourtScheduleId(SLOT_SCHEDULE_ID)
@@ -1142,7 +1145,7 @@ public class HearingsDataFactory {
                 .withStartTime(SLOT_START_TIME)
                 .build());
 
-        return new HearingData(randomUUID(), getRandomCourtCenterId(), STRING.next(), PTP_HEARING_TYPE, LocalDate.now(),
+        return new HearingData(randomUUID(), courtCentreId, STRING.next(), PTP_HEARING_TYPE, LocalDate.now(),
                 hearingEndDate, HEARING_ESTIMATE_MINUTES,
                 courtRoomId, ZonedDateTime.now(), listedCaseData,
                 judicialRoles, CROWN_JURISDICTION, STRING.next(),

@@ -48,6 +48,7 @@ import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWi
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDelayForJms;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrown;
 import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByOrganisationDefendant;
 import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByPersonDefendant;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
@@ -406,6 +407,12 @@ public class ListCourtHearingSteps extends AbstractIT {
         hearingsData.getHearingData().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
         hearingsData.getHearingData().stream().filter(hd -> hd.getJudiciary() != null)
                 .forEach(hearingData -> stubGetReferenceDataJudiciaries(judicialId));
+        hearingsData.getHearingData().stream()
+                .filter(hd -> "CROWN".equals(hd.getJurisdictionType()) && hd.getCourtRoomId() != null)
+                .forEach(hd -> stubSearchBookHearingSlotsForCrown(
+                        hd.getId().toString(),
+                        hd.getCourtCentreId().toString(),
+                        hd.getCourtRoomId().toString()));
     }
 
     protected void stubReferenceDataForFirstHearing() {
@@ -420,6 +427,12 @@ public class ListCourtHearingSteps extends AbstractIT {
         hearingsData.getHearingData().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
         hearingsData.getHearingData().stream().filter(hd -> hd.getJudiciary() != null)
                 .forEach(hearingData -> stubGetReferenceDataJudiciaries(hearingData.getJudiciary().get(0).getJudicialId()));
+        hearingsData.getHearingData().stream()
+                .filter(hd -> "CROWN".equals(hd.getJurisdictionType()) && hd.getCourtRoomId() != null)
+                .forEach(hd -> stubSearchBookHearingSlotsForCrown(
+                        hd.getId().toString(),
+                        hd.getCourtCentreId().toString(),
+                        hd.getCourtRoomId().toString()));
     }
 
     private Response getResponseCaseSubmittedForListingWithLegalEntity() {
