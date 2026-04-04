@@ -519,6 +519,40 @@ class CourtScheduleEnrichmentServiceTest {
         assertThat(result.getId(), is(hearingId));
     }
 
+    @Test
+    void shouldSearchAndBookForCrownListWithoutCourtScheduleIdsWhenAllocationCandidate() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withListedStartDateTime(ZonedDateTime.now().plusDays(5))
+                .withEndDate(LocalDate.now().plusDays(5).toString())
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtCentreId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withStartTime(ZonedDateTime.now().plusDays(5).withHour(10).withMinute(0))
+                                .withDurationMinutes(240)
+                                .build()))
+                .withEstimatedMinutes(240)
+                .build();
+
+        final JsonObject searchBookResponse = givenPayload("/courtscheduler.search.book.hearing.slots.json");
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(searchBookResponse);
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // searchAndBook should be called for Crown without courtScheduleIds
+        verify(hearingSlotsService).searchBookSlots(anyMap());
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId().toString(), is("23681024-8eac-4890-8c44-4651ad48cb24"));
+    }
+
     // ─── CROWN multi-day enrichment tests ────────────────────────────────
 
     @Test
@@ -713,6 +747,82 @@ class CourtScheduleEnrichmentServiceTest {
         verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
         verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
         assertThat(result.getHearingId(), is(hearingId));
+    }
+
+    @Test
+    void shouldSearchAndBookForCrownUpdateWhenAllocationCandidateWithoutCourtScheduleIds() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .withCourtRoomId(courtRoomId)
+                .withStartDate(LocalDate.now().plusDays(5))
+                .withEndDate(LocalDate.now().plusDays(5))
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(240)
+                                .withCourtRoomId(courtRoomId)
+                                .withCourtCentreId(courtCentreId)
+                                .build()))
+                .build();
+
+        final JsonObject searchBookResponse = givenPayload("/courtscheduler.search.book.hearing.slots.json");
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(searchBookResponse);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService).searchBookSlots(anyMap());
+        // listHearingInCourtSessions should NOT be called — update searchAndBook returns directly
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        assertThat(result.getHearingDays().size(), is(1));
+        // courtScheduleId should be set from searchAndBook response
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId().toString(), is("23681024-8eac-4890-8c44-4651ad48cb24"));
+        // courtRoomId should be PRESERVED from the original hearing day, not overwritten by searchAndBook
+        assertThat(result.getHearingDays().get(0).getCourtRoomId(), is(courtRoomId));
+    }
+
+    @Test
+    void shouldReturnUnchangedWhenCrownUpdateSearchAndBookReturnsEmpty() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .withCourtRoomId(courtRoomId)
+                .withStartDate(LocalDate.now().plusDays(5))
+                .withEndDate(LocalDate.now().plusDays(5))
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // searchAndBook returns empty response
+        final JsonObject emptyResponse = givenPayload("/courtscheduler.search.book.hearing.slots.json");
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        // Return empty hearingSlots object
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(
+                javax.json.Json.createObjectBuilder().add("hearingSlots", javax.json.Json.createObjectBuilder()).build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService).searchBookSlots(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        // Should return unchanged hearing when searchAndBook returns empty
+        assertThat(result.getHearingId(), is(hearingId));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(org.hamcrest.CoreMatchers.nullValue()));
     }
 
     @Test
