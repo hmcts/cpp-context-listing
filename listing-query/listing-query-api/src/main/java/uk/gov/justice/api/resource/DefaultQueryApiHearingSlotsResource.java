@@ -111,7 +111,7 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
         params.put(PAGE_SIZE, pageSize);
         params.put(PAGE_NUMBER, pageNumber);
         if(availableDurationMins != null)
-            params.put(DURATION, String.valueOf(availableDurationMins));
+            params.put(AVAILABLE_DURATION_MINS, String.valueOf(availableDurationMins));
         params.put(STATUS, status != null ? status : "ALL");
         params.put(JURISDICTION, jurisdiction);
 
