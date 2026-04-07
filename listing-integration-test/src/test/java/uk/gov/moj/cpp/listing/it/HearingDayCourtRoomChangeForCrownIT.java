@@ -12,6 +12,8 @@ import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetCourtSchedulesByIdWithDraftStatus;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 
 import uk.gov.moj.cpp.listing.helper.SearchHearingHelper;
@@ -79,6 +81,8 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
         );
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        stubGetCourtSchedulesByIdWithDraftStatus(java.util.Collections.singletonList("8e837de0-743a-4a2c-9db3-b2e678c48729"), false);
+        stubListHearingInCourtSessions(HEARING_ID.toString(), "8e837de0-743a-4a2c-9db3-b2e678c48729", HEARING_START_TIME);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
 
         // Verify the hearing is created and allocated

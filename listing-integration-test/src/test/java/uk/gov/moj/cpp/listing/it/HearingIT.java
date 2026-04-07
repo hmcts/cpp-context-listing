@@ -32,6 +32,7 @@ import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROW
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetCourtSchedulesByIdWithDraftStatus;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithJudiciary;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
@@ -535,6 +536,8 @@ class HearingIT extends AbstractIT {
         stubParams.put("BOOKING_ID", bookingId.toString());
         stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
         stubProvisionalBookingWithCustomParams(stubParams);
+        stubGetCourtSchedulesByIdWithDraftStatus(java.util.Collections.singletonList(courtScheduleId), false);
+        stubListHearingInCourtSessions(hearinId.toString(), courtScheduleId, hearingStartTime);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
