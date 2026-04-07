@@ -17,6 +17,7 @@ import static uk.gov.moj.cpp.listing.command.api.util.FileUtil.givenPayload;
 
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.JurisdictionType;
+import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
@@ -2073,6 +2074,35 @@ class CourtScheduleEnrichmentServiceTest {
                                 .withHearingDate(LocalDate.of(2026, 4, 10))
                                 .withDurationMinutes(120)
                                 .build()))
+                .build();
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result, is(hearing));
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldReturnUnchanged_whenCourtScheduleIdOnlyOnBookedSlots() {
+        final UUID hearingId = UUID.randomUUID();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(240)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(240)
+                                .build()))  // no courtScheduleId on hearingDays
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(UUID.randomUUID().toString())
+                                .withCourtCentreId(UUID.randomUUID().toString())
+                                .withRoomId(UUID.randomUUID().toString())
+                                .build()))  // courtScheduleId on bookedSlots only
                 .build();
 
         final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
