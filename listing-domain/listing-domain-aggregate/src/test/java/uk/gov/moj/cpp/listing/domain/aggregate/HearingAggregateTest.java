@@ -6120,6 +6120,52 @@ class HearingAggregateTest {
     }
 
     @Test
+    void shouldNotAllocateCrownHearingWhenMultiDayAndOneHearingDayIsDraft() {
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withCourtScheduleId(randomUUID())
+                                        .withHearingDate(LocalDate.now().plusDays(5))
+                                        .withIsDraft(false)
+                                        .build(),
+                                HearingDay.hearingDay()
+                                        .withCourtScheduleId(randomUUID())
+                                        .withHearingDate(LocalDate.now().plusDays(6))
+                                        .withIsDraft(true)  // one day is draft
+                                        .build()))
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(6))
+                        .withEstimatedMinutes(720)
+                        .withEstimatedDuration("720 minutes")
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(randomUUID())
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withOffences(Arrays.asList(Offence.offence()
+                                                .withId(randomUUID())
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
+        final List<Object> allocationEvents = allocationStream.toList();
+
+        // Should NOT allocate because one hearingDay has isDraft=true
+        assertThat(allocationEvents.size(), is(0));
+    }
+
+    @Test
     void shouldNotAllocateCrownHearingWhenHearingDaysMissCourtScheduleIds() {
         final UUID crownHearingId = randomUUID();
         final UUID crownCourtRoomId = randomUUID();

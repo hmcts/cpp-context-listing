@@ -76,23 +76,25 @@ Only substantive changes are listed — trivial refactors (pom version bumps, `J
 
 ---
 
-## Change 4: `HearingEnrichmentOrchestrator` — CROWN enrichment now includes court schedules
+## Change 4: `HearingEnrichmentOrchestrator` — CROWN enrichment pipeline reordered (CourtSchedule first)
 
 **File:** `listing-command/listing-command-api/src/main/java/.../HearingEnrichmentOrchestrator.java`
 
 **What changed:**
-- `enrichListCourtHearing()` CROWN path: now adds `courtScheduleEnrichmentService.enrichWithCourtSchedules()` after duration enrichment
-- `enrichUpdateHearing()` CROWN path: now adds court schedule enrichment + `enrichCrownWithSessionStatus()` which checks if sessions are draft and clears courtroom info accordingly
-- `enrichUpdateHearingWithCourtCentre()` CROWN path: same as above
-- New `enrichCrownWithSessionStatus()` method: checks draft status of court schedule IDs, clears courtRoomId if all sessions are draft (making the hearing unallocated)
-- New `checkIfSessionsAreAssigned()` method: queries `getCourtScheduleDraftStatus()` and returns true if no sessions are draft
+- CROWN enrichment pipeline reordered from `HearingDays → Duration → CourtSchedule` to `CourtSchedule → HearingDays → Duration`
+- `enrichListCourtHearing()` CROWN path: now calls `courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst()` FIRST, then HearingDays, then Duration
+- `enrichUpdateHearingForListing()` CROWN path (both overloads): same reorder — `enrichCrownCourtScheduleFirst()` first
+- `enrichCrownCourtScheduleFirst()` determines 3 cases: no courtScheduleId (return unchanged), multi-day (multiDaySearchAndBook), single-day (listHearingInCourtSessions)
+- Duration aggregation for multi-day decision uses `calculateAggregatedDuration()`: hearingDays → nonDefaultDays → estimatedMinutes
+- MAGS pipeline order unchanged
 
 **Journey:**
-- Adhoc Hearing (1): `enrichListCourtHearing()` path — now enriches CROWN with court schedules
-- Unallocated→Allocated (2): `enrichUpdateHearing()` path — enriches + checks session status
-- Update Allocated (3): `enrichUpdateHearingWithCourtCentre()` path — enriches + checks session status
+- Adhoc Hearing (1): `enrichListCourtHearing()` path — CROWN court schedule enriched first
+- Unallocated→Allocated (2): `enrichUpdateHearingForListing()` path — CROWN court schedule enriched first
+- Update Allocated (3): `enrichUpdateHearingForListing()` path — CROWN court schedule enriched first
+- Adjournment Path C (4): `enrichListCourtHearing()` via `listing.list-next-hearings-v2` — CROWN court schedule enriched first
 
-**Analysis:** This is the orchestration layer that wires court schedule enrichment into the CROWN flow. The logic of clearing courtRoomId for draft sessions is how you achieve the "unallocated = draft, allocated = assigned" semantics. This is **correct and needed**.
+**Analysis:** This is the orchestration layer that wires court schedule enrichment into the CROWN flow. The court scheduler is the source of truth for session dates, times, rooms, and judiciary — running it first means HearingDays and Duration derive from scheduler data rather than building speculatively. See `docs/development-guidelines/crown-courtschedule-design-decisions.md` §5a for full rationale.
 
 **Potential issue:** In `enrichCrownWithSessionStatus()`, if `getCourtScheduleDraftStatus()` returns an empty map (e.g., court scheduler is down), the code defaults to assuming sessions are assigned (`return true`). This means a network failure could cause a hearing to be incorrectly allocated. Consider whether this should fail loudly instead.
 

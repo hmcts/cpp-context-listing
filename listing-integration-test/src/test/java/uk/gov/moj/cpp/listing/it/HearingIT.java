@@ -815,4 +815,18 @@ class HearingIT extends AbstractIT {
         updateHearingSteps.verifyHearingResultedInDatabase();
     }
 
+    @Test
+    void shouldNotAllocateCrownHearingWhenCourtScheduleSessionIsDraft() {
+        final HearingsData hearingsData = HearingsData.hearingsDataForBookedSlot();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+
+        // Stub fetchCourtSchedulesByIds to return isDraft=true
+        final String courtScheduleId = hearingsData.getHearingData().get(0).getBookedSlots().get(0).getCourtScheduleId();
+        stubGetCourtSchedulesByIdWithDraftStatus(java.util.Collections.singletonList(courtScheduleId), true);
+
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        // isDraft=true session → aggregate noneHasDraftSession fails → UNALLOCATED
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+    }
+
 }

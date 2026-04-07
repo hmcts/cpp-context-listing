@@ -127,6 +127,99 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         return hearingBuilder.build();
     }
 
+    /**
+     * CROWN-first enrichment: determines case and calls appropriate court scheduler endpoint.
+     * Called BEFORE HearingDays and Duration enrichment for CROWN hearings.
+     *
+     * Case 1: No courtScheduleId anywhere -> return unchanged
+     * Case 2: Has courtScheduleId + aggregated duration > 360 -> multiDaySearchAndBook
+     * Case 3: Has courtScheduleId + aggregated duration <= 360 -> listHearingInCourtSessions
+     */
+    public HearingListingNeeds enrichCrownCourtScheduleFirst(final HearingListingNeeds hearing) {
+        LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] Starting for hearingId: {}", hearing.getId());
+
+        final boolean hasCourtScheduleIdOnHearingDays = anyHearingDayHasCourtScheduleId(hearing);
+        final boolean hasCourtScheduleId = hasCourtScheduleIdOnHearingDays || hasBookedSlotsWithCourtScheduleId(hearing);
+
+        if (!hasCourtScheduleId) {
+            LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] Case 1: No courtScheduleId found. Returning unchanged for hearingId: {}", hearing.getId());
+            return hearing;
+        }
+
+        // If courtScheduleId is only on bookedSlots (not on hearingDays), skip enrichment
+        // because the enrichment methods require hearingDays with courtScheduleIds
+        if (!hasCourtScheduleIdOnHearingDays) {
+            LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] courtScheduleId found on bookedSlots only (no hearingDays). Returning unchanged for hearingId: {}", hearing.getId());
+            return hearing;
+        }
+
+        final int aggregatedDuration = calculateAggregatedDuration(hearing);
+        final boolean isMultiDay = aggregatedDuration > HearingDurationEnrichmentService.MINUTES_IN_DAY;
+
+        LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] hearingId: {}, aggregatedDuration={}, isMultiDay={} (threshold={})",
+                hearing.getId(), aggregatedDuration, isMultiDay, HearingDurationEnrichmentService.MINUTES_IN_DAY);
+
+        EnrichmentResult enrichmentResult;
+        if (isMultiDay) {
+            LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] Case 2: Multi-day -> multiDaySearchAndBook for hearingId: {}", hearing.getId());
+            enrichmentResult = handleCrownMultiDayEnrichment(hearing);
+        } else {
+            LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] Case 3: Single-day -> listHearingInCourtSessions for hearingId: {}", hearing.getId());
+            enrichmentResult = handleCrownSingleDayEnrichment(hearing);
+        }
+
+        final List<HearingDay> enrichedHearingDays = enrichmentResult.getHearingDays();
+        final List<JudicialRole> enrichedJudiciaries = enrichmentResult.getJudiciaries();
+
+        LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] Result: enrichedHearingDays={}, judiciaries={} for hearingId: {}",
+                enrichedHearingDays.size(), enrichedJudiciaries.size(), hearing.getId());
+
+        HearingListingNeeds.Builder hearingBuilder = HearingListingNeeds.hearingListingNeeds()
+                .withValuesFrom(hearing)
+                .withHearingDays(enrichedHearingDays);
+
+        if (isNotEmpty(enrichedJudiciaries)) {
+            hearingBuilder.withJudiciary(convertJudicialRoleDomainToCore(enrichedJudiciaries));
+        }
+
+        // Adjust court centre if scheduler returned a different room
+        if (isNotEmpty(enrichedHearingDays) && nonNull(hearing.getCourtCentre())) {
+            final CourtCentre adjustedCourtCentre = CourtCentre.courtCentre()
+                    .withValuesFrom(hearing.getCourtCentre())
+                    .withRoomId(enrichedHearingDays.get(0).getCourtRoomId())
+                    .build();
+            hearingBuilder.withCourtCentre(adjustedCourtCentre);
+        }
+
+        return hearingBuilder.build();
+    }
+
+    /**
+     * CROWN-first enrichment for update path.
+     * Called BEFORE HearingDays and Duration enrichment for CROWN update hearings.
+     */
+    public UpdateHearingForListing enrichCrownCourtScheduleFirst(final UpdateHearingForListing hearing) {
+        LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] Update path starting for hearingId: {}", hearing.getHearingId());
+
+        final boolean hasCourtScheduleIdOnHearingDays = !isEmpty(hearing.getHearingDays())
+                && hearing.getHearingDays().stream().anyMatch(d -> nonNull(d.getCourtScheduleId()));
+        final boolean hasCourtScheduleIdOnNonDefaultDays = !isEmpty(hearing.getNonDefaultDays())
+                && hearing.getNonDefaultDays().stream().anyMatch(d -> nonNull(d.getCourtScheduleId()));
+        final boolean hasCourtScheduleId = hasCourtScheduleIdOnHearingDays || hasCourtScheduleIdOnNonDefaultDays;
+
+        if (!hasCourtScheduleId) {
+            LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] Update Case 1: No courtScheduleId on hearingDays or nonDefaultDays. Returning unchanged for hearingId: {}", hearing.getHearingId());
+            return hearing;
+        }
+
+        final int aggregatedDuration = calculateAggregatedDuration(hearing);
+        LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] Update hearingId: {}, aggregatedDuration={}, isMultiDay={}",
+                hearing.getHearingId(), aggregatedDuration, aggregatedDuration > HearingDurationEnrichmentService.MINUTES_IN_DAY);
+
+        // Delegate to existing enrichCrownUpdateHearing which already handles multi-day vs single-day
+        return enrichCrownUpdateHearing(hearing);
+    }
+
     private UpdateHearingForListing enrichCrownUpdateHearing(final UpdateHearingForListing hearing) {
         LOGGER.info("CROWN update enrichment for hearingId: {}", hearing.getHearingId());
 
@@ -702,6 +795,18 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         return hearingDaysUpdatedByCourtSchedules;
     }
 
+    /**
+     * Checks if the input hearing has courtScheduleId on hearingDays or bookedSlots.
+     * Used by the orchestrator to decide enrichment order for CROWN.
+     */
+    public static boolean hasCourtScheduleIdOnInput(final HearingListingNeeds hearing) {
+        final boolean onHearingDays = !isEmpty(hearing.getHearingDays())
+                && hearing.getHearingDays().stream().anyMatch(d -> nonNull(d.getCourtScheduleId()));
+        final boolean onBookedSlots = isNotEmpty(hearing.getBookedSlots())
+                && hearing.getBookedSlots().stream().anyMatch(s -> !isBlank(s.getCourtScheduleId()));
+        return onHearingDays || onBookedSlots;
+    }
+
     static boolean needsCourtScheduleEnrichment(final HearingListingNeeds hearing) {
         if (JurisdictionType.MAGISTRATES.equals(hearing.getJurisdictionType())) {
             return !isEmpty(hearing.getNonDefaultDays()) || nonNull(hearing.getBookingReference())
@@ -712,6 +817,38 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     || (isNull(hearing.getWeekCommencingDate()) && isCandidateForAllocation(hearing));
         }
         return false;
+    }
+
+    /**
+     * Calculates the total duration for the CROWN multi-day vs single-day decision.
+     * Priority: hearingDays durationMinutes → nonDefaultDays duration → estimatedMinutes → 0
+     */
+    static int calculateAggregatedDuration(final HearingListingNeeds hearing) {
+        if (isNotEmpty(hearing.getHearingDays())) {
+            return hearing.getHearingDays().stream()
+                    .mapToInt(d -> d.getDurationMinutes() != null ? d.getDurationMinutes() : 0)
+                    .sum();
+        }
+        if (isNotEmpty(hearing.getNonDefaultDays())) {
+            return hearing.getNonDefaultDays().stream()
+                    .mapToInt(d -> d.getDuration() != null ? d.getDuration() : 0)
+                    .sum();
+        }
+        return hearing.getEstimatedMinutes() != null ? hearing.getEstimatedMinutes() : 0;
+    }
+
+    static int calculateAggregatedDuration(final UpdateHearingForListing hearing) {
+        if (isNotEmpty(hearing.getHearingDays())) {
+            return hearing.getHearingDays().stream()
+                    .mapToInt(d -> d.getDurationMinutes() != null ? d.getDurationMinutes() : 0)
+                    .sum();
+        }
+        if (isNotEmpty(hearing.getNonDefaultDays())) {
+            return hearing.getNonDefaultDays().stream()
+                    .mapToInt(d -> d.getDuration() != null ? d.getDuration() : 0)
+                    .sum();
+        }
+        return 0;
     }
 
     private static boolean isCrownFixedDateWithCourtScheduleId(final HearingListingNeeds hearing) {
