@@ -992,7 +992,7 @@ public class CourtSchedulerServiceStub {
 
         stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/courtschedule/search.court-schedules-by-id")))
                 .withQueryParam("courtScheduleIds", matching(".*"))
-                .withHeader("Accept", containing("application/vnd.courtscheduler.search.courtschedules.by.id+json"))
+                .withHeader("Accept", containing("application/vnd.courtscheduler.search.court-schedules-by-id+json"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(hearingSlotsJson.toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
