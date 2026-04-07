@@ -12,7 +12,7 @@ Status: Draft — Pending implementation
 **Rationale:**
 - CROWN single-day enrichment closely parallels MAGS "direct listing" (Case 1: all hearingDays have courtScheduleId)
 - Reuses existing infrastructure: `listHearingSessionsAndExtractData()`, `combineSearchAndBookResponseAndListResponse()`, `populateJudiciaryInfoFromSlots()`, `SlotsToJsonStringConverter`
-- Keeps the enrichment pipeline pattern consistent: HearingDays → Duration → CourtSchedule
+- Keeps the enrichment pipeline pattern consistent (MAGS: HearingDays → Duration → CourtSchedule; CROWN: CourtSchedule → HearingDays → Duration — see §5a)
 - A separate service would duplicate HTTP client wiring, JSON parsing, and `EnrichmentResult` handling
 
 **Trade-off:** The class grows larger. Mitigated by clean method separation — CROWN methods are self-contained and don't share mutable state with MAGS methods.
@@ -63,13 +63,50 @@ Status: Draft — Pending implementation
 
 ## 5. Single-day vs multi-day determination
 
-**Decision:** Use `estimatedMinutes > 360` as the threshold (360 = `HearingDurationEnrichmentService.MINUTES_IN_DAY`).
+**Decision:** Use aggregated duration > 360 as the threshold (360 = `HearingDurationEnrichmentService.MINUTES_IN_DAY`).
+
+**Duration aggregation priority** (implemented in `CourtScheduleEnrichmentService.calculateAggregatedDuration`):
+1. If `hearingDays` exist → sum all `durationMinutes`
+2. Else if `nonDefaultDays` exist → sum all `duration`
+3. Else → fall back to `estimatedMinutes` (for `HearingListingNeeds`) or 0 (for `UpdateHearingForListing`)
 
 **Rationale:**
 - Aligns with the existing constant already used for MAGS duration calculations
-- For list-court-hearing: the payload carries a single nonDefaultDay. If its duration/estimatedMinutes > 360, it's multi-day
-- For update-hearing-for-listing: the enriched hearing has total estimated minutes. If > 360, it's multi-day
-- Matching the user's specification: "if duration <= 360 its single day otherwise its multiday"
+- For list-court-hearing: the payload carries hearing days or a single nonDefaultDay. If the aggregated duration > 360, it's multi-day
+- For update-hearing-for-listing: the enriched hearing has hearing days with durations. If the total > 360, it's multi-day
+- `estimatedMinutes` is a fallback when no structured day data is available
+
+---
+
+## 5a. CROWN enrichment pipeline order
+
+**Decision:** For CROWN, run CourtSchedule enrichment FIRST, then HearingDays, then Duration. MAGS retains the original order (HearingDays → Duration → CourtSchedule).
+
+**Pipeline order:**
+```
+MAGS:  HearingDays → Duration → CourtSchedule
+CROWN: CourtSchedule → HearingDays → Duration
+```
+
+**Entry point:** `CourtScheduleEnrichmentService.enrichCrownCourtScheduleFirst()` (overloaded for `HearingListingNeeds` and `UpdateHearingForListing`).
+
+**Three cases inside `enrichCrownCourtScheduleFirst`:**
+
+| Case | Condition | Action |
+|------|-----------|--------|
+| 1 | No courtScheduleId in hearingDays/bookedSlots | Return unchanged — no court schedule enrichment |
+| 2 | Has courtScheduleId + aggregated duration > 360 | Multi-day: `multiDaySearchAndBook` → get all sessions |
+| 3 | Has courtScheduleId + aggregated duration ≤ 360 | Single-day: `listHearingInCourtSessions` → get session details |
+
+**Rationale:**
+- The court scheduler is the source of truth for CROWN session dates, times, rooms, and judiciary
+- Running CourtSchedule first means HearingDays and Duration enrichment derive truth from the scheduler response rather than building hearing days speculatively and then correcting
+- For MAGS, the UI provides most hearing day details (slots, times, rooms) — the court scheduler just confirms and books, so the original order is correct
+
+**Affected entry points (all in `HearingEnrichmentOrchestrator`):**
+- `enrichListCourtHearing()` — used by `listing.command.list-court-hearing` and `listing.list-next-hearings-v2`
+- `enrichUpdateHearingForListing(hearing, envelope)` — used by `listing.command.update-related-hearing`
+- `enrichUpdateHearingForListing(hearing, envelope, courtCentreDetails)` — used by `listing.command.update-hearing-for-listing` and `listing.command.update-hearings-for-listing`
 
 ---
 
