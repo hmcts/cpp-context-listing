@@ -248,7 +248,7 @@ class HearingSlotsServiceTest {
         try {
             hearingSlotsService.getCourtSchedulesById(params);
         } catch (DataValidationException e) {
-            assertThat(e.getMessage(), is("Params for search application/vnd.courtscheduler.search.courtschedules.by.id+json is null ...."));
+            assertThat(e.getMessage(), is("Params for search application/vnd.courtscheduler.search.court-schedules-by-id+json is null ...."));
         }
     }
 
