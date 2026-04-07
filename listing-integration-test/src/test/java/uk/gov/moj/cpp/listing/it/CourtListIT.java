@@ -132,7 +132,7 @@ public class CourtListIT extends AbstractIT {
         final HearingsData hearingsData = HearingsData.hearingsDataWithExParteOffence();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
                 listCourtHearingSteps.whenCaseIsSubmittedForListing();
-                listCourtHearingSteps.verifyHearingListedFromAPI(AbstractIT.ALLOCATED);
+                listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(AbstractIT.ALLOCATED);
         final HearingData hearingData = hearingsData.getHearingData().get(0);
 
         // stubbed last listed case without exParte offence
