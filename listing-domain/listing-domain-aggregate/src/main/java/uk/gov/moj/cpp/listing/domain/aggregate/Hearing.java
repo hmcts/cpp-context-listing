@@ -3294,13 +3294,15 @@ public class Hearing implements Aggregate {
 
         final Stream.Builder<Object> eventStreamBuilder = Stream.builder();
 
-        eventStreamBuilder.add(OffencesRemovedFromHearing.offencesRemovedFromHearing()
-                .withHearingId(hearingId)
-                .withSeedingHearingId(seedingHearingId)
-                .withCaseIdsSeededByOnlySeedingHearingId(caseIdsSeededBySeedingHearingId)
-                .withUnallocated(!isAllocated())
-                .withSeededOffences(offencesSeededBySeedingHearing.stream().toList())
-                .build());
+        if(isNotEmpty(offencesSeededBySeedingHearing)) {
+            eventStreamBuilder.add(OffencesRemovedFromHearing.offencesRemovedFromHearing()
+                    .withHearingId(hearingId)
+                    .withSeedingHearingId(seedingHearingId)
+                    .withCaseIdsSeededByOnlySeedingHearingId(caseIdsSeededBySeedingHearingId)
+                    .withUnallocated(!isAllocated())
+                    .withSeededOffences(offencesSeededBySeedingHearing.stream().toList())
+                    .build());
+        }
 
         if (isAllocated() && MAGISTRATES == jurisdictionType) {
             eventStreamBuilder.add(availableSlotsForHearingFreed()
