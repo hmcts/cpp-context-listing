@@ -57,6 +57,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     private static final String HEARING_SLOTS = "hearingSlots";
     private static final String COURT_SCHEDULE_IDS = "courtScheduleIds";
     private static final String JUDICIARIES = "judiciaries";
+    private static final String COURT_SCHEDULE_ID = "courtScheduleId";
     @Inject
     private CourtSchedulerService courtSchedulerService;
     @Inject
@@ -666,7 +667,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
     private List<CourtSchedule> fetchCourtSchedulesByIds(final List<String> courtScheduleIds) {
         final Map<String, String> params = new HashMap<>();
-        params.put("courtScheduleIds", String.join(",", courtScheduleIds));
+        params.put(COURT_SCHEDULE_IDS, String.join(",", courtScheduleIds));
         final Response response = hearingSlotsService.getCourtSchedulesById(params);
 
         if (!isSuccess(response)) {
@@ -694,9 +695,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
     private List<CourtSchedule> multiDaySearchAndBook(final String courtScheduleId, final Integer durationInMinutes, final String hearingId) {
         final Map<String, String> params = new HashMap<>();
-        params.put("courtScheduleId", courtScheduleId);
-        params.put("durationInMinutes", String.valueOf(durationInMinutes));
-        params.put("hearingId", hearingId);
+        params.put(COURT_SCHEDULE_ID, courtScheduleId);
+        params.put(DURATION_MINUTES, String.valueOf(durationInMinutes));
+        params.put(HEARING_ID, hearingId);
         final Response response = hearingSlotsService.multiDaySearchAndBook(params);
 
         if (!isSuccess(response)) {
@@ -894,7 +895,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 return null;
             }
             final String bookedHearingId = responseJson.getString(HEARING_ID);
-            final String bookedCourtScheduleId = responseJson.getString("courtScheduleId");
+            final String bookedCourtScheduleId = responseJson.getString(COURT_SCHEDULE_ID);
             final String bookedCourtRoomId = responseJson.getString(COURT_ROOM_ID);
             final String bookedSessionStartTime = responseJson.getString(HEARING_START_TIME);
             final Integer duration = responseJson.getInt("duration");
@@ -959,7 +960,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             }
 
             final JsonObject firstSlot = slotsArray.getJsonObject(0);
-            final String courtScheduleId = firstSlot.getString("courtScheduleId");
+            final String courtScheduleId = firstSlot.getString(COURT_SCHEDULE_ID);
             final String courtRoomId = firstSlot.getString(COURT_ROOM_ID);
             final String sessionStartTime = firstSlot.getString("sessionStartTime");
 

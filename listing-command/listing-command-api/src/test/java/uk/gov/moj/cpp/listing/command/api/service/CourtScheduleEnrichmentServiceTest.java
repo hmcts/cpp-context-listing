@@ -40,7 +40,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
 
-import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
@@ -811,7 +810,6 @@ class CourtScheduleEnrichmentServiceTest {
                 .build();
 
         // searchAndBook returns empty response
-        final JsonObject emptyResponse = givenPayload("/courtscheduler.search.book.hearing.slots.json");
         when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         // Return empty hearingSlots object
