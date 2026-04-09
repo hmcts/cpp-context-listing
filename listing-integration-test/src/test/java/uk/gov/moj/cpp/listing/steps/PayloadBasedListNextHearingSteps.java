@@ -19,6 +19,7 @@ import org.hamcrest.MatcherAssert;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
+import uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub;
 import uk.gov.moj.cpp.listing.utils.PropertyUtil;
 import uk.gov.moj.cpp.listing.utils.ReferenceDataStub;
 
@@ -234,7 +235,10 @@ public class PayloadBasedListNextHearingSteps extends AbstractIT {
             ReferenceDataStub.stubGetReferenceDataHearingTypes(defaultHearingTypeId);
         }
         
-        // Add judiciary stubs if needed
+        if ("CROWN".equals(values.jurisdictionType) && values.courtRoomId != null && values.hearingId != null) {
+            CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrown(
+                    values.hearingId, values.courtCentreId, values.courtRoomId);
+        }
     }
     
     /**

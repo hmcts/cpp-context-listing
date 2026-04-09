@@ -6165,7 +6165,53 @@ class HearingAggregateTest {
     }
 
     @Test
-    void shouldAllocateCrownHearingWhenHearingDaysMissCourtScheduleIds() {
+    void shouldNotAllocateCrownHearingWhenMultiDayAndOneHearingDayIsDraft() {
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withCourtScheduleId(randomUUID())
+                                        .withHearingDate(LocalDate.now().plusDays(5))
+                                        .withIsDraft(false)
+                                        .build(),
+                                HearingDay.hearingDay()
+                                        .withCourtScheduleId(randomUUID())
+                                        .withHearingDate(LocalDate.now().plusDays(6))
+                                        .withIsDraft(true)  // one day is draft
+                                        .build()))
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(6))
+                        .withEstimatedMinutes(720)
+                        .withEstimatedDuration("720 minutes")
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(randomUUID())
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withOffences(Arrays.asList(Offence.offence()
+                                                .withId(randomUUID())
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
+        final List<Object> allocationEvents = allocationStream.toList();
+
+        // Should NOT allocate because one hearingDay has isDraft=true
+        assertThat(allocationEvents.size(), is(0));
+    }
+
+    @Test
+    void shouldNotAllocateCrownHearingWhenHearingDaysMissCourtScheduleIds() {
         final UUID crownHearingId = randomUUID();
         final UUID crownCourtRoomId = randomUUID();
 
@@ -6179,7 +6225,7 @@ class HearingAggregateTest {
                                 HearingDay.hearingDay()
                                         .withHearingDate(LocalDate.now().plusDays(5))
                                         .withIsDraft(false)
-                                        .build()))  // no courtScheduleId — legacy behavior still allocates
+                                        .build()))  // no courtScheduleId — must NOT allocate
                         .withCourtRoomId(crownCourtRoomId)
                         .withStartDate(LocalDate.now().plusDays(5))
                         .withEndDate(LocalDate.now().plusDays(5))
@@ -6200,13 +6246,12 @@ class HearingAggregateTest {
         final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
         final List<Object> allocationEvents = allocationStream.toList();
 
-        // Legacy: hearings without courtScheduleIds still allocate based on basic criteria
-        assertThat(allocationEvents.size(), is(1));
-        assertTrue(allocationEvents.get(0) instanceof HearingAllocatedForListingV2);
+        // Crown hearings without courtScheduleIds must NOT allocate
+        assertThat(allocationEvents.size(), is(0));
     }
 
     @Test
-    void shouldAllocateCrownHearingWhenHearingDaysEmpty() {
+    void shouldNotAllocateCrownHearingWhenHearingDaysEmpty() {
         final UUID crownHearingId = randomUUID();
         final UUID crownCourtRoomId = randomUUID();
 
@@ -6237,9 +6282,8 @@ class HearingAggregateTest {
         final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
         final List<Object> allocationEvents = allocationStream.toList();
 
-        // Legacy: empty hearingDays without courtScheduleIds still allocate based on basic criteria
-        assertThat(allocationEvents.size(), is(1));
-        assertTrue(allocationEvents.get(0) instanceof HearingAllocatedForListingV2);
+        // Crown hearings with empty hearingDays must NOT allocate — no courtScheduleIds
+        assertThat(allocationEvents.size(), is(0));
     }
 
     // ─── CROWN vacate-trial slot payback tests ───────────────────────────

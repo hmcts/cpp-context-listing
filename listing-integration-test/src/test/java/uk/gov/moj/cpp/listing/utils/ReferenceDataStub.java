@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.utils;
 
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
@@ -264,7 +265,7 @@ public class ReferenceDataStub {
                 .replace("JUDICIARY_ID", judiciaryId.toString());
 
         stubFor(get(urlPathMatching(REFERENCE_DATA_JUDICIARIES_QUERY_URL))
-                .withQueryParam("ids", equalTo(judiciaryId.toString()))
+                .withQueryParam("ids", containing(judiciaryId.toString()))
                 .willReturn(aResponse().withStatus(SC_OK)
                         .withHeader("CPPID", UUID.randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_JUDICIARIES_MEDIA_TYPE)

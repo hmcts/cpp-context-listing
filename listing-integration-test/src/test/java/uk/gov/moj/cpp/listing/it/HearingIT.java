@@ -32,6 +32,7 @@ import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROW
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetCourtSchedulesByIdWithDraftStatus;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithJudiciary;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
@@ -535,6 +536,8 @@ class HearingIT extends AbstractIT {
         stubParams.put("BOOKING_ID", bookingId.toString());
         stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
         stubProvisionalBookingWithCustomParams(stubParams);
+        stubGetCourtSchedulesByIdWithDraftStatus(java.util.Collections.singletonList(courtScheduleId), false);
+        stubListHearingInCourtSessions(hearinId.toString(), courtScheduleId, hearingStartTime);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
@@ -810,6 +813,20 @@ class HearingIT extends AbstractIT {
 
         // 2. Verify hearing is persisted in database with 'resulted' flag set to true
         updateHearingSteps.verifyHearingResultedInDatabase();
+    }
+
+    @Test
+    void shouldNotAllocateCrownHearingWhenCourtScheduleSessionIsDraft() {
+        final HearingsData hearingsData = HearingsData.hearingsDataForBookedSlot();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+
+        // Stub fetchCourtSchedulesByIds to return isDraft=true
+        final String courtScheduleId = hearingsData.getHearingData().get(0).getBookedSlots().get(0).getCourtScheduleId();
+        stubGetCourtSchedulesByIdWithDraftStatus(java.util.Collections.singletonList(courtScheduleId), true);
+
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        // isDraft=true session → aggregate noneHasDraftSession fails → UNALLOCATED
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
     }
 
 }

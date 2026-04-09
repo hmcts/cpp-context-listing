@@ -6,6 +6,7 @@ import static java.nio.charset.Charset.defaultCharset;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.joining;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCourtSchedulerCatchAll;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubDeleteAvailableHearingSlotsServiceForAnyHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import uk.gov.moj.cpp.listing.it.util.ArtemisQueuePurger;
@@ -56,6 +57,7 @@ public class AbstractIT {
     void setUp() {
         ArtemisQueuePurger.purgeAllListingQueues();
         reset();
+        stubCourtSchedulerCatchAll();
         setupAsAuthorisedUser(USER_ID_VALUE);
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased();
         stubDeleteAvailableHearingSlotsServiceForAnyHearing();

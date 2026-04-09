@@ -1964,12 +1964,8 @@ public class Hearing implements Aggregate {
         if (!basicCriteria) {
             return false;
         }
-        // If hearing days have court schedule IDs, ensure none are from draft sessions
-        if (hasCourtScheduleIds(this.hearingDays)) {
-            return noneHasDraftSession(this.hearingDays);
-        }
-        // Legacy: hearings without court schedule IDs allocate based on basic criteria
-        return true;
+        // Crown hearings require courtScheduleIds on all hearingDays, and none can be draft
+        return hasCourtScheduleIds(this.hearingDays) && noneHasDraftSession(this.hearingDays);
     }
 
     private boolean noneHasDraftSession(final List<HearingDay> hearingDays) {
