@@ -58,6 +58,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     private static final String COURT_SCHEDULE_IDS = "courtScheduleIds";
     private static final String JUDICIARIES = "judiciaries";
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
+    private static final String IS_DRAFT = "isDraft";
     @Inject
     private CourtSchedulerService courtSchedulerService;
     @Inject
@@ -900,7 +901,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             final String bookedCourtRoomId = responseJson.getString(COURT_ROOM_ID);
             final String bookedSessionStartTime = responseJson.getString(HEARING_START_TIME);
             final Integer duration = responseJson.getInt("duration");
-            final Boolean isDraft = responseJson.containsKey("isDraft") ? responseJson.getBoolean("isDraft") : false;
+            final Boolean isDraft = responseJson.containsKey(IS_DRAFT) ? responseJson.getBoolean(IS_DRAFT) : false;
 
             // Extract judiciaries if present
             List<JudicialRole> judiciaries = new ArrayList<>();
@@ -979,7 +980,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 }
             }
 
-            final Boolean isDraft = firstSlot.containsKey("isDraft") ? firstSlot.getBoolean("isDraft") : false;
+            final Boolean isDraft = firstSlot.containsKey(IS_DRAFT) ? firstSlot.getBoolean(IS_DRAFT) : false;
 
             return new HearingSlotSearchResponse(null, courtScheduleId, courtRoomId, sessionStartTime, hearingDay.getDurationMinutes(), judiciaries, isDraft);
         } else {
