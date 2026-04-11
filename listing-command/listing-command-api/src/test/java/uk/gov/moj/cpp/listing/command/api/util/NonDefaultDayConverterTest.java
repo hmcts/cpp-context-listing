@@ -99,6 +99,8 @@ class NonDefaultDayConverterTest {
         assertThat(result.get(0).getCourtScheduleId(), is(UUID.fromString(courtScheduleId)));
         assertThat(result.get(0).getDurationMinutes(), is(30));
         assertThat(result.get(0).getHearingDate(), is(startTime.toLocalDate()));
+        assertThat(result.get(0).getEndTime(), is(startTime.plusMinutes(30)));
+
     }
 
     @Test
@@ -142,6 +144,7 @@ class NonDefaultDayConverterTest {
         assertThat(result.get(0).getDurationMinutes(), is(30));
         assertThat(result.get(0).getHearingDate(), is(startTime.toLocalDate()));
         assertThat(result.get(0).getStartTime(), is(startTime));
+        assertThat(result.get(0).getEndTime(), is(startTime.plusMinutes(30)));
     }
 
     @Test

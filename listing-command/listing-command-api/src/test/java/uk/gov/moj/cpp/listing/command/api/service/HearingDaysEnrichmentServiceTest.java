@@ -49,6 +49,8 @@ class HearingDaysEnrichmentServiceTest {
     @Mock
     private CourtScheduleEnrichmentService courtScheduleEnrichmentService;
     @Mock
+    private uk.gov.moj.cpp.listing.common.xhibit.ReferenceDataCache referenceDataCache;
+    @Mock
     private JsonEnvelope jsonEnvelope;
     private RotaSlot defaultSlot;
     private HearingDay defaultHearingDay;
@@ -206,6 +208,67 @@ class HearingDaysEnrichmentServiceTest {
         // Then
         assertNotNull(enrichedHearing);
         assertEquals(JurisdictionType.CROWN, enrichedHearing.getJurisdictionType());
+    }
+
+    @Test
+    public void shouldSetEndTimeOnHearingDaysForUpdateWithNonDefaultDays() {
+        // Given — MAGISTRATES update hearing with non-default days triggers convertNonDefaultDaysToHearingDays
+        // which should compute endTime = startTime + duration
+        final LocalDate today = LocalDate.now();
+
+        UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withHearingId(randomUUID())
+                .withNonDefaultDays(Arrays.asList(
+                        createCommandNonDefaultDay(today, "AM"),
+                        createCommandNonDefaultDay(today.plusDays(1), "PM")))
+                .withStartDate(today)
+                .withEndDate(today.plusDays(1))
+                .withNonSittingDays(emptyList())
+                .build();
+
+        // When
+        UpdateHearingForListing enrichedHearing = hearingDaysEnrichmentService.enrichHearing(hearing, jsonEnvelope);
+
+        // Then — each hearingDay should have endTime = startTime + durationMinutes
+        assertNotNull(enrichedHearing);
+        assertNotNull(enrichedHearing.getHearingDays());
+        assertFalse(enrichedHearing.getHearingDays().isEmpty());
+        enrichedHearing.getHearingDays().forEach(hearingDay -> {
+            assertNotNull(hearingDay.getStartTime(), "startTime should not be null");
+            assertNotNull(hearingDay.getDurationMinutes(), "durationMinutes should not be null");
+            assertNotNull(hearingDay.getEndTime(), "endTime should not be null");
+            assertEquals(hearingDay.getStartTime().plusMinutes(hearingDay.getDurationMinutes()), hearingDay.getEndTime(),
+                    "endTime should equal startTime + durationMinutes");
+        });
+    }
+
+    @Test
+    public void shouldSetEndTimeOnEnrichCandidateHearingDay() {
+        // Given — Crown hearing with no hearingDays and no nonDefaultDays (candidate path)
+        final ZonedDateTime startTime = ZonedDateTime.of(2026, 5, 1, 10, 0, 0, 0, ZoneId.of("UTC"));
+
+        HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(randomUUID())
+                .withListedStartDateTime(startTime)
+                .withEstimatedMinutes(120)
+                .withCourtCentre(uk.gov.justice.core.courts.CourtCentre.courtCentre()
+                        .withId(randomUUID())
+                        .withRoomId(randomUUID())
+                        .build())
+                .build();
+
+        // When
+        HearingListingNeeds enrichedHearing = hearingDaysEnrichmentService.enrichHearings(hearing, jsonEnvelope);
+
+        // Then
+        assertNotNull(enrichedHearing);
+        assertNotNull(enrichedHearing.getHearingDays());
+        assertEquals(1, enrichedHearing.getHearingDays().size());
+        HearingDay day = enrichedHearing.getHearingDays().get(0);
+        assertNotNull(day.getEndTime(), "endTime should be computed from startTime + estimatedMinutes");
+        assertEquals(startTime.plusMinutes(120), day.getEndTime());
     }
 
     @Test

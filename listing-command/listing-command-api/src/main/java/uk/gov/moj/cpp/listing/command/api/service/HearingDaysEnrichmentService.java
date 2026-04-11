@@ -237,7 +237,8 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
                             .withHearingDate(nonDefaultDay.getStartTime().toLocalDate())
                             .withCourtCentreId(fromString(nonDefaultDay.getCourtCentreId()))
                             .withStartTime(nonDefaultDay.getStartTime())
-                            .withDurationMinutes(nonDefaultDay.getDuration());
+                            .withDurationMinutes(nonDefaultDay.getDuration())
+                            .withEndTime(nonDefaultDay.getStartTime().plusMinutes(nonDefaultDay.getDuration()));
                     if (nonNull(nonDefaultDay.getRoomId())) {
                         hdbuilder.withCourtRoomId(fromString(nonDefaultDay.getRoomId()));
                     }
@@ -373,7 +374,8 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
             hdbuilder.withHearingDate(nonDefaultDay.getStartTime().toLocalDate())
                     .withCourtCentreId(fromString(nonDefaultDay.getCourtCentreId()))
                     .withDurationMinutes(nonDefaultDay.getDuration())
-                    .withStartTime(nonDefaultDay.getStartTime());
+                    .withStartTime(nonDefaultDay.getStartTime())
+                    .withEndTime(nonDefaultDay.getStartTime().plusMinutes(nonDefaultDay.getDuration()));
             if (nonNull(nonDefaultDay.getRoomId())) {
                 hdbuilder.withCourtRoomId(fromString(nonDefaultDay.getRoomId()));
             }
@@ -414,6 +416,7 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
                     .withCourtCentreId(hearing.getCourtCentre().getId())
                     .withCourtRoomId(hearing.getCourtCentre().getRoomId())
                     .withDurationMinutes(hearing.getEstimatedMinutes())
+                    .withEndTime(nonNull(hearing.getEstimatedMinutes()) ? startTime.plusMinutes(hearing.getEstimatedMinutes()) : null)
                     .build()));
         }
     }

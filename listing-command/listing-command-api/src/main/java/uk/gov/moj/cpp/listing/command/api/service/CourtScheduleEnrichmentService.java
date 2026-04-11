@@ -58,6 +58,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     private static final String COURT_SCHEDULE_IDS = "courtScheduleIds";
     private static final String JUDICIARIES = "judiciaries";
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
+    private static final String IS_DRAFT = "isDraft";
     @Inject
     private CourtSchedulerService courtSchedulerService;
     @Inject
@@ -355,10 +356,11 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 if (hearingSlotSearchResponse == null) {
                     hearingDaysWithCourtScheduleId.add(hearingDay);
                 } else {
-                    // Only take courtScheduleId from searchAndBook; preserve hearing day's original courtRoomId/courtCentreId/dates
+                    // Only take courtScheduleId and isDraft from searchAndBook; preserve hearing day's original courtRoomId/courtCentreId/dates
                     hearingDaysWithCourtScheduleId.add(HearingDay.hearingDay()
                             .withValuesFrom(hearingDay)
                             .withCourtScheduleId(fromString(hearingSlotSearchResponse.courtScheduleId()))
+                            .withIsDraft(hearingSlotSearchResponse.isDraft())
                             .build());
                     if (hearingSlotSearchResponse.judiciaries() != null && !hearingSlotSearchResponse.judiciaries().isEmpty()) {
                         judicialRolesBySearchAndBook.addAll(hearingSlotSearchResponse.judiciaries());
@@ -899,6 +901,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             final String bookedCourtRoomId = responseJson.getString(COURT_ROOM_ID);
             final String bookedSessionStartTime = responseJson.getString(HEARING_START_TIME);
             final Integer duration = responseJson.getInt("duration");
+            final Boolean isDraft = responseJson.containsKey(IS_DRAFT) ? responseJson.getBoolean(IS_DRAFT) : false;
 
             // Extract judiciaries if present
             List<JudicialRole> judiciaries = new ArrayList<>();
@@ -913,7 +916,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 }
             }
 
-            return new HearingSlotSearchResponse(bookedHearingId, bookedCourtScheduleId, bookedCourtRoomId, bookedSessionStartTime, duration, judiciaries);
+            return new HearingSlotSearchResponse(bookedHearingId, bookedCourtScheduleId, bookedCourtRoomId, bookedSessionStartTime, duration, judiciaries, isDraft);
         }
 
         String responsePayload = "";
@@ -977,7 +980,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 }
             }
 
-            return new HearingSlotSearchResponse(null, courtScheduleId, courtRoomId, sessionStartTime, hearingDay.getDurationMinutes(), judiciaries);
+            final Boolean isDraft = firstSlot.containsKey(IS_DRAFT) ? firstSlot.getBoolean(IS_DRAFT) : false;
+
+            return new HearingSlotSearchResponse(null, courtScheduleId, courtRoomId, sessionStartTime, hearingDay.getDurationMinutes(), judiciaries, isDraft);
         } else {
             String responsePayload = "";
             if (searchResponse.hasEntity()) {
@@ -1004,6 +1009,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 .withStartTime(startTime)
                 .withDurationMinutes(duration)
                 .withEndTime(endTime)
+                .withIsDraft(hearingSlotSearchResponse.isDraft())
                 .build();
     }
 

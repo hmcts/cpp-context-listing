@@ -552,6 +552,41 @@ class CourtScheduleEnrichmentServiceTest {
         verify(hearingSlotsService).searchBookSlots(anyMap());
         assertThat(result.getHearingDays().size(), is(1));
         assertThat(result.getHearingDays().get(0).getCourtScheduleId().toString(), is("23681024-8eac-4890-8c44-4651ad48cb24"));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(false));
+    }
+
+    @Test
+    void shouldSetIsDraftTrueOnHearingDaysWhenSearchAndBookReturnsDraftForCrownAllocationCandidate() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withListedStartDateTime(ZonedDateTime.now().plusDays(5))
+                .withEndDate(LocalDate.now().plusDays(5).toString())
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtCentreId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withStartTime(ZonedDateTime.now().plusDays(5).withHour(10).withMinute(0))
+                                .withDurationMinutes(240)
+                                .build()))
+                .withEstimatedMinutes(240)
+                .build();
+
+        final JsonObject searchBookResponse = givenPayload("/courtscheduler.search.book.hearing.slots.draft.json");
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(searchBookResponse);
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService).searchBookSlots(anyMap());
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId().toString(), is("23681024-8eac-4890-8c44-4651ad48cb24"));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
     }
 
     // ─── CROWN multi-day enrichment tests ────────────────────────────────
