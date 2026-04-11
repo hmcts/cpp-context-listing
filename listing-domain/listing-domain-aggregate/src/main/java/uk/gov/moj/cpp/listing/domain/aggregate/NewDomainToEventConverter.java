@@ -417,6 +417,7 @@ public class NewDomainToEventConverter {
                         .withCourtScheduleId(hearingDay.getCourtScheduleId().orElse(null))
                         .withCourtRoomId(hearingDay.getCourtRoomId().orElse(null))
                         .withCourtCentreId(hearingDay.getCourtCentreId().orElse(null))
+                        .withIsDraft(hearingDay.getIsDraft().orElse(null))
                         .build())
                 .toList();
 

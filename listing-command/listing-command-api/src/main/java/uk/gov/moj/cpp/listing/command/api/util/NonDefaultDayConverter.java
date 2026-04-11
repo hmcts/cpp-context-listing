@@ -37,7 +37,8 @@ public class NonDefaultDayConverter {
                     .withCourtRoomId(UUID.fromString(nonDefaultDay.getRoomId()))
                     .withDurationMinutes(nonDefaultDay.getDuration())
                     .withStartTime(nonDefaultDay.getStartTime())
-                    .withHearingDate(nonDefaultDay.getStartTime().toLocalDate());
+                    .withHearingDate(nonDefaultDay.getStartTime().toLocalDate())
+                    .withEndTime(nonDefaultDay.getStartTime().plusMinutes(nonDefaultDay.getDuration()));
             if (nonNull(nonDefaultDay.getCourtScheduleId())) {
                 builder.withCourtScheduleId(UUID.fromString(nonDefaultDay.getCourtScheduleId()));
             }
@@ -56,6 +57,7 @@ public class NonDefaultDayConverter {
                     .withDurationMinutes(slot.getDuration())
                     .withHearingDate(slot.getStartTime().toLocalDate())
                     .withStartTime(slot.getStartTime())
+                    .withEndTime(slot.getStartTime().plusMinutes(slot.getDuration()))
                     .build());
         }
         return hearingDayList;
