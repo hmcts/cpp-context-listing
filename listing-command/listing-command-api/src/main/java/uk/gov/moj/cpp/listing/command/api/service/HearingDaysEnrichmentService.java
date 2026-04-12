@@ -242,6 +242,9 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
                     if (nonNull(nonDefaultDay.getRoomId())) {
                         hdbuilder.withCourtRoomId(fromString(nonDefaultDay.getRoomId()));
                     }
+                    if (nonNull(nonDefaultDay.getCourtScheduleId())) {
+                        hdbuilder.withCourtScheduleId(fromString(nonDefaultDay.getCourtScheduleId()));
+                    }
                     hearingDays.add(hdbuilder.build());
                 } else {
                     // Use default court hours for this date
