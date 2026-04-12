@@ -33,11 +33,16 @@ import uk.gov.moj.cpp.listing.domain.CourtSchedule;
 import uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse;
 import uk.gov.moj.cpp.listing.domain.ListUpdateHearing;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 import javax.json.JsonObject;
@@ -3136,5 +3141,119 @@ class CourtScheduleEnrichmentServiceTest {
                                 .build()))
                 .build();
         assertThat(CourtScheduleEnrichmentService.hasCourtScheduleIdOnInput(hearing), is(true));
+    }
+
+    // --- populateBookedSlots tests ---
+
+    @Test
+    void populateBookedSlots_shouldMatchAndPopulate_whenRoomIdIsNullOnBothSides() {
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final ZonedDateTime startTime = ZonedDateTime.of(2026, 5, 1, 9, 0, 0, 0, ZoneOffset.UTC);
+
+        RotaSlot slot = RotaSlot.rotaSlot()
+                .withCourtCentreId(courtCentreId.toString())
+                .withCourtScheduleId(courtScheduleId.toString())
+                .withStartTime(startTime)
+                .withDuration(60)
+                .build();
+
+        HearingDay hearingDay = HearingDay.hearingDay()
+                .withCourtCentreId(courtCentreId)
+                .withCourtScheduleId(courtScheduleId)
+                .withStartTime(startTime)
+                .withDurationMinutes(60)
+                .build();
+
+        List<RotaSlot> result = CourtScheduleEnrichmentService.populateBookedSlots(
+                List.of(slot), List.of(hearingDay));
+
+        assertEquals(1, result.size());
+        assertEquals(courtScheduleId.toString(), result.get(0).getCourtScheduleId());
+        assertNull(result.get(0).getRoomId());
+    }
+
+    @Test
+    void populateBookedSlots_shouldMatchAndKeepOriginalRoom_whenSlotHasRoomButHearingDayDoesNot() {
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID roomId = UUID.randomUUID();
+        final ZonedDateTime startTime = ZonedDateTime.of(2026, 5, 1, 9, 0, 0, 0, ZoneOffset.UTC);
+
+        RotaSlot slot = RotaSlot.rotaSlot()
+                .withCourtCentreId(courtCentreId.toString())
+                .withRoomId(roomId.toString())
+                .withCourtScheduleId(courtScheduleId.toString())
+                .withStartTime(startTime)
+                .withDuration(60)
+                .build();
+
+        HearingDay hearingDay = HearingDay.hearingDay()
+                .withCourtCentreId(courtCentreId)
+                .withCourtScheduleId(courtScheduleId)
+                .withStartTime(startTime)
+                .withDurationMinutes(60)
+                .build();
+
+        List<RotaSlot> result = CourtScheduleEnrichmentService.populateBookedSlots(
+                List.of(slot), List.of(hearingDay));
+
+        assertEquals(1, result.size());
+        // roomId from original slot preserved via withValuesFrom; hearingDay has no courtRoomId to override
+        assertEquals(roomId.toString(), result.get(0).getRoomId());
+    }
+
+    @Test
+    void populateBookedSlots_shouldMatchAndPopulateRoomId_whenBothHaveRoomId() {
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID roomId = UUID.randomUUID();
+        final ZonedDateTime startTime = ZonedDateTime.of(2026, 5, 1, 9, 0, 0, 0, ZoneOffset.UTC);
+
+        RotaSlot slot = RotaSlot.rotaSlot()
+                .withCourtCentreId(courtCentreId.toString())
+                .withRoomId(roomId.toString())
+                .withCourtScheduleId(courtScheduleId.toString())
+                .withStartTime(startTime)
+                .withDuration(60)
+                .build();
+
+        HearingDay hearingDay = HearingDay.hearingDay()
+                .withCourtCentreId(courtCentreId)
+                .withCourtRoomId(roomId)
+                .withCourtScheduleId(courtScheduleId)
+                .withStartTime(startTime)
+                .withDurationMinutes(60)
+                .build();
+
+        List<RotaSlot> result = CourtScheduleEnrichmentService.populateBookedSlots(
+                List.of(slot), List.of(hearingDay));
+
+        assertEquals(1, result.size());
+        assertEquals(roomId.toString(), result.get(0).getRoomId());
+    }
+
+    @Test
+    void populateBookedSlots_shouldNotMatch_whenCentreIdsDiffer() {
+        final ZonedDateTime startTime = ZonedDateTime.of(2026, 5, 1, 9, 0, 0, 0, ZoneOffset.UTC);
+
+        RotaSlot slot = RotaSlot.rotaSlot()
+                .withCourtCentreId(UUID.randomUUID().toString())
+                .withCourtScheduleId(UUID.randomUUID().toString())
+                .withStartTime(startTime)
+                .withDuration(60)
+                .build();
+
+        HearingDay hearingDay = HearingDay.hearingDay()
+                .withCourtCentreId(UUID.randomUUID())
+                .withCourtScheduleId(UUID.randomUUID())
+                .withStartTime(startTime)
+                .withDurationMinutes(60)
+                .build();
+
+        List<RotaSlot> result = CourtScheduleEnrichmentService.populateBookedSlots(
+                List.of(slot), List.of(hearingDay));
+
+        assertTrue(result.isEmpty());
     }
 }
