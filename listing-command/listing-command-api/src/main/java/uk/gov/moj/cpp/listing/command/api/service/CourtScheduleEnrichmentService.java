@@ -184,8 +184,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             hearingBuilder.withJudiciary(convertJudicialRoleDomainToCore(enrichedJudiciaries));
         }
 
-        // Adjust court centre if scheduler returned a different room
-        if (isNotEmpty(enrichedHearingDays) && nonNull(hearing.getCourtCentre())) {
+        // Adjust court centre if scheduler returned a different room (only for non-draft sessions)
+        if (isNotEmpty(enrichedHearingDays) && nonNull(hearing.getCourtCentre()) && nonNull(enrichedHearingDays.get(0).getCourtRoomId())) {
             final CourtCentre adjustedCourtCentre = CourtCentre.courtCentre()
                     .withValuesFrom(hearing.getCourtCentre())
                     .withRoomId(enrichedHearingDays.get(0).getCourtRoomId())
@@ -264,24 +264,23 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
             final int daysNeeded = sessions.size();
             final int durationPerDay = totalDuration / daysNeeded;
-            final List<HearingDay> expandedDays = sessions.stream().map(session -> HearingDay.hearingDay()
-                    .withCourtCentreId(fromString(session.getCourtHouseId()))
-                    .withCourtScheduleId(fromString(session.getCourtScheduleId()))
-                    .withCourtRoomId(fromString(session.getCourtRoomId()))
-                    .withStartTime(nonNull(session.getHearingStartTime()) ? ZonedDateTime.parse(session.getHearingStartTime()) : null)
-                    .withHearingDate(session.getSessionDate())
-                    .withDurationMinutes(durationPerDay)
-                    .withIsDraft(session.isDraft())
-                    .build()
-            ).toList();
+            final List<HearingDay> expandedDays = sessions.stream().map(session -> {
+                    HearingDay.Builder dayBuilder = HearingDay.hearingDay()
+                            .withCourtScheduleId(fromString(session.getCourtScheduleId()))
+                            .withStartTime(nonNull(session.getHearingStartTime()) ? ZonedDateTime.parse(session.getHearingStartTime()) : null)
+                            .withHearingDate(session.getSessionDate())
+                            .withDurationMinutes(durationPerDay)
+                            .withIsDraft(session.isDraft());
+                    if (!session.isDraft()) {
+                        dayBuilder.withCourtCentreId(fromString(session.getCourtHouseId()));
+                        dayBuilder.withCourtRoomId(fromString(session.getCourtRoomId()));
+                    }
+                    return dayBuilder.build();
+            }).toList();
 
             final boolean allNonDraft = sessions.stream().noneMatch(CourtSchedule::isDraft);
             if (!allNonDraft) {
-                LOGGER.warn("CROWN multi-day update: isDraft=true sessions for hearingId {}. HearingDays will carry isDraft=true.", hearing.getHearingId());
-                return UpdateHearingForListing.updateHearingForListing()
-                        .withValuesFrom(hearing)
-                        .withHearingDays(expandedDays)
-                        .build();
+                LOGGER.info("CROWN multi-day update: isDraft=true sessions for hearingId {}. Listing in court sessions for slot deduction, allocation decided by aggregate.", hearing.getHearingId());
             }
 
             enrichmentResult = listHearingSessionsAndExtractData(hearing.getHearingId(), expandedDays);
@@ -302,11 +301,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             final List<HearingDay> sanityCheckedDays = sanityCheckAndEnrichCrown(hearing.getHearingDays(), sessions, hearing.getHearingId());
 
             if (!allNonDraft) {
-                LOGGER.warn("CROWN single-day update: isDraft=true sessions for hearingId {}. HearingDays will carry isDraft=true.", hearing.getHearingId());
-                return UpdateHearingForListing.updateHearingForListing()
-                        .withValuesFrom(hearing)
-                        .withHearingDays(sanityCheckedDays)
-                        .build();
+                LOGGER.info("CROWN single-day update: isDraft=true sessions for hearingId {}. Listing in court sessions for slot deduction, allocation decided by aggregate.", hearing.getHearingId());
             }
 
             enrichmentResult = listHearingSessionsAndExtractData(hearing.getHearingId(), sanityCheckedDays);
@@ -467,9 +462,11 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             }
             /**in case we land in a different courtroom then requested, this should be reflected to main CourtCentre Object
              will be removed with LPT-1090 along with LPT-1355*/
-            final CourtCentre adjustedCourtCentre = CourtCentre.courtCentre().withValuesFrom(hearing.getCourtCentre())
-                    .withRoomId(enrichedHearingDays.get(0).getCourtRoomId())
-                    .build();
+            final CourtCentre.Builder courtCentreBuilder = CourtCentre.courtCentre().withValuesFrom(hearing.getCourtCentre());
+            if (nonNull(enrichedHearingDays.get(0).getCourtRoomId())) {
+                courtCentreBuilder.withRoomId(enrichedHearingDays.get(0).getCourtRoomId());
+            }
+            final CourtCentre adjustedCourtCentre = courtCentreBuilder.build();
 
             HearingListingNeeds.Builder hearingBuilder = HearingListingNeeds.hearingListingNeeds()
                     .withValuesFrom(hearing)
@@ -627,8 +624,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         final List<HearingDay> sanityCheckedDays = sanityCheckAndEnrichCrown(hearing.getHearingDays(), sessions, hearing.getId());
 
         if (!allNonDraft) {
-            LOGGER.warn("CROWN single-day: isDraft=true sessions for hearingId {}. HearingDays will carry isDraft=true, allocation decided by aggregate.", hearing.getId());
-            return new EnrichmentResult(sanityCheckedDays, new ArrayList<>());
+            LOGGER.info("CROWN single-day: isDraft=true sessions for hearingId {}. Listing in court sessions for slot deduction, allocation decided by aggregate.", hearing.getId());
         }
 
         return listHearingSessionsAndExtractData(hearing.getId(), sanityCheckedDays);
@@ -660,8 +656,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
         final boolean allNonDraft = sessions.stream().noneMatch(CourtSchedule::isDraft);
         if (!allNonDraft) {
-            LOGGER.warn("CROWN multi-day: isDraft=true sessions for hearingId {}. HearingDays will carry isDraft=true, allocation decided by aggregate.", hearing.getId());
-            return new EnrichmentResult(expandedDays, new ArrayList<>());
+            LOGGER.info("CROWN multi-day: isDraft=true sessions for hearingId {}. Listing in court sessions for slot deduction, allocation decided by aggregate.", hearing.getId());
         }
 
         return listHearingSessionsAndExtractData(hearing.getId(), expandedDays);
@@ -745,10 +740,17 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             final HearingDay.Builder builder = HearingDay.hearingDay()
                     .withValuesFrom(hd)
                     .withHearingDate(session.getSessionDate())
-                    .withCourtRoomId(fromString(session.getCourtRoomId()))
                     .withIsDraft(session.isDraft());
-            if (nonNull(session.getCourtHouseId())) {
-                builder.withCourtCentreId(fromString(session.getCourtHouseId()));
+            if (session.isDraft()) {
+                // Draft sessions: clear any inherited courtRoomId — room is not confirmed
+                builder.withCourtRoomId(null);
+            } else {
+                if (nonNull(session.getCourtRoomId())) {
+                    builder.withCourtRoomId(fromString(session.getCourtRoomId()));
+                }
+                if (nonNull(session.getCourtHouseId())) {
+                    builder.withCourtCentreId(fromString(session.getCourtHouseId()));
+                }
             }
             if (nonNull(session.getHearingStartTime())) {
                 builder.withStartTime(ZonedDateTime.parse(session.getHearingStartTime()));
@@ -1084,16 +1086,24 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         List<RotaSlot> newlyPopulatedRotaSlots = new ArrayList<>();
         for (RotaSlot listUpdateHearing : bookedSlots) {
             for (HearingDay hearingDay : hearingDays) {
-                if (listUpdateHearing.getCourtCentreId().equals(hearingDay.getCourtCentreId().toString()) &&
-                        listUpdateHearing.getRoomId().equals(hearingDay.getCourtRoomId().toString()) &&
-                        listUpdateHearing.getStartTime().isEqual(hearingDay.getStartTime()) &&
-                        listUpdateHearing.getDuration().equals(hearingDay.getDurationMinutes())) {
-                    newlyPopulatedRotaSlots.add(RotaSlot.rotaSlot()
+                final boolean centreMatch = nonNull(listUpdateHearing.getCourtCentreId()) && nonNull(hearingDay.getCourtCentreId())
+                        && listUpdateHearing.getCourtCentreId().equals(hearingDay.getCourtCentreId().toString());
+                final boolean roomMatch = isNull(listUpdateHearing.getRoomId()) || isNull(hearingDay.getCourtRoomId())
+                        || listUpdateHearing.getRoomId().equals(hearingDay.getCourtRoomId().toString());
+                final boolean timeMatch = nonNull(listUpdateHearing.getStartTime()) && nonNull(hearingDay.getStartTime())
+                        && listUpdateHearing.getStartTime().isEqual(hearingDay.getStartTime());
+                final boolean durationMatch = nonNull(listUpdateHearing.getDuration()) && nonNull(hearingDay.getDurationMinutes())
+                        && listUpdateHearing.getDuration().equals(hearingDay.getDurationMinutes());
+                if (centreMatch && roomMatch && timeMatch && durationMatch) {
+                    RotaSlot.Builder slotBuilder = RotaSlot.rotaSlot()
                             .withValuesFrom(listUpdateHearing)
-                            .withCourtScheduleId(hearingDay.getCourtScheduleId().toString())
+                            .withCourtScheduleId(nonNull(hearingDay.getCourtScheduleId()) ? hearingDay.getCourtScheduleId().toString() : listUpdateHearing.getCourtScheduleId())
                             .withStartTime(hearingDay.getStartTime())
-                            .withDuration(hearingDay.getDurationMinutes())
-                            .build());
+                            .withDuration(hearingDay.getDurationMinutes());
+                    if (nonNull(hearingDay.getCourtRoomId())) {
+                        slotBuilder.withRoomId(hearingDay.getCourtRoomId().toString());
+                    }
+                    newlyPopulatedRotaSlots.add(slotBuilder.build());
                 }
             }
         }

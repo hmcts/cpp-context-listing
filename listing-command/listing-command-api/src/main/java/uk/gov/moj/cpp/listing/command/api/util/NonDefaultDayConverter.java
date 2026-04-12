@@ -50,15 +50,17 @@ public class NonDefaultDayConverter {
     public static List<HearingDay> convertBookedSlotsToHearingDays(final List<RotaSlot> bookedSlots) {
         List<HearingDay> hearingDayList = new ArrayList<>();
         for (RotaSlot slot : bookedSlots) {
-            hearingDayList.add(HearingDay.hearingDay()
+            HearingDay.Builder builder = HearingDay.hearingDay()
                     .withCourtCentreId(UUID.fromString(slot.getCourtCentreId()))
-                    .withCourtRoomId(UUID.fromString(slot.getRoomId()))
                     .withCourtScheduleId(UUID.fromString(slot.getCourtScheduleId()))
                     .withDurationMinutes(slot.getDuration())
                     .withHearingDate(slot.getStartTime().toLocalDate())
                     .withStartTime(slot.getStartTime())
-                    .withEndTime(slot.getStartTime().plusMinutes(slot.getDuration()))
-                    .build());
+                    .withEndTime(slot.getStartTime().plusMinutes(slot.getDuration()));
+            if (nonNull(slot.getRoomId())) {
+                builder.withCourtRoomId(UUID.fromString(slot.getRoomId()));
+            }
+            hearingDayList.add(builder.build());
         }
         return hearingDayList;
     }
