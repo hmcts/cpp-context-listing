@@ -5,6 +5,6 @@
     "courtRoomId": "573bd1e6-92fa-49c2-8fa9-a355c1a4cded",
     "hearingStartTime": "2020-05-26T09:00:000Z",
     "duration": 20,
-    "isDraft": false
+    "isDraft": true
   }
 }

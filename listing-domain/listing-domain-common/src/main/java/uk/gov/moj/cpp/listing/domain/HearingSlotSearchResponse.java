@@ -8,7 +8,8 @@ public record HearingSlotSearchResponse(String hearingId,
                                         String courtRoomId,
                                         String sessionStartTime,
                                         Integer duration,
-                                        List<JudicialRole> judiciaries) {
+                                        List<JudicialRole> judiciaries,
+                                        Boolean isDraft) {
     @Override
     public boolean equals(final Object o) {
         if (this == o) return true;
@@ -19,12 +20,13 @@ public record HearingSlotSearchResponse(String hearingId,
                 that.courtRoomId()) && Objects.equals(this.sessionStartTime(),
                 that.sessionStartTime()) && Objects.equals(this.duration(),
                 that.duration()) && Objects.equals(this.judiciaries(),
-                that.judiciaries());
+                that.judiciaries()) && Objects.equals(this.isDraft(),
+                that.isDraft());
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(this.hearingId(), this.courtScheduleId(), this.courtRoomId(), this.sessionStartTime(),
-                this.duration(), this.judiciaries());
+                this.duration(), this.judiciaries(), this.isDraft());
     }
 }

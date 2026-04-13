@@ -736,7 +736,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldCreateAllocatedHearingDeletedAndFreeSlotsForCrownJurisdiction() {
+    void shouldCreateAllocatedHearingDeletedAndFreeSlotsForCrownJurisdiction() {
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
         final UUID defendant1Id = randomUUID();
@@ -6319,7 +6319,7 @@ class HearingAggregateTest {
         // Should emit both HearingTrialVacated + AvailableSlotsForHearingFreed
         assertThat(eventsList.size(), is(2));
         assertTrue(eventsList.stream().anyMatch(e -> e instanceof uk.gov.justice.listing.events.HearingTrialVacated));
-        assertTrue(eventsList.stream().anyMatch(e -> e instanceof AvailableSlotsForHearingFreed));
+        assertTrue(eventsList.stream().anyMatch(AvailableSlotsForHearingFreed.class::isInstance));
     }
 
     @Test
@@ -6349,7 +6349,7 @@ class HearingAggregateTest {
         // Should emit both HearingTrialVacated + AvailableSlotsForHearingFreed for Crown jurisdiction
         assertThat(eventsList.size(), is(2));
         assertTrue(eventsList.stream().anyMatch(e -> e instanceof uk.gov.justice.listing.events.HearingTrialVacated));
-        assertTrue(eventsList.stream().anyMatch(e -> e instanceof AvailableSlotsForHearingFreed));
+        assertTrue(eventsList.stream().anyMatch(AvailableSlotsForHearingFreed.class::isInstance));
     }
 
     @Test

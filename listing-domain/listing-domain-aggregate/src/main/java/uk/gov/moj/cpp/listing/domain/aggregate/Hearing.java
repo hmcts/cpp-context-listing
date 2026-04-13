@@ -2563,6 +2563,7 @@ public class Hearing implements Aggregate {
                             .withCourtScheduleId(cd.getCourtScheduleId())
                             .withCourtRoomId(cd.getCourtRoomId())
                             .withCourtCentreId(cd.getCourtCentreId())
+                            .withIsDraft(cd.isDraft())
                             .build())
                     .collect(toList());
 
