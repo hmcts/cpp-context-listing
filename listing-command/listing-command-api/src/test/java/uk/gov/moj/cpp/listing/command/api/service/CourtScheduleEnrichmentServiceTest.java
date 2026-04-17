@@ -2255,6 +2255,33 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
+    void shouldSumBookedSlotsDurationWhenNoHearingDaysOrNonDefaultDays() {
+        // Multi-day CROWN adjournment shape: bookedSlots carries the booked window; estimatedMinutes
+        // may be 0 or a per-offence value. bookedSlots aggregated total wins over estimatedMinutes.
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withEstimatedMinutes(0)
+                .withBookedSlots(Arrays.asList(
+                        RotaSlot.rotaSlot().withCourtScheduleId(UUID.randomUUID().toString()).withDuration(360).build(),
+                        RotaSlot.rotaSlot().withCourtScheduleId(UUID.randomUUID().toString()).withDuration(360).build(),
+                        RotaSlot.rotaSlot().withCourtScheduleId(UUID.randomUUID().toString()).withDuration(360).build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.calculateAggregatedDuration(hearing), is(1080));
+    }
+
+    @Test
+    void shouldFallBackToEstimatedMinutesWhenBookedSlotsHaveNoDuration() {
+        // Guard case: bookedSlots present but all durations null -> must not collapse to 0; keep estimatedMinutes.
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withEstimatedMinutes(240)
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot().withCourtScheduleId(UUID.randomUUID().toString()).build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.calculateAggregatedDuration(hearing), is(240));
+    }
+
+    @Test
     void shouldReturnZeroWhenNoDurationInfoAvailable() {
         final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
                 .build();

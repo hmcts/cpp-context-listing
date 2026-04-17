@@ -872,7 +872,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
     /**
      * Calculates the total duration for the CROWN multi-day vs single-day decision.
-     * Priority: hearingDays durationMinutes → nonDefaultDays duration → estimatedMinutes → 0
+     * Priority: hearingDays durationMinutes → nonDefaultDays duration → bookedSlots duration → estimatedMinutes → 0.
+     * bookedSlots sits above estimatedMinutes because for CROWN adjournment / MCC the bookedSlots
+     * are the authoritative booked window whereas estimatedMinutes can be 0 or a per-offence value.
      */
     static int calculateAggregatedDuration(final HearingListingNeeds hearing) {
         if (isNotEmpty(hearing.getHearingDays())) {
@@ -884,6 +886,14 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return hearing.getNonDefaultDays().stream()
                     .mapToInt(d -> d.getDuration() != null ? d.getDuration() : 0)
                     .sum();
+        }
+        if (isNotEmpty(hearing.getBookedSlots())) {
+            final int bookedSlotsTotal = hearing.getBookedSlots().stream()
+                    .mapToInt(s -> s.getDuration() != null ? s.getDuration() : 0)
+                    .sum();
+            if (bookedSlotsTotal > 0) {
+                return bookedSlotsTotal;
+            }
         }
         return hearing.getEstimatedMinutes() != null ? hearing.getEstimatedMinutes() : 0;
     }
