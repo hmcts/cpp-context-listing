@@ -68,11 +68,10 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
             builder.withNonDefaultDays(emptyList());
             builder.withNonSittingDays(emptyList());
         } else if (JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
-            // builder.withNonSittingDays(enrichNonSittingDaysForCrown(hearing)); no nonsittingdays on this journey
-            // builder.withNonDefaultDays(enrichNonDefaultDaysForCrown(hearing)); no nondefaultdays on this journey
-            if (isNull(hearing.getWeekCommencingDate())) {
-                builder.withHearingDays(enrichHearingDaysForCrown(hearing));
-            }
+            // CROWN: hearingDays are already populated by CourtScheduleEnrichmentService.enrichCrownCourtScheduleFirst
+            // (single-day: 1 HearingDay from the fetched session; multi-day: N HearingDays from multiDaySearchAndBook,
+            // each with its own courtScheduleId and hearingDate).
+            // This stage only computes start/end dates — the existing hearingDays come in via withValuesFrom(hearing).
         }
         calculateStartAndEndDates(builder);
         return builder.build();

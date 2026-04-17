@@ -54,11 +54,12 @@ public class HearingEnrichmentOrchestrator {
                 enrichedHearings.add(withCourtSchedules);
             } else if (JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
                 LOGGER.info("Enrich list court hearing for CROWN hearingid: {}", hearing.getId());
-                // For crown: Hearing Days -> Duration -> Court Schedule
-                HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(hearing, envelope);
+                // CROWN order: CourtSchedule-first (expands multi-day into N hearingDays) ->
+                // HearingDays (calcStartAndEndDates only) -> Duration.
+                HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+                HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(withCourtSchedules, envelope);
                 HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
-                HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDurations, envelope);
-                enrichedHearings.add(withCourtSchedules);
+                enrichedHearings.add(withDurations);
             } else {
                 throw new IllegalArgumentException(UNSUPPORTED_JURISDICTION_TYPE + hearing.getJurisdictionType());
             }
