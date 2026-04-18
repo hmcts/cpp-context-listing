@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import uk.gov.justice.core.courts.JurisdictionType;
+import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
@@ -61,6 +62,10 @@ public class HearingEnrichmentOrchestratorTest {
         enrichedCrownHearing = mock(HearingListingNeeds.class);
         lenient().when(magistratesHearing.getJurisdictionType()).thenReturn(JurisdictionType.MAGISTRATES);
         lenient().when(crownHearing.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
+        // CROWN with courtScheduleId on bookedSlot -> triggers the CourtSchedule-first flow in enrichListCourtHearing.
+        // Tests that need the allocation-candidate flow should override getBookedSlots() to return null/empty.
+        lenient().when(crownHearing.getBookedSlots()).thenReturn(Collections.singletonList(
+                RotaSlot.rotaSlot().withCourtScheduleId(java.util.UUID.randomUUID().toString()).build()));
     }
 
     @Test

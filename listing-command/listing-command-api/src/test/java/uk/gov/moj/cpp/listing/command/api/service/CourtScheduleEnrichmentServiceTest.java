@@ -1,9 +1,10 @@
 package uk.gov.moj.cpp.listing.command.api.service;
 
-import uk.gov.justice.services.messaging.JsonObjects;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -27,15 +28,12 @@ import uk.gov.justice.listing.courts.SelectedCourtCentre;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.JsonObjects;
 import uk.gov.moj.cpp.listing.command.api.util.SlotsToJsonStringConverter;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.CourtSchedule;
 import uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse;
 import uk.gov.moj.cpp.listing.domain.ListUpdateHearing;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -646,7 +644,7 @@ class CourtScheduleEnrichmentServiceTest {
                         HearingDay.hearingDay()
                                 .withCourtScheduleId(courtScheduleId1)
                                 .withHearingDate(day1)
-                                .withDurationMinutes(360)
+                                .withDurationMinutes(1080)
                                 .build()))
                 .withBookedSlots(Collections.singletonList(
                         RotaSlot.rotaSlot()
@@ -730,7 +728,7 @@ class CourtScheduleEnrichmentServiceTest {
                         HearingDay.hearingDay()
                                 .withCourtScheduleId(courtScheduleId)
                                 .withHearingDate(LocalDate.now().plusDays(5))
-                                .withDurationMinutes(360)
+                                .withDurationMinutes(1080)
                                 .build()))
                 .withBookedSlots(Collections.singletonList(
                         RotaSlot.rotaSlot()
@@ -776,7 +774,7 @@ class CourtScheduleEnrichmentServiceTest {
                         HearingDay.hearingDay()
                                 .withCourtScheduleId(courtScheduleId1)
                                 .withHearingDate(day1)
-                                .withDurationMinutes(360)
+                                .withDurationMinutes(1080)
                                 .build()))
                 .withBookedSlots(Collections.singletonList(
                         RotaSlot.rotaSlot()
@@ -1521,7 +1519,7 @@ class CourtScheduleEnrichmentServiceTest {
                         HearingDay.hearingDay()
                                 .withCourtScheduleId(courtScheduleId)
                                 .withHearingDate(LocalDate.now().plusDays(5))
-                                .withDurationMinutes(360)
+                                .withDurationMinutes(1080)
                                 .build()))
                 .withBookedSlots(Collections.singletonList(
                         RotaSlot.rotaSlot()
@@ -1554,7 +1552,7 @@ class CourtScheduleEnrichmentServiceTest {
                         HearingDay.hearingDay()
                                 .withCourtScheduleId(courtScheduleId)
                                 .withHearingDate(LocalDate.now().plusDays(5))
-                                .withDurationMinutes(360)
+                                .withDurationMinutes(1080)
                                 .build()))
                 .withBookedSlots(Collections.singletonList(
                         RotaSlot.rotaSlot()

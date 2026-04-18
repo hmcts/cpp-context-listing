@@ -54,12 +54,22 @@ public class HearingEnrichmentOrchestrator {
                 enrichedHearings.add(withCourtSchedules);
             } else if (JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
                 LOGGER.info("Enrich list court hearing for CROWN hearingid: {}", hearing.getId());
-                // CROWN order: CourtSchedule-first (expands multi-day into N hearingDays) ->
-                // HearingDays (calcStartAndEndDates only) -> Duration.
-                HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
-                HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(withCourtSchedules, envelope);
-                HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
-                enrichedHearings.add(withDurations);
+                if (hasCourtScheduleId(hearing)) {
+                    // CROWN with courtScheduleId (bookedSlots or hearingDays): CourtSchedule-first flow
+                    // expands multi-day into N hearingDays, then HearingDays computes start/end,
+                    // then Duration runs.
+                    HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+                    HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(withCourtSchedules, envelope);
+                    HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
+                    enrichedHearings.add(withDurations);
+                } else {
+                    // CROWN allocation candidate (no courtScheduleId anywhere): legacy HearingDays ->
+                    // Duration -> CourtSchedule order so handleAllocationCandidate can search-and-book.
+                    HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(hearing, envelope);
+                    HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
+                    HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDurations, envelope);
+                    enrichedHearings.add(withCourtSchedules);
+                }
             } else {
                 throw new IllegalArgumentException(UNSUPPORTED_JURISDICTION_TYPE + hearing.getJurisdictionType());
             }
@@ -266,5 +276,20 @@ public class HearingEnrichmentOrchestrator {
                 .mapToInt(hearingDay -> hearingDay.getDurationMinutes() != null ?
                         hearingDay.getDurationMinutes() : DEFAULT_MIN)
                 .sum();
+    }
+
+    /**
+     * Returns true if the hearing has a courtScheduleId on any hearingDay or on any bookedSlot.
+     * Used by the CROWN branch to decide between CourtSchedule-first flow (has id) and the legacy
+     * allocation-candidate flow (no id, needs search-and-book).
+     */
+    private static boolean hasCourtScheduleId(final HearingListingNeeds hearing) {
+        if (hearing.getHearingDays() != null
+                && hearing.getHearingDays().stream().anyMatch(d -> d.getCourtScheduleId() != null)) {
+            return true;
+        }
+        return hearing.getBookedSlots() != null
+                && hearing.getBookedSlots().stream()
+                .anyMatch(s -> s.getCourtScheduleId() != null && !s.getCourtScheduleId().isBlank());
     }
 }

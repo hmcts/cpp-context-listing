@@ -3,15 +3,14 @@ package uk.gov.moj.cpp.listing.command.api.service;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
-import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
-import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.moj.cpp.listing.command.api.service.HearingDaysEnrichmentService.log;
 
 import uk.gov.justice.core.courts.CourtCentre;
-import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.commands.HearingDay;
@@ -25,6 +24,7 @@ import uk.gov.moj.cpp.listing.command.api.util.SlotsToJsonStringConverter;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.CourtSchedule;
 import uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse;
+import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 import uk.gov.moj.cpp.listing.domain.ListUpdateHearing;
 import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
@@ -166,7 +166,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         EnrichmentResult enrichmentResult;
         if (isMultiDay) {
             LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] Case 2: Multi-day -> multiDaySearchAndBook for hearingId: {}", hearing.getId());
-            enrichmentResult = handleCrownMultiDayEnrichment(hearing);
+            enrichmentResult = handleCrownMultiDayEnrichment(hearing, aggregatedDuration);
         } else {
             LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] Case 3: Single-day -> listHearingInCourtSessions for hearingId: {}", hearing.getId());
             enrichmentResult = handleCrownSingleDayEnrichment(hearing);
@@ -598,10 +598,13 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     }
 
     private EnrichmentResult handleCrownEnrichment(final HearingListingNeeds hearing) {
-        final boolean isMultiDay = nonNull(hearing.getEstimatedMinutes())
-                && hearing.getEstimatedMinutes() > HearingDurationEnrichmentService.MINUTES_IN_DAY;
+        // Use aggregated duration (hearingDays / nonDefaultDays / bookedSlots / estimatedMinutes priority)
+        // rather than raw estimatedMinutes — the UI has been observed to send a wrong estimatedMinutes
+        // for multi-day Crown hearings, so we trust the bookedSlots sum when available.
+        final int aggregatedDuration = calculateAggregatedDuration(hearing);
+        final boolean isMultiDay = aggregatedDuration > HearingDurationEnrichmentService.MINUTES_IN_DAY;
         if (isMultiDay) {
-            return handleCrownMultiDayEnrichment(hearing);
+            return handleCrownMultiDayEnrichment(hearing, aggregatedDuration);
         }
         return handleCrownSingleDayEnrichment(hearing);
     }
@@ -673,8 +676,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         ).toList();
     }
 
-    private EnrichmentResult handleCrownMultiDayEnrichment(final HearingListingNeeds hearing) {
-        LOGGER.info("CROWN multi-day enrichment for hearingId: {}", hearing.getId());
+    private EnrichmentResult handleCrownMultiDayEnrichment(final HearingListingNeeds hearing, final int aggregatedDuration) {
+        LOGGER.info("CROWN multi-day enrichment for hearingId: {}, aggregatedDuration: {}", hearing.getId(), aggregatedDuration);
 
         // Anchor off the first bookedSlot. For CROWN adjournment + MCC, courtScheduleId lives on
         // bookedSlots, not hearingDays. The scheduler expands from this anchor into N consecutive
@@ -688,9 +691,11 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return new EnrichmentResult(hearing.getHearingDays(), new ArrayList<>());
         }
 
+        // Use aggregatedDuration (bookedSlots / hearingDays / nonDefaultDays sum) not estimatedMinutes —
+        // UI has been observed to submit a stale estimatedMinutes that would pick the wrong slot count.
         final List<CourtSchedule> sessions = multiDaySearchAndBook(
                 anchorCourtScheduleId,
-                hearing.getEstimatedMinutes(),
+                aggregatedDuration,
                 hearing.getId().toString());
 
         if (isEmpty(sessions)) {
@@ -698,7 +703,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return new EnrichmentResult(hearing.getHearingDays(), new ArrayList<>());
         }
 
-        final List<HearingDay> expandedDays = buildHearingDaysFromMultiDaySessions(sessions, hearing);
+        final List<HearingDay> expandedDays = buildHearingDaysFromMultiDaySessions(sessions, aggregatedDuration);
 
         final boolean allNonDraft = sessions.stream().noneMatch(CourtSchedule::isDraft);
         if (!allNonDraft) {
@@ -805,9 +810,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         }).toList();
     }
 
-    private List<HearingDay> buildHearingDaysFromMultiDaySessions(final List<CourtSchedule> sessions, final HearingListingNeeds hearing) {
+    private List<HearingDay> buildHearingDaysFromMultiDaySessions(final List<CourtSchedule> sessions, final int aggregatedDuration) {
         final int daysNeeded = sessions.size();
-        final int durationPerDay = hearing.getEstimatedMinutes() / daysNeeded;
+        final int durationPerDay = aggregatedDuration / daysNeeded;
 
         return sessions.stream().map(session -> HearingDay.hearingDay()
                 .withCourtCentreId(fromString(session.getCourtHouseId()))
