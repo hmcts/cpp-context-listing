@@ -703,6 +703,19 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return new EnrichmentResult(hearing.getHearingDays(), new ArrayList<>());
         }
 
+        // Defensive: courtscheduler returned fewer sessions than the duration requires. This typically means
+        // the anchor slot was not a true multi-day-capable (AD) session — often because the slot search that
+        // produced the anchor omitted `isMultiday=true` / `courtSession=AD`. Log a clear warning so callers
+        // can correct their slot-search parameters. We still emit whatever the scheduler gave us so the
+        // mismatch surfaces in downstream assertions (caller expected N hearingDays, got M<N) rather than
+        // silently succeeding with incorrect data.
+        final int expectedDaysMinimum = (aggregatedDuration + HearingDurationEnrichmentService.MINUTES_IN_DAY - 1)
+                / HearingDurationEnrichmentService.MINUTES_IN_DAY;
+        if (sessions.size() < expectedDaysMinimum) {
+            LOGGER.warn("CROWN multi-day: scheduler returned {} session(s) but duration {} requires at least {} day(s) for hearingId {}. Check hearing-slots search parameters (isMultiday=true, courtSession=AD) used to produce the anchor courtScheduleId {}.",
+                    sessions.size(), aggregatedDuration, expectedDaysMinimum, hearing.getId(), anchorCourtScheduleId);
+        }
+
         final List<HearingDay> expandedDays = buildHearingDaysFromMultiDaySessions(sessions, aggregatedDuration);
 
         final boolean allNonDraft = sessions.stream().noneMatch(CourtSchedule::isDraft);
