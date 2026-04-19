@@ -249,33 +249,10 @@ class HearingDaysEnrichmentServiceTest {
         });
     }
 
-    @Test
-    public void shouldSetEndTimeOnEnrichCandidateHearingDay() {
-        // Given — Crown hearing with no hearingDays and no nonDefaultDays (candidate path)
-        final ZonedDateTime startTime = ZonedDateTime.of(2026, 5, 1, 10, 0, 0, 0, ZoneId.of("UTC"));
-
-        HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
-                .withJurisdictionType(JurisdictionType.CROWN)
-                .withId(randomUUID())
-                .withListedStartDateTime(startTime)
-                .withEstimatedMinutes(120)
-                .withCourtCentre(uk.gov.justice.core.courts.CourtCentre.courtCentre()
-                        .withId(randomUUID())
-                        .withRoomId(randomUUID())
-                        .build())
-                .build();
-
-        // When
-        HearingListingNeeds enrichedHearing = hearingDaysEnrichmentService.enrichHearings(hearing, jsonEnvelope);
-
-        // Then
-        assertNotNull(enrichedHearing);
-        assertNotNull(enrichedHearing.getHearingDays());
-        assertEquals(1, enrichedHearing.getHearingDays().size());
-        HearingDay day = enrichedHearing.getHearingDays().get(0);
-        assertNotNull(day.getEndTime(), "endTime should be computed from startTime + estimatedMinutes");
-        assertEquals(startTime.plusMinutes(120), day.getEndTime());
-    }
+    // Removed shouldSetEndTimeOnEnrichCandidateHearingDay: on list-court-hearing, CROWN hearingDays
+    // are now produced exclusively by CourtScheduleEnrichmentService.enrichCrownCourtScheduleFirst
+    // (single-day) or by multiDaySearchAndBook (multi-day). HearingDaysEnrichmentService.enrichHearings
+    // no longer creates hearingDays for CROWN and only calculates start/end dates.
 
     @Test
     public void shouldEnrichHearingDaysFromBookedSlots() {

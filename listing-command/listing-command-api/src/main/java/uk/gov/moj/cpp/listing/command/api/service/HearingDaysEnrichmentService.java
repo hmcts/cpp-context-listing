@@ -68,9 +68,14 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
             builder.withNonDefaultDays(emptyList());
             builder.withNonSittingDays(emptyList());
         } else if (JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
-            // builder.withNonSittingDays(enrichNonSittingDaysForCrown(hearing)); no nonsittingdays on this journey
-            // builder.withNonDefaultDays(enrichNonDefaultDaysForCrown(hearing)); no nondefaultdays on this journey
-            if (isNull(hearing.getWeekCommencingDate())) {
+            // CROWN flow:
+            //   * If enrichCrownCourtScheduleFirst has populated hearingDays (single-day with one session,
+            //     multi-day with N sessions each carrying its own courtScheduleId + hearingDate) we leave
+            //     them untouched — overwriting would collapse multi-day expansion back to one day.
+            //   * If hearingDays is still empty (allocation candidate, no courtScheduleId anywhere) we fall
+            //     back to the pre-existing enrichment that builds hearingDays from bookedSlots / nonDefaultDays
+            //     / candidate so the downstream allocation-candidate path can search-and-book.
+            if (isNull(hearing.getWeekCommencingDate()) && isEmpty(hearing.getHearingDays())) {
                 builder.withHearingDays(enrichHearingDaysForCrown(hearing));
             }
         }

@@ -1,9 +1,10 @@
 package uk.gov.moj.cpp.listing.command.api.service;
 
-import uk.gov.justice.services.messaging.JsonObjects;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -27,15 +28,12 @@ import uk.gov.justice.listing.courts.SelectedCourtCentre;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.JsonObjects;
 import uk.gov.moj.cpp.listing.command.api.util.SlotsToJsonStringConverter;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.CourtSchedule;
 import uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse;
 import uk.gov.moj.cpp.listing.domain.ListUpdateHearing;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -636,7 +634,7 @@ class CourtScheduleEnrichmentServiceTest {
         final UUID courtHouseId = UUID.randomUUID();
         final LocalDate day1 = LocalDate.now().plusDays(5);
 
-        // Multi-day: estimatedMinutes > 360
+        // Multi-day: estimatedMinutes > 360. Anchor lives on bookedSlots (new contract).
         final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
                 .withJurisdictionType(JurisdictionType.CROWN)
                 .withId(hearingId)
@@ -646,7 +644,13 @@ class CourtScheduleEnrichmentServiceTest {
                         HearingDay.hearingDay()
                                 .withCourtScheduleId(courtScheduleId1)
                                 .withHearingDate(day1)
-                                .withDurationMinutes(360)
+                                .withDurationMinutes(1080)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId1.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withRoomId(courtRoomId.toString())
                                 .build()))
                 .build();
 
@@ -724,7 +728,13 @@ class CourtScheduleEnrichmentServiceTest {
                         HearingDay.hearingDay()
                                 .withCourtScheduleId(courtScheduleId)
                                 .withHearingDate(LocalDate.now().plusDays(5))
-                                .withDurationMinutes(360)
+                                .withDurationMinutes(1080)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withRoomId(courtRoomId.toString())
                                 .build()))
                 .build();
 
@@ -764,7 +774,13 @@ class CourtScheduleEnrichmentServiceTest {
                         HearingDay.hearingDay()
                                 .withCourtScheduleId(courtScheduleId1)
                                 .withHearingDate(day1)
-                                .withDurationMinutes(360)
+                                .withDurationMinutes(1080)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId1.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withRoomId(courtRoomId.toString())
                                 .build()))
                 .build();
 
@@ -1503,7 +1519,11 @@ class CourtScheduleEnrichmentServiceTest {
                         HearingDay.hearingDay()
                                 .withCourtScheduleId(courtScheduleId)
                                 .withHearingDate(LocalDate.now().plusDays(5))
-                                .withDurationMinutes(360)
+                                .withDurationMinutes(1080)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId.toString())
                                 .build()))
                 .build();
 
@@ -1532,7 +1552,11 @@ class CourtScheduleEnrichmentServiceTest {
                         HearingDay.hearingDay()
                                 .withCourtScheduleId(courtScheduleId)
                                 .withHearingDate(LocalDate.now().plusDays(5))
-                                .withDurationMinutes(360)
+                                .withDurationMinutes(1080)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId.toString())
                                 .build()))
                 .build();
 
@@ -2229,6 +2253,33 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
+    void shouldSumBookedSlotsDurationWhenNoHearingDaysOrNonDefaultDays() {
+        // Multi-day CROWN adjournment shape: bookedSlots carries the booked window; estimatedMinutes
+        // may be 0 or a per-offence value. bookedSlots aggregated total wins over estimatedMinutes.
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withEstimatedMinutes(0)
+                .withBookedSlots(Arrays.asList(
+                        RotaSlot.rotaSlot().withCourtScheduleId(UUID.randomUUID().toString()).withDuration(360).build(),
+                        RotaSlot.rotaSlot().withCourtScheduleId(UUID.randomUUID().toString()).withDuration(360).build(),
+                        RotaSlot.rotaSlot().withCourtScheduleId(UUID.randomUUID().toString()).withDuration(360).build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.calculateAggregatedDuration(hearing), is(1080));
+    }
+
+    @Test
+    void shouldFallBackToEstimatedMinutesWhenBookedSlotsHaveNoDuration() {
+        // Guard case: bookedSlots present but all durations null -> must not collapse to 0; keep estimatedMinutes.
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withEstimatedMinutes(240)
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot().withCourtScheduleId(UUID.randomUUID().toString()).build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.calculateAggregatedDuration(hearing), is(240));
+    }
+
+    @Test
     void shouldReturnZeroWhenNoDurationInfoAvailable() {
         final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
                 .build();
@@ -2308,32 +2359,71 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
-    void enrichCrownCourtScheduleFirst_shouldReturnUnchanged_whenCourtScheduleIdOnlyOnBookedSlots() {
+    void enrichCrownCourtScheduleFirst_shouldCallSingleDay_whenCourtScheduleIdOnlyOnBookedSlots() {
+        // When courtScheduleId lives only on bookedSlots (MCC shape), single-day enrichment must still run.
+        // It fetches sessions by that id and materialises a HearingDay from the returned session.
         final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
 
         final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
                 .withJurisdictionType(JurisdictionType.CROWN)
                 .withId(hearingId)
                 .withEstimatedMinutes(240)
-                .withHearingDays(Collections.singletonList(
-                        HearingDay.hearingDay()
-                                .withHearingDate(LocalDate.now().plusDays(5))
-                                .withDurationMinutes(240)
-                                .build()))  // no courtScheduleId on hearingDays
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).build())
                 .withBookedSlots(Collections.singletonList(
                         RotaSlot.rotaSlot()
-                                .withCourtScheduleId(UUID.randomUUID().toString())
-                                .withCourtCentreId(UUID.randomUUID().toString())
-                                .withRoomId(UUID.randomUUID().toString())
-                                .build()))  // courtScheduleId on bookedSlots only
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .build()))
                 .build();
+
+        // Mock fetchCourtSchedulesByIds returning one non-draft session
+        final CourtSchedule cs = buildCourtSchedule(courtScheduleId, courtRoomId, courtHouseId, sessionDate, false);
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId.toString())))
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        // Mock listHearingInCourtSessions
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, "2026-03-16T10:00:00Z", 240)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
 
         final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
 
-        assertThat(result, is(hearing));
-        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
-        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
         verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        // One HearingDay materialised from the fetched session
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId().toString(), is(courtScheduleId.toString()));
     }
 
     @Test
@@ -2426,6 +2516,12 @@ class CourtScheduleEnrichmentServiceTest {
                                 .withCourtScheduleId(courtScheduleId1)
                                 .withHearingDate(day1)
                                 .withDurationMinutes(1080)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId1.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withRoomId(courtRoomId.toString())
                                 .build()))
                 .build();
 
@@ -2582,6 +2678,12 @@ class CourtScheduleEnrichmentServiceTest {
                                 .withCourtScheduleId(courtScheduleId1)
                                 .withHearingDate(day1)
                                 .withDurationMinutes(720)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId1.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withRoomId(courtRoomId.toString())
                                 .build()))
                 .build();
 

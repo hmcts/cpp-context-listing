@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import uk.gov.justice.core.courts.JurisdictionType;
+import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
@@ -61,6 +62,10 @@ public class HearingEnrichmentOrchestratorTest {
         enrichedCrownHearing = mock(HearingListingNeeds.class);
         lenient().when(magistratesHearing.getJurisdictionType()).thenReturn(JurisdictionType.MAGISTRATES);
         lenient().when(crownHearing.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
+        // CROWN with courtScheduleId on bookedSlot -> triggers the CourtSchedule-first flow in enrichListCourtHearing.
+        // Tests that need the allocation-candidate flow should override getBookedSlots() to return null/empty.
+        lenient().when(crownHearing.getBookedSlots()).thenReturn(Collections.singletonList(
+                RotaSlot.rotaSlot().withCourtScheduleId(java.util.UUID.randomUUID().toString()).build()));
     }
 
     @Test
@@ -74,7 +79,6 @@ public class HearingEnrichmentOrchestratorTest {
 
         // Mock objects for crown hearing chain
         HearingListingNeeds crownWithHearingDays = mock(HearingListingNeeds.class);
-        HearingListingNeeds crownWithDurations = mock(HearingListingNeeds.class);
 
         // Mock the enrichment chain for magistrates (3 steps: days -> duration -> courtSchedule)
         when(hearingDaysEnrichmentService.enrichHearings(magistratesHearing, envelope))
@@ -84,12 +88,13 @@ public class HearingEnrichmentOrchestratorTest {
         when(courtScheduleEnrichmentService.enrichWithCourtSchedules(magsWithDurations, envelope))
                 .thenReturn(enrichedMagistratesHearing);
 
-        // Mock the enrichment chain for crown (3 steps: days -> duration -> courtSchedule)
-        when(hearingDaysEnrichmentService.enrichHearings(crownHearing, envelope))
+        // Mock the enrichment chain for crown (3 steps: crownCourtScheduleFirst -> days -> duration)
+        HearingListingNeeds crownWithCourtSchedules = mock(HearingListingNeeds.class);
+        when(courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(crownHearing))
+                .thenReturn(crownWithCourtSchedules);
+        when(hearingDaysEnrichmentService.enrichHearings(crownWithCourtSchedules, envelope))
                 .thenReturn(crownWithHearingDays);
         when(hearingDurationEnrichmentService.enrichWithDurations(crownWithHearingDays, envelope))
-                .thenReturn(crownWithDurations);
-        when(courtScheduleEnrichmentService.enrichWithCourtSchedules(crownWithDurations, envelope))
                 .thenReturn(enrichedCrownHearing);
 
         // When
@@ -133,24 +138,24 @@ public class HearingEnrichmentOrchestratorTest {
         // Given
         List<HearingListingNeeds> hearings = Arrays.asList(crownHearing);
 
+        HearingListingNeeds withCourtSchedules = mock(HearingListingNeeds.class);
         HearingListingNeeds withHearingDays = mock(HearingListingNeeds.class);
-        HearingListingNeeds withDurations = mock(HearingListingNeeds.class);
 
-        // Crown now has 3 enrichment steps: days -> duration -> courtSchedule
-        when(hearingDaysEnrichmentService.enrichHearings(crownHearing, envelope))
+        // CROWN order: crownCourtScheduleFirst -> days -> duration
+        when(courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(crownHearing))
+                .thenReturn(withCourtSchedules);
+        when(hearingDaysEnrichmentService.enrichHearings(withCourtSchedules, envelope))
                 .thenReturn(withHearingDays);
         when(hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope))
-                .thenReturn(withDurations);
-        when(courtScheduleEnrichmentService.enrichWithCourtSchedules(withDurations, envelope))
                 .thenReturn(enrichedCrownHearing);
 
         // When
         List<HearingListingNeeds> result = orchestrator.enrichListCourtHearing(hearings, envelope);
 
         // Then
-        verify(hearingDaysEnrichmentService).enrichHearings(crownHearing, envelope);
+        verify(courtScheduleEnrichmentService).enrichCrownCourtScheduleFirst(crownHearing);
+        verify(hearingDaysEnrichmentService).enrichHearings(withCourtSchedules, envelope);
         verify(hearingDurationEnrichmentService).enrichWithDurations(withHearingDays, envelope);
-        verify(courtScheduleEnrichmentService).enrichWithCourtSchedules(withDurations, envelope);
 
         assertEquals(1, result.size());
         assertEquals(enrichedCrownHearing, result.get(0));
