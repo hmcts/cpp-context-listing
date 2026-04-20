@@ -1486,9 +1486,13 @@ class HearingAggregateTest {
         );
 
 
-        final Stream<Object> listedHearing = hearing.ejectApplication(hearingId, applicationId, removalReason);
+        var listedHearing = hearing.ejectApplication(hearingId, applicationId, removalReason).toList();
 
-        assertThat(listedHearing.count(), is(1L));
+        assertThat(listedHearing, hasSize(2));
+        var availableSlotsForHearingFreed = (AvailableSlotsForHearingFreed) listedHearing.get(0);
+        var applicationEjected = (ApplicationEjected) listedHearing.get(1);
+        assertThat(availableSlotsForHearingFreed.getHearingId(), is(hearingId));
+        assertThat(applicationEjected.getHearingId(), is(hearingId));
 
     }
 
@@ -1672,7 +1676,7 @@ class HearingAggregateTest {
                         .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
                         .withHearingDays(emptyList())
                         .withCourtRoomId(randomUUID())
-                        .withStartDate(LocalDate.now())
+                        .withStartDate(LocalDate.now().minusDays(1))
                         .withEstimatedMinutes(30)
                         .withEstimatedDuration("30 minutes")
                         .withCourtApplications(new ArrayList<>(asList(uk.gov.justice.listing.events.CourtApplication.courtApplication()
@@ -5017,7 +5021,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    void shouldReturnFalse_WhenHearingIsNotAllocated() {
+    void shouldReturnTrue_WhenHearingIsNotAllocatedButOtherConditionsMet() {
         final UUID ejectedItemId = randomUUID();
         final UUID hearingId = randomUUID();
 
@@ -5029,7 +5033,7 @@ class HearingAggregateTest {
                         .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
                         .withHearingDays(emptyList())
                         .withCourtRoomId(randomUUID())
-                        .withAllocated(false) // Not allocated
+                        .withAllocated(false)
                         .withStartDate(LocalDate.now().plusDays(1))
                         .withEstimatedMinutes(30)
                         .withEstimatedDuration("30 minutes")
@@ -5039,7 +5043,7 @@ class HearingAggregateTest {
 
         boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
-        assertThat(result, is(false));
+        assertThat(result, is(true));
     }
 
     @Test

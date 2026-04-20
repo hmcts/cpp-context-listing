@@ -1725,11 +1725,6 @@ public class Hearing implements Aggregate {
             return false;
         }
 
-
-        if (!Boolean.TRUE.equals(this.currentHearingEventState.getAllocated())) {
-            return false;
-        }
-
         if (Boolean.TRUE.equals(this.resulted)) {
             return false;
         }
