@@ -53,6 +53,8 @@ public class CourtSchedulerServiceStub {
     private static final String PROVISIONAL_BOOKING = "/provisionalBooking";
     private static final String HEARING_SLOTS = "/hearingslots";
     private static final String VALIDATE_SESSION_AVAILABILITY = "/validate-session-availability";
+    private static final String CROWN_FALLBACK_SEARCH_BOOK = "/crownfallbacksearchandbook/hearingslots";
+    private static final String CROWN_FALLBACK_SEARCH_BOOK_TYPE = "application/vnd.courtscheduler.crown.fallback.search.book.hearing.slots+json";
     private static final String COURTSCHEDULER_GET_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.get.hearing.slots+json";
     private static final String COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE = "application/vnd.courtscheduler.validate.session.availability+json";
     public static final String COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE = "application/vnd.courtscheduler.get.provisional.booking+json";
@@ -117,6 +119,74 @@ public class CourtSchedulerServiceStub {
                         .withBody("{}")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
+    }
+
+    // --- Crown fallback search-and-book stubs (Option C: courtCentreId-only wire) ---
+
+    /**
+     * Stub a successful 200 response from /crownfallbacksearchandbook/hearingslots.
+     *
+     * @param hearingId       hearingId echoed back in the response
+     * @param courtScheduleId the booked session id to return (as if courtscheduler picked it)
+     * @param isDraft         draft state of the picked session — drives ALLOCATED/UNALLOCATED downstream
+     * @param source          expected source label on the incoming request; verified via request-body match
+     */
+    public static void stubCrownFallbackSearchAndBookSuccess(final String hearingId,
+                                                              final String courtScheduleId,
+                                                              final boolean isDraft,
+                                                              final String source) {
+        final String sessionDate = LocalDate.now().plusDays(1).toString();
+        final String startTime = sessionDate + "T09:00:00Z";
+        final String endTime = sessionDate + "T17:00:00Z";
+        final String body = format(
+                "{\"hearingId\":\"%s\",\"courtScheduleId\":\"%s\",\"courtRoomId\":731816," +
+                        "\"sessionDate\":\"%s\",\"sessionStartTime\":\"%s\",\"sessionEndTime\":\"%s\"," +
+                        "\"durationInMinutes\":10,\"isDraft\":%s,\"businessType\":\"CR\"," +
+                        "\"source\":\"%s\",\"overbooked\":false}",
+                hearingId, courtScheduleId, sessionDate, startTime, endTime, isDraft, source);
+
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + CROWN_FALLBACK_SEARCH_BOOK)))
+                .withQueryParam("source", matching(source))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(body)
+                        .withHeader(CONTENT_TYPE, CROWN_FALLBACK_SEARCH_BOOK_TYPE)));
+    }
+
+    /** Stub 404 "no session found" — listing-side translates to CrownFallbackNoSessionException. */
+    public static void stubCrownFallbackSearchAndBookNotFound() {
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + CROWN_FALLBACK_SEARCH_BOOK)))
+                .willReturn(aResponse()
+                        .withStatus(404)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    /** Stub 400 "invalid request" — used for defensive coverage; the listing-side multi-day guard fires first. */
+    public static void stubCrownFallbackSearchAndBookBadRequest() {
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + CROWN_FALLBACK_SEARCH_BOOK)))
+                .willReturn(aResponse()
+                        .withStatus(BAD_REQUEST.getStatusCode())
+                        .withBody("{\"error\":\"durationInMinutes exceeds single-day cap\"}")
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    /** Verify the Crown fallback endpoint was called with the expected source label. */
+    public static void verifyCrownFallbackSearchAndBookCalledWithSource(final String source) {
+        Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
+            try {
+                WireMock.verify(WireMock.getRequestedFor(urlPathMatching(
+                        COURT_SCHEDULER_ENDPOINT + CROWN_FALLBACK_SEARCH_BOOK))
+                        .withQueryParam("source", matching(source)));
+                return true;
+            } catch (VerificationException e) {
+                return false;
+            }
+        });
+    }
+
+    /** Verify the Crown fallback endpoint was NEVER called (regression guard for MAGS / already-allocated CROWN). */
+    public static void verifyCrownFallbackSearchAndBookNeverCalled() {
+        WireMock.verify(0, WireMock.getRequestedFor(urlPathMatching(
+                COURT_SCHEDULER_ENDPOINT + CROWN_FALLBACK_SEARCH_BOOK)));
     }
 
     public static void stubValidateSessionAvailabilityFailure() {

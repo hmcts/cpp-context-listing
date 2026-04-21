@@ -21,6 +21,10 @@ import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.util.SlotsToJsonStringConverter;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource;
+import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.CourtSchedule;
 import uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse;
@@ -82,6 +86,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     private HearingSlotsService hearingSlotsService;
     @Inject
     private SlotsToJsonStringConverter slotsToJsonStringConverter;
+    @Inject
+    private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
 
     public HearingListingNeeds enrichWithCourtSchedules(final HearingListingNeeds hearingEnrichedWithDurations, final JsonEnvelope envelope) {
         return checkAndUpdateListingCourtScheduler(hearingEnrichedWithDurations, envelope);
@@ -138,19 +144,20 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
      * Case 3: Has courtScheduleId + aggregated duration <= 360 -> listHearingInCourtSessions
      */
     public HearingListingNeeds enrichCrownCourtScheduleFirst(final HearingListingNeeds hearing) {
-        LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] Starting for hearingId: {}", hearing.getId());
+        return enrichCrownCourtScheduleFirst(hearing, CrownFallbackSource.LIST_COURT_HEARING);
+    }
+
+    public HearingListingNeeds enrichCrownCourtScheduleFirst(final HearingListingNeeds hearing,
+                                                             final CrownFallbackSource fallbackSource) {
+        LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] Starting for hearingId: {} (fallbackSource={})",
+                hearing.getId(), fallbackSource);
 
         final boolean hasCourtScheduleIdOnHearingDays = anyHearingDayHasCourtScheduleId(hearing);
         final boolean hasCourtScheduleIdOnBookedSlots = hasBookedSlotsWithCourtScheduleId(hearing);
         final boolean hasCourtScheduleId = hasCourtScheduleIdOnHearingDays || hasCourtScheduleIdOnBookedSlots;
 
         if (!hasCourtScheduleId) {
-            // TODO CROWN without any courtScheduleId (hearingDays or bookedSlots):
-            //   a later ticket will call courtscheduler searchAndBook here to discover a slot.
-            //   For now, return unchanged so the existing handleAllocationCandidate path (via
-            //   checkAndUpdateListingCourtScheduler) can still be reached for CROWN adhoc-without-slot.
-            LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] No courtScheduleId anywhere; returning unchanged for hearingId: {}", hearing.getId());
-            return hearing;
+            return applyCrownFallback(hearing, fallbackSource);
         }
 
         // NOTE: we intentionally do NOT skip when courtScheduleId is on bookedSlots only.
@@ -203,7 +210,13 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
      * Called BEFORE HearingDays and Duration enrichment for CROWN update hearings.
      */
     public UpdateHearingForListing enrichCrownCourtScheduleFirst(final UpdateHearingForListing hearing) {
-        LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] Update path starting for hearingId: {}", hearing.getHearingId());
+        return enrichCrownCourtScheduleFirst(hearing, CrownFallbackSource.UPDATE_HEARING_FOR_LISTING);
+    }
+
+    public UpdateHearingForListing enrichCrownCourtScheduleFirst(final UpdateHearingForListing hearing,
+                                                                 final CrownFallbackSource fallbackSource) {
+        LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] Update path starting for hearingId: {} (fallbackSource={})",
+                hearing.getHearingId(), fallbackSource);
 
         final boolean hasCourtScheduleIdOnHearingDays = !isEmpty(hearing.getHearingDays())
                 && hearing.getHearingDays().stream().anyMatch(d -> nonNull(d.getCourtScheduleId()));
@@ -212,8 +225,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         final boolean hasCourtScheduleId = hasCourtScheduleIdOnHearingDays || hasCourtScheduleIdOnNonDefaultDays;
 
         if (!hasCourtScheduleId) {
-            LOGGER.info("[CROWN-ENRICH][CourtSchedule-First] Update Case 1: No courtScheduleId on hearingDays or nonDefaultDays. Returning unchanged for hearingId: {}", hearing.getHearingId());
-            return hearing;
+            return applyCrownFallback(hearing, fallbackSource);
         }
 
         final int aggregatedDuration = calculateAggregatedDuration(hearing);
@@ -1280,6 +1292,182 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         public AllocationResult(List<HearingDay> hearingDays, List<JudicialRole> judiciaries) {
             super(hearingDays, judiciaries);
         }
+    }
+
+    // ─── CROWN fallback search-and-book ──────────────────────────────────────────
+    // Called when a CROWN hearing arrives with no courtScheduleId on hearingDays, bookedSlots,
+    // or nonDefaultDays (i.e. a "naked" Crown payload). Delegates to the courtscheduler's
+    // /crownfallbacksearchandbook/hearingslots endpoint, which relaxes MAGS rota matching and
+    // picks any session at the courtCentre + hearingDate. Draft preference follows the allocated/
+    // unallocated semantic: courtRoomId supplied -> prefer non-draft; courtRoomId omitted -> draft.
+
+    private HearingListingNeeds applyCrownFallback(final HearingListingNeeds hearing,
+                                                    final CrownFallbackSource fallbackSource) {
+        final int aggregatedDuration = calculateAggregatedDuration(hearing);
+        if (aggregatedDuration > HearingDurationEnrichmentService.MINUTES_IN_DAY) {
+            throw new CrownFallbackInvalidRequestException(
+                    "Multi-day CROWN hearing arrived without an anchor courtScheduleId (hearingId="
+                            + hearing.getId() + ", aggregatedDuration=" + aggregatedDuration
+                            + "). Upstream must supply courtScheduleIds for multi-day Crown bookings.");
+        }
+
+        final CourtCentre courtCentre = hearing.getCourtCentre();
+        if (courtCentre == null || courtCentre.getId() == null) {
+            LOGGER.warn("[CROWN-FB] Cannot invoke fallback for hearingId={}: courtCentre missing id. Returning unchanged.",
+                    hearing.getId());
+            return hearing;
+        }
+
+        final LocalDate hearingDate = extractFirstHearingDate(hearing);
+        if (hearingDate == null) {
+            LOGGER.warn("[CROWN-FB] Cannot invoke fallback for hearingId={}: no hearingDate derivable. Returning unchanged.",
+                    hearing.getId());
+            return hearing;
+        }
+
+        final Optional<UUID> courtRoomId = Optional.ofNullable(courtCentre.getRoomId());
+        final Optional<String> earliestHearingTime = Optional.ofNullable(hearing.getListedStartDateTime())
+                .map(ZonedDateTime::toString);
+        final int durationInMinutes = aggregatedDuration > 0 ? aggregatedDuration : 1;
+
+        final CrownFallbackResult result = courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                hearing.getId(),
+                courtCentre.getId(),
+                hearingDate,
+                durationInMinutes,
+                courtRoomId,
+                earliestHearingTime,
+                fallbackSource);
+
+        LOGGER.info("[CROWN-FB] hearingId={} booked courtScheduleId={} isDraft={} overbooked={} source={}",
+                hearing.getId(), result.courtScheduleId(), result.isDraft(), result.overbooked(), result.source());
+
+        final List<HearingDay> enrichedHearingDays = buildHearingDaysFromCrownFallback(hearing, result, durationInMinutes);
+        final HearingListingNeeds.Builder builder = HearingListingNeeds.hearingListingNeeds()
+                .withValuesFrom(hearing)
+                .withHearingDays(enrichedHearingDays);
+
+        if (Boolean.FALSE.equals(result.isDraft()) && result.courtRoomId() != null) {
+            final CourtCentre adjustedCourtCentre = CourtCentre.courtCentre()
+                    .withValuesFrom(courtCentre)
+                    .withRoomId(UUID.nameUUIDFromBytes(("room-" + result.courtRoomId()).getBytes()))
+                    .build();
+            builder.withCourtCentre(adjustedCourtCentre);
+        }
+
+        return builder.build();
+    }
+
+    private UpdateHearingForListing applyCrownFallback(final UpdateHearingForListing hearing,
+                                                        final CrownFallbackSource fallbackSource) {
+        // Unblocked by Option C: endpoint now uses courtCentreId only, which UpdateHearingForListing carries
+        // directly via getCourtCentreId(). No ouCode lookup needed.
+        final int aggregatedDuration = calculateAggregatedDuration(hearing);
+        if (aggregatedDuration > HearingDurationEnrichmentService.MINUTES_IN_DAY) {
+            throw new CrownFallbackInvalidRequestException(
+                    "Multi-day CROWN update hearing arrived without an anchor courtScheduleId (hearingId="
+                            + hearing.getHearingId() + ", aggregatedDuration=" + aggregatedDuration + ").");
+        }
+
+        if (hearing.getCourtCentreId() == null) {
+            LOGGER.warn("[CROWN-FB] Cannot invoke fallback for update hearingId={}: courtCentreId missing. Returning unchanged.",
+                    hearing.getHearingId());
+            return hearing;
+        }
+
+        final LocalDate hearingDate = extractFirstHearingDate(hearing);
+        if (hearingDate == null) {
+            LOGGER.warn("[CROWN-FB] Cannot invoke fallback for update hearingId={}: no hearingDate derivable. Returning unchanged.",
+                    hearing.getHearingId());
+            return hearing;
+        }
+
+        final Optional<UUID> courtRoomId = Optional.ofNullable(hearing.getCourtRoomId());
+        final Optional<String> earliestHearingTime = !isEmpty(hearing.getHearingDays())
+                && hearing.getHearingDays().get(0).getStartTime() != null
+                ? Optional.of(hearing.getHearingDays().get(0).getStartTime().toString())
+                : Optional.empty();
+        final int durationInMinutes = aggregatedDuration > 0 ? aggregatedDuration : 1;
+
+        final CrownFallbackResult result = courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                hearing.getHearingId(),
+                hearing.getCourtCentreId(),
+                hearingDate,
+                durationInMinutes,
+                courtRoomId,
+                earliestHearingTime,
+                fallbackSource);
+
+        LOGGER.info("[CROWN-FB] update hearingId={} booked courtScheduleId={} isDraft={} overbooked={} source={}",
+                hearing.getHearingId(), result.courtScheduleId(), result.isDraft(), result.overbooked(), result.source());
+
+        final List<HearingDay> enrichedHearingDays = buildHearingDaysFromCrownFallback(hearing, result, durationInMinutes);
+        return UpdateHearingForListing.updateHearingForListing()
+                .withValuesFrom(hearing)
+                .withHearingDays(enrichedHearingDays)
+                .build();
+    }
+
+    private static List<HearingDay> buildHearingDaysFromCrownFallback(final UpdateHearingForListing hearing,
+                                                                       final CrownFallbackResult result,
+                                                                       final int durationInMinutes) {
+        final HearingDay.Builder dayBuilder = HearingDay.hearingDay()
+                .withCourtScheduleId(result.courtScheduleId())
+                .withHearingDate(result.sessionDate())
+                .withStartTime(result.sessionStartTime())
+                .withDurationMinutes(durationInMinutes)
+                .withIsDraft(Boolean.TRUE.equals(result.isDraft()));
+        if (hearing.getCourtCentreId() != null) {
+            dayBuilder.withCourtCentreId(hearing.getCourtCentreId());
+        }
+        return List.of(dayBuilder.build());
+    }
+
+    private static LocalDate extractFirstHearingDate(final UpdateHearingForListing hearing) {
+        if (hearing.getStartDate() != null) {
+            return hearing.getStartDate();
+        }
+        if (!isEmpty(hearing.getHearingDays())) {
+            final HearingDay first = hearing.getHearingDays().get(0);
+            if (first.getHearingDate() != null) {
+                return first.getHearingDate();
+            }
+            if (first.getStartTime() != null) {
+                return first.getStartTime().toLocalDate();
+            }
+        }
+        return null;
+    }
+
+    private static List<HearingDay> buildHearingDaysFromCrownFallback(final HearingListingNeeds hearing,
+                                                                       final CrownFallbackResult result,
+                                                                       final int durationInMinutes) {
+        final HearingDay.Builder dayBuilder = HearingDay.hearingDay()
+                .withCourtScheduleId(result.courtScheduleId())
+                .withHearingDate(result.sessionDate())
+                .withStartTime(result.sessionStartTime())
+                .withDurationMinutes(durationInMinutes)
+                .withIsDraft(Boolean.TRUE.equals(result.isDraft()));
+        if (hearing.getCourtCentre() != null && hearing.getCourtCentre().getId() != null) {
+            dayBuilder.withCourtCentreId(hearing.getCourtCentre().getId());
+        }
+        return List.of(dayBuilder.build());
+    }
+
+    private static LocalDate extractFirstHearingDate(final HearingListingNeeds hearing) {
+        if (hearing.getListedStartDateTime() != null) {
+            return hearing.getListedStartDateTime().toLocalDate();
+        }
+        if (!isEmpty(hearing.getHearingDays())) {
+            final HearingDay first = hearing.getHearingDays().get(0);
+            if (first.getHearingDate() != null) {
+                return first.getHearingDate();
+            }
+            if (first.getStartTime() != null) {
+                return first.getStartTime().toLocalDate();
+            }
+        }
+        return null;
     }
 
 }

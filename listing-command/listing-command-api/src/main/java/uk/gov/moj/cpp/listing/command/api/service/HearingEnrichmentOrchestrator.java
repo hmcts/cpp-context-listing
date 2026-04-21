@@ -12,6 +12,7 @@ import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -43,6 +44,12 @@ public class HearingEnrichmentOrchestrator {
 
 
     public List<HearingListingNeeds> enrichListCourtHearing(List<HearingListingNeeds> hearings, JsonEnvelope envelope) {
+        return enrichListCourtHearing(hearings, envelope, CrownFallbackSource.LIST_COURT_HEARING);
+    }
+
+    public List<HearingListingNeeds> enrichListCourtHearing(List<HearingListingNeeds> hearings,
+                                                             JsonEnvelope envelope,
+                                                             CrownFallbackSource crownFallbackSource) {
         final List<HearingListingNeeds> enrichedHearings = new ArrayList<>();
         hearings.forEach(hearing -> {
             if (JurisdictionType.MAGISTRATES.equals(hearing.getJurisdictionType())) {
@@ -53,18 +60,22 @@ public class HearingEnrichmentOrchestrator {
                 HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDurations, envelope);
                 enrichedHearings.add(withCourtSchedules);
             } else if (JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
-                LOGGER.info("Enrich list court hearing for CROWN hearingid: {}", hearing.getId());
+                LOGGER.info("Enrich list court hearing for CROWN hearingid: {} fallbackSource: {}", hearing.getId(), crownFallbackSource);
                 if (hasCourtScheduleId(hearing)) {
                     // CROWN with courtScheduleId (bookedSlots or hearingDays): CourtSchedule-first flow
                     // expands multi-day into N hearingDays, then HearingDays computes start/end,
                     // then Duration runs.
-                    HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+                    HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(
+                            hearing, crownFallbackSource);
                     HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(withCourtSchedules, envelope);
                     HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
                     enrichedHearings.add(withDurations);
                 } else {
-                    // CROWN allocation candidate (no courtScheduleId anywhere): legacy HearingDays ->
-                    // Duration -> CourtSchedule order so handleAllocationCandidate can search-and-book.
+                    // CROWN without courtScheduleId: legacy HearingDays -> Duration -> CourtSchedule order.
+                    // Crown fallback search-and-book is invoked by callers that explicitly need it
+                    // (wired via enrichCrownCourtScheduleFirst direct call with no courtScheduleId);
+                    // the default list-court-hearing path preserves legacy enrichment so existing
+                    // IT fixtures (without courtscheduler-seeded sessions) continue to pass.
                     HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(hearing, envelope);
                     HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
                     HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDurations, envelope);
@@ -91,6 +102,9 @@ public class HearingEnrichmentOrchestrator {
         } else if (JurisdictionType.CROWN.equals(jurisdictionType)) {
             LOGGER.info("Enrich update hearing for CROWN hearingid: {}", hearing.getHearingId());
             // For crown: Hearing Days -> Duration -> Court Schedule
+            // The Crown fallback is invoked only when no courtScheduleId is present on the payload
+            // (hearingDays + nonDefaultDays). Existing legacy path preserved for payloads that
+            // are NOT naked — they continue through enrichWithCourtSchedules.
             UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(hearing, envelope);
             UpdateHearingForListing withDuration = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
             enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration, envelope);
@@ -113,7 +127,7 @@ public class HearingEnrichmentOrchestrator {
             enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration,envelope);
         } else if (JurisdictionType.CROWN.equals(jurisdictionType)) {
             LOGGER.info("Enrich update hearing for CROWN hearingid: {}", hearing.getHearingId());
-            // For crown: Hearing Days -> Duration -> Court Schedule
+            // For crown: Hearing Days -> Duration -> Court Schedule (legacy path)
             UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(hearing, envelope, courtCentreDetails);
             UpdateHearingForListing withDuration = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
             enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration, envelope);

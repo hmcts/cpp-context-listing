@@ -261,4 +261,73 @@ class CourtSchedulerServiceAdapterTest {
 
         assertThat(result.getStatus(), is(HttpStatus.SC_BAD_REQUEST));
     }
+
+    // ─── Crown fallback search-and-book (Option C: courtCentreId-only) ───
+
+    @Test
+    void crownFallbackSearchAndBook_shouldReturnParsedResult_on200() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomUuid = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 4, 21);
+        final UUID bookedScheduleId = UUID.randomUUID();
+
+        final JsonObject body = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .add("courtScheduleId", bookedScheduleId.toString())
+                .add("courtRoomId", 731816)
+                .add("sessionDate", hearingDate.toString())
+                .add("sessionStartTime", "2026-04-21T09:00:00Z")
+                .add("sessionEndTime", "2026-04-21T17:00:00Z")
+                .add("durationInMinutes", 10)
+                .add("isDraft", false)
+                .add("businessType", "CR")
+                .add("source", "CROWN_FB_LIST")
+                .add("overbooked", false)
+                .build();
+
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        final uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult result =
+                courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                        hearingId, courtCentreId, hearingDate, 10,
+                        Optional.of(courtRoomUuid), Optional.of("2026-04-21T09:00:00Z"),
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING);
+
+        assertThat(result.hearingId(), is(hearingId));
+        assertThat(result.courtScheduleId(), is(bookedScheduleId));
+        assertThat(result.isDraft(), is(false));
+        assertThat(result.businessType(), is("CR"));
+        assertThat(result.source(), is("CROWN_FB_LIST"));
+    }
+
+    @Test
+    void crownFallbackSearchAndBook_shouldThrowNoSession_on404() {
+        final UUID hearingId = UUID.randomUUID();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_NOT_FOUND);
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException.class,
+                () -> courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                        hearingId, UUID.randomUUID(), LocalDate.of(2026, 4, 21), 10,
+                        Optional.empty(), Optional.empty(),
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING));
+    }
+
+    @Test
+    void crownFallbackSearchAndBook_shouldThrowInvalidRequest_on400() {
+        when(response.getStatus()).thenReturn(HttpStatus.SC_BAD_REQUEST);
+        when(response.hasEntity()).thenReturn(false);
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException.class,
+                () -> courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                        UUID.randomUUID(), UUID.randomUUID(), LocalDate.of(2026, 4, 21), 400,
+                        Optional.empty(), Optional.empty(),
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING));
+    }
 }
