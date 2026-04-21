@@ -52,6 +52,18 @@ public class CourtSchedulerServiceAdapter {
     public static final String PANEL_ADULT_YOUTH = "ADULT,YOUTH";
     private static final String PANEL = "panel";
     public static final String HEARING_ID = "hearingId";
+    // Crown fallback wire-field constants (used by crownFallbackSearchAndBook + parseCrownFallbackResult)
+    private static final String COURT_CENTRE_ID = "courtCentreId";
+    private static final String HEARING_DATE = "hearingDate";
+    private static final String DURATION_IN_MINUTES = "durationInMinutes";
+    private static final String SOURCE = "source";
+    private static final String EARLIEST_HEARING_TIME = "earliestHearingTime";
+    private static final String COURT_SCHEDULE_ID = "courtScheduleId";
+    private static final String SESSION_DATE = "sessionDate";
+    private static final String SESSION_START_TIME = "sessionStartTime";
+    private static final String SESSION_END_TIME = "sessionEndTime";
+    private static final String IS_DRAFT = "isDraft";
+    private static final String OVERBOOKED = "overbooked";
     @Inject
     private HearingSlotsService hearingSlotsService;
     @Inject
@@ -198,12 +210,12 @@ public class CourtSchedulerServiceAdapter {
                                                            final CrownFallbackSource source) {
         final Map<String, String> params = new HashMap<>();
         params.put(HEARING_ID, hearingId.toString());
-        params.put("courtCentreId", courtCentreId.toString());
-        params.put("hearingDate", hearingDate.toString());
-        params.put("durationInMinutes", Integer.toString(durationInMinutes));
-        params.put("source", source.label());
+        params.put(COURT_CENTRE_ID, courtCentreId.toString());
+        params.put(HEARING_DATE, hearingDate.toString());
+        params.put(DURATION_IN_MINUTES, Integer.toString(durationInMinutes));
+        params.put(SOURCE, source.label());
         courtRoomId.ifPresent(id -> params.put(COURT_ROOM_ID, id.toString()));
-        earliestHearingTime.ifPresent(t -> params.put("earliestHearingTime", t));
+        earliestHearingTime.ifPresent(t -> params.put(EARLIEST_HEARING_TIME, t));
 
         final Response response = hearingSlotsService.crownFallbackSearchAndBook(params);
         final int status = response.getStatus();
@@ -230,18 +242,46 @@ public class CourtSchedulerServiceAdapter {
 
     private static CrownFallbackResult parseCrownFallbackResult(final JsonObject body) {
         return new CrownFallbackResult(
-                body.containsKey("hearingId") ? UUID.fromString(body.getString("hearingId")) : null,
-                body.containsKey("courtScheduleId") ? UUID.fromString(body.getString("courtScheduleId")) : null,
-                body.containsKey("courtRoomId") && !body.isNull("courtRoomId") ? body.getInt("courtRoomId") : null,
-                body.containsKey("sessionDate") && !body.isNull("sessionDate") ? LocalDate.parse(body.getString("sessionDate")) : null,
-                body.containsKey("sessionStartTime") && !body.isNull("sessionStartTime") ? ZonedDateTime.parse(body.getString("sessionStartTime")) : null,
-                body.containsKey("sessionEndTime") && !body.isNull("sessionEndTime") ? ZonedDateTime.parse(body.getString("sessionEndTime")) : null,
-                body.containsKey("durationInMinutes") && !body.isNull("durationInMinutes") ? body.getInt("durationInMinutes") : null,
-                body.containsKey("isDraft") && !body.isNull("isDraft") ? body.getBoolean("isDraft") : null,
-                body.containsKey("businessType") && !body.isNull("businessType") ? body.getString("businessType") : null,
-                body.containsKey("source") && !body.isNull("source") ? body.getString("source") : null,
-                body.containsKey("overbooked") && !body.isNull("overbooked") ? body.getBoolean("overbooked") : null
+                uuidOrNull(body, HEARING_ID),
+                uuidOrNull(body, COURT_SCHEDULE_ID),
+                intOrNull(body, COURT_ROOM_ID),
+                localDateOrNull(body, SESSION_DATE),
+                zonedDateTimeOrNull(body, SESSION_START_TIME),
+                zonedDateTimeOrNull(body, SESSION_END_TIME),
+                intOrNull(body, DURATION_IN_MINUTES),
+                booleanOrNull(body, IS_DRAFT),
+                stringOrNull(body, BUSINESS_TYPE),
+                stringOrNull(body, SOURCE),
+                booleanOrNull(body, OVERBOOKED)
         );
+    }
+
+    private static boolean hasValue(final JsonObject body, final String key) {
+        return body.containsKey(key) && !body.isNull(key);
+    }
+
+    private static String stringOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? body.getString(key) : null;
+    }
+
+    private static UUID uuidOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? UUID.fromString(body.getString(key)) : null;
+    }
+
+    private static Integer intOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? body.getInt(key) : null;
+    }
+
+    private static Boolean booleanOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? body.getBoolean(key) : null;
+    }
+
+    private static LocalDate localDateOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? LocalDate.parse(body.getString(key)) : null;
+    }
+
+    private static ZonedDateTime zonedDateTimeOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? ZonedDateTime.parse(body.getString(key)) : null;
     }
 
     public Response validateSessionAvailability(final JsonObject requestPayload) {
