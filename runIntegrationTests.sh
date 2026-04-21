@@ -42,7 +42,7 @@ deltaspikeIntegrationTests() {
 
 buildDeployAndTest() {
   loginToDockerContainerRegistry
-#  buildWars
+  buildWars
   undeployWarsFromDocker
   buildAndStartContainers
   runLiquibase
@@ -50,7 +50,7 @@ buildDeployAndTest() {
   deployWiremock
   deployWars
   healthchecks
-#  integrationTests
+  integrationTests
 }
 
 buildDeployAndTest
