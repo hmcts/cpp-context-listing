@@ -681,9 +681,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         // a hearingDay with durationMinutes=0 that then propagated to the listHearingInCourtSessions
         // wire call and ultimately persisted 0 on allocated_listings.
         final int aggregatedDuration = calculateAggregatedDuration(hearing);
-        final int fallbackDuration = aggregatedDuration > 0
-                ? aggregatedDuration
-                : (hearing.getEstimatedMinutes() != null ? hearing.getEstimatedMinutes() : 0);
+        final Integer estimatedMinutes = hearing.getEstimatedMinutes();
+        final int estimatedFallback = estimatedMinutes != null ? estimatedMinutes : 0;
+        final int fallbackDuration = aggregatedDuration > 0 ? aggregatedDuration : estimatedFallback;
         return sessions.stream().limit(1).map(session -> HearingDay.hearingDay()
                 .withCourtCentreId(fromString(session.getCourtHouseId()))
                 .withCourtScheduleId(fromString(session.getCourtScheduleId()))
