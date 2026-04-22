@@ -17,15 +17,8 @@ public final class SessionAvailabilityValidationQueryParamConstants {
     public static final String PAGE_SIZE = "pageSize";
     public static final String PAGE_NUMBER = "pageNumber";
     public static final String AVAILABLE_DURATION_MINS = "availableDurationMins";
-    public static final String DURATION = "duration";
     public static final String STATUS = "status";
-    public static final String COURT_SCHEDULE_ID = "courtScheduleId";
     public static final String JURISDICTION = "jurisdiction";
-    public static final String COURT_SCHEDULE_ID_LIST = "courtScheduleIdList";
-    public static final String VALIDATION_RESULT = "validationResult";
-    public static final String VALIDATION_STATUS = "status";
-    public static final String VALIDATION_ERROR = "validationError";
-    public static final String FAILURE = "FAILURE";
 
     private SessionAvailabilityValidationQueryParamConstants() {
         // utility class

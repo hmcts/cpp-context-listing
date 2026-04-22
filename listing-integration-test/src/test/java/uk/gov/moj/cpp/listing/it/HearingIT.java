@@ -19,6 +19,7 @@ import static uk.gov.moj.cpp.listing.steps.data.HearingsData.singleHearingDataSi
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.trialHearingsData;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingData;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocation;
+import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocationWithMagistratesSearch;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocationWithDefendant;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocationWithJurisdictionType;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocationWithNonDefaultDays;
@@ -32,6 +33,7 @@ import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROW
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyHearingSlotsSearchCalledWithJurisdiction;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetCourtSchedulesByIdWithDraftStatus;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithJudiciary;
@@ -102,6 +104,23 @@ class HearingIT extends AbstractIT {
         updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
         updateHearingSteps.verifyPublicEventHearingConfirmed();
         updateHearingSteps.verifyPublicEventHearingChangesSaved();
+    }
+
+    @Test
+    void shouldPassJurisdictionQueryParamWhenSearchingAvailableHearingSlots() throws IOException {
+        final HearingsData hearingsData = hearingsData();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        final UpdatedHearingData updatedHearingData = updatedHearingDataForAllocationWithMagistratesSearch(hearingsData.getHearingData().get(0).getId());
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingData);
+        stubGetAvailableHearingSlotsWithQueryParams(updateHearingSteps.getUpdatedHearingData());
+        stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
+        updateHearingSteps.whenHearingIsUpdatedForListing();
+        updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
+
+        verifyHearingSlotsSearchCalledWithJurisdiction(MAGISTRATES_JURISDICTION);
     }
 
     @Test

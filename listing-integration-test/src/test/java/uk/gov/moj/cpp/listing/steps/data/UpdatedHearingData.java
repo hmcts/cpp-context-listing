@@ -172,6 +172,11 @@ public class UpdatedHearingData {
         return updatedHearingDataForAllocationWithNonDefaultDays(hearingId, judiciary);
     }
 
+    public static UpdatedHearingData updatedHearingDataForAllocationWithMagistratesSearch(final UUID hearingId) {
+        final List<JudicialRoleData> judiciary = singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "MAGISTRATE")));
+        return updatedHearingDataForAllocationWithoutCourtScheduleIds(hearingId, judiciary);
+    }
+
     public static UpdatedHearingData updatedHearingDataForAllocationWithNonDefaultDaysWithAdditionalFields(final UUID hearingId) {
         final List<JudicialRoleData> judiciary = singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "MAGISTRATE")));
         return updatedHearingDataForAllocationWithNonDefaultDaysWithAdditionalFields(hearingId, judiciary);
@@ -275,6 +280,26 @@ public class UpdatedHearingData {
         return day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY;
     }
 
+
+    private static UpdatedHearingData updatedHearingDataForAllocationWithoutCourtScheduleIds(final UUID hearingId, final List<JudicialRoleData> judiciary) {
+        final UUID courtCentreId = getRandomCourtCenterId();
+        final UUID roomId = getRandomCourtRoomId();
+
+        final LocalDate startDate = nextOrSameWorkingDay(LocalDate.now());
+        final ZonedDateTime startTimeWithZone = ZonedDateTime.of(startDate, DEFAULT_START_TIME, UTC);
+
+        final List<String> nonSittingDays = singletonList(startDate.plusDays(1).toString());
+
+        final NonDefaultDayData nonDefaultDayData = new NonDefaultDayData(startTimeWithZone.format(DATE_TIME_FORMAT), of(DURATION), empty(), of(1), of(OUCODE), of(SESSION), of(courtCentreId).map(UUID::toString), of(roomId).map(UUID::toString), empty());
+
+        final List<NonDefaultDayData> nonDefaultDays = singletonList(nonDefaultDayData);
+
+        final String endDate = startDate.toString();
+
+        return new UpdatedHearingData(hearingId, courtCentreId, RandomGenerator.STRING.next(), roomId, SENTENCE_HEARING_TYPE,
+                startDate.toString(), endDate, nonDefaultDays,
+                nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null, true, "publicListNote", false, null, null);
+    }
 
     private static UpdatedHearingData updatedHearingDataForAllocationWithNonDefaultDays(final UUID hearingId, final List<JudicialRoleData> judiciary) {
         final String endDate = "2020-04-23";
