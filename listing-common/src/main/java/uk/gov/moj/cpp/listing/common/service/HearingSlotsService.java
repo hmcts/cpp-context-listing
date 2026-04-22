@@ -60,6 +60,9 @@ public class HearingSlotsService {
     private static final String MULTIDAY_SEARCH_BOOK_RESOURCE = "/multidaysearchandbook/hearingslots";
     private static final String COURTSCHEDULER_MULTIDAY_SEARCH_BOOK = "application/vnd.courtscheduler.multiday.searchandbook.hearing.slots+json";
 
+    private static final String CROWN_FALLBACK_SEARCH_BOOK_RESOURCE = "/crownfallbacksearchandbook/hearingslots";
+    private static final String COURTSCHEDULER_CROWN_FALLBACK_SEARCH_BOOK = "application/vnd.courtscheduler.crown.fallback.search.book.hearing.slots+json";
+
     private static final String CJS_CPP_UID = "CJSCPPUID";
     @Inject
     @Value(key = "courtscheduler.base.url", defaultValue = "http://localhost:8080/listingcourtscheduler-api/rest/courtscheduler")
@@ -130,6 +133,10 @@ public class HearingSlotsService {
 
     public Response multiDaySearchAndBook(final Map<String, String> params) {
         return query(MULTIDAY_SEARCH_BOOK_RESOURCE, COURTSCHEDULER_MULTIDAY_SEARCH_BOOK, params);
+    }
+
+    public Response crownFallbackSearchAndBook(final Map<String, String> params) {
+        return query(CROWN_FALLBACK_SEARCH_BOOK_RESOURCE, COURTSCHEDULER_CROWN_FALLBACK_SEARCH_BOOK, params);
     }
 
     public void delete(final UUID hearingId) {

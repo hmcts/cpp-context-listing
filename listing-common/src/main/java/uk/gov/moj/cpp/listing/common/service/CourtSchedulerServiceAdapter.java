@@ -5,11 +5,16 @@ import static java.util.Optional.empty;
 
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,6 +52,18 @@ public class CourtSchedulerServiceAdapter {
     public static final String PANEL_ADULT_YOUTH = "ADULT,YOUTH";
     private static final String PANEL = "panel";
     public static final String HEARING_ID = "hearingId";
+    // Crown fallback wire-field constants (used by crownFallbackSearchAndBook + parseCrownFallbackResult)
+    private static final String COURT_CENTRE_ID = "courtCentreId";
+    private static final String HEARING_DATE = "hearingDate";
+    private static final String DURATION_IN_MINUTES = "durationInMinutes";
+    private static final String SOURCE = "source";
+    private static final String EARLIEST_HEARING_TIME = "earliestHearingTime";
+    private static final String COURT_SCHEDULE_ID = "courtScheduleId";
+    private static final String SESSION_DATE = "sessionDate";
+    private static final String SESSION_START_TIME = "sessionStartTime";
+    private static final String SESSION_END_TIME = "sessionEndTime";
+    private static final String IS_DRAFT = "isDraft";
+    private static final String OVERBOOKED = "overbooked";
     @Inject
     private HearingSlotsService hearingSlotsService;
     @Inject
@@ -165,6 +182,106 @@ public class CourtSchedulerServiceAdapter {
         }
         LOGGER.error("hearingSlotsSearch from rota returned an error : {} with status {}", responsePayload, hearingSlotResponse.getStatus());
         return hearingSlotResponse;
+    }
+
+    /**
+     * Calls the courtscheduler Crown fallback search-and-book endpoint. Returns the booked session
+     * parsed into a {@link CrownFallbackResult}. On 404 (no session available), throws
+     * {@link CrownFallbackNoSessionException}. On 400 (invalid request, typically multi-day with
+     * duration > 360), throws {@link CrownFallbackInvalidRequestException}.
+     *
+     * Uses courtCentreId (UUID) as the single canonical court identifier — the courtscheduler
+     * filters on court_schedule.court_house_id directly, so no ouCode lookup is needed.
+     *
+     * @param hearingId           listing hearingId
+     * @param courtCentreId       court centre UUID (hard match on court_schedule.court_house_id)
+     * @param hearingDate         hearing date (hard match)
+     * @param durationInMinutes   hearing duration (max 360 — multi-day rejected)
+     * @param courtRoomId         optional court room UUID; if supplied, courtscheduler prefers non-draft at that room
+     * @param earliestHearingTime optional earliest start time (ISO-8601); courtscheduler honors it if provided
+     * @param source              which listing flow initiated this call
+     */
+    public CrownFallbackResult crownFallbackSearchAndBook(final UUID hearingId,
+                                                           final UUID courtCentreId,
+                                                           final LocalDate hearingDate,
+                                                           final int durationInMinutes,
+                                                           final Optional<UUID> courtRoomId,
+                                                           final Optional<String> earliestHearingTime,
+                                                           final CrownFallbackSource source) {
+        final Map<String, String> params = new HashMap<>();
+        params.put(HEARING_ID, hearingId.toString());
+        params.put(COURT_CENTRE_ID, courtCentreId.toString());
+        params.put(HEARING_DATE, hearingDate.toString());
+        params.put(DURATION_IN_MINUTES, Integer.toString(durationInMinutes));
+        params.put(SOURCE, source.label());
+        courtRoomId.ifPresent(id -> params.put(COURT_ROOM_ID, id.toString()));
+        earliestHearingTime.ifPresent(t -> params.put(EARLIEST_HEARING_TIME, t));
+
+        final Response response = hearingSlotsService.crownFallbackSearchAndBook(params);
+        final int status = response.getStatus();
+
+        if (status == HttpStatus.SC_NOT_FOUND) {
+            throw new CrownFallbackNoSessionException(
+                    "Crown fallback: no session at courtCentreId=" + courtCentreId + " on " + hearingDate
+                            + " (hearingId=" + hearingId + ")");
+        }
+        if (status == HttpStatus.SC_BAD_REQUEST) {
+            throw new CrownFallbackInvalidRequestException(
+                    "Crown fallback rejected by courtscheduler (status=" + status + ") for hearingId=" + hearingId
+                            + ": " + (response.hasEntity() ? response.getEntity().toString() : ""));
+        }
+        if (status != HttpStatus.SC_OK) {
+            LOGGER.error("Crown fallback search-and-book returned unexpected status {} for hearingId {}", status, hearingId);
+            throw new CrownFallbackNoSessionException(
+                    "Crown fallback: unexpected courtscheduler status " + status + " for hearingId " + hearingId);
+        }
+
+        final JsonObject body = objectToJsonObjectConverter.convert(response.getEntity());
+        return parseCrownFallbackResult(body);
+    }
+
+    private static CrownFallbackResult parseCrownFallbackResult(final JsonObject body) {
+        return new CrownFallbackResult(
+                uuidOrNull(body, HEARING_ID),
+                uuidOrNull(body, COURT_SCHEDULE_ID),
+                intOrNull(body, COURT_ROOM_ID),
+                localDateOrNull(body, SESSION_DATE),
+                zonedDateTimeOrNull(body, SESSION_START_TIME),
+                zonedDateTimeOrNull(body, SESSION_END_TIME),
+                intOrNull(body, DURATION_IN_MINUTES),
+                booleanOrNull(body, IS_DRAFT),
+                stringOrNull(body, BUSINESS_TYPE),
+                stringOrNull(body, SOURCE),
+                booleanOrNull(body, OVERBOOKED)
+        );
+    }
+
+    private static boolean hasValue(final JsonObject body, final String key) {
+        return body.containsKey(key) && !body.isNull(key);
+    }
+
+    private static String stringOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? body.getString(key) : null;
+    }
+
+    private static UUID uuidOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? UUID.fromString(body.getString(key)) : null;
+    }
+
+    private static Integer intOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? body.getInt(key) : null;
+    }
+
+    private static Boolean booleanOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? body.getBoolean(key) : null;
+    }
+
+    private static LocalDate localDateOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? LocalDate.parse(body.getString(key)) : null;
+    }
+
+    private static ZonedDateTime zonedDateTimeOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? ZonedDateTime.parse(body.getString(key)) : null;
     }
 
     public Response validateSessionAvailability(final JsonObject requestPayload) {

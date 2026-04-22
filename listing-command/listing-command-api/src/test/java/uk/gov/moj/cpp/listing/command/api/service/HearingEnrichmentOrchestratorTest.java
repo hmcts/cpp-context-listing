@@ -17,6 +17,7 @@ import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -89,8 +90,9 @@ public class HearingEnrichmentOrchestratorTest {
                 .thenReturn(enrichedMagistratesHearing);
 
         // Mock the enrichment chain for crown (3 steps: crownCourtScheduleFirst -> days -> duration)
+        // Orchestrator now calls the 2-arg overload with CrownFallbackSource.LIST_COURT_HEARING by default.
         HearingListingNeeds crownWithCourtSchedules = mock(HearingListingNeeds.class);
-        when(courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(crownHearing))
+        when(courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(crownHearing, CrownFallbackSource.LIST_COURT_HEARING))
                 .thenReturn(crownWithCourtSchedules);
         when(hearingDaysEnrichmentService.enrichHearings(crownWithCourtSchedules, envelope))
                 .thenReturn(crownWithHearingDays);
@@ -142,7 +144,8 @@ public class HearingEnrichmentOrchestratorTest {
         HearingListingNeeds withHearingDays = mock(HearingListingNeeds.class);
 
         // CROWN order: crownCourtScheduleFirst -> days -> duration
-        when(courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(crownHearing))
+        // Orchestrator calls 2-arg overload; default source is CrownFallbackSource.LIST_COURT_HEARING.
+        when(courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(crownHearing, CrownFallbackSource.LIST_COURT_HEARING))
                 .thenReturn(withCourtSchedules);
         when(hearingDaysEnrichmentService.enrichHearings(withCourtSchedules, envelope))
                 .thenReturn(withHearingDays);
@@ -153,7 +156,7 @@ public class HearingEnrichmentOrchestratorTest {
         List<HearingListingNeeds> result = orchestrator.enrichListCourtHearing(hearings, envelope);
 
         // Then
-        verify(courtScheduleEnrichmentService).enrichCrownCourtScheduleFirst(crownHearing);
+        verify(courtScheduleEnrichmentService).enrichCrownCourtScheduleFirst(crownHearing, CrownFallbackSource.LIST_COURT_HEARING);
         verify(hearingDaysEnrichmentService).enrichHearings(withCourtSchedules, envelope);
         verify(hearingDurationEnrichmentService).enrichWithDurations(withHearingDays, envelope);
 

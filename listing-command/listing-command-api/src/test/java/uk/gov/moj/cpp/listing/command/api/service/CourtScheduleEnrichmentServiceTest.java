@@ -67,6 +67,8 @@ class CourtScheduleEnrichmentServiceTest {
     private JsonObjectToObjectConverter jsonObjectConverter;
     @Mock
     private SlotsToJsonStringConverter slotsToJsonStringConverter;
+    @Mock
+    private uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
 
     @Test
     void searchAndBookShouldReturnBookedHearingSlots() {
@@ -2406,6 +2408,126 @@ class CourtScheduleEnrichmentServiceTest {
         verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
     }
 
+    // ─── Crown fallback (HearingListingNeeds) tests — Option C wiring ────
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldCallCrownFallback_whenNoCourtScheduleIdAndCourtCentrePresent() {
+        // A naked Crown payload: courtCentre + listedStartDateTime + estimatedMinutes but no courtScheduleId.
+        // The fallback should fire and the hearing should be enriched with the booked courtScheduleId.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID bookedScheduleId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 4, 21);
+        final java.time.ZonedDateTime listedStart = hearingDate.atStartOfDay(java.time.ZoneOffset.UTC).plusHours(9);
+
+        final uk.gov.justice.core.courts.CourtCentre courtCentre = uk.gov.justice.core.courts.CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .withCode("C01CY00")
+                .withRoomId(courtRoomId)
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withListedStartDateTime(listedStart)
+                .withEstimatedMinutes(10)
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate),
+                org.mockito.ArgumentMatchers.anyInt(),
+                any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING)))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, bookedScheduleId, 731816, hearingDate,
+                        listedStart, listedStart.plusHours(8),
+                        10, false, "CR", "CROWN_FB_LIST", false));
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedScheduleId));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(false));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldReturnUnchanged_whenFallbackCourtCentreMissing() {
+        // Without a courtCentre we cannot call the fallback; the method returns hearing unchanged.
+        final UUID hearingId = UUID.randomUUID();
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withEstimatedMinutes(10)
+                .build();
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result, is(hearing));
+        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(
+                any(), any(), any(), org.mockito.ArgumentMatchers.anyInt(), any(), any(), any());
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldThrow_whenNoCourtScheduleIdAndMultiDayDuration() {
+        // Multi-day Crown without an anchor courtScheduleId is a caller contract violation.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+
+        final uk.gov.justice.core.courts.CourtCentre courtCentre = uk.gov.justice.core.courts.CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .withCode("C01CY00")
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withEstimatedMinutes(1080) // 3 full days
+                .build();
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException.class,
+                () -> courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldThreadSourceLabel_whenLnhOverloadUsed() {
+        // LIST_NEXT_HEARINGS_V2 must reach the adapter verbatim for observability.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 4, 21);
+
+        final uk.gov.justice.core.courts.CourtCentre courtCentre = uk.gov.justice.core.courts.CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .withCode("C01CY00")
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withListedStartDateTime(hearingDate.atStartOfDay(java.time.ZoneOffset.UTC))
+                .withEstimatedMinutes(10)
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                any(), any(), any(), org.mockito.ArgumentMatchers.anyInt(), any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_NEXT_HEARINGS_V2)))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, UUID.randomUUID(), 731816, hearingDate,
+                        hearingDate.atStartOfDay(java.time.ZoneOffset.UTC),
+                        hearingDate.atStartOfDay(java.time.ZoneOffset.UTC).plusHours(8),
+                        10, true, "CR", "CROWN_FB_ADJOURN", false));
+
+        courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing,
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_NEXT_HEARINGS_V2);
+
+        verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
+                any(), any(), any(), org.mockito.ArgumentMatchers.anyInt(), any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_NEXT_HEARINGS_V2));
+    }
+
     @Test
     void enrichCrownCourtScheduleFirst_shouldReturnUnchanged_whenNoCourtScheduleIdAndHasWeekCommencing() {
         final UUID hearingId = UUID.randomUUID();
@@ -2822,29 +2944,51 @@ class CourtScheduleEnrichmentServiceTest {
     // ─── enrichCrownCourtScheduleFirst (UpdateHearingForListing) tests ───
 
     @Test
-    void enrichCrownCourtScheduleFirst_update_shouldReturnUnchanged_whenNoCourtScheduleId() {
+    void enrichCrownCourtScheduleFirst_update_shouldCallCrownFallback_whenNoCourtScheduleId() {
+        // Under Option C: when a CROWN update hearing arrives with no courtScheduleId on
+        // hearingDays/nonDefaultDays, the fallback-aware entry point invokes the Crown fallback
+        // search-and-book via courtSchedulerServiceAdapter. The legacy hearingSlotsService paths
+        // (getCourtSchedulesById, listHearingInCourtSessions, multiDaySearchAndBook) are NOT touched.
         final UUID hearingId = UUID.randomUUID();
         final UUID courtCentreId = UUID.randomUUID();
         final UUID courtRoomId = UUID.randomUUID();
+        final UUID bookedCourtScheduleId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 4, 10);
 
         final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
                 .withHearingId(hearingId)
                 .withJurisdictionType(JurisdictionType.CROWN)
-                .withStartDate(LocalDate.of(2026, 4, 10))
-                .withEndDate(LocalDate.of(2026, 4, 10))
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
                 .withCourtCentreId(courtCentreId)
                 .withCourtRoomId(courtRoomId)
                 .withHearingDays(Collections.singletonList(
                         HearingDay.hearingDay()
-                                .withHearingDate(LocalDate.of(2026, 4, 10))
+                                .withHearingDate(hearingDate)
                                 .withDurationMinutes(120)
                                 .build()
                 ))
                 .build();
 
-        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId),
+                eq(courtCentreId),
+                eq(hearingDate),
+                eq(120),
+                any(),
+                any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.UPDATE_HEARING_FOR_LISTING)))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, bookedCourtScheduleId, 731816, hearingDate,
+                        hearingDate.atStartOfDay(java.time.ZoneOffset.UTC),
+                        hearingDate.atStartOfDay(java.time.ZoneOffset.UTC).plusHours(8),
+                        120, false, "CR", "CROWN_FB_UPDATE", false));
 
-        assertThat(result, is(hearing));
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(
+                hearing, uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.UPDATE_HEARING_FOR_LISTING);
+
+        // Hearing is enriched: hearingDays now carry the booked courtScheduleId from the fallback
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedCourtScheduleId));
         verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
         verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
         verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());

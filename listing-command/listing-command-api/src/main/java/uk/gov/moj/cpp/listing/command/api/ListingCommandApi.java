@@ -137,7 +137,9 @@ public class ListingCommandApi {
 
         final JsonObject payload = envelope.payloadAsJsonObject();
         final ListNextHearingsV2 listNextHearings = jsonObjectConverter.convert(payload, ListNextHearingsV2.class);
-        final List<HearingListingNeeds> enrichedHearings = hearingEnrichmentOrchestrator.enrichListCourtHearing(listNextHearings.getHearings(), envelope);
+        final List<HearingListingNeeds> enrichedHearings = hearingEnrichmentOrchestrator.enrichListCourtHearing(
+                listNextHearings.getHearings(), envelope,
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_NEXT_HEARINGS_V2);
         final Set<CourtCentreDetails> courtCentres = getCourtCentreDetails(envelope, enrichedHearings);
 
         final ListNextHearingsEnrichedV2 listNextHearingsEnriched = ListNextHearingsEnrichedV2.listNextHearingsEnrichedV2()
