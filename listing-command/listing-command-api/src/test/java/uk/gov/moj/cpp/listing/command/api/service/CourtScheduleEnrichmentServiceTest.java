@@ -2623,6 +2623,83 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
+    void enrichCrownCourtScheduleFirst_shouldUseBookedSlotDuration_whenOnlyBookedSlotsPresentAndEstimatedMinutesNull() {
+        // Reproduces the CROWN wire duration=0 bug: the client sends ONLY bookedSlots (courtScheduleId + duration),
+        // no hearingDays, no nonDefaultDays and no estimatedMinutes. buildHearingDaysFromSingleDaySessions used to
+        // fall back to estimatedMinutes and then 0, producing hearingDay.durationMinutes=0 that propagated to the
+        // listHearingInCourtSessions wire call. The fix prefers calculateAggregatedDuration so the bookedSlot
+        // duration is honoured.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+        final int bookedSlotDuration = 180;
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                // estimatedMinutes intentionally NOT set (null) to simulate the real-world payload
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).build())
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withDuration(bookedSlotDuration)
+                                .build()))
+                .build();
+
+        final CourtSchedule cs = buildCourtSchedule(courtScheduleId, courtRoomId, courtHouseId, sessionDate, false);
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId.toString())))
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, sessionDate + "T10:00:00Z", bookedSlotDuration)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        // Capture the hearingDays list passed to the wire serializer so we can assert the
+        // duration that would be sent in the listHearingInCourtSessions request body.
+        final org.mockito.ArgumentCaptor<List<HearingDay>> daysCaptor =
+                org.mockito.ArgumentCaptor.forClass(List.class);
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(daysCaptor.capture()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        // The hearingDay serialized to the wire must carry the bookedSlot duration, not 0.
+        final List<HearingDay> wireHearingDays = daysCaptor.getValue();
+        assertThat(wireHearingDays.size(), is(1));
+        assertThat(wireHearingDays.get(0).getDurationMinutes(), is(bookedSlotDuration));
+        assertThat(wireHearingDays.get(0).getCourtScheduleId().toString(), is(courtScheduleId.toString()));
+    }
+
+    @Test
     void enrichCrownCourtScheduleFirst_shouldCallSingleDay_whenCourtScheduleIdPresentAndDurationBelow360() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtScheduleId = UUID.randomUUID();
