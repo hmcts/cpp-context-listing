@@ -3576,4 +3576,124 @@ class CourtScheduleEnrichmentServiceTest {
 
         assertTrue(result.isEmpty());
     }
+
+    // ─── nonDefaultDays → hearingDays courtScheduleId merge (Crown update path) ───
+
+    @Test
+    void enrichCrownUpdateHearing_shouldMergeCourtScheduleIdFromNonDefaultDaysOntoHearingDay_whenHearingDayHasNoCourtScheduleId() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID finalCourtScheduleId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+        final ZonedDateTime startTime = hearingDate.atStartOfDay(ZoneOffset.UTC);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withCourtScheduleId(finalCourtScheduleId.toString())
+                                .withStartTime(startTime)
+                                .withDuration(240)
+                                .build()))
+                .build();
+
+        // Mock downstream fetch to return empty so the method returns the (merged) hearing unchanged
+        final JsonObject emptyResponse = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder())
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(emptyResponse);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(finalCourtScheduleId));
+        // Downstream fetch should have been called with the merged id (not search-and-book)
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).searchBookSlots(anyMap());
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_shouldPreserveExistingCourtScheduleIdOnHearingDay_evenWhenNonDefaultDaysHasOne() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID existingDraftCourtScheduleId = UUID.randomUUID();
+        final UUID finalCourtScheduleIdOnNonDefault = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+        final ZonedDateTime startTime = hearingDate.atStartOfDay(ZoneOffset.UTC);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(existingDraftCourtScheduleId)
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withCourtScheduleId(finalCourtScheduleIdOnNonDefault.toString())
+                                .withStartTime(startTime)
+                                .withDuration(240)
+                                .build()))
+                .build();
+
+        // Mock downstream fetch to return empty so we can inspect the merged hearing
+        final JsonObject emptyResponse = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder())
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(emptyResponse);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(existingDraftCourtScheduleId));
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_shouldSkipMerge_whenNonDefaultDayCourtScheduleIdDateDoesNotMatchAnyHearingDay() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID unusedCourtScheduleId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+        final LocalDate otherDate = LocalDate.now().plusDays(10);
+        final ZonedDateTime nonDefaultStartTime = otherDate.atStartOfDay(ZoneOffset.UTC);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withCourtCentreId(UUID.randomUUID())
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withCourtScheduleId(unusedCourtScheduleId.toString())
+                                .withStartTime(nonDefaultStartTime)
+                                .withDuration(240)
+                                .build()))
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().size(), is(1));
+        assertNull(result.getHearingDays().get(0).getCourtScheduleId());
+    }
 }
