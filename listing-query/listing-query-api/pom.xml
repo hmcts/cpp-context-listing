@@ -4,7 +4,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.listing</groupId>
         <artifactId>listing-query</artifactId>
-        <version>17.103.168-CCSPH2N-SNAPSHOT</version>
+        <version>17.103.169-CCSPH2N-SNAPSHOT</version>
     </parent>
 
     <artifactId>listing-query-api</artifactId>
