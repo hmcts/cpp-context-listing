@@ -116,6 +116,7 @@ class CourtScheduleEnrichmentServiceTest {
 
         final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
                 .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
                 .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre().withOuCode("OU123").build())
                 .withCourtRoomId(courtRoomId)
                 .withStartDate(day1)
@@ -202,6 +203,7 @@ class CourtScheduleEnrichmentServiceTest {
 
         final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
                 .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
                 .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre().withOuCode("OU123").build())
                 .withCourtRoomId(courtRoomId)
                 .withStartDate(day1)
@@ -2085,6 +2087,78 @@ class CourtScheduleEnrichmentServiceTest {
 
         org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () ->
                 courtScheduleEnrichmentService.enrichWithCourtSchedules(updateHearing, mock(JsonEnvelope.class)));
+    }
+
+    @Test
+    void shouldPassJurisdictionQueryParamInGetFirstAvailableSlot() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final String bookedCourtScheduleId = UUID.randomUUID().toString();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+
+        final HearingDay hearingDay = HearingDay.hearingDay()
+                .withHearingDate(hearingDate)
+                .withDurationMinutes(120)
+                .withStartTime(hearingDate.atTime(10, 0).atZone(ZoneOffset.UTC))
+                .withCourtRoomId(courtRoomId)
+                .build();
+
+        final UpdateHearingForListing updateHearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre().withOuCode("OU123").build())
+                .withHearingDays(Collections.singletonList(hearingDay))
+                .build();
+
+        final JsonObject searchJson = JsonObjects.createObjectBuilder()
+                .add("hearingSlots", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", bookedCourtScheduleId)
+                                .add("courtRoomId", courtRoomId.toString())
+                                .add("sessionStartTime", "2020-01-01T10:00:00Z")))
+                .build();
+
+        final Response searchResponse = mock(Response.class);
+        when(searchResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(searchResponse.getEntity()).thenReturn(searchJson);
+        when(hearingSlotsService.search(anyMap())).thenReturn(searchResponse);
+        when(objectToJsonObjectConverter.convert(searchJson)).thenReturn(searchJson);
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(bookedCourtScheduleId).build());
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", bookedCourtScheduleId)
+                                .add("hearingStartTime", "2020-01-01T10:00:00Z")
+                                .add("duration", 120)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        @SuppressWarnings("unchecked")
+        final org.mockito.ArgumentCaptor<java.util.Map<String, String>> mapCaptor =
+                org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+
+        courtScheduleEnrichmentService.enrichWithCourtSchedules(updateHearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService).search(mapCaptor.capture());
+        assertThat(mapCaptor.getValue().get("jurisdiction"), is(JurisdictionType.MAGISTRATES.toString()));
     }
 
     // ─── populateJudiciaryInfoFromSlots edge case tests ─────────────────

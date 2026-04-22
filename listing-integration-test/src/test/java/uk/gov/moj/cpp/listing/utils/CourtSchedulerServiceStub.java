@@ -108,6 +108,19 @@ public class CourtSchedulerServiceStub {
         });
     }
 
+    public static void verifyHearingSlotsSearchCalledWithJurisdiction(final String jurisdiction) {
+        Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
+            final RequestPatternBuilder requestPatternBuilder = WireMock.getRequestedFor(urlPathMatching(COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS))
+                    .withQueryParam("jurisdiction", WireMock.equalTo(jurisdiction));
+            try {
+                WireMock.verify(WireMock.moreThanOrExactly(1), requestPatternBuilder);
+            } catch (VerificationException e) {
+                return false;
+            }
+            return true;
+        });
+    }
+
     public static void stubValidateSessionAvailability() {
         stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + VALIDATE_SESSION_AVAILABILITY)))
                 .withHeader("Content-Type", containing(COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE))
