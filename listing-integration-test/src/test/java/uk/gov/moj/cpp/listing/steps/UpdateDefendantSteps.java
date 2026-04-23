@@ -28,6 +28,8 @@ import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.steps.data.UpdateCaseDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedDefendantData;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import javax.json.JsonObject;
@@ -122,42 +124,53 @@ public class UpdateDefendantSteps extends AbstractIT {
      * JMS-aware version of verifyHearingListedFromAPI for handling asynchronous message processing timing issues.
      */
     public void verifyHearingListedFromAPIWithJmsDelay(final boolean isAllocated) {
+        verifyHearingListedFromAPIWithJmsDelay(isAllocated, null);
+    }
+
+    /**
+     * Same as {@link #verifyHearingListedFromAPIWithJmsDelay(boolean)} with an optional assertion on the first listed defendant's youth flag.
+     */
+    @SuppressWarnings("rawtypes")
+    public void verifyHearingListedFromAPIWithJmsDelay(final boolean isAllocated, final Boolean expectedIsYouth) {
 
         final com.jayway.jsonpath.JsonPath lastNameFilter = getJsonPathQueryForDefendantLastName(hearingData, listedCaseData, updatedDefendantData, updatedDefendantData.getLastName());
         final com.jayway.jsonpath.JsonPath caseReferenceFilter = getJsonPathQueryForCaseReference(hearingData, listedCaseData, updatedDefendantData, listedCaseData.getCaseReference());
 
-        // Use JMS-aware polling to handle asynchronous message processing
-        pollForHearingWithJmsDelay(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
+        final List<Matcher> matchers = new ArrayList<>();
+        matchers.add(withJsonPath(lastNameFilter));
+        matchers.add(withJsonPath(caseReferenceFilter));
+        matchers.add(withJsonPath("$.hearings[0].id",
+                equalTo(hearingData.getId().toString())));
+        matchers.add(withJsonPath("$.hearings[0].jurisdictionType",
+                equalTo(hearingData.getJurisdictionType())));
+        matchers.add(withJsonPath("$.hearings[0].courtCentreId",
+                equalTo(hearingData.getCourtCentreId().toString())));
+        matchers.add(withJsonPath("$.hearings[0].type.id",
+                equalTo(hearingData.getHearingTypeData().getTypeId().toString())));
+        matchers.add(withJsonPath("$.hearings[0].type.description",
+                equalTo(hearingData.getHearingTypeData().getTypeDescription())));
+        matchers.add(withJsonPath("$.hearings[0].startDate",
+                equalTo(hearingData.getHearingStartDate().toString())));
+        matchers.add(withJsonPath("$.hearings[0].listedCases[0].defendants[0].id",
+                equalTo(updatedDefendantData.getDefendantId().toString())));
+        matchers.add(withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
+                equalTo(updatedDefendantData.getMasterDefendantId().toString())));
+        matchers.add(withJsonPath("$.hearings[0].listedCases[0].defendants[0].bailStatus.code",
+                equalTo(updatedDefendantData.getBailStatus().getCode())));
+        matchers.add(withJsonPath("$.hearings[0].listedCases[0].defendants[0].bailStatus.id",
+                equalTo(updatedDefendantData.getBailStatus().getId().toString())));
+        matchers.add(withJsonPath("$.hearings[0].listedCases[0].defendants[0].firstName",
+                equalTo(updatedDefendantData.getFirstName())));
+        matchers.add(withJsonPath("$.hearings[0].listedCases[0].defendants[0].lastName",
+                equalTo(updatedDefendantData.getLastName())));
+        matchers.add(withJsonPath("$.hearings[0].listedCases[0].defendants[0].restrictFromCourtList",
+                equalTo(hearingData.getListedCases().get(0).getDefendants().get(0).getRestrictFromCourtList())));
+        if (expectedIsYouth != null) {
+            matchers.add(withJsonPath("$.hearings[0].listedCases[0].defendants[0].isYouth", equalTo(expectedIsYouth)));
+        }
 
-                withJsonPath(lastNameFilter),
-                withJsonPath(caseReferenceFilter),
-                withJsonPath("$.hearings[0].id",
-                        equalTo(hearingData.getId().toString())),
-                withJsonPath("$.hearings[0].jurisdictionType",
-                        equalTo(hearingData.getJurisdictionType())),
-                withJsonPath("$.hearings[0].courtCentreId",
-                        equalTo(hearingData.getCourtCentreId().toString())),
-                withJsonPath("$.hearings[0].type.id",
-                        equalTo(hearingData.getHearingTypeData().getTypeId().toString())),
-                withJsonPath("$.hearings[0].type.description",
-                        equalTo(hearingData.getHearingTypeData().getTypeDescription())),
-                withJsonPath("$.hearings[0].startDate",
-                        equalTo(hearingData.getHearingStartDate().toString())),
-                withJsonPath("$.hearings[0].listedCases[0].defendants[0].id",
-                        equalTo(updatedDefendantData.getDefendantId().toString())),
-                withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
-                        equalTo(updatedDefendantData.getMasterDefendantId().toString())),
-                withJsonPath("$.hearings[0].listedCases[0].defendants[0].bailStatus.code",
-                        equalTo(updatedDefendantData.getBailStatus().getCode())),
-                withJsonPath("$.hearings[0].listedCases[0].defendants[0].bailStatus.id",
-                        equalTo(updatedDefendantData.getBailStatus().getId().toString())),
-                withJsonPath("$.hearings[0].listedCases[0].defendants[0].firstName",
-                        equalTo(updatedDefendantData.getFirstName())),
-                withJsonPath("$.hearings[0].listedCases[0].defendants[0].lastName",
-                        equalTo(updatedDefendantData.getLastName())),
-                withJsonPath("$.hearings[0].listedCases[0].defendants[0].restrictFromCourtList",
-                        equalTo(hearingData.getListedCases().get(0).getDefendants().get(0).getRestrictFromCourtList()))
-        });
+        pollForHearingWithJmsDelay(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(),
+                matchers.toArray(new Matcher[0]));
 
     }
 

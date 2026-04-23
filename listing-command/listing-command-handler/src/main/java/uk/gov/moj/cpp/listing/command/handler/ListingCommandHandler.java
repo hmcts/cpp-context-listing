@@ -662,7 +662,8 @@ public class ListingCommandHandler {
                     final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unallocatedHearingPersisted, fullExtension, extendHearingForHearingEnriched.getSendNotificationToParties());
                     final Stream<Object> addCaseEvent = hearing.addCasesToUnAllocatedHearing(casesToMove, unAllocatedHearingId);
                     final Stream<Object> hearingMarkedForPartialUpdated = hearing.markUnallocatedHearingForPartialUpdate(unAllocatedHearingId, prosecutionCasesToBeRemovedFromHearing);
-                    return Stream.of(addCaseEvent, updatedHearing, allocationEvents, hearingMarkedForPartialUpdated).flatMap(i -> i);
+                    final Stream<Object> emitYouthCourtListRestrictionsEvents = hearing.emitYouthCourtListRestrictions();
+                    return Stream.of(addCaseEvent, updatedHearing, allocationEvents, hearingMarkedForPartialUpdated, emitYouthCourtListRestrictionsEvents).flatMap(i -> i);
                 });
 
             } else {
@@ -1649,6 +1650,7 @@ public class ListingCommandHandler {
                 .withCourtApplicationApplicantIds(restrictCourtList.getCourtApplicationApplicantIds())
                 .withCourtApplicatonIds(restrictCourtList.getCourtApplicationIds())
                 .withCourtApplicatonRespondentIds(restrictCourtList.getCourtApplicationRespondentIds())
+                .withCourtApplicationSubjectIds(restrictCourtList.getCourtApplicationSubjectIds())
                 .withCourtApplicationType(restrictCourtList.getCourtApplicationType())
                 .withRestrictFromCourtList(restrictCourtList.getRestrictCourtList())
                 .build();

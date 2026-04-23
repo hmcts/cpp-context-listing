@@ -991,6 +991,60 @@ public class AlphabeticalCourtListServiceTest {
                 queryPayload);
     }
 
+    @Test
+    public void shouldUseSubjectAsDefendantWhenCourtApplicationHasSubject() {
+        final JsonEnvelope envelope = buildRequestEnvelopeWithSubjectInCourtApplication();
+        when(courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope)).thenReturn(getCourtCentreDetails(false));
+
+        final Optional<JsonObject> listJson = service.buildAlphabeticalCourtListData(envelope, COURT_CENTRE_ID.toString());
+
+        assertThat(listJson.orElse(createObjectBuilder().build()).toString(), isJson(allOf(
+                withJsonPath("$.defendants", hasSize(1)),
+                withJsonPath("$.defendants[0].defendantFullName", equalTo(upperCase(LAST_NAME_6) + "," + SPACE + FIRST_NAME_6)),
+                withJsonPath("$.defendants[0].caseReference", equalTo(APPLICATION_REFERENCE_1))
+        )));
+        verify(courtCentreFactory).getCourtCentre(eq(COURT_CENTRE_ID), eq(envelope));
+    }
+
+    private JsonEnvelope buildRequestEnvelopeWithSubjectInCourtApplication() {
+        final JsonObject queryPayload = createObjectBuilder()
+                .add("hearings", createArrayBuilder().add(createObjectBuilder()
+                        .add("hearingDate", to(HEARING_DATE))
+                        .add("hearingsByHearingDate", createArrayBuilder().add(createObjectBuilder()
+                                .add("hearing", getHearingBuilder(emptyMap())
+                                        .add("allocated", true)
+                                        .add("hearingDays", generateHearingDays(START_DATE_TIME_1))
+                                        .add("courtApplications", generateCourtApplicationsWithSubject())
+                                )
+                        ))
+                        .build()).build()).build();
+
+        return envelopeFrom(
+                metadataOf(randomUUID(), QUERY_NAME)
+                        .withUserId(randomUUID().toString())
+                        .build(),
+                queryPayload);
+    }
+
+    private JsonArrayBuilder generateCourtApplicationsWithSubject() {
+        return createArrayBuilder().add(createObjectBuilder()
+                .add("id", randomUUID().toString())
+                .add("applicationReference", APPLICATION_REFERENCE_1)
+                .add("restrictFromCourtList", FALSE)
+                .add("respondents", createArrayBuilder())
+                .add("applicant", createObjectBuilder()
+                        .add("firstName", FIRST_NAME_4)
+                        .add("lastName", LAST_NAME_4)
+                        .add("restrictFromCourtList", FALSE)
+                        .add("courtApplicationPartyType", "PERSON"))
+                .add("subject", createObjectBuilder()
+                        .add("firstName", FIRST_NAME_6)
+                        .add("lastName", LAST_NAME_6)
+                        .add("restrictFromCourtList", FALSE)
+                        .add("courtApplicationPartyType", "PERSON"))
+        );
+    }
+
     private CourtCentreDetails getCourtCentreDetails(final Boolean welsh) {
         final CourtRoomDetails courtRoomDetails = courtRoomDetails()
                 .withCourtRoomName(COURT_ROOM_NAME).withWelshCourtRoomName(COURT_ROOM_NAME_WELSH)

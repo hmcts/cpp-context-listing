@@ -4,6 +4,8 @@ import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.codehaus.groovy.runtime.InvokerHelper.asList;
 
+import java.time.LocalDate;
+
 import uk.gov.justice.core.courts.AssociatedDefenceOrganisation;
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.DefenceOrganisation;
@@ -43,7 +45,42 @@ public class UpdatedDefendantData {
                         .withDescription(defendantData.getBailStatus().getDescription())
                         .withId(fromString(defendantData.getBailStatus().getId().toString())).build())
                 .withCustodyTimeLimit("2025-07-27")
-                .withDateOfBirth("2025-07-27")
+                .withDateOfBirth("2006-07-27")
+                .withDefendantId(defendantData.getDefendantId())
+                .withMasterDefendantId(fromString(defendantData.getMasterDefendantId().toString()))
+                .withFirstName(defendantData.getFirstName())
+                .withLastName(defendantData.getLastName())
+                .withOrganisationName("withOrganisationName")
+                .withLegalEntityName("withOrganisationName")
+                .withLegalEntityId(fromString("55b8e1fd-085d-4236-a14f-8a35d86db8b2"))
+                .withSpecificRequirements("withSpecificRequirements")
+                .withCourtCentreId(randomUUID())
+                .withPncId("pncId")
+                .withIsYouth(Boolean.TRUE)
+                .withAssociatedDefenceOrganisation(AssociatedDefenceOrganisation.associatedDefenceOrganisation()
+                        .withFundingType(FundingType.REPRESENTATION_ORDER)
+                        .withAssociationStartDate("2018-10-10")
+                        .withDefenceOrganisation(DefenceOrganisation.defenceOrganisation()
+                                .withOrganisation(Organisation.organisation()
+                                        .withName("withOrganisationName")
+                                        .build())
+                                .withLaaContractNumber("LAACONTRACT")
+                                .build())
+                        .build())
+                .withAliases(asList(DefendantAlias.defendantAlias()
+                        .withFirstName("Alias First Name")
+                        .withLastName("Alias Last Name")
+                        .build()))
+                .build();
+    }
+
+    public static UpdatedDefendantData updatedDefendantDataWithUnder18DateOfBirth(final DefendantData defendantData) {
+        return Builder.UpdatedDefendantData()
+                .withBailStatus(new BailStatus.Builder().withCode(defendantData.getBailStatus().getCode())
+                        .withDescription(defendantData.getBailStatus().getDescription())
+                        .withId(fromString(defendantData.getBailStatus().getId().toString())).build())
+                .withCustodyTimeLimit("2025-07-27")
+                .withDateOfBirth(LocalDate.now().minusYears(15).toString())
                 .withDefendantId(defendantData.getDefendantId())
                 .withMasterDefendantId(fromString(defendantData.getMasterDefendantId().toString()))
                 .withFirstName(defendantData.getFirstName())
