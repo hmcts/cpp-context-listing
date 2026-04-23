@@ -108,6 +108,8 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.listing.command.factory.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingFactory;
+import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
+import uk.gov.moj.cpp.listing.common.duration.HearingDurationDefaults;
 import uk.gov.moj.cpp.listing.command.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.command.service.UUIDService;
 import uk.gov.moj.cpp.listing.command.utils.CaseMarkersToDomainConverter;
@@ -266,6 +268,9 @@ public class ListingCommandHandler {
 
     @Inject
     private CourtCentreFactory courtCentreFactory;
+
+    @Inject
+    private HearingTypeFactory hearingTypeFactory;
 
 
     private static final String APPLICATION_ID = "applicationId";
@@ -580,6 +585,10 @@ public class ListingCommandHandler {
             //raisenewHearing
             final List<ListedCase> listedCases = extendHearingUtils.extractCasesToMove(actualStoredHearing.getListedCases(), unallocatedHearingRequestCaseMap);
             final List<uk.gov.justice.core.courts.JudicialRole> judiciaryInfoByUpdate = updateHearingForListing.getJudiciary();
+            final Integer hearingTypeDuration = HearingDurationDefaults.resolveHearingTypeDuration(
+                    updateHearingForListing.getType() != null && updateHearingForListing.getType().getId() != null
+                            ? updateHearingForListing.getType().getId().toString() : null,
+                    hearingTypeFactory.getHearingTypesIdDurationMap(command));
             updateHearingEventStream(command, eventStream, hearingAggregate, (Hearing hearing) -> {
                 final Stream<Object> hearingListedEvent = hearing.listForSplit(type,
                         listedCases,
@@ -591,7 +600,8 @@ public class ListingCommandHandler {
                         weekCommencingStartDate,
                         weekCommencingDurationInWeeks,
                         judiciaryInfoByUpdate,
-                        convertCommandHearingDaysToDomainNonDefaultDays(hearingDays));
+                        convertCommandHearingDaysToDomainNonDefaultDays(hearingDays),
+                        hearingTypeDuration);
                 return Stream.of(hearingListedEvent).flatMap(i -> i);
             });
         }

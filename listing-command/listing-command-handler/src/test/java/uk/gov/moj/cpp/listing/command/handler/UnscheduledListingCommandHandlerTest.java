@@ -355,4 +355,77 @@ public class UnscheduledListingCommandHandlerTest {
                 .build();
     }
 
+    // SPRDT-807 — the handler used to call map.get(...) which returns null for an unmapped type.
+    // After the fix it delegates to HearingDurationDefaults.resolveHearingTypeDuration which
+    // falls back to DEFAULT_MIN=20. These tests lock in the guarantee for every path through
+    // listUnscheduledHearing (both court-hearing and next-hearing enriched entry points converge here).
+    @Test
+    public void shouldFallBackToDefaultMinWhenHearingTypeMissingFromDurationMap() throws EventStreamException {
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        // Intentionally empty map — real reference data could fail to resolve a new hearing type (e.g. Crown Plea)
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.emptyMap());
+
+        unscheduledListingCommandHandler.handleListUnscheduledCourtHearing(listUnscheduledCourtHearingCommandEnvelope());
+
+        verify(hearing).listUnscheduled(
+                eq(HEARING_ID_1),
+                eq(HEARING_TYPE),
+                anyList(),
+                eq(COURT_CENTRE_ID),
+                anyList(),
+                eq(COURT_ROOM_ID),
+                eq(LISTING_DIRECTIONS),
+                eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID),
+                eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)),
+                eq(null),
+                any(CourtCentreDefaults.class),
+                anyList(),
+                anyList(),
+                eq(20),
+                eq(of(WEEK_COMMENCING_START_DATE)),
+                eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_DURATION)),
+                eq(TYPE_OF_LIST));
+    }
+
+    @Test
+    public void shouldFallBackToDefaultMinWhenMappedDurationIsZero() throws EventStreamException {
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class)))
+                .thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 0));
+
+        unscheduledListingCommandHandler.handleListUnscheduledCourtHearing(listUnscheduledCourtHearingCommandEnvelope());
+
+        verify(hearing).listUnscheduled(
+                eq(HEARING_ID_1), eq(HEARING_TYPE), anyList(), eq(COURT_CENTRE_ID), anyList(),
+                eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)), eq(null), any(CourtCentreDefaults.class),
+                anyList(), anyList(), eq(20),
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_DURATION)), eq(TYPE_OF_LIST));
+    }
+
+    @Test
+    public void shouldPassThroughMappedDurationWhenValid() throws EventStreamException {
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class)))
+                .thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 150));
+
+        unscheduledListingCommandHandler.handleListUnscheduledCourtHearing(listUnscheduledCourtHearingCommandEnvelope());
+
+        verify(hearing).listUnscheduled(
+                eq(HEARING_ID_1), eq(HEARING_TYPE), anyList(), eq(COURT_CENTRE_ID), anyList(),
+                eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)), eq(null), any(CourtCentreDefaults.class),
+                anyList(), anyList(), eq(150),
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_DURATION)), eq(TYPE_OF_LIST));
+    }
 }

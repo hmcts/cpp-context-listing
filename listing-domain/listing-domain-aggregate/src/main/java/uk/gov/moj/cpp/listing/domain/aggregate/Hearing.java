@@ -506,7 +506,8 @@ public class Hearing implements Aggregate {
                                        final LocalDate weekCommencingStartDate,
                                        final Integer weekCommencingDurationInWeeks,
                                        final List<uk.gov.justice.core.courts.JudicialRole> judiciary,
-                                       final List<NonDefaultDay> nonDefaultDays) {
+                                       final List<NonDefaultDay> nonDefaultDays,
+                                       final Integer hearingTypeDuration) {
 
         if (this.duplicate || this.deleted) {
             return Stream.empty();
@@ -518,7 +519,7 @@ public class Hearing implements Aggregate {
 
         final CourtHearingRequest.Builder builder = CourtHearingRequest.courtHearingRequest();
         builder.withCourtCentre(defaultCourtCentre)
-                .withEstimatedMinutes(30)
+                .withEstimatedMinutes(coerceToValidDuration(hearingTypeDuration))
                 .withHearingType(HearingType.hearingType()
                         .withId(type.getId())
                         .withDescription(type.getDescription())
@@ -2276,7 +2277,7 @@ public class Hearing implements Aggregate {
                 .build();
         this.startDate = hearing.getStartDate();
         this.endDate = hearing.getEndDate();
-        this.estimatedMinutes = hearing.getEstimatedMinutes();
+        this.estimatedMinutes = coerceToValidDuration(hearing.getEstimatedMinutes());
         this.estimatedDuration = hearing.getEstimatedDuration();
         this.nonSittingDays = hearing.getNonSittingDays();
 
@@ -2449,6 +2450,7 @@ public class Hearing implements Aggregate {
     private void initialiseCurrentHearingState(final uk.gov.justice.listing.events.Hearing hearing) {
         currentHearingEventState = uk.gov.justice.listing.events.Hearing.hearing()
                 .withValuesFrom(hearing)
+                .withEstimatedMinutes(coerceToValidDuration(hearing.getEstimatedMinutes()))
                 .withCourtApplications(nonNull(hearing.getCourtApplications()) ? hearing.getCourtApplications().stream().distinct().collect(toList()) : null)
                 .build();
     }
@@ -3501,6 +3503,18 @@ public class Hearing implements Aggregate {
             this.estimatedMinutes = total;
         }
     }
+
+    // Invariant: estimatedMinutes must be a real duration. 0 and 1 are treated as sentinel-invalid
+    // throughout the enrichment layer (see HearingDurationEnrichmentService.hasInvalidEstimatedMinutes),
+    // so coerce them here too for any path that bypasses enrichment (unscheduled, split).
+    private static Integer coerceToValidDuration(final Integer estimatedMinutes) {
+        if (estimatedMinutes == null || estimatedMinutes == 0 || estimatedMinutes == 1) {
+            return DEFAULT_MIN_MINUTES;
+        }
+        return estimatedMinutes;
+    }
+
+    private static final int DEFAULT_MIN_MINUTES = 20;
 
     private void updateCurrentHearingEventStateWithHearingDays() {
         if (nonNull(this.currentHearingEventState)) {
