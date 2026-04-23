@@ -239,7 +239,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     private UpdateHearingForListing enrichCrownUpdateHearing(final UpdateHearingForListing rawHearing) {
         LOGGER.info("CROWN update enrichment for hearingId: {}", rawHearing.getHearingId());
 
-        final UpdateHearingForListing hearing = mergeCourtScheduleIdsFromNonDefaultDays(rawHearing);
+        final UpdateHearingForListing withSeededHearingDays = seedHearingDaysFromNonDefaultDaysIfEmpty(rawHearing);
+        final UpdateHearingForListing hearing = mergeCourtScheduleIdsFromNonDefaultDays(withSeededHearingDays);
 
         final boolean anyHearingDayHasCourtScheduleId = !isEmpty(hearing.getHearingDays())
                 && hearing.getHearingDays().stream().anyMatch(d -> nonNull(d.getCourtScheduleId()));
@@ -337,6 +338,57 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         }
 
         return hearingBuilder.build();
+    }
+
+    /**
+     * When the raw update-hearing-for-listing payload carries the authoritative courtScheduleId + duration
+     * on nonDefaultDays only (hearingDays empty — frontend's multi-day shape), seed hearingDays from
+     * nonDefaultDays so the downstream multi-day vs single-day decision and multiDaySearchAndBook call have
+     * authoritative input. For multi-day the seeded hearingDay's {@code durationMinutes} carries the TOTAL
+     * requested duration (e.g. 1080) — the sessions returned by courtscheduler then replace this seed.
+     *
+     * <p>WeekCommencing payloads are excluded: they model a weekly window rather than discrete days, and
+     * seeding would cause {@code recalculateDurationSequenceAndEndDatesForHearingDays} to compute an
+     * endDate from the seeded day and overwrite the weekCommencing window.
+     */
+    private UpdateHearingForListing seedHearingDaysFromNonDefaultDaysIfEmpty(final UpdateHearingForListing hearing) {
+        if (nonNull(hearing.getWeekCommencingStartDate())) {
+            return hearing;
+        }
+        if (!isEmpty(hearing.getHearingDays()) || isEmpty(hearing.getNonDefaultDays())) {
+            return hearing;
+        }
+
+        final List<HearingDay> seeded = hearing.getNonDefaultDays().stream()
+                .filter(nd -> nonNull(nd.getStartTime()))
+                .map(nd -> {
+                    HearingDay.Builder b = HearingDay.hearingDay()
+                            .withHearingDate(nd.getStartTime().toLocalDate())
+                            .withStartTime(nd.getStartTime())
+                            .withDurationMinutes(nd.getDuration());
+                    if (nonNull(nd.getCourtCentreId())) {
+                        b.withCourtCentreId(fromString(nd.getCourtCentreId()));
+                    }
+                    if (nonNull(nd.getRoomId())) {
+                        b.withCourtRoomId(fromString(nd.getRoomId()));
+                    }
+                    if (nonNull(nd.getCourtScheduleId()) && !isBlank(nd.getCourtScheduleId())) {
+                        b.withCourtScheduleId(fromString(nd.getCourtScheduleId()));
+                    }
+                    return b.build();
+                })
+                .toList();
+
+        if (seeded.isEmpty()) {
+            return hearing;
+        }
+
+        LOGGER.info("CROWN update: seeded {} hearingDay(s) from nonDefaultDays for hearingId {}",
+                seeded.size(), hearing.getHearingId());
+        return UpdateHearingForListing.updateHearingForListing()
+                .withValuesFrom(hearing)
+                .withHearingDays(seeded)
+                .build();
     }
 
     /**
