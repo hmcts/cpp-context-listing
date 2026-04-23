@@ -202,6 +202,69 @@ public class CourtSchedulerServiceStub {
                 COURT_SCHEDULER_ENDPOINT + CROWN_FALLBACK_SEARCH_BOOK)));
     }
 
+    // --- Multi-day search-and-book stubs (CROWN update multi-day path) ---
+
+    /**
+     * Stub a successful response from GET /multidaysearchandbook/hearingslots returning the supplied
+     * court schedule sessions. Used to drive the CROWN multi-day update path — the listing service
+     * passes the starting courtScheduleId + total duration, courtscheduler returns N consecutive
+     * sessions that together cover the duration.
+     */
+    public static void stubMultiDaySearchAndBook(final List<String> courtScheduleIds,
+                                                  final UUID courtHouseId,
+                                                  final UUID courtRoomId,
+                                                  final LocalDate firstSessionDate,
+                                                  final boolean isDraft) {
+        final StringBuilder body = new StringBuilder();
+        body.append("{\"courtSchedules\":[");
+        for (int i = 0; i < courtScheduleIds.size(); i++) {
+            if (i > 0) {
+                body.append(",");
+            }
+            final LocalDate sessionDate = firstSessionDate.plusDays(i);
+            body.append("{")
+                    .append("\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\",")
+                    .append("\"courtHouseId\":\"").append(courtHouseId).append("\",")
+                    .append("\"courtRoomId\":\"").append(courtRoomId).append("\",")
+                    .append("\"sessionDate\":\"").append(sessionDate).append("\",")
+                    .append("\"hearingStartTime\":\"").append(sessionDate).append("T09:00:00Z\",")
+                    .append("\"isDraft\":").append(isDraft)
+                    .append("}");
+        }
+        body.append("]}");
+
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/multidaysearchandbook/hearingslots")))
+                .atPriority(1)
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(body.toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    /**
+     * Verify that GET /multidaysearchandbook/hearingslots was called with the expected courtScheduleId
+     * + total duration. Proves the CROWN update path correctly routed multi-day through the CourtSchedule-first
+     * flow and didn't regress to the startDate→endDate expansion.
+     */
+    public static void verifyMultiDaySearchAndBookCalled(final String courtScheduleId, final int durationInMinutes) {
+        Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
+            try {
+                WireMock.verify(WireMock.getRequestedFor(urlPathMatching(
+                        COURT_SCHEDULER_ENDPOINT + "/multidaysearchandbook/hearingslots"))
+                        .withQueryParam("courtScheduleId", WireMock.equalTo(courtScheduleId))
+                        .withQueryParam("durationInMinutes", WireMock.equalTo(String.valueOf(durationInMinutes))));
+                return true;
+            } catch (VerificationException e) {
+                return false;
+            }
+        });
+    }
+
+    /** Regression guard: CROWN update without a courtScheduleId must NOT trigger multi-day search-and-book. */
+    public static void verifyMultiDaySearchAndBookNeverCalled() {
+        WireMock.verify(0, WireMock.getRequestedFor(urlPathMatching(
+                COURT_SCHEDULER_ENDPOINT + "/multidaysearchandbook/hearingslots")));
+    }
+
     public static void stubValidateSessionAvailabilityFailure() {
         stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + VALIDATE_SESSION_AVAILABILITY)))
                 .withHeader("Content-Type", containing(COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE))

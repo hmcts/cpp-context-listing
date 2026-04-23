@@ -15,9 +15,13 @@ import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
+import uk.gov.justice.listing.commands.NonDefaultDay;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource;
+
+import java.time.ZonedDateTime;
+import java.util.UUID;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -219,6 +223,67 @@ public class HearingEnrichmentOrchestratorTest {
         verify(hearingDurationEnrichmentService).enrichWithDurationForUpdate(withHearingDays, envelope);
         verify(courtScheduleEnrichmentService).enrichWithCourtSchedules(withDuration, envelope);
         assertEquals(enrichedUpdate, result);
+    }
+
+    @Test
+    public void shouldRouteCrownUpdateThroughCourtScheduleFirst_whenCourtScheduleIdOnNonDefaultDays() {
+        // Given — raw multi-day payload: hearingDays empty, courtScheduleId + duration live on nonDefaultDays.
+        // This is the shape the frontend sends for CROWN multi-day updates.
+        UpdateHearingForListing crownUpdate = mock(UpdateHearingForListing.class);
+        lenient().when(crownUpdate.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
+        lenient().when(crownUpdate.getHearingDays()).thenReturn(Collections.emptyList());
+        NonDefaultDay withId = NonDefaultDay.nonDefaultDay()
+                .withStartTime(ZonedDateTime.parse("2026-05-27T09:00:00Z"))
+                .withDuration(1080)
+                .withCourtScheduleId(UUID.randomUUID().toString())
+                .build();
+        lenient().when(crownUpdate.getNonDefaultDays()).thenReturn(Collections.singletonList(withId));
+
+        UpdateHearingForListing afterCourtSchedule = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing afterHearingDays = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing afterDuration = mock(UpdateHearingForListing.class);
+
+        when(courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(crownUpdate)).thenReturn(afterCourtSchedule);
+        when(hearingDaysEnrichmentService.enrichHearing(afterCourtSchedule, envelope)).thenReturn(afterHearingDays);
+        when(hearingDurationEnrichmentService.enrichWithDurationForUpdate(afterHearingDays, envelope)).thenReturn(afterDuration);
+
+        // When
+        UpdateHearingForListing result = orchestrator.enrichUpdateHearingForListing(crownUpdate, envelope);
+
+        // Then — CourtSchedule-first order: courtSchedule -> days -> duration (matches enrichListCourtHearing)
+        verify(courtScheduleEnrichmentService).enrichCrownCourtScheduleFirst(crownUpdate);
+        verify(hearingDaysEnrichmentService).enrichHearing(afterCourtSchedule, envelope);
+        verify(hearingDurationEnrichmentService).enrichWithDurationForUpdate(afterHearingDays, envelope);
+        assertEquals(afterDuration, result);
+    }
+
+    @Test
+    public void shouldRouteCrownUpdateWithCourtCentreDetailsThroughCourtScheduleFirst_whenCourtScheduleIdOnHearingDays() {
+        UpdateHearingForListing crownUpdate = mock(UpdateHearingForListing.class);
+        lenient().when(crownUpdate.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
+        HearingDay dayWithId = HearingDay.hearingDay()
+                .withHearingDate(LocalDate.parse("2026-05-27"))
+                .withCourtScheduleId(UUID.randomUUID())
+                .withDurationMinutes(360)
+                .build();
+        lenient().when(crownUpdate.getHearingDays()).thenReturn(Collections.singletonList(dayWithId));
+        lenient().when(crownUpdate.getNonDefaultDays()).thenReturn(Collections.emptyList());
+        CourtCentreDetails courtCentreDetails = mock(CourtCentreDetails.class);
+
+        UpdateHearingForListing afterCourtSchedule = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing afterHearingDays = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing afterDuration = mock(UpdateHearingForListing.class);
+
+        when(courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(crownUpdate)).thenReturn(afterCourtSchedule);
+        when(hearingDaysEnrichmentService.enrichHearing(afterCourtSchedule, envelope, courtCentreDetails)).thenReturn(afterHearingDays);
+        when(hearingDurationEnrichmentService.enrichWithDurationForUpdate(afterHearingDays, envelope)).thenReturn(afterDuration);
+
+        UpdateHearingForListing result = orchestrator.enrichUpdateHearingForListing(crownUpdate, envelope, courtCentreDetails);
+
+        verify(courtScheduleEnrichmentService).enrichCrownCourtScheduleFirst(crownUpdate);
+        verify(hearingDaysEnrichmentService).enrichHearing(afterCourtSchedule, envelope, courtCentreDetails);
+        verify(hearingDurationEnrichmentService).enrichWithDurationForUpdate(afterHearingDays, envelope);
+        assertEquals(afterDuration, result);
     }
 
     // ─── MAGS update enrichment tests ────────────────────────────────────

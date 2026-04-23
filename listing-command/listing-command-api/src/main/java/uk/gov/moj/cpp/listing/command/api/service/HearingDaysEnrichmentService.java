@@ -110,10 +110,16 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
         } else if (JurisdictionType.CROWN.equals(updateHearingForListing.getJurisdictionType())) {
             final List<LocalDate> nonSittingDays = enrichNonSittingDaysForCrown(updateHearingForListing);
             final List<NonDefaultDay> nonDefaultDays = enrichNonDefaultDaysForCrown(updateHearingForListing, nonSittingDays);
-            final List<HearingDay> hearingDays = enrichHearingDaysForCrown(updateHearingForListing, nonSittingDays, nonDefaultDays, courtCentreDetails);
             builder.withNonSittingDays(nonSittingDays);
             builder.withNonDefaultDays(nonDefaultDays);
-            builder.withHearingDays(hearingDays);
+            if (isCourtScheduleFirstResolved(updateHearingForListing)) {
+                // enrichCrownCourtScheduleFirst already produced the authoritative hearingDays
+                // (single-day: one session; multi-day: N sessions each with its own courtScheduleId + date).
+                // Overwriting here would collapse the multi-day expansion back to a startDate→endDate iteration.
+                builder.withHearingDays(updateHearingForListing.getHearingDays());
+            } else {
+                builder.withHearingDays(enrichHearingDaysForCrown(updateHearingForListing, nonSittingDays, nonDefaultDays, courtCentreDetails));
+            }
         }
         calculateStartAndEndDates(builder);
 
@@ -189,6 +195,16 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
 
     static boolean isWeekCommencingHearing(final UpdateHearingForListing updateHearingForListing) {
         return nonNull(updateHearingForListing.getWeekCommencingStartDate());
+    }
+
+    /**
+     * True when hearingDays have already been resolved via CourtScheduleEnrichmentService's
+     * CourtSchedule-first flow (each day carries a courtScheduleId). In that case we must not
+     * re-expand from startDate→endDate.
+     */
+    private static boolean isCourtScheduleFirstResolved(final UpdateHearingForListing hearing) {
+        return isNotEmpty(hearing.getHearingDays())
+                && hearing.getHearingDays().stream().anyMatch(d -> nonNull(d.getCourtScheduleId()));
     }
 
     static boolean isWeekCommencingHearing(final HearingListingNeeds hearing) {
