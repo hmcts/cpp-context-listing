@@ -312,16 +312,10 @@ public class HearingDurationEnrichmentService implements EnrichmentService {
 
     static Integer getDurationByHearingTypeOrDefault(HearingType hearingType,
                                                      Map<String, Integer> hearingTypesIdDurationMap) {
-        if (hearingTypesIdDurationMap.isEmpty() || isNull(hearingType)) {
-            return DEFAULT_MIN;
-        }
-
-        Integer duration = hearingTypesIdDurationMap.getOrDefault(
-                hearingType.getId().toString(),
-                DEFAULT_MIN
-        );
-
-        return duration == 0 || duration == 1 ? DEFAULT_MIN : duration;
+        final String typeId = (hearingType != null && hearingType.getId() != null)
+                ? hearingType.getId().toString() : null;
+        return uk.gov.moj.cpp.listing.common.duration.HearingDurationDefaults
+                .resolveHearingTypeDuration(typeId, hearingTypesIdDurationMap);
     }
 
     static Integer calculateCrownDurationForUpdate(UpdateHearingForListing hearing) {

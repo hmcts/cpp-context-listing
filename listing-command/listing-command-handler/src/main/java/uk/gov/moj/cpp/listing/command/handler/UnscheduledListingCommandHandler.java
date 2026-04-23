@@ -22,6 +22,7 @@ import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamEx
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter;
+import uk.gov.moj.cpp.listing.common.duration.HearingDurationDefaults;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate;
@@ -138,7 +139,10 @@ public class UnscheduledListingCommandHandler {
                 commandToDomainConverter.getCourtCentreDefaults(courtCentres, commandHearing),
                 commandToDomainConverter.getCourtApplications(commandHearing),
                 commandToDomainConverter.getCourtApplicationPartyListingNeeds(commandHearing),
-                hearingTypesIdDurationMap.get(commandHearing.getType().getId().toString()),
+                HearingDurationDefaults.resolveHearingTypeDuration(
+                        commandHearing.getType() != null && commandHearing.getType().getId() != null
+                                ? commandHearing.getType().getId().toString() : null,
+                        hearingTypesIdDurationMap),
                 weekCommencingStartDate,
                 weekCommencingEndDate,
                 weekCommencingDurationInWeeks,
