@@ -3483,13 +3483,31 @@ public class Hearing implements Aggregate {
 
     private void updateHearingDays(final List<uk.gov.justice.listing.events.HearingDay> hearingDays) {
         this.hearingDays = convertHearingDaysToDomain(hearingDays);
+        recalculateEstimatedMinutesFromHearingDays();
         updateCurrentHearingEventStateWithHearingDays();
+    }
+
+    // Preserve pre-initialised / duration-less state so HearingListed's estimatedMinutes isn't clobbered to 0.
+    private void recalculateEstimatedMinutesFromHearingDays() {
+        if (isEmpty(this.hearingDays)) {
+            return;
+        }
+        int total = this.hearingDays.stream()
+                .map(HearingDay::getDurationMinutes)
+                .filter(d -> nonNull(d))
+                .mapToInt(Integer::intValue)
+                .sum();
+        if (total > 0) {
+            this.estimatedMinutes = total;
+        }
     }
 
     private void updateCurrentHearingEventStateWithHearingDays() {
         if (nonNull(this.currentHearingEventState)) {
             this.currentHearingEventState = uk.gov.justice.listing.events.Hearing.hearing().withValuesFrom(currentHearingEventState)
-                    .withHearingDays(convertDomainToHearingDays(this.hearingDays)).build();
+                    .withHearingDays(convertDomainToHearingDays(this.hearingDays))
+                    .withEstimatedMinutes(this.estimatedMinutes)
+                    .build();
         }
     }
 

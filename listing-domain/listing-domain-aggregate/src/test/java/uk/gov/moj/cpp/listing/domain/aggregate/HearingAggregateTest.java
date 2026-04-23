@@ -6384,4 +6384,131 @@ class HearingAggregateTest {
         assertThat(eventsList.size(), is(1));
         assertTrue(eventsList.get(0) instanceof uk.gov.justice.listing.events.HearingTrialVacated);
     }
+
+    @Test
+    void shouldRecalculateEstimatedMinutesWhenHearingDaysChanged() {
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+        final UUID crownCourtCentreId = randomUUID();
+        final ZonedDateTime startTime = ZonedDateTime.now().plusDays(5).withHour(9).withMinute(0);
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(singletonList(HearingDay.hearingDay()
+                                .withCourtScheduleId(randomUUID())
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withStartTime(startTime)
+                                .withDurationMinutes(20)
+                                .withCourtRoomId(crownCourtRoomId)
+                                .withCourtCentreId(crownCourtCentreId)
+                                .build()))
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withCourtCentreId(crownCourtCentreId)
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(20)
+                        .build())
+                .build());
+
+        assertThat(hearing.getCurrentHearingEventState().getEstimatedMinutes(), is(20));
+
+        hearing.apply(HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingId(crownHearingId)
+                .withHearingDays(singletonList(HearingDay.hearingDay()
+                        .withCourtScheduleId(randomUUID())
+                        .withHearingDate(LocalDate.now().plusDays(5))
+                        .withStartTime(startTime)
+                        .withDurationMinutes(120)
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withCourtCentreId(crownCourtCentreId)
+                        .build()))
+                .build());
+
+        assertThat(hearing.getCurrentHearingEventState().getEstimatedMinutes(), is(120));
+    }
+
+    @Test
+    void shouldSumEstimatedMinutesAcrossMultipleHearingDays() {
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+        final UUID crownCourtCentreId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(singletonList(HearingDay.hearingDay()
+                                .withCourtScheduleId(randomUUID())
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(20)
+                                .build()))
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(20)
+                        .build())
+                .build());
+
+        final ZonedDateTime day1Start = ZonedDateTime.now().plusDays(5).withHour(9).withMinute(0);
+        final ZonedDateTime day2Start = ZonedDateTime.now().plusDays(6).withHour(9).withMinute(0);
+        hearing.apply(HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingId(crownHearingId)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(randomUUID())
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withStartTime(day1Start)
+                                .withDurationMinutes(360)
+                                .withCourtRoomId(crownCourtRoomId)
+                                .withCourtCentreId(crownCourtCentreId)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(randomUUID())
+                                .withHearingDate(LocalDate.now().plusDays(6))
+                                .withStartTime(day2Start)
+                                .withDurationMinutes(180)
+                                .withCourtRoomId(crownCourtRoomId)
+                                .withCourtCentreId(crownCourtCentreId)
+                                .build()))
+                .build());
+
+        assertThat(hearing.getCurrentHearingEventState().getEstimatedMinutes(), is(540));
+    }
+
+    @Test
+    void shouldPreserveEstimatedMinutesWhenHearingDaysHaveNoDuration() {
+        final UUID crownHearingId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(singletonList(HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(30)
+                                .build()))
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(30)
+                        .build())
+                .build());
+
+        hearing.apply(HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingId(crownHearingId)
+                .withHearingDays(singletonList(HearingDay.hearingDay()
+                        .withHearingDate(LocalDate.now().plusDays(5))
+                        // no durationMinutes - mirrors a sequence-reset / courtScheduleId-only path
+                        .build()))
+                .build());
+
+        // When no day carries a duration the sum is 0 — don't clobber the prior estimate.
+        assertThat(hearing.getCurrentHearingEventState().getEstimatedMinutes(), is(30));
+    }
 }
