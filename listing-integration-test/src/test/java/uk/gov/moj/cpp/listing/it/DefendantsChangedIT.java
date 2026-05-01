@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.it;
 
 
-import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedDefendantData.updatedDefendantData;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
@@ -73,5 +72,27 @@ class DefendantsChangedIT extends AbstractIT {
         final UpdateDefendantSteps updateDefendantSteps = new UpdateDefendantSteps(caseId, hearingData, updatedDefendantData);
         updateDefendantSteps.whenPublicEventProgressionCaseDefendantsUpdatedIsPublished();
         updateDefendantSteps.verifyHearingListedFromAPIWithJmsDelay(true);
+    }
+
+    /**
+     * {@code public.progression.case-defendant-changed} is processed into {@code listing.command.update-defendants-for-hearing}.
+     * Listed defendant starts as an adult ({@code isYouth} false); after the update payload marks them as youth, the view reflects {@code isYouth} true.
+     */
+    @Test
+    void shouldSetDefendantAsYouthAfterUpdateDefendantsForHearingWhenInitiallyAdult() {
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAdultDefendants();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(UNALLOCATED);
+        listCourtHearingSteps.verifyFirstListedDefendantYouthStatusWithJmsDelay(UNALLOCATED, false);
+
+        final DefendantData defendantData = hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0);
+        final UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final UpdatedDefendantData updatedDefendantData = updatedDefendantData(defendantData);
+
+        final UpdateDefendantSteps updateDefendantSteps = new UpdateDefendantSteps(caseId, hearingData, updatedDefendantData);
+        updateDefendantSteps.whenPublicEventProgressionCaseDefendantsUpdatedIsPublished();
+        updateDefendantSteps.verifyHearingListedFromAPIWithJmsDelay(false, true);
     }
 }

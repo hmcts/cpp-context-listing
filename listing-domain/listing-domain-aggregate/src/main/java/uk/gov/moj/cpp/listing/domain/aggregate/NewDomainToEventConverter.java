@@ -344,6 +344,8 @@ public class NewDomainToEventConverter {
                     .withRestrictFromCourtList(false)
                     .withCourtApplicationPartyType(buildCourtApplicationPartyTypeEvent(applicant.getCourtApplicationPartyType()))
                     .withAddress(NewDomainToEventConverter.buildAddress(applicant.getAddress()))
+                    .withMasterDefendantId(applicant.getMasterDefendantId().orElse(null))
+                    .withDateOfBirth(applicant.getDateOfBirth().orElse(null))
                     .build();
         }
         return null;

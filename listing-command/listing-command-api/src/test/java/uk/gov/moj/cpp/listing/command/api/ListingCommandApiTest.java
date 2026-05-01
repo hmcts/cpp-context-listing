@@ -984,6 +984,17 @@ public class ListingCommandApiTest {
     }
 
     @Test
+    public void shouldHandleUpdateHearingAddCaseBdf() {
+        final Metadata mockMetadata = MetadataBuilderFactory.metadataWithRandomUUIDAndName().build();
+        when(envelope.metadata()).thenReturn(mockMetadata);
+
+        listingCommandApi.handleUpdateHearingAddCaseBdf(envelope);
+
+        verify(sender).send(envelopeArgumentCaptor.capture());
+        assertThat(envelopeArgumentCaptor.getValue().metadata().name(), is("listing.command.update-hearing-add-case-bdf"));
+    }
+
+    @Test
     public void shouldHandleDeletePreviousHearingsAndCreateNextHearing() {
         final Metadata mockMetadata = MetadataBuilderFactory.metadataWithRandomUUIDAndName().build();
         when(envelope.metadata()).thenReturn(mockMetadata);

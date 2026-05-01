@@ -53,6 +53,11 @@ public class NewDomainToEventConverterTest {
         checkAddress(courtApplication.getRespondents().get(0).getAddress(), courtApplicationBuilt.getRespondents().get(0).getAddress());
         assertThat(courtApplicationBuilt.getSubject().getAddress(), is(notNullValue()));
         checkAddress(courtApplication.getSubject().getAddress(), courtApplicationBuilt.getSubject().getAddress());
+
+        assertThat(courtApplicationBuilt.getRespondents().get(0).getMasterDefendantId(), is(courtApplication.getRespondents().get(0).getMasterDefendantId().orElse(null)));
+        assertThat(courtApplicationBuilt.getRespondents().get(0).getDateOfBirth(), is(courtApplication.getRespondents().get(0).getDateOfBirth().orElse(null)));
+        assertThat(courtApplicationBuilt.getSubject().getMasterDefendantId(), is(courtApplication.getSubject().getMasterDefendantId().orElse(null)));
+        assertThat(courtApplicationBuilt.getSubject().getDateOfBirth(), is(courtApplication.getSubject().getDateOfBirth().orElse(null)));
     }
 
     @Test
@@ -348,6 +353,8 @@ public class NewDomainToEventConverterTest {
                         .build())
                 .withRespondents(singletonList(courtApplicationParty()
                         .withCourtApplicationPartyType(PERSON)
+                        .withMasterDefendantId(randomUUID())
+                        .withDateOfBirth("1990-05-15")
                         .withAddress(address()
                                 .withAddress1(STRING.next())
                                 .withAddress2(of(STRING.next()))
@@ -359,6 +366,8 @@ public class NewDomainToEventConverterTest {
                         .build()))
                 .withSubject(courtApplicationParty()
                         .withCourtApplicationPartyType(PERSON)
+                        .withMasterDefendantId(randomUUID())
+                        .withDateOfBirth("1985-12-01")
                         .withAddress(address()
                                 .withAddress1(STRING.next())
                                 .withAddress2(of(STRING.next()))

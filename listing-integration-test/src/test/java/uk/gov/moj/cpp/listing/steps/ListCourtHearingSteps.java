@@ -511,6 +511,15 @@ public class ListCourtHearingSteps extends AbstractIT {
                 withJsonPath(lastNameFilter)
         });
     }
+
+    public void verifyFirstListedDefendantYouthStatusWithJmsDelay(final boolean isAllocated, final boolean expectedIsYouth) {
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        pollForHearingWithJmsDelay(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[0].id", equalTo(hearingData.getId().toString())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants[0].isYouth", equalTo(expectedIsYouth))
+        });
+    }
+
     public void verifyHearingDayCourtScheduledUpdated() {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
         final String hearingIdFilter = getHearingFilter(hearingData.getId().toString());
@@ -1635,6 +1644,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                         .build())
                         .withProsecutionCases(hearingData.getListedCases().stream()
                                 .map(lc -> ProsecutionCase.prosecutionCase().withId(lc.getCaseId())
+                                        .withIsCivil(lc.getCivil())
                                         .withInitiationCode(InitiationCode.C)
                                         .withProsecutionCaseIdentifier(ProsecutionCaseIdentifier.prosecutionCaseIdentifier()
                                                 .withProsecutionAuthorityCode(lc.getAuthorityCode())
@@ -1730,16 +1740,33 @@ public class ListCourtHearingSteps extends AbstractIT {
     }
 
     private CourtApplicationParty getApplicant(final CourtApplicationPartyData applicant) {
-        return CourtApplicationParty.courtApplicationParty()
+        final CourtApplicationParty.Builder builder = CourtApplicationParty.courtApplicationParty()
                 .withId(applicant.getId())
-                .withPersonDetails(Person.person().withLastName(applicant.getLastName())
-                        .withFirstName(applicant.getFirstName())
-                        .withGender(Gender.FEMALE)
-                        .withAddress(getAddress(applicant.getAddress()))
-                        .build())
                 .withSummonsRequired(false)
-                .withNotificationRequired(false)
-                .build();
+                .withNotificationRequired(false);
+        if (applicant.getMasterDefendantId() != null) {
+            builder.withMasterDefendant(MasterDefendant.masterDefendant()
+                    .withMasterDefendantId(applicant.getMasterDefendantId())
+                    .withPersonDefendant(PersonDefendant.personDefendant()
+                            .withPersonDetails(Person.person()
+                                    .withLastName(applicant.getLastName())
+                                    .withFirstName(applicant.getFirstName())
+                                    .withGender(Gender.FEMALE)
+                                    .withAddress(getAddress(applicant.getAddress()))
+                                    .withDateOfBirth(applicant.getDateOfBirth() != null ? applicant.getDateOfBirth().toString() : null)
+                                    .build())
+                            .build())
+                    .build());
+        } else {
+            builder.withPersonDetails(Person.person()
+                    .withLastName(applicant.getLastName())
+                    .withFirstName(applicant.getFirstName())
+                    .withGender(Gender.FEMALE)
+                    .withAddress(getAddress(applicant.getAddress()))
+                    .withDateOfBirth(applicant.getDateOfBirth() != null ? applicant.getDateOfBirth().toString() : null)
+                    .build());
+        }
+        return builder.build();
     }
 
     private Address getAddress(final uk.gov.moj.cpp.listing.domain.Address address) {
@@ -1917,7 +1944,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                         .build()))
                                 .withApplicant(getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
                                 .withRespondents(singletonList(CourtApplicationParty.courtApplicationParty()
-                                        .withId(randomUUID())
+                                        .withId(hearingData.getCourtApplications().get(0).getRespondent().getId())
                                         .withPersonDetails(Person.person().withLastName(hearingData.getCourtApplications().get(0).getRespondent().getLastName())
                                                 .withFirstName(hearingData.getCourtApplications().get(0).getRespondent().getFirstName())
                                                 .withGender(Gender.FEMALE)
@@ -2082,7 +2109,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 .withObservedEthnicityId(randomUUID())
                                 .withObservedEthnicityDescription(STRING.next())
                                 .build())
-                        .withDateOfBirth(LocalDate.now().minusYears(21).toString())
+                        .withDateOfBirth(d.getDateOfBirth().toString())
                         .build())
                 .build();
     }

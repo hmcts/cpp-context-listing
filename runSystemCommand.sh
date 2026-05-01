@@ -20,6 +20,7 @@
 FRAMEWORK_VERSION=$(mvn help:evaluate -Dexpression=framework.version -q -DforceStdout)
 USER_NAME="admin"
 PASSWORD="admin"
+CONTEXT_NAME="listing"
 
 #fail script on error
 set -e

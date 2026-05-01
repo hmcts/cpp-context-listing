@@ -64,6 +64,7 @@ import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.Ethnicity;
 import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.core.courts.HearingType;
+import uk.gov.justice.core.courts.InitiationCode;
 import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.LaaReference;
@@ -175,6 +176,7 @@ import uk.gov.moj.cpp.listing.event.processor.util.HearingObjectsListingToCoreCo
 import uk.gov.moj.cpp.listing.event.utils.EventBuilder;
 import uk.gov.moj.cpp.listing.event.utils.FileUtil;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
+import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -374,6 +376,9 @@ class ListingEventProcessorTest {
 
     @Mock
     private Logger logger;
+
+    @Mock
+    private ProgressionService progressionService;
 
     @InjectMocks
     private ListingEventProcessor listingEventProcessor;
@@ -763,7 +768,7 @@ class ListingEventProcessorTest {
         final HearingAllocatedForListing hearingAllocatedForListing = createHearingAllocatedForListing(false, false, false, null);
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(hearingAllocatedForListing);
 
-        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN);
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN, false);
         given(hearingConfirmedFactory.create(hearingAllocatedForListing, event)).willReturn(hearingConfirmed);
 
         //when
@@ -786,7 +791,7 @@ class ListingEventProcessorTest {
         final HearingAllocatedForListing hearingAllocatedForListing = createHearingAllocatedForListing(true, true, true, null);
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(hearingAllocatedForListing);
 
-        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.MAGISTRATES);
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.MAGISTRATES, false);
         given(hearingConfirmedFactory.create(hearingAllocatedForListing, event)).willReturn(hearingConfirmed);
 
         final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
@@ -813,7 +818,7 @@ class ListingEventProcessorTest {
 
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(hearingAllocatedForListing);
 
-        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.MAGISTRATES);
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.MAGISTRATES, false);
         given(hearingConfirmedFactory.create(hearingAllocatedForListing, event)).willReturn(hearingConfirmed);
 
         final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
@@ -840,7 +845,7 @@ class ListingEventProcessorTest {
                 .build();
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListingV2.class)).willReturn(hearingAllocatedForListingV2);
 
-        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN);
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN, false);
         given(hearingConfirmedFactory.createV2(hearingAllocatedForListingV2, event)).willReturn(hearingConfirmed);
 
         final ObjectToJsonValueConverter jsonValueConverter =  new JsonObjectConvertersFactory().objectToJsonValueConverter();
@@ -860,6 +865,84 @@ class ListingEventProcessorTest {
     }
 
     @Test
+    void shouldHandleHearingAllocatedForListingV2Message_CivilCaseCreation() {
+        //given
+        final JsonEnvelope event = hearingAllocatedEvent();
+        final HearingAllocatedForListingV2 hearingAllocatedForListingV2 = new HearingAllocatedForListingV2.Builder()
+                .withUpdateSlot(false)
+                .withHearingDays(hearingDays)
+                .withHasAdjournmentDate(false)
+                .withSendNotificationToParties(false)
+                .build();
+        given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListingV2.class)).willReturn(hearingAllocatedForListingV2);
+
+        final ProsecutionCase prosecutionCase = ProsecutionCase.prosecutionCase()
+                .withIsCivil(true)
+                .withId(CASE_ID)
+                .withInitiationCode(InitiationCode.O)
+                .build();
+
+        given(progressionService.getProsecutionCaseByCaseId(any(),any())).willReturn(prosecutionCase);
+
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN, true);
+        given(hearingConfirmedFactory.createV2(hearingAllocatedForListingV2, event)).willReturn(hearingConfirmed);
+
+        final ObjectToJsonValueConverter jsonValueConverter =  new JsonObjectConvertersFactory().objectToJsonValueConverter();
+        final JsonValue hearingConfirmedJson = jsonValueConverter.convert(hearingConfirmed);
+
+        given(objectToJsonValueConverter.convert(any())).willReturn(hearingConfirmedJson);
+        //when
+        listingEventProcessor.handleHearingAllocatedForListingV2Message(event);
+
+        //then
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+        final JsonEnvelope jsonEnvelope = senderJsonEnvelopeCaptor.getAllValues().get(0);
+        assertThat(jsonEnvelope.metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
+        assertThat(jsonEnvelope.payloadAsJsonObject().getBoolean("sendNotificationToParties"), is(true));
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CHANGES_SAVED));
+
+    }
+
+    @Test
+    void shouldHandleHearingAllocatedForListingV2Message_CivilSummonsCaseCreation() {
+        //given
+        final JsonEnvelope event = hearingAllocatedEvent();
+        final HearingAllocatedForListingV2 hearingAllocatedForListingV2 = new HearingAllocatedForListingV2.Builder()
+                .withUpdateSlot(false)
+                .withHearingDays(hearingDays)
+                .withHasAdjournmentDate(false)
+                .withSendNotificationToParties(false)
+                .build();
+        given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListingV2.class)).willReturn(hearingAllocatedForListingV2);
+
+        final ProsecutionCase prosecutionCase = ProsecutionCase.prosecutionCase()
+                .withIsCivil(true)
+                .withId(CASE_ID)
+                .withInitiationCode(InitiationCode.S)
+                .build();
+
+        given(progressionService.getProsecutionCaseByCaseId(any(),any())).willReturn(prosecutionCase);
+
+        final HearingConfirmed hearingConfirmed = hearingConfirmedWithSendNotificationFalse(JurisdictionType.CROWN, true);
+        given(hearingConfirmedFactory.createV2(hearingAllocatedForListingV2, event)).willReturn(hearingConfirmed);
+
+        final ObjectToJsonValueConverter jsonValueConverter =  new JsonObjectConvertersFactory().objectToJsonValueConverter();
+        final JsonValue hearingConfirmedJson = jsonValueConverter.convert(hearingConfirmed);
+
+        given(objectToJsonValueConverter.convert(any())).willReturn(hearingConfirmedJson);
+        //when
+        listingEventProcessor.handleHearingAllocatedForListingV2Message(event);
+
+        //then
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+        final JsonEnvelope jsonEnvelope = senderJsonEnvelopeCaptor.getAllValues().get(0);
+        assertThat(jsonEnvelope.metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
+        assertThat(jsonEnvelope.payloadAsJsonObject().getBoolean("sendNotificationToParties"), is(false));
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CHANGES_SAVED));
+
+    }
+
+    @Test
     public void shouldUpdateCourtScheduleForListingMessageWhenAdjournedAndJurisdictionTypeIsMagistrates() {
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
         //given
@@ -867,7 +950,7 @@ class ListingEventProcessorTest {
         final HearingAllocatedForListing hearingAllocatedForListing = createHearingAllocatedForListing(true, true, true, null);
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(hearingAllocatedForListing);
 
-        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.MAGISTRATES);
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.MAGISTRATES, false);
         given(hearingConfirmedFactory.create(hearingAllocatedForListing, event)).willReturn(hearingConfirmed);
 
         final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
@@ -895,7 +978,7 @@ class ListingEventProcessorTest {
                 .build();
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListingV2.class)).willReturn(hearingAllocatedForListingV2);
 
-        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN);
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN, false);
         given(hearingConfirmedFactory.createV2(hearingAllocatedForListingV2, event)).willReturn(hearingConfirmed);
 
         final ObjectToJsonValueConverter jsonValueConverter =  new JsonObjectConvertersFactory().objectToJsonValueConverter();
@@ -932,7 +1015,7 @@ class ListingEventProcessorTest {
         final HearingAllocatedForListingV2 hearingAllocatedForListingV2 = createHearingAllocatedForListingV2(false, true, hearingId);
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListingV2.class)).willReturn(hearingAllocatedForListingV2);
 
-        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN);
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN, false);
         given(hearingConfirmedFactory.createV2(hearingAllocatedForListingV2, event)).willReturn(hearingConfirmed);
 
         //when
@@ -1114,7 +1197,7 @@ class ListingEventProcessorTest {
     }
 
     @Test
-    public void shouldHandlePublicApplicationOffenceUpdated() {
+    void shouldHandlePublicApplicationOffenceUpdated() {
         final ApplicationOffencesUpdated applicationOffencesUpdated = ApplicationOffencesUpdated.applicationOffencesUpdated()
                 .withApplicationId(randomUUID())
                 .withOffenceId(randomUUID())
@@ -1132,7 +1215,7 @@ class ListingEventProcessorTest {
     }
 
     @Test
-    public void shouldHandleApplicationLaaReferenceUpdatedForApplication() {
+    void shouldHandleApplicationLaaReferenceUpdatedForApplication() {
         final ApplicationLaaReferenceUpdatedForApplication applicationLaaReferenceUpdatedForApplication = ApplicationLaaReferenceUpdatedForApplication.applicationLaaReferenceUpdatedForApplication()
                 .withApplicationId(randomUUID())
                 .withSubjectId(randomUUID())
@@ -1909,7 +1992,7 @@ class ListingEventProcessorTest {
         allocatedHearingExtendedForListing = AllocatedHearingExtendedForListing.allocatedHearingExtendedForListing()
                 .withUnAllocatedListedCases(listedCases).build();
 
-        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN);
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN, false);
 
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), AllocatedHearingExtendedForListing.class))
                 .willReturn(allocatedHearingExtendedForListing);
@@ -1941,7 +2024,7 @@ class ListingEventProcessorTest {
         allocatedHearingExtendedForListingV2 = AllocatedHearingExtendedForListingV2.allocatedHearingExtendedForListingV2()
                 .withUnAllocatedListedCases(listedCases).build();
 
-        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN);
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN, false);
 
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), AllocatedHearingExtendedForListingV2.class))
                 .willReturn(allocatedHearingExtendedForListingV2);
@@ -2709,14 +2792,32 @@ class ListingEventProcessorTest {
         return defendantUpdated;
     }
 
-    private HearingConfirmed hearingConfirmed(final JurisdictionType jurisdictionType) {
+    private HearingConfirmed hearingConfirmed(final JurisdictionType jurisdictionType, boolean isCivil) {
 
         final String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
+        final HearingConfirmed.Builder hearingBuilder = HearingConfirmed.hearingConfirmed()
+                .withSendNotificationToParties(true);
+        if (isCivil) {
+            hearingBuilder.withConfirmedHearing(buildHearingWithCivilCase(formattedDateTime, jurisdictionType));
+        } else {
+            hearingBuilder.withConfirmedHearing(buildHearing(formattedDateTime, jurisdictionType));
+        }
 
-        return HearingConfirmed.hearingConfirmed()
-                .withConfirmedHearing(buildHearing(formattedDateTime, jurisdictionType))
-                .withSendNotificationToParties(true)
-                .build();
+        return hearingBuilder.build();
+    }
+
+    private HearingConfirmed hearingConfirmedWithSendNotificationFalse(final JurisdictionType jurisdictionType, boolean isCivil) {
+
+        final String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
+        final HearingConfirmed.Builder hearingBuilder = HearingConfirmed.hearingConfirmed()
+                .withSendNotificationToParties(false);
+        if (isCivil) {
+            hearingBuilder.withConfirmedHearing(buildHearingWithCivilCase(formattedDateTime, jurisdictionType));
+        } else {
+            hearingBuilder.withConfirmedHearing(buildHearing(formattedDateTime, jurisdictionType));
+        }
+
+        return hearingBuilder.build();
     }
 
     private uk.gov.justice.core.courts.ConfirmedHearing buildHearing(final String formattedDateTime, final JurisdictionType jurisdictionType) {
@@ -2751,6 +2852,43 @@ class ListingEventProcessorTest {
                                 .withId(DEFENDANT_ID)
                                 .withOffences(Arrays.asList(uk.gov.justice.core.courts.ConfirmedOffence.confirmedOffence().withId(OFFENCE_ID).build()))
                                 .build()))
+                        .build()))
+                .build();
+    }
+
+    private uk.gov.justice.core.courts.ConfirmedHearing buildHearingWithCivilCase(final String formattedDateTime, final JurisdictionType jurisdictionType) {
+        return uk.gov.justice.core.courts.ConfirmedHearing.confirmedHearing()
+                .withExistingHearingId(randomUUID())
+                .withId(HEARING_ID)
+                .withEstimatedDuration(ESTIMATED_DURATION)
+                .withHearingDays(Arrays.asList(hearingDay()
+                        .withSittingDay(ZonedDateTimes.fromString(formattedDateTime))
+                        .withListedDurationMinutes(0)
+                        .build()))
+                .withCourtCentre(courtCentre()
+                        .withCode("BAX0100")
+                        .withId(COURT_CENTRE_ID)
+                        .withRoomId(COURT_ROOM_ID)
+                        .build())
+                .withHearingLanguage(HearingLanguage.WELSH)
+                .withCourtApplicationIds(Arrays.asList(randomUUID()))
+                .withJurisdictionType(jurisdictionType)
+                .withType(HearingType.hearingType().withDescription(TYPE).withId(randomUUID()).build())
+                .withJudiciary(Arrays.asList(JudicialRole.judicialRole()
+                        .withJudicialId(JUDICIAL_ID)
+                        .withJudicialRoleType(
+                                uk.gov.justice.core.courts.JudicialRoleType.judicialRoleType()
+                                        .withJudiciaryType(CIRCUIT_JUDGE)
+                                        .withJudicialRoleTypeId(null)
+                                        .build())
+                        .build()))
+                .withProsecutionCases(Arrays.asList(uk.gov.justice.core.courts.ConfirmedProsecutionCase.confirmedProsecutionCase()
+                        .withId(CASE_ID)
+                        .withDefendants(Arrays.asList(uk.gov.justice.core.courts.ConfirmedDefendant.confirmedDefendant()
+                                .withId(DEFENDANT_ID)
+                                .withOffences(Arrays.asList(uk.gov.justice.core.courts.ConfirmedOffence.confirmedOffence().withId(OFFENCE_ID).build()))
+                                .build()))
+                                .withIsCivil(true)
                         .build()))
                 .build();
     }

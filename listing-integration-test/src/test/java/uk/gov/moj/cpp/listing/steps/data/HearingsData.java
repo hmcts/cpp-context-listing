@@ -18,6 +18,22 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsData());
     }
 
+    public static HearingsData hearingsDataForYoungDefendants() {
+        return new HearingsData(HearingsDataFactory.hearingsDataForYoungDefendants());
+    }
+
+    public static HearingsData hearingsDataWithAdultDefendants() {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAdultDefendants());
+    }
+
+    public static HearingsData hearingsDataForYoungCourtApplicationRespondent() {
+        return new HearingsData(HearingsDataFactory.hearingsDataForYoungCourtApplicationRespondent());
+    }
+
+    public static HearingsData hearingsDataForYoungCourtApplicationSubject() {
+        return new HearingsData(HearingsDataFactory.hearingsDataForYoungCourtApplicationSubject());
+    }
+
     public static HearingsData hearingsDataWithExParteOffence() {
         return new HearingsData(HearingsDataFactory.hearingsDataForCasesWithExParte());
     }
@@ -59,6 +75,10 @@ public class HearingsData {
 
     public static HearingsData hearingsDataForWeekCommencing(final LocalDate startDate, final Integer duration) {
         return new HearingsData(HearingsDataFactory.hearingsDataForWeekCommencing(startDate, duration));
+    }
+
+    public static HearingsData hearingsDataForWeekCommencingWithYoungDefendants(final LocalDate startDate, final Integer duration) {
+        return new HearingsData(HearingsDataFactory.hearingsDataForWeekCommencingWithYoungDefendants(startDate, duration));
     }
 
     public static HearingsData hearingsDataForWeekCommencing(final LocalDate startDate, final Integer duration, UUID courtCenterId, UUID courtRoomId, String roles) {
@@ -142,6 +162,11 @@ public class HearingsData {
     public static HearingsData hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(final Integer numberOfHearings) {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(numberOfHearings));
     }
+
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate_CivilCase(final Integer numberOfHearings) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate_CivilCase(numberOfHearings));
+    }
+
 
     public static HearingsData hearingsDataWithPossibleDisqualification() {
         return new HearingsData(HearingsDataFactory.singleHearingsDataWithPossibleDisqualification());

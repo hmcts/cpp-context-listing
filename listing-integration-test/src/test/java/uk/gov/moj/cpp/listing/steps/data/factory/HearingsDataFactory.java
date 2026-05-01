@@ -75,6 +75,22 @@ public class HearingsDataFactory {
         return manyRandomHearings(2);
     }
 
+    public static List<HearingData> hearingsDataForYoungDefendants() {
+        return List.of(randomHearingWithYoungDefendants(), randomHearingWithYoungDefendants());
+    }
+
+    public static List<HearingData> hearingsDataForYoungCourtApplicationRespondent() {
+        return List.of(randomHearingWithYoungCourtApplicationRespondent(), randomHearingWithYoungCourtApplicationRespondent());
+    }
+
+    public static List<HearingData> hearingsDataForYoungCourtApplicationSubject() {
+        return List.of(randomHearingWithYoungCourtApplicationSubject(), randomHearingWithYoungCourtApplicationSubject());
+    }
+
+    public static List<HearingData> hearingsDataWithAdultDefendants() {
+        return List.of(randomHearingWithAdultDefendants());
+    }
+
     public static List<HearingData> trialHearingsData() {
         return manyRandomHearings(2, TRIAL_HEARING_TYPE);
     }
@@ -113,6 +129,10 @@ public class HearingsDataFactory {
 
     public static List<HearingData> hearingsDataForWeekCommencing(final LocalDate weekCommencingStartDate, final Integer weekCommencingDuration) {
         return createRandomHearingWithWeekCommencing(1, weekCommencingStartDate, weekCommencingDuration);
+    }
+
+    public static List<HearingData> hearingsDataForWeekCommencingWithYoungDefendants(final LocalDate weekCommencingStartDate, final Integer weekCommencingDuration) {
+        return createRandomHearingWithWeekCommencingAndYoungDefendants(1, weekCommencingStartDate, weekCommencingDuration);
     }
 
     public static List<HearingData> hearingsDataForWeekCommencing(final LocalDate weekCommencingStartDate, final Integer weekCommencingDuration, UUID courtCenterId, UUID courtRoomId, String role) {
@@ -195,6 +215,10 @@ public class HearingsDataFactory {
         return manyRandomHearingsWithAllocationDataAndIsAdjournment(numberOfHearings);
     }
 
+    public static List<HearingData> hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate_CivilCase(final Integer numberOfHearings) {
+        return manyRandomHearingsWithAllocationDataAndIsAdjournment_CivilCase(numberOfHearings);
+    }
+
     public static List<HearingData> hearingsDataWithAllocationDataAndAdjournmentFromDateWithoutJudiciary(final Integer numberOfHearings) {
         return manyRandomHearingsWithAllocationDataAndIsAdjournmentWithoutJudiciary(numberOfHearings);
     }
@@ -274,6 +298,10 @@ public class HearingsDataFactory {
         return manyRandomHearingsWithAllocationDataAndIsAdjournment(numberOfHearings, getRandomCourtCenterId());
     }
 
+    private static List<HearingData> manyRandomHearingsWithAllocationDataAndIsAdjournment_CivilCase(final Integer numberOfHearings) {
+        return manyRandomHearingsWithAllocationDataAndIsAdjournment_CivilCases(numberOfHearings, UUID.fromString("8de7f2e2-5705-3be5-af9a-321a891ab708"));
+    }
+
     private static List<HearingData> manyRandomHearingsWithAllocationDataAndIsAdjournmentWithParameters(final Integer numberOfHearings, UUID courtCenterId, UUID courtRoomid, String judiciaryType) {
          return IntStream.range(0, numberOfHearings)
                 .mapToObj((int i) -> randomHearingWithAdjournmentFromDateWithParameters(courtCenterId, courtRoomid, singletonList(randomJudicialRole(judiciaryType))))
@@ -295,6 +323,10 @@ public class HearingsDataFactory {
 
     private static List<HearingData> manyRandomHearingsWithAllocationDataAndIsAdjournment(final Integer numberOfHearings, final UUID courtCentreId) {
         return manyRandomHearingsWithAllocationDataAndIsAdjournment(numberOfHearings, courtCentreId, MAGISTRATES_JURISDICTION);
+    }
+
+    private static List<HearingData> manyRandomHearingsWithAllocationDataAndIsAdjournment_CivilCases(final Integer numberOfHearings, final UUID courtCentreId) {
+        return manyRandomHearingsWithAllocationDataAndIsAdjournment_withSingleCivilCases(numberOfHearings, courtCentreId, MAGISTRATES_JURISDICTION);
     }
 
     private static List<HearingData> manyRandomHearingsWithAllocationDataAndIsAdjournmentWithCourt(final Integer numberOfHearings, final UUID courtCentreId, final UUID courtRoomUUID,  final String court) {
@@ -346,6 +378,13 @@ public class HearingsDataFactory {
         final UUID courtRoomId = getRandomCourtRoomId();
         return IntStream.range(0, numberOfHearings)
                 .mapToObj((int i) -> randomHearingWithAdjournmentFromDate(courtCentreId, courtRoomId, singletonList(randomJudicialRole(judiciaryType))))
+                .collect(toList());
+    }
+
+    private static List<HearingData> manyRandomHearingsWithAllocationDataAndIsAdjournment_withSingleCivilCases(final Integer numberOfHearings, final UUID courtCentreId, final String judiciaryType) {
+        final UUID courtRoomId = randomUUID();
+        return IntStream.range(0, numberOfHearings)
+                .mapToObj((int i) -> randomHearingWithAdjournmentFromDate_withSingleCivilCase(courtCentreId, courtRoomId, singletonList(randomJudicialRole(judiciaryType))))
                 .collect(toList());
     }
 
@@ -465,6 +504,12 @@ public class HearingsDataFactory {
                 .collect(toList());
     }
 
+    private static List<HearingData> createRandomHearingWithWeekCommencingAndYoungDefendants(final Integer numberOfHearings, final LocalDate weekCommencingStartDate, final Integer weekCommencingDuration) {
+        return IntStream.range(0, numberOfHearings)
+                .mapToObj((int i) -> randomHearingWithWeekCommencingDatesAndYoungDefendants(null, null, null, weekCommencingStartDate, weekCommencingDuration))
+                .collect(toList());
+    }
+
     private static List<HearingData> createRandomHearingWithWeekCommencing(final Integer numberOfHearings, final LocalDate weekCommencingStartDate, final Integer weekCommencingDuration, UUID courtCenterId, UUID courtRoomId, String judicialRoles) {
         return IntStream.range(0, numberOfHearings)
                 .mapToObj((int i) -> randomHearingWithWeekCommencingDates(null, courtCenterId, courtRoomId, singletonList(randomJudicialRole(judicialRoles)), weekCommencingStartDate, weekCommencingDuration))
@@ -544,6 +589,25 @@ public class HearingsDataFactory {
                 .mapToObj((int i) -> randomListedCase())
                 .collect(toList());
     }
+
+    private static List<ListedCaseData> manyRandomListedCasesWithYoungDefendants(final Integer numberOfListingCases) {
+        return IntStream.range(0, numberOfListingCases)
+                .mapToObj((int i) -> randomListedCaseWithYoungDefendants())
+                .collect(toList());
+    }
+
+    private static List<ListedCaseData> manyRandomListedCasesWithAdultDefendants(final Integer numberOfListingCases) {
+        return IntStream.range(0, numberOfListingCases)
+                .mapToObj((int i) -> randomListedCaseWithAdultDefendants())
+                .collect(toList());
+    }
+
+    private static List<ListedCaseData> manyRandomListingSingleCivilCases(final Integer numberOfListingCases) {
+        return IntStream.range(0, numberOfListingCases)
+                .mapToObj((int i) -> randomListedSingleCivilCase())
+                .collect(toList());
+    }
+
 
     private static List<ListedCaseData> manyRandomListingCasesSingleDefendant(final Integer numberOfListingCases) {
         return IntStream.range(0, numberOfListingCases)
@@ -643,6 +707,18 @@ public class HearingsDataFactory {
                 .collect(toList());
     }
 
+    private static List<DefendantData> manyRandomYoungDefendants(final Integer numberOfDefendants) {
+        return IntStream.range(0, numberOfDefendants)
+                .mapToObj((int i) -> randomYoungDefendant())
+                .collect(toList());
+    }
+
+    private static List<DefendantData> manyRandomAdultDefendants(final Integer numberOfDefendants) {
+        return IntStream.range(0, numberOfDefendants)
+                .mapToObj((int i) -> randomAdultDefendant())
+                .collect(toList());
+    }
+
     private static List<DefendantData> manyRandomDefendantsTwoOffences(final Integer numberOfDefendants) {
         return IntStream.range(0, numberOfDefendants)
                 .mapToObj((int i) -> randomDefendant(2))
@@ -711,6 +787,18 @@ public class HearingsDataFactory {
 
     private static ListedCaseData randomListedCase() {
         return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendants(2), false, false, manyRandomCaseMarkers(1), STRING.next(), null, null, null, null);
+    }
+
+    private static ListedCaseData randomListedCaseWithYoungDefendants() {
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomYoungDefendants(2), false, false, manyRandomCaseMarkers(1), STRING.next(), null, null, null, null);
+    }
+
+    private static ListedCaseData randomListedCaseWithAdultDefendants() {
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomAdultDefendants(2), false, false, manyRandomCaseMarkers(1), STRING.next(), null, null, null, null);
+    }
+
+    private static ListedCaseData randomListedSingleCivilCase() {
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendants(2), false, false, manyRandomCaseMarkers(1), STRING.next(), null, true, null, null);
     }
 
     private static ListedCaseData randomListedCaseSingleDefendant() {
@@ -811,9 +899,23 @@ public class HearingsDataFactory {
 
     private static DefendantData randomDefendant() {
         return new DefendantData(randomUUID(), STRING.next(), STRING.next(),
-                LocalDate.now(), LocalDate.now(), BAIL_CONDITIONAL, STRING.next(),
+                LocalDate.now().minusYears(21), LocalDate.now(), BAIL_CONDITIONAL, STRING.next(),
                 manyRandomOffences(3), new LegalEntityDefendantData(UUID.randomUUID(), getOrganisationData()),
                 Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, randomUUID(), ZonedDateTime.now(), STRING.next());
+    }
+
+    private static DefendantData randomYoungDefendant() {
+        return new DefendantData(randomUUID(), STRING.next(), STRING.next(),
+                LocalDate.now().minusYears(15), LocalDate.now(), BAIL_CONDITIONAL, STRING.next(),
+                manyRandomOffences(3), new LegalEntityDefendantData(UUID.randomUUID(), getOrganisationData()),
+                Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, randomUUID(), ZonedDateTime.now(), STRING.next());
+    }
+
+    private static DefendantData randomAdultDefendant() {
+        return new DefendantData(randomUUID(), STRING.next(), STRING.next(),
+                LocalDate.now().minusYears(25), LocalDate.now(), BAIL_CONDITIONAL, STRING.next(),
+                manyRandomOffences(3), new LegalEntityDefendantData(UUID.randomUUID(), getOrganisationData()),
+                Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, randomUUID(), ZonedDateTime.now(), STRING.next());
     }
 
     private static DefendantData randomDefendant(final int numberOfOffences) {
@@ -894,6 +996,51 @@ public class HearingsDataFactory {
     private static HearingData randomHearing() {
         return randomHearing(null, null, null);
     }
+
+    private static HearingData randomHearingWithYoungDefendants() {
+        final List<ListedCaseData> listedCaseData = manyRandomListedCasesWithYoungDefendants(2);
+        return new HearingData(randomUUID(), UUID.fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08"), PTP_HEARING_TYPE, LocalDate.now(),
+                null, HEARING_ESTIMATE_MINUTES, ESTIMATED_DURATION,
+                null, ZonedDateTime.now(), listedCaseData,
+                null, CROWN_JURISDICTION,
+                STRING.next(),
+                singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
+                singletonList(randomCourtApplicationPartyNeed()), "Carmarthen Magistrates Court");
+    }
+
+    private static HearingData randomHearingWithYoungCourtApplicationRespondent() {
+        final List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
+        return new HearingData(randomUUID(), UUID.fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08"), PTP_HEARING_TYPE, LocalDate.now(),
+                null, HEARING_ESTIMATE_MINUTES, ESTIMATED_DURATION,
+                null, ZonedDateTime.now(), listedCaseData,
+                null, CROWN_JURISDICTION,
+                STRING.next(),
+                singletonList(randomCourtApplicationDataWithYoungRespondent(listedCaseData.get(0).getCaseId())),
+                singletonList(randomCourtApplicationPartyNeed()), "Carmarthen Magistrates Court");
+    }
+
+    private static HearingData randomHearingWithYoungCourtApplicationSubject() {
+        final List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
+        return new HearingData(randomUUID(), UUID.fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08"), PTP_HEARING_TYPE, LocalDate.now(),
+                null, HEARING_ESTIMATE_MINUTES, ESTIMATED_DURATION,
+                null, ZonedDateTime.now(), listedCaseData,
+                null, CROWN_JURISDICTION,
+                STRING.next(),
+                singletonList(randomCourtApplicationDataWithYoungSubject(listedCaseData.get(0).getCaseId())),
+                singletonList(randomCourtApplicationPartyNeed()), "Carmarthen Magistrates Court");
+    }
+
+    private static HearingData randomHearingWithAdultDefendants() {
+        final List<ListedCaseData> listedCaseData = manyRandomListedCasesWithAdultDefendants(2);
+        return new HearingData(randomUUID(), UUID.fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08"), PTP_HEARING_TYPE, LocalDate.now(),
+                null, HEARING_ESTIMATE_MINUTES, ESTIMATED_DURATION,
+                null, ZonedDateTime.now(), listedCaseData,
+                null, CROWN_JURISDICTION,
+                STRING.next(),
+                singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
+                singletonList(randomCourtApplicationPartyNeed()), "Carmarthen Magistrates Court");
+    }
+
     private static HearingData randomHearingWithExParte() {
         return randomHearingWithExParte(LocalDate.now(), getRandomCourtRoomId(), null);
     }
@@ -1131,6 +1278,17 @@ public class HearingsDataFactory {
                 weekCommencingStartDate, null, weekCommencingDuration);
     }
 
+    private static HearingData randomHearingWithWeekCommencingDatesAndYoungDefendants(final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles, final LocalDate weekCommencingStartDate, final Integer weekCommencingDuration) {
+        final List<ListedCaseData> listedCaseData = manyRandomListedCasesWithYoungDefendants(2);
+        return new HearingData(randomUUID(), getRandomCourtCenterId(), STRING.next(), PTP_HEARING_TYPE, LocalDate.now(),
+                hearingEndDate, HEARING_ESTIMATE_MINUTES,
+                courtRoomId, ZonedDateTime.now(), listedCaseData,
+                judicialRoles, CROWN_JURISDICTION, STRING.next(),
+                singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
+                singletonList(randomCourtApplicationPartyNeed()),
+                weekCommencingStartDate, null, weekCommencingDuration);
+    }
+
     private static HearingData createRandomHearingWithBookedSlot(final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles) {
         final List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
         final UUID courtCentreId = getRandomCourtCenterId();
@@ -1156,6 +1314,16 @@ public class HearingsDataFactory {
 
     private static HearingData randomHearingWithAdjournmentFromDate(final UUID courtCentreId, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles) {
         final List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
+        return new HearingData(randomUUID(), courtCentreId, PTP_HEARING_TYPE, LocalDate.now(),
+                LocalDate.now(), HEARING_ESTIMATE_MINUTES,
+                courtRoomId, ZonedDateTime.now().truncatedTo(ChronoUnit.HOURS), listedCaseData,
+                judicialRoles, MAGISTRATES_JURISDICTION, STRING.next(),
+                singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
+                singletonList(randomCourtApplicationPartyNeed()), "Carmarthen Magistrates Court", LocalDate.now().toString());
+    }
+
+    private static HearingData randomHearingWithAdjournmentFromDate_withSingleCivilCase(final UUID courtCentreId, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles) {
+        final List<ListedCaseData> listedCaseData = manyRandomListingSingleCivilCases(2);
         return new HearingData(randomUUID(), courtCentreId, PTP_HEARING_TYPE, LocalDate.now(),
                 LocalDate.now(), HEARING_ESTIMATE_MINUTES,
                 courtRoomId, ZonedDateTime.now().truncatedTo(ChronoUnit.HOURS), listedCaseData,
@@ -1333,6 +1501,27 @@ public class HearingsDataFactory {
                 new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.FALSE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
                 new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
                 STRING.next(), Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, STRING.next(), courtApplicationData.getOffenceId());
+    }
+
+    private static CourtApplicationPartyData randomYoungCourtApplicationPartyData(final boolean isRespondent) {
+        return new CourtApplicationPartyData(randomUUID(), STRING.next(), isRespondent, STRING.next(),
+                CourtApplicationPartyType.PERSON, null, randomAddress(),
+                randomUUID(), LocalDate.now().minusYears(15));
+    }
+
+    private static CourtApplicationData randomCourtApplicationDataWithYoungRespondent(final UUID linkedCaseId) {
+        return new CourtApplicationData(randomUUID(), linkedCaseId, randomUUID(),
+                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.FALSE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
+                randomYoungCourtApplicationPartyData(Boolean.TRUE),
+                STRING.next(), Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, STRING.next(), randomUUID());
+    }
+
+    private static CourtApplicationData randomCourtApplicationDataWithYoungSubject(final UUID linkedCaseId) {
+        return new CourtApplicationData(randomUUID(), linkedCaseId, randomUUID(),
+                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.FALSE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
+                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
+                randomYoungCourtApplicationPartyData(Boolean.FALSE),
+                STRING.next(), Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, STRING.next(), randomUUID());
     }
 
     private static CourtApplicationData randomCourtApplicationDataWithLegalEntity(final UUID linkedCaseId) {

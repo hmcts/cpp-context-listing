@@ -13,6 +13,7 @@ import uk.gov.justice.listing.events.ProsecutionCases;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -45,7 +46,7 @@ public class HearingUtils {
     }
 
     public static List<ListedCase> createListedCases(final UUID caseId1, final UUID caseId2, final UUID defId1, final UUID defId2, final UUID offId1, final UUID offId2, final UUID offId3) {
-        return Arrays.asList(ListedCase.listedCase()
+        return new ArrayList<>(Arrays.asList(ListedCase.listedCase()
                         .withId(caseId1)
                         .withDefendants(Arrays.asList(Defendant.defendant().withId(defId1)
                                 .withOffences(Arrays.asList(Offence.offence().withId(offId1).build(),
@@ -57,7 +58,7 @@ public class HearingUtils {
                         .withDefendants(Arrays.asList(Defendant.defendant().withId(defId2)
                                 .withOffences(Arrays.asList(Offence.offence().withId(offId3).build()))
                                 .build()))
-                        .build());
+                        .build()));
     }
 
     public static List<ProsecutionCases> buildEventProsecutionCases() {

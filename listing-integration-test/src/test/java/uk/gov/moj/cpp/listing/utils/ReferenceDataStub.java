@@ -259,6 +259,21 @@ public class ReferenceDataStub {
                         .withBody(payload)));
     }
 
+    public static void stubGetReferenceDataOrganisationUnitById(UUID courtCentreId) {
+        InternalEndpointMockUtils.stubPingFor("referencedata-service");
+
+        final String urlPath = String.format(REFERENCE_DATA_ORGANISATION_UNIT_QUERY_URL, courtCentreId.toString());
+
+        String payload = getPayload("stub-data/referencedata.query.organisation-unit.json")
+                .replace("COURT_CENTRE_ID", courtCentreId.toString());
+
+        stubFor(get(urlPathMatching(urlPath))
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader("Content-Type", REFERENCE_DATA_ORGANISATION_UNIT_MEDIA_TYPE)
+                        .withBody(payload)));
+    }
+
     public static void stubGetReferenceDataJudiciaries(final UUID judiciaryId) {
         stubPingForReferenceDataService();
         String payload = getPayload("stub-data/referencedata.query.judiciaries.json")

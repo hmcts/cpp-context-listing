@@ -230,3 +230,12 @@ rule "Command - API - Action - listing.delete-previous-hearings-and-create-next-
     $outcome.setSuccess(true);
 end
 
+rule "Command - API - Action - listing.update-hearing-add-case-bdf"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.update-hearing-add-case-bdf");
+    eval(userAndGroupProvider.isSystemUser($action))
+  then
+    $outcome.setSuccess(true);
+end
+

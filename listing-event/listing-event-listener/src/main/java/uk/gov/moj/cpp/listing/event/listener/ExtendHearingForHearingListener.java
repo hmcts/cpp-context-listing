@@ -201,6 +201,14 @@ public class ExtendHearingForHearingListener {
     private List<ListedCase> updateListedCases(final List<ListedCase> listedCasesToAdd,
                                                final List<ListedCase> dbListedCases) {
 
+        // remove duplicate cases from event
+        final Set<Object> seen = new HashSet<>();
+        listedCasesToAdd.removeIf(c -> ! seen.add(c));
+
+        // remove duplicate cases from DB
+        final Set<Object> seenDb = new HashSet<>();
+        dbListedCases.removeIf(c -> ! seenDb.add(c));
+
         //create map from dbListedCases to compare against given request
         //but we will still modify the dbListedCases list
         final Map<UUID, Map<UUID, List<Offence>>> dbCaseDefendantOffenceMap = dbListedCases.stream()
@@ -211,8 +219,9 @@ public class ExtendHearingForHearingListener {
                                         Defendant::getId,
                                         Defendant::getOffences,
                                         (existing, replacement) -> existing
-                                ))
-                ));
+                                )),
+                        (existing, replacement) -> existing)
+                         );
 
         listedCasesToAdd.forEach(c -> { //iterate over the requested cases
             if (dbCaseDefendantOffenceMap.containsKey(c.getId())) { //if dbListedCases already has the same case

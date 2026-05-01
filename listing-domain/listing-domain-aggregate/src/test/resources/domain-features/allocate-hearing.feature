@@ -46,3 +46,14 @@ Feature: Allocate a hearing
     And hearing days changed for hearing
     When you applyAllocationRules to a Hearing using a defendants offences
     Then hearing allocated for listing
+
+  Scenario: When a hearing is allocated with a defendant under 18 at the hearing start date,
+  the defendant is automatically restricted from the court list.
+
+    Given hearing listed with an under-18 defendant
+    And court room assigned to hearing
+    And non default days assigned to hearing
+    And hearing days changed for hearing
+    When you applyAllocationRules to a Hearing using a defendants offences
+    Then hearing allocated for listing
+    And court list restricted for under-18 defendants

@@ -118,6 +118,9 @@ protocols: [ HTTP, HTTPS ]
       (mapping):
         requestType: application/vnd.listing.delete-next-hearings+json
         name: listing.delete-next-hearings
+      (mapping):
+        requestType: application/vnd.listing.update-hearing-add-case-bdf+json
+        name: listing.update-hearing-add-case-bdf
       ...
     body:
       application/vnd.listing.command.update-hearing-for-listing+json:
@@ -154,7 +157,9 @@ protocols: [ HTTP, HTTPS ]
       application/vnd.listing.delete-next-hearings+json:
         example: !include json/listing.delete-next-hearings.json
         schema: !include json/schema/listing.delete-next-hearings.json
-
+      application/vnd.listing.update-hearing-add-case-bdf+json:
+        example: !include json/listing.update-hearing-add-case-bdf.json
+        schema: !include json/schema/listing.update-hearing-add-case-bdf.json
     responses:
       202:
         description: Request accepted

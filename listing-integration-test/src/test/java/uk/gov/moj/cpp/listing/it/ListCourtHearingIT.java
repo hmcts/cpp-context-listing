@@ -6,6 +6,7 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
@@ -13,8 +14,11 @@ import static uk.gov.moj.cpp.listing.it.SearchAvailableHearingIT.MATCHED_DEFENDA
 import static uk.gov.moj.cpp.listing.it.util.HearingHelper.pollForHearingById;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate;
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate_CivilCase;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithShadowListedOffences;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.*;
+import static uk.gov.moj.cpp.listing.utils.ProgressionServiceStub.stubProgressionServiceCivilCase;
+import static uk.gov.moj.cpp.listing.utils.ProgressionServiceStub.stubProgressionServiceCivilCaseSummons;
 
 import com.google.common.collect.ImmutableMap;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
@@ -27,7 +31,6 @@ import uk.gov.moj.cpp.listing.steps.data.JudicialRoleData;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +39,6 @@ import java.util.stream.IntStream;
 
 import com.google.common.collect.Lists;
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("squid:S1607")
@@ -61,6 +63,40 @@ public class ListCourtHearingIT extends AbstractIT {
                 ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+    }
+
+    @Test
+    public void shouldListHearingWithAdjournedDateSingleCountBasedSlot_CivilCase() {
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate_CivilCase(1));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
+                "8e837de0-743a-4a2c-9db3-b2e678c48729",
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
+        stubProgressionServiceCivilCase();
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        io.restassured.path.json.JsonPath jsonPath = listCourtHearingSteps.getHearingConfirmedPublicEventPayload();
+        assertThat(jsonPath.get("sendNotificationToParties"), is(true));
+        assertThat(jsonPath.get("confirmedHearing.prosecutionCases"), hasSize(2));
+        assertThat(jsonPath.get("confirmedHearing.prosecutionCases[0].isCivil"), is(true));
+        assertThat(jsonPath.get("confirmedHearing.prosecutionCases[1].isCivil"), is(true));
+    }
+
+    @Test
+    public void shouldListHearingWithAdjournedDateSingleCountBasedSlot_CivilSummons() {
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate_CivilCase(1));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
+                "8e837de0-743a-4a2c-9db3-b2e678c48729",
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
+        stubProgressionServiceCivilCaseSummons();
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        io.restassured.path.json.JsonPath jsonPath = listCourtHearingSteps.getHearingConfirmedPublicEventPayload();
+        assertThat(jsonPath.get("sendNotificationToParties"), is(false));
+        assertThat(jsonPath.get("confirmedHearing.prosecutionCases"), hasSize(2));
+        assertThat(jsonPath.get("confirmedHearing.prosecutionCases[0].isCivil"), is(true));
+        assertThat(jsonPath.get("confirmedHearing.prosecutionCases[1].isCivil"), is(true));
     }
 
     @Test

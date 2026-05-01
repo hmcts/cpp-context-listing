@@ -20,7 +20,15 @@ public class CourtApplicationPartyData {
 
     private final Address address;
 
+    private final UUID masterDefendantId;
+
+    private final java.time.LocalDate dateOfBirth;
+
     public CourtApplicationPartyData(final UUID id, String firstName, Boolean respondent, String lastName, final CourtApplicationPartyType courtApplicationPartyType, final LegalEntityDefendantData legalEntityDefendant, final Address address) {
+        this(id, firstName, respondent, lastName, courtApplicationPartyType, legalEntityDefendant, address, null, null);
+    }
+
+    public CourtApplicationPartyData(final UUID id, String firstName, Boolean respondent, String lastName, final CourtApplicationPartyType courtApplicationPartyType, final LegalEntityDefendantData legalEntityDefendant, final Address address, final UUID masterDefendantId, final java.time.LocalDate dateOfBirth) {
         this.id = id;
         this.firstName = firstName;
         this.respondent = respondent;
@@ -28,6 +36,8 @@ public class CourtApplicationPartyData {
         this.courtApplicationPartyType = courtApplicationPartyType;
         this.legalEntityDefendant = legalEntityDefendant;
         this.address = address;
+        this.masterDefendantId = masterDefendantId;
+        this.dateOfBirth = dateOfBirth;
     }
 
     public String getFirstName() {
@@ -56,5 +66,13 @@ public class CourtApplicationPartyData {
 
     public Address getAddress() {
         return address;
+    }
+
+    public UUID getMasterDefendantId() {
+        return masterDefendantId;
+    }
+
+    public java.time.LocalDate getDateOfBirth() {
+        return dateOfBirth;
     }
 }
