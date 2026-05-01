@@ -93,6 +93,7 @@ import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishedCourtListStored;
 import uk.gov.justice.listing.events.HearingDayCourtSchedule;
 import uk.gov.justice.listing.events.ListedCase;
+import uk.gov.justice.listing.events.UpdateHearingAddCaseBdf;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.util.Clock;
@@ -152,6 +153,7 @@ import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -670,7 +672,8 @@ public class ListingCommandHandler {
                     final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unallocatedHearingPersisted, fullExtension, extendHearingForHearingEnriched.getSendNotificationToParties());
                     final Stream<Object> addCaseEvent = hearing.addCasesToUnAllocatedHearing(casesToMove, unAllocatedHearingId);
                     final Stream<Object> hearingMarkedForPartialUpdated = hearing.markUnallocatedHearingForPartialUpdate(unAllocatedHearingId, prosecutionCasesToBeRemovedFromHearing);
-                    return Stream.of(addCaseEvent, updatedHearing, allocationEvents, hearingMarkedForPartialUpdated).flatMap(i -> i);
+                    final Stream<Object> emitYouthCourtListRestrictionsEvents = hearing.emitYouthCourtListRestrictions();
+                    return Stream.of(addCaseEvent, updatedHearing, allocationEvents, hearingMarkedForPartialUpdated, emitYouthCourtListRestrictionsEvents).flatMap(i -> i);
                 });
 
             } else {
@@ -1476,6 +1479,13 @@ public class ListingCommandHandler {
         });
     }
 
+    @Handles("listing.command.update-hearing-add-case-bdf")
+    public void updateHearingAddCaseBdf(final JsonEnvelope command) throws EventStreamException {
+        final JsonObject payload = command.payloadAsJsonObject();
+        final UpdateHearingAddCaseBdf updateHearingAddCaseBdf = jsonObjectConverter.convert(payload, UpdateHearingAddCaseBdf.class);
+        updateHearingEventStream(command, updateHearingAddCaseBdf.getHearingId(), (Hearing hearing) -> hearing.addCasesForHearing(Collections.singletonList(updateHearingAddCaseBdf.getProsecutionCase()), new ArrayList<>()));
+    }
+
 
     @VisibleForTesting
     void setClock(final Clock clock) {
@@ -1650,6 +1660,7 @@ public class ListingCommandHandler {
                 .withCourtApplicationApplicantIds(restrictCourtList.getCourtApplicationApplicantIds())
                 .withCourtApplicatonIds(restrictCourtList.getCourtApplicationIds())
                 .withCourtApplicatonRespondentIds(restrictCourtList.getCourtApplicationRespondentIds())
+                .withCourtApplicationSubjectIds(restrictCourtList.getCourtApplicationSubjectIds())
                 .withCourtApplicationType(restrictCourtList.getCourtApplicationType())
                 .withRestrictFromCourtList(restrictCourtList.getRestrictCourtList())
                 .build();

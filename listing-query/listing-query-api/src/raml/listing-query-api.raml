@@ -317,10 +317,17 @@ protocols: [ HTTP, HTTPS ]
           type: boolean
           required: false
           default: false
+        includeApplications:
+          description: when true, include court applications in the payload even when the hearing has prosecution cases (listedCases). When false (default), court applications are only included when there are no listed cases
+          type: boolean
+          required: false
+          default: false
     responses:
       200:
         body:
           application/vnd.listing.search.court.list.payload+json:
+            example: !include json/listing.search.court.list.payload.json
+            schema: !include json/schema/listing.search.court.list.payload.json
 
 /courtListPublishStatus/{courtCentreId}:
   description: get status of latest publish court list document

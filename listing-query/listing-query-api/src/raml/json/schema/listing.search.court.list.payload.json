@@ -1,0 +1,128 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/query/listing.search.court.list.payload.json",
+  "type": "object",
+  "properties": {
+    "listType": { "type": "string" },
+    "courtCentreName": { "type": "string" },
+    "courtCentreAddress1": { "type": "string" },
+    "courtCentreAddress2": { "type": "string" },
+    "courtCentreDefaultStartTime": { "type": "string" },
+    "welshCourtCentreName": { "type": "string" },
+    "welshCourtCentreAddress1": { "type": "string" },
+    "welshCourtCentreAddress2": { "type": "string" },
+    "hearingDates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "hearingDate": { "type": "string", "format": "date" },
+          "hearingDateWelsh": { "type": "string" },
+          "courtRooms": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "courtRoomName": { "type": "string" },
+                "welshCourtRoomName": { "type": "string" },
+                "judiciaryNames": { "type": "string" },
+                "welshJudiciaryNames": { "type": "string" },
+                "timeslots": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "hearings": {
+                        "type": "array",
+                        "items": { "$ref": "#/definitions/hearing" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "templateName": { "type": "string" }
+  },
+  "definitions": {
+    "hearing": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "sequence": { "type": "integer" },
+        "reportingRestrictionReason": { "type": "string" },
+        "welshReportingRestrictionReason": { "type": "string" },
+        "startTime": { "type": "string" },
+        "hearingType": { "type": "string" },
+        "welshHearingType": { "type": "string" },
+        "caseNumber": { "type": "string" },
+        "caseId": { "type": "string", "format": "uuid" },
+        "prosecutorType": { "type": "string" },
+        "hearingPublicListNote": { "type": "string" },
+        "defendants": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/defendant" }
+        },
+        "subject": {
+          "$ref": "#/definitions/defendant",
+          "description": "Optional. Present when includeApplications=true and the court application contains a subject. Same data type as defendants array items."
+        },
+        "adjournedHearingDate": { "type": "string" },
+        "panel": { "type": "string" },
+        "courtApplicationId": { "type": "string", "format": "uuid" },
+        "applicationOffences": {
+          "type": "array",
+          "items": { "type": "object", "properties": { "id": { "type": "string", "format": "uuid" } } }
+        }
+      }
+    },
+    "defendant": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "organisationName": { "type": "string" },
+        "welshOrganisationName": { "type": "string" },
+        "firstName": { "type": "string" },
+        "surname": { "type": "string" },
+        "welshSurname": { "type": "string" },
+        "dateOfBirth": { "type": "string" },
+        "age": { "type": "string" },
+        "nationality": { "type": "string" },
+        "address": { "$ref": "#/definitions/address" },
+        "offences": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "offenceTitle": { "type": "string" },
+              "welshOffenceTitle": { "type": "string" },
+              "offenceWording": { "type": "string" }
+            }
+          }
+        },
+        "reportingRestrictions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": { "label": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "address": {
+      "type": "object",
+      "properties": {
+        "address1": { "type": "string" },
+        "address2": { "type": "string" },
+        "address3": { "type": "string" },
+        "address4": { "type": "string" },
+        "address5": { "type": "string" },
+        "postcode": { "type": "string" }
+      }
+    }
+  }
+}

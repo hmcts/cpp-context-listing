@@ -18,6 +18,7 @@ public class Hearing {
     private String prosecutorType;
     private String hearingPublicListNote;
     private List<Defendant> defendants;
+    private Defendant subject;
     private String adjournedHearingDate;
     private String panel;
     private UUID courtApplicationId;
@@ -53,6 +54,10 @@ public class Hearing {
 
     public List<Defendant> getDefendants() {
         return defendants;
+    }
+
+    public Defendant getSubject() {
+        return subject;
     }
 
     public String getReportingRestrictionReason() {
@@ -99,6 +104,7 @@ public class Hearing {
         private UUID caseId;
         private String prosecutorType;
         private List<Defendant> defendants;
+        private Defendant subject;
         private String reportingRestrictionReason;
         private String welshReportingRestrictionReason;
         private String adjournedHearingDate;
@@ -163,6 +169,11 @@ public class Hearing {
             return this;
         }
 
+        public Builder withSubject(Defendant subject) {
+            this.subject = subject;
+            return this;
+        }
+
         public Builder withAdjournedHearingDate(String adjournedHearingDate) {
             this.adjournedHearingDate = adjournedHearingDate;
             return this;
@@ -202,6 +213,7 @@ public class Hearing {
             hearing.startTime = this.startTime;
             hearing.prosecutorType = this.prosecutorType;
             hearing.defendants = this.defendants;
+            hearing.subject = this.subject;
             hearing.reportingRestrictionReason = this.reportingRestrictionReason;
             hearing.welshReportingRestrictionReason = this.welshReportingRestrictionReason;
             hearing.adjournedHearingDate = this.adjournedHearingDate;
@@ -228,6 +240,7 @@ public class Hearing {
                 ", caseId='" + caseId + '\'' +
                 ", prosecutorType='" + prosecutorType + '\'' +
                 ", defendants=" + defendants +
+                ", subject=" + subject +
                 ", id=" + id +
                 ", panel=" + panel +
                 ", courtApplicationId=" + courtApplicationId +
@@ -260,6 +273,6 @@ public class Hearing {
 
     @Override
     public int hashCode() {
-        return Objects.hash(sequence, reportingRestrictionReason, welshReportingRestrictionReason, startTime, hearingType, welshHearingType, caseNumber, caseId, prosecutorType, defendants, id, panel, courtApplicationId, applicationOffences);
+        return Objects.hash(sequence, reportingRestrictionReason, welshReportingRestrictionReason, startTime, hearingType, welshHearingType, caseNumber, caseId, prosecutorType, defendants, subject, id, panel, courtApplicationId, applicationOffences);
     }
 }

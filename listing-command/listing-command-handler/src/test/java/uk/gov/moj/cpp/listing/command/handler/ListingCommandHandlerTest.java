@@ -4195,6 +4195,21 @@ class ListingCommandHandlerTest {
     }
 
     @Test
+    public void shouldUpdateHearingAddCaseBdf() throws EventStreamException {
+        final UUID hearingId = randomUUID();
+
+        final JsonObject payload = createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .add("prosecutionCase", createObjectBuilder())
+                .build();
+
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.update-hearing-add-case-bdf", payload);
+        listingCommandHandler.updateHearingAddCaseBdf(commandEnvelope);
+
+        verify(hearing, times(1)).addCasesForHearing(any(List.class), any(List.class));
+    }
+
+    @Test
     public void shouldParseStringToXML() {
         final String authContextInfoValue = "<Sw:AuthContextInfo xmlns:Sw=\"urn:swift:saml:Sw.01\"><Network>abcdef</Network><SubjectDN>cn=%1,cn=uk2345678,ou=operators,o=scblgb21,o=swift</SubjectDN><PolicyOID>SWIFT_OID</PolicyOID></Sw:AuthContextInfo>";
 
