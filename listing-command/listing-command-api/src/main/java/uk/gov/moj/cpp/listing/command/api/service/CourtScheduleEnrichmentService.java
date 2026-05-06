@@ -790,16 +790,26 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         final Integer estimatedMinutes = hearing.getEstimatedMinutes();
         final int estimatedFallback = estimatedMinutes != null ? estimatedMinutes : 0;
         final int fallbackDuration = aggregatedDuration > 0 ? aggregatedDuration : estimatedFallback;
-        return sessions.stream().limit(1).map(session -> HearingDay.hearingDay()
-                .withCourtCentreId(fromString(session.getCourtHouseId()))
-                .withCourtScheduleId(fromString(session.getCourtScheduleId()))
-                .withCourtRoomId(session.isDraft() || isBlank(session.getCourtRoomId()) ? null : fromString(session.getCourtRoomId()))
-                .withStartTime(nonNull(session.getHearingStartTime()) ? ZonedDateTime.parse(session.getHearingStartTime()) : null)
-                .withHearingDate(session.getSessionDate())
-                .withDurationMinutes(fallbackDuration)
-                .withIsDraft(session.isDraft())
-                .build()
-        ).toList();
+        final List<RotaSlot> bookedSlots = hearing.getBookedSlots();
+        return sessions.stream().limit(1).map(session -> {
+            final ZonedDateTime startTime = isNotEmpty(bookedSlots)
+                    ? bookedSlots.stream()
+                            .filter(slot -> session.getCourtScheduleId().equals(slot.getCourtScheduleId()))
+                            .map(RotaSlot::getStartTime)
+                            .filter(t -> nonNull(t))
+                            .findFirst()
+                            .orElseGet(() -> nonNull(session.getHearingStartTime()) ? ZonedDateTime.parse(session.getHearingStartTime()) : null)
+                    : nonNull(session.getHearingStartTime()) ? ZonedDateTime.parse(session.getHearingStartTime()) : null;
+            return HearingDay.hearingDay()
+                    .withCourtCentreId(fromString(session.getCourtHouseId()))
+                    .withCourtScheduleId(fromString(session.getCourtScheduleId()))
+                    .withCourtRoomId(session.isDraft() || isBlank(session.getCourtRoomId()) ? null : fromString(session.getCourtRoomId()))
+                    .withStartTime(startTime)
+                    .withHearingDate(session.getSessionDate())
+                    .withDurationMinutes(fallbackDuration)
+                    .withIsDraft(session.isDraft())
+                    .build();
+        }).toList();
     }
 
     private EnrichmentResult handleCrownMultiDayEnrichment(final HearingListingNeeds hearing, final int aggregatedDuration) {
