@@ -2700,6 +2700,142 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
+    void enrichCrownCourtScheduleFirst_shouldUseBookedSlotStartTime_whenBookedSlotHasStartTime() {
+        // Verifies that buildHearingDaysFromSingleDaySessions sets withStartTime from the matching
+        // bookedSlot's startTime rather than the court schedule's hearingStartTime.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+        final ZonedDateTime bookedSlotStartTime = ZonedDateTime.of(2026, 5, 10, 9, 30, 0, 0, ZoneOffset.UTC);
+        final int bookedSlotDuration = 180;
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).build())
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withDuration(bookedSlotDuration)
+                                .withStartTime(bookedSlotStartTime)
+                                .build()))
+                .build();
+
+        // Court schedule has a different start time (T10:00:00Z) to confirm bookedSlot takes precedence
+        final CourtSchedule cs = buildCourtSchedule(courtScheduleId, courtRoomId, courtHouseId, sessionDate, false);
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId.toString())))
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, sessionDate + "T10:00:00Z", bookedSlotDuration)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        final org.mockito.ArgumentCaptor<List<HearingDay>> daysCaptor =
+                org.mockito.ArgumentCaptor.forClass(List.class);
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(daysCaptor.capture()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        final List<HearingDay> wireHearingDays = daysCaptor.getValue();
+        assertThat(wireHearingDays.size(), is(1));
+        assertThat(wireHearingDays.get(0).getStartTime(), is(bookedSlotStartTime));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldFallbackToSessionStartTime_whenBookedSlotStartTimeIsNull() {
+        // Verifies fallback to session.getHearingStartTime() when the matching bookedSlot has no startTime.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+        final int bookedSlotDuration = 180;
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).build())
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withDuration(bookedSlotDuration)
+                                // startTime intentionally not set (null)
+                                .build()))
+                .build();
+
+        final CourtSchedule cs = buildCourtSchedule(courtScheduleId, courtRoomId, courtHouseId, sessionDate, false);
+        final String expectedStartTimeStr = sessionDate + "T10:00:00Z"; // set by buildCourtSchedule
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId.toString())))
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, expectedStartTimeStr, bookedSlotDuration)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        final org.mockito.ArgumentCaptor<List<HearingDay>> daysCaptor =
+                org.mockito.ArgumentCaptor.forClass(List.class);
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(daysCaptor.capture()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        final List<HearingDay> wireHearingDays = daysCaptor.getValue();
+        assertThat(wireHearingDays.size(), is(1));
+        assertThat(wireHearingDays.get(0).getStartTime(), is(ZonedDateTime.parse(expectedStartTimeStr)));
+    }
+
+    @Test
     void enrichCrownCourtScheduleFirst_shouldCallSingleDay_whenCourtScheduleIdPresentAndDurationBelow360() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtScheduleId = UUID.randomUUID();
