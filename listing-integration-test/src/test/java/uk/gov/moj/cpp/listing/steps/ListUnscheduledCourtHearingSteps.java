@@ -101,6 +101,23 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                 request, getLoggedInHeader());
     }
 
+    /**
+     * Verifies the user-entered estimatedMinutes survives the listing-command-handler path
+     * for an unscheduled hearing. Without the fix in {@code UnscheduledListingCommandHandler},
+     * the hearing-type's reference-data default (390 minutes for PTP via the stub) would
+     * overwrite the user value (30 minutes from {@code HEARING_ESTIMATE_MINUTES}).
+     */
+    public void verifyHearingUnscheduledEstimatedMinutesPersisted() {
+        final HearingData hearingData = getHearingsData().getHearingData().get(0);
+        final UUID courtCentreId = hearingData.getCourtCentreId();
+
+        final Matcher<? super ReadContext> estimatedMinutesPersistedMatcher = withJsonPath(
+                "$.hearings[0].estimatedMinutes",
+                equalTo(hearingData.getHearingEstimateMinutes()));
+
+        pollForUnscheduledHearings(getLoggedInUser(), courtCentreId, estimatedMinutesPersistedMatcher);
+    }
+
     public void verifyHearingUnscheduledListedFromAPI() {
         final HearingData hearingData = getHearingsData().getHearingData().get(0);
 
