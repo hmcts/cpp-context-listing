@@ -6,6 +6,7 @@ import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static uk.gov.moj.cpp.listing.command.api.service.HearingDaysEnrichmentService.isWeekCommencingHearing;
 import static uk.gov.moj.cpp.listing.command.api.service.HearingDurationEnrichmentService.DEFAULT_MIN;
 
+import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
@@ -70,7 +71,7 @@ public class HearingEnrichmentOrchestrator {
                             hearing, crownFallbackSource);
                     HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(withCourtSchedules, envelope);
                     HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
-                    enrichedHearings.add(withDurations);
+                    enrichedHearings.add(stripRoomInfoIfAnyDraft(withDurations));
                 } else {
                     // CROWN without courtScheduleId: legacy HearingDays -> Duration -> CourtSchedule order.
                     // Crown fallback search-and-book is invoked by callers that explicitly need it
@@ -80,7 +81,7 @@ public class HearingEnrichmentOrchestrator {
                     HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(hearing, envelope);
                     HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
                     HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDurations, envelope);
-                    enrichedHearings.add(withCourtSchedules);
+                    enrichedHearings.add(stripRoomInfoIfAnyDraft(withCourtSchedules));
                 }
             } else {
                 throw new IllegalArgumentException(UNSUPPORTED_JURISDICTION_TYPE + hearing.getJurisdictionType());
@@ -116,6 +117,7 @@ public class HearingEnrichmentOrchestrator {
                 UpdateHearingForListing withDuration = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
                 enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration, envelope);
             }
+            enrichedHearing = stripRoomInfoIfAnyDraft(enrichedHearing);
         } else {
             throw new IllegalArgumentException(UNSUPPORTED_JURISDICTION_TYPE + jurisdictionType);
         }
@@ -145,6 +147,7 @@ public class HearingEnrichmentOrchestrator {
                 UpdateHearingForListing withDuration = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
                 enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration, envelope);
             }
+            enrichedHearing = stripRoomInfoIfAnyDraft(enrichedHearing);
         } else {
             throw new IllegalArgumentException(UNSUPPORTED_JURISDICTION_TYPE + jurisdictionType);
         }
@@ -334,5 +337,55 @@ public class HearingEnrichmentOrchestrator {
         return !isEmpty(hearing.getNonDefaultDays())
                 && hearing.getNonDefaultDays().stream()
                 .anyMatch(nd -> nonNull(nd.getCourtScheduleId()) && !nd.getCourtScheduleId().isBlank());
+    }
+
+    /**
+     * SPRDT-858: when ANY hearingDay references a draft session, the whole hearing is treated as
+     * unallocated for CROWN. Courtscheduler always pins a room to a session, but for an unallocated
+     * hearing that room MUST NOT propagate to commands or downstream events. Stripping happens here
+     * (after all enrichment branches complete) so the rule holds regardless of which branch ran.
+     */
+    static HearingListingNeeds stripRoomInfoIfAnyDraft(final HearingListingNeeds hearing) {
+        final List<HearingDay> days = hearing.getHearingDays();
+        if (isEmpty(days) || !anyDayIsDraft(days)) {
+            return hearing;
+        }
+        final List<HearingDay> sanitisedDays = days.stream()
+                .map(d -> HearingDay.hearingDay().withValuesFrom(d).withCourtRoomId(null).build())
+                .toList();
+        final HearingListingNeeds.Builder builder = HearingListingNeeds.hearingListingNeeds()
+                .withValuesFrom(hearing)
+                .withHearingDays(sanitisedDays);
+        if (nonNull(hearing.getCourtCentre())) {
+            final CourtCentre sanitisedCourtCentre = CourtCentre.courtCentre()
+                    .withValuesFrom(hearing.getCourtCentre())
+                    .withRoomId(null)
+                    .withRoomName(null)
+                    .build();
+            builder.withCourtCentre(sanitisedCourtCentre);
+        }
+        return builder.build();
+    }
+
+    /**
+     * Update-path variant — UpdateHearingForListing has no hearing-level CourtCentre, so we
+     * only sanitise the per-day courtRoomId.
+     */
+    static UpdateHearingForListing stripRoomInfoIfAnyDraft(final UpdateHearingForListing hearing) {
+        final List<HearingDay> days = hearing.getHearingDays();
+        if (isEmpty(days) || !anyDayIsDraft(days)) {
+            return hearing;
+        }
+        final List<HearingDay> sanitisedDays = days.stream()
+                .map(d -> HearingDay.hearingDay().withValuesFrom(d).withCourtRoomId(null).build())
+                .toList();
+        return UpdateHearingForListing.updateHearingForListing()
+                .withValuesFrom(hearing)
+                .withHearingDays(sanitisedDays)
+                .build();
+    }
+
+    private static boolean anyDayIsDraft(final List<HearingDay> days) {
+        return days.stream().anyMatch(d -> Boolean.TRUE.equals(d.getIsDraft()));
     }
 }
