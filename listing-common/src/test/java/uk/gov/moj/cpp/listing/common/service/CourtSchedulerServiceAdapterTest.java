@@ -216,7 +216,7 @@ class CourtSchedulerServiceAdapterTest {
         when(response.getEntity()).thenReturn(hearingIdsResponse);
         when(hearingSlotsService.getCourtSchedulerHearingIds(anyMap())).thenReturn(response);
 
-        final HearingIdsResponse finalResp = courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, Optional.of(Instant.now()), businessTypeOptional, "ADULT,YOUTH", pageSize, pageNumber);
+        final HearingIdsResponse finalResp = courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, Optional.of(Instant.now()), businessTypeOptional, Optional.of("MAGISTRATES"), "ADULT,YOUTH", pageSize, pageNumber);
 
         assertThat(finalResp.getUuids().size(), is(4));
         assertThat(finalResp.getPageCount(), is(1L));

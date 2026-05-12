@@ -285,7 +285,9 @@ public class RangeSearchQueryTest {
                         SEARCH_DATE.toString(),
                         SEARCH_DATE.toString(),
                         Optional.empty(),
-                        Optional.of(BUSINESS_TYPE), "ADULT,YOUTH", 50, 1)).thenReturn(response);
+                        Optional.of(BUSINESS_TYPE),
+                        Optional.of(MAGISTRATES_TYPE.toString()),
+                        "ADULT,YOUTH", 50, 1)).thenReturn(response);
 
         when(hearingRepository.findAllCourtSchedulerHearingByIds(anyList())).thenReturn(hearings);
 

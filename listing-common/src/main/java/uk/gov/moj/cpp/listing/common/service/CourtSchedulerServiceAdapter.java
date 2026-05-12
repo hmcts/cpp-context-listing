@@ -49,6 +49,7 @@ public class CourtSchedulerServiceAdapter {
     public static final String HEARING_SLOTS = "hearingSlots";
     public static final String COURT_SESSION = "courtSession";
     public static final String BUSINESS_TYPE = "businessType";
+    public static final String JURISDICTION = "jurisdiction";
     public static final String PANEL_ADULT_YOUTH = "ADULT,YOUTH";
     private static final String PANEL = "panel";
     public static final String HEARING_ID = "hearingId";
@@ -304,6 +305,7 @@ public class CourtSchedulerServiceAdapter {
                                                         final String courtRoomId, final String startDate,
                                                         final String endDate, final Optional<Instant> exactHearingStartDateTime,
                                                         final Optional<String> businessTypeOptional,
+                                                        final Optional<String> jurisdiction,
                                                         final String panel, final Integer pageSize, final Integer pageNumber
     ) {
         final Map<String, String> queryParams = new HashMap<>();
@@ -316,6 +318,7 @@ public class CourtSchedulerServiceAdapter {
         queryParams.put(COURT_ROOM_ID, courtRoomId);
         courtSessionOptional.ifPresent(courtSession -> queryParams.put(COURT_SESSION, courtSession));
         businessTypeOptional.ifPresent(businessType -> queryParams.put(BUSINESS_TYPE, businessType));
+        jurisdiction.ifPresent(j -> queryParams.put(JURISDICTION, j));
         exactHearingStartDateTime.ifPresent(s -> queryParams.put(EXACT_HEARING_START_DATETIME, s.toString()));
         final Response hearingsResponse = getCourtSchedulerHearingIds(queryParams);
 
