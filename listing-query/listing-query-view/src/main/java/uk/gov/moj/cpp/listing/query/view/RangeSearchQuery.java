@@ -124,7 +124,7 @@ public class RangeSearchQuery {
         if (params.courtSessionOptional().isPresent() || params.businessType().isPresent()) {
 
             if(isMags(params.jurisdictionType()) && params.allocated() && params.ouCode() != null ) {
-                return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.exactHearingStartDateTime(), params.businessType(), PANEL_ADULT_YOUTH, params.paginationParameter());
+                return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.exactHearingStartDateTime(), params.businessType(), Optional.ofNullable(params.jurisdictionType()), PANEL_ADULT_YOUTH, params.paginationParameter());
             }
 
             throw new BadRequestException("courtSession or businessType are only relevant to allocated MAGs with ouCode");
@@ -310,8 +310,8 @@ public class RangeSearchQuery {
     }
 
 
-     private JsonEnvelope getCourtSchedulerHearings(final JsonEnvelope query , final boolean allocated, final String ouCode, final Optional<String> courtSessionOptional, final String courtRoomId, final String startDate, final String endDate, final Optional<Instant> startDateTime, final Optional<String> businessType, final String panel, final PaginationParameter paginationParameter) {
-        final HearingIdsResponse hearingIdsResponse = courtSchedulerServiceAdapter.getCourtSchedulerHearings(ouCode, courtSessionOptional, courtRoomId, startDate, endDate, startDateTime, businessType, panel, paginationParameter.getPageSize(), paginationParameter.getPageNumber());
+     private JsonEnvelope getCourtSchedulerHearings(final JsonEnvelope query, final boolean allocated, final String ouCode, final Optional<String> courtSessionOptional, final String courtRoomId, final String startDate, final String endDate, final Optional<Instant> startDateTime, final Optional<String> businessType, final Optional<String> jurisdiction, final String panel, final PaginationParameter paginationParameter) {
+        final HearingIdsResponse hearingIdsResponse = courtSchedulerServiceAdapter.getCourtSchedulerHearings(ouCode, courtSessionOptional, courtRoomId, startDate, endDate, startDateTime, businessType, jurisdiction, panel, paginationParameter.getPageSize(), paginationParameter.getPageNumber());
         logger.info("CourtScheduler Hearings response : {}", hearingIdsResponse);
         final List<Hearing> enrichedHearingList = isEmpty(hearingIdsResponse.getUuids())
                 ? emptyList() : enrichAllCourtSchedulerHearingIdsIntoHearings(hearingIdsResponse.getUuids());
@@ -359,7 +359,7 @@ public class RangeSearchQuery {
         if (params.courtSessionOptional().isPresent() || params.businessType().isPresent()) {
 
             if(isMags(params.jurisdictionType()) && params.allocated() && params.ouCode() != null ) {
-                return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.exactHearingStartDateTime(), params.businessType(), PANEL_ADULT_YOUTH, params.paginationParameter());
+                return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.exactHearingStartDateTime(), params.businessType(), Optional.ofNullable(params.jurisdictionType()), PANEL_ADULT_YOUTH, params.paginationParameter());
             }
 
             throw new BadRequestException("courtSession or businessType are only relevant to allocated MAGs with ouCode");
