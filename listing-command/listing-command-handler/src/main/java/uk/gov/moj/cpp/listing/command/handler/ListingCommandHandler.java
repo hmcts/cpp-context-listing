@@ -1629,6 +1629,7 @@ public class ListingCommandHandler {
                         .withEndTime(nonNull(commandHearingDay.getEndTime()) ? commandHearingDay.getEndTime() : commandHearingDay.getStartTime().plusMinutes(commandHearingDay.getDurationMinutes()))
                         .withHearingDate(commandHearingDay.getHearingDate())
                         .withIsCancelled(Optional.ofNullable(commandHearingDay.getIsCancelled()))
+                        .withIsDraft(Optional.ofNullable(commandHearingDay.getIsDraft()))
                         .withSequence(commandHearingDay.getSequence())
                         .build())
                 .toList();

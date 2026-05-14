@@ -4269,6 +4269,80 @@ class ListingCommandHandlerTest {
         verify(hearing).assignNonDefaultDays(any(), any());
     }
 
+    @Test
+    public void shouldPropagateIsDraftTrueFromHearingDayThroughConvertHearingDaysCommandToDomain() throws Exception {
+        final JsonEnvelope commandEnvelope = updateHearingForListingWithDraftHearingDayCommandEnvelope();
+
+        when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
+        when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
+        when(courtCentreFactory.getOrganisationUnit(any(), any()))
+                .thenReturn(createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime", "09:00").build());
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<List<HearingDay>> hearingDaysCaptor = ArgumentCaptor.forClass(List.class);
+        when(hearing.assignHearingDaysV2(any(), hearingDaysCaptor.capture(), any(), any(), any(), any()))
+                .thenReturn(mock(Stream.class));
+
+        listingCommandHandler.updateHearingForListing(commandEnvelope);
+
+        final List<HearingDay> capturedHearingDays = hearingDaysCaptor.getValue();
+        assertThat(capturedHearingDays, hasSize(1));
+        assertThat("isDraft=true from a draft court session must be preserved through convertHearingDaysCommandToDomain "
+                + "so noneHasDraftSession() correctly blocks allocation",
+                capturedHearingDays.get(0).getIsDraft(), is(of(true)));
+    }
+
+    @Test
+    public void shouldPropagateIsDraftFalseFromHearingDayThroughConvertHearingDaysCommandToDomain() throws Exception {
+        final JsonEnvelope commandEnvelope = updateHearingForListingWithNonDraftHearingDayCommandEnvelope();
+
+        when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
+        when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
+        when(courtCentreFactory.getOrganisationUnit(any(), any()))
+                .thenReturn(createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime", "09:00").build());
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<List<HearingDay>> hearingDaysCaptor = ArgumentCaptor.forClass(List.class);
+        when(hearing.assignHearingDaysV2(any(), hearingDaysCaptor.capture(), any(), any(), any(), any()))
+                .thenReturn(mock(Stream.class));
+
+        listingCommandHandler.updateHearingForListing(commandEnvelope);
+
+        final List<HearingDay> capturedHearingDays = hearingDaysCaptor.getValue();
+        assertThat(capturedHearingDays, hasSize(1));
+        assertThat(capturedHearingDays.get(0).getIsDraft(), is(of(false)));
+    }
+
+    private JsonEnvelope updateHearingForListingWithDraftHearingDayCommandEnvelope() {
+        return buildUpdateHearingForListingEnvelopeFromFixture(
+                "/test-data/listing.command.update-hearing-for-listing-with-draft-hearing-day.json");
+    }
+
+    private JsonEnvelope updateHearingForListingWithNonDraftHearingDayCommandEnvelope() {
+        return buildUpdateHearingForListingEnvelopeFromFixture(
+                "/test-data/listing.command.update-hearing-for-listing-with-non-draft-hearing-day.json");
+    }
+
+    private JsonEnvelope buildUpdateHearingForListingEnvelopeFromFixture(final String fixturePath) {
+        final String jsonString = givenPayload(fixturePath).toString()
+                .replace("HEARING_ID", HEARING_ID_1.toString())
+                .replace("HEARING_TYPE_ID", HEARING_TYPE.getId().toString())
+                .replace("HEARING_TYPE_DESCRIPTION", HEARING_TYPE.getDescription())
+                .replace("START_DATE", START_DATE.toString())
+                .replace("END_DATE", END_DATE)
+                .replace("HEARING_LANGUAGE", HEARING_LANGUAGE)
+                .replace("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
+                .replace("COURT_ROOM_ID", COURT_ROOM_ID.toString())
+                .replace("JURISDICTION_TYPE", JURISDICTION_TYPE.toString())
+                .replace("COURT_SCHEDULE_ID_1", COURT_SCHEDULE_ID_1.toString());
+        try {
+            final JsonReader jsonReader = JsonObjects.createReader(new StringReader(jsonString));
+            return createEnvelope("listing.command.update-hearing-for-listing", jsonReader.readObject());
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private List<NonDefaultDay> toMultiDayNonDefaultDay(final List<NonDefaultDay> nonDefaultDays) {
         final List<NonDefaultDay> multiDateNonDefaultDays = new ArrayList<>();
 
