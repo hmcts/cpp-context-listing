@@ -65,6 +65,7 @@ public class CourtSchedulerServiceAdapter {
     private static final String SESSION_END_TIME = "sessionEndTime";
     private static final String IS_DRAFT = "isDraft";
     private static final String OVERBOOKED = "overbooked";
+    private static final String ANY_DRAFT = "anyDraft";
     @Inject
     private HearingSlotsService hearingSlotsService;
     @Inject
@@ -316,7 +317,7 @@ public class CourtSchedulerServiceAdapter {
     public JsonObject getCourtScheduleDraftStatus(final JsonObject requestPayload) {
         final List<String> courtScheduleIds = extractCourtScheduleIds(requestPayload);
         if (courtScheduleIds.isEmpty()) {
-            return javax.json.Json.createObjectBuilder().add("anyDraft", false).build();
+            return javax.json.Json.createObjectBuilder().add(ANY_DRAFT, false).build();
         }
 
         final Map<String, String> params = new HashMap<>();
@@ -328,17 +329,17 @@ public class CourtSchedulerServiceAdapter {
         } catch (Exception ex) {
             LOGGER.warn("courtscheduler getCourtSchedulesById threw {} for {} ids - failing-safe by returning anyDraft=true",
                     ex.getClass().getSimpleName(), courtScheduleIds.size());
-            return javax.json.Json.createObjectBuilder().add("anyDraft", true).build();
+            return javax.json.Json.createObjectBuilder().add(ANY_DRAFT, true).build();
         }
 
         if (response == null || HttpStatus.SC_OK != response.getStatus()) {
             LOGGER.warn("courtscheduler getCourtSchedulesById returned status {} for {} ids - failing-safe by returning anyDraft=true",
                     response == null ? "null" : response.getStatus(), courtScheduleIds.size());
-            return javax.json.Json.createObjectBuilder().add("anyDraft", true).build();
+            return javax.json.Json.createObjectBuilder().add(ANY_DRAFT, true).build();
         }
 
         final boolean anyDraft = scanForDraftSession(objectToJsonObjectConverter.convert(response.getEntity()));
-        return javax.json.Json.createObjectBuilder().add("anyDraft", anyDraft).build();
+        return javax.json.Json.createObjectBuilder().add(ANY_DRAFT, anyDraft).build();
     }
 
     private static List<String> extractCourtScheduleIds(final JsonObject requestPayload) {
