@@ -300,6 +300,86 @@ public class CourtSchedulerServiceAdapter {
         return response;
     }
 
+    /**
+     * Reports whether any of the supplied courtScheduleIds resolves to a DRAFT
+     * (unallocated) court-schedule session. Used by cpp-context-progression to
+     * decide whether to strip courtroom info from outgoing unallocated CROWN
+     * hearings before they are persisted or surfaced in notifications.
+     *
+     * <p>Fails-safe by reporting anyDraft=true when the downstream courtscheduler
+     * call fails - leaking a phantom courtroom is worse than dropping room info
+     * for what may actually be a confirmed-allocated hearing.
+     *
+     * @param requestPayload JSON object with a courtScheduleIdList array
+     * @return Response with body {"anyDraft": true|false}
+     */
+    public JsonObject getCourtScheduleDraftStatus(final JsonObject requestPayload) {
+        final List<String> courtScheduleIds = extractCourtScheduleIds(requestPayload);
+        if (courtScheduleIds.isEmpty()) {
+            return javax.json.Json.createObjectBuilder().add("anyDraft", false).build();
+        }
+
+        final Map<String, String> params = new HashMap<>();
+        params.put("courtScheduleIds", String.join(",", courtScheduleIds));
+
+        final Response response;
+        try {
+            response = hearingSlotsService.getCourtSchedulesById(params);
+        } catch (Exception ex) {
+            LOGGER.warn("courtscheduler getCourtSchedulesById threw {} for {} ids - failing-safe by returning anyDraft=true",
+                    ex.getClass().getSimpleName(), courtScheduleIds.size());
+            return javax.json.Json.createObjectBuilder().add("anyDraft", true).build();
+        }
+
+        if (response == null || HttpStatus.SC_OK != response.getStatus()) {
+            LOGGER.warn("courtscheduler getCourtSchedulesById returned status {} for {} ids - failing-safe by returning anyDraft=true",
+                    response == null ? "null" : response.getStatus(), courtScheduleIds.size());
+            return javax.json.Json.createObjectBuilder().add("anyDraft", true).build();
+        }
+
+        final boolean anyDraft = scanForDraftSession(objectToJsonObjectConverter.convert(response.getEntity()));
+        return javax.json.Json.createObjectBuilder().add("anyDraft", anyDraft).build();
+    }
+
+    private static List<String> extractCourtScheduleIds(final JsonObject requestPayload) {
+        if (requestPayload == null || !requestPayload.containsKey("courtScheduleIdList")) {
+            return Collections.emptyList();
+        }
+        final JsonArray list = requestPayload.getJsonArray("courtScheduleIdList");
+        final List<String> ids = new ArrayList<>();
+        for (int i = 0; i < list.size(); i++) {
+            final JsonObject entry = list.getJsonObject(i);
+            if (entry.containsKey(COURT_SCHEDULE_ID) && !entry.isNull(COURT_SCHEDULE_ID)) {
+                final String id = entry.getString(COURT_SCHEDULE_ID);
+                if (StringUtils.isNotBlank(id)) {
+                    ids.add(id);
+                }
+            }
+        }
+        return ids;
+    }
+
+    private static boolean scanForDraftSession(final JsonObject responseJson) {
+        if (responseJson == null || responseJson.isEmpty() || !responseJson.containsKey("courtSchedules")) {
+            return false;
+        }
+        final JsonArray schedules = responseJson.getJsonArray("courtSchedules");
+        for (int i = 0; i < schedules.size(); i++) {
+            final JsonObject schedule = schedules.getJsonObject(i);
+            if (!schedule.containsKey("sessions")) {
+                continue;
+            }
+            final JsonArray sessions = schedule.getJsonArray("sessions");
+            for (int j = 0; j < sessions.size(); j++) {
+                final JsonObject session = sessions.getJsonObject(j);
+                if (session.containsKey(IS_DRAFT) && !session.isNull(IS_DRAFT) && session.getBoolean(IS_DRAFT)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public HearingIdsResponse getCourtSchedulerHearings(final String ouCode,
                                                         final Optional<String> courtSessionOptional,
                                                         final String courtRoomId, final String startDate,

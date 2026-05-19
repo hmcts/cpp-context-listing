@@ -463,12 +463,44 @@ protocols: [ HTTP, HTTPS ]
     responses:
         200:
             description: OK
+            body:
+                application/vnd.listing.validate.session.availability.response+json:
+                  example:  !include json/listing.validate.session.availability.response.json
+                  schema:  !include  json/schema/listing.validate.session.availability.response.json
         400:
             description: Validation failed
             body:
                 application/vnd.listing.validate.session.availability.response+json:
                   example:  !include json/listing.validate.session.availability.response.json
                   schema:  !include  json/schema/listing.validate.session.availability.response.json
+
+/courtScheduleDraftStatus:
+  description: |
+    Reports whether any of the supplied courtScheduleIds resolves to a DRAFT
+    (unallocated) court-schedule session. Callers - notably cpp-context-progression
+    when it receives progression.command.list-new-hearing - use this to detect
+    unallocated CROWN hearings so they can strip the UI-denormalised courtroom
+    info from courtCentre before it is persisted or surfaced in notifications.
+  post:
+    description: |
+      Returns { "anyDraft": true|false } based on the isDraft flag of the
+      sessions identified by courtScheduleIdList.
+      ...
+      (mapping):
+          requestType: application/vnd.listing.query.court.schedule.draft.status+json
+          name: listing.query.court.schedule.draft.status
+      ...
+    body:
+        application/vnd.listing.query.court.schedule.draft.status+json:
+          example:  !include json/listing.query.court.schedule.draft.status.json
+          schema:  !include  json/schema/listing.query.court.schedule.draft.status.json
+    responses:
+        200:
+            description: OK
+            body:
+                application/vnd.listing.query.court.schedule.draft.status.response+json:
+                  example:  !include json/listing.query.court.schedule.draft.status.response.json
+                  schema:  !include  json/schema/listing.query.court.schedule.draft.status.response.json
 
 /hearings/unscheduled:
    get:

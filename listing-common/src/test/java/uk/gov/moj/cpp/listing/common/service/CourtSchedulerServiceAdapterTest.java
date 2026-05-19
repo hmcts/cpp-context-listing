@@ -330,4 +330,92 @@ class CourtSchedulerServiceAdapterTest {
                         Optional.empty(), Optional.empty(),
                         uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING));
     }
+
+    // ─── getCourtScheduleDraftStatus ─────────────────────────────────────────
+
+    @Test
+    void getCourtScheduleDraftStatus_returnsTrueWhenAnySessionIsDraft() {
+        final JsonObject schedulesResponse = javax.json.Json.createObjectBuilder()
+                .add("courtSchedules", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("sessions", javax.json.Json.createArrayBuilder()
+                                        .add(javax.json.Json.createObjectBuilder()
+                                                .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
+                                                .add("isDraft", false))
+                                        .add(javax.json.Json.createObjectBuilder()
+                                                .add("courtScheduleId", "9e4932f7-97b2-3010-b942-ddd2624e4dd8")
+                                                .add("isDraft", true)))))
+                .build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(schedulesResponse);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(response);
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                "9e4932f7-97b2-3010-b942-ddd2624e4dd8"));
+
+        assertTrue(result.getBoolean("anyDraft"));
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_returnsFalseWhenAllSessionsAreNonDraft() {
+        final JsonObject schedulesResponse = javax.json.Json.createObjectBuilder()
+                .add("courtSchedules", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("sessions", javax.json.Json.createArrayBuilder()
+                                        .add(javax.json.Json.createObjectBuilder()
+                                                .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
+                                                .add("isDraft", false)))))
+                .build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(schedulesResponse);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(response);
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "f8254db1-1683-483e-afb3-b87fde5a0a26"));
+
+        assertFalse(result.getBoolean("anyDraft"));
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_failsSafeToTrueOnNon200() {
+        when(response.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(response);
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "f8254db1-1683-483e-afb3-b87fde5a0a26"));
+
+        assertTrue(result.getBoolean("anyDraft"));
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_failsSafeToTrueOnException() {
+        when(hearingSlotsService.getCourtSchedulesById(anyMap()))
+                .thenThrow(new RuntimeException("simulated connection refused"));
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "f8254db1-1683-483e-afb3-b87fde5a0a26"));
+
+        assertTrue(result.getBoolean("anyDraft"));
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_returnsFalseWhenRequestHasNoIds() {
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleIdList", javax.json.Json.createArrayBuilder())
+                        .build());
+
+        assertFalse(result.getBoolean("anyDraft"));
+    }
+
+    private static JsonObject buildRequest(final String... courtScheduleIds) {
+        final javax.json.JsonArrayBuilder list = javax.json.Json.createArrayBuilder();
+        for (final String id : courtScheduleIds) {
+            list.add(javax.json.Json.createObjectBuilder().add("courtScheduleId", id));
+        }
+        return javax.json.Json.createObjectBuilder()
+                .add("courtScheduleIdList", list)
+                .build();
+    }
 }
