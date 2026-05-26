@@ -126,6 +126,7 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
 
     private  JsonArray convertToNotes(JsonArray hearings){
         final List<NoteUUIDService.ListingNotesCollection> notes = hearings.stream().map(h -> (JsonObject) h).
+                filter(h -> h.containsKey("courtRoomId") && !h.isNull("courtRoomId")).
                 map( h -> new NoteUUIDService.ListingNotesCollection(fromString(h.getString("courtRoomId")), from(h.getString("sessionDate"))))
                 .toList();
         return listToJsonArrayConverter.convert(notesService.findNotes(notes));
