@@ -4064,7 +4064,7 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
-    void handleCrownMultiDayExtension_throws_on422() {
+    void handleCrownMultiDayExtension_throws_on422_NO_AVAILABILITY_withUnavailableDates() {
         final UUID hearingId = UUID.randomUUID();
         final HearingDay d1 = HearingDay.hearingDay().withDurationMinutes(360).build();
         final HearingDay d2 = HearingDay.hearingDay().withDurationMinutes(360).build();
@@ -4079,7 +4079,7 @@ class CourtScheduleEnrichmentServiceTest {
 
         final JsonObject errorBody = JsonObjects.createObjectBuilder()
                 .add("errorCode", "NO_AVAILABILITY")
-                .add("unavailableDates", JsonObjects.createArrayBuilder().add("2026-03-05"))
+                .add("unavailableDates", JsonObjects.createArrayBuilder().add("2026-03-04").add("2026-03-05"))
                 .build();
 
         when(courtSchedulerServiceAdapter.extendMultiDayHearing(any(JsonObject.class))).thenReturn(response);
@@ -4093,6 +4093,71 @@ class CourtScheduleEnrichmentServiceTest {
                         () -> courtScheduleEnrichmentService.handleCrownMultiDayExtension(hearing));
 
         assertThat(thrown.getHttpStatus(), is(422));
-        assertThat(thrown.getResponseBody().getString("errorCode"), is("NO_AVAILABILITY"));
+        assertThat(thrown.getErrorCode(), is("NO_AVAILABILITY"));
+        assertThat(thrown.getUnavailableDates(), is(Arrays.asList("2026-03-04", "2026-03-05")));
+    }
+
+    @Test
+    void handleCrownMultiDayExtension_throws_on422_START_DATE_CHANGE_NOT_ALLOWED() {
+        final HearingDay d1 = HearingDay.hearingDay().withDurationMinutes(360).build();
+        final HearingDay d2 = HearingDay.hearingDay().withDurationMinutes(360).build();
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(LocalDate.of(2026, 3, 2))
+                .withEndDate(LocalDate.of(2026, 3, 5))
+                .withHearingDays(Arrays.asList(d1, d2))
+                .build();
+
+        final JsonObject errorBody = JsonObjects.createObjectBuilder()
+                .add("errorCode", "START_DATE_CHANGE_NOT_ALLOWED")
+                .build();
+
+        when(courtSchedulerServiceAdapter.extendMultiDayHearing(any(JsonObject.class))).thenReturn(response);
+        when(response.getStatus()).thenReturn(422);
+        when(response.hasEntity()).thenReturn(true);
+        when(response.getEntity()).thenReturn(errorBody);
+
+        final uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException thrown =
+                org.junit.jupiter.api.Assertions.assertThrows(
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException.class,
+                        () -> courtScheduleEnrichmentService.handleCrownMultiDayExtension(hearing));
+
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getErrorCode(), is("START_DATE_CHANGE_NOT_ALLOWED"));
+        assertThat(thrown.getUnavailableDates().isEmpty(), is(true));
+    }
+
+    @Test
+    void handleCrownMultiDayExtension_throws_on422_NO_EXISTING_ALLOCATION() {
+        final HearingDay d1 = HearingDay.hearingDay().withDurationMinutes(360).build();
+        final HearingDay d2 = HearingDay.hearingDay().withDurationMinutes(360).build();
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(LocalDate.of(2026, 3, 2))
+                .withEndDate(LocalDate.of(2026, 3, 5))
+                .withHearingDays(Arrays.asList(d1, d2))
+                .build();
+
+        final JsonObject errorBody = JsonObjects.createObjectBuilder()
+                .add("errorCode", "NO_EXISTING_ALLOCATION")
+                .build();
+
+        when(courtSchedulerServiceAdapter.extendMultiDayHearing(any(JsonObject.class))).thenReturn(response);
+        when(response.getStatus()).thenReturn(422);
+        when(response.hasEntity()).thenReturn(true);
+        when(response.getEntity()).thenReturn(errorBody);
+
+        final uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException thrown =
+                org.junit.jupiter.api.Assertions.assertThrows(
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException.class,
+                        () -> courtScheduleEnrichmentService.handleCrownMultiDayExtension(hearing));
+
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getErrorCode(), is("NO_EXISTING_ALLOCATION"));
+        assertThat(thrown.getUnavailableDates().isEmpty(), is(true));
     }
 }

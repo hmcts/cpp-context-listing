@@ -838,6 +838,34 @@ public class ListingCommandApiTest {
     }
 
     @Test
+    public void shouldPropagateCrownMultiDayExtensionException_andNotSendEvent_when422FromCourtscheduler() {
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
+        given(updateHearingForListing.getHearingId()).willReturn(randomUUID());
+        mockCourtCentres();
+
+        final JsonObject errorBody = JsonObjects.createObjectBuilder()
+                .add("errorCode", "NO_AVAILABILITY")
+                .add("unavailableDates", createArrayBuilder().add("2026-03-04").add("2026-03-05"))
+                .build();
+        final uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException domainFailure =
+                new uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException(
+                        422, errorBody, "extendMultiDayHearing returned 422");
+        when(hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(any(), any(), any()))
+                .thenThrow(domainFailure);
+
+        final uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException thrown =
+                assertThrows(
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException.class,
+                        () -> listingCommandApi.handleUpdateHearingForListing(envelope));
+
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getErrorCode(), is("NO_AVAILABILITY"));
+        verify(sender, never()).send(any(JsonEnvelope.class));
+        verify(sender, never()).send(any(Envelope.class));
+    }
+
+    @Test
     public void shouldExtendCourtHearing() {
 
         //given
