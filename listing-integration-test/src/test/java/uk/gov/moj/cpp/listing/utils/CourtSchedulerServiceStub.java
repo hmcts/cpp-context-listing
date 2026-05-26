@@ -53,6 +53,7 @@ public class CourtSchedulerServiceStub {
     private static final String PROVISIONAL_BOOKING = "/provisionalBooking";
     private static final String HEARING_SLOTS = "/hearingslots";
     private static final String VALIDATE_SESSION_AVAILABILITY = "/validate-session-availability";
+    private static final String SEARCH_COURT_SCHEDULES_BY_ID = "/courtschedule/search.court-schedules-by-id";
     private static final String CROWN_FALLBACK_SEARCH_BOOK = "/crownfallbacksearchandbook/hearingslots";
     private static final String CROWN_FALLBACK_SEARCH_BOOK_TYPE = "application/vnd.courtscheduler.crown.fallback.search.book.hearing.slots+json";
     private static final String COURTSCHEDULER_GET_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.get.hearing.slots+json";
@@ -130,6 +131,41 @@ public class CourtSchedulerServiceStub {
                 .withRequestBody(containing("duration"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody("{}")
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    /**
+     * Stub a successful response from /courtschedule/search.court-schedules-by-id for the given
+     * courtScheduleId. Returned wire shape mirrors what the real courtscheduler emits via
+     * {@code CourtSchedulerApi.searchCourtSchedulesById} - FLAT: each courtSchedules[] element
+     * is a single CourtSchedule with isDraft at the top level. The schema example in
+     * courtscheduler-api shows a misleading nested "sessions" structure copied from a different
+     * endpoint; never match the schema shape, match the wire shape.
+     *
+     * @param courtScheduleId the id under query
+     * @param isDraft         draft state to report - drives whether
+     *                        {@code listing.query.court.schedule.draft.status} returns
+     *                        {@code anyDraft=true} (strip) or {@code anyDraft=false} (preserve)
+     */
+    public static void stubSearchCourtSchedulesById(final String courtScheduleId, final boolean isDraft) {
+        final String body = "{\"courtSchedules\":[{\"courtScheduleId\":\"" + courtScheduleId
+                + "\",\"isDraft\":" + isDraft + "}]}";
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + SEARCH_COURT_SCHEDULES_BY_ID)))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(body)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    /**
+     * Stub /courtschedule/search.court-schedules-by-id to return a 500. Exercises the listing
+     * adapter's fail-closed path (anyDraft=true on courtscheduler error).
+     */
+    public static void stubSearchCourtSchedulesByIdServerError() {
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + SEARCH_COURT_SCHEDULES_BY_ID)))
+                .willReturn(aResponse().withStatus(500)
+                        .withBody("internal server error")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
