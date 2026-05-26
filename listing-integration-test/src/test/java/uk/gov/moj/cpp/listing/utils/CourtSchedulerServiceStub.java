@@ -148,9 +148,22 @@ public class CourtSchedulerServiceStub {
      *                        {@code listing.query.court.schedule.draft.status} returns
      *                        {@code anyDraft=true} (strip) or {@code anyDraft=false} (preserve)
      */
-    public static void stubSearchCourtSchedulesById(final String courtScheduleId, final boolean isDraft) {
+    /**
+     * Stub courtscheduler's search-court-schedules-by-id response with an explicit choice of
+     * draft-field name. Real-world Jackson serialisation of CourtSchedule emits one of:
+     *   - {@code "isDraft": <bool>} (from the setter convention)
+     *   - {@code "draft": <bool>}   (from the boolean-getter "is" prefix stripping)
+     * The parser must accept either, so tests assert both.
+     *
+     * @param courtScheduleId the id under query
+     * @param draftKey        wire field name to emit - either "isDraft" or "draft"
+     * @param draft           value for that field
+     */
+    public static void stubSearchCourtSchedulesByIdWithKey(final String courtScheduleId,
+                                                            final String draftKey,
+                                                            final boolean draft) {
         final String body = "{\"courtSchedules\":[{\"courtScheduleId\":\"" + courtScheduleId
-                + "\",\"isDraft\":" + isDraft + "}]}";
+                + "\",\"" + draftKey + "\":" + draft + "}]}";
         stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + SEARCH_COURT_SCHEDULES_BY_ID)))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(body)

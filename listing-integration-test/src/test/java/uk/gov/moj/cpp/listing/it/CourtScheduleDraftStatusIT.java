@@ -7,8 +7,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createReader;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchCourtSchedulesById;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchCourtSchedulesByIdServerError;
+
+import uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 
@@ -44,8 +45,26 @@ class CourtScheduleDraftStatusIT extends AbstractIT {
     private static final String NON_DRAFT_SCHEDULE_ID = "d474db0a-8c3e-4e0c-8f98-66ed7eda57f0";
 
     @Test
-    void shouldReturnAnyDraftTrueWhenCourtschedulerReportsDraftSession() {
-        stubSearchCourtSchedulesById(DRAFT_SCHEDULE_ID, true);
+    void shouldReturnAnyDraftTrueWhenCourtschedulerReportsDraftSessionUnderIsDraftKey() {
+        // Stubs the FLAT wire shape with the "isDraft" field name. Some Jackson configurations
+        // serialise the CourtSchedule.isDraft() getter as JSON property "isDraft"; the parser
+        // must handle this name.
+        CourtSchedulerServiceStub.stubSearchCourtSchedulesByIdWithKey(DRAFT_SCHEDULE_ID, "isDraft", true);
+
+        final Response response = postDraftStatusCheck(DRAFT_SCHEDULE_ID);
+
+        assertThat(response.getStatus(), is(OK.getStatusCode()));
+        final JsonObject body = readBody(response);
+        assertThat(body.getBoolean("anyDraft"), is(true));
+    }
+
+    @Test
+    void shouldReturnAnyDraftTrueWhenCourtschedulerReportsDraftSessionUnderDraftKey() {
+        // Stubs the FLAT wire shape with the "draft" field name. Jackson's default JavaBean
+        // convention for a boolean getter `isDraft()` strips the "is" prefix and serialises
+        // as JSON property "draft" - this was the field name the parser missed in the bug
+        // where curl returned anyDraft=false for a known-draft courtScheduleId.
+        CourtSchedulerServiceStub.stubSearchCourtSchedulesByIdWithKey(DRAFT_SCHEDULE_ID, "draft", true);
 
         final Response response = postDraftStatusCheck(DRAFT_SCHEDULE_ID);
 
@@ -56,7 +75,7 @@ class CourtScheduleDraftStatusIT extends AbstractIT {
 
     @Test
     void shouldReturnAnyDraftFalseWhenCourtschedulerReportsNonDraftSession() {
-        stubSearchCourtSchedulesById(NON_DRAFT_SCHEDULE_ID, false);
+        CourtSchedulerServiceStub.stubSearchCourtSchedulesByIdWithKey(NON_DRAFT_SCHEDULE_ID, "draft", false);
 
         final Response response = postDraftStatusCheck(NON_DRAFT_SCHEDULE_ID);
 
@@ -90,9 +109,9 @@ class CourtScheduleDraftStatusIT extends AbstractIT {
     }
 
     private static String requestPayload(final String courtScheduleId) {
+        // Request shape is a flat array of UUID strings - no per-entry object wrapping.
         return createObjectBuilder()
-                .add("courtScheduleIdList", createArrayBuilder()
-                        .add(createObjectBuilder().add("courtScheduleId", courtScheduleId)))
+                .add("courtScheduleIdList", createArrayBuilder().add(courtScheduleId))
                 .build()
                 .toString();
     }

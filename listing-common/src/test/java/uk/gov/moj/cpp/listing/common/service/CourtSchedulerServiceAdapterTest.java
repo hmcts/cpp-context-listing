@@ -334,24 +334,20 @@ class CourtSchedulerServiceAdapterTest {
     // ─── getCourtScheduleDraftStatus ─────────────────────────────────────────
 
     @Test
-    void getCourtScheduleDraftStatus_returnsTrueWhenAnySessionIsDraft() {
+    void getCourtScheduleDraftStatus_returnsTrueWhenSessionUsesIsDraftKey() {
         // Wire format from courtscheduler.search.court-schedules-by-id is FLAT - each
-        // courtSchedules[] element is a single CourtSchedule (one session) with isDraft
-        // at the top level. The schema/example file shows a misleading nested "sessions"
-        // structure copied from courtscheduler.get.court_schedule, but the actual response
-        // body is built via ListToJsonArrayConverter<CourtSchedule>.
-        final JsonObject schedulesResponse = javax.json.Json.createObjectBuilder()
-                .add("courtSchedules", javax.json.Json.createArrayBuilder()
-                        .add(javax.json.Json.createObjectBuilder()
-                                .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
-                                .add("isDraft", false))
-                        .add(javax.json.Json.createObjectBuilder()
-                                .add("courtScheduleId", "9e4932f7-97b2-3010-b942-ddd2624e4dd8")
-                                .add("isDraft", true)))
-                .build();
-        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
-        when(response.getEntity()).thenReturn(schedulesResponse);
-        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(response);
+        // courtSchedules[] element is a single CourtSchedule (one session). The boolean
+        // draft field may appear under either "isDraft" or "draft" depending on how
+        // Jackson resolves the getter/setter pair. This test pins the "isDraft" path.
+        givenSchedulesResponse(
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
+                        .add("isDraft", false)
+                        .build(),
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleId", "9e4932f7-97b2-3010-b942-ddd2624e4dd8")
+                        .add("isDraft", true)
+                        .build());
 
         final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
                 "f8254db1-1683-483e-afb3-b87fde5a0a26",
@@ -361,21 +357,61 @@ class CourtSchedulerServiceAdapterTest {
     }
 
     @Test
+    void getCourtScheduleDraftStatus_returnsTrueWhenSessionUsesDraftKey() {
+        // When Jackson's default boolean-getter convention applies, the wire field name is
+        // "draft" (the "is" prefix is stripped). Confirm we still pick it up so a Jackson
+        // configuration change doesn't silently break the strip in production.
+        givenSchedulesResponse(
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleId", "ea73df0c-2cbf-4f27-80ce-8b88ac1df702")
+                        .add("draft", true)
+                        .build());
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "ea73df0c-2cbf-4f27-80ce-8b88ac1df702"));
+
+        assertTrue(result.getBoolean("anyDraft"));
+    }
+
+    @Test
     void getCourtScheduleDraftStatus_returnsFalseWhenAllSessionsAreNonDraft() {
-        final JsonObject schedulesResponse = javax.json.Json.createObjectBuilder()
-                .add("courtSchedules", javax.json.Json.createArrayBuilder()
-                        .add(javax.json.Json.createObjectBuilder()
-                                .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
-                                .add("isDraft", false)))
-                .build();
-        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
-        when(response.getEntity()).thenReturn(schedulesResponse);
-        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(response);
+        givenSchedulesResponse(
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
+                        .add("isDraft", false)
+                        .build());
 
         final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
                 "f8254db1-1683-483e-afb3-b87fde5a0a26"));
 
         assertFalse(result.getBoolean("anyDraft"));
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_returnsFalseWhenAllSessionsAreNonDraftUnderDraftKey() {
+        givenSchedulesResponse(
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
+                        .add("draft", false)
+                        .build());
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "f8254db1-1683-483e-afb3-b87fde5a0a26"));
+
+        assertFalse(result.getBoolean("anyDraft"));
+    }
+
+    private void givenSchedulesResponse(final JsonObject... schedules) {
+        final javax.json.JsonArrayBuilder array = javax.json.Json.createArrayBuilder();
+        for (final JsonObject s : schedules) {
+            array.add(s);
+        }
+        final JsonObject schedulesResponse = javax.json.Json.createObjectBuilder()
+                .add("courtSchedules", array)
+                .build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(schedulesResponse);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(response);
     }
 
     @Test
@@ -413,7 +449,7 @@ class CourtSchedulerServiceAdapterTest {
     private static JsonObject buildRequest(final String... courtScheduleIds) {
         final javax.json.JsonArrayBuilder list = javax.json.Json.createArrayBuilder();
         for (final String id : courtScheduleIds) {
-            list.add(javax.json.Json.createObjectBuilder().add("courtScheduleId", id));
+            list.add(id);
         }
         return javax.json.Json.createObjectBuilder()
                 .add("courtScheduleIdList", list)
