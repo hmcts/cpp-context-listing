@@ -364,18 +364,18 @@ public class CourtSchedulerServiceAdapter {
         if (responseJson == null || responseJson.isEmpty() || !responseJson.containsKey("courtSchedules")) {
             return false;
         }
+        // The /courtschedule/search.court-schedules-by-id wire response is FLAT:
+        //   { "courtSchedules": [ { "courtScheduleId": "...", "isDraft": true|false, ... }, ... ] }
+        // Each array element is a single CourtSchedule (= one session). The schema/example
+        // file in courtscheduler-api declares a nested "sessions" array but that mirrors a
+        // different endpoint (courtscheduler.get.court_schedule). The actual implementation
+        // (CourtSchedulerApi.searchCourtSchedulesById) serialises List<CourtSchedule> flat
+        // via ListToJsonArrayConverter, so each entry's isDraft sits at the top level.
         final JsonArray schedules = responseJson.getJsonArray("courtSchedules");
         for (int i = 0; i < schedules.size(); i++) {
             final JsonObject schedule = schedules.getJsonObject(i);
-            if (!schedule.containsKey("sessions")) {
-                continue;
-            }
-            final JsonArray sessions = schedule.getJsonArray("sessions");
-            for (int j = 0; j < sessions.size(); j++) {
-                final JsonObject session = sessions.getJsonObject(j);
-                if (session.containsKey(IS_DRAFT) && !session.isNull(IS_DRAFT) && session.getBoolean(IS_DRAFT)) {
-                    return true;
-                }
+            if (schedule.containsKey(IS_DRAFT) && !schedule.isNull(IS_DRAFT) && schedule.getBoolean(IS_DRAFT)) {
+                return true;
             }
         }
         return false;

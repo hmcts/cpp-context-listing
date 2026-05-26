@@ -335,16 +335,19 @@ class CourtSchedulerServiceAdapterTest {
 
     @Test
     void getCourtScheduleDraftStatus_returnsTrueWhenAnySessionIsDraft() {
+        // Wire format from courtscheduler.search.court-schedules-by-id is FLAT - each
+        // courtSchedules[] element is a single CourtSchedule (one session) with isDraft
+        // at the top level. The schema/example file shows a misleading nested "sessions"
+        // structure copied from courtscheduler.get.court_schedule, but the actual response
+        // body is built via ListToJsonArrayConverter<CourtSchedule>.
         final JsonObject schedulesResponse = javax.json.Json.createObjectBuilder()
                 .add("courtSchedules", javax.json.Json.createArrayBuilder()
                         .add(javax.json.Json.createObjectBuilder()
-                                .add("sessions", javax.json.Json.createArrayBuilder()
-                                        .add(javax.json.Json.createObjectBuilder()
-                                                .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
-                                                .add("isDraft", false))
-                                        .add(javax.json.Json.createObjectBuilder()
-                                                .add("courtScheduleId", "9e4932f7-97b2-3010-b942-ddd2624e4dd8")
-                                                .add("isDraft", true)))))
+                                .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
+                                .add("isDraft", false))
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("courtScheduleId", "9e4932f7-97b2-3010-b942-ddd2624e4dd8")
+                                .add("isDraft", true)))
                 .build();
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.getEntity()).thenReturn(schedulesResponse);
@@ -362,10 +365,8 @@ class CourtSchedulerServiceAdapterTest {
         final JsonObject schedulesResponse = javax.json.Json.createObjectBuilder()
                 .add("courtSchedules", javax.json.Json.createArrayBuilder()
                         .add(javax.json.Json.createObjectBuilder()
-                                .add("sessions", javax.json.Json.createArrayBuilder()
-                                        .add(javax.json.Json.createObjectBuilder()
-                                                .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
-                                                .add("isDraft", false)))))
+                                .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
+                                .add("isDraft", false)))
                 .build();
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.getEntity()).thenReturn(schedulesResponse);
