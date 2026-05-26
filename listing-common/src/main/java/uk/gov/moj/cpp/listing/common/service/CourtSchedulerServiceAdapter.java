@@ -300,6 +300,21 @@ public class CourtSchedulerServiceAdapter {
         return response;
     }
 
+    public Response extendMultiDayHearing(final JsonObject requestPayload) {
+        final Response response = hearingSlotsService.extendMultiDayHearing(requestPayload);
+
+        if (HttpStatus.SC_OK == response.getStatus()) {
+            return response;
+        }
+
+        String responsePayload = "";
+        if (response.hasEntity()) {
+            responsePayload = response.getEntity().toString();
+        }
+        LOGGER.error("extendMultiDayHearing from courtscheduler returned an error : {} with status {}", responsePayload, response.getStatus());
+        return response;
+    }
+
     public HearingIdsResponse getCourtSchedulerHearings(final String ouCode,
                                                         final Optional<String> courtSessionOptional,
                                                         final String courtRoomId, final String startDate,

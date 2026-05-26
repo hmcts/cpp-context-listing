@@ -63,6 +63,9 @@ public class HearingSlotsService {
     private static final String CROWN_FALLBACK_SEARCH_BOOK_RESOURCE = "/crownfallbacksearchandbook/hearingslots";
     private static final String COURTSCHEDULER_CROWN_FALLBACK_SEARCH_BOOK = "application/vnd.courtscheduler.crown.fallback.search.book.hearing.slots+json";
 
+    private static final String EXTEND_MULTIDAY_RESOURCE = "/extendmultidayhearing/hearingslots";
+    private static final String COURTSCHEDULER_EXTEND_MULTIDAY = "application/vnd.courtscheduler.extend.multiday.hearing+json";
+
     private static final String CJS_CPP_UID = "CJSCPPUID";
     @Inject
     @Value(key = "courtscheduler.base.url", defaultValue = "http://localhost:8080/listingcourtscheduler-api/rest/courtscheduler")
@@ -80,6 +83,10 @@ public class HearingSlotsService {
 
     public Response validateSessionAvailability(final JsonObject payload) {
         return post(VALIDATE_SESSION_AVAILABILITY_RESOURCE, COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE, payload);
+    }
+
+    public Response extendMultiDayHearing(final JsonObject payload) {
+        return post(EXTEND_MULTIDAY_RESOURCE, COURTSCHEDULER_EXTEND_MULTIDAY, payload);
     }
 
     public Response searchBookSlots(final Map<String, String> params) {
@@ -251,22 +258,18 @@ public class HearingSlotsService {
                     ? Json.createObjectBuilder().build()
                     : stringToJsonObjectConverter.convert(responseBody);
 
+            final int statusCode = httpResponse.getStatusLine().getStatusCode();
             if (isOk(httpResponse)) {
                 if (LOGGER.isInfoEnabled()) {
                     LOGGER.info("Retrieve {} successfully", contentTypeHeader);
                 }
-                return Response
-                        .status(Response.Status.fromStatusCode(httpResponse.getStatusLine().getStatusCode()))
-                        .entity(entity)
-                        .build();
             } else {
-                LOGGER.error("Retrieve {} failed with status code:{}", contentTypeHeader,
-                        httpResponse.getStatusLine().getStatusCode());
-                return Response
-                        .status(Response.Status.fromStatusCode(httpResponse.getStatusLine().getStatusCode()))
-                        .entity(entity)
-                        .build();
+                LOGGER.error("Retrieve {} failed with status code:{}", contentTypeHeader, statusCode);
             }
+            return Response
+                    .status(statusCode)
+                    .entity(entity)
+                    .build();
         } catch (URISyntaxException | IOException ex) {
             LOGGER.error("Exception thrown on trying to Retrieving %s".formatted(contentTypeHeader), ex);
             return Response

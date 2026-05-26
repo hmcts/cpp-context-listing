@@ -265,6 +265,81 @@ public class CourtSchedulerServiceStub {
                 COURT_SCHEDULER_ENDPOINT + "/multidaysearchandbook/hearingslots")));
     }
 
+    // --- Extend multi-day hearing stubs (SPRDT-901: CROWN update-hearing-for-listing multi-day path) ---
+
+    private static final String EXTEND_MULTIDAY = "/extendmultidayhearing/hearingslots";
+    private static final String COURTSCHEDULER_EXTEND_MULTIDAY_TYPE =
+            "application/vnd.courtscheduler.extend.multiday.hearing+json";
+
+    /**
+     * Stub a successful POST to /extendmultidayhearing/hearingslots returning the supplied court schedule
+     * sessions, scoped to the supplied hearingId. SPRDT-901 routes CROWN multi-day updates here instead of
+     * the GET-based /multidaysearchandbook — courtscheduler receives the full duration and returns N
+     * sessions to use as the rebuilt hearingDays.
+     *
+     * <p><b>Scoping:</b> WireMock stubs persist across IT classes in the same suite. Without a body
+     * matcher, this stub would intercept every other IT that extends a CROWN hearing into multi-day
+     * (e.g. HearingCsvReportIT) and return these synthetic courtSchedules — corrupting their hearingDays.
+     * The hearingId body match makes the stub apply only to the test's own hearing.
+     */
+    public static void stubExtendMultiDayHearing(final String hearingId,
+                                                  final List<String> courtScheduleIds,
+                                                  final UUID courtHouseId,
+                                                  final UUID courtRoomId,
+                                                  final LocalDate firstSessionDate,
+                                                  final boolean isDraft) {
+        final StringBuilder body = new StringBuilder();
+        body.append("{\"courtSchedules\":[");
+        for (int i = 0; i < courtScheduleIds.size(); i++) {
+            if (i > 0) {
+                body.append(",");
+            }
+            final LocalDate sessionDate = firstSessionDate.plusDays(i);
+            body.append("{")
+                    .append("\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\",")
+                    .append("\"courtHouseId\":\"").append(courtHouseId).append("\",")
+                    .append("\"courtRoomId\":\"").append(courtRoomId).append("\",")
+                    .append("\"sessionDate\":\"").append(sessionDate).append("\",")
+                    .append("\"hearingStartTime\":\"").append(sessionDate).append("T09:00:00Z\",")
+                    .append("\"isDraft\":").append(isDraft)
+                    .append("}");
+        }
+        body.append("]}");
+
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + EXTEND_MULTIDAY)))
+                .withHeader(CONTENT_TYPE, containing(COURTSCHEDULER_EXTEND_MULTIDAY_TYPE))
+                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(body.toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    /**
+     * Verify that POST /extendmultidayhearing/hearingslots was called with a body containing the
+     * supplied hearingId and durationInMinutes. Proves SPRDT-901 routing: the CROWN multi-day update
+     * was sent to courtscheduler's new extension endpoint with the full requested duration.
+     */
+    public static void verifyExtendMultiDayHearingCalled(final String hearingId, final int durationInMinutes) {
+        Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
+            try {
+                WireMock.verify(WireMock.postRequestedFor(urlPathMatching(
+                        COURT_SCHEDULER_ENDPOINT + EXTEND_MULTIDAY))
+                        .withHeader(CONTENT_TYPE, containing(COURTSCHEDULER_EXTEND_MULTIDAY_TYPE))
+                        .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
+                        .withRequestBody(containing("\"durationInMinutes\":" + durationInMinutes)));
+                return true;
+            } catch (VerificationException e) {
+                return false;
+            }
+        });
+    }
+
+    /** Regression guard: single-day CROWN updates / non-CROWN updates must NOT call /extendmultidayhearing. */
+    public static void verifyExtendMultiDayHearingNeverCalled() {
+        WireMock.verify(0, WireMock.postRequestedFor(urlPathMatching(
+                COURT_SCHEDULER_ENDPOINT + EXTEND_MULTIDAY)));
+    }
+
     public static void stubValidateSessionAvailabilityFailure() {
         stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + VALIDATE_SESSION_AVAILABILITY)))
                 .withHeader("Content-Type", containing(COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE))
