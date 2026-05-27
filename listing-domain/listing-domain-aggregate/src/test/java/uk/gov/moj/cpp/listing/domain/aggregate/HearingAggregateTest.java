@@ -7934,7 +7934,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    void shouldNotAllocateCrownHearingWhenAnyHearingDayIsDraft() {
+    void shouldEmitHearingAllocatedForListingV2WhenCrownHearingHasSingleDraftSession() {
         final UUID crownHearingId = randomUUID();
         final UUID crownCourtRoomId = randomUUID();
 
@@ -7970,12 +7970,13 @@ class HearingAggregateTest {
         final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
         final List<Object> allocationEvents = allocationStream.toList();
 
-        // Should NOT allocate because isDraft=true
-        assertThat(allocationEvents.size(), is(0));
+        // Draft sessions must still emit allocation events so all 4 public events are raised
+        assertThat(allocationEvents.size(), is(1));
+        assertTrue(allocationEvents.get(0) instanceof HearingAllocatedForListingV2);
     }
 
     @Test
-    void shouldNotAllocateCrownHearingWhenMultiDayAndOneHearingDayIsDraft() {
+    void shouldEmitHearingAllocatedForListingV2WhenCrownMultiDayHearingHasOneDraftSession() {
         final UUID crownHearingId = randomUUID();
         final UUID crownCourtRoomId = randomUUID();
 
@@ -8016,8 +8017,9 @@ class HearingAggregateTest {
         final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
         final List<Object> allocationEvents = allocationStream.toList();
 
-        // Should NOT allocate because one hearingDay has isDraft=true
-        assertThat(allocationEvents.size(), is(0));
+        // Draft sessions must still emit allocation events so all 4 public events are raised
+        assertThat(allocationEvents.size(), is(1));
+        assertTrue(allocationEvents.get(0) instanceof HearingAllocatedForListingV2);
     }
 
     @Test
@@ -8396,5 +8398,202 @@ class HearingAggregateTest {
         hearing.apply(HearingListed.hearingListed().withHearing(listedBuilder.build()).build());
 
         assertThat(hearing.getCurrentHearingEventState().getEstimatedMinutes(), is(expected));
+    }
+
+    // SPRDT-860: Crown hearings with draft sessions must still emit allocation events
+
+    @Test
+    void shouldEmitHearingAllocatedForListingV2WhenCrownHearingHasAllDraftSessions() {
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay().withCourtScheduleId(randomUUID()).withIsDraft(true).build()))
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(now().plusDays(1))
+                        .withEndDate(now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(caseId)
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(defendantId)
+                                        .withOffences(Arrays.asList(Offence.offence().withId(offenceId).build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final List<Object> events = Stream.of(
+                hearing.applyAllocationRules(emptyList(), empty(), false, false, null))
+                .flatMap(i -> i).toList();
+
+        assertThat(events, hasSize(1));
+        assertTrue(events.get(0) instanceof HearingAllocatedForListingV2);
+    }
+
+    @Test
+    void shouldEmitHearingAllocatedForListingV2WhenCrownHearingHasMixedDraftAndNonDraftSessions() {
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay().withCourtScheduleId(randomUUID()).withIsDraft(false).build(),
+                                HearingDay.hearingDay().withCourtScheduleId(randomUUID()).withIsDraft(true).build()))
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(now().plusDays(1))
+                        .withEndDate(now().plusDays(2))
+                        .withEstimatedMinutes(60)
+                        .withEstimatedDuration("60 minutes")
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(caseId)
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(defendantId)
+                                        .withOffences(Arrays.asList(Offence.offence().withId(offenceId).build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final List<Object> events = Stream.of(
+                hearing.applyAllocationRules(emptyList(), empty(), false, false, null))
+                .flatMap(i -> i).toList();
+
+        assertThat(events, hasSize(1));
+        assertTrue(events.get(0) instanceof HearingAllocatedForListingV2);
+    }
+
+    @Test
+    void shouldEmitAllocatedHearingUpdatedForListingV2WhenAlreadyAllocatedCrownHearingHasDraftSessions() {
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay().withCourtScheduleId(randomUUID()).withIsDraft(false).build()))
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(now().plusDays(1))
+                        .withEndDate(now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(caseId)
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(defendantId)
+                                        .withOffences(Arrays.asList(Offence.offence().withId(offenceId).build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        hearing.apply(HearingAllocatedForListingV2.hearingAllocatedForListingV2()
+                .withHearingId(hearingId)
+                .withCourtRoomId(randomUUID())
+                .build());
+
+        hearing.apply(HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingId(hearingId)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay().withCourtScheduleId(randomUUID()).withIsDraft(true).build()))
+                .build());
+
+        final List<Object> events = Stream.of(
+                hearing.applyAllocationRules(emptyList(), empty(), false, false, null))
+                .flatMap(i -> i).toList();
+
+        assertThat(events, hasSize(1));
+        assertTrue(events.get(0) instanceof AllocatedHearingUpdatedForListingV2);
+    }
+
+    @Test
+    void shouldNotEmitAllocationEventsWhenCrownHearingHasDraftSessionsButMissingCourtRoom() {
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay().withCourtScheduleId(randomUUID()).withIsDraft(true).build()))
+                        .withStartDate(now().plusDays(1))
+                        .withEndDate(now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(caseId)
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(defendantId)
+                                        .withOffences(Arrays.asList(Offence.offence().withId(offenceId).build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final List<Object> events = Stream.of(
+                hearing.applyAllocationRules(emptyList(), empty(), false, false, null))
+                .flatMap(i -> i).toList();
+
+        assertThat(events, hasSize(0));
+    }
+
+    @Test
+    void shouldEmitHearingAllocatedForListingV2ViaBookingReferenceOverloadWhenCrownHearingHasDraftSessions() {
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay().withCourtScheduleId(randomUUID()).withIsDraft(true).build()))
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(now().plusDays(1))
+                        .withEndDate(now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(caseId)
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(defendantId)
+                                        .withOffences(Arrays.asList(Offence.offence().withId(offenceId).build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final List<Object> events = Stream.of(
+                hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null))
+                .flatMap(i -> i).toList();
+
+        assertThat(events, hasSize(1));
+        assertTrue(events.get(0) instanceof HearingAllocatedForListingV2);
     }
 }
