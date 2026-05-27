@@ -33,7 +33,7 @@
         <referencedata.version>17.103.131</referencedata.version>
         <documentgenerator-client.version>1.0.4</documentgenerator-client.version>
         <sardine.version>5.7</sardine.version>
-        <progression.version>17.0.262</progression.version>
+        <progression.version>17.0.260</progression.version>
 
         <org.xmlunit.version>2.6.3</org.xmlunit.version>    <!-- Version property added to common-bom:2.2.1. Replace with org.xmlunit.version after upgrade to Framework 6 -->
 
