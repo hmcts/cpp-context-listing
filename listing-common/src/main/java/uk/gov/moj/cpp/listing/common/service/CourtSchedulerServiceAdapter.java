@@ -64,7 +64,9 @@ public class CourtSchedulerServiceAdapter {
     private static final String SESSION_START_TIME = "sessionStartTime";
     private static final String SESSION_END_TIME = "sessionEndTime";
     private static final String IS_DRAFT = "isDraft";
+    private static final String DRAFT = "draft";
     private static final String OVERBOOKED = "overbooked";
+    private static final String ANY_DRAFT = "anyDraft";
     @Inject
     private HearingSlotsService hearingSlotsService;
     @Inject
@@ -298,6 +300,105 @@ public class CourtSchedulerServiceAdapter {
         }
         LOGGER.error("validateSessionAvailability from courtscheduler returned an error : {} with status {}", responsePayload, response.getStatus());
         return response;
+    }
+
+    /**
+     * Reports whether any of the supplied courtScheduleIds resolves to a DRAFT
+     * (unallocated) court-schedule session. Used by cpp-context-progression to
+     * decide whether to strip courtroom info from outgoing unallocated CROWN
+     * hearings before they are persisted or surfaced in notifications.
+     *
+     * <p>Fails-safe by reporting anyDraft=true when the downstream courtscheduler
+     * call fails - leaking a phantom courtroom is worse than dropping room info
+     * for what may actually be a confirmed-allocated hearing.
+     *
+     * @param requestPayload JSON object with a courtScheduleIdList array
+     * @return Response with body {"anyDraft": true|false}
+     */
+    public JsonObject getCourtScheduleDraftStatus(final JsonObject requestPayload) {
+        final List<String> courtScheduleIds = extractCourtScheduleIds(requestPayload);
+        if (courtScheduleIds.isEmpty()) {
+            return javax.json.Json.createObjectBuilder().add(ANY_DRAFT, false).build();
+        }
+
+        final Map<String, String> params = new HashMap<>();
+        params.put("courtScheduleIds", String.join(",", courtScheduleIds));
+
+        final Response response;
+        try {
+            response = hearingSlotsService.getCourtSchedulesById(params);
+        } catch (Exception ex) {
+            LOGGER.warn("courtscheduler getCourtSchedulesById threw {} for {} ids - failing-safe by returning anyDraft=true",
+                    ex.getClass().getSimpleName(), courtScheduleIds.size());
+            return javax.json.Json.createObjectBuilder().add(ANY_DRAFT, true).build();
+        }
+
+        if (response == null || HttpStatus.SC_OK != response.getStatus()) {
+            LOGGER.warn("courtscheduler getCourtSchedulesById returned status {} for {} ids - failing-safe by returning anyDraft=true",
+                    response == null ? "null" : response.getStatus(), courtScheduleIds.size());
+            return javax.json.Json.createObjectBuilder().add(ANY_DRAFT, true).build();
+        }
+
+        final boolean anyDraft = scanForDraftSession(objectToJsonObjectConverter.convert(response.getEntity()));
+        return javax.json.Json.createObjectBuilder().add(ANY_DRAFT, anyDraft).build();
+    }
+
+    private static List<String> extractCourtScheduleIds(final JsonObject requestPayload) {
+        if (requestPayload == null || !requestPayload.containsKey("courtScheduleIdList")) {
+            return Collections.emptyList();
+        }
+        // Wire shape: { "courtScheduleIdList": ["uuid", "uuid", ...] } - flat array of UUID
+        // strings. The caller is progression (or any inter-context system caller); we don't
+        // accept the object-wrapped {"courtScheduleId": "..."} form because every entry IS a
+        // UUID and the wrapper added nothing but ceremony.
+        final JsonArray list = requestPayload.getJsonArray("courtScheduleIdList");
+        final List<String> ids = new ArrayList<>();
+        for (int i = 0; i < list.size(); i++) {
+            if (list.isNull(i)) {
+                continue;
+            }
+            final String id = list.getString(i, null);
+            if (StringUtils.isNotBlank(id)) {
+                ids.add(id);
+            }
+        }
+        return ids;
+    }
+
+    private static boolean scanForDraftSession(final JsonObject responseJson) {
+        if (responseJson == null || responseJson.isEmpty() || !responseJson.containsKey("courtSchedules")) {
+            return false;
+        }
+        // The /courtschedule/search.court-schedules-by-id wire response is FLAT:
+        //   { "courtSchedules": [ {...one CourtSchedule (a session) per element...}, ... ] }
+        // Each array element is a single CourtSchedule. The schema/example file in
+        // courtscheduler-api shows a misleading nested "sessions" array copied from a
+        // different endpoint. The actual implementation serialises List<CourtSchedule> flat
+        // via ListToJsonArrayConverter -> ObjectMapper.writeValueAsString.
+        //
+        // The boolean draft field appears in the wire JSON under two possible names depending
+        // on how Jackson resolves the CourtSchedule pair `isDraft()` getter + `setIsDraft(...)`
+        // setter:
+        //
+        //   - getter `isDraft()` for a boolean -> Jackson conventionally exposes it as
+        //     property "draft" (the "is" prefix is stripped for boolean getters)
+        //   - setter `setIsDraft(...)`         -> Jackson exposes it as property "isDraft"
+        //
+        // The framework's ObjectMapperProducer doesn't configure either USE_GETTERS_AS_SETTERS
+        // or USE_STD_BEAN_NAMING explicitly, so we cover both names here. This means a future
+        // change to either getter or setter naming does not silently break the strip.
+        final JsonArray schedules = responseJson.getJsonArray("courtSchedules");
+        for (int i = 0; i < schedules.size(); i++) {
+            final JsonObject schedule = schedules.getJsonObject(i);
+            if (isTrue(schedule, IS_DRAFT) || isTrue(schedule, DRAFT)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isTrue(final JsonObject obj, final String key) {
+        return obj.containsKey(key) && !obj.isNull(key) && obj.getBoolean(key);
     }
 
     public HearingIdsResponse getCourtSchedulerHearings(final String ouCode,

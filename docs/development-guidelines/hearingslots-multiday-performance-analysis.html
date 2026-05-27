@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hearingSlots multi-day Crown — performance analysis &amp; fix plan</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --bg-soft: #161b22;
+    --bg-card: #1c232c;
+    --bg-code: #0a0d12;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --fg-dim: #6e7681;
+    --accent: #58a6ff;
+    --accent-soft: #1f6feb33;
+    --good: #3fb950;
+    --warn: #d29922;
+    --bad: #f85149;
+    --border: #30363d;
+    --border-soft: #21262d;
+    --radius: 8px;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #ffffff;
+      --bg-soft: #f6f8fa;
+      --bg-card: #ffffff;
+      --bg-code: #f6f8fa;
+      --fg: #1f2328;
+      --fg-muted: #57606a;
+      --fg-dim: #8c959f;
+      --accent: #0969da;
+      --accent-soft: #0969da18;
+      --good: #1a7f37;
+      --warn: #9a6700;
+      --bad: #cf222e;
+      --border: #d0d7de;
+      --border-soft: #d8dee4;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); }
+  body {
+    line-height: 1.55;
+    font-size: 15px;
+    padding: 32px 24px 80px;
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+    margin-bottom: 28px;
+  }
+  header .crumbs {
+    color: var(--fg-dim);
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  header .crumbs a { color: var(--fg-muted); text-decoration: none; }
+  header .crumbs a:hover { text-decoration: underline; }
+  h1 {
+    font-size: 26px;
+    line-height: 1.25;
+    margin: 0 0 10px;
+    letter-spacing: -0.01em;
+  }
+  header .meta {
+    color: var(--fg-muted);
+    font-size: 13px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  header .meta strong { color: var(--fg); font-weight: 600; }
+  h2 {
+    font-size: 20px;
+    margin: 36px 0 12px;
+    letter-spacing: -0.005em;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  h3 {
+    font-size: 16px;
+    margin: 24px 0 8px;
+    color: var(--fg);
+  }
+  p { margin: 10px 0; }
+  code, pre, .mono { font-family: var(--mono); }
+  code {
+    background: var(--bg-code);
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 13px;
+    border: 1px solid var(--border-soft);
+  }
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--fg);
+  }
+  pre code {
+    background: transparent;
+    padding: 0;
+    border: 0;
+    font-size: inherit;
+  }
+  .tldr {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin: 14px 0 22px;
+  }
+  .tldr strong { color: var(--accent); }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--bg-soft);
+    color: var(--fg-muted);
+    border: 1px solid var(--border);
+    vertical-align: 1px;
+  }
+  .badge.high { color: var(--bad); border-color: var(--bad); background: transparent; }
+  .badge.med { color: var(--warn); border-color: var(--warn); background: transparent; }
+  .badge.low { color: var(--good); border-color: var(--good); background: transparent; }
+  .grid-chain {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin: 16px 0;
+  }
+  .chain-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .chain-step .ix {
+    flex: 0 0 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: var(--bg-soft);
+    color: var(--fg-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+  }
+  .chain-step.hot { border-color: var(--bad); }
+  .chain-step.hot .ix { color: var(--bad); border-color: var(--bad); }
+  .chain-step .note {
+    margin-left: auto;
+    font-family: var(--sans);
+    color: var(--fg-muted);
+    font-size: 12px;
+  }
+  .findings {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin: 12px 0 8px;
+  }
+  .finding {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+  .finding header.f-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    border: none;
+    padding: 0;
+    margin: 0 0 8px;
+  }
+  .finding .f-num {
+    font-family: var(--mono);
+    color: var(--bad);
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .finding h3 {
+    margin: 0;
+    font-size: 15px;
+    color: var(--fg);
+  }
+  .finding p { margin: 6px 0; color: var(--fg); }
+  .finding .where { color: var(--fg-muted); font-size: 12px; font-family: var(--mono); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-soft);
+    vertical-align: top;
+  }
+  th {
+    background: var(--bg-soft);
+    color: var(--fg);
+    font-weight: 600;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:hover { background: var(--bg-soft); }
+  td.rank { font-family: var(--mono); color: var(--fg-muted); font-weight: 600; }
+  td.fix { font-weight: 600; }
+  ol.sequence {
+    counter-reset: seq;
+    list-style: none;
+    padding: 0;
+  }
+  ol.sequence li {
+    counter-increment: seq;
+    position: relative;
+    padding: 10px 14px 10px 44px;
+    margin: 8px 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+  }
+  ol.sequence li::before {
+    content: counter(seq);
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 22px;
+    background: var(--accent);
+    color: white;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .footer {
+    margin-top: 56px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-soft);
+    color: var(--fg-dim);
+    font-size: 12px;
+  }
+  .pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 6px 0 14px;
+  }
+  .pill {
+    background: var(--bg-soft);
+    border: 1px solid var(--border-soft);
+    color: var(--fg-muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .pill strong { color: var(--fg); font-weight: 600; }
+  .hot { color: var(--bad); }
+  .warn { color: var(--warn); }
+  .good { color: var(--good); }
+  .muted { color: var(--fg-muted); }
+  hr { border: 0; border-top: 1px solid var(--border-soft); margin: 28px 0; }
+  .callout {
+    background: var(--bg-soft);
+    border: 1px solid var(--border-soft);
+    border-left: 3px solid var(--warn);
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+  .callout strong { color: var(--warn); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="crumbs">cpp-context-listing &middot; docs/development-guidelines &middot; performance analysis</div>
+  <h1>hearingSlots endpoint &mdash; multi-day Crown timeout</h1>
+  <div class="meta">
+    <span><strong>Endpoint:</strong> <code>GET /listing-query-api/.../hearingSlots</code></span>
+    <span><strong>Symptom:</strong> request times out</span>
+    <span><strong>Branch:</strong> <code>team/ccsph2n</code></span>
+  </div>
+</header>
+
+<div class="tldr">
+  <strong>TL;DR.</strong> The multi-day Crown path forces an unpaginated <code>pageSize=10000</code> fetch over an extended date window, runs the same heavy SQL twice (once to count, once to page), groups by 25 columns with a <code>LEFT JOIN allocated_listings</code>, has no index matching the actual predicate set, and logs the full entity list at INFO. Several O(N) costs stack &mdash; alone any one would be tolerable, together they exceed the request budget.
+</div>
+
+<h2>1 &middot; Request under analysis</h2>
+<pre><code>curl -X GET --location "https://steccm72.ingress01.dev.nl.cjscp.org.uk/listing-query-api/query/api/rest/listing/hearingSlots\
+?sessionStartDate=2026-05-07\
+&amp;sessionEndDate=2026-06-07\
+&amp;panel=ADULT,YOUTH\
+&amp;isSlotBased=false\
+&amp;isMultiday=true\
+&amp;availableDurationMins=720\
+&amp;status=FINAL\
+&amp;jurisdiction=CROWN\
+&amp;oucodeL2Code=1\
+&amp;courtSession=AD\
+&amp;pageNumber=1&amp;pageSize=10" \
+  -H "Accept: application/vnd.listing.search.hearing.slots+json" \
+  -H "CJSCPPUID: abce7b02-7872-4c0d-8ffc-a475fafd2819"</code></pre>
+
+<div class="pill-row">
+  <span class="pill">jurisdiction <strong>CROWN</strong></span>
+  <span class="pill">duration <strong>720 min</strong> (2 days)</span>
+  <span class="pill">window <strong>31 days</strong></span>
+  <span class="pill">panel <strong>ADULT, YOUTH</strong></span>
+  <span class="pill">session <strong>AD</strong></span>
+  <span class="pill">status <strong>FINAL</strong></span>
+  <span class="pill">oucodeL2Code <strong>1</strong></span>
+  <span class="pill">requested pageSize <strong>10</strong></span>
+</div>
+
+<p>
+  Because <code>jurisdiction=CROWN</code> and <code>duration &gt; 360</code>, the courtscheduler enters the multi-day branch
+  <code>SlotsSearchService.getMultidayCourtSchedules</code>. The URL's <code>isMultiday=true</code> is informational
+  &mdash; the server decides via <code>isMultidayCrownSearch(param)</code>.
+</p>
+
+<h2>2 &middot; Request chain</h2>
+<div class="grid-chain">
+  <div class="chain-step"><span class="ix">1</span><span>GET /hearingSlots &rarr; DefaultQueryApiHearingSlotsResource</span><span class="note">listing-query-api</span></div>
+  <div class="chain-step"><span class="ix">2</span><span>CourtSchedulerServiceAdapter.hearingSlotsSearch(params)</span><span class="note">HTTP / JMS hop</span></div>
+  <div class="chain-step"><span class="ix">3</span><span>CourtSchedulerApi.getHearingSlots @Handles courtscheduler.get.hearing.slots</span><span class="note">courtscheduler</span></div>
+  <div class="chain-step"><span class="ix">4</span><span>SlotsSearchService.search &rarr; isMultidayCrownSearch?</span><span class="note">CROWN + 720 &gt; 360 &rarr; yes</span></div>
+  <div class="chain-step hot"><span class="ix">5</span><span>getMultidayCourtSchedules &mdash; forces pageSize=10000, extends end date by weekendBuffer</span><span class="note">hot path</span></div>
+  <div class="chain-step hot"><span class="ix">6</span><span>CourtScheduleRepository.getCourtSchedules &mdash; runs heavy SQL <em>twice</em> (count + page)</span><span class="note">DB hits 1+2</span></div>
+  <div class="chain-step"><span class="ix">7</span><span>processScheduleEntities &rarr; allocated_listings + court_schedule_judiciary lookups</span><span class="note">DB hits 3+4</span></div>
+  <div class="chain-step hot"><span class="ix">8</span><span>filterForMultidayAvailability &mdash; group by room, walk daysNeeded consecutively</span><span class="note">Java post-process</span></div>
+  <div class="chain-step"><span class="ix">9</span><span>removeIf(sessionDate &gt; originalEndDate) &mdash; throw away look-ahead rows</span><span class="note">wasted work</span></div>
+  <div class="chain-step"><span class="ix">10</span><span>in-memory subList for the requested page</span><span class="note">finally pageSize=10</span></div>
+</div>
+
+<h2>3 &middot; Findings, in order of impact</h2>
+
+<div class="findings">
+
+  <article class="finding">
+    <header class="f-head">
+      <span class="f-num">#1</span>
+      <h3>Multi-day path discards <code>pageSize=10</code> and refetches with <code>pageSize=10000</code> on an extended window</h3>
+      <span class="badge high">High</span>
+    </header>
+    <p class="where">SlotsSearchService.java &middot; lines ~89&ndash;110</p>
+    <p>
+      For your request, <code>daysNeeded = 720 / 360 = 2</code> and
+      <code>weekendBuffer = 2 * ((2/5) + 1) = 2</code>, so the discovery window becomes
+      <strong>31 + (2 &minus; 1) + 2 = 34 days</strong>. The repository is then called with
+      <code>UNPAGINATED_PAGE_SIZE = "10000"</code>, fetching every matching row in that window
+      before any pagination is applied.
+    </p>
+    <p class="muted">Why it matters: across all rooms in <code>oucodeL2Code=1</code> with panels ADULT&plus;YOUTH and AD sessions over 34 days, this is typically thousands of rows.</p>
+  </article>
+
+  <article class="finding">
+    <header class="f-head">
+      <span class="f-num">#2</span>
+      <h3>The repository runs the same heavy SQL <em>twice</em> just to know <code>totalCount</code></h3>
+      <span class="badge high">High</span>
+    </header>
+    <p class="where">CourtScheduleRepository.getCourtSchedules &middot; lines 990&ndash;1014</p>
+<pre><code>String countQuery = buildFullQuery(requestParam).replace(GET_HEARING_SLOTS_QUERY_PAGINATION, "");
+List&lt;CourtSchedule&gt; allSchedules = executeQuery(countQuery, queryParamsForCount);
+int totalCount = allSchedules.size();      // entire result set materialised just to .size() it
+
+String paginatedQuery = buildFullQuery(requestParam);
+List&lt;CourtSchedule&gt; paginatedSchedules = executeQuery(paginatedQuery, queryParamsForResult);</code></pre>
+    <p>The "count" branch isn't a <code>SELECT COUNT(*)</code> &mdash; it pulls every column for every row, then takes <code>.size()</code> of the list. Paired with <strong>#1</strong>, the two queries do near-identical work twice per request.</p>
+  </article>
+
+  <article class="finding">
+    <header class="f-head">
+      <span class="f-num">#3</span>
+      <h3>The base query groups by 25 columns and aggregates over a <code>LEFT JOIN allocated_listings</code></h3>
+      <span class="badge high">High</span>
+    </header>
+    <p class="where">CourtScheduleRepository.GET_HEARING_SLOTS_QUERY_GROUP_BY &middot; line ~325</p>
+    <p>
+      The SELECT computes three <code>SUM(CASE WHEN ...)</code> aggregates
+      (<code>totalbookedformorning</code>, <code>totalbookedforafternoon</code>, <code>totalbooked</code>)
+      against the joined <code>allocated_listings</code>, then collapses through a 25-column <code>GROUP BY</code> on
+      <code>cs.id, cs.court_listing_profile_id, cs.oucode, cs.court_room_id, cs.court_room_number, cs.court_house_id, cs.court_house_name, cs.court_room_name, cs.operational_unit, cs.rota_business_type, cs.panel, cs.court_session, cs.active, cs.is_slot_based, cs.session_start, cs.max_slot, cs.max_duration_mins, cs.available_slot, cs.available_duration_mins, cs.support_ad_split, cs.max_ad_morning_duration, cs.max_ad_afternoon_duration, cs.is_overbooking_allowed, cs.is_draft, cs.jurisdiction</code>.
+      The wide GROUP BY plus join expansion is where Postgres spends most of its time on this query.
+    </p>
+  </article>
+
+  <article class="finding">
+    <header class="f-head">
+      <span class="f-num">#4</span>
+      <h3>No index covers the actual predicate set</h3>
+      <span class="badge high">High</span>
+    </header>
+    <p class="where">liquibase changesets 006, 010, 014, 036, 051</p>
+    <table>
+      <thead>
+        <tr><th>Index</th><th>Columns</th><th>Helps this query?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>compo_panel_idx</code></td><td><code>(panel, session_start, oucode, rota_business_type, court_session, court_house_name, court_room_name, available_duration_mins, active)</code></td><td>Partially &mdash; leading <code>panel</code> matches <code>IN ('ADULT','YOUTH')</code> but the planner often skips this with multi-value IN.</td></tr>
+        <tr><td><code>court_schedule_oucode_session_start_idx</code></td><td><code>(oucode, session_start)</code></td><td><span class="hot">No</span> &mdash; this query filters by <code>operational_unit</code>, not <code>oucode</code>.</td></tr>
+        <tr><td><code>court_act_business_date_session_idx_am/_pm</code></td><td><code>(oucode, court_room_id, rota_business_type, session_start, court_session, is_draft)</code> partial <code>WHERE active</code></td><td><span class="hot">No</span> &mdash; same <code>oucode</code> mismatch, and no <code>court_room_id</code> filter in this query.</td></tr>
+        <tr><td><code>idx_court_schedule_act_sst</code></td><td><code>(active, session_start)</code></td><td>Weak &mdash; <code>active</code> has very low selectivity.</td></tr>
+      </tbody>
+    </table>
+    <p>Combined predicate the planner sees: <code>active</code> &amp; <code>operational_unit</code> &amp; <code>panel IN (...)</code> &amp; <code>session_start BETWEEN ...</code> &amp; <code>is_draft</code> &amp; <code>jurisdiction</code> &amp; <code>court_session IN (...)</code> &amp; <code>is_slot_based</code>. No index supports this shape, so Postgres falls back to a sequential scan of <code>court_schedule</code>.</p>
+  </article>
+
+  <article class="finding">
+    <header class="f-head">
+      <span class="f-num">#5</span>
+      <h3>INFO-level logging serialises the full entity list each request</h3>
+      <span class="badge med">Med</span>
+    </header>
+    <p class="where">CourtScheduleRepository.getCourtSchedules &middot; lines 997, 1004</p>
+<pre><code>LOGGER.info("GET_HEARING_SLOTS_QUERY_MANDATORY_PARAMS ******* allSchedules : {}", allSchedules);
+...
+LOGGER.info("GET_HEARING_SLOTS_QUERY_MANDATORY_PARAMS ******* paginatedSchedules : {}", paginatedSchedules);</code></pre>
+    <p>SLF4J's <code>{}</code> is lazy-evaluated but still calls <code>toString()</code> on every element when INFO is enabled. With 10,000 entities of ~30 fields, that is a measurable per-request cost on top of the DB time.</p>
+  </article>
+
+  <article class="finding">
+    <header class="f-head">
+      <span class="f-num">#6</span>
+      <h3><code>filterForMultidayAvailability</code> is <code>O(rooms &times; days &times; daysNeeded)</code> in Java</h3>
+      <span class="badge med">Med</span>
+    </header>
+    <p class="where">SlotsSearchService.java &middot; lines 139&ndash;170</p>
+    <p>After the DB hit, schedules are grouped by <code>courtRoomId + businessType + ouCode</code>, each group is sorted, and for each schedule the code walks <code>daysNeeded</code> forward calling <code>isValidMultidayStart</code>. With many rooms over a 34-day window the post-processing isn't trivial &mdash; but it's dwarfed by the DB cost in items <strong>#1&ndash;#4</strong>.</p>
+  </article>
+
+  <article class="finding">
+    <header class="f-head">
+      <span class="f-num">#7</span>
+      <h3>The look-ahead window is queried, aggregated, then thrown away</h3>
+      <span class="badge low">Low</span>
+    </header>
+    <p class="where">SlotsSearchService.getMultidayCourtSchedules &middot; line ~123</p>
+<pre><code>multidayResults.removeIf(cs -&gt; cs.getSessionDate().isAfter(originalEndDate));</code></pre>
+    <p>The weekend-buffer days exist only to validate the last few candidate starts. They are pulled, joined, aggregated, deduplicated, grouped, then discarded.</p>
+  </article>
+
+</div>
+
+<h2>4 &middot; Recommended fixes, ranked by ROI</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Fix</th>
+      <th>Effort</th>
+      <th>Impact</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="rank">1</td>
+      <td class="fix">Eliminate the double DB hit</td>
+      <td><span class="badge low">Low</span></td>
+      <td><span class="badge high">High</span></td>
+      <td>Use <code>COUNT(*) OVER ()</code> as an extra column in <code>GET_HEARING_SLOTS_QUERY_GROUP_BY</code> and read it from the first row. Drop the separate count query and the <code>.size()</code>-on-full-list pattern. Pure repository change; no API change.</td>
+    </tr>
+    <tr>
+      <td class="rank">2</td>
+      <td class="fix">Demote INFO logs / stop logging entity lists</td>
+      <td><span class="badge low">Trivial</span></td>
+      <td><span class="badge med">Med</span></td>
+      <td>The three <code>LOGGER.info(... : {}, allSchedules/paginatedSchedules)</code> lines in <code>getCourtSchedules</code> should log <code>.size()</code> only, or move to DEBUG.</td>
+    </tr>
+    <tr>
+      <td class="rank">3</td>
+      <td class="fix">Add a composite index that matches the real predicate shape</td>
+      <td><span class="badge low">Low</span></td>
+      <td><span class="badge high">High</span></td>
+      <td>Candidate: <code>(operational_unit, panel, jurisdiction, session_start, is_draft, court_session) WHERE active = true</code>. Validate with <code>EXPLAIN ANALYZE</code> against ste data. Single liquibase changeset; use <code>CREATE INDEX CONCURRENTLY</code> in prod-like envs.</td>
+    </tr>
+    <tr>
+      <td class="rank">4</td>
+      <td class="fix">Slim the multi-day "discovery" query to a lightweight projection</td>
+      <td><span class="badge med">Med</span></td>
+      <td><span class="badge high">High</span></td>
+      <td>When <code>isMultidayCrownSearch</code>, run a thin <code>SELECT</code> (no <code>LEFT JOIN allocated_listings</code>, no <code>SUM(CASE WHEN)</code>, narrow column set) just to find <em>which</em> rooms have <code>daysNeeded</code> consecutive sessions. Re-hydrate only the surviving rows via <code>getCourtSchedulesByIdList</code>. The expensive aggregation then runs on ~10 rows instead of ~10k.</td>
+    </tr>
+    <tr>
+      <td class="rank">5</td>
+      <td class="fix">Push consecutive-availability into SQL with a window function</td>
+      <td><span class="badge med">High</span></td>
+      <td><span class="badge high">High</span></td>
+      <td>Use the <code>session_start - row_number() OVER (PARTITION BY court_room_id ORDER BY session_start)</code> "consecutive island" trick to find <code>daysNeeded</code>-blocks inside the DB, then <code>LIMIT pageSize OFFSET ...</code>. Eliminates the unpaginated fetch and the Java group/walk entirely. Worth attempting only after #1&ndash;#4.</td>
+    </tr>
+    <tr>
+      <td class="rank">6</td>
+      <td class="fix">Cap the date window at the validator</td>
+      <td><span class="badge low">Trivial</span></td>
+      <td><span class="badge med">Med</span></td>
+      <td>Reject Crown multi-day requests where <code>sessionEndDate - sessionStartDate &gt; 31</code> (or 14) days. Defensive only; doesn't fix the underlying cost, but stops runaway queries from scripted callers and UI bugs.</td>
+    </tr>
+    <tr>
+      <td class="rank">7</td>
+      <td class="fix">Drop the look-ahead-throwaway pattern</td>
+      <td><span class="badge low">Low</span></td>
+      <td><span class="badge low">Low</span></td>
+      <td>Query only the original window; short-circuit <code>isValidMultidayStart</code> when the remaining days run past <code>originalEndDate</code>. Pairs naturally with #4.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <strong>Why "two queries, no LIMIT" is the anti-pattern to fix first.</strong>
+  It's a classic shape when pagination is bolted on after the fact &mdash; the count branch grew into a full row fetch because someone needed <code>totalCount</code> and didn't have the appetite to refactor the SQL. The fix is small and self-contained; it halves DB load even before any index work.
+</div>
+
+<h2>5 &middot; Suggested sequencing</h2>
+
+<ol class="sequence">
+  <li>
+    <strong>Quick wins.</strong> Fix #1 and #2 together in one PR. Roughly 20 lines, instantly halves DB cost and removes log overhead. Safe to ship by itself.
+  </li>
+  <li>
+    <strong>Index.</strong> Fix #3 in a single liquibase changeset. Coordinate the <code>EXPLAIN ANALYZE</code> on a ste-equivalent dataset; in any live environment use <code>CREATE INDEX CONCURRENTLY</code>.
+  </li>
+  <li>
+    <strong>Architectural fix.</strong> Fix #4 &mdash; the slim discovery query is where the multi-day path really wants to land. Own PR with new repository method, integration tests for the discovery + re-hydrate pattern.
+  </li>
+  <li>
+    <strong>Only if still over SLA.</strong> Move on to #5, #6, #7 &mdash; each is independently safe but worth measuring before adopting.
+  </li>
+</ol>
+
+<h2>6 &middot; Where the code lives</h2>
+
+<table>
+  <thead><tr><th>Layer</th><th>File</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Endpoint</td>
+      <td><code>cpp-context-listing / listing-query / listing-query-api / DefaultQueryApiHearingSlotsResource.java</code></td>
+    </tr>
+    <tr>
+      <td>Adapter</td>
+      <td><code>cpp-context-listing / .../adapter/CourtSchedulerServiceAdapter.java</code></td>
+    </tr>
+    <tr>
+      <td>Handler</td>
+      <td><code>cpp-context-listing-courtscheduler / .../api/CourtSchedulerApi.java @Handles courtscheduler.get.hearing.slots</code></td>
+    </tr>
+    <tr>
+      <td>Service (multi-day branch)</td>
+      <td><code>cpp-context-listing-courtscheduler / .../api/service/SlotsSearchService.java</code></td>
+    </tr>
+    <tr>
+      <td>Repository (heavy SQL)</td>
+      <td><code>cpp-context-listing-courtscheduler / .../repository/CourtScheduleRepository.java</code></td>
+    </tr>
+    <tr>
+      <td>Indexes</td>
+      <td><code>cpp-context-listing-courtscheduler / .../viewstore-liquibase / 006, 010, 014, 036, 051 changesets</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="footer">
+  Analysis only &mdash; no code changes have been made for the findings above. Multi-day Java comparator and the reverted single-day SQL <code>ORDER BY</code> from PR #819 / PR #824 are independent of this performance issue.
+</div>
+
+</body>
+</html>
