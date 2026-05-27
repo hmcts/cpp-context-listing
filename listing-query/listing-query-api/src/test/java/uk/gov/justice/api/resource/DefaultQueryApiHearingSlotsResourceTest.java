@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
@@ -242,6 +243,39 @@ class DefaultQueryApiHearingSlotsResourceTest {
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(paramsCaptor.capture());
         final Map<String, String> params = paramsCaptor.getValue();
         assertEquals("ALL", params.get("status"));
+    }
+
+    @Test
+    void searchHearingSlots_skipsDraftSlotsWithoutCourtRoomId() {
+        // ADR-005: courtscheduler now strips courtRoomId from draft sessions. Note enrichment is
+        // keyed on (courtRoomId, sessionDate), so a draft slot lacking courtRoomId must be skipped
+        // rather than fed to UUID.fromString(null) — which would throw.
+        final JsonObject draftResponseBody = Json.createObjectBuilder()
+                .add("results", 2)
+                .add("pageCount", 1)
+                .add("hearingSlots", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder()
+                                .add("courtRoomId", "001c067d-eaca-4ce5-ad90-a366ef3e4bb6")
+                                .add("sessionDate", "2020-10-11"))
+                        .add(Json.createObjectBuilder()
+                                .add("sessionDate", "2020-10-12")))
+                .build();
+        final Response draftResponse = Response.status(Response.Status.OK).entity(draftResponseBody).build();
+        when(courtSchedulerServiceAdapter.hearingSlotsSearch(any(Map.class))).thenReturn(draftResponse);
+        when(notesService.findNotes(any(List.class))).thenReturn(new ArrayList());
+
+        final ArgumentCaptor<List> notesCaptor = ArgumentCaptor.forClass(List.class);
+
+        final Response result = queryApiHearingSlotsResource.getHearingSlots("ADULT",
+                "2017-10-11", "2020-10-11", null, "BAOOUS", "BAOOUS",
+                "001c067d-eaca-4ce5-ad90-a366ef3e4bb6", "1234", "BYS", "AM",
+                null, null, "20", "1", 20, null, "CROWN");
+
+        verify(notesService).findNotes(notesCaptor.capture());
+        assertEquals(1, notesCaptor.getValue().size());
+        final JsonObject payload = (JsonObject) result.getEntity();
+        assertNotNull(payload.getJsonArray("hearingSlots"));
+        assertEquals(2, payload.getJsonArray("hearingSlots").size());
     }
 
     private JsonObject createJsonObject() {
