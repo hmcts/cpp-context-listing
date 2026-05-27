@@ -28,6 +28,7 @@ import static uk.gov.justice.services.common.converter.LocalDates.from;
 @Adapter(Component.QUERY_API)
 public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlotsResource {
 
+    private static final String SESSION_DATE = "sessionDate";
     @Inject
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
 
@@ -126,8 +127,9 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
 
     private  JsonArray convertToNotes(JsonArray hearings){
         final List<NoteUUIDService.ListingNotesCollection> notes = hearings.stream().map(h -> (JsonObject) h).
-                filter(h -> h.containsKey(COURT_ROOM_ID) && !h.isNull(COURT_ROOM_ID)).
-                map( h -> new NoteUUIDService.ListingNotesCollection(fromString(h.getString(COURT_ROOM_ID)), from(h.getString("sessionDate"))))
+                filter(h -> h.containsKey(COURT_ROOM_ID) && !h.isNull(COURT_ROOM_ID)
+                        && h.containsKey(SESSION_DATE) && !h.isNull(SESSION_DATE)).
+                map( h -> new NoteUUIDService.ListingNotesCollection(fromString(h.getString(COURT_ROOM_ID)), from(h.getString(SESSION_DATE))))
                 .toList();
         return listToJsonArrayConverter.convert(notesService.findNotes(notes));
     }

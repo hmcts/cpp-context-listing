@@ -8,6 +8,7 @@ import static uk.gov.moj.cpp.listing.command.api.service.HearingDurationEnrichme
 
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.JurisdictionType;
+import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.commands.HearingDay;
@@ -63,12 +64,16 @@ public class HearingEnrichmentOrchestrator {
                 enrichedHearings.add(withCourtSchedules);
             } else if (JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
                 LOGGER.info("Enrich list court hearing for CROWN hearingid: {} fallbackSource: {}", hearing.getId(), crownFallbackSource);
-                if (hasCourtScheduleId(hearing)) {
+                // CROWN next-hearing (list-next-hearings-v2) carries the chosen courtScheduleId in the
+                // bookingReference (Crown has no provisional-booking concept). Promote it onto a bookedSlot
+                // so the CourtSchedule-first flow below resolves the session/room. See helper javadoc.
+                final HearingListingNeeds crownHearing = promoteCrownBookingReferenceToBookedSlot(hearing);
+                if (hasCourtScheduleId(crownHearing)) {
                     // CROWN with courtScheduleId (bookedSlots or hearingDays): CourtSchedule-first flow
                     // expands multi-day into N hearingDays, then HearingDays computes start/end,
                     // then Duration runs.
                     HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(
-                            hearing, crownFallbackSource);
+                            crownHearing, crownFallbackSource);
                     HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(withCourtSchedules, envelope);
                     HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
                     enrichedHearings.add(stripRoomInfoIfAnyDraft(withDurations));
@@ -78,7 +83,7 @@ public class HearingEnrichmentOrchestrator {
                     // (wired via enrichCrownCourtScheduleFirst direct call with no courtScheduleId);
                     // the default list-court-hearing path preserves legacy enrichment so existing
                     // IT fixtures (without courtscheduler-seeded sessions) continue to pass.
-                    HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(hearing, envelope);
+                    HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(crownHearing, envelope);
                     HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
                     HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDurations, envelope);
                     enrichedHearings.add(stripRoomInfoIfAnyDraft(withCourtSchedules));
@@ -307,6 +312,37 @@ public class HearingEnrichmentOrchestrator {
                 .mapToInt(hearingDay -> hearingDay.getDurationMinutes() != null ?
                         hearingDay.getDurationMinutes() : DEFAULT_MIN)
                 .sum();
+    }
+
+    /**
+     * CROWN list-next-hearings-v2 carries the chosen courtScheduleId in {@code bookingReference}
+     * (Crown has no provisional-booking concept — the id IS a court-schedule session id). The
+     * CourtSchedule-first enrichment keys off a courtScheduleId on hearingDays/bookedSlots, so we
+     * promote the bookingReference onto a synthetic bookedSlot before the {@link #hasCourtScheduleId}
+     * gate. Without this, the hearing falls through to the legacy allocation-candidate path and is
+     * listed unallocated (no room, no courtScheduleId on the day). Mirrors
+     * {@code CourtScheduleEnrichmentService.mergeCourtScheduleIdsFromNonDefaultDays} on the update path.
+     *
+     * <p>The duration is copied from {@code estimatedMinutes} so {@code calculateAggregatedDuration}
+     * still drives the single-day vs multi-day decision; multi-day enrichment anchors off
+     * {@code bookedSlots[0].courtScheduleId}. No-op unless jurisdiction-agnostic guards hold:
+     * a bookingReference is present and no courtScheduleId already exists.
+     */
+    private static HearingListingNeeds promoteCrownBookingReferenceToBookedSlot(final HearingListingNeeds hearing) {
+        if (isNull(hearing.getBookingReference()) || hasCourtScheduleId(hearing)) {
+            return hearing;
+        }
+        final RotaSlot bookedSlot = RotaSlot.rotaSlot()
+                .withCourtScheduleId(hearing.getBookingReference().toString())
+                .withDuration(hearing.getEstimatedMinutes())
+                .withStartTime(hearing.getListedStartDateTime())
+                .build();
+        LOGGER.info("CROWN list: promoting bookingReference {} onto a bookedSlot courtScheduleId for hearingId {}",
+                hearing.getBookingReference(), hearing.getId());
+        return HearingListingNeeds.hearingListingNeeds()
+                .withValuesFrom(hearing)
+                .withBookedSlots(List.of(bookedSlot))
+                .build();
     }
 
     /**
