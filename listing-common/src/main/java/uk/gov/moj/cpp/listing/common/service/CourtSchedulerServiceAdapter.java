@@ -436,6 +436,7 @@ public class CourtSchedulerServiceAdapter {
         businessTypeOptional.ifPresent(businessType -> queryParams.put(BUSINESS_TYPE, businessType));
         jurisdiction.ifPresent(j -> queryParams.put(JURISDICTION, j));
         exactHearingStartDateTime.ifPresent(s -> queryParams.put(EXACT_HEARING_START_DATETIME, s.toString()));
+
         final Response hearingsResponse = getCourtSchedulerHearingIds(queryParams);
 
         return getHearingIds(hearingsResponse);
