@@ -194,3 +194,12 @@ rule "Query - API - listing.query.download-hearing-csv-report"
   then
     $outcome.setSuccess(true);
 end
+
+rule "Query - API - listing.query.court.schedule.draft.status"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.query.court.schedule.draft.status");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.SYSTEM_USERS));
+  then
+    $outcome.setSuccess(true);
+end

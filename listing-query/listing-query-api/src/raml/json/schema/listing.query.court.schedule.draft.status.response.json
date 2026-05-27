@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/query/listing.query.court.schedule.draft.status.response.json",
+  "type": "object",
+  "properties": {
+    "anyDraft": {
+      "type": "boolean",
+      "description": "True if at least one of the supplied courtScheduleIds resolves to a DRAFT session. Callers use this to detect unallocated hearings and strip courtroom info from outgoing events / notifications."
+    }
+  },
+  "required": [
+    "anyDraft"
+  ],
+  "additionalProperties": false
+}

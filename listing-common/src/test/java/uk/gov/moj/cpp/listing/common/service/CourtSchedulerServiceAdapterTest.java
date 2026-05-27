@@ -371,4 +371,129 @@ class CourtSchedulerServiceAdapterTest {
                         Optional.empty(), Optional.empty(),
                         uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING));
     }
+
+    // ─── getCourtScheduleDraftStatus ─────────────────────────────────────────
+
+    @Test
+    void getCourtScheduleDraftStatus_returnsTrueWhenSessionUsesIsDraftKey() {
+        // Wire format from courtscheduler.search.court-schedules-by-id is FLAT - each
+        // courtSchedules[] element is a single CourtSchedule (one session). The boolean
+        // draft field may appear under either "isDraft" or "draft" depending on how
+        // Jackson resolves the getter/setter pair. This test pins the "isDraft" path.
+        givenSchedulesResponse(
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
+                        .add("isDraft", false)
+                        .build(),
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleId", "9e4932f7-97b2-3010-b942-ddd2624e4dd8")
+                        .add("isDraft", true)
+                        .build());
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                "9e4932f7-97b2-3010-b942-ddd2624e4dd8"));
+
+        assertTrue(result.getBoolean("anyDraft"));
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_returnsTrueWhenSessionUsesDraftKey() {
+        // When Jackson's default boolean-getter convention applies, the wire field name is
+        // "draft" (the "is" prefix is stripped). Confirm we still pick it up so a Jackson
+        // configuration change doesn't silently break the strip in production.
+        givenSchedulesResponse(
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleId", "ea73df0c-2cbf-4f27-80ce-8b88ac1df702")
+                        .add("draft", true)
+                        .build());
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "ea73df0c-2cbf-4f27-80ce-8b88ac1df702"));
+
+        assertTrue(result.getBoolean("anyDraft"));
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_returnsFalseWhenAllSessionsAreNonDraft() {
+        givenSchedulesResponse(
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
+                        .add("isDraft", false)
+                        .build());
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "f8254db1-1683-483e-afb3-b87fde5a0a26"));
+
+        assertFalse(result.getBoolean("anyDraft"));
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_returnsFalseWhenAllSessionsAreNonDraftUnderDraftKey() {
+        givenSchedulesResponse(
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
+                        .add("draft", false)
+                        .build());
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "f8254db1-1683-483e-afb3-b87fde5a0a26"));
+
+        assertFalse(result.getBoolean("anyDraft"));
+    }
+
+    private void givenSchedulesResponse(final JsonObject... schedules) {
+        final javax.json.JsonArrayBuilder array = javax.json.Json.createArrayBuilder();
+        for (final JsonObject s : schedules) {
+            array.add(s);
+        }
+        final JsonObject schedulesResponse = javax.json.Json.createObjectBuilder()
+                .add("courtSchedules", array)
+                .build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(schedulesResponse);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(response);
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_failsSafeToTrueOnNon200() {
+        when(response.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(response);
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "f8254db1-1683-483e-afb3-b87fde5a0a26"));
+
+        assertTrue(result.getBoolean("anyDraft"));
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_failsSafeToTrueOnException() {
+        when(hearingSlotsService.getCourtSchedulesById(anyMap()))
+                .thenThrow(new RuntimeException("simulated connection refused"));
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "f8254db1-1683-483e-afb3-b87fde5a0a26"));
+
+        assertTrue(result.getBoolean("anyDraft"));
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_returnsFalseWhenRequestHasNoIds() {
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleIdList", javax.json.Json.createArrayBuilder())
+                        .build());
+
+        assertFalse(result.getBoolean("anyDraft"));
+    }
+
+    private static JsonObject buildRequest(final String... courtScheduleIds) {
+        final javax.json.JsonArrayBuilder list = javax.json.Json.createArrayBuilder();
+        for (final String id : courtScheduleIds) {
+            list.add(id);
+        }
+        return javax.json.Json.createObjectBuilder()
+                .add("courtScheduleIdList", list)
+                .build();
+    }
 }
