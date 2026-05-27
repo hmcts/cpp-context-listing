@@ -64,6 +64,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     private static final String JUDICIARIES = "judiciaries";
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
     private static final String IS_DRAFT = "isDraft";
+    private static final String COURT_SCHEDULES = "courtSchedules";
     @Inject
     private CourtSchedulerService courtSchedulerService;
     @Inject
@@ -878,7 +879,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return new ArrayList<>();
         }
 
-        final JsonArray schedulesArray = responseJson.getJsonArray("courtSchedules");
+        final JsonArray schedulesArray = responseJson.getJsonArray(COURT_SCHEDULES);
         if (schedulesArray == null || schedulesArray.isEmpty()) {
             return new ArrayList<>();
         }
@@ -908,7 +909,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return new ArrayList<>();
         }
 
-        final JsonArray schedulesArray = responseJson.getJsonArray("courtSchedules");
+        final JsonArray schedulesArray = responseJson.getJsonArray(COURT_SCHEDULES);
         if (schedulesArray == null || schedulesArray.isEmpty()) {
             return new ArrayList<>();
         }
@@ -991,7 +992,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return hearing;
         }
 
-        final JsonArray schedulesArray = responseJson.getJsonArray("courtSchedules");
+        final JsonArray schedulesArray = responseJson.getJsonArray(COURT_SCHEDULES);
         if (schedulesArray == null || schedulesArray.isEmpty()) {
             LOGGER.warn("CROWN extend-multiday empty courtSchedules array for hearingId {}. Returning hearing unchanged.", hearing.getHearingId());
             return hearing;
