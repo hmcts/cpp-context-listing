@@ -1158,8 +1158,6 @@ public class Hearing implements Aggregate {
             return onAllocationEvents(bookingReference, prosecutionCaseDefendantOffenceIds, source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated, isGroupProceedings);
         } else if (canUnallocate()) {
             return onUnallocationEvents(empty());
-        } else if (hasCrownAllocationCriteriaWithDraftSessions()) {
-            return onAllocationEvents(bookingReference, prosecutionCaseDefendantOffenceIds, source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated, isGroupProceedings);
         } else {
             return Stream.empty();
         }
@@ -1181,8 +1179,6 @@ public class Hearing implements Aggregate {
             return onAllocationEvents(empty(), prosecutionCaseDefendantOffenceIds, source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated, isGroupProceedings);
         } else if (canUnallocate()) {
             return onUnallocationEvents(source);
-        } else if (hasCrownAllocationCriteriaWithDraftSessions()) {
-            return onAllocationEvents(empty(), prosecutionCaseDefendantOffenceIds, source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated, isGroupProceedings);
         } else {
             return Stream.empty();
         }
@@ -2163,12 +2159,6 @@ public class Hearing implements Aggregate {
         }
         // Crown hearings require courtScheduleIds on all hearingDays, and none can be draft
         return hasCourtScheduleIds(this.hearingDays) && noneHasDraftSession(this.hearingDays);
-    }
-
-    private boolean hasCrownAllocationCriteriaWithDraftSessions() {
-        final boolean basicCriteria = currentlyAssigned(this.hearingLanguage) && currentlyAssigned(this.jurisdictionType) && JurisdictionType.CROWN.equals(this.jurisdictionType)
-                && currentlyAssigned(this.courtRoomId) && currentlyAssigned(this.endDate) && currentlyAssigned(this.startDate);
-        return basicCriteria && hasCourtScheduleIds(this.hearingDays) && !noneHasDraftSession(this.hearingDays);
     }
 
     private boolean noneHasDraftSession(final List<HearingDay> hearingDays) {
