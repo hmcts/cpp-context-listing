@@ -756,6 +756,57 @@ public class RangeSearchQueryTest {
         );
     }
 
+    @Test
+    void rangeSearchCourtCalendarWithBusinessTypeAndCrownShouldIgnoreBusinessTypeAndProceed() {
+        final List<Hearing> mockHearings = hearingsJson(ALLOCATEDSTR);
+        when(hearingRepository.findAllocatedHearingsForCourtCalendar(
+                eq(COURT_CENTRE_ID),
+                eq(COURT_ROOM_ID),
+                eq(UUID.fromString(AUTHORITY_ID)),
+                eq(HEARING_TYPE_ID),
+                eq(JURISDICTION_TYPE.toString()),
+                eq(SEARCH_DATE),
+                eq(SEARCH_DATE),
+                eq(null),
+                eq(0),
+                eq(40)
+        )).thenReturn(mockHearings);
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(BUSINESS_TYPE_QUERY_PARAMETER, "GENC")
+                        .add(COURT_SESSION_QUERY_PARAMETER, "Any")
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(OU_CODE_QUERY_PARAMETER, "C01CY00")
+                        .add(PAGE_SIZE, 40)
+                        .add(PAGE_NUMBER, 1)
+                        .build());
+
+        final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
+
+        assertThat(result, is(notNullValue()));
+        verify(hearingRepository).findAllocatedHearingsForCourtCalendar(
+                eq(COURT_CENTRE_ID),
+                eq(COURT_ROOM_ID),
+                eq(UUID.fromString(AUTHORITY_ID)),
+                eq(HEARING_TYPE_ID),
+                eq(JURISDICTION_TYPE.toString()),
+                eq(SEARCH_DATE),
+                eq(SEARCH_DATE),
+                eq(null),
+                eq(0),
+                eq(40)
+        );
+    }
+
     private List<Hearing> hearingsJson(String allocated) {
         String testJsonString = "{ \"allocated\":\"" + allocated + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}], \"hearingDays\" : [{\"hearingDate\": \"HEARING_DATE1\"}, {\"hearingDate\": \"HEARING_DATE2\"}] }";
         LocalDate today = LocalDate.now();
