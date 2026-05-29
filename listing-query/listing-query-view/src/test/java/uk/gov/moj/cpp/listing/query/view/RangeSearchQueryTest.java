@@ -756,6 +756,405 @@ public class RangeSearchQueryTest {
         );
     }
 
+    @Test
+    void rangeSearchCourtCalendarWithBusinessTypeAndCrownShouldIgnoreBusinessTypeAndProceed() {
+        final List<Hearing> mockHearings = hearingsJson(ALLOCATEDSTR);
+        when(hearingRepository.findAllocatedHearingsForCourtCalendar(
+                eq(COURT_CENTRE_ID),
+                eq(COURT_ROOM_ID),
+                eq(UUID.fromString(AUTHORITY_ID)),
+                eq(HEARING_TYPE_ID),
+                eq(JURISDICTION_TYPE.toString()),
+                eq(SEARCH_DATE),
+                eq(SEARCH_DATE),
+                eq(null),
+                eq(0),
+                eq(40)
+        )).thenReturn(mockHearings);
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(BUSINESS_TYPE_QUERY_PARAMETER, "GENC")
+                        .add(COURT_SESSION_QUERY_PARAMETER, "Any")
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(OU_CODE_QUERY_PARAMETER, "C01CY00")
+                        .add(PAGE_SIZE, 40)
+                        .add(PAGE_NUMBER, 1)
+                        .build());
+
+        final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
+
+        assertThat(result, is(notNullValue()));
+        verify(hearingRepository).findAllocatedHearingsForCourtCalendar(
+                eq(COURT_CENTRE_ID),
+                eq(COURT_ROOM_ID),
+                eq(UUID.fromString(AUTHORITY_ID)),
+                eq(HEARING_TYPE_ID),
+                eq(JURISDICTION_TYPE.toString()),
+                eq(SEARCH_DATE),
+                eq(SEARCH_DATE),
+                eq(null),
+                eq(0),
+                eq(40)
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // rangeSearchCourtCalendar – missing branch coverage
+    // -----------------------------------------------------------------------
+
+    @Test
+    void rangeSearchCourtCalendarWithCrownAndBusinessTypeShouldIgnoreAndProceedToAllocatedHearings() {
+        final List<Hearing> mockHearings = hearingsJson(ALLOCATEDSTR);
+        when(hearingRepository.findAllocatedHearingsForCourtCalendar(
+                eq(COURT_CENTRE_ID),
+                eq(COURT_ROOM_ID),
+                eq(UUID.fromString(AUTHORITY_ID)),
+                eq(HEARING_TYPE_ID),
+                eq(JURISDICTION_TYPE.toString()),
+                eq(SEARCH_DATE),
+                eq(SEARCH_DATE),
+                eq(null),
+                eq(0),
+                eq(40)
+        )).thenReturn(mockHearings);
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(BUSINESS_TYPE_QUERY_PARAMETER, "GENC")
+                        .add(COURT_SESSION_QUERY_PARAMETER, "Any")
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(OU_CODE_QUERY_PARAMETER, "C01CY00")
+                        .add(PAGE_SIZE, 40)
+                        .add(PAGE_NUMBER, 1)
+                        .build());
+
+        final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
+
+        assertThat(result, is(notNullValue()));
+        assertThat(result.metadata().name(), is("listing.search.hearings"));
+        verify(hearingRepository).findAllocatedHearingsForCourtCalendar(
+                eq(COURT_CENTRE_ID),
+                eq(COURT_ROOM_ID),
+                eq(UUID.fromString(AUTHORITY_ID)),
+                eq(HEARING_TYPE_ID),
+                eq(JURISDICTION_TYPE.toString()),
+                eq(SEARCH_DATE),
+                eq(SEARCH_DATE),
+                eq(null),
+                eq(0),
+                eq(40)
+        );
+    }
+
+    @Test
+    void rangeSearchCourtCalendarWithCrownAndCourtSessionNonAnyShouldIgnoreAndProceedToAllocatedHearings() {
+        final List<Hearing> mockHearings = hearingsJson(ALLOCATEDSTR);
+        when(hearingRepository.findAllocatedHearingsForCourtCalendar(
+                eq(COURT_CENTRE_ID),
+                eq(COURT_ROOM_ID),
+                eq(UUID.fromString(AUTHORITY_ID)),
+                eq(HEARING_TYPE_ID),
+                eq(JURISDICTION_TYPE.toString()),
+                eq(SEARCH_DATE),
+                eq(SEARCH_DATE),
+                eq(null),
+                eq(0),
+                eq(50)
+        )).thenReturn(mockHearings);
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(COURT_SESSION_QUERY_PARAMETER, AM)
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(PAGE_SIZE, "50")
+                        .add(PAGE_NUMBER, "1")
+                        .build());
+
+        final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
+
+        assertThat(result, is(notNullValue()));
+        verify(hearingRepository).findAllocatedHearingsForCourtCalendar(
+                eq(COURT_CENTRE_ID),
+                eq(COURT_ROOM_ID),
+                eq(UUID.fromString(AUTHORITY_ID)),
+                eq(HEARING_TYPE_ID),
+                eq(JURISDICTION_TYPE.toString()),
+                eq(SEARCH_DATE),
+                eq(SEARCH_DATE),
+                eq(null),
+                eq(0),
+                eq(50)
+        );
+    }
+
+    @Test
+    void rangeSearchCourtCalendarWithMagsAndBusinessTypeUnallocatedThrowsBadRequest() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, false)
+                        .add(BUSINESS_TYPE_QUERY_PARAMETER, BUSINESS_TYPE)
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, MAGISTRATES_TYPE.toString())
+                        .add(OU_CODE_QUERY_PARAMETER, OU_CODE)
+                        .add(PAGE_SIZE, "50")
+                        .add(PAGE_NUMBER, "1")
+                        .build());
+
+        final BadRequestException thrown = assertThrows(
+                BadRequestException.class,
+                () -> rangeSearchQuery.rangeSearchCourtCalendar(query)
+        );
+
+        assertThat(thrown.getMessage(), CoreMatchers.is(COURT_SESSION_OR_BUSINESS_ERR));
+    }
+
+    @Test
+    void rangeSearchCourtCalendarWithMagsAndBusinessTypeNoOuCodeThrowsBadRequest() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(BUSINESS_TYPE_QUERY_PARAMETER, BUSINESS_TYPE)
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, MAGISTRATES_TYPE.toString())
+                        .add(PAGE_SIZE, "50")
+                        .add(PAGE_NUMBER, "1")
+                        .build());
+
+        final BadRequestException thrown = assertThrows(
+                BadRequestException.class,
+                () -> rangeSearchQuery.rangeSearchCourtCalendar(query)
+        );
+
+        assertThat(thrown.getMessage(), CoreMatchers.is(COURT_SESSION_OR_BUSINESS_ERR));
+    }
+
+    @Test
+    void rangeSearchCourtCalendarUnallocatedShouldUseFindHearings() {
+        final List<Hearing> mockHearings = hearingsJson(ALLOCATEDSTR);
+        when(hearingRepository.findHearings(
+                false,
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                UUID.fromString(AUTHORITY_ID),
+                HEARING_TYPE_ID,
+                JURISDICTION_TYPE.toString(),
+                SEARCH_DATE,
+                SEARCH_DATE, 0, 50)
+        ).thenReturn(mockHearings);
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, false)
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(PAGE_SIZE, "50")
+                        .add(PAGE_NUMBER, "1")
+                        .build());
+
+        final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
+
+        assertThat(result, is(notNullValue()));
+        verify(hearingRepository).findHearings(
+                false,
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                UUID.fromString(AUTHORITY_ID),
+                HEARING_TYPE_ID,
+                JURISDICTION_TYPE.toString(),
+                SEARCH_DATE,
+                SEARCH_DATE, 0, 50);
+    }
+
+    @Test
+    void rangeSearchCourtCalendarWithWeekCommencingShouldUseFindHearingsByWeekCommencingRange() {
+        final List<Hearing> mockHearings = hearingJsonForWeekCommencing();
+        doReturn(mockHearings)
+                .when(hearingRepository)
+                .findHearingsByWeekCommencingRange(
+                        null,
+                        null,
+                        AUTHORITY_ID,
+                        null,
+                        null,
+                        WEEK_COMMENCING_START_DATE,
+                        WEEK_COMMENCING_END_DATE, 0, 50);
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(WEEK_COMMENCING_START_DATE_QUERY_PARAMETER, WEEK_COMMENCING_START_DATE.toString())
+                        .add(WEEK_COMMENCING_END_DATE_QUERY_PARAMETER, WEEK_COMMENCING_END_DATE.toString())
+                        .add(PAGE_SIZE, "50")
+                        .add(PAGE_NUMBER, "1")
+                        .build());
+
+        final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
+
+        assertThat(result, is(notNullValue()));
+        verify(hearingRepository).findHearingsByWeekCommencingRange(
+                null,
+                null,
+                AUTHORITY_ID,
+                null,
+                null,
+                WEEK_COMMENCING_START_DATE,
+                WEEK_COMMENCING_END_DATE, 0, 50);
+    }
+
+    @Test
+    void rangeSearchCourtCalendarWithEmptyHearingsReturnsZeroResults() {
+        when(hearingRepository.findAllocatedHearingsForCourtCalendar(
+                eq(COURT_CENTRE_ID),
+                eq(null),
+                eq(null),
+                eq(null),
+                eq(null),
+                eq(SEARCH_DATE),
+                eq(SEARCH_DATE),
+                eq(null),
+                eq(0),
+                eq(50)
+        )).thenReturn(List.of());
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(PAGE_SIZE, "50")
+                        .add(PAGE_NUMBER, "1")
+                        .build());
+
+        final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
+
+        assertThat(result.payloadAsJsonObject().getInt("results"), is(0));
+        assertThat(result.payloadAsJsonObject().getJsonArray("hearings").size(), is(0));
+    }
+
+    @Test
+    void rangeSearchCourtCalendarWithInvalidExactHearingStartDateTimeThrowsBadRequest() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(EXACT_HEARING_START_DATETIME, "not-a-valid-datetime")
+                        .add(PAGE_SIZE, "50")
+                        .add(PAGE_NUMBER, "1")
+                        .build());
+
+        final BadRequestException thrown = assertThrows(
+                BadRequestException.class,
+                () -> rangeSearchQuery.rangeSearchCourtCalendar(query)
+        );
+
+        assertThat(thrown.getMessage(), CoreMatchers.containsString("Invalid startDateTime format"));
+    }
+
+    // -----------------------------------------------------------------------
+    // rangeSearchHearings – missing branch coverage
+    // -----------------------------------------------------------------------
+
+    @Test
+    void rangeSearchHearingsWithMagsAllocatedOuCodeCourtSessionAndBusinessTypeShouldDelegateToCourtScheduler() {
+        final List<Hearing> hearings = hearingsJson(ALLOCATEDSTR);
+        final List<IdResponse> hearingIds = new ArrayList<>();
+        hearings.forEach(h -> hearingIds.add(new IdResponse(h.getId(), UUID.randomUUID(), LocalDate.now(), 1, 1)));
+        final HearingIdsResponse response = new HearingIdsResponse(hearingIds, 2, 1);
+
+        when(courtSchedulerServiceAdapter.getCourtSchedulerHearings(
+                OU_CODE,
+                Optional.of(COURT_SESSION),
+                COURT_ROOM_ID.toString(),
+                SEARCH_DATE.toString(),
+                SEARCH_DATE.toString(),
+                Optional.empty(),
+                Optional.of(BUSINESS_TYPE),
+                Optional.of(MAGISTRATES_TYPE.toString()),
+                "ADULT,YOUTH", 50, 1)
+        ).thenReturn(response);
+        when(hearingRepository.findAllCourtSchedulerHearingByIds(anyList())).thenReturn(hearings);
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(OU_CODE_QUERY_PARAMETER, OU_CODE)
+                        .add(COURT_SESSION_QUERY_PARAMETER, COURT_SESSION)
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, MAGISTRATES_TYPE.toString())
+                        .add(BUSINESS_TYPE_QUERY_PARAMETER, BUSINESS_TYPE)
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(PAGE_SIZE, "50")
+                        .add(PAGE_NUMBER, "1")
+                        .build());
+
+        final JsonEnvelope result = rangeSearchQuery.rangeSearchHearings(query);
+
+        assertThat(result.payloadAsJsonObject().getInt("results"), is(2));
+        assertThat(result.metadata().name(), is("listing.search.hearings"));
+    }
+
+    @Test
+    void rangeSearchHearingsWithInvalidExactHearingStartDateTimeThrowsBadRequest() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(EXACT_HEARING_START_DATETIME, "not-a-valid-datetime")
+                        .add(PAGE_SIZE, "50")
+                        .add(PAGE_NUMBER, "1")
+                        .build());
+
+        final BadRequestException thrown = assertThrows(
+                BadRequestException.class,
+                () -> rangeSearchQuery.rangeSearchHearings(query)
+        );
+
+        assertThat(thrown.getMessage(), CoreMatchers.containsString("Invalid startDateTime format"));
+    }
+
     private List<Hearing> hearingsJson(String allocated) {
         String testJsonString = "{ \"allocated\":\"" + allocated + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}], \"hearingDays\" : [{\"hearingDate\": \"HEARING_DATE1\"}, {\"hearingDate\": \"HEARING_DATE2\"}] }";
         LocalDate today = LocalDate.now();
