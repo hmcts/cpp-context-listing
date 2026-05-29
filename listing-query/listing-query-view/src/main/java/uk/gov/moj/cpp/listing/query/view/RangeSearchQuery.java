@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import javax.inject.Inject;
+import javax.json.JsonArray;
 
 import org.slf4j.Logger;
 
@@ -315,8 +316,10 @@ public class RangeSearchQuery {
         logger.info("CourtScheduler Hearings response : {}", hearingIdsResponse);
         final List<Hearing> enrichedHearingList = isEmpty(hearingIdsResponse.getUuids())
                 ? emptyList() : enrichAllCourtSchedulerHearingIdsIntoHearings(hearingIdsResponse.getUuids());
-        logger.info("getCourtSchedulerHearings found {} hearings", hearingIdsResponse.getResults());
-        return buildHearingsResponse(query, allocated, courtRoomId, startDate, enrichedHearingList, hearingIdsResponse.getResults(), hearingIdsResponse, paginationParameter);
+        final JsonArray hearingsJsonArray = hearingJsonListConverterFilterEjectCases.convert(enrichedHearingList, hearingIdsResponse);
+        final long totalCount = hearingsJsonArray.size();
+        logger.info("getCourtSchedulerHearings found {} hearings", totalCount);
+        return buildHearingsResponse(query, allocated, courtRoomId, startDate, enrichedHearingList, totalCount, hearingIdsResponse, paginationParameter);
     }
 
 

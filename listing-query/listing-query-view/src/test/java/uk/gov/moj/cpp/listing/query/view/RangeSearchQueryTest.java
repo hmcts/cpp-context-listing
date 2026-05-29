@@ -268,7 +268,7 @@ public class RangeSearchQueryTest {
         final List<IdResponse> hearingIds = new ArrayList<>();
         hearings.forEach(hearing -> hearingIds.add(new IdResponse(hearing.getId(), UUID.randomUUID(), LocalDate.now(), 1,1)));
 
-        final HearingIdsResponse response = new HearingIdsResponse(hearingIds, 2, 1);
+        final HearingIdsResponse response = new HearingIdsResponse(hearingIds, 10, 5);
 
         when(courtSchedulerServiceAdapter
                 .getCourtSchedulerHearings(
@@ -1193,7 +1193,7 @@ public class RangeSearchQueryTest {
         final List<Hearing> hearings = hearingsJson(ALLOCATEDSTR);
         final List<IdResponse> hearingIds = new ArrayList<>();
         hearings.forEach(h -> hearingIds.add(new IdResponse(h.getId(), UUID.randomUUID(), LocalDate.now(), 1, 1)));
-        final HearingIdsResponse response = new HearingIdsResponse(hearingIds, 2, 1);
+        final HearingIdsResponse response = new HearingIdsResponse(hearingIds, 10, 5);
 
         when(courtSchedulerServiceAdapter.getCourtSchedulerHearings(
                 OU_CODE,
