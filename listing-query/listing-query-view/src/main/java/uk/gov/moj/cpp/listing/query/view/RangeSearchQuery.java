@@ -357,13 +357,8 @@ public class RangeSearchQuery {
         final RangeSearchQueryParams params = rangeQueryParams(query);
 
         if (params.courtSessionOptional().isPresent() || params.businessType().isPresent()) {
-
-            if(isMags(params.jurisdictionType()) && params.allocated() && params.ouCode() != null ) {
+            if(params.allocated() && params.ouCode() != null ) {
                 return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.exactHearingStartDateTime(), params.businessType(), Optional.ofNullable(params.jurisdictionType()), PANEL_ADULT_YOUTH, params.paginationParameter());
-            }
-
-            if (isMags(params.jurisdictionType())) {
-                throw new BadRequestException("courtSession or businessType are only relevant to allocated MAGs with ouCode");
             }
         }
 

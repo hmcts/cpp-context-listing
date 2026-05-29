@@ -79,7 +79,6 @@ public class RangeSearchQueryTest {
     private static final String ALLOCATED_QUERY_PARAMETER = "allocated";
     private static final boolean POSSIBLE_DISQUALIFICATION_STR = true;
     private static final String POSSIBLE_DISQUALIFICATION_QUERY_PARAMETER = "possibleDisqualification";
-    private static final String SEARCH_DATE_QUERY_PARAMETER = "searchDate";
     private static final String START_DATE_QUERY_PARAMETER = "startDate";
     private static final String END_DATE_QUERY_PARAMETER = "endDate";
     private static final String WEEK_COMMENCING_START_DATE_QUERY_PARAMETER = "weekCommencingStartDate";
@@ -94,8 +93,6 @@ public class RangeSearchQueryTest {
     private static final String HEARING_TYPE_QUERY_PARAMETER = "hearingTypeId";
     private static final String JURISDICTION_TYPE_QUERY_PARAMETER = "jurisdictionType";
     private static final String AUTHORITY_ID = "efa4e01b-1dc5-48c5-80b5-c3858a7622d6";
-    private static final String AUTHORITY_ID_SEARCH = String.format("[ { \"caseIdentifier\": { \"authorityId\": \"%s\" } } ]", AUTHORITY_ID);
-    private static final String PROSECUTOR_ID_SEARCH = String.format("[ { \"prosecutor\": { \"prosecutorId\": \"%s\" } } ]", AUTHORITY_ID);
     private static final UUID HEARING_TYPE_ID = randomUUID();
     private static final JurisdictionType JURISDICTION_TYPE = JurisdictionType.CROWN;
     private static final JurisdictionType MAGISTRATES_TYPE = JurisdictionType.MAGISTRATES;
@@ -110,14 +107,10 @@ public class RangeSearchQueryTest {
 
     private static final String PAGE_SIZE = "pageSize";
     private static final String PAGE_NUMBER = "pageNumber";
-    private static final boolean IS_POSSIBLE_DISQUALIFICATION = true;
 
     private static final String TRIAL_HEARING_TYPE_ID = "bf8155e1-90b9-4080-b133-bfbad895d6e4";
     private static final Set<String> hearingTypeIds = new HashSet<>(Arrays.asList(TRIAL_HEARING_TYPE_ID));
 
-    private static final String IS_CIVIL = "isCivil";
-    private static final String IS_GROUP_MEMBER = "isGroupMember";
-    private static final String IS_GROUP_MASTER = "isGroupMaster";
     private static final String COURT_SESSION_OR_BUSINESS_ERR = "courtSession or businessType are only relevant to allocated MAGs with ouCode";
     private static final String AM = "AM";
 
@@ -757,20 +750,82 @@ public class RangeSearchQueryTest {
     }
 
     @Test
-    void rangeSearchCourtCalendarWithBusinessTypeAndCrownShouldIgnoreBusinessTypeAndProceed() {
+    void rangeSearchCourtCalendarWithCrownAllocatedAndOuCodeAndBusinessTypeShouldUseCourtScheduler() {
         final List<Hearing> mockHearings = hearingsJson(ALLOCATEDSTR);
-        when(hearingRepository.findAllocatedHearingsForCourtCalendar(
-                eq(COURT_CENTRE_ID),
-                eq(COURT_ROOM_ID),
-                eq(UUID.fromString(AUTHORITY_ID)),
-                eq(HEARING_TYPE_ID),
-                eq(JURISDICTION_TYPE.toString()),
-                eq(SEARCH_DATE),
-                eq(SEARCH_DATE),
-                eq(null),
-                eq(0),
-                eq(40)
-        )).thenReturn(mockHearings);
+        final List<IdResponse> hearingIds = new ArrayList<>();
+        mockHearings.forEach(h -> hearingIds.add(new IdResponse(h.getId(), UUID.randomUUID(), LocalDate.now(), 1, 1)));
+        final HearingIdsResponse response = new HearingIdsResponse(hearingIds, mockHearings.size(), 1);
+
+        when(courtSchedulerServiceAdapter.getCourtSchedulerHearings(
+                "C01CY00",
+                Optional.empty(),
+                COURT_ROOM_ID.toString(),
+                SEARCH_DATE.toString(),
+                SEARCH_DATE.toString(),
+                Optional.empty(),
+                Optional.of("GENC"),
+                Optional.of(JURISDICTION_TYPE.toString()),
+                "ADULT,YOUTH",
+                40,
+                1
+        )).thenReturn(response);
+        when(hearingRepository.findAllCourtSchedulerHearingByIds(anyList())).thenReturn(mockHearings);
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(BUSINESS_TYPE_QUERY_PARAMETER, "GENC")
+                        .add(COURT_SESSION_QUERY_PARAMETER, "Any")
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(OU_CODE_QUERY_PARAMETER, "C01CY00")
+                        .add(PAGE_SIZE, 40)
+                        .add(PAGE_NUMBER, 1)
+                        .build());
+
+        final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
+
+        assertThat(result, is(notNullValue()));
+        verify(courtSchedulerServiceAdapter).getCourtSchedulerHearings(
+                "C01CY00",
+                Optional.empty(),
+                COURT_ROOM_ID.toString(),
+                SEARCH_DATE.toString(),
+                SEARCH_DATE.toString(),
+                Optional.empty(),
+                Optional.of("GENC"),
+                Optional.of(JURISDICTION_TYPE.toString()),
+                "ADULT,YOUTH",
+                40,
+                1);
+    }
+
+    @Test
+    void rangeSearchCourtCalendarWithCrownAllocatedAndOuCodeAndHearingTypeIdShouldPassHearingTypeIdToCourtScheduler() {
+        final List<Hearing> mockHearings = hearingsJson(ALLOCATEDSTR);
+        final List<IdResponse> hearingIds = new ArrayList<>();
+        mockHearings.forEach(h -> hearingIds.add(new IdResponse(h.getId(), UUID.randomUUID(), LocalDate.now(), 1, 1)));
+        final HearingIdsResponse response = new HearingIdsResponse(hearingIds, mockHearings.size(), 1);
+
+        when(courtSchedulerServiceAdapter.getCourtSchedulerHearings(
+                "C01CY00",
+                Optional.empty(),
+                COURT_ROOM_ID.toString(),
+                SEARCH_DATE.toString(),
+                SEARCH_DATE.toString(),
+                Optional.empty(),
+                Optional.of("GENC"),
+                Optional.of(JURISDICTION_TYPE.toString()),
+                "ADULT,YOUTH",
+                40,
+                1
+        )).thenReturn(response);
+        when(hearingRepository.findAllCourtSchedulerHearingByIds(anyList())).thenReturn(mockHearings);
 
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
@@ -793,18 +848,18 @@ public class RangeSearchQueryTest {
         final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
 
         assertThat(result, is(notNullValue()));
-        verify(hearingRepository).findAllocatedHearingsForCourtCalendar(
-                eq(COURT_CENTRE_ID),
-                eq(COURT_ROOM_ID),
-                eq(UUID.fromString(AUTHORITY_ID)),
-                eq(HEARING_TYPE_ID),
-                eq(JURISDICTION_TYPE.toString()),
-                eq(SEARCH_DATE),
-                eq(SEARCH_DATE),
-                eq(null),
-                eq(0),
-                eq(40)
-        );
+        verify(courtSchedulerServiceAdapter).getCourtSchedulerHearings(
+                "C01CY00",
+                Optional.empty(),
+                COURT_ROOM_ID.toString(),
+                SEARCH_DATE.toString(),
+                SEARCH_DATE.toString(),
+                Optional.empty(),
+                Optional.of("GENC"),
+                Optional.of(JURISDICTION_TYPE.toString()),
+                "ADULT,YOUTH",
+                40,
+                1);
     }
 
     // -----------------------------------------------------------------------
@@ -812,20 +867,26 @@ public class RangeSearchQueryTest {
     // -----------------------------------------------------------------------
 
     @Test
-    void rangeSearchCourtCalendarWithCrownAndBusinessTypeShouldIgnoreAndProceedToAllocatedHearings() {
+    void rangeSearchCourtCalendarWithCrownAndBusinessTypeShouldUseCourtScheduler() {
         final List<Hearing> mockHearings = hearingsJson(ALLOCATEDSTR);
-        when(hearingRepository.findAllocatedHearingsForCourtCalendar(
-                eq(COURT_CENTRE_ID),
-                eq(COURT_ROOM_ID),
-                eq(UUID.fromString(AUTHORITY_ID)),
-                eq(HEARING_TYPE_ID),
-                eq(JURISDICTION_TYPE.toString()),
-                eq(SEARCH_DATE),
-                eq(SEARCH_DATE),
-                eq(null),
-                eq(0),
-                eq(40)
-        )).thenReturn(mockHearings);
+        final List<IdResponse> hearingIds = new ArrayList<>();
+        mockHearings.forEach(h -> hearingIds.add(new IdResponse(h.getId(), UUID.randomUUID(), LocalDate.now(), 1, 1)));
+        final HearingIdsResponse response = new HearingIdsResponse(hearingIds, mockHearings.size(), 1);
+
+        when(courtSchedulerServiceAdapter.getCourtSchedulerHearings(
+                "C01CY00",
+                Optional.empty(),
+                COURT_ROOM_ID.toString(),
+                SEARCH_DATE.toString(),
+                SEARCH_DATE.toString(),
+                Optional.empty(),
+                Optional.of("GENC"),
+                Optional.of(JURISDICTION_TYPE.toString()),
+                "ADULT,YOUTH",
+                40,
+                1
+        )).thenReturn(response);
+        when(hearingRepository.findAllCourtSchedulerHearingByIds(anyList())).thenReturn(mockHearings);
 
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
@@ -836,7 +897,6 @@ public class RangeSearchQueryTest {
                         .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
                         .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
                         .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
-                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
                         .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
                         .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
                         .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
@@ -849,18 +909,18 @@ public class RangeSearchQueryTest {
 
         assertThat(result, is(notNullValue()));
         assertThat(result.metadata().name(), is("listing.search.hearings"));
-        verify(hearingRepository).findAllocatedHearingsForCourtCalendar(
-                eq(COURT_CENTRE_ID),
-                eq(COURT_ROOM_ID),
-                eq(UUID.fromString(AUTHORITY_ID)),
-                eq(HEARING_TYPE_ID),
-                eq(JURISDICTION_TYPE.toString()),
-                eq(SEARCH_DATE),
-                eq(SEARCH_DATE),
-                eq(null),
-                eq(0),
-                eq(40)
-        );
+        verify(courtSchedulerServiceAdapter).getCourtSchedulerHearings(
+                "C01CY00",
+                Optional.empty(),
+                COURT_ROOM_ID.toString(),
+                SEARCH_DATE.toString(),
+                SEARCH_DATE.toString(),
+                Optional.empty(),
+                Optional.of("GENC"),
+                Optional.of(JURISDICTION_TYPE.toString()),
+                "ADULT,YOUTH",
+                40,
+                1);
     }
 
     @Test
@@ -913,7 +973,19 @@ public class RangeSearchQueryTest {
     }
 
     @Test
-    void rangeSearchCourtCalendarWithMagsAndBusinessTypeUnallocatedThrowsBadRequest() {
+    void rangeSearchCourtCalendarWithMagsAndBusinessTypeUnallocatedShouldProceedToFindHearings() {
+        when(hearingRepository.findHearings(
+                false,
+                (UUID) null,
+                (UUID) null,
+                (UUID) null,
+                (UUID) null,
+                MAGISTRATES_TYPE.toString(),
+                LocalDate.parse(EARLIEST_SEARCH_DATE),
+                LocalDate.parse(LATEST_SEARCH_DATE),
+                0, 50)
+        ).thenReturn(List.of());
+
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
                 createObjectBuilder()
@@ -925,16 +997,34 @@ public class RangeSearchQueryTest {
                         .add(PAGE_NUMBER, "1")
                         .build());
 
-        final BadRequestException thrown = assertThrows(
-                BadRequestException.class,
-                () -> rangeSearchQuery.rangeSearchCourtCalendar(query)
-        );
+        final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
 
-        assertThat(thrown.getMessage(), CoreMatchers.is(COURT_SESSION_OR_BUSINESS_ERR));
+        assertThat(result, is(notNullValue()));
+        verify(hearingRepository).findHearings(
+                false,
+                (UUID) null,
+                (UUID) null,
+                (UUID) null,
+                (UUID) null,
+                MAGISTRATES_TYPE.toString(),
+                LocalDate.parse(EARLIEST_SEARCH_DATE),
+                LocalDate.parse(LATEST_SEARCH_DATE),
+                0, 50);
     }
 
     @Test
-    void rangeSearchCourtCalendarWithMagsAndBusinessTypeNoOuCodeThrowsBadRequest() {
+    void rangeSearchCourtCalendarWithMagsAndBusinessTypeNoOuCodeShouldProceedToAllocatedHearings() {
+        when(hearingRepository.findAllocatedHearingsForCourtCalendar(
+                null,
+                null,
+                null,
+                null,
+                MAGISTRATES_TYPE.toString(),
+                LocalDate.parse(EARLIEST_SEARCH_DATE),
+                LocalDate.parse(LATEST_SEARCH_DATE),
+                null, 0, 50)
+        ).thenReturn(List.of());
+
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
                 createObjectBuilder()
@@ -945,12 +1035,18 @@ public class RangeSearchQueryTest {
                         .add(PAGE_NUMBER, "1")
                         .build());
 
-        final BadRequestException thrown = assertThrows(
-                BadRequestException.class,
-                () -> rangeSearchQuery.rangeSearchCourtCalendar(query)
-        );
+        final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
 
-        assertThat(thrown.getMessage(), CoreMatchers.is(COURT_SESSION_OR_BUSINESS_ERR));
+        assertThat(result, is(notNullValue()));
+        verify(hearingRepository).findAllocatedHearingsForCourtCalendar(
+                null,
+                null,
+                null,
+                null,
+                MAGISTRATES_TYPE.toString(),
+                LocalDate.parse(EARLIEST_SEARCH_DATE),
+                LocalDate.parse(LATEST_SEARCH_DATE),
+                null, 0, 50);
     }
 
     @Test
