@@ -24,6 +24,7 @@ import uk.gov.moj.cpp.listing.command.api.util.SlotsToJsonStringConverter;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.CourtSchedule;
@@ -63,6 +64,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     private static final String JUDICIARIES = "judiciaries";
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
     private static final String IS_DRAFT = "isDraft";
+    private static final String COURT_SCHEDULES = "courtSchedules";
     @Inject
     private CourtSchedulerService courtSchedulerService;
     @Inject
@@ -877,7 +879,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return new ArrayList<>();
         }
 
-        final JsonArray schedulesArray = responseJson.getJsonArray("courtSchedules");
+        final JsonArray schedulesArray = responseJson.getJsonArray(COURT_SCHEDULES);
         if (schedulesArray == null || schedulesArray.isEmpty()) {
             return new ArrayList<>();
         }
@@ -907,7 +909,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return new ArrayList<>();
         }
 
-        final JsonArray schedulesArray = responseJson.getJsonArray("courtSchedules");
+        final JsonArray schedulesArray = responseJson.getJsonArray(COURT_SCHEDULES);
         if (schedulesArray == null || schedulesArray.isEmpty()) {
             return new ArrayList<>();
         }
@@ -957,6 +959,56 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             }
             return builder.build();
         }).toList();
+    }
+
+    public UpdateHearingForListing handleCrownMultiDayExtension(final UpdateHearingForListing hearing) {
+        final int totalDuration = calculateAggregatedDuration(hearing);
+
+        final JsonObject requestPayload = createObjectBuilder()
+                .add(HEARING_ID, hearing.getHearingId().toString())
+                .add("startDate", hearing.getStartDate().toString())
+                .add("endDate", hearing.getEndDate().toString())
+                .add(DURATION_MINUTES, totalDuration)
+                .build();
+
+        LOGGER.info("CROWN extend-multiday hearingId={}, startDate={}, endDate={}, totalDuration={}",
+                hearing.getHearingId(), hearing.getStartDate(), hearing.getEndDate(), totalDuration);
+
+        final Response response = courtSchedulerServiceAdapter.extendMultiDayHearing(requestPayload);
+
+        if (HttpStatus.SC_OK != response.getStatus()) {
+            final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject)
+                    ? (JsonObject) response.getEntity()
+                    : createObjectBuilder().build();
+            throw new CrownMultiDayExtensionException(response.getStatus(), body,
+                    "extendMultiDayHearing returned " + response.getStatus() + " for hearingId " + hearing.getHearingId());
+        }
+
+        final JsonObject responseJson = (response.getEntity() instanceof JsonObject)
+                ? (JsonObject) response.getEntity()
+                : objectToJsonObjectConverter.convert(response.getEntity());
+        if (responseJson == null || responseJson.isEmpty()) {
+            LOGGER.warn("CROWN extend-multiday empty 200 body for hearingId {}. Returning hearing unchanged.", hearing.getHearingId());
+            return hearing;
+        }
+
+        final JsonArray schedulesArray = responseJson.getJsonArray(COURT_SCHEDULES);
+        if (schedulesArray == null || schedulesArray.isEmpty()) {
+            LOGGER.warn("CROWN extend-multiday empty courtSchedules array for hearingId {}. Returning hearing unchanged.", hearing.getHearingId());
+            return hearing;
+        }
+
+        final List<CourtSchedule> sessions = new ArrayList<>();
+        for (int i = 0; i < schedulesArray.size(); i++) {
+            sessions.add(jsonObjectConverter.convert(schedulesArray.getJsonObject(i), CourtSchedule.class));
+        }
+
+        final List<HearingDay> rebuiltHearingDays = buildHearingDaysFromMultiDaySessions(sessions, totalDuration);
+
+        return UpdateHearingForListing.updateHearingForListing()
+                .withValuesFrom(hearing)
+                .withHearingDays(rebuiltHearingDays)
+                .build();
     }
 
     private List<HearingDay> buildHearingDaysFromMultiDaySessions(final List<CourtSchedule> sessions, final int aggregatedDuration) {

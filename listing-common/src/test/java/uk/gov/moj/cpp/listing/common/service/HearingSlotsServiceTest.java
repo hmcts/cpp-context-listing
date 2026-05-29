@@ -674,4 +674,70 @@ class HearingSlotsServiceTest {
             assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
         }
     }
+
+    // ─── extendMultiDayHearing tests ──────────────────────────────
+
+    @Test
+    void shouldExtendMultiDayHearingSuccessfully() throws Exception {
+        javax.json.JsonObject payload = javax.json.Json.createObjectBuilder()
+                .add("hearingId", "11111111-1111-1111-1111-111111111111")
+                .add("startDate", "2026-03-02")
+                .add("endDate", "2026-03-05")
+                .add("durationInMinutes", 1440)
+                .build();
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
+
+        try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
+            mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.build()).thenReturn(httpClient);
+            when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
+            when(httpResponse.getStatusLine()).thenReturn(statusLine);
+            when(statusLine.getStatusCode()).thenReturn(Response.Status.OK.getStatusCode());
+            when(httpResponse.getEntity()).thenReturn(mock(org.apache.http.HttpEntity.class));
+
+            Response response = hearingSlotsService.extendMultiDayHearing(payload);
+
+            assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+            verify(httpClient).execute(httpPostCaptor.capture());
+            HttpPost capturedPost = httpPostCaptor.getValue();
+            assertThat(capturedPost.getURI().toString(), is(BASE_URI + "/extendmultidayhearing/hearingslots"));
+            assertThat(capturedPost.getFirstHeader("Content-Type").getValue(),
+                    is("application/vnd.courtscheduler.extend.multiday.hearing+json"));
+        }
+    }
+
+    @Test
+    void shouldThrowExceptionWhenExtendMultiDayHearingPayloadIsEmpty() {
+        javax.json.JsonObject emptyPayload = javax.json.Json.createObjectBuilder().build();
+
+        try {
+            hearingSlotsService.extendMultiDayHearing(emptyPayload);
+        } catch (DataValidationException e) {
+            assertThat(e.getMessage(), is("Payload for application/vnd.courtscheduler.extend.multiday.hearing+json is null or empty ...."));
+        }
+    }
+
+    @Test
+    void shouldDoesNotSwallow422FromExtendMultiDayHearing() throws Exception {
+        javax.json.JsonObject payload = javax.json.Json.createObjectBuilder()
+                .add("hearingId", "11111111-1111-1111-1111-111111111111")
+                .add("startDate", "2026-03-02")
+                .add("endDate", "2026-03-05")
+                .add("durationInMinutes", 1440)
+                .build();
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
+
+        try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
+            mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.build()).thenReturn(httpClient);
+            when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
+            when(httpResponse.getStatusLine()).thenReturn(statusLine);
+            when(statusLine.getStatusCode()).thenReturn(422);
+            when(httpResponse.getEntity()).thenReturn(mock(org.apache.http.HttpEntity.class));
+
+            Response response = hearingSlotsService.extendMultiDayHearing(payload);
+
+            assertThat(response.getStatus(), is(422));
+        }
+    }
 }

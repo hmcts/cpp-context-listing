@@ -4001,4 +4001,98 @@ class CourtScheduleEnrichmentServiceTest {
         assertThat(result.getHearingDays().size(), is(1));
         assertNull(result.getHearingDays().get(0).getCourtScheduleId());
     }
+
+    @Test
+    void handleCrownMultiDayExtension_rebuildsHearingDays_on200() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID firstDayCsId = UUID.randomUUID();
+        final LocalDate startDate = LocalDate.of(2026, 3, 2);
+        final LocalDate endDate = LocalDate.of(2026, 3, 4);
+
+        final HearingDay day1 = HearingDay.hearingDay()
+                .withCourtScheduleId(firstDayCsId)
+                .withDurationMinutes(360)
+                .withHearingDate(startDate)
+                .build();
+        final HearingDay day2 = HearingDay.hearingDay()
+                .withDurationMinutes(360)
+                .withHearingDate(startDate.plusDays(1))
+                .build();
+        final HearingDay day3 = HearingDay.hearingDay()
+                .withDurationMinutes(360)
+                .withHearingDate(endDate)
+                .build();
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(startDate)
+                .withEndDate(endDate)
+                .withHearingDays(Arrays.asList(day1, day2, day3))
+                .build();
+
+        final String returnedCsId1 = UUID.randomUUID().toString();
+        final String returnedCsId2 = UUID.randomUUID().toString();
+        final String returnedCsId3 = UUID.randomUUID().toString();
+        final JsonObject responseBody = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", returnedCsId1))
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", returnedCsId2))
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", returnedCsId3)))
+                .build();
+
+        when(courtSchedulerServiceAdapter.extendMultiDayHearing(any(JsonObject.class))).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(responseBody);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenAnswer(inv -> {
+                    final JsonObject jo = inv.getArgument(0);
+                    final CourtSchedule cs = new CourtSchedule();
+                    cs.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    cs.setCourtHouseId(UUID.randomUUID().toString());
+                    cs.setCourtRoomId(UUID.randomUUID().toString());
+                    cs.setSessionDate(LocalDate.of(2026, 3, 2));
+                    return cs;
+                });
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.handleCrownMultiDayExtension(hearing);
+
+        assertThat(result.getHearingDays().size(), is(3));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId().toString(), is(returnedCsId1));
+        assertThat(result.getHearingDays().get(1).getCourtScheduleId().toString(), is(returnedCsId2));
+        assertThat(result.getHearingDays().get(2).getCourtScheduleId().toString(), is(returnedCsId3));
+    }
+
+    @Test
+    void handleCrownMultiDayExtension_throws_on422() {
+        final UUID hearingId = UUID.randomUUID();
+        final HearingDay d1 = HearingDay.hearingDay().withDurationMinutes(360).build();
+        final HearingDay d2 = HearingDay.hearingDay().withDurationMinutes(360).build();
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(LocalDate.of(2026, 3, 2))
+                .withEndDate(LocalDate.of(2026, 3, 5))
+                .withHearingDays(Arrays.asList(d1, d2))
+                .build();
+
+        final JsonObject errorBody = JsonObjects.createObjectBuilder()
+                .add("errorCode", "NO_AVAILABILITY")
+                .add("unavailableDates", JsonObjects.createArrayBuilder().add("2026-03-05"))
+                .build();
+
+        when(courtSchedulerServiceAdapter.extendMultiDayHearing(any(JsonObject.class))).thenReturn(response);
+        when(response.getStatus()).thenReturn(422);
+        when(response.hasEntity()).thenReturn(true);
+        when(response.getEntity()).thenReturn(errorBody);
+
+        final uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException thrown =
+                org.junit.jupiter.api.Assertions.assertThrows(
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException.class,
+                        () -> courtScheduleEnrichmentService.handleCrownMultiDayExtension(hearing));
+
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getResponseBody().getString("errorCode"), is("NO_AVAILABILITY"));
+    }
 }

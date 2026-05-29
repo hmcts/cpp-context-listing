@@ -302,6 +302,21 @@ public class CourtSchedulerServiceAdapter {
         return response;
     }
 
+    public Response extendMultiDayHearing(final JsonObject requestPayload) {
+        final Response response = hearingSlotsService.extendMultiDayHearing(requestPayload);
+
+        if (HttpStatus.SC_OK == response.getStatus()) {
+            return response;
+        }
+
+        String responsePayload = "";
+        if (response.hasEntity()) {
+            responsePayload = response.getEntity().toString();
+        }
+        LOGGER.error("extendMultiDayHearing from courtscheduler returned an error : {} with status {}", responsePayload, response.getStatus());
+        return response;
+    }
+
     /**
      * Reports whether any of the supplied courtScheduleIds resolves to a DRAFT
      * (unallocated) court-schedule session. Used by cpp-context-progression to
@@ -421,6 +436,7 @@ public class CourtSchedulerServiceAdapter {
         businessTypeOptional.ifPresent(businessType -> queryParams.put(BUSINESS_TYPE, businessType));
         jurisdiction.ifPresent(j -> queryParams.put(JURISDICTION, j));
         exactHearingStartDateTime.ifPresent(s -> queryParams.put(EXACT_HEARING_START_DATETIME, s.toString()));
+
         final Response hearingsResponse = getCourtSchedulerHearingIds(queryParams);
 
         return getHearingIds(hearingsResponse);

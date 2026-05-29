@@ -262,6 +262,47 @@ class CourtSchedulerServiceAdapterTest {
         assertThat(result.getStatus(), is(HttpStatus.SC_BAD_REQUEST));
     }
 
+    @Test
+    void shouldDelegateExtendMultiDayHearingTo200() {
+        final JsonObject body = javax.json.Json.createObjectBuilder()
+                .add("courtSchedules", javax.json.Json.createArrayBuilder()).build();
+        final JsonObject payload = javax.json.Json.createObjectBuilder()
+                .add("hearingId", "11111111-1111-1111-1111-111111111111")
+                .add("startDate", "2026-03-02")
+                .add("endDate", "2026-03-05")
+                .add("durationInMinutes", 1440)
+                .build();
+
+        when(hearingSlotsService.extendMultiDayHearing(any(JsonObject.class))).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(body);
+
+        final Response result = courtSchedulerServiceAdapter.extendMultiDayHearing(payload);
+
+        assertThat(result.getStatus(), is(HttpStatus.SC_OK));
+        assertThat(result.getEntity(), is(body));
+    }
+
+    @Test
+    void shouldReturnErrorResponseWhenExtendMultiDayHearingFails() {
+        final JsonObject payload = javax.json.Json.createObjectBuilder()
+                .add("hearingId", "11111111-1111-1111-1111-111111111111")
+                .add("startDate", "2026-03-02")
+                .add("endDate", "2026-03-05")
+                .add("durationInMinutes", 1440)
+                .build();
+
+        when(hearingSlotsService.extendMultiDayHearing(any(JsonObject.class))).thenReturn(response);
+        when(response.getStatus()).thenReturn(422);
+        when(response.hasEntity()).thenReturn(true);
+        when(response.getEntity()).thenReturn(javax.json.Json.createObjectBuilder()
+                .add("errorCode", "NO_AVAILABILITY").build());
+
+        final Response result = courtSchedulerServiceAdapter.extendMultiDayHearing(payload);
+
+        assertThat(result.getStatus(), is(422));
+    }
+
     // ─── Crown fallback search-and-book (Option C: courtCentreId-only) ───
 
     @Test
