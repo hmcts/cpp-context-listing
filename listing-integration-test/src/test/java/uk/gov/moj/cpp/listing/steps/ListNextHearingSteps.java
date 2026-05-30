@@ -41,7 +41,9 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForCourtSchedule;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrown;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchCourtSchedulesByIdSession;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
 
 import uk.gov.justice.core.courts.Address;
@@ -703,14 +705,42 @@ public class ListNextHearingSteps extends AbstractIT {
         pollForUnscheduledHearings(getLoggedInUser(), courtCentreId, unscheduledHearingVerifiedMatcher);
     }
 
+    /**
+     * For a CROWN hearing the {@code bookingReference} IS the courtScheduleId. The listing command resolves
+     * it against courtscheduler ({@code search.court-schedules-by-id}) then lists it. Stub both so the
+     * bookingReference resolves to a session echoing this hearing's own centre/room. No-op for MAGISTRATES
+     * or hearings without a court centre.
+     */
+    private static void stubCrownBookingReferenceResolution(final HearingData hearingData, final UUID bookingReference) {
+        if (bookingReference == null
+                || hearingData.getCourtCentreId() == null
+                || !"CROWN".equals(hearingData.getJurisdictionType())) {
+            return;
+        }
+        final ZonedDateTime startTime = hearingData.getHearingStartTime() != null
+                ? hearingData.getHearingStartTime()
+                : ZonedDateTime.now();
+        final LocalDate sessionDate = hearingData.getHearingStartDate() != null
+                ? hearingData.getHearingStartDate()
+                : startTime.toLocalDate();
+        stubSearchCourtSchedulesByIdSession(
+                bookingReference.toString(), hearingData.getCourtCentreId(), hearingData.getCourtRoomId(),
+                sessionDate, startTime, false);
+        stubListHearingInCourtSessionsForCourtSchedule(hearingData.getId().toString(), bookingReference.toString(), startTime);
+    }
+
     private HearingListingNeeds buildHearingListingNeeds(final HearingData hearingData) {
+        // CROWN treats the bookingReference as the courtScheduleId; the command resolves it via
+        // search.court-schedules-by-id. Stub that resolution to echo this hearing's own centre/room.
+        final UUID bookingReference = randomUUID();
+        stubCrownBookingReferenceResolution(hearingData, bookingReference);
         return HearingListingNeeds.hearingListingNeeds()
                 .withCourtCentre(CourtCentre.courtCentre()
                         .withId(hearingData.getCourtCentreId())
                         .withName(hearingData.getName())
                         .withRoomId(hearingData.getCourtRoomId())
                         .build())
-                .withBookingReference(randomUUID())
+                .withBookingReference(bookingReference)
                 .withId(hearingData.getId())
                 .withEarliestStartDateTime(hearingData.getHearingStartTime() != null ? hearingData.getHearingStartTime() : null)
                 .withEndDate(hearingData.getHearingEndDate() != null ? hearingData.getHearingEndDate().toString() : null)

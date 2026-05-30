@@ -864,6 +864,60 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         return listHearingSessionsAndExtractData(hearing.getId(), expandedDays);
     }
 
+    /**
+     * CROWN list paths (list-court-hearing / list-next-hearings-v2) carry the chosen courtScheduleId in
+     * {@code bookingReference} — Crown has no provisional-booking concept, so the id IS a court-schedule
+     * session id. Resolve it against courtscheduler ({@code search.court-schedules-by-id}) and promote the
+     * resolved session onto a bookedSlot (courtScheduleId + courtHouse/room/start) so the CourtSchedule-first
+     * flow can list and allocate it.
+     *
+     * <p>If the bookingReference does not resolve to a session we fail fast with
+     * {@link CrownFallbackInvalidRequestException} rather than silently listing the hearing unallocated.
+     *
+     * <p>No-op when there is no bookingReference, or a courtScheduleId is already present on
+     * hearingDays/bookedSlots.
+     */
+    public HearingListingNeeds promoteCrownBookingReferenceToBookedSlot(final HearingListingNeeds hearing) {
+        if (isNull(hearing.getBookingReference())
+                || anyHearingDayHasCourtScheduleId(hearing)
+                || hasBookedSlotsWithCourtScheduleId(hearing)) {
+            return hearing;
+        }
+
+        final String courtScheduleId = hearing.getBookingReference().toString();
+        final List<CourtSchedule> sessions = fetchCourtSchedulesByIds(List.of(courtScheduleId));
+        if (isEmpty(sessions)) {
+            throw new CrownFallbackInvalidRequestException(
+                    "CROWN bookingReference " + courtScheduleId
+                            + " did not resolve to a court schedule session for hearingId " + hearing.getId());
+        }
+
+        final CourtSchedule session = sessions.get(0);
+        final RotaSlot.Builder bookedSlot = RotaSlot.rotaSlot()
+                .withCourtScheduleId(courtScheduleId)
+                .withDuration(hearing.getEstimatedMinutes())
+                .withStartTime(nonNull(session.getHearingStartTime())
+                        ? ZonedDateTime.parse(session.getHearingStartTime())
+                        : hearing.getListedStartDateTime());
+        if (nonNull(session.getCourtHouseId())) {
+            bookedSlot.withCourtCentreId(session.getCourtHouseId());
+        }
+        if (!session.isDraft() && !isBlank(session.getCourtRoomId())) {
+            bookedSlot.withRoomId(session.getCourtRoomId());
+        }
+        if (!isBlank(session.getOuCode())) {
+            bookedSlot.withOucode(session.getOuCode());
+        }
+
+        LOGGER.info("CROWN list: resolved bookingReference {} to court schedule session (isDraft={}) for hearingId {}",
+                courtScheduleId, session.isDraft(), hearing.getId());
+
+        return HearingListingNeeds.hearingListingNeeds()
+                .withValuesFrom(hearing)
+                .withBookedSlots(List.of(bookedSlot.build()))
+                .build();
+    }
+
     private List<CourtSchedule> fetchCourtSchedulesByIds(final List<String> courtScheduleIds) {
         final Map<String, String> params = new HashMap<>();
         params.put(COURT_SCHEDULE_IDS, String.join(",", courtScheduleIds));

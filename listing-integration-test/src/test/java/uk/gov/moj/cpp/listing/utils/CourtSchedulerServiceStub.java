@@ -183,6 +183,44 @@ public class CourtSchedulerServiceStub {
                 ));
     }
 
+    /**
+     * Stub {@code search.court-schedules-by-id} so a CROWN bookingReference (which IS the courtScheduleId)
+     * resolves to a single session echoing the supplied courtHouse / room / date. The listing command resolves
+     * the bookingReference here (see {@code CourtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot}).
+     * Scoped by the {@code courtScheduleIds} query param so it answers only for this hearing's bookingReference
+     * and never pollutes other tests (WireMock stubs persist across IT classes in a suite).
+     */
+    public static void stubSearchCourtSchedulesByIdSession(final String courtScheduleId,
+                                                           final UUID courtHouseId,
+                                                           final UUID courtRoomId,
+                                                           final LocalDate sessionDate,
+                                                           final ZonedDateTime hearingStartTime,
+                                                           final boolean isDraft) {
+        final StringBuilder session = new StringBuilder();
+        session.append("{\"courtScheduleId\":\"").append(courtScheduleId).append("\"");
+        if (courtHouseId != null) {
+            session.append(",\"courtHouseId\":\"").append(courtHouseId).append("\"");
+        }
+        if (courtRoomId != null) {
+            session.append(",\"courtRoomId\":\"").append(courtRoomId).append("\"");
+        }
+        if (sessionDate != null) {
+            session.append(",\"sessionDate\":\"").append(sessionDate).append("\"");
+        }
+        if (hearingStartTime != null) {
+            session.append(",\"hearingStartTime\":\"").append(hearingStartTime).append("\"");
+        }
+        session.append(",\"isDraft\":").append(isDraft).append("}");
+        final String body = "{\"courtSchedules\":[" + session + "]}";
+
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + SEARCH_COURT_SCHEDULES_BY_ID)))
+                .atPriority(2)
+                .withQueryParam("courtScheduleIds", containing(courtScheduleId))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(body)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
     // --- Crown fallback search-and-book stubs (Option C: courtCentreId-only wire) ---
 
     /**
@@ -749,6 +787,34 @@ public class CourtSchedulerServiceStub {
         stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
                 .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
                 .withRequestBody(containing("hearingSlots"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(payload)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    /**
+     * Scoped variant of {@link #stubListHearingInCourtSessions(String, String, ZonedDateTime)}: matches only the
+     * PUT whose request body carries this {@code courtScheduleId}. Needed when one command lists several CROWN
+     * hearings (e.g. list-next-hearings-v2 with two next hearings) — each hearing's list call must resolve to its
+     * own session rather than the last broad stub registered winning for all of them.
+     */
+    public static void stubListHearingInCourtSessionsForCourtSchedule(final String hearingId, final String courtScheduleId, final ZonedDateTime hearingStartTime) {
+        final String payload = "{\n" +
+                "  \"hearings\": [\n" +
+                "    {\n" +
+                "      \"hearingId\": \"" + hearingId + "\",\n" +
+                "      \"courtScheduleId\": \"" + courtScheduleId + "\",\n" +
+                "      \"hearingStartTime\": \"" + hearingStartTime.toString() + "\",\n" +
+                "      \"duration\": 20\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}";
+
+        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
+                .atPriority(2)
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
+                .withRequestBody(containing(courtScheduleId))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
