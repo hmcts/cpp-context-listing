@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.steps;
 
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
-import static com.jayway.jsonpath.JsonPath.read;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
@@ -28,7 +27,6 @@ import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static uk.gov.justice.core.courts.Organisation.organisation;
 import static uk.gov.justice.services.common.converter.LocalDates.to;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
@@ -131,11 +129,9 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -150,7 +146,6 @@ import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Filter;
-import com.jayway.jsonpath.PathNotFoundException;
 import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
@@ -824,48 +819,21 @@ public class ListCourtHearingSteps extends AbstractIT {
         final com.jayway.jsonpath.JsonPath caseReferenceFilter = getJsonPathQueryForCaseReference(
                 hearingData, listedCaseData, defendant, listedCaseData.getCaseReference());
 
-        String courtCentreId = hearingData.getCourtCentreId().toString();
-        String userId = getLoggedInUser().toString();
+        final String courtCentreId = hearingData.getCourtCentreId().toString();
+        final String userId = getLoggedInUser().toString();
 
-        // Keep only caseReferenceFilter in poll for initial verification
-        // Use JMS-aware polling to handle asynchronous message processing
-        String jsonResponse = pollForHearingWithJmsDelay(courtCentreId, isAllocated, userId, new Matcher[]{
-                withJsonPath(caseReferenceFilter) });
+        // Poll until the WHOLE hearing projection is present, not just the case reference. The defendant
+        // lastName, the N hearingDays and the allocation fields are projected asynchronously and can lag the
+        // case-reference write under suite load; asserting them on the first snapshot where the case ref
+        // appears is racy (intermittent "Failed JsonPath check: lastName" / "Missing path: ..."). Keeping
+        // every check inside the poll lets it retry until the full hearing has materialised.
+        final List<Matcher> matchers = new ArrayList<>();
+        matchers.add(withJsonPath(caseReferenceFilter));
+        matchers.add(withJsonPath(lastNameFilter));
+        buildExpectedJsonValues(hearingData, courtScheduleSlots, courtRoomIds)
+                .forEach((path, value) -> matchers.add(withJsonPath(path, is(value))));
 
-        List<String> failedAssertions = new ArrayList<>();
-
-        // Check other matchers separately for clearer debugging
-        validateJsonPath(jsonResponse, lastNameFilter, failedAssertions, "lastName");
-
-        Map<String, Object> expectedValues = buildExpectedJsonValues(hearingData, courtScheduleSlots, courtRoomIds);
-
-        for (Map.Entry<String, Object> entry : expectedValues.entrySet()) {
-            try {
-                Object actualValue = read(jsonResponse, entry.getKey());
-                if (!Objects.equals(actualValue, entry.getValue())) {
-                    failedAssertions.add(String.format("Mismatch at path '%s': expected '%s', but was '%s'",
-                            entry.getKey(), entry.getValue(), actualValue));
-                }
-            } catch (PathNotFoundException e) {
-                failedAssertions.add("Missing path: " + entry.getKey());
-            }
-        }
-
-        if (!failedAssertions.isEmpty()) {
-            fail("Following JSONPath assertions failed:\n" + String.join("\n", failedAssertions));
-        }
-    }
-
-    private void validateJsonPath(String json, com.jayway.jsonpath.JsonPath path,
-                                  List<String> failedAssertions, String label) {
-        try {
-            Object result = path.read(json);
-            if (result == null || (result instanceof Collection && ((Collection<?>) result).isEmpty())) {
-                failedAssertions.add("Failed JsonPath check: " + label);
-            }
-        } catch (Exception e) {
-            failedAssertions.add("Invalid JsonPath or value missing: " + label + " - " + e.getMessage());
-        }
+        pollForHearingWithJmsDelay(courtCentreId, isAllocated, userId, matchers.toArray(new Matcher[0]));
     }
 
     private Map<String, Object> buildExpectedJsonValues(HearingData hearingData, String[] courtScheduleSlots, String[] courtRoomIds) {
