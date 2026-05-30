@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -35,7 +34,6 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -75,6 +73,10 @@ public class HearingEnrichmentOrchestratorTest {
         // Tests that need the allocation-candidate flow should override getBookedSlots() to return null/empty.
         lenient().when(crownHearing.getBookedSlots()).thenReturn(Collections.singletonList(
                 RotaSlot.rotaSlot().withCourtScheduleId(java.util.UUID.randomUUID().toString()).build()));
+        // Booking-reference resolution lives in CourtScheduleEnrichmentService; default it to a pass-through
+        // so orchestrator tests exercise the routing, not the (separately unit-tested) resolution.
+        lenient().when(courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(any(HearingListingNeeds.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -170,46 +172,6 @@ public class HearingEnrichmentOrchestratorTest {
 
         assertEquals(1, result.size());
         assertEquals(enrichedCrownHearing, result.get(0));
-    }
-
-    @Test
-    public void shouldPromoteCrownBookingReferenceOntoBookedSlotForListNextHearingsV2() {
-        // Given a CROWN list-next-hearings-v2 hearing whose chosen courtScheduleId is carried in the
-        // bookingReference (Crown has no provisional-booking concept) and no courtScheduleId on
-        // hearingDays/bookedSlots yet. Without promotion this falls to the legacy unallocated path.
-        final UUID bookingReference = UUID.randomUUID();
-        final ZonedDateTime listedStart = ZonedDateTime.parse("2026-05-24T09:00:00Z");
-        final HearingListingNeeds nextHearing = mock(HearingListingNeeds.class);
-        lenient().when(nextHearing.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
-        lenient().when(nextHearing.getBookedSlots()).thenReturn(Collections.emptyList());
-        lenient().when(nextHearing.getHearingDays()).thenReturn(Collections.emptyList());
-        lenient().when(nextHearing.getBookingReference()).thenReturn(bookingReference);
-        lenient().when(nextHearing.getEstimatedMinutes()).thenReturn(20);
-        lenient().when(nextHearing.getListedStartDateTime()).thenReturn(listedStart);
-
-        final HearingListingNeeds withCourtSchedules = mock(HearingListingNeeds.class);
-        final HearingListingNeeds withHearingDays = mock(HearingListingNeeds.class);
-        when(courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(any(HearingListingNeeds.class), eq(CrownFallbackSource.LIST_NEXT_HEARINGS_V2)))
-                .thenReturn(withCourtSchedules);
-        when(hearingDaysEnrichmentService.enrichHearings(withCourtSchedules, envelope)).thenReturn(withHearingDays);
-        when(hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope)).thenReturn(enrichedCrownHearing);
-
-        // When
-        final List<HearingListingNeeds> result = orchestrator.enrichListCourtHearing(
-                Collections.singletonList(nextHearing), envelope, CrownFallbackSource.LIST_NEXT_HEARINGS_V2);
-
-        // Then the CourtSchedule-first flow ran (not the legacy allocation-candidate path)
-        assertEquals(1, result.size());
-        assertEquals(enrichedCrownHearing, result.get(0));
-
-        // ...and the bookingReference was promoted onto a bookedSlot carrying it as the courtScheduleId,
-        // with the duration sourced from estimatedMinutes so single-vs-multi-day detection still works.
-        final ArgumentCaptor<HearingListingNeeds> captor = ArgumentCaptor.forClass(HearingListingNeeds.class);
-        verify(courtScheduleEnrichmentService).enrichCrownCourtScheduleFirst(captor.capture(), eq(CrownFallbackSource.LIST_NEXT_HEARINGS_V2));
-        assertThat(captor.getValue().getBookedSlots().size(), is(1));
-        final RotaSlot promotedSlot = captor.getValue().getBookedSlots().get(0);
-        assertThat(promotedSlot.getCourtScheduleId(), is(bookingReference.toString()));
-        assertThat(promotedSlot.getDuration(), is(20));
     }
 
     @Test

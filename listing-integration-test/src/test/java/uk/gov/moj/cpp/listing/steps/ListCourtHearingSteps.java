@@ -48,7 +48,9 @@ import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWi
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDelayForJms;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForCourtSchedule;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrown;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchCourtSchedulesByIdSession;
 import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByOrganisationDefendant;
 import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByPersonDefendant;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
@@ -434,6 +436,63 @@ public class ListCourtHearingSteps extends AbstractIT {
                         hd.getId().toString(),
                         hd.getCourtCentreId().toString(),
                         hd.getCourtRoomId().toString()));
+    }
+
+    /**
+     * For a CROWN hearing the {@code bookingReference} IS the courtScheduleId. The listing command resolves
+     * it against courtscheduler ({@code search.court-schedules-by-id}) and then lists it
+     * ({@code list.hearings-in-court-sessions}). Stub both so the bookingReference resolves to a session
+     * echoing this hearing's own centre/room — keeping the enriched hearing consistent with the listed values.
+     * No-op for MAGISTRATES, unallocated hearings (no booking reference) or hearings without a court centre.
+     */
+    private static void stubCrownBookingReferenceResolution(final HearingData hearingData, final UUID bookingReference) {
+        if (bookingReference == null
+                || hearingData.getCourtCentreId() == null
+                || !"CROWN".equals(hearingData.getJurisdictionType())) {
+            return;
+        }
+        final ZonedDateTime startTime = hearingData.getHearingStartTime() != null
+                ? hearingData.getHearingStartTime()
+                : ZonedDateTime.now();
+        final LocalDate sessionDate = hearingData.getHearingStartDate() != null
+                ? hearingData.getHearingStartDate()
+                : startTime.toLocalDate();
+        stubSearchCourtSchedulesByIdSession(
+                bookingReference.toString(), hearingData.getCourtCentreId(), hearingData.getCourtRoomId(),
+                sessionDate, startTime, false);
+        stubListHearingInCourtSessionsForCourtSchedule(hearingData.getId().toString(), bookingReference.toString(), startTime);
+    }
+
+    /**
+     * Variant of {@link #stubCrownBookingReferenceResolution} for template-built payloads (e.g. group cases):
+     * reads the CROWN bookingReference / courtCentre / room straight from the list-court-hearing JSON and stubs
+     * the courtscheduler resolution + list calls so the bookingReference resolves to a matching session.
+     */
+    private static void stubCrownBookingReferenceResolutionFromPayload(final JsonObject payload, final UUID fallbackCourtCentreId) {
+        if (payload == null || !payload.containsKey("hearings") || payload.isNull("hearings")) {
+            return;
+        }
+        final JsonArray hearings = payload.getJsonArray("hearings");
+        for (int i = 0; i < hearings.size(); i++) {
+            final JsonObject hearing = hearings.getJsonObject(i);
+            if (!"CROWN".equals(hearing.getString("jurisdictionType", null))
+                    || !hearing.containsKey("bookingReference") || hearing.isNull("bookingReference")) {
+                continue;
+            }
+            final String bookingReference = hearing.getString("bookingReference");
+            final JsonObject courtCentre = hearing.containsKey("courtCentre") && !hearing.isNull("courtCentre")
+                    ? hearing.getJsonObject("courtCentre") : null;
+            final UUID roomId = courtCentre != null && courtCentre.containsKey("roomId") && !courtCentre.isNull("roomId")
+                    ? UUID.fromString(courtCentre.getString("roomId")) : null;
+            final UUID centreId = courtCentre != null && courtCentre.containsKey("id") && !courtCentre.isNull("id")
+                    ? UUID.fromString(courtCentre.getString("id")) : fallbackCourtCentreId;
+            final String hearingId = hearing.getString("id", null);
+            final ZonedDateTime startTime = ZonedDateTime.now();
+            stubSearchCourtSchedulesByIdSession(bookingReference, centreId, roomId, startTime.toLocalDate(), startTime, false);
+            if (hearingId != null) {
+                stubListHearingInCourtSessionsForCourtSchedule(hearingId, bookingReference, startTime);
+            }
+        }
     }
 
     private Response getResponseCaseSubmittedForListingWithLegalEntity() {
@@ -1573,6 +1632,11 @@ public class ListCourtHearingSteps extends AbstractIT {
 
         // Determine if hearing is allocated (has court room) or unallocated
         final boolean isAllocated = hearingData.getCourtRoomId() != null;
+        // CROWN treats the bookingReference as the courtScheduleId; the command resolves it via
+        // search.court-schedules-by-id. Stub that resolution (and the follow-up list call) to echo
+        // this hearing's own centre/room so the resolved session matches the listed values.
+        final UUID bookingReference = isAllocated ? randomUUID() : null;
+        stubCrownBookingReferenceResolution(hearingData, bookingReference);
 
         return ListCourtHearing.listCourtHearing()
                 .withAdjournedFromDate(LocalDate.now().toString())
@@ -1584,7 +1648,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 .withRoomId(hearingData.getCourtRoomId())
                                 .build())
                         // Only add booking reference for allocated hearings
-                        .withBookingReference(isAllocated ? randomUUID() : null)
+                        .withBookingReference(bookingReference)
                         .withListedStartDateTime(hearingData.getHearingStartTime() != null ? hearingData.getHearingStartTime() : null)
                         .withCourtApplications(isNull(hearingData.getCourtApplications()) ? null : singletonList(CourtApplication.courtApplication()
                                 .withId(hearingData.getCourtApplications().get(0).getId())
@@ -1991,6 +2055,11 @@ public class ListCourtHearingSteps extends AbstractIT {
                 .map(offence -> offence.getOffenceId())
                 .collect(Collectors.toList());
 
+        // CROWN: resolve the bookingReference (= courtScheduleId) via search.court-schedules-by-id; stub it to
+        // echo this hearing's own centre/room so the resolved session matches the listed values.
+        final UUID bookingReference = randomUUID();
+        stubCrownBookingReferenceResolution(hearingData, bookingReference);
+
         return ListCourtHearing.listCourtHearing()
                 .withAdjournedFromDate(LocalDate.now().toString())
                 .withShadowListedOffences(shadowListedOffences)
@@ -2000,7 +2069,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 .withName(hearingData.getName())
                                 .withRoomId(hearingData.getCourtRoomId())
                                 .build())
-                        .withBookingReference(randomUUID())
+                        .withBookingReference(bookingReference)
                         .withCourtApplications(singletonList(getCourtApplication(hearingData)))
                         .withCourtApplicationPartyListingNeeds(hearingData.getCourtApplicationPartyNeeds())
                         .withId(hearingData.getId())
@@ -2462,6 +2531,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         final CourtCentreData courtCentreData = new CourtCentreData(courtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, null, "City of London Magistrates' Court");
         stubGetReferenceDataCourtCentreById(courtCentreData);
         stubGetReferenceDataHearingTypes(hearingTypeId);
+        stubCrownBookingReferenceResolutionFromPayload(listCourtHearingJsonObject, courtCentreId);
 
         final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
                 (readConfig().getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
