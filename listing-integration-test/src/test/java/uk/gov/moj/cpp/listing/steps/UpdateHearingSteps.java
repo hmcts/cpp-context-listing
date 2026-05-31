@@ -818,9 +818,13 @@ public class UpdateHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicEventHearingDaysChangedForHearing() {
-        final JsonPath jsonResponse = retrieveMessage(publicEventHearingDaysChangedForHearing);
+        final String expectedHearingId = updatedHearingData.getHearingId().toString();
+        // Match by hearingId so a stale event from another test on the shared public topic is skipped.
+        final JsonPath jsonResponse = retrieveMessage(publicEventHearingDaysChangedForHearing,
+                org.hamcrest.CoreMatchers.containsString(expectedHearingId));
+        assertNotNull("No public hearing-days-changed event found for hearingId=" + expectedHearingId, jsonResponse);
 
-        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
+        assertThat(jsonResponse.get("hearingId"), is(expectedHearingId));
         assertThat(jsonResponse.get("hearingDays[0].courtCentreId"), is(updatedHearingData.getCourtCentreId().toString()));
     }
 

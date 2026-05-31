@@ -7,8 +7,10 @@ import static java.text.MessageFormat.format;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
@@ -140,9 +142,12 @@ public class CourtApplicationSteps extends AbstractIT {
     public void verifyPublicEventCourtApplicationAdded() {
         JsonPath jsRequest = new JsonPath(request);
 
-        JsonPath jsonResponse = retrieveMessage(publicMessageConsumerCourtApplicationAddedForHearing);
+        final String expectedHearingId = jsRequest.getString("hearingId");
+        JsonPath jsonResponse = retrieveMessage(publicMessageConsumerCourtApplicationAddedForHearing,
+                containsString(expectedHearingId));
+        assertNotNull(jsonResponse, "No public court-application-added event found for hearingId=" + expectedHearingId);
         LOGGER.debug("jsonResponse from publicMessageConsumerCourtApplicationAddedForHearing: {}", jsonResponse.prettify());
-        assertThat(jsonResponse.get("hearingId"), is(jsRequest.getString("hearingId")));
+        assertThat(jsonResponse.get("hearingId"), is(expectedHearingId));
         assertThat(jsonResponse.get("courtApplication.id"), is(jsRequest.getString("courtApplication.id")));
     }
 

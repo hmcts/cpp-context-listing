@@ -11,8 +11,10 @@ import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -458,7 +460,9 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     }
 
     public void verifyPublicEventForCourtListPublished(final String courtCentreId, final String publishCourtListType, final Boolean weekCommencing, final Boolean sendNotificationToParties, final int courtListItems) {
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerPublishCourtList);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerPublishCourtList,
+                containsString(courtCentreId));
+        assertNotNull(jsonResponse, "No public publish-court-list event found for courtCentreId=" + courtCentreId);
         LOGGER.info("jsonResponse from publicMessageConsumerHearingUpdated: {}", jsonResponse.prettify());
         LOGGER.info("jsonResponse from publicMessageConsumerHearingUpdated ");
         assertThat(jsonResponse.get("courtCentreId"), is(courtCentreId));
