@@ -8,13 +8,11 @@ import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
@@ -505,14 +503,8 @@ public class ListNextHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicUnallocatedOldHearingDeletedInPublicMQ(final HearingsData hearingsData) {
-        // Match by this test's hearingIds so stale events from another test on the shared public topic are skipped.
-        final Matcher belongsToThisTest = anyOf(
-                containsString(hearingsData.getHearingData().get(0).getId().toString()),
-                containsString(hearingsData.getHearingData().get(1).getId().toString()));
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerUnallocatedHearingDeleted, belongsToThisTest);
-        final JsonPath jsonResponse2 = QueueUtil.retrieveMessage(publicMessageConsumerUnallocatedHearingDeleted, belongsToThisTest);
-        assertNotNull(jsonResponse, "No public unallocated-hearing-deleted event found for this test's hearings");
-        assertNotNull(jsonResponse2, "No second public unallocated-hearing-deleted event found for this test's hearings");
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerUnallocatedHearingDeleted);
+        final JsonPath jsonResponse2 = QueueUtil.retrieveMessage(publicMessageConsumerUnallocatedHearingDeleted);
 
         final List<String> actualHearingIds = Arrays.asList(jsonResponse.get("hearingId"), jsonResponse2.get("hearingId"));
         final List<String> expectedHearingIds = hearingsData.getHearingData().stream()
@@ -523,9 +515,7 @@ public class ListNextHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicOffencesRemovedFromExistingHearingInActiveMQ(final UUID existedHearingId, final HearingsData hearingsData) {
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesRemovedFromExistingHearing,
-                containsString(existedHearingId.toString()));
-        assertNotNull(jsonResponse, "No public offences-removed-from-existing-hearing event found for hearingId=" + existedHearingId);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesRemovedFromExistingHearing);
 
         hearingsData.getHearingData().get(0).getListedCases().stream()
                 .flatMap(listedCaseData -> listedCaseData.getDefendants().stream())
@@ -538,23 +528,16 @@ public class ListNextHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicHearingAddedToCaseInActiveMQ(final UUID existedHearingId) {
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingAddedToCase,
-                containsString(existedHearingId.toString()));
-        assertNotNull(jsonResponse, "No public hearing-added-to-case event found for hearingId=" + existedHearingId);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingAddedToCase);
 
         assertThat(jsonResponse.get("hearingId"), is(existedHearingId.toString()));
 
     }
 
     public void verifyPublicOffencesMovedToHearingInActiveMQ(final HearingsData hearingsData, final HearingsData oldHearingsData, final UUID seedingHearingId) {
-        final Matcher movedToThisTest = anyOf(
-                containsString(hearingsData.getHearingData().get(0).getId().toString()),
-                containsString(hearingsData.getHearingData().get(1).getId().toString()));
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesMovedToHearing, movedToThisTest);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesMovedToHearing);
 
-        final JsonPath jsonResponse2 = QueueUtil.retrieveMessage(publicMessageConsumerOffencesMovedToHearing, movedToThisTest);
-        assertNotNull(jsonResponse, "No public offences-moved-to-next-hearing event found for this test's hearings");
-        assertNotNull(jsonResponse2, "No second public offences-moved-to-next-hearing event found for this test's hearings");
+        final JsonPath jsonResponse2 = QueueUtil.retrieveMessage(publicMessageConsumerOffencesMovedToHearing);
 
         assertThat(jsonResponse.get("seedingHearingId"), is(seedingHearingId.toString()));
 
@@ -581,9 +564,7 @@ public class ListNextHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(final UUID existedHearingId, final HearingsData hearingsData, final String... newOffence) {
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing,
-                containsString(existedHearingId.toString()));
-        assertNotNull(jsonResponse, "No public offences-removed-from-existing-allocated-hearing event found for hearingId=" + existedHearingId);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing);
 
         final List<String> offenceIds = hearingsData.getHearingData().get(0).getListedCases().stream()
                 .flatMap(listedCaseData -> listedCaseData.getDefendants().stream())

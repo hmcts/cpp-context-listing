@@ -2336,9 +2336,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         assertThat(jsonResponse.get("confirmedHearing.prosecutionCases.size()"), is(1));
         final String allocatedHearingCaseId = jsonResponse.get("confirmedHearing.prosecutionCases[0].id");
 
-        final JsonPath jsonResponse1 = retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing,
-                anyOf(containsString(allocatedHearingId.toString()), containsString(unAllocatedHearingId.toString())));
-        assertNotNull(jsonResponse1, "No public hearing-confirmed event found for hearingId=" + unAllocatedHearingId);
+        final JsonPath jsonResponse1 = retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing);
 
         assertThat(jsonResponse1.getBoolean("sendNotificationToParties"), is(true));
         assertThat(jsonResponse1.get("confirmedHearing.id"), is(unAllocatedHearingId.toString()));
@@ -2374,17 +2372,13 @@ public class ListCourtHearingSteps extends AbstractIT {
     public void verifyPublicEventHearingConfirmedEventAndExtendPartialHearingFromProgression(final UUID allocatedHearingId, final UUID unAllocatedHearingId) {
         final List<String> newCaseIds = new ArrayList<>();
 
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing,
-                anyOf(containsString(allocatedHearingId.toString()), containsString(unAllocatedHearingId.toString())));
-        assertNotNull(jsonResponse, "No public hearing-confirmed event found for hearingId=" + allocatedHearingId);
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing);
 
         assertThat(jsonResponse.get("confirmedHearing.id"), is(allocatedHearingId.toString()));
         assertThat(jsonResponse.get("confirmedHearing.prosecutionCases.size()"), is(1));
         final String allocatedHearingCaseId = jsonResponse.get("confirmedHearing.prosecutionCases[0].id");
 
-        final JsonPath jsonResponse1 = retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing,
-                anyOf(containsString(allocatedHearingId.toString()), containsString(unAllocatedHearingId.toString())));
-        assertNotNull(jsonResponse1, "No public hearing-confirmed event found for hearingId=" + unAllocatedHearingId);
+        final JsonPath jsonResponse1 = retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing);
 
         assertThat(jsonResponse1.get("confirmedHearing.id"), is(unAllocatedHearingId.toString()));
         assertThat(jsonResponse1.get("confirmedHearing.prosecutionCases.size()"), is(1));
