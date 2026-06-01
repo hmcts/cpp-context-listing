@@ -810,20 +810,32 @@ public class UpdateHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicEventHearingConfirmed() {
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingConfirmed);
+        final String expectedHearingId = updatedHearingData.getHearingId().toString();
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingConfirmed,
+                org.hamcrest.CoreMatchers.containsString(expectedHearingId));
+        assertNotNull("No public hearing-confirmed event found for hearingId=" + expectedHearingId, jsonResponse);
         verifyHearingPublicDetails(jsonResponse, "confirmedHearing");
     }
 
     public void verifyPublicEventHearingDaysChangedForHearing() {
-        final JsonPath jsonResponse = retrieveMessage(publicEventHearingDaysChangedForHearing);
+        final String expectedHearingId = updatedHearingData.getHearingId().toString();
+        // Match by hearingId so a stale event from another test on the shared public topic is skipped.
+        final JsonPath jsonResponse = retrieveMessage(publicEventHearingDaysChangedForHearing,
+                org.hamcrest.CoreMatchers.containsString(expectedHearingId));
+        assertNotNull("No public hearing-days-changed event found for hearingId=" + expectedHearingId, jsonResponse);
 
-        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
+        assertThat(jsonResponse.get("hearingId"), is(expectedHearingId));
         assertThat(jsonResponse.get("hearingDays[0].courtCentreId"), is(updatedHearingData.getCourtCentreId().toString()));
     }
 
     public void verifyPublicEventHearingConfirmed_hasNoJudiciary() {
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingConfirmed);
-        assertThat(jsonResponse.get("confirmedHearing.id"), is(updatedHearingData.getHearingId().toString()));
+        final String expectedHearingId = updatedHearingData.getHearingId().toString();
+        // Match by hearingId so a stale hearing-confirmed event from another test on the shared public
+        // topic is skipped rather than consumed (drains until this hearing's event arrives).
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingConfirmed,
+                org.hamcrest.CoreMatchers.containsString(expectedHearingId));
+        assertNotNull("No public hearing-confirmed event found for hearingId=" + expectedHearingId, jsonResponse);
+        assertThat(jsonResponse.get("confirmedHearing.id"), is(expectedHearingId));
         assertNull(jsonResponse.get("confirmedHearing.judiciary"));
     }
 
