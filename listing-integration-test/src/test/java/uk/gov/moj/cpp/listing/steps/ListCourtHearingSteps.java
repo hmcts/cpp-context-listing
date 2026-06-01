@@ -18,6 +18,7 @@ import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.apache.http.HttpStatus.SC_FORBIDDEN;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -26,6 +27,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.gov.justice.core.courts.Organisation.organisation;
 import static uk.gov.justice.services.common.converter.LocalDates.to;
@@ -667,10 +669,15 @@ public class ListCourtHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicEventHearingListed() {
-        final JsonPath jsonResponse = retrieveMessage(publicEventHearingListed);
+        final String expectedHearingId = hearingsData.getHearingData().get(0).getId().toString();
+        // Match by hearingId so a stale hearing-listed event from another test on the shared
+        // public topic is skipped rather than consumed (drains until this hearing's event arrives).
+        final JsonPath jsonResponse = retrieveMessage(publicEventHearingListed,
+                org.hamcrest.CoreMatchers.containsString(expectedHearingId));
+        assertNotNull(jsonResponse, "No public hearing-listed event found for hearingId=" + expectedHearingId);
         LOGGER.info("jsonResponse from publicEventHearingListed: {}", jsonResponse.prettify());
 
-        assertThat(jsonResponse.get("hearingId"), is(hearingsData.getHearingData().get(0).getId().toString()));
+        assertThat(jsonResponse.get("hearingId"), is(expectedHearingId));
     }
 
     public void verifyHearingListedWithAnyAllocationFromAPI(final boolean isAllocated) {
@@ -2409,12 +2416,16 @@ public class ListCourtHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicEventHearingUpdatedPartially(final UUID hearingId) {
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingPartiallyUpdated);
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingPartiallyUpdated,
+                containsString(hearingId.toString()));
+        assertNotNull(jsonResponse, "No public hearing-partially-updated event found for hearingId=" + hearingId);
         assertThat(jsonResponse.get("hearingIdToBeUpdated"), is(hearingId.toString()));
     }
 
     public void verifyPublicEVentHearingChangesSaved(final UUID hearingId) {
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingChangesSaved);
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingChangesSaved,
+                containsString(hearingId.toString()));
+        assertNotNull(jsonResponse, "No public hearing-changes-saved event found for hearingId=" + hearingId);
         assertThat(jsonResponse.get("hearingId"), is(hearingId.toString()));
     }
 
@@ -2437,6 +2448,8 @@ public class ListCourtHearingSteps extends AbstractIT {
     }
 
     public JsonPath getHearingConfirmedPublicEventPayload() {
+        // NOTE: shared getter — callers (e.g. GroupCasesIT) use a Steps instance without hearingsData set,
+        // so it cannot be filtered by this.hearingsData. Filter at the call site where the expected id is known.
         return retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing);
     }
 
