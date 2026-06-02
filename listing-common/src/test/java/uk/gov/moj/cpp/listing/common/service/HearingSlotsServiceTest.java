@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.common.service;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -458,6 +459,7 @@ class HearingSlotsServiceTest {
             verify(httpClient).execute(httpPostCaptor.capture());
             HttpPost capturedPost = httpPostCaptor.getValue();
             assertThat(capturedPost.getURI().toString(), is(BASE_URI + "/validate-session-availability"));
+            assertThat(capturedPost.getFirstHeader("Accept").getValue(), is("application/json"));
         }
     }
 
@@ -703,6 +705,7 @@ class HearingSlotsServiceTest {
             assertThat(capturedPost.getURI().toString(), is(BASE_URI + "/extendmultidayhearing/hearingslots"));
             assertThat(capturedPost.getFirstHeader("Content-Type").getValue(),
                     is("application/vnd.courtscheduler.extend.multiday.hearing+json"));
+            assertThat(capturedPost.getFirstHeader("Accept"), is(nullValue()));
         }
     }
 
