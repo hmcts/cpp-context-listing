@@ -82,11 +82,11 @@ public class HearingSlotsService {
     }
 
     public Response validateSessionAvailability(final JsonObject payload) {
-        return post(VALIDATE_SESSION_AVAILABILITY_RESOURCE, COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE, payload);
+        return post(VALIDATE_SESSION_AVAILABILITY_RESOURCE, COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE, payload, true);
     }
 
     public Response extendMultiDayHearing(final JsonObject payload) {
-        return post(EXTEND_MULTIDAY_RESOURCE, COURTSCHEDULER_EXTEND_MULTIDAY, payload);
+        return post(EXTEND_MULTIDAY_RESOURCE, COURTSCHEDULER_EXTEND_MULTIDAY, payload, false);
     }
 
     public Response searchBookSlots(final Map<String, String> params) {
@@ -238,7 +238,7 @@ public class HearingSlotsService {
         }
     }
 
-    private Response post(final String urlPath, final String contentTypeHeader, final JsonObject payload) {
+    private Response post(final String urlPath, final String contentTypeHeader, final JsonObject payload, final boolean addAcceptJson) {
         if (LOGGER.isInfoEnabled() && Objects.nonNull(payload)) {
             LOGGER.info("{} in CourtScheduler S & L with payload '{}'", contentTypeHeader, payload);
         }
@@ -248,7 +248,9 @@ public class HearingSlotsService {
         try {
             final HttpPost httpPost = new HttpPost(new URIBuilder(baseUri + urlPath).build());
             httpPost.addHeader(CONTENT_TYPE, contentTypeHeader);
-            httpPost.addHeader(ACCEPT, "application/json");
+            if (addAcceptJson) {
+                httpPost.addHeader(ACCEPT, "application/json");
+            }
             httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
             httpPost.setEntity(new StringEntity(payload.toString()));
 
