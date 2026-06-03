@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
@@ -4301,5 +4302,283 @@ class CourtScheduleEnrichmentServiceTest {
 
         assertThat(result, is(hearing));
         verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+    }
+
+    // ─── enrichCrownUpdateHearing / applyCrownFallback guard-path tests ──────
+
+    @Test
+    void shouldReturnUnchangedWhenCrownUpdateHasNoCourtScheduleIdOnMergedDaysAndNotAllocationCandidate() {
+        // nonDefaultDay has a courtScheduleId (so hasCourtScheduleId=true → enrichCrownUpdateHearing),
+        // but the date doesn't match the hearingDay → no merge → anyHearingDayHasCourtScheduleId=false.
+        // With no startDate / courtRoomId, isCandidateForAllocation is false → return unchanged.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID nonDefaultCsId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 5, 10);
+        final LocalDate nonDefaultDate = LocalDate.of(2026, 6, 1);
+
+        final HearingDay hearingDay = HearingDay.hearingDay()
+                .withHearingDate(hearingDate)
+                .withDurationMinutes(120)
+                .build();
+
+        final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
+                .withCourtScheduleId(nonDefaultCsId.toString())
+                .withStartTime(nonDefaultDate.atStartOfDay(ZoneOffset.UTC))
+                .withDuration(120)
+                .build();
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Collections.singletonList(hearingDay))
+                .withNonDefaultDays(Collections.singletonList(nonDefaultDay))
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingId(), is(hearingId));
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+    }
+
+    @Test
+    void shouldReturnUnchangedFromCrownFallbackWhenCourtCentreIdIsMissing() {
+        // hasCourtScheduleId=false (no courtScheduleId anywhere) → applyCrownFallback.
+        // courtCentreId is null → log warning and return unchanged without calling the adapter.
+        final UUID hearingId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 5, 10);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(hearingDate)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(120)
+                                .build()))
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingId(), is(hearingId));
+        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(any(), any(), any(), anyInt(), any(), any(), any());
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+    }
+
+    @Test
+    void shouldReturnUnchangedFromCrownFallbackWhenHearingDateIsNotDerivable() {
+        // hasCourtScheduleId=false → applyCrownFallback.
+        // courtCentreId present but no startDate and no hearingDays → hearingDate=null → return unchanged.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingId(), is(hearingId));
+        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(any(), any(), any(), anyInt(), any(), any(), any());
+    }
+
+    @Test
+    void shouldReturnUnchangedForCrownUpdateSingleDayWhenFetchCourtSchedulesByIdsReturnsEmpty() {
+        // enrichCrownUpdateHearing single-day path: fetchCourtSchedulesByIds returns a non-200
+        // response → sessions is empty → log warning and return hearing unchanged.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(hearingDate)
+                .withCourtRoomId(courtRoomId)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingId(), is(hearingId));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+    }
+
+    @Test
+    void shouldReturnOriginalHearingDayUnchangedWhenSanityCheckCannotFindMatchingSession() {
+        // sanityCheckAndEnrichCrown: the session returned by fetchCourtSchedulesByIds has a different
+        // courtScheduleId → session == null for the requested ID → original hearingDay returned as-is.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID unrelatedSessionId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(hearingDate)
+                .withCourtRoomId(courtRoomId)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Session returned has a different courtScheduleId — will not match the hearingDay
+        final CourtSchedule unrelatedSession = new CourtSchedule();
+        unrelatedSession.setCourtScheduleId(unrelatedSessionId.toString());
+        unrelatedSession.setCourtRoomId(courtRoomId.toString());
+        unrelatedSession.setCourtHouseId(courtHouseId.toString());
+        unrelatedSession.setSessionDate(hearingDate);
+        unrelatedSession.setDraft(false);
+        unrelatedSession.setHearingStartTime(hearingDate + "T10:00:00Z");
+        unrelatedSession.setSessionStartTime(Date.from(hearingDate.atTime(10, 0).toInstant(ZoneOffset.UTC)));
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", unrelatedSessionId.toString())
+                                .add("isDraft", false)))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(unrelatedSession);
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        // List response maps the original courtScheduleId so combineSearchAndBook succeeds
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", hearingDate + "T10:00:00Z")
+                                .add("duration", 240)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        // The original courtScheduleId is preserved — sanityCheck returned the original hearingDay
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+    }
+
+    @Test
+    void shouldNotAdjustCourtCentreWhenFirstEnrichedHearingDayHasNullCourtRoomId() {
+        // enrichCrownCourtScheduleFirst(HearingListingNeeds): the session returned has a null
+        // courtRoomId; the hearingDay also has no courtRoomId. The guard at line 199 is false
+        // (enrichedHearingDays.get(0).getCourtRoomId() == null) so the court centre is NOT updated.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final UUID existingRoomId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withEstimatedMinutes(240)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(existingRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(sessionDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Session is non-draft but has no courtRoomId — sanityCheck will not call withCourtRoomId
+        final CourtSchedule sessionWithNoRoom = new CourtSchedule();
+        sessionWithNoRoom.setCourtScheduleId(courtScheduleId.toString());
+        sessionWithNoRoom.setCourtRoomId(null);
+        sessionWithNoRoom.setCourtHouseId(courtHouseId.toString());
+        sessionWithNoRoom.setSessionDate(sessionDate);
+        sessionWithNoRoom.setDraft(false);
+        sessionWithNoRoom.setHearingStartTime(sessionDate + "T10:00:00Z");
+        sessionWithNoRoom.setSessionStartTime(Date.from(sessionDate.atTime(10, 0).toInstant(ZoneOffset.UTC)));
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("isDraft", false)))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(sessionWithNoRoom);
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", sessionDate + "T10:00:00Z")
+                                .add("duration", 240)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        // Court centre should NOT have been updated — the enriched day has no courtRoomId
+        assertThat(result.getCourtCentre().getRoomId(), is(existingRoomId));
     }
 }
