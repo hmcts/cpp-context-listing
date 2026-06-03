@@ -1048,7 +1048,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
         final JsonArray schedulesArray = responseJson.getJsonArray(COURT_SCHEDULES);
         if (schedulesArray == null || schedulesArray.isEmpty()) {
-            LOGGER.warn("CROWN extend-multiday empty courtSchedules array for hearingId {}. Returning hearing unchanged.", hearing.getHearingId());
+            LOGGER.info("CROWN extend-multiday empty courtSchedules array for hearingId {}. Returning hearing unchanged.", hearing.getHearingId());
             return hearing;
         }
 
@@ -1072,8 +1072,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         return sessions.stream().map(session -> HearingDay.hearingDay()
                 .withCourtCentreId(fromString(session.getCourtHouseId()))
                 .withCourtScheduleId(fromString(session.getCourtScheduleId()))
-                .withCourtRoomId(fromString(session.getCourtRoomId()))
-                .withStartTime(nonNull(session.getHearingStartTime()) ? ZonedDateTime.parse(session.getHearingStartTime()) : null)
+                .withStartTime(nonNull(session.getSessionStartTime()) ? session.getSessionStartTime().toInstant().atZone(ZoneOffset.UTC) : null)
                 .withHearingDate(session.getSessionDate())
                 .withDurationMinutes(durationPerDay)
                 .withIsDraft(session.isDraft())

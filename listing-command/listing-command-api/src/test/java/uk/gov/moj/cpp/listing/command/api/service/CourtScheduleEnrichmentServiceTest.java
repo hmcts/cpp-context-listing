@@ -39,6 +39,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -2272,6 +2273,7 @@ class CourtScheduleEnrichmentServiceTest {
         cs.setSessionDate(sessionDate);
         cs.setDraft(isDraft);
         cs.setHearingStartTime(sessionDate + "T10:00:00Z");
+        cs.setSessionStartTime(Date.from(sessionDate.atTime(10, 0).toInstant(ZoneOffset.UTC)));
         return cs;
     }
 
