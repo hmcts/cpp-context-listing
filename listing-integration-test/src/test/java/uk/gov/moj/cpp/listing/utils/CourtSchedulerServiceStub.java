@@ -427,6 +427,35 @@ public class CourtSchedulerServiceStub {
                 COURT_SCHEDULER_ENDPOINT + EXTEND_MULTIDAY)));
     }
 
+    /**
+     * SPRDT-902: stub a 422 typed-failure response from /extendmultidayhearing/hearingslots,
+     * scoped to a specific hearingId. Body shape mirrors the courtscheduler RAML error contract.
+     */
+    public static void stubExtendMultiDayHearingFailure(final String hearingId,
+                                                         final int statusCode,
+                                                         final String errorCode,
+                                                         final List<String> unavailableDates) {
+        final StringBuilder body = new StringBuilder("{\"errorCode\":\"").append(errorCode).append("\"");
+        if (unavailableDates != null && !unavailableDates.isEmpty()) {
+            body.append(",\"unavailableDates\":[");
+            for (int i = 0; i < unavailableDates.size(); i++) {
+                if (i > 0) {
+                    body.append(",");
+                }
+                body.append("\"").append(unavailableDates.get(i)).append("\"");
+            }
+            body.append("]");
+        }
+        body.append("}");
+
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + EXTEND_MULTIDAY)))
+                .withHeader(CONTENT_TYPE, containing(COURTSCHEDULER_EXTEND_MULTIDAY_TYPE))
+                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
+                .willReturn(aResponse().withStatus(statusCode)
+                        .withBody(body.toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
     public static void stubValidateSessionAvailabilityFailure() {
         stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + VALIDATE_SESSION_AVAILABILITY)))
                 .withHeader("Content-Type", containing(COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE))
