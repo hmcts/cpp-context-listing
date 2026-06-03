@@ -2,6 +2,8 @@ package uk.gov.moj.cpp.listing.command.api.service;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -2205,10 +2207,15 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
-    void shouldReturnNoJudiciaryWhenResponseHasNoJudiciariesKey() {
+    void shouldPreserveExistingJudiciaryWhenResponseHasNoJudiciariesKey() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtScheduleId = UUID.randomUUID();
         final UUID courtRoomId = UUID.randomUUID();
+        final UUID judicialId = UUID.randomUUID();
+
+        final uk.gov.justice.core.courts.JudicialRole existingJudiciary = uk.gov.justice.core.courts.JudicialRole.judicialRole()
+                .withJudicialId(judicialId)
+                .build();
 
         // HearingDay with courtScheduleId — bypasses getFirstAvailableSlot
         final HearingDay hearingDay = HearingDay.hearingDay()
@@ -2219,6 +2226,7 @@ class CourtScheduleEnrichmentServiceTest {
                 .withDurationMinutes(30)
                 .build();
 
+        // Update already has existing judiciary
         final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
                 .withHearingId(hearingId)
                 .withJurisdictionType(JurisdictionType.MAGISTRATES)
@@ -2226,12 +2234,13 @@ class CourtScheduleEnrichmentServiceTest {
                 .withCourtRoomId(courtRoomId)
                 .withStartDate(LocalDate.now().plusDays(3))
                 .withHearingDays(Collections.singletonList(hearingDay))
+                .withJudiciary(Collections.singletonList(existingJudiciary))
                 .build();
 
         when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
                 .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
 
-        // Mock listHearingInCourtSessions — response is 200 but hearing has NO "judiciaries" key
+        // Response is 200 but hearing has NO "judiciaries" key — enrichment provides nothing
         final JsonObject listJson = JsonObjects.createObjectBuilder()
                 .add("hearings", JsonObjects.createArrayBuilder()
                         .add(JsonObjects.createObjectBuilder()
@@ -2258,9 +2267,10 @@ class CourtScheduleEnrichmentServiceTest {
 
         final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
 
-        // populateJudiciaryInfoFromSlots finds no "judiciaries" key in the hearing object, returns empty list
-        // No judiciary should be set on the result
-        assertThat(result.getJudiciary() == null || result.getJudiciary().isEmpty(), is(true));
+        // Existing judiciary is preserved because the response has no judiciaries key to replace it
+        assertThat(result.getJudiciary(), is(not(nullValue())));
+        assertThat(result.getJudiciary().size(), is(1));
+        assertThat(result.getJudiciary().get(0).getJudicialId(), is(judicialId));
     }
 
     // ─── Helper methods ──────────────────────────────────────────────────
