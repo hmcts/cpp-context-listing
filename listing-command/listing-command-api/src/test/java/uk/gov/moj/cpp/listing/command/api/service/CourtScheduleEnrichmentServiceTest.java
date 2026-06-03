@@ -4502,6 +4502,340 @@ class CourtScheduleEnrichmentServiceTest {
         verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
     }
 
+    // ─── Coverage push >80%: seeding / merging / fallback date-derivation paths ─
+
+    @Test
+    void shouldSkipSeedingHearingDaysWhenWeekCommencingStartDateIsPresent() {
+        // seedHearingDaysFromNonDefaultDaysIfEmpty returns the hearing unchanged when
+        // weekCommencingStartDate is set (line 357 guard). Despite nonDefaultDays being present,
+        // no seeding occurs and the result has no hearingDays.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID csId = UUID.randomUUID();
+        final LocalDate nonDefaultDate = LocalDate.of(2026, 5, 10);
+
+        final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
+                .withCourtScheduleId(csId.toString())
+                .withStartTime(nonDefaultDate.atStartOfDay(ZoneOffset.UTC))
+                .withDuration(60)
+                .build();
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withWeekCommencingStartDate(LocalDate.of(2026, 5, 6))
+                .withNonDefaultDays(Collections.singletonList(nonDefaultDay))
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingId(), is(hearingId));
+        assertThat(result.getHearingDays(), is(nullValue()));
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).searchBookSlots(anyMap());
+    }
+
+    @Test
+    void shouldSeedHearingDayWithoutCourtScheduleIdWhenNonDefaultDayHasBlankCourtScheduleId() {
+        // seedHearingDaysFromNonDefaultDaysIfEmpty skips setting courtScheduleId on seeded
+        // hearingDays when the nonDefaultDay's courtScheduleId is blank (line 377 guard).
+        // The seeded hearingDay carries the correct date/duration but a null courtScheduleId.
+        final UUID hearingId = UUID.randomUUID();
+        final LocalDate nonDefaultDate = LocalDate.of(2026, 6, 10);
+
+        final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
+                .withCourtScheduleId("")
+                .withStartTime(nonDefaultDate.atStartOfDay(ZoneOffset.UTC))
+                .withDuration(60)
+                .build();
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withNonDefaultDays(Collections.singletonList(nonDefaultDay))
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingId(), is(hearingId));
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getHearingDate(), is(nonDefaultDate));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(nullValue()));
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+    }
+
+    @Test
+    void shouldReturnUnchangedWhenSearchAndBookReturnsNullForAllHearingDays() {
+        // handleCrownUpdateSearchAndBook: searchBookSlots returns non-200 for all days,
+        // so searchAndBookSlots returns null (line 473). After the loop every hearingDay
+        // still has null courtScheduleId, so allMatch(isNull) is true and the hearing is
+        // returned unchanged (lines 491-493).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID csId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 5, 10);
+        final LocalDate nonDefaultDate = LocalDate.of(2026, 6, 1);
+
+        final HearingDay hearingDay = HearingDay.hearingDay()
+                .withHearingDate(hearingDate)
+                .withDurationMinutes(120)
+                .build();
+
+        final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
+                .withCourtScheduleId(csId.toString())
+                .withStartTime(nonDefaultDate.atStartOfDay(ZoneOffset.UTC))
+                .withDuration(120)
+                .build();
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(hearingDate)
+                .withCourtCentreId(courtCentreId)
+                .withCourtRoomId(courtRoomId)
+                .withHearingDays(Collections.singletonList(hearingDay))
+                .withNonDefaultDays(Collections.singletonList(nonDefaultDay))
+                .build();
+
+        final Response sbResponse = mock(Response.class);
+        when(sbResponse.getStatus()).thenReturn(HttpStatus.SC_NOT_FOUND);
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(sbResponse);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingId(), is(hearingId));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(nullValue()));
+        verify(hearingSlotsService).searchBookSlots(anyMap());
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+    }
+
+    @Test
+    void shouldNotAdjustCourtCentreWhenCrownFallbackResultIsDraft() {
+        // applyCrownFallback(HearingListingNeeds): when isDraft=true the condition
+        // Boolean.FALSE.equals(result.isDraft()) is false (line 1580), so the court
+        // centre is NOT updated — the original roomId is preserved.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID originalRoomId = UUID.randomUUID();
+        final UUID bookedScheduleId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 5, 10);
+        final ZonedDateTime listedStart = hearingDate.atStartOfDay(ZoneOffset.UTC).plusHours(9);
+
+        final CourtCentre courtCentre = CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .withRoomId(originalRoomId)
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withListedStartDateTime(listedStart)
+                .withEstimatedMinutes(60)
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate),
+                anyInt(), any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING)))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, bookedScheduleId, 731816, hearingDate,
+                        listedStart, listedStart.plusHours(8),
+                        60, true, "CR", "CROWN_FB_LIST", false));
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getCourtCentre().getRoomId(), is(originalRoomId));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedScheduleId));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
+    }
+
+    @Test
+    void shouldReturnUnchangedWhenFallbackHearingDateNullForHearingListingNeedsWithCourtCentre() {
+        // applyCrownFallback(HearingListingNeeds): courtCentre is present but
+        // extractFirstHearingDate returns null because there is no listedStartDateTime
+        // and no hearingDays. The hearing is returned unchanged (line 1552 guard).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+
+        final CourtCentre courtCentre = CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withEstimatedMinutes(60)
+                .build();
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result, is(hearing));
+        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(
+                any(), any(), any(), anyInt(), any(), any(), any());
+    }
+
+    @Test
+    void shouldDeriveHearingDateFromHearingDayForHearingListingNeedsFallback() {
+        // extractFirstHearingDate(HearingListingNeeds): when listedStartDateTime is null but a
+        // hearingDay carries hearingDate, the fallback derives the booking date from it (line 1693).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID bookedScheduleId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 6, 15);
+
+        final CourtCentre courtCentre = CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withEstimatedMinutes(60)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(60)
+                                .build()))
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate),
+                anyInt(), any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING)))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, bookedScheduleId, null, hearingDate,
+                        hearingDate.atStartOfDay(ZoneOffset.UTC),
+                        hearingDate.atStartOfDay(ZoneOffset.UTC).plusHours(8),
+                        60, false, null, "CROWN_FB_LIST", false));
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedScheduleId));
+        verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate), anyInt(), any(), any(), any());
+    }
+
+    @Test
+    void shouldDeriveHearingDateFromHearingDayStartTimeForHearingListingNeedsFallback() {
+        // extractFirstHearingDate(HearingListingNeeds): when listedStartDateTime is null and
+        // hearingDay has no hearingDate but has startTime, the fallback uses
+        // startTime.toLocalDate() as the booking date (line 1697).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID bookedScheduleId = UUID.randomUUID();
+        final LocalDate expectedDate = LocalDate.of(2026, 6, 20);
+        final ZonedDateTime startTime = expectedDate.atTime(9, 0).atZone(ZoneOffset.UTC);
+
+        final CourtCentre courtCentre = CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withEstimatedMinutes(60)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withStartTime(startTime)
+                                .withDurationMinutes(60)
+                                .build()))
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(expectedDate),
+                anyInt(), any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING)))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, bookedScheduleId, null, expectedDate,
+                        startTime, startTime.plusHours(8),
+                        60, false, null, "CROWN_FB_LIST", false));
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedScheduleId));
+        verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(expectedDate), anyInt(), any(), any(), any());
+    }
+
+    @Test
+    void shouldDeriveHearingDateFromHearingDayWhenNoStartDateInUpdateFallback() {
+        // extractFirstHearingDate(UpdateHearingForListing): when startDate is null but a
+        // hearingDay carries hearingDate, the fallback uses it as the booking date (line 1662).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID bookedScheduleId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 7, 10);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(60)
+                                .build()))
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate),
+                anyInt(), any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.UPDATE_HEARING_FOR_LISTING)))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, bookedScheduleId, null, hearingDate,
+                        hearingDate.atStartOfDay(ZoneOffset.UTC),
+                        hearingDate.atStartOfDay(ZoneOffset.UTC).plusHours(8),
+                        60, false, null, "CROWN_FB_UPDATE", false));
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedScheduleId));
+        verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate), anyInt(), any(), any(), any());
+    }
+
+    @Test
+    void shouldDeriveHearingDateFromHearingDayStartTimeForUpdateFallback() {
+        // extractFirstHearingDate(UpdateHearingForListing): when startDate is null and
+        // hearingDay has no hearingDate but has startTime, the fallback uses
+        // startTime.toLocalDate() as the booking date (line 1665).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID bookedScheduleId = UUID.randomUUID();
+        final LocalDate expectedDate = LocalDate.of(2026, 7, 15);
+        final ZonedDateTime startTime = expectedDate.atTime(10, 0).atZone(ZoneOffset.UTC);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withStartTime(startTime)
+                                .withDurationMinutes(60)
+                                .build()))
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(expectedDate),
+                anyInt(), any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.UPDATE_HEARING_FOR_LISTING)))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, bookedScheduleId, null, expectedDate,
+                        startTime, startTime.plusHours(8),
+                        60, false, null, "CROWN_FB_UPDATE", false));
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedScheduleId));
+        verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(expectedDate), anyInt(), any(), any(), any());
+    }
+
     @Test
     void shouldNotAdjustCourtCentreWhenFirstEnrichedHearingDayHasNullCourtRoomId() {
         // enrichCrownCourtScheduleFirst(HearingListingNeeds): the session returned has a null
