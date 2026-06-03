@@ -342,9 +342,13 @@ public class HearingEnrichmentOrchestrator {
                 && hearing.getHearingDays().stream().anyMatch(d -> nonNull(d.getCourtScheduleId()))) {
             return true;
         }
+        // Virtual nonDefaultDays are UI-only courtroom preferences and must not trigger the
+        // CourtSchedule-first enrichment path. Only non-virtual nonDefaultDays with a
+        // courtScheduleId drive that flow; virtual ones use the standard startDate→endDate path.
         return !isEmpty(hearing.getNonDefaultDays())
                 && hearing.getNonDefaultDays().stream()
-                .anyMatch(nd -> nonNull(nd.getCourtScheduleId()) && !nd.getCourtScheduleId().isBlank());
+                .anyMatch(nd -> nonNull(nd.getCourtScheduleId()) && !nd.getCourtScheduleId().isBlank()
+                        && !Boolean.TRUE.equals(nd.getVirtual()));
     }
 
     private static boolean isCrownMultiDay(final UpdateHearingForListing hearing) {

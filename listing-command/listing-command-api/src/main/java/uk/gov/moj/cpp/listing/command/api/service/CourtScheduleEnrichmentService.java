@@ -222,8 +222,11 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
         final boolean hasCourtScheduleIdOnHearingDays = !isEmpty(hearing.getHearingDays())
                 && hearing.getHearingDays().stream().anyMatch(d -> nonNull(d.getCourtScheduleId()));
+        // Virtual nonDefaultDays are UI-only courtroom preferences; their courtScheduleId must not
+        // trigger CourtSchedule-first enrichment (which seeds only those days and loses all others).
         final boolean hasCourtScheduleIdOnNonDefaultDays = !isEmpty(hearing.getNonDefaultDays())
-                && hearing.getNonDefaultDays().stream().anyMatch(d -> nonNull(d.getCourtScheduleId()));
+                && hearing.getNonDefaultDays().stream()
+                .anyMatch(d -> nonNull(d.getCourtScheduleId()) && !Boolean.TRUE.equals(d.getVirtual()));
         final boolean hasCourtScheduleId = hasCourtScheduleIdOnHearingDays || hasCourtScheduleIdOnNonDefaultDays;
 
         if (!hasCourtScheduleId) {
@@ -363,6 +366,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
         final List<HearingDay> seeded = hearing.getNonDefaultDays().stream()
                 .filter(nd -> nonNull(nd.getStartTime()))
+                .filter(nd -> !Boolean.TRUE.equals(nd.getVirtual())) // virtual days are UI-only; don't seed
                 .map(nd -> {
                     HearingDay.Builder b = HearingDay.hearingDay()
                             .withHearingDate(nd.getStartTime().toLocalDate())
