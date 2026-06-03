@@ -1,6 +1,11 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubExtendMultiDayHearing;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubExtendMultiDayHearingFailure;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyExtendMultiDayHearingCalled;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
@@ -123,6 +128,39 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
 
         // NonSittingDays must NOT reduce the duration sent to courtscheduler — slot accounting requires
         // all N sessions be deducted. Filtering of nonSittingDays happens post-enrichment on hearingDays.
+        verifyExtendMultiDayHearingCalled(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
+    }
+
+    @Test
+    void shouldReturn422WithErrorCodeAndUnavailableDates_whenCourtschedulerRejectsExtendMultiDay() throws Exception {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID startingCourtScheduleId = UUID.randomUUID();
+        final LocalDate startDate = LocalDate.now().plusDays(30);
+        final LocalDate endDate = startDate.plusDays(57);
+        final ZonedDateTime sessionStart = startDate.atTime(9, 0).atZone(ZoneOffset.UTC);
+
+        stubExtendMultiDayHearingFailure(
+                hearingId.toString(), 422, "NO_AVAILABILITY",
+                asList(startDate.plusDays(1).toString(), startDate.plusDays(2).toString()));
+        givenReferenceDataStubsForUpdateHearing(courtCentreId, courtRoomId);
+        givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+
+        final String payload = loadAndSubstitute(
+                "test-data/CROWN/update-hearing-for-listing/update-hearing-for-listing-crown-multiday-courtscheduleid.json",
+                basePlaceholders(hearingId, courtCentreId, courtRoomId, startingCourtScheduleId, startDate, endDate, sessionStart));
+
+        final javax.ws.rs.core.Response response = AbstractIT.restClient.postCommand(
+                buildUpdateHearingUrl(hearingId),
+                MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
+                payload,
+                getLoggedInHeader());
+
+        assertThat(response.getStatus(), is(422));
+        final String body = response.readEntity(String.class);
+        assertThat(body, containsString("\"errorCode\":\"NO_AVAILABILITY\""));
+        assertThat(body, containsString("\"unavailableDates\""));
         verifyExtendMultiDayHearingCalled(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
     }
 
