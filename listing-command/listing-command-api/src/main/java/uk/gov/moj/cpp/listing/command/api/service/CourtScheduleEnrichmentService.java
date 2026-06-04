@@ -895,12 +895,18 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         }
 
         final CourtSchedule session = sessions.get(0);
+        final ZonedDateTime slotStartTime = nonNull(session.getHearingStartTime())
+                ? ZonedDateTime.parse(session.getHearingStartTime())
+                : hearing.getListedStartDateTime();
+        if (isNull(slotStartTime)) {
+            LOGGER.warn("CROWN list: session {} has no hearingStartTime and hearing {} has no listedStartDateTime; "
+                    + "skipping bookedSlot promotion (startTime is mandatory on bookedSlots).", courtScheduleId, hearing.getId());
+            return hearing;
+        }
         final RotaSlot.Builder bookedSlot = RotaSlot.rotaSlot()
                 .withCourtScheduleId(courtScheduleId)
                 .withDuration(hearing.getEstimatedMinutes())
-                .withStartTime(nonNull(session.getHearingStartTime())
-                        ? ZonedDateTime.parse(session.getHearingStartTime())
-                        : hearing.getListedStartDateTime());
+                .withStartTime(slotStartTime);
         if (nonNull(session.getCourtHouseId())) {
             bookedSlot.withCourtCentreId(session.getCourtHouseId());
         }

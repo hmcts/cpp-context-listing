@@ -4519,6 +4519,7 @@ class CourtScheduleEnrichmentServiceTest {
         cs.setCourtScheduleId(bookingReference.toString());
         cs.setCourtHouseId(courtHouseId.toString());
         cs.setCourtRoomId(UUID.randomUUID().toString());
+        cs.setHearingStartTime("2026-03-16T10:00:00Z");
         cs.setDraft(true);
 
         final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
@@ -4537,6 +4538,38 @@ class CourtScheduleEnrichmentServiceTest {
         assertThat(slot.getCourtScheduleId(), is(bookingReference.toString()));
         assertThat(slot.getCourtCentreId(), is(courtHouseId.toString()));
         assertNull(slot.getRoomId());
+    }
+
+    @Test
+    public void promoteCrownBookingReferenceToBookedSlot_skipsWhenNoStartTimeResolvable() {
+        final UUID bookingReference = UUID.randomUUID();
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withBookingReference(bookingReference)
+                .withEstimatedMinutes(60)
+                .build();
+
+        final CourtSchedule cs = new CourtSchedule();
+        cs.setCourtScheduleId(bookingReference.toString());
+        cs.setDraft(true);
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", bookingReference.toString())))
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        // No hearingStartTime on the session and no listedStartDateTime on the hearing:
+        // the promotion must be skipped rather than emitting a bookedSlot without startTime,
+        // which fails rotaSlot schema validation on the enriched command.
+        final HearingListingNeeds result = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing);
+
+        assertNull(result.getBookedSlots());
     }
 
     @Test
