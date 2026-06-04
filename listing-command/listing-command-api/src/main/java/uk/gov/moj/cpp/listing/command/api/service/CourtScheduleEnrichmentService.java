@@ -1069,15 +1069,19 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         final int daysNeeded = sessions.size();
         final int durationPerDay = aggregatedDuration / daysNeeded;
 
-        return sessions.stream().map(session -> HearingDay.hearingDay()
-                .withCourtCentreId(fromString(session.getCourtHouseId()))
-                .withCourtScheduleId(fromString(session.getCourtScheduleId()))
-                .withStartTime(nonNull(session.getSessionStartTime()) ? session.getSessionStartTime().toInstant().atZone(ZoneOffset.UTC) : null)
-                .withHearingDate(session.getSessionDate())
-                .withDurationMinutes(durationPerDay)
-                .withIsDraft(session.isDraft())
-                .build()
-        ).toList();
+        return sessions.stream().map(session -> {
+            final HearingDay.Builder builder = HearingDay.hearingDay()
+                    .withCourtCentreId(fromString(session.getCourtHouseId()))
+                    .withCourtScheduleId(fromString(session.getCourtScheduleId()))
+                    .withStartTime(nonNull(session.getSessionStartTime()) ? session.getSessionStartTime().toInstant().atZone(ZoneOffset.UTC) : null)
+                    .withHearingDate(session.getSessionDate())
+                    .withDurationMinutes(durationPerDay)
+                    .withIsDraft(session.isDraft());
+            if (nonNull(session.getCourtRoomId())) {
+                builder.withCourtRoomId(fromString(session.getCourtRoomId()));
+            }
+            return builder.build();
+        }).toList();
     }
 
     private List<HearingDay> generateHearingDaysFromCourtSchedule(final List<HearingDay> hearingDays, final List<CourtSchedule> courtScheduleList, final HearingListingNeeds hearing) {
