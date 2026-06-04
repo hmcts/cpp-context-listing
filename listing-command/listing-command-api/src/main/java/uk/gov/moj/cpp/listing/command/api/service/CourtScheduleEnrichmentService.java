@@ -326,7 +326,17 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 LOGGER.info("CROWN single-day update: isDraft=true sessions for hearingId {}. Listing in court sessions for slot deduction, allocation decided by aggregate.", hearing.getHearingId());
             }
 
-            enrichmentResult = listHearingSessionsAndExtractData(hearing.getHearingId(), sanityCheckedDays);
+            // Only pass days that have a courtScheduleId to listHearingInCourtSessions.
+            // When this path is reached via the standard enrichment route (e.g. a virtual
+            // nonDefaultDay with courtScheduleId mixed with default-generated days that have
+            // no courtScheduleId), passing all days would cause a NullPointerException in
+            // convertHearingDaysToCourtScheduleIdsJson. The aggregate's PATCH mode preserves
+            // the remaining days without a courtScheduleId.
+            final List<HearingDay> daysToBook = sanityCheckedDays.stream()
+                    .filter(d -> nonNull(d.getCourtScheduleId()))
+                    .collect(toList());
+
+            enrichmentResult = listHearingSessionsAndExtractData(hearing.getHearingId(), daysToBook);
         }
 
         final List<HearingDay> enrichedHearingDays = enrichmentResult.getHearingDays();
