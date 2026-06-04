@@ -949,7 +949,8 @@ public class UpdateHearingSteps extends AbstractIT {
     }
 
     public void verifyHearingUnallocatedCourtroomRemoveds(final UUID hearingId) {
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingUnallocatedCourtroomRemoved);
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingUnallocatedCourtroomRemoved,
+                org.hamcrest.CoreMatchers.containsString(hearingId.toString()));
         LOGGER.info("jsonResponse from publicMessageConsumerHearingUnallocatedCourtroomRemoved: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.getUUID("hearingId"), is(hearingId));

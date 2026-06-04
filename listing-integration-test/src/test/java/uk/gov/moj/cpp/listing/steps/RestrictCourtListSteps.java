@@ -9,6 +9,7 @@ import static java.text.MessageFormat.format;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
@@ -253,7 +254,8 @@ public class RestrictCourtListSteps extends AbstractIT {
 
     public void verifyPublicCourtListRestrictedEvent(final Boolean restrictCourtList) {
         final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerCourtListRestricted,
-                isJson(withJsonPath("$.restrictCourtList", equalTo(restrictCourtList))));
+                isJson(allOf(withJsonPath("$.restrictCourtList", equalTo(restrictCourtList)),
+                        withJsonPath("$.hearingId", equalTo(hearingsData.getHearingData().get(0).getId().toString())))));
         assertThat(jsonResponse, notNullValue());
         assertThat(jsonResponse.get("hearingId"), is(hearingsData.getHearingData().get(0).getId().toString()));
     }
@@ -261,7 +263,8 @@ public class RestrictCourtListSteps extends AbstractIT {
     public void verifyPublicCourtListRestrictedEventWithApplicant(final Boolean restrictCourtList) {
         final CourtApplicationData courtApplication = hearingsData.getHearingData().get(0).getCourtApplications().get(0);
         final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerCourtListRestricted,
-                isJson(withJsonPath("$.restrictCourtList", equalTo(restrictCourtList))));
+                isJson(allOf(withJsonPath("$.restrictCourtList", equalTo(restrictCourtList)),
+                        withJsonPath("$.hearingId", equalTo(hearingsData.getHearingData().get(0).getId().toString())))));
         assertThat(jsonResponse, notNullValue());
         assertThat(jsonResponse.get("hearingId"), is(hearingsData.getHearingData().get(0).getId().toString()));
         assertThat(jsonResponse.get("courtApplicationApplicantIds[0]"), is(courtApplication.getApplicant().getId().toString()));
@@ -270,7 +273,8 @@ public class RestrictCourtListSteps extends AbstractIT {
     public void verifyPublicCourtListRestrictedEventWithApplicantAndRespondent(final Boolean restrictCourtList) {
         final CourtApplicationData courtApplication = hearingsData.getHearingData().get(0).getCourtApplications().get(0);
         final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerCourtListRestricted,
-                isJson(withJsonPath("$.restrictCourtList", equalTo(restrictCourtList))));
+                isJson(allOf(withJsonPath("$.restrictCourtList", equalTo(restrictCourtList)),
+                        withJsonPath("$.hearingId", equalTo(hearingsData.getHearingData().get(0).getId().toString())))));
         assertThat(jsonResponse, notNullValue());
         assertThat(jsonResponse.get("hearingId"), is(hearingsData.getHearingData().get(0).getId().toString()));
         assertThat(jsonResponse.get("courtApplicationApplicantIds[0]"), is(courtApplication.getApplicant().getId().toString()));
@@ -280,7 +284,8 @@ public class RestrictCourtListSteps extends AbstractIT {
     public void verifyPublicCourtListRestrictedEventWithSubject(final Boolean restrictCourtList) {
         final CourtApplicationData courtApplication = hearingsData.getHearingData().get(0).getCourtApplications().get(0);
         final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerCourtListRestricted,
-                isJson(withJsonPath("$.restrictCourtList", equalTo(restrictCourtList))));
+                isJson(allOf(withJsonPath("$.restrictCourtList", equalTo(restrictCourtList)),
+                        withJsonPath("$.hearingId", equalTo(hearingsData.getHearingData().get(0).getId().toString())))));
         assertThat(jsonResponse, notNullValue());
         assertThat(jsonResponse.get("hearingId"), is(hearingsData.getHearingData().get(0).getId().toString()));
         assertThat(jsonResponse.get("courtApplicationSubjectIds[0]"), is(courtApplication.getSubject().getId().toString()));

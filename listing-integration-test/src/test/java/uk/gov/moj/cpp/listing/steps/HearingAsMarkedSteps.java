@@ -81,7 +81,8 @@ public class HearingAsMarkedSteps extends AbstractIT {
 
     public void verifyHearingMarkedAsDuplicatePublicEventInActiveMQ() {
         final JsonPath jsRequest = new JsonPath(request);
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingMarkedAsDuplicateEvent);
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingMarkedAsDuplicateEvent,
+                org.hamcrest.CoreMatchers.containsString(jsRequest.getString("hearingId")));
         LOGGER.info("jsonResponse from publicMessageConsumerHearingMarkedAsDuplicateEvent: {}", jsonResponse.prettify());
 
 
@@ -95,7 +96,8 @@ public class HearingAsMarkedSteps extends AbstractIT {
     }
 
     public void verifyHmiPublicEventForDeleteHearing() {
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHmiHearingDeleted);
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHmiHearingDeleted,
+                org.hamcrest.CoreMatchers.containsString(hearingData.getId().toString()));
         LOGGER.info("jsonResponse from publicMessageConsumerHmiHearingUpdated: {}", jsonResponse.prettify());
         assertThat(jsonResponse.getString("hearingId"), is(hearingData.getId().toString()));
         assertThat(jsonResponse.getString("cancellationReasonCode"), is("CNCL"));
