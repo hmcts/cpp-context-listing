@@ -334,7 +334,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             // the remaining days without a courtScheduleId.
             final List<HearingDay> daysToBook = sanityCheckedDays.stream()
                     .filter(d -> nonNull(d.getCourtScheduleId()))
-                    .collect(toList());
+                    .toList();
 
             enrichmentResult = listHearingSessionsAndExtractData(hearing.getHearingId(), daysToBook);
         }

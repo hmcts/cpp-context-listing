@@ -1107,6 +1107,12 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> assignHearingDaysV2(final UUID hearingId, final List<uk.gov.moj.cpp.listing.domain.HearingDay> updatedHearingDays, final UUID oldParentCourtRoom, final UUID newParentCourtRoom, final uk.gov.justice.core.courts.JurisdictionType newJurisdictionType, List<LocalDate> daysOfNonDefaultDays) {
+        // Delegate to 8-arg with null dates so preserveUnchangedHearingDays falls back to the
+        // full range of existing hearing days — preserving all unchanged days of a multiday hearing.
+        return assignHearingDaysV2(hearingId, updatedHearingDays, oldParentCourtRoom, newParentCourtRoom, newJurisdictionType, daysOfNonDefaultDays, null, null);
+    }
+
+    public Stream<Object> assignHearingDaysV2(final UUID hearingId, final List<uk.gov.moj.cpp.listing.domain.HearingDay> updatedHearingDays, final UUID oldParentCourtRoom, final UUID newParentCourtRoom, final uk.gov.justice.core.courts.JurisdictionType newJurisdictionType, List<LocalDate> daysOfNonDefaultDays, final LocalDate newStartDate, final LocalDate newEndDate) {
         if (this.duplicate) {
             return Stream.empty();
         }
@@ -1119,77 +1125,6 @@ public class Hearing implements Aggregate {
         final List<uk.gov.justice.listing.events.HearingDay> hearingDaysChangedForHearing = NewDomainToEventConverter.convertHearingDaysDomainToEvent(updatedHearingDays);
 
         if (!this.hearingDays.isEmpty()) {
-            // PATCH MODE: when daysOfNonDefaultDays are all present in existing hearing days, do a
-            // targeted patch — iterate over existing days and apply updates only to changed dates.
-            // This is the correct path for "change courtroom for one day of a multiday hearing"
-            // (virtual nonDefaultDay with or without courtScheduleId). The enrichment may produce
-            // more or fewer days than the original (startDate→endDate iteration vs court-scheduler
-            // sessions), so we MUST start from existing days, not from the enriched day list.
-            final boolean isPartialUpdate = !daysOfNonDefaultDays.isEmpty()
-                    && daysOfNonDefaultDays.stream().allMatch(changeDate ->
-                            this.hearingDays.stream().anyMatch(hd -> changeDate.equals(hd.getHearingDate())));
-
-            if (isPartialUpdate) {
-                LOGGER.info("assignHearingDaysV2: PATCH mode for hearingId {}, changing dates: {}",
-                        hearingId, daysOfNonDefaultDays);
-
-                // Build lookup of incoming days by hearingDate (only needed for changed dates)
-                final Map<LocalDate, uk.gov.justice.listing.events.HearingDay> incomingByDate =
-                        hearingDaysChangedForHearing.stream()
-                                .filter(d -> nonNull(d.getHearingDate()))
-                                .collect(toMap(
-                                        uk.gov.justice.listing.events.HearingDay::getHearingDate,
-                                        d -> d,
-                                        (a, b) -> a));
-
-                final List<uk.gov.justice.listing.events.HearingDay> patched = this.hearingDays.stream()
-                        .map(existingDay -> {
-                            final uk.gov.justice.listing.events.HearingDay incoming =
-                                    incomingByDate.get(existingDay.getHearingDate());
-                            if (incoming != null && daysOfNonDefaultDays.contains(existingDay.getHearingDate())) {
-                                // Changed date: apply incoming data.
-                                // If incoming courtScheduleId is null (e.g. virtual day without a new slot),
-                                // preserve the existing one so allocation state is not lost.
-                                final UUID newCourtScheduleId = nonNull(incoming.getCourtScheduleId())
-                                        ? incoming.getCourtScheduleId()
-                                        : existingDay.getCourtScheduleId();
-                                return uk.gov.justice.listing.events.HearingDay.hearingDay()
-                                        .withDurationMinutes(incoming.getDurationMinutes() != null ? incoming.getDurationMinutes() : existingDay.getDurationMinutes())
-                                        .withEndTime(incoming.getEndTime())
-                                        .withSequence(existingDay.getSequence())
-                                        .withHearingDate(existingDay.getHearingDate())
-                                        .withStartTime(incoming.getStartTime() != null ? incoming.getStartTime() : existingDay.getStartTime())
-                                        .withIsCancelled(incoming.getIsCancelled())
-                                        .withCourtScheduleId(newCourtScheduleId)
-                                        .withCourtRoomId(incoming.getCourtRoomId() != null ? incoming.getCourtRoomId() : existingDay.getCourtRoomId())
-                                        .withCourtCentreId(incoming.getCourtCentreId() != null ? incoming.getCourtCentreId() : existingDay.getCourtCentreId())
-                                        .withIsDraft(incoming.getIsDraft())
-                                        .build();
-                            }
-                            // Unchanged date: preserve existing day exactly (courtScheduleId, room, startTime, sequence, etc.)
-                            return uk.gov.justice.listing.events.HearingDay.hearingDay()
-                                    .withDurationMinutes(existingDay.getDurationMinutes())
-                                    .withEndTime(existingDay.getEndTime())
-                                    .withSequence(existingDay.getSequence())
-                                    .withHearingDate(existingDay.getHearingDate())
-                                    .withStartTime(existingDay.getStartTime())
-                                    .withIsCancelled(existingDay.isCancelled())
-                                    .withCourtScheduleId(existingDay.getCourtScheduleId())
-                                    .withCourtRoomId(existingDay.getCourtRoomId())
-                                    .withCourtCentreId(existingDay.getCourtCentreId())
-                                    .withIsDraft(existingDay.isDraft())
-                                    .build();
-                        })
-                        .collect(toList());
-
-                return apply(Stream.of(hearingDaysChangedForHearing()
-                        .withHearingDays(patched)
-                        .withHearingId(hearingId)
-                        .build()));
-            }
-
-            // STANDARD MODE: replace all hearing days with the enriched incoming list,
-            // merging sequences and previously-changed courtrooms from the existing days.
             final Map<ZonedDateTime, HearingDay> existingHearingDays = this.hearingDays.stream()
                     .collect(toMap(HearingDay::getStartTime, hearingDay -> hearingDay, (hd1, hd2) -> hd2));
 
@@ -1206,6 +1141,10 @@ public class Hearing implements Aggregate {
 
                newHearingDaysWithExistingInfo = mergePreviouslyChangedCourtRooms(newHearingDaysWithExistingInfo, existingHearingDaysWithChangedRooms);
             }
+
+            newHearingDaysWithExistingInfo = preserveUnchangedHearingDays(
+                    hearingDaysChangedForHearing, existingHearingDays, newHearingDaysWithExistingInfo,
+                    newStartDate, newEndDate, hearingId);
 
             return apply(Stream.of(hearingDaysChangedForHearing()
                     .withHearingDays(newHearingDaysWithExistingInfo)
@@ -2661,6 +2600,91 @@ public class Hearing implements Aggregate {
                             .build();
                 })
                 .collect(toList());
+    }
+
+    /** Preserves existing hearing days that were not part of a partial update command.
+     *  Uses hearingDate (LocalDate) as the primary key to avoid ZonedDateTime timezone
+     *  comparison issues, falling back to startTime.toLocalDate() when hearingDate is null.
+     *  When newStartDate/newEndDate are null the full date range of the existing hearing days
+     *  is used as the effective range, preserving all unchanged days. */
+    private List<uk.gov.justice.listing.events.HearingDay> preserveUnchangedHearingDays(
+            final List<uk.gov.justice.listing.events.HearingDay> hearingDaysChangedForHearing,
+            final Map<ZonedDateTime, HearingDay> existingHearingDays,
+            final List<uk.gov.justice.listing.events.HearingDay> currentMergedDays,
+            final LocalDate newStartDate,
+            final LocalDate newEndDate,
+            final UUID hearingId) {
+
+        if (hearingDaysChangedForHearing.size() >= existingHearingDays.size()) {
+            return currentMergedDays;
+        }
+
+        final LocalDate effectiveStartDate = newStartDate != null ? newStartDate
+                : existingHearingDays.values().stream()
+                        .map(this::toLocalDate).filter(java.util.Objects::nonNull)
+                        .min(java.util.Comparator.naturalOrder()).orElse(null);
+        final LocalDate effectiveEndDate = newEndDate != null ? newEndDate
+                : existingHearingDays.values().stream()
+                        .map(this::toLocalDate).filter(java.util.Objects::nonNull)
+                        .max(java.util.Comparator.naturalOrder()).orElse(null);
+
+        if (effectiveStartDate == null || effectiveEndDate == null) {
+            return currentMergedDays;
+        }
+
+        final java.util.Set<LocalDate> updatedDates = hearingDaysChangedForHearing.stream()
+                .map(this::toLocalDate)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+
+        final List<uk.gov.justice.listing.events.HearingDay> unmatchedInRangeExistingDays = existingHearingDays.values().stream()
+                .filter(hd -> {
+                    final LocalDate existingDate = toLocalDate(hd);
+                    return existingDate != null
+                            && !updatedDates.contains(existingDate)
+                            && !existingDate.isBefore(effectiveStartDate)
+                            && !existingDate.isAfter(effectiveEndDate);
+                })
+                .map(this::convertDomainHearingDayToEvent)
+                .toList();
+
+        if (unmatchedInRangeExistingDays.isEmpty()) {
+            return currentMergedDays;
+        }
+
+        final List<uk.gov.justice.listing.events.HearingDay> merged = new java.util.ArrayList<>(currentMergedDays);
+        merged.addAll(unmatchedInRangeExistingDays);
+        merged.sort(java.util.Comparator.comparing(
+                uk.gov.justice.listing.events.HearingDay::getStartTime,
+                java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())));
+        LOGGER.info("Preserved {} existing hearing day(s) within date range [{} - {}] for hearing {}",
+                unmatchedInRangeExistingDays.size(), effectiveStartDate, effectiveEndDate, hearingId);
+        return merged;
+    }
+
+    private LocalDate toLocalDate(final uk.gov.justice.listing.events.HearingDay hd) {
+        if (hd.getHearingDate() != null) return hd.getHearingDate();
+        return hd.getStartTime() != null ? hd.getStartTime().toLocalDate() : null;
+    }
+
+    private LocalDate toLocalDate(final HearingDay hd) {
+        if (hd.getHearingDate() != null) return hd.getHearingDate();
+        return hd.getStartTime() != null ? hd.getStartTime().toLocalDate() : null;
+    }
+
+    private uk.gov.justice.listing.events.HearingDay convertDomainHearingDayToEvent(final HearingDay hd) {
+        return uk.gov.justice.listing.events.HearingDay.hearingDay()
+                .withDurationMinutes(hd.getDurationMinutes())
+                .withEndTime(hd.getEndTime())
+                .withSequence(hd.getSequence())
+                .withHearingDate(hd.getHearingDate())
+                .withStartTime(hd.getStartTime())
+                .withIsCancelled(hd.isCancelled())
+                .withCourtScheduleId(hd.getCourtScheduleId())
+                .withCourtRoomId(hd.getCourtRoomId())
+                .withCourtCentreId(hd.getCourtCentreId())
+                .withIsDraft(hd.isDraft())
+                .build();
     }
 
     private SequencesResetOnHearingDays createSequencesResetOnHearingDaysEvent(final UUID hearingId) {
