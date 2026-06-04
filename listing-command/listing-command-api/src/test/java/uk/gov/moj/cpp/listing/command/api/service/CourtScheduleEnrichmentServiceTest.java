@@ -734,6 +734,7 @@ class CourtScheduleEnrichmentServiceTest {
                 .withJurisdictionType(JurisdictionType.CROWN)
                 .withId(hearingId)
                 .withEstimatedMinutes(1080)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).build())
                 .withHearingDays(Collections.singletonList(
                         HearingDay.hearingDay()
                                 .withCourtScheduleId(courtScheduleId1)

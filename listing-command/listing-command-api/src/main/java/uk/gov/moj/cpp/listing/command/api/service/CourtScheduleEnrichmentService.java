@@ -292,7 +292,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                             .withIsDraft(session.isDraft());
                     if (!session.isDraft()) {
                         dayBuilder.withCourtCentreId(fromString(session.getCourtHouseId()));
-                        dayBuilder.withCourtRoomId(fromString(session.getCourtRoomId()));
+                        if (nonNull(session.getCourtRoomId())) {
+                            dayBuilder.withCourtRoomId(fromString(session.getCourtRoomId()));
+                        }
                     }
                     return dayBuilder.build();
             }).toList();
