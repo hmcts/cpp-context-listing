@@ -91,7 +91,10 @@ public class QueueUtil {
                 }
             }
         } while (MESSAGE_RETRIEVE_TRIAL_TIMEOUT > (System.currentTimeMillis() - startTime));
-        return null;
+        // B6: fail loudly instead of returning null (which produced opaque NPEs at every call site).
+        // Mirrors the 1-arg overload — a missing/filtered-out event is a clear, actionable failure.
+        throw new java.util.NoSuchElementException(
+                "No JMS message matching [" + matchers + "] received within " + MESSAGE_RETRIEVE_TRIAL_TIMEOUT + "ms");
     }
 
     public static void clearAllMessages(JmsMessageConsumerClient consumer) {
