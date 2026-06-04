@@ -140,7 +140,8 @@ public class CourtApplicationSteps extends AbstractIT {
     public void verifyPublicEventCourtApplicationAdded() {
         JsonPath jsRequest = new JsonPath(request);
 
-        JsonPath jsonResponse = retrieveMessage(publicMessageConsumerCourtApplicationAddedForHearing);
+        JsonPath jsonResponse = retrieveMessage(publicMessageConsumerCourtApplicationAddedForHearing,
+                org.hamcrest.CoreMatchers.containsString(jsRequest.getString("hearingId")));
         LOGGER.debug("jsonResponse from publicMessageConsumerCourtApplicationAddedForHearing: {}", jsonResponse.prettify());
         assertThat(jsonResponse.get("hearingId"), is(jsRequest.getString("hearingId")));
         assertThat(jsonResponse.get("courtApplication.id"), is(jsRequest.getString("courtApplication.id")));

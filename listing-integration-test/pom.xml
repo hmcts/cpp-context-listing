@@ -235,6 +235,14 @@
                             <excludes>
                                 <exclude>**/*SpiScenario.java</exclude>
                             </excludes>
+                            <!--
+                              Pin the IT JVM timezone + locale so behaviour does not depend on the host zone.
+                              The deployed Wildfly/Postgres run in UTC, so the test JVM must also read UTC:
+                              otherwise on a Europe/London host LocalDate.now() in the test data builders is one
+                              calendar day ahead of the server during the 00:00-01:00 BST band, producing
+                              "midnight" failures and the green-local / red-CI split. UTC is the canonical zone.
+                            -->
+                            <argLine>-Duser.timezone=UTC -Duser.language=en -Duser.country=GB</argLine>
                         </configuration>
                     </plugin>
                 </plugins>
