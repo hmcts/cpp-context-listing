@@ -3,6 +3,9 @@ package uk.gov.moj.cpp.listing.it;
 import static java.text.MessageFormat.format;
 import static java.util.Collections.emptyList;
 import static javax.ws.rs.core.Response.Status.OK;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.POLL_INTERVAL;
 import static org.codehaus.groovy.runtime.InvokerHelper.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -33,6 +36,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.ws.rs.core.Response;
 
@@ -118,15 +122,34 @@ public class HearingCsvReportIT extends AbstractIT {
         // When
         final String url = getDownloadUrl(courtCentreId, now, numberOfWeeks);
 
+        // The CSV report is built from the hearing read-model, which updates asynchronously after the
+        // multi-day update in @BeforeEach. Poll the download until the report reflects the enriched
+        // 4-day hearing (duration "360" and the "1 of 4".."4 of 4" day markers) so we never assert on
+        // a pre-enrichment snapshot (which intermittently showed duration "20" / "1 of 1").
+        // getLoggedInHeader() reads a ThreadLocal user context. Awaitility evaluates the condition on a
+        // SEPARATE polling thread where that ThreadLocal is unset, which would make userId null and 500 the
+        // endpoint on every poll. Capture the header here on the test thread and reuse it inside the lambda.
+        final javax.ws.rs.core.MultivaluedMap<String, Object> loggedInHeader = getLoggedInHeader();
+        final AtomicReference<Response> responseRef = new AtomicReference<>();
+        final AtomicReference<String> csvRef = new AtomicReference<>();
+        await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
+            final Response polled = restClient.query(url, "text/csv", loggedInHeader);
+            if (polled.getStatus() != OK.getStatusCode()) {
+                return false;
+            }
+            final String csv = polled.readEntity(String.class);
+            responseRef.set(polled);
+            csvRef.set(csv);
+            return csv.contains("360") && csv.contains("4 of 4");
+        });
 
-        final Response response = restClient.query(url, "text/csv", getLoggedInHeader());
+        final Response response = responseRef.get();
+        final String csvContent = csvRef.get();
         // Then
         assertThat(response.getStatus(), is(OK.getStatusCode()));
         assertThat(response.getHeaderString("Content-Type"), containsString("text/csv"));
         assertThat(response.getHeaderString("Content-Disposition"), containsString("attachment"));
         assertThat(response.getHeaderString("Content-Disposition"), containsString(expectedCsvFileName));
-
-        final String csvContent = response.readEntity(String.class);
 
         assertThat(csvContent, is(not(emptyString())));
         assertThat(csvContent, containsString("Date of hearing"));

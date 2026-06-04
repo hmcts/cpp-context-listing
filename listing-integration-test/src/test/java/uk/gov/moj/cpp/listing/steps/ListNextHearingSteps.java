@@ -8,6 +8,7 @@ import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
@@ -503,8 +504,12 @@ public class ListNextHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicUnallocatedOldHearingDeletedInPublicMQ(final HearingsData hearingsData) {
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerUnallocatedHearingDeleted);
-        final JsonPath jsonResponse2 = QueueUtil.retrieveMessage(publicMessageConsumerUnallocatedHearingDeleted);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerUnallocatedHearingDeleted,
+                anyOf(containsString(hearingsData.getHearingData().get(0).getId().toString()),
+                        containsString(hearingsData.getHearingData().get(1).getId().toString())));
+        final JsonPath jsonResponse2 = QueueUtil.retrieveMessage(publicMessageConsumerUnallocatedHearingDeleted,
+                anyOf(containsString(hearingsData.getHearingData().get(0).getId().toString()),
+                        containsString(hearingsData.getHearingData().get(1).getId().toString())));
 
         final List<String> actualHearingIds = Arrays.asList(jsonResponse.get("hearingId"), jsonResponse2.get("hearingId"));
         final List<String> expectedHearingIds = hearingsData.getHearingData().stream()
@@ -515,7 +520,8 @@ public class ListNextHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicOffencesRemovedFromExistingHearingInActiveMQ(final UUID existedHearingId, final HearingsData hearingsData) {
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesRemovedFromExistingHearing);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesRemovedFromExistingHearing,
+                containsString(existedHearingId.toString()));
 
         hearingsData.getHearingData().get(0).getListedCases().stream()
                 .flatMap(listedCaseData -> listedCaseData.getDefendants().stream())
@@ -528,16 +534,21 @@ public class ListNextHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicHearingAddedToCaseInActiveMQ(final UUID existedHearingId) {
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingAddedToCase);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingAddedToCase,
+                containsString(existedHearingId.toString()));
 
         assertThat(jsonResponse.get("hearingId"), is(existedHearingId.toString()));
 
     }
 
     public void verifyPublicOffencesMovedToHearingInActiveMQ(final HearingsData hearingsData, final HearingsData oldHearingsData, final UUID seedingHearingId) {
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesMovedToHearing);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesMovedToHearing,
+                anyOf(containsString(hearingsData.getHearingData().get(0).getId().toString()),
+                        containsString(hearingsData.getHearingData().get(1).getId().toString())));
 
-        final JsonPath jsonResponse2 = QueueUtil.retrieveMessage(publicMessageConsumerOffencesMovedToHearing);
+        final JsonPath jsonResponse2 = QueueUtil.retrieveMessage(publicMessageConsumerOffencesMovedToHearing,
+                anyOf(containsString(hearingsData.getHearingData().get(0).getId().toString()),
+                        containsString(hearingsData.getHearingData().get(1).getId().toString())));
 
         assertThat(jsonResponse.get("seedingHearingId"), is(seedingHearingId.toString()));
 
@@ -564,7 +575,8 @@ public class ListNextHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(final UUID existedHearingId, final HearingsData hearingsData, final String... newOffence) {
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing,
+                containsString(existedHearingId.toString()));
 
         final List<String> offenceIds = hearingsData.getHearingData().get(0).getListedCases().stream()
                 .flatMap(listedCaseData -> listedCaseData.getDefendants().stream())
@@ -621,36 +633,23 @@ public class ListNextHearingSteps extends AbstractIT {
     }
 
     public void verifyAllocatedHearingListedFromAPI(final HearingData hearingData) {
+        final String hearingId = hearingData.getId().toString();
+        // Match the hearing by id at ANY position. This scenario lists three hearings in one court centre,
+        // so a positional hearings[0]/[1] matcher races under load when the target lands at index >= 2
+        // (manifested as a 90s RestPoller ConditionTimeout). Mirrors verifyHearingListedFromAPI.
         pollForHearing(hearingData.getCourtCentreId().toString(), true, getLoggedInUser().toString(), new Matcher[]{
-                anyOf(allOf(
-                                withJsonPath("$.hearings[0].id",
-                                        equalTo(hearingData.getId().toString())),
-                                withJsonPath("$.hearings[0].jurisdictionType",
-                                        equalTo(hearingData.getJurisdictionType())),
-                                withJsonPath("$.hearings[0].courtCentreId",
-                                        equalTo(hearingData.getCourtCentreId().toString())),
-                                withJsonPath("$.hearings[0].type.id",
-                                        equalTo(hearingData.getHearingTypeData().getTypeId().toString())),
-                                withJsonPath("$.hearings[0].type.description",
-                                        equalTo(hearingData.getHearingTypeData().getTypeDescription())),
-                                withJsonPath("$.hearings[0].startDate",
-                                        equalTo(hearingData.getHearingStartDate().toString())),
-                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].isYouth",
-                                        equalTo(true))),
-                        allOf(withJsonPath("$.hearings[1].id",
-                                        equalTo(hearingData.getId().toString())),
-                                withJsonPath("$.hearings[1].jurisdictionType",
-                                        equalTo(hearingData.getJurisdictionType())),
-                                withJsonPath("$.hearings[1].courtCentreId",
-                                        equalTo(hearingData.getCourtCentreId().toString())),
-                                withJsonPath("$.hearings[1].type.id",
-                                        equalTo(hearingData.getHearingTypeData().getTypeId().toString())),
-                                withJsonPath("$.hearings[1].type.description",
-                                        equalTo(hearingData.getHearingTypeData().getTypeDescription())),
-                                withJsonPath("$.hearings[1].startDate",
-                                        equalTo(hearingData.getHearingStartDate().toString())),
-                                withJsonPath("$.hearings[1].listedCases[0].defendants[0].isYouth",
-                                        equalTo(true))))
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].jurisdictionType",
+                        contains(hearingData.getJurisdictionType())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].courtCentreId",
+                        contains(hearingData.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].type.id",
+                        contains(hearingData.getHearingTypeData().getTypeId().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].type.description",
+                        contains(hearingData.getHearingTypeData().getTypeDescription())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].startDate",
+                        contains(hearingData.getHearingStartDate().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].listedCases[0].defendants[0].isYouth",
+                        contains(true))
         });
     }
 

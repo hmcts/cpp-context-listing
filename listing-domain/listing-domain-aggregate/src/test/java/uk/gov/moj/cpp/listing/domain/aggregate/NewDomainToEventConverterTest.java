@@ -188,7 +188,6 @@ public class NewDomainToEventConverterTest {
         assertThat(committingCourt.getCourtHouseCode(), is(courtHouseCode));
         assertThat(committingCourt.getCourtHouseName(), is(courtHouseName));
         assertThat(committingCourt.getCourtHouseShortName(), is(courtHouseShortName));
-//        assertThat(committingCourt.getCourtHouseType(), is(uk.gov.justice.listing.events.CourtHouseType.CROWN));
 
         final uk.gov.justice.listing.events.StatementOfOffence statementOfOffence = eventOffence.getStatementOfOffence();
         assertThat(statementOfOffence.getWelshLegislation(), is(welshLegislation));

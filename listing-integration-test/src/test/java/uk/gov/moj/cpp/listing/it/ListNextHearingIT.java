@@ -267,6 +267,9 @@ public class ListNextHearingIT extends AbstractIT {
         listNextHearingSteps1.verifyCasesAddedToAllocatedHearingFromApi(nextHearings, secondHearings);
 
         // Amend Reshare First Hearing
+        // Drain the offences-removed events produced by the earlier update-related-hearing step so the
+        // verify below reads the DELETE's event, not the UPDATE's (same hearingId, so id-filter alone can't disambiguate).
+        listNextHearingSteps1.clearStaleAllocatedHearingMessages();
         listNextHearingSteps1.whenDeleteNextHearingSubmittedForListing();
         listNextHearingSteps1.verifyCasesAreInAllocatedHearingFromApi(nextHearings, secondHearings);
         listNextHearingSteps1.verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(nextHearings.getHearingData().get(0).getId(), nextHearings);
