@@ -14,6 +14,7 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetCourtSchedulesByIdWithDraftStatus;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForCourtSchedule;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 
 import uk.gov.moj.cpp.listing.helper.SearchHearingHelper;
@@ -416,6 +417,98 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
 
         LOGGER.info("Successfully verified hearing days on {} have courtRoom {} and empty nonDefaultDays",
                 String.join(", ", expectedDates), expectedCourtRoomId);
+    }
+
+    /**
+     * SPRDT-939: Verifies that when a virtual nonDefaultDay carrying a {@code courtScheduleId}
+     * is used to change the courtroom for ONE day of a multiday CROWN hearing, all other hearing
+     * days are preserved intact and only the targeted day gets the new courtroom.
+     *
+     * <p>This directly tests the fix for the regression where passing {@code courtScheduleId}
+     * in a virtual nonDefaultDay previously collapsed the entire multiday hearing to a single day.
+     */
+    @Test
+    public void shouldChangeCourtRoomForOneDayOfMultidayCrownHearingUsingCourtScheduleId() {
+        // ── Step 1: create the initial 1-day CROWN hearing ──────────────────────────
+        final CaseAndDefendantData caseData = new CaseAndDefendantData(
+                HEARING_ID, null, "CASE_URN_SPRDT939", randomUUID(), null,
+                JURISDICTION_TYPE, JURISDICTION_TYPE, null, null);
+
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary(
+                caseData, COURT_CENTRE_ID, COURT_ROOM_ID, END_DATE, HEARING_START_TIME);
+
+        final ListCourtHearingSteps listSteps = new ListCourtHearingSteps(hearingsData);
+        stubGetCourtSchedulesByIdWithDraftStatus(java.util.Collections.singletonList("8e837de0-743a-4a2c-9db3-b2e678c48729"), false);
+        stubListHearingInCourtSessions(HEARING_ID.toString(), "8e837de0-743a-4a2c-9db3-b2e678c48729", HEARING_START_TIME);
+        listSteps.whenCaseIsSubmittedForListing();
+        listSteps.verifyHearingIsCreated(HEARING_ID, 1);
+
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+
+        // ── Step 2: expand to 5 days (Aug 15-19) using the virtual courtroom-change ──
+        // Calling changeTwoDaysToCourtRoom with COURT_ROOM_ID assigns Aug18/Aug19 to
+        // COURT_ROOM_ID (same as parent).  After this call the aggregate holds 5 days.
+        changeTwoDaysToCourtRoom(hearingData, hearingsData, COURT_ROOM_ID);
+
+        LOGGER.info("SPRDT-939 test: multiday hearing established with 5 days ({} - {})", START_DATE, END_DATE);
+
+        // ── Step 3: change ONLY Aug-18 using virtual nonDefaultDay WITH courtScheduleId ──
+        // This is the new payload shape introduced in SPRDT-939: the frontend sends
+        //   virtual=true, courtScheduleId=<new booking id>, roomId=<new room>
+        // for the single day being moved to a different courtroom.
+        final String newCourtScheduleIdForAug18 = "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f90";
+        final ZonedDateTime aug18StartTime = ZonedDateTime.of(2025, 8, 18, 10, 30, 0, 0, java.time.ZoneOffset.UTC);
+
+        // Stub: when listHearingInCourtSessions is called with the new court-schedule-id
+        // (scoped to only this request so other tests are not affected).
+        stubListHearingInCourtSessionsForCourtSchedule(
+                HEARING_ID.toString(), newCourtScheduleIdForAug18, aug18StartTime);
+
+        // NonDefaultDayData using the full 9-arg constructor so courtScheduleId is serialised.
+        final List<uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData> nonDefaultDayWithNewSlot = java.util.List.of(
+                new uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData(
+                        aug18StartTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")),
+                        Optional.of(360),
+                        Optional.of(newCourtScheduleIdForAug18),   // courtScheduleId ← the new slot
+                        Optional.empty(),                           // courtRoomId (integer)
+                        Optional.empty(),                           // oucode
+                        Optional.empty(),                           // session
+                        Optional.of(COURT_CENTRE_ID.toString()),
+                        Optional.of(COURT_ROOM_ID2.toString()),     // new courtroom for Aug-18
+                        Optional.of(Boolean.TRUE)                   // virtual=true
+                )
+        );
+
+        final var updateData = new uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData(
+                HEARING_ID, COURT_CENTRE_ID, hearingData.getName(), COURT_ROOM_ID,
+                hearingData.getHearingTypeData(),
+                START_DATE.toString(), END_DATE.toString(),
+                nonDefaultDayWithNewSlot, emptyList(), "ENGLISH",
+                hearingData.getJudiciary(), JURISDICTION_TYPE,
+                null, null, null,
+                hearingData.getHasVideoLink(), hearingData.getPublicListNote(),
+                "High", null, null, false, null);
+
+        final UpdateHearingSteps updateSteps = new UpdateHearingSteps(hearingsData, updateData);
+        updateSteps.whenHearingIsUpdatedForListing();
+        updateSteps.verifyHearingUpdatedWhenQueryingFromAPICourtCalendar();
+        updateSteps.verifyHearingAllocatedWhenQueryingFromAPICourtCalendar();
+
+        LOGGER.info("SPRDT-939 test: courtroom change sent for Aug-18 only (courtScheduleId={})", newCourtScheduleIdForAug18);
+
+        // ── Step 4: verify only Aug-18 moved to COURT_ROOM_ID2 ──────────────────────
+        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(
+                updateSteps, HEARING_ID, 0, COURT_ROOM_ID2, asList("2025-08-18"));
+
+        // ── Step 5: verify all other days are PRESERVED with COURT_ROOM_ID ──────────
+        // This is the core assertion: the fix must keep Aug-15, Aug-16, Aug-17, Aug-19
+        // unchanged even though the payload contained no hearingDays entries for them.
+        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(
+                updateSteps, HEARING_ID, 0, COURT_ROOM_ID,
+                asList("2025-08-15", "2025-08-16", "2025-08-17", "2025-08-19"));
+
+        LOGGER.info("SPRDT-939 test: PASSED — only Aug-18 changed to {}, other 4 days preserved with {}",
+                COURT_ROOM_ID2, COURT_ROOM_ID);
     }
 
     private static String dateTimeToDate(final String expectedDateTime) {
