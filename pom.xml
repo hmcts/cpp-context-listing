@@ -8,7 +8,6 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-
     <groupId>uk.gov.moj.cpp.listing</groupId>
     <artifactId>listing-parent</artifactId>
     <version>17.103.164-SNAPSHOT</version>
@@ -42,7 +41,6 @@
         <com.sun.xml.bind.jaxb.version>2.2.11</com.sun.xml.bind.jaxb.version>   <!-- Version property added to common-bom:2.2.1. Replace with com.sun.xml.bind.jaxb.version after upgrade to Framework 6 -->
         <slf4j-log4j12.version>1.7.10</slf4j-log4j12.version>
         <postgresql.version>42.1.4</postgresql.version>
-
         <mssql.jdbc.version>7.0.0.jre8</mssql.jdbc.version>
         <commons-csv.version>1.4</commons-csv.version>
         <defence.version>17.0.94</defence.version>
