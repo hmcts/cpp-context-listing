@@ -380,6 +380,7 @@ public class ListCourtHearingSteps extends AbstractIT {
     private Response getResponseCaseSubmittedForListingBookedSlot() {
 
         stubReferenceDataForFirstHearing();
+        hearingsData.getHearingData().forEach(ListCourtHearingSteps::stubCrownBookedSlotResolution);
 
         final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
                 (readConfig().getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
@@ -458,6 +459,35 @@ public class ListCourtHearingSteps extends AbstractIT {
                 bookingReference.toString(), hearingData.getCourtCentreId(), hearingData.getCourtRoomId(),
                 sessionDate, startTime, false);
         stubListHearingInCourtSessionsForCourtSchedule(hearingData.getId().toString(), bookingReference.toString(), startTime);
+    }
+
+    /**
+     * Booked-slot analogue of {@link #stubCrownBookingReferenceResolution}: a CROWN hearing listed with
+     * pre-booked slots carries the chosen courtScheduleId on {@code bookedSlots[]}, which the listing command
+     * resolves against courtscheduler ({@code search.court-schedules-by-id}) and then lists
+     * ({@code list.hearings-in-court-sessions}). Stub both so each bookedSlot's courtScheduleId resolves to a
+     * non-draft session echoing this hearing's own centre/room — keeping the enriched hearing consistent with
+     * the listed values. Without these the enrichment degrades to the legacy bookedSlots fallback and logs a
+     * failed courtscheduler retrieve. No-op for MAGISTRATES or hearings without booked slots.
+     */
+    private static void stubCrownBookedSlotResolution(final HearingData hearingData) {
+        if (!"CROWN".equals(hearingData.getJurisdictionType()) || !isNotEmpty(hearingData.getBookedSlots())) {
+            return;
+        }
+        hearingData.getBookedSlots().stream()
+                .filter(slot -> nonNull(slot.getCourtScheduleId()))
+                .forEach(slot -> {
+                    final ZonedDateTime startTime = nonNull(slot.getStartTime())
+                            ? slot.getStartTime()
+                            : (nonNull(hearingData.getHearingStartTime()) ? hearingData.getHearingStartTime() : ZonedDateTime.now());
+                    final UUID roomId = nonNull(slot.getRoomId())
+                            ? fromString(slot.getRoomId())
+                            : hearingData.getCourtRoomId();
+                    stubSearchCourtSchedulesByIdSession(
+                            slot.getCourtScheduleId(), hearingData.getCourtCentreId(), roomId,
+                            startTime.toLocalDate(), startTime, false);
+                    stubListHearingInCourtSessionsForCourtSchedule(hearingData.getId().toString(), slot.getCourtScheduleId(), startTime);
+                });
     }
 
     /**
@@ -2456,14 +2486,21 @@ public class ListCourtHearingSteps extends AbstractIT {
         return retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing);
     }
 
+    // noteId is derived server-side from (courtRoomId, hearingDate): creating the same pair twice
+    // makes the ListingNote aggregate log ERROR "Note already exists" and no-op, so both helpers
+    // de-duplicate before posting (hearings in shared test data often reuse a courtroom).
     public void createListingNotes() {
-        this.hearingsData.getHearingData().stream().filter(hearing -> hearing.getCourtRoomId() != null).
-                forEach(hearing -> notesSteps.createNoteForListing(hearing.getCourtRoomId(), "2020-05-21", "note 1"));
+        this.hearingsData.getHearingData().stream().filter(hearing -> hearing.getCourtRoomId() != null)
+                .map(HearingData::getCourtRoomId)
+                .distinct()
+                .forEach(courtRoomId -> notesSteps.createNoteForListing(courtRoomId, "2020-05-21", "note 1"));
     }
 
     public void createListingNotesForStartDays() {
-        this.hearingsData.getHearingData().stream().filter(hearing -> hearing.getCourtRoomId() != null).
-                forEach(hearing -> notesSteps.createNoteForListing(hearing.getCourtRoomId(), hearing.getHearingStartDate().toString(), "note 1"));
+        this.hearingsData.getHearingData().stream().filter(hearing -> hearing.getCourtRoomId() != null)
+                .map(hearing -> java.util.Map.entry(hearing.getCourtRoomId(), hearing.getHearingStartDate().toString()))
+                .distinct()
+                .forEach(roomAndDate -> notesSteps.createNoteForListing(roomAndDate.getKey(), roomAndDate.getValue(), "note 1"));
     }
 
     public void listCourtHearing(final JsonObject listCourtHearingJsonObject, Optional<LocalDate> adjournedFromDate, Optional<List<UUID>> shadowListedOffences) {

@@ -449,6 +449,90 @@ mvn verify -pl listing-integration-test -P listing-integration-test
 
 ---
 
+## 13. Server.log Markers and Unexpected-Error Enforcement
+
+The Wildfly `server.log` must stay CLEAN during a healthy IT run: **all ERROR/WARN lines must come
+from deliberate negative scenarios**. Three pieces of test infrastructure enforce this.
+
+### 13.1 Test Lifecycle Markers
+
+`ServerLogTestMarkerExtension` (registered on `AbstractIT`, so every IT gets it) appends marker
+lines directly into `server.log` — the test JVM and Wildfly share the bind-mounted log file:
+
+```
+==== [IT-CLASS-START] CrownUpdateHearingMultidayIT ====
+---- [TEST-START] CrownUpdateHearingMultidayIT.shouldExtendHearing ----
+---- [TEST-END][SUCCESS] CrownUpdateHearingMultidayIT.shouldExtendHearing ----
+==== [IT-CLASS-END] CrownUpdateHearingMultidayIT ====
+```
+
+Triage rules when reading server.log:
+
+| Where the ERROR/WARN appears | Meaning |
+|---|---|
+| Inside a `[TEST-START]` window **without** `[EXPECTED-ERRORS]` | Genuine problem — investigate |
+| Inside an `[EXPECTED-ERRORS]` window | Deliberate negative scenario — ignore (reason is on the marker) |
+| Between `[TEST-END]` and the next `[TEST-START]` | Async straggler — missing await/drain in the test that just ended |
+
+The `[TEST-START]` marker is written *before* `AbstractIT.setUp()`, so Artemis purge / WireMock
+reset / DB clean errors are attributed to the right test.
+
+### 13.2 Negative Scenarios: `@ExpectedServerErrors`
+
+Tests that DELIBERATELY provoke server-side ERROR/WARN lines (e.g. stubbing courtscheduler to
+return 422/500 and asserting fail-safe behaviour) must be annotated:
+
+```java
+@Test
+@ExpectedServerErrors("courtscheduler stub returns 500 -> ERROR 'Retrieve ... failed with status code:500' + WARN 'failing-safe by returning anyDraft=true'")
+void shouldFailClosedToAnyDraftTrueWhenCourtschedulerReturnsServerError() {
+```
+
+The annotation stamps the test's markers with `[EXPECTED-ERRORS]` plus the reason, and exempts the
+window from unexpected-error detection. Describe the EXACT lines expected so a log reader can match
+them without opening the test source.
+
+### 13.3 Unexpected-Error Detection and the End-of-Run Summary
+
+After each test, the extension reads back that test's server.log window and flags any ERROR/WARN
+line that is neither sanctioned by `@ExpectedServerErrors` nor a known framework-race floor
+signature. Findings are printed at the end of the run (and written to
+`target/unexpected-server-errors.txt`):
+
+```
+=================== SERVER.LOG UNEXPECTED ERROR SUMMARY ===================
+1 test window(s) contained unexpected server.log ERROR/WARN lines ...
+  SomeIT.someTest
+    07/Jun/2026:11:36:19 UTC  ERROR [uk.gov...] ...
+============================================================================
+```
+
+Strict mode makes the owning test FAIL instead of just being summarised:
+
+```bash
+./runIntegrationTests.sh errorlog                      # full suite, strict (also disables reruns)
+mvn verify ... -Dserver.log.failOnUnexpectedErrors=true  # targeted runs
+```
+
+Allowlisted floor signatures (framework races that self-heal on redelivery, also present on main;
+NOT fixable from test code): `No stream not found` (EVENT_LISTENER stream_status race),
+`Failed to find Event with id` (AsynchronousPrePublisher vs event-store truncate),
+`AMQ212009: resetting session` (companion WARN). Project-specific additions:
+`-Dserver.log.error.allowlist=<regex>`.
+
+### 13.4 Keeping Windows Clean: Drain Your Own Aftermath
+
+A test is responsible for the async work it triggers. Before a test ends:
+
+- Await the viewstore projection the next command/assertion depends on (`verifyHearingIsCreated`,
+  poll-based assertions).
+- Drain EVENT_PROCESSOR output where the test caused public events (e.g.
+  `verifyPublicEVentHearingChangesSaved`, `WebDavStub.awaitCourtListXmlFilesSent(n)` for
+  court-list exports) — otherwise the in-flight work crosses the next test's WireMock `reset()` /
+  DB truncate and produces errors misattributed to the next test's window.
+
+---
+
 ## Summary Checklist
 
 When writing or reviewing integration tests, verify:
@@ -464,3 +548,6 @@ When writing or reviewing integration tests, verify:
 - [ ] Unnecessary JMS consumers are not created
 - [ ] Awaitility/WireMock timeouts use reduced, reasonable values (e.g., 15s instead of 30s)
 - [ ] Run with `-P test-duration-tracking` to check for slow tests when making changes to integration tests
+- [ ] Negative scenarios that provoke server-side errors are annotated with `@ExpectedServerErrors`
+- [ ] Tests drain their own async aftermath (projections awaited, exports/public events drained) before finishing
+- [ ] The end-of-run `SERVER.LOG UNEXPECTED ERROR SUMMARY` is CLEAN (or run `./runIntegrationTests.sh errorlog`)

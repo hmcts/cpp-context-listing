@@ -13,6 +13,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Collections;
 
 import org.junit.jupiter.api.Disabled;
@@ -54,10 +55,20 @@ public class WeekCommencingHearingIT extends AbstractIT {
         final UpdatedHearingData updatedHearingDataForUnallocation = updatedHearingData(hearingsData.getHearingData().get(0));
 
         final String courtScheduleId = updatedHearingDataForUnallocation.getNonDefaultDays().get(0).getCourtScheduleId().orElseThrow();
-        stubGetCourtSchedulesByIdWithDraftStatus(Collections.singletonList(courtScheduleId), false);
+        // Rich overload: the single-day UPDATE enrichment sanity-checks hearingDate against the
+        // session's sessionDate, so the stub must agree with the update payload's nonDefaultDay.
+        final LocalDate updatedStartDate = LocalDate.parse(updatedHearingDataForUnallocation.getStartDate());
+        final java.time.ZonedDateTime updatedStartTime = updatedStartDate.atTime(10, 0).atZone(ZoneOffset.UTC);
+        stubGetCourtSchedulesByIdWithDraftStatus(Collections.singletonList(courtScheduleId), false,
+                updatedStartDate,
+                updatedHearingDataForUnallocation.getCourtCentreId(),
+                updatedHearingDataForUnallocation.getCourtRoomId(),
+                updatedStartTime);
+        // Sessions listing must also reflect the UPDATED start time — the enrichment rebuilds
+        // the hearing day from this response (stale seed-time values would revert the date).
         stubListHearingInCourtSessions(hearingsData.getHearingData().get(0).getId().toString(),
                 courtScheduleId,
-                hearingsData.getHearingData().get(0).getHearingStartTime());
+                updatedStartTime);
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForUnallocation);
         updateHearingSteps.whenHearingIsUpdatedForListing();

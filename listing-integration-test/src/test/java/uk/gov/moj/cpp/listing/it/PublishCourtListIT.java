@@ -37,6 +37,7 @@ import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
+import uk.gov.moj.cpp.listing.utils.WebDavStub;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -155,6 +156,11 @@ public class PublishCourtListIT extends AbstractIT {
 
         publishCourtListSteps.verifyThatWeSuccessfullyRequestedAFinalListPublication(courtCentreIdOne, expectedPublishDate);
         publishCourtListSteps.verifyThatWeSuccessfullyRequestedAFinalListPublication(courtCentreIdTwo, expectedPublishDate);
+
+        // Drain our own async aftermath: the final-list publication exports a DailyList XML per
+        // centre to the xhibit-gateway. Without this await the PUT lands mid-reset() of the NEXT
+        // test -> 404 -> ERROR "Failed to put file" misattributed to that test's window.
+        WebDavStub.awaitCourtListXmlFilesSent(2);
     }
 
     @Test

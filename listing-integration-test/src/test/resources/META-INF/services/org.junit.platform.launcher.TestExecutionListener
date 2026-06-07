@@ -1,3 +1,4 @@
 uk.gov.moj.cpp.listing.it.TestDurationListener
 uk.gov.moj.cpp.listing.it.TestDurationExtension
 uk.gov.moj.cpp.listing.it.TestReportGenerator
+uk.gov.moj.cpp.listing.it.ServerLogUnexpectedErrorSummary
