@@ -6,15 +6,23 @@
 #     mvn clean
 #     ./runIntegrationTests.sh
 #
-# This harness runs that unit 10x, DOES NOT stop on first failure (so it measures
-# the true flake rate), parses the failsafe summary each time, scans the shared
-# Wildfly server.log, and classifies every failure as one of:
-#     code-flake        — failures/errors with normal duration, broker alive   (REAL signal)
-#     deterministic     — the SAME test fails on a clean run (not flakiness)
-#     broker-infra      — Artemis container exited mid-run / AMQ219019 cascade  (HOST artifact, discount)
+# Behaviour:
+#   - EXECUTION errors (non-zero exit, failsafe failures/errors, missing summary, broker death)
+#     STOP the harness: the failure is reported and the script WAITS for manual resolution
+#     (interactive prompt: retry the same run or abort). In a non-interactive session it exits 1
+#     immediately. LOG errors (unexpected server.log ERROR/WARN lines) do NOT stop the harness —
+#     they are reported per run and aggregated in the final summary.
+#   - On first execution the Wildfly server.log is DELETED; before every run it is truncated and
+#     after every run its content (= that run's slice) is appended to an aggregated copy:
+#         $OUTDIR/server-log-aggregate.log   (one "#### RUN n" header per slice)
+#   - Unexpected server.log errors come from the in-run detector
+#     (ServerLogTestMarkerExtension -> listing-integration-test/target/unexpected-server-errors.txt,
+#     @ExpectedServerErrors windows and known framework-race floor already filtered) and are shown
+#     on each RUN line and under the final "RESULT: x/y green" summary.
 #
 # A run counts toward "X/10 green" only if it is a true PASS (exit 0, failures=0, errors=0).
-# Broker-infra failures are reported separately so they neither pass silently nor hide a real flake.
+# Rerun-masked flakes (failsafe-green only thanks to reruns) are surfaced separately and still
+# fail the final robustness gate.
 #
 # Env (must be set — see ~/.zprofile): CPP_DOCKER_DIR, CPP_ACR_REGISTRY, CPP_ACR_REGISTRY_PATH
 # Optional knobs:
@@ -38,14 +46,13 @@ COOLDOWN="${COOLDOWN:-30}"
 
 SERVER_LOG="${CPP_DOCKER_DIR%/}/containers/wildfly/log/server.log"
 SUMMARY_GLOB="listing-integration-test/target/failsafe-reports/failsafe-summary.xml"
+UNEXPECTED_FILE="listing-integration-test/target/unexpected-server-errors.txt"
 TS="$(date +%Y%m%d-%H%M%S)"
 OUTDIR="/tmp/it-10x-$TS"
 mkdir -p "$OUTDIR"
 REPORT="$OUTDIR/results.log"
+AGGREGATE="$OUTDIR/server-log-aggregate.log"
 STATUS="/tmp/it-10x-STATUS.txt"   # stable path for live tailing
-
-# Known-noise allow-list (plan §8.3): these appear even on a green run.
-NOISE='CrownUpdateHearingMultiday|JsonValue.NULL|StreamStatusLockingException'
 
 log() { echo "$@" | tee -a "$REPORT"; }
 
@@ -53,15 +60,53 @@ log "================================================================"
 log "run-it-10x.sh  repo=$REPO_ROOT  branch=$(git branch --show-current)"
 log "             head=$(git rev-parse --short HEAD)  RUNS=$RUNS  HARDEN=$HARDEN"
 log "             outdir=$OUTDIR  started=$(date '+%F %T %Z')"
+log "             server.log aggregate: $AGGREGATE"
 log "================================================================"
 
-pass=0 ; broker_fails=0 ; code_fails=0 ; total_flakes=0
+# First execution: delete the shared Wildfly server.log so the aggregate starts from zero.
+rm -f "$SERVER_LOG" 2>/dev/null || true
+
+pass=0 ; attempts=0 ; exec_failures=0 ; total_flakes=0
 declare -a FLAKY_TESTS=()
 declare -a FLAKE_TESTS=()
+declare -a UNEXPECTED_ALL=()
 
 free_gb() { awk '/MemAvailable/ {printf "%d", $2/1024/1024}' /proc/meminfo 2>/dev/null || echo 99; }
 
-for i in $(seq 1 "$RUNS"); do
+# Append the current server.log (this run's slice) to the aggregated copy.
+append_aggregate() {
+  local run_no="$1" run_status="$2"
+  {
+    echo ""
+    echo "##############################################################"
+    echo "#### RUN $run_no  ($(date '+%F %T'))  status=$run_status"
+    echo "##############################################################"
+    cat "$SERVER_LOG" 2>/dev/null || echo "(server.log unreadable)"
+  } >> "$AGGREGATE"
+}
+
+# Execution failure -> block until a human resolves it (or exit 1 when non-interactive).
+await_manual_resolution() {
+  local run_no="$1" ; local reason="$2"
+  log ""
+  log "!!!! EXECUTION FAILURE on run $run_no: $reason"
+  log "!!!! Inspect: $OUTDIR/run-$run_no.out   server.log slice: $AGGREGATE (RUN $run_no)"
+  if [[ -t 0 ]]; then
+    local ans=""
+    read -rp ">>>> Manual resolution required. Press ENTER to retry run $run_no, or q+ENTER to abort: " ans
+    if [[ "$ans" == "q" || "$ans" == "Q" ]]; then
+      log "Aborted by operator after execution failure on run $run_no."
+      exit 1
+    fi
+    log ">>>> Retrying run $run_no after manual resolution."
+  else
+    log "!!!! Non-interactive session — failing the entire harness (exit 1)."
+    exit 1
+  fi
+}
+
+i=1
+while [[ "$i" -le "$RUNS" ]]; do
   log ""
   log "================ RUN $i/$RUNS  ($(date '+%T')) ================"
 
@@ -79,11 +124,13 @@ for i in $(seq 1 "$RUNS"); do
   [[ -n "$ids" ]] && docker rm -f $ids >/dev/null 2>&1
   # Step 2: purge target/.
   mvn -q clean >/dev/null 2>&1
-  # Clean per-run failsafe summary + truncate the shared server.log for a clean scan.
+  # Clean per-run failsafe summary + truncate the shared server.log so this run's slice is isolated
+  # (the previous slice is already in the aggregate).
   rm -f "$SUMMARY_GLOB" 2>/dev/null
   : > "$SERVER_LOG" 2>/dev/null || true
 
   # Step 3: run the suite.
+  attempts=$((attempts+1))
   start=$(date +%s)
   ./runIntegrationTests.sh > "$OUTDIR/run-$i.out" 2>&1
   rc=$? ; dur=$(( $(date +%s) - start ))
@@ -103,16 +150,24 @@ for i in $(seq 1 "$RUNS"); do
   flaky_this=$(grep -aoE 'Run [0-9]+: [A-Za-z0-9_]+IT\.[A-Za-z0-9_]+' "$OUTDIR/run-$i.out" 2>/dev/null \
                | grep -aoE '[A-Za-z0-9_]+IT\.[A-Za-z0-9_]+' | sort -u | paste -sd, - )
 
-  # server.log error scan, excluding documented known-noise.
-  logerr=$(grep -aiE 'ERROR|Exception' "$SERVER_LOG" 2>/dev/null | grep -vE "$NOISE" | wc -l | tr -d ' ')
-  # broker death signature.
+  # Unexpected server.log errors from the in-run detector (@ExpectedServerErrors windows and the
+  # framework-race floor are already filtered by ServerLogTestMarkerExtension).
+  unexpected="?" ; unexpected_tests=""
+  if [[ -f "$UNEXPECTED_FILE" ]]; then
+    if grep -qa 'server.log CLEAN' "$UNEXPECTED_FILE"; then
+      unexpected=0
+    else
+      unexpected_tests=$(grep -aE '^  [A-Za-z0-9_]+(IT|Scenario)\.[A-Za-z0-9_]+' "$UNEXPECTED_FILE" | sed 's/^  //' | sort -u | paste -sd, -)
+      unexpected=$(grep -acE '^  [A-Za-z0-9_]+(IT|Scenario)\.[A-Za-z0-9_]+' "$UNEXPECTED_FILE")
+      cp "$UNEXPECTED_FILE" "$OUTDIR/run-$i.unexpected-errors.txt" 2>/dev/null || true
+    fi
+  fi
+
+  # broker death signature (classification only — every execution failure now stops the harness).
   broker_dead=0
   docker ps -a --filter "name=cpp-artemis" --format '{{.Status}}' 2>/dev/null | grep -qiE 'Exited' && broker_dead=1
   grep -qaE 'AMQ219019|Session is closed' "$OUTDIR/run-$i.out" 2>/dev/null && broker_dead=1
 
-  # capture failing test names
-  grep -aoE '[A-Za-z0-9_]+IT\.[A-Za-z0-9_]+' "$OUTDIR/run-$i.out" 2>/dev/null \
-     | sort -u > "$OUTDIR/run-$i.failtests" || true
   failing_names=$(grep -aE '<<< (FAILURE|ERROR)|Tests run.*Failures: [1-9]' "$OUTDIR/run-$i.out" 2>/dev/null \
                   | grep -aoE '[A-Za-z0-9_]+IT(\.[A-Za-z0-9_]+)?' | sort -u | paste -sd, - )
 
@@ -123,32 +178,60 @@ for i in $(seq 1 "$RUNS"); do
     else
       status="PASS" ; pass=$((pass+1))
     fi
-  elif [[ "$broker_dead" == "1" || "$dur" -gt 900 ]]; then
-    status="FAIL-broker" ; broker_fails=$((broker_fails+1))
-    cp "$OUTDIR/run-$i.out" "$OUTDIR/FAIL-broker-$i.out"
-  else
-    status="FAIL-flake" ; code_fails=$((code_fails+1))
-    cp "$OUTDIR/run-$i.out" "$OUTDIR/FAIL-flake-$i.out"
-    [[ -n "$failing_names" ]] && FLAKY_TESTS+=("$failing_names")
-  fi
 
-  line=$(printf 'RUN %2d  %-12s completed=%s failures=%s errors=%s flakes=%s serverlog_err=%s broker_dead=%s  %ss  %s' \
-         "$i" "$status" "${comp:-?}" "${fails:-?}" "${errs:-?}" "$flakes" "$logerr" "$broker_dead" "$dur" "${failing_names}${flaky_this:+ [rerun-masked: $flaky_this]}")
-  log "$line"
-  printf '%s\n' "$line" > "$STATUS"
+    append_aggregate "$i" "$status"
+
+    line=$(printf 'RUN %2d  %-12s completed=%s failures=%s errors=%s flakes=%s unexpected_log_errors=%s  %ss%s' \
+           "$i" "$status" "${comp:-?}" "${fails:-?}" "${errs:-?}" "$flakes" "$unexpected" "$dur" \
+           "${flaky_this:+ [rerun-masked: $flaky_this]}")
+    log "$line"
+    if [[ "$unexpected" != "0" && "$unexpected" != "?" && -n "$unexpected_tests" ]]; then
+      log "        unexpected server.log errors in: $unexpected_tests"
+      UNEXPECTED_ALL+=("RUN$i: $unexpected_tests")
+    fi
+    printf '%s\n' "$line" > "$STATUS"
+    i=$((i+1))
+  else
+    exec_failures=$((exec_failures+1))
+    [[ -n "$failing_names" ]] && FLAKY_TESTS+=("$failing_names")
+    reason="exit=$rc failures=${fails:-?} errors=${errs:-?}"
+    [[ "$broker_dead" == "1" ]] && reason="$reason (broker death signature)"
+    [[ ! -f "$SUMMARY_GLOB" ]] && reason="$reason (no failsafe summary — run died early)"
+    [[ -n "$failing_names" ]] && reason="$reason failing=[$failing_names]"
+
+    append_aggregate "$i" "FAIL"
+
+    line=$(printf 'RUN %2d  %-12s completed=%s failures=%s errors=%s flakes=%s unexpected_log_errors=%s  %ss  %s' \
+           "$i" "EXEC-FAIL" "${comp:-?}" "${fails:-?}" "${errs:-?}" "$flakes" "$unexpected" "$dur" "$failing_names")
+    log "$line"
+    printf '%s\n' "$line" > "$STATUS"
+
+    cp "$OUTDIR/run-$i.out" "$OUTDIR/FAIL-run-$i.out" 2>/dev/null || true
+    await_manual_resolution "$i" "$reason"
+    # retry the same run number (i unchanged)
+  fi
 done
 
 log ""
 log "================================================================"
-log "RESULT: $pass/$RUNS green   (code-flake fails=$code_fails, broker-infra fails=$broker_fails, rerun-masked flakes=$total_flakes)"
+log "RESULT: $pass/$RUNS green   (attempts=$attempts, execution failures manually resolved=$exec_failures, rerun-masked flakes=$total_flakes)"
+if [[ ${#UNEXPECTED_ALL[@]} -gt 0 ]]; then
+  log "Unexpected server.log errors across runs (per-run details in $OUTDIR/run-*.unexpected-errors.txt):"
+  printf '%s\n' "${UNEXPECTED_ALL[@]}" | sed 's/^/  /' | tee -a "$REPORT"
+  log "Most-affected tests:"
+  printf '%s\n' "${UNEXPECTED_ALL[@]}" | sed 's/^RUN[0-9]*: //' | tr ',' '\n' | sed '/^$/d' | sort | uniq -c | sort -rn | sed 's/^/  /' | tee -a "$REPORT"
+else
+  log "Unexpected server.log errors across runs: NONE — every window clean or sanctioned by @ExpectedServerErrors."
+fi
 if [[ ${#FLAKY_TESTS[@]} -gt 0 ]]; then
-  log "Hard-failed tests observed:"
+  log "Hard-failed tests observed (before manual resolution):"
   printf '%s\n' "${FLAKY_TESTS[@]}" | tr ',' '\n' | sed '/^$/d' | sort | uniq -c | sort -rn | sed 's/^/  /' | tee -a "$REPORT"
 fi
 if [[ ${#FLAKE_TESTS[@]} -gt 0 ]]; then
   log "Rerun-masked flaky tests (failsafe-green but NOT robust):"
   printf '%s\n' "${FLAKE_TESTS[@]}" | tr ',' '\n' | sed '/^$/d' | sort | uniq -c | sort -rn | sed 's/^/  /' | tee -a "$REPORT"
 fi
+log "Aggregated server.log (all run slices): $AGGREGATE"
 log "Report: $REPORT"
 log "================================================================"
 
