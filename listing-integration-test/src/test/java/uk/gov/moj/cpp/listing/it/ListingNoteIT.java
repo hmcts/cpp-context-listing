@@ -217,12 +217,16 @@ public class ListingNoteIT extends AbstractIT {
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(ALLOCATED);
 
-        //Given 2 : Note data using courtRoomId and date from hearing data
+        //Given 2 : Note data using courtRoomId and date from hearing data. noteId is derived
+        //server-side from (courtRoomId, hearingDate) -> de-duplicate, or the second create for a
+        //shared courtroom/date logs ERROR "Note already exists" in the aggregate and no-ops.
         List<UUID> noteIds = new ArrayList<>();
-        hearingData
-                .forEach(hearingData1 -> {
-                            notesSteps.createNoteForListing(hearingData1.getCourtRoomId(), hearingData1.getHearingStartDate().toString(), NOTE_DESCRIPTION);
-                            noteIds.add(verifyNoteExists(hearingData1.getCourtRoomId(), hearingData1.getHearingStartDate()));
+        hearingData.stream()
+                .map(hearingData1 -> java.util.Map.entry(hearingData1.getCourtRoomId(), hearingData1.getHearingStartDate()))
+                .distinct()
+                .forEach(roomAndDate -> {
+                            notesSteps.createNoteForListing(roomAndDate.getKey(), roomAndDate.getValue().toString(), NOTE_DESCRIPTION);
+                            noteIds.add(verifyNoteExists(roomAndDate.getKey(), roomAndDate.getValue()));
                         }
                 );
 

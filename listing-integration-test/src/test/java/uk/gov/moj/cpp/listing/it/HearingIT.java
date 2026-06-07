@@ -287,6 +287,7 @@ class HearingIT extends AbstractIT {
     }
 
     @Test
+    @ExpectedServerErrors("bulk update deliberately references hearings that do not exist -> ERROR 'Failed to update hearingId=... There is no Hearing for this ID' x2; the public event must report those failures")
     void shouldUpdateMultipleHearingsWithAllocationAndRaisesPublicEventWithFailures() throws IOException {
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);

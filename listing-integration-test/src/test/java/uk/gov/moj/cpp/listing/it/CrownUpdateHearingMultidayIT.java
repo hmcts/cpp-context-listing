@@ -41,11 +41,13 @@ import org.junit.jupiter.api.Test;
  * are unchanged — those still go through {@code multiDaySearchAndBook} / {@code enrichCrownCourtScheduleFirst}.
  *
  * <p>Assertion scope: we verify the WireMock call to courtscheduler was made with the correct
- * hearingId and duration. The HTTP response code isn't asserted because this IT posts to a synthetic
- * hearingId (no pre-existing aggregate) — the async command handler will roll back, but the
- * enrichment path (where the routing change lives) has already executed and hit the stub by that point.
- * Unit tests in {@code CourtScheduleEnrichmentServiceTest} and {@code HearingEnrichmentOrchestratorTest}
- * cover the request/response behaviour in isolation.
+ * hearingId and duration. The success-path tests seed a REAL hearing first (see
+ * {@code givenARealHearingExists}) so the async command handler has an aggregate to update — the
+ * original synthetic-hearingId design caused a 10-attempt redelivery storm of
+ * "There is no Hearing for this ID" ERRORs plus DLQ poison once enrichment stopped failing first.
+ * The 422 test stays synthetic: its command is rejected synchronously in COMMAND_API and never
+ * reaches the handler. Unit tests in {@code CourtScheduleEnrichmentServiceTest} and
+ * {@code HearingEnrichmentOrchestratorTest} cover the request/response behaviour in isolation.
  */
 public class CrownUpdateHearingMultidayIT extends AbstractIT {
 
@@ -74,8 +76,9 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         sessionScheduleIds.add(UUID.randomUUID().toString());
 
         stubExtendMultiDayHearing(hearingId.toString(), sessionScheduleIds, courtHouseId, courtRoomId, startDate, false);
-        givenReferenceDataStubsForUpdateHearing(courtCentreId, courtRoomId);
         givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+        final uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps seedSteps = givenARealHearingExists(hearingId);
+        givenReferenceDataStubsForUpdateHearing(courtCentreId, courtRoomId);
 
         final String payload = loadAndSubstitute(
                 "test-data/CROWN/update-hearing-for-listing/update-hearing-for-listing-crown-multiday-courtscheduleid.json",
@@ -90,6 +93,11 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         // Core assertion: the CROWN update was routed through handleCrownMultiDayExtension and hit
         // POST /extendmultidayhearing/hearingslots with hearingId + full 1080-minute duration.
         verifyExtendMultiDayHearingCalled(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
+        // Drain our own async aftermath before the test ends: viewstore projection (event listener)
+        // AND the public hearing-changes-saved (event processor) — otherwise the next test's cleanup
+        // races our in-flight events into JsonValue.NULL redelivery storms.
+        awaitUpdateProjection(hearingId, startDate);
+        seedSteps.verifyPublicEVentHearingChangesSaved(hearingId);
     }
 
     @Test
@@ -110,8 +118,9 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         sessionScheduleIds.add(UUID.randomUUID().toString());
 
         stubExtendMultiDayHearing(hearingId.toString(), sessionScheduleIds, courtHouseId, courtRoomId, startDate, false);
-        givenReferenceDataStubsForUpdateHearing(courtCentreId, courtRoomId);
         givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+        final uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps seedSteps = givenARealHearingExists(hearingId);
+        givenReferenceDataStubsForUpdateHearing(courtCentreId, courtRoomId);
 
         final Map<String, String> placeholders = basePlaceholders(hearingId, courtCentreId, courtRoomId,
                 startingCourtScheduleId, startDate, endDate, sessionStart);
@@ -129,9 +138,13 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         // NonSittingDays must NOT reduce the duration sent to courtscheduler — slot accounting requires
         // all N sessions be deducted. Filtering of nonSittingDays happens post-enrichment on hearingDays.
         verifyExtendMultiDayHearingCalled(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
+        // Drain our own async aftermath — see shouldCallExtendMultiDayHearingOnListingCourtScheduler test.
+        awaitUpdateProjection(hearingId, startDate);
+        seedSteps.verifyPublicEVentHearingChangesSaved(hearingId);
     }
 
     @Test
+    @ExpectedServerErrors("courtscheduler extend stub returns 422 -> ERROR 'Retrieve ...extend.multiday.hearing+json failed with status code:422' + ERROR 'extendMultiDayHearing from courtscheduler returned an error: NO_AVAILABILITY'")
     void shouldReturn422WithErrorCodeAndUnavailableDates_whenCourtschedulerRejectsExtendMultiDay() throws Exception {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtCentreId = UUID.randomUUID();
@@ -164,6 +177,44 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         verifyExtendMultiDayHearingCalled(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
     }
 
+    /**
+     * Seeds a real CROWN hearing (list-court-hearing + await its query-view projection) so the async
+     * {@code update-hearing-for-listing-enriched} command finds an aggregate to update. The earlier
+     * synthetic-hearingId design relied on the handler "just rolling back" — in practice the rollback
+     * redelivers up to maxDeliveryAttempts, spraying 10× "There is no Hearing for this ID" ERROR pairs
+     * per test into server.log and dead-lettering the command. The enrichment routing under test runs
+     * BEFORE the handler either way; seeding only silences the aftermath.
+     */
+    private uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps givenARealHearingExists(final UUID hearingId) {
+        final uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps seedSteps =
+                new uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps(
+                        uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData(hearingId));
+        seedSteps.whenCaseIsSubmittedForListing();
+        seedSteps.verifyHearingIsCreated(hearingId, 2);
+        return seedSteps;
+    }
+
+    /**
+     * Awaits the seeded hearing's async update aftermath (start-date-changed / v2 allocation events)
+     * reaching the viewstore before the test ends. Without this the NEXT test's event-store cleanup
+     * races our still-in-flight events: the event processor redelivers them with JsonValue.NULL
+     * payloads (the known teardown-race signature) ~10 times each and dead-letters them.
+     */
+    private void awaitUpdateProjection(final UUID hearingId, final LocalDate expectedStartDate) {
+        final String url = String.format("%s/%s", getBaseUri(),
+                MessageFormat.format(readConfig().getProperty("listing.search.hearing"), hearingId.toString()));
+        uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults(
+                uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder
+                        .requestParams(url, "application/vnd.listing.search.hearing+json")
+                        .withHeader(uk.gov.justice.services.common.http.HeaderConstants.USER_ID, getLoggedInUser())
+                        .build())
+                .until(
+                        uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status().is(javax.ws.rs.core.Response.Status.OK),
+                        uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload()
+                                .isJson(com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath(
+                                        "$.startDate", org.hamcrest.CoreMatchers.is(expectedStartDate.toString()))));
+    }
+
     private static void givenReferenceDataStubsForUpdateHearing(final UUID courtCentreId, final UUID courtRoomId) {
         final CourtCentreData courtCentreData = new CourtCentreData(
                 courtCentreId,
@@ -175,6 +226,11 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         stubGetReferenceDataCourtCentreById(courtCentreData);
         stubGetReferenceDataCourtMappings(courtCentreData);
         stubGetReferenceDataHearingTypes(UUID.randomUUID());
+        // The event processor's public hearing-confirmed V2 factory resolves the hearing's court centre
+        // via referencedata organisation-units/{id} (ReferenceDataService.getOrganizationUnitById).
+        // Without this stub the requester returns a NULL-payload envelope and the processor rollback-
+        // redelivers the v2 allocation events 10x into the DLQ ("JsonValue.NULL" storm).
+        uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataOrganisationUnitById(courtCentreId);
     }
 
     private static Map<String, String> basePlaceholders(final UUID hearingId,

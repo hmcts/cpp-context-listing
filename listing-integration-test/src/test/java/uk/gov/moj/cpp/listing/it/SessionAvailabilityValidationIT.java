@@ -36,6 +36,7 @@ class SessionAvailabilityValidationIT extends AbstractIT {
     }
 
     @Test
+    @ExpectedServerErrors("courtscheduler validation stub returns an error response -> ERROR 'Retrieve ...validate.session.availability+json failed' + ERROR 'validateSessionAvailability from courtscheduler returned an error'")
     void shouldPassThroughCourtSchedulerErrorResponse() {
         stubValidateSessionAvailabilityFailure();
 

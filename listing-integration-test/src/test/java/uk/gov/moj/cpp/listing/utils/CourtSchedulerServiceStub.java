@@ -382,12 +382,19 @@ public class CourtSchedulerServiceStub {
                 body.append(",");
             }
             final LocalDate sessionDate = firstSessionDate.plusDays(i);
+            // Wire-shape note: the courtscheduler RAML example for this endpoint
+            // (courtscheduler.extend.multiday.hearing.response.json) shows "hearingStartTime", but the
+            // real endpoint serialises the courtscheduler DOMAIN CourtSchedule, which only has
+            // "sessionStartTime" (java.util.Date). Listing's buildHearingDaysFromMultiDaySessions reads
+            // getSessionStartTime() — emitting the RAML's field name leaves HearingDay.startTime null
+            // and NPEs downstream ("HearingDay.getStartTime() is null"). Match the wire, not the schema.
+            // (stubMultiDaySearchAndBook above is DIFFERENT: that endpoint's consumer reads hearingStartTime.)
             body.append("{")
                     .append("\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\",")
                     .append("\"courtHouseId\":\"").append(courtHouseId).append("\",")
                     .append("\"courtRoomId\":\"").append(courtRoomId).append("\",")
                     .append("\"sessionDate\":\"").append(sessionDate).append("\",")
-                    .append("\"hearingStartTime\":\"").append(sessionDate).append("T09:00:00Z\",")
+                    .append("\"sessionStartTime\":\"").append(sessionDate).append("T09:00:00.000Z\",")
                     .append("\"isDraft\":").append(isDraft)
                     .append("}");
         }
@@ -1337,29 +1344,66 @@ public class CourtSchedulerServiceStub {
                 .willReturn(aResponse().withStatus(NO_CONTENT.getStatusCode())));
     }
 
+    /**
+     * Minimal draft-status stub: each session carries ONLY courtScheduleId + isDraft.
+     * Sufficient for LIST-path consumers (allocation decision reads just the flag).
+     * For UPDATE-path consumers use the overload below — the single-day update's
+     * sanityCheckAndEnrichCrown overwrites hearingDate with the session's sessionDate,
+     * so a session without one would null the date and log a CROWN sanity ERROR.
+     *
+     * <p>HISTORY: until 2026-06-07 this emitted the envelope key "hearingSlots" — the real
+     * courtscheduler wire (and listing's fetchCourtSchedulesByIds) uses "courtSchedules",
+     * so every caller silently parsed an EMPTY list and enrichment degraded with
+     * "CROWN single-day update: failed to fetch court schedules" WARNs.</p>
+     */
     public static void stubGetCourtSchedulesByIdWithDraftStatus(final List<String> courtScheduleIds, final boolean isDraft) {
-        final StringBuilder hearingSlotsJson = new StringBuilder();
-        hearingSlotsJson.append("{\n");
-        hearingSlotsJson.append("  \"hearingSlots\": [\n");
-
+        final StringBuilder schedulesJson = new StringBuilder();
         for (int i = 0; i < courtScheduleIds.size(); i++) {
             if (i > 0) {
-                hearingSlotsJson.append(",\n");
+                schedulesJson.append(",");
             }
-            hearingSlotsJson.append("    {\n");
-            hearingSlotsJson.append("      \"courtScheduleId\": \"").append(courtScheduleIds.get(i)).append("\",\n");
-            hearingSlotsJson.append("      \"isDraft\": ").append(isDraft).append("\n");
-            hearingSlotsJson.append("    }");
+            schedulesJson.append("{\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\",")
+                    .append("\"isDraft\":").append(isDraft).append("}");
         }
+        stubCourtSchedulesByIdResponse("{\"courtSchedules\":[" + schedulesJson + "]}");
+    }
 
-        hearingSlotsJson.append("\n  ]\n");
-        hearingSlotsJson.append("}");
+    /**
+     * Full draft-status stub for UPDATE-path flows: sessions carry sessionDate, courtHouseId,
+     * courtRoomId and hearingStartTime so sanityCheckAndEnrichCrown can re-derive the hearing
+     * day without nulling its date. Values MUST agree with the update payload's nonDefaultDays
+     * (same date/centre/room) or the enrichment will log a CROWN sanity date-mismatch ERROR
+     * and shift the projected hearing day.
+     */
+    public static void stubGetCourtSchedulesByIdWithDraftStatus(final List<String> courtScheduleIds,
+                                                                final boolean isDraft,
+                                                                final LocalDate sessionDate,
+                                                                final UUID courtHouseId,
+                                                                final UUID courtRoomId,
+                                                                final ZonedDateTime hearingStartTime) {
+        final StringBuilder schedulesJson = new StringBuilder();
+        for (int i = 0; i < courtScheduleIds.size(); i++) {
+            if (i > 0) {
+                schedulesJson.append(",");
+            }
+            schedulesJson.append("{\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\"")
+                    .append(",\"courtHouseId\":\"").append(courtHouseId).append("\"");
+            if (courtRoomId != null) {
+                schedulesJson.append(",\"courtRoomId\":\"").append(courtRoomId).append("\"");
+            }
+            schedulesJson.append(",\"sessionDate\":\"").append(sessionDate).append("\"")
+                    .append(",\"hearingStartTime\":\"").append(hearingStartTime).append("\"")
+                    .append(",\"isDraft\":").append(isDraft).append("}");
+        }
+        stubCourtSchedulesByIdResponse("{\"courtSchedules\":[" + schedulesJson + "]}");
+    }
 
+    private static void stubCourtSchedulesByIdResponse(final String body) {
         stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/courtschedule/search.court-schedules-by-id")))
                 .withQueryParam("courtScheduleIds", matching(".*"))
                 .withHeader("Accept", containing("application/vnd.courtscheduler.search.court-schedules-by-id+json"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(hearingSlotsJson.toString())
+                        .withBody(body)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }

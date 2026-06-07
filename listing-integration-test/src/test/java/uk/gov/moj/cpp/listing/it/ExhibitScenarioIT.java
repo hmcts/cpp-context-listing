@@ -622,6 +622,7 @@ class ExhibitScenarioIT extends AbstractIT {
      * The hearing should have one court application with a subject but no prosecution cases or listed cases
      */
     @Test
+    @ExpectedServerErrors("court application hearings without a prosecution case -> WARN 'Hearing does not contain caseIdentifier' from the court-list export (application-only hearings are valid)")
     void testCrownAllocatedHearingWithSentenceTypeAndCourtApplicationWithSubject() throws Exception {
         stubUpdateAvailableHearingSlotsService();
         
