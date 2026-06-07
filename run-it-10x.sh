@@ -56,6 +56,17 @@ STATUS="/tmp/it-10x-STATUS.txt"   # stable path for live tailing
 
 log() { echo "$@" | tee -a "$REPORT"; }
 
+# Echo the full in-run detector block (SERVER.LOG UNEXPECTED ERROR SUMMARY) into the harness
+# output so it is visible between runs without opening run-N.out.
+log_unexpected_block() {
+  if [[ -f "$UNEXPECTED_FILE" ]]; then
+    sed 's/^/    /' "$UNEXPECTED_FILE" | tee -a "$REPORT"
+  else
+    log "    (no unexpected-server-errors.txt — in-run detector absent: run died before the summary,"
+    log "     or this branch lacks ServerLogTestMarkerExtension)"
+  fi
+}
+
 log "================================================================"
 log "run-it-10x.sh  repo=$REPO_ROOT  branch=$(git branch --show-current)"
 log "             head=$(git rev-parse --short HEAD)  RUNS=$RUNS  HARDEN=$HARDEN"
@@ -185,6 +196,7 @@ while [[ "$i" -le "$RUNS" ]]; do
            "$i" "$status" "${comp:-?}" "${fails:-?}" "${errs:-?}" "$flakes" "$unexpected" "$dur" \
            "${flaky_this:+ [rerun-masked: $flaky_this]}")
     log "$line"
+    log_unexpected_block
     if [[ "$unexpected" != "0" && "$unexpected" != "?" && -n "$unexpected_tests" ]]; then
       log "        unexpected server.log errors in: $unexpected_tests"
       UNEXPECTED_ALL+=("RUN$i: $unexpected_tests")
@@ -204,6 +216,7 @@ while [[ "$i" -le "$RUNS" ]]; do
     line=$(printf 'RUN %2d  %-12s completed=%s failures=%s errors=%s flakes=%s unexpected_log_errors=%s  %ss  %s' \
            "$i" "EXEC-FAIL" "${comp:-?}" "${fails:-?}" "${errs:-?}" "$flakes" "$unexpected" "$dur" "$failing_names")
     log "$line"
+    log_unexpected_block
     printf '%s\n' "$line" > "$STATUS"
 
     cp "$OUTDIR/run-$i.out" "$OUTDIR/FAIL-run-$i.out" 2>/dev/null || true
