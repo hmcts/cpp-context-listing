@@ -243,6 +243,16 @@
                               "midnight" failures and the green-local / red-CI split. UTC is the canonical zone.
                             -->
                             <argLine>-Duser.timezone=UTC -Duser.language=en -Duser.country=GB</argLine>
+                            <!--
+                              Force NO failsafe reruns, overriding the validation pipeline's
+                              -Dfailsafe.rerunFailingTestsCount=4. An explicit value here replaces the
+                              plugin's ${failsafe.rerunFailingTestsCount} default expression, so the
+                              command-line -D no longer takes effect for this profile.
+                              Reruns mask flaky/stale-cross-test failures and quadruple the runtime
+                              (the cancelled 651338 run ground for 53+ min); 0 gives one honest pass
+                              so the public-event-timeout failures surface cleanly for diagnosis.
+                            -->
+                            <rerunFailingTestsCount>0</rerunFailingTestsCount>
                         </configuration>
                     </plugin>
                 </plugins>
