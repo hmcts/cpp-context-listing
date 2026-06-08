@@ -34,11 +34,14 @@ import org.junit.jupiter.api.Test;
 /**
  * Integration coverage for the CROWN update-hearing-for-listing multi-day extension routing (SPRDT-901).
  *
- * <p>A raw multi-day Crown update (hearingDays empty, single nonDefaultDay carrying a CROWN
- * courtScheduleId + duration > MINUTES_IN_DAY) must hit courtscheduler's new
- * {@code /extendmultidayhearing/hearingslots} POST endpoint with the full requested duration.
- * The single-day CROWN path (duration ≤ MINUTES_IN_DAY) and fresh allocations via list-court-hearing
- * are unchanged — those still go through {@code multiDaySearchAndBook} / {@code enrichCrownCourtScheduleFirst}.
+ * <p>A raw multi-day Crown update with NO courtScheduleId submitted (hearingDays empty, single
+ * nonDefaultDay with duration > MINUTES_IN_DAY and no courtScheduleId) must hit courtscheduler's
+ * {@code /extendmultidayhearing/hearingslots} POST endpoint with the full requested duration —
+ * the listing officer has not yet picked sessions, so courtscheduler is asked to extend/book them.
+ * When a courtScheduleId IS submitted the update reverts to {@code enrichCrownCourtScheduleFirst}
+ * (multiDaySearchAndBook) — the pre-d62d3446 behaviour — and extend-multiday is NOT called; that
+ * courtScheduleId-wins routing is locked by HearingEnrichmentOrchestratorTest. The single-day CROWN
+ * path (duration ≤ MINUTES_IN_DAY) and fresh allocations via list-court-hearing are likewise unchanged.
  *
  * <p>Assertion scope: we verify the WireMock call to courtscheduler was made with the correct
  * hearingId and duration. The success-path tests seed a REAL hearing first (see
@@ -58,7 +61,7 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
     private static final int MULTI_DAY_TOTAL_DURATION_MINUTES = 1080;
 
     @Test
-    void shouldCallExtendMultiDayHearingOnListingCourtScheduler_whenCrownUpdateCarriesCourtScheduleIdOnNonDefaultDayWithMultiDayDuration() throws Exception {
+    void shouldCallExtendMultiDayHearingOnListingCourtScheduler_whenCrownMultiDayUpdateHasNoCourtScheduleIdOnNonDefaultDay() throws Exception {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtCentreId = UUID.randomUUID();
         final UUID courtRoomId = UUID.randomUUID();
@@ -81,7 +84,7 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         givenReferenceDataStubsForUpdateHearing(courtCentreId, courtRoomId);
 
         final String payload = loadAndSubstitute(
-                "test-data/CROWN/update-hearing-for-listing/update-hearing-for-listing-crown-multiday-courtscheduleid.json",
+                "test-data/CROWN/update-hearing-for-listing/update-hearing-for-listing-crown-multiday-no-courtscheduleid.json",
                 basePlaceholders(hearingId, courtCentreId, courtRoomId, startingCourtScheduleId, startDate, endDate, sessionStart));
 
         AbstractIT.restClient.postCommand(
@@ -161,7 +164,7 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
 
         final String payload = loadAndSubstitute(
-                "test-data/CROWN/update-hearing-for-listing/update-hearing-for-listing-crown-multiday-courtscheduleid.json",
+                "test-data/CROWN/update-hearing-for-listing/update-hearing-for-listing-crown-multiday-no-courtscheduleid.json",
                 basePlaceholders(hearingId, courtCentreId, courtRoomId, startingCourtScheduleId, startDate, endDate, sessionStart));
 
         final javax.ws.rs.core.Response response = AbstractIT.restClient.postCommand(

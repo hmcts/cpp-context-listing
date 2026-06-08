@@ -260,16 +260,19 @@ public class HearingEnrichmentOrchestratorTest {
     }
 
     @Test
-    public void shouldRouteCrownUpdateThroughMultiDayExtension_whenMultiDayDurationOnNonDefaultDays() {
+    public void shouldRouteCrownUpdateThroughMultiDayExtension_whenMultiDayDurationAndNoCourtScheduleId() {
+        // No courtScheduleId + a SINGLE day whose duration spans more than one court day (1080 > 360):
+        // a raw multi-day booking the listing officer hasn't yet picked sessions for. This hits
+        // extend-multiday-hearing. (A courtScheduleId would instead revert to enrichCrownCourtScheduleFirst;
+        // per-day entries each ≤ MINUTES_IN_DAY take the plain path — see the plain-path tests below.)
         UpdateHearingForListing crownUpdate = mock(UpdateHearingForListing.class);
         lenient().when(crownUpdate.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
         lenient().when(crownUpdate.getHearingDays()).thenReturn(Collections.emptyList());
-        NonDefaultDay withId = NonDefaultDay.nonDefaultDay()
+        NonDefaultDay noId = NonDefaultDay.nonDefaultDay()
                 .withStartTime(ZonedDateTime.parse("2026-05-27T09:00:00Z"))
                 .withDuration(1080)
-                .withCourtScheduleId(UUID.randomUUID().toString())
                 .build();
-        lenient().when(crownUpdate.getNonDefaultDays()).thenReturn(Collections.singletonList(withId));
+        lenient().when(crownUpdate.getNonDefaultDays()).thenReturn(Collections.singletonList(noId));
 
         UpdateHearingForListing afterExtension = mock(UpdateHearingForListing.class);
         UpdateHearingForListing afterHearingDays = mock(UpdateHearingForListing.class);
@@ -285,6 +288,68 @@ public class HearingEnrichmentOrchestratorTest {
         verify(courtScheduleEnrichmentService, never()).enrichCrownCourtScheduleFirst(any(UpdateHearingForListing.class));
         verify(hearingDaysEnrichmentService).enrichHearing(afterExtension, envelope);
         verify(hearingDurationEnrichmentService).enrichWithDurationForUpdate(afterHearingDays, envelope);
+        assertEquals(afterDuration, result);
+    }
+
+    @Test
+    public void shouldRouteCrownUpdateThroughPlainPath_whenPerDayNonDefaultDaysEachWithinOneCourtDayAndNoCourtScheduleId() {
+        // Court-room-change shape via nonDefaultDays: each entry = one court day (360), no courtScheduleId.
+        // Aggregated duration (720) exceeds MINUTES_IN_DAY but NO single day does, so this is NOT a raw
+        // multi-day booking — it must take the plain path (days → duration → courtSchedules), NOT extend.
+        UpdateHearingForListing crownUpdate = mock(UpdateHearingForListing.class);
+        lenient().when(crownUpdate.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
+        lenient().when(crownUpdate.getHearingDays()).thenReturn(Collections.emptyList());
+        NonDefaultDay day1 = NonDefaultDay.nonDefaultDay()
+                .withStartTime(ZonedDateTime.parse("2026-05-27T09:00:00Z"))
+                .withDuration(360)
+                .build();
+        NonDefaultDay day2 = NonDefaultDay.nonDefaultDay()
+                .withStartTime(ZonedDateTime.parse("2026-05-28T09:00:00Z"))
+                .withDuration(360)
+                .build();
+        lenient().when(crownUpdate.getNonDefaultDays()).thenReturn(Arrays.asList(day1, day2));
+
+        UpdateHearingForListing withHearingDays = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing withDuration = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing enrichedUpdate = mock(UpdateHearingForListing.class);
+
+        when(hearingDaysEnrichmentService.enrichHearing(crownUpdate, envelope)).thenReturn(withHearingDays);
+        when(hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope)).thenReturn(withDuration);
+        when(courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration, envelope)).thenReturn(enrichedUpdate);
+
+        UpdateHearingForListing result = orchestrator.enrichUpdateHearingForListing(crownUpdate, envelope);
+
+        verify(courtScheduleEnrichmentService, never()).handleCrownMultiDayExtension(any(UpdateHearingForListing.class));
+        verify(courtScheduleEnrichmentService, never()).enrichCrownCourtScheduleFirst(any(UpdateHearingForListing.class));
+        assertEquals(enrichedUpdate, result);
+    }
+
+    @Test
+    public void shouldRouteCrownUpdateThroughCourtScheduleFirst_whenCourtScheduleIdPresentEvenIfMultiDay() {
+        // courtScheduleId submitted on a multi-day update → must behave as prior to d62d3446:
+        // resolve the chosen sessions via enrichCrownCourtScheduleFirst, NOT extend-multiday-hearing.
+        UpdateHearingForListing crownUpdate = mock(UpdateHearingForListing.class);
+        lenient().when(crownUpdate.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
+        lenient().when(crownUpdate.getHearingDays()).thenReturn(Collections.emptyList());
+        NonDefaultDay withId = NonDefaultDay.nonDefaultDay()
+                .withStartTime(ZonedDateTime.parse("2026-05-27T09:00:00Z"))
+                .withDuration(1080)
+                .withCourtScheduleId(UUID.randomUUID().toString())
+                .build();
+        lenient().when(crownUpdate.getNonDefaultDays()).thenReturn(Collections.singletonList(withId));
+
+        UpdateHearingForListing afterCourtSchedule = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing afterHearingDays = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing afterDuration = mock(UpdateHearingForListing.class);
+
+        when(courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(crownUpdate)).thenReturn(afterCourtSchedule);
+        when(hearingDaysEnrichmentService.enrichHearing(afterCourtSchedule, envelope)).thenReturn(afterHearingDays);
+        when(hearingDurationEnrichmentService.enrichWithDurationForUpdate(afterHearingDays, envelope)).thenReturn(afterDuration);
+
+        UpdateHearingForListing result = orchestrator.enrichUpdateHearingForListing(crownUpdate, envelope);
+
+        verify(courtScheduleEnrichmentService).enrichCrownCourtScheduleFirst(crownUpdate);
+        verify(courtScheduleEnrichmentService, never()).handleCrownMultiDayExtension(any(UpdateHearingForListing.class));
         assertEquals(afterDuration, result);
     }
 
@@ -316,19 +381,50 @@ public class HearingEnrichmentOrchestratorTest {
     }
 
     @Test
-    public void shouldRouteCrownUpdateWithCourtCentreDetailsThroughMultiDayExtension_whenMultiDayDurationOnHearingDays() {
+    public void shouldRouteCrownUpdateWithCourtCentreDetailsThroughPlainPath_whenPerDayHearingDaysEachWithinOneCourtDayAndNoCourtScheduleId() {
+        // Court-room-change shape (mirrors HearingDayCourtRoomChangeForCrownIT): per-day hearingDays
+        // each = one court day (360), no courtScheduleId. Aggregated 720 > MINUTES_IN_DAY but no single
+        // day does, so this is NOT a raw multi-day booking — plain path, NEVER extend-multiday.
         UpdateHearingForListing crownUpdate = mock(UpdateHearingForListing.class);
         lenient().when(crownUpdate.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
         HearingDay d1 = HearingDay.hearingDay()
-                .withHearingDate(java.time.LocalDate.parse("2026-05-27"))
-                .withCourtScheduleId(UUID.randomUUID())
+                .withHearingDate(LocalDate.parse("2026-05-27"))
                 .withDurationMinutes(360)
                 .build();
         HearingDay d2 = HearingDay.hearingDay()
-                .withHearingDate(java.time.LocalDate.parse("2026-05-28"))
+                .withHearingDate(LocalDate.parse("2026-05-28"))
                 .withDurationMinutes(360)
                 .build();
-        lenient().when(crownUpdate.getHearingDays()).thenReturn(java.util.Arrays.asList(d1, d2));
+        lenient().when(crownUpdate.getHearingDays()).thenReturn(Arrays.asList(d1, d2));
+        lenient().when(crownUpdate.getNonDefaultDays()).thenReturn(Collections.emptyList());
+        CourtCentreDetails courtCentreDetails = mock(CourtCentreDetails.class);
+
+        UpdateHearingForListing withHearingDays = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing withDuration = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing enrichedUpdate = mock(UpdateHearingForListing.class);
+
+        when(hearingDaysEnrichmentService.enrichHearing(crownUpdate, envelope, courtCentreDetails)).thenReturn(withHearingDays);
+        when(hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope)).thenReturn(withDuration);
+        when(courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration, envelope)).thenReturn(enrichedUpdate);
+
+        UpdateHearingForListing result = orchestrator.enrichUpdateHearingForListing(crownUpdate, envelope, courtCentreDetails);
+
+        verify(courtScheduleEnrichmentService, never()).handleCrownMultiDayExtension(any(UpdateHearingForListing.class));
+        verify(courtScheduleEnrichmentService, never()).enrichCrownCourtScheduleFirst(any(UpdateHearingForListing.class));
+        assertEquals(enrichedUpdate, result);
+    }
+
+    @Test
+    public void shouldRouteCrownUpdateWithCourtCentreDetailsThroughMultiDayExtension_whenSingleDayDurationExceedsOneCourtDayAndNoCourtScheduleId() {
+        // A single hearingDay whose own duration spans more than one court day (720 > 360) and no
+        // courtScheduleId → raw multi-day booking → extend-multiday-hearing.
+        UpdateHearingForListing crownUpdate = mock(UpdateHearingForListing.class);
+        lenient().when(crownUpdate.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
+        HearingDay bigDay = HearingDay.hearingDay()
+                .withHearingDate(LocalDate.parse("2026-05-27"))
+                .withDurationMinutes(720)
+                .build();
+        lenient().when(crownUpdate.getHearingDays()).thenReturn(Collections.singletonList(bigDay));
         lenient().when(crownUpdate.getNonDefaultDays()).thenReturn(Collections.emptyList());
         CourtCentreDetails courtCentreDetails = mock(CourtCentreDetails.class);
 
@@ -344,6 +440,40 @@ public class HearingEnrichmentOrchestratorTest {
 
         verify(courtScheduleEnrichmentService).handleCrownMultiDayExtension(crownUpdate);
         verify(courtScheduleEnrichmentService, never()).enrichCrownCourtScheduleFirst(any(UpdateHearingForListing.class));
+        assertEquals(afterDuration, result);
+    }
+
+    @Test
+    public void shouldRouteCrownUpdateWithCourtCentreDetailsThroughCourtScheduleFirst_whenCourtScheduleIdPresentEvenIfMultiDay() {
+        // courtScheduleId submitted on a multi-day update (with courtCentreDetails) → pre-d62d3446
+        // behaviour: enrichCrownCourtScheduleFirst, never extend-multiday-hearing.
+        UpdateHearingForListing crownUpdate = mock(UpdateHearingForListing.class);
+        lenient().when(crownUpdate.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
+        HearingDay d1 = HearingDay.hearingDay()
+                .withHearingDate(LocalDate.parse("2026-05-27"))
+                .withCourtScheduleId(UUID.randomUUID())
+                .withDurationMinutes(360)
+                .build();
+        HearingDay d2 = HearingDay.hearingDay()
+                .withHearingDate(LocalDate.parse("2026-05-28"))
+                .withDurationMinutes(360)
+                .build();
+        lenient().when(crownUpdate.getHearingDays()).thenReturn(Arrays.asList(d1, d2));
+        lenient().when(crownUpdate.getNonDefaultDays()).thenReturn(Collections.emptyList());
+        CourtCentreDetails courtCentreDetails = mock(CourtCentreDetails.class);
+
+        UpdateHearingForListing afterCourtSchedule = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing afterHearingDays = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing afterDuration = mock(UpdateHearingForListing.class);
+
+        when(courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(crownUpdate)).thenReturn(afterCourtSchedule);
+        when(hearingDaysEnrichmentService.enrichHearing(afterCourtSchedule, envelope, courtCentreDetails)).thenReturn(afterHearingDays);
+        when(hearingDurationEnrichmentService.enrichWithDurationForUpdate(afterHearingDays, envelope)).thenReturn(afterDuration);
+
+        UpdateHearingForListing result = orchestrator.enrichUpdateHearingForListing(crownUpdate, envelope, courtCentreDetails);
+
+        verify(courtScheduleEnrichmentService).enrichCrownCourtScheduleFirst(crownUpdate);
+        verify(courtScheduleEnrichmentService, never()).handleCrownMultiDayExtension(any(UpdateHearingForListing.class));
         assertEquals(afterDuration, result);
     }
 
