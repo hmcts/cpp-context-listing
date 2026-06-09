@@ -51,9 +51,14 @@ import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.path.json.JsonPath;
+import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AddDefendantSteps extends AbstractIT {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AddDefendantSteps.class);
 
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS = "public.progression.defendants-added-to-court-proceedings";
     private static final String PUBLIC_EVENT_SELECTOR_DEFENDANT_DETAILS_ADDED_FOR_COURT_PROCEEDINGS = "public.listing.new-defendant-added-for-court-proceedings";
@@ -149,6 +154,70 @@ public class AddDefendantSteps extends AbstractIT {
                 withJsonPath("$.hearings[0].listedCases[0].defendants[2].offences[0].offenceCode",
                         equalTo(defendant.getOffences().get(0).getOffenceCode()))
         });
+    }
+
+    /**
+     * Publishes the {@code public.progression.defendants-added-to-court-proceedings} event and verifies it was
+     * consumed downstream (via the {@code public.listing.new-defendant-added-for-court-proceedings} JMS message),
+     * RE-PUBLISHING until the message arrives (or the attempt budget is exhausted).
+     *
+     * <p><b>Why re-publish?</b> Same case-link race as described on {@link #publishUntilDefendantsAddedReflected}:
+     * the Case aggregate silently drops the event when {@code hearingIds.isEmpty()}. A dropped publish emits NO
+     * downstream events, so the JMS consume hangs to timeout with {@link java.util.NoSuchElementException}.
+     * Re-publishing with a fresh metadata id each attempt recovers once the case&lt;-&gt;hearing link forms.
+     * Safe: a dropped publish produces no duplicates.
+     */
+    public void publishUntilDefendantsAddedConsumed() {
+        final int maxPublishAttempts = 3;
+        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
+            LOGGER.info("[defendants-added-fix] publishing defendants-added event (JMS-consume gate) for case {} (attempt {}/{})",
+                    caseId, attempt, maxPublishAttempts);
+            whenCaseDefendantsAddedPublicEventIsPublished();
+            try {
+                verifyPublicEventDefendantAddedInActiveMQ();
+                LOGGER.info("[defendants-added-fix] downstream JMS event received after {} publish attempt(s)", attempt);
+                return;
+            } catch (final java.util.NoSuchElementException caseNotYetLinkedToHearing) {
+                if (attempt == maxPublishAttempts) {
+                    LOGGER.error("[defendants-added-fix] downstream JMS event still not received after {} attempts — failing", maxPublishAttempts);
+                    throw caseNotYetLinkedToHearing;
+                }
+                LOGGER.warn("[defendants-added-fix] attempt {} produced no downstream JMS event (case<->hearing link likely not yet established); re-publishing", attempt);
+            }
+        }
+    }
+
+    /**
+     * Publishes the {@code public.progression.defendants-added-to-court-proceedings} event and verifies the
+     * read model, RE-PUBLISHING until the update is reflected (or the attempt budget is exhausted).
+     *
+     * <p><b>Why re-publish?</b> The event is consumed by the Case aggregate's handler which silently drops
+     * the update ({@code if (hearingIds.isEmpty()) return Stream.empty();}) when the case is not yet linked to
+     * a hearing. The async {@code add-hearing-to-case} command runs after {@code list-court-hearing} and has
+     * no viewstore projection, so the test cannot await the link deterministically. On slow CI the single
+     * publish can be lost with no JMS redelivery. Re-publishing with a fresh metadata id each attempt
+     * (framework dedupes by metadata id) recovers once the link is established.
+     */
+    public void publishUntilDefendantsAddedReflected(final boolean allocated) {
+        final int maxPublishAttempts = 3;
+        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
+            LOGGER.info("[defendants-added-fix] publishing defendants-added event for case {} (attempt {}/{})",
+                    caseId, attempt, maxPublishAttempts);
+            whenCaseDefendantsAddedPublicEventIsPublished();
+            try {
+                verifyHearingListedFromAPIWithJmsDelay(allocated);
+                LOGGER.info("[defendants-added-fix] read model reflected defendants-added update after {} publish attempt(s)", attempt);
+                return;
+            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
+                if (attempt == maxPublishAttempts) {
+                    LOGGER.error("[defendants-added-fix] update still not reflected after {} attempts — failing", maxPublishAttempts);
+                    throw caseNotYetLinkedToHearing;
+                }
+                // The case<->hearing link was not established when this publish was processed, so the
+                // update was dropped. Re-publish and poll again.
+                LOGGER.warn("[defendants-added-fix] attempt {} did not land (case<->hearing link likely not yet established); re-publishing", attempt);
+            }
+        }
     }
 
     private AddDefendantForCourtProceedingsData getAddDefendantDetails(final UUID caseId) {

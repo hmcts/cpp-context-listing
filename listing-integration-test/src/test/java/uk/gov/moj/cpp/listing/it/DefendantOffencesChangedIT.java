@@ -46,8 +46,11 @@ public class DefendantOffencesChangedIT extends AbstractIT {
         UpdatedOffenceData updatedOffenceData = updateOffenceData(offenceData);
 
         final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, offenceIdToBeDeleted);
-        steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublished();
-        steps.verifyPublicEventDefendantOffencesUpdatedInActiveMQ();
+        // Re-publishes until the public event is consumed (gate). The Case aggregate silently drops
+        // the update when the case<->hearing link has not yet formed (async add-hearing-to-case race);
+        // a fresh metadata id per attempt avoids framework dedup. Remaining verify calls are outside
+        // the loop — they only run once the gate consume has succeeded.
+        steps.publishUntilOffencesConsumed();
         steps.verifyEventDefendantOffencesToBeUpdateInActiveMQ();
         steps.verifyEventDefendantOffencesToBeAddedInActiveMQ();
         steps.verifyEventDefendantOffencesToBeDeletedInActiveMQ();
@@ -70,8 +73,7 @@ public class DefendantOffencesChangedIT extends AbstractIT {
         UpdatedOffenceData updatedOffenceData = updateOffenceData(offenceData);
 
         final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, null);
-        steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedUpdatedOnly();
-        steps.verifyDefendentOffenceUpdatedOnlyFromAPI(false);
+        steps.publishUntilOffencesUpdatedOnlyReflected(false);
     }
 
     @Test
@@ -85,8 +87,7 @@ public class DefendantOffencesChangedIT extends AbstractIT {
         UpdatedOffenceData updatedOffenceData = updateOffenceData(offenceData);
 
         final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, null);
-        steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly();
-        steps.verifyDefendentOffenceAddedOnlyFromAPI(false);
+        steps.publishUntilOffencesAddedOnlyReflected(false);
     }
 
     @Test

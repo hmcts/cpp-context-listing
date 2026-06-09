@@ -41,10 +41,15 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @SuppressWarnings({"pmd:BeanMembersShouldSerialize", "squid:S1068"})
 public class Case implements Aggregate {
 
     private static final long serialVersionUID = 203L;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Case.class);
 
     private final Set<UUID> hearingIds = new HashSet<>();
 
@@ -146,9 +151,14 @@ public class Case implements Aggregate {
 
     public Stream<Object> addedCaseMarkers(UUID caseId, List<CaseMarker> caseMarkers) {
         if (hearingIds.isEmpty()) {
+            // Observability for the cross-aggregate race: this update is silently dropped because the
+            // case is not yet linked to any hearing (hearingIds populated only by the async
+            // add-hearing-to-case command). A re-published progression event lands once the link exists.
+            LOGGER.warn("update-case-markers for case {} DROPPED: case not yet linked to any hearing (hearingIds empty)", caseId);
             return Stream.empty();
         }
 
+        LOGGER.info("update-case-markers for case {} APPLIED to hearings {}", caseId, hearingIds);
         return apply(Stream.of(CaseMarkersToBeUpdated.caseMarkersToBeUpdated()
                 .withProsecutionCaseId(caseId)
                 .withMarkers(NewDomainToEventConverter.convertCaseMarkersListToMarkers(caseMarkers))

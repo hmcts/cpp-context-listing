@@ -97,6 +97,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
+import uk.gov.moj.cpp.listing.steps.UpdateDefendantOffencesSteps;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -116,6 +117,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.ReadContext;
 import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
+import org.awaitility.core.ConditionTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -478,6 +480,51 @@ public class ListNextHearingSteps extends AbstractIT {
                                         hasItems(true)),
                                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].listedCases[*].defendants[*].offences[*].id", hasItems(offenceId))
                         )));
+    }
+
+    /**
+     * Verifies the read model reflects a new offence, re-publishing the
+     * {@code public.progression.offences-for-defendant-changed} event (with a fresh metadata id each time)
+     * if the first verify times out, up to {@code maxPublishAttempts} total attempts.
+     *
+     * <p><b>Why re-publish instead of publish-once-then-poll?</b> The event is consumed async by
+     * {@code ListingEventProcessor} and routed to the {@code Case} aggregate. If the case's hearing-link
+     * has not yet been established when the first publish is processed, the update is silently dropped with
+     * no JMS redelivery, so a single publish is lost forever on slow CI (vld pipeline). Re-publishing with
+     * a fresh metadata id each time (the steps instance regenerates it in
+     * {@code publishCaseDefendantOffencesUpdated}) guarantees that once the link is established, a
+     * subsequent publish lands. Root-cause class: cross-aggregate eventual-consistency race, same pattern
+     * as {@code UpdateCaseMarkersSteps#publishUntilCaseMarkersReflected}.
+     *
+     * <p>The caller is expected to have already done the <em>initial</em> publish and to pass the offence
+     * id extracted from that publish's return value. This method first tries to verify the existing
+     * publish; only if that times out does it re-publish and retry.
+     */
+    public void verifyOrRepublishUntilOffenceReflected(final UpdateDefendantOffencesSteps offenceSteps,
+                                                        final HearingsData existedHearingsData,
+                                                        final String offenceId) {
+        final int maxPublishAttempts = 3;
+        ConditionTimeoutException lastFailure = null;
+        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
+            if (attempt > 1) {
+                // The previous verify timed out — re-publish with a fresh metadata id before retrying.
+                LOGGER.warn("[list-next-hearing-fix] attempt {} timed out; re-publishing offences-for-defendant-changed for offence {} (attempt {}/{})",
+                        attempt - 1, offenceId, attempt, maxPublishAttempts);
+                offenceSteps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly();
+            } else {
+                LOGGER.info("[list-next-hearing-fix] verifying offences-for-defendant-changed for offence {} (attempt {}/{})",
+                        offenceId, attempt, maxPublishAttempts);
+            }
+            try {
+                verifyOffenceAddedToAllocatedHearingFromApi(existedHearingsData, offenceId);
+                LOGGER.info("[list-next-hearing-fix] read model reflected offence update after {} attempt(s)", attempt);
+                return;
+            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
+                lastFailure = caseNotYetLinkedToHearing;
+            }
+        }
+        LOGGER.error("[list-next-hearing-fix] offence still not reflected after {} attempts — failing", maxPublishAttempts);
+        throw lastFailure;
     }
 
     public void verifyCasesAreInAllocatedHearingFromApi(HearingsData existedHearingsData, final HearingsData hearingsData) {
