@@ -48,7 +48,6 @@ import uk.gov.moj.cpp.listing.utils.QueueUtil;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import javax.json.JsonObject;
@@ -168,9 +167,9 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
     }
 
     /**
-     * Publishes the {@code public.progression.defendant-offences-changed} event and verifies that the
-     * public event lands on the JMS queue (gate consume), RE-PUBLISHING until it is consumed or the
-     * attempt budget is exhausted.
+     * Publishes the combined {@code public.progression.defendant-offences-changed} event
+     * (update + add + delete) and RE-PUBLISHES until the update is <b>reflected in the
+     * viewstore via REST</b>, or the attempt budget is exhausted.
      *
      * <p><b>Why re-publish?</b> The event is handled by the {@code Case} aggregate which
      * <b>silently drops</b> the update ({@code hearingIds.isEmpty() → Stream.empty()}) when the
@@ -179,26 +178,37 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
      * event to be dropped with no JMS redelivery. Re-publishing (with a fresh metadata id each
      * time) recovers once the link is established.
      *
-     * <p>Only the first downstream consumer ({@code verifyPublicEventDefendantOffencesUpdatedInActiveMQ})
-     * is used as the gate inside the loop; the remaining downstream verify calls are left to the
-     * calling test so that they are NOT repeated on retry.
+     * <p><b>Why gate on REST, not on a JMS consume?</b> The previous gate consumed
+     * {@code verifyPublicEventDefendantOffencesUpdatedInActiveMQ()}, which reads back the test's
+     * <i>own</i> published event off the public topic — an echo that is ALWAYS present on the first
+     * attempt, so the loop never actually re-published and the case&lt;-&gt;hearing race was left
+     * unguarded. The downstream private-event verifies (called by the test after this gate) then
+     * died with {@code NoSuchElement} when the link had not yet formed. A REST poll is the true
+     * proof the aggregate <i>applied</i> the combined event, and — being a read — it does NOT consume
+     * the private JMS messages the test must subsequently assert. Once REST reflects the update, all
+     * downstream {@code offences-to-be-*} / {@code offence-*} events are guaranteed emitted and
+     * buffered on the consumers. This mirrors the proven gate used by the *Only variants.
+     *
+     * <p>The combined event's updated offence is built by the same {@code buildUpdatedOffences} /
+     * {@code buildOffence} as the {@code updatedOnly} variant, so {@link #verifyDefendentOffenceUpdatedOnlyFromAPI(boolean)}
+     * is a valid predicate here; the additional add (appended) and delete (offences[1]) do not shift offences[0].
      */
-    public void publishUntilOffencesConsumed() {
+    public void publishUntilOffencesReflected(final boolean isAllocated) {
         final int maxPublishAttempts = 3;
         for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
-            LOGGER.info("[offences-fix] publishing defendant-offences-changed for case {} (attempt {}/{})",
+            LOGGER.info("[offences-fix] publishing combined defendant-offences-changed for case {} (attempt {}/{})",
                     caseId, attempt, maxPublishAttempts);
             whenCaseDefendantOffencesUpdatedPublicEventIsPublished();
             try {
-                verifyPublicEventDefendantOffencesUpdatedInActiveMQ();
-                LOGGER.info("[offences-fix] public event consumed after {} publish attempt(s)", attempt);
+                verifyDefendentOffenceUpdatedOnlyFromAPI(isAllocated);
+                LOGGER.info("[offences-fix] combined update reflected after {} publish attempt(s)", attempt);
                 return;
-            } catch (final NoSuchElementException caseNotYetLinkedToHearing) {
+            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
                 if (attempt == maxPublishAttempts) {
-                    LOGGER.error("[offences-fix] public event still not consumed after {} attempts — failing", maxPublishAttempts);
+                    LOGGER.error("[offences-fix] combined update still not reflected after {} attempts — failing", maxPublishAttempts);
                     throw caseNotYetLinkedToHearing;
                 }
-                LOGGER.warn("[offences-fix] attempt {} did not land (case<->hearing link likely not yet established); re-publishing", attempt);
+                LOGGER.warn("[offences-fix] combined attempt {} timed out (case<->hearing link likely not yet established); re-publishing", attempt);
             }
         }
     }
