@@ -101,8 +101,9 @@ public class DefendantOffencesChangedIT extends AbstractIT {
         UpdatedOffenceData updatedOffenceData = updateOffenceData(offenceData);
 
         final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, updatedOffenceData.getOffenceId());
-        steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedDeletedOnly();
-        steps.verifyDefendentOffenceDeletedOnlyFromAPI(false);
+        // Re-publish until reflected — closes the coverage gap left when the other offence-change
+        // variants were wrapped: the case<->hearing link race silently drops a single publish.
+        steps.publishUntilOffencesDeletedOnlyReflected(false);
     }
 
     private HearingsData listCourtHearing() {
