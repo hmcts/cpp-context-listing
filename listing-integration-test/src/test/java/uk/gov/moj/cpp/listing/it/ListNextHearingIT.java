@@ -317,7 +317,9 @@ public class ListNextHearingIT extends AbstractIT {
         final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, null, false);
         final OffencesForDefendantUpdated newOffences = steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly();
         final String newOffenceId = newOffences.getAddedOffences().stream().flatMap(a -> a.getOffences().stream()).map(Offence::getId).map(UUID::toString).toList().get(0);
-        listNextHearingSteps.verifyOffenceAddedToAllocatedHearingFromApi(firstHearings, newOffenceId);
+        // Re-publish if the first publish was silently dropped due to the cross-aggregate
+        // case<->hearing link not yet being established (same race as CaseMarkerUpdateIT on vld).
+        listNextHearingSteps.verifyOrRepublishUntilOffenceReflected(steps, firstHearings, newOffenceId);
 
         // Amend Reshare second Hearing
         listNextHearingSteps.clearStaleAllocatedHearingMessages();

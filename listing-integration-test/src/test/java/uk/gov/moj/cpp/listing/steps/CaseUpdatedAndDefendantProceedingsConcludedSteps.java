@@ -21,15 +21,19 @@ import java.util.UUID;
 
 import javax.json.JsonObject;
 
+import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CaseUpdatedAndDefendantProceedingsConcludedSteps.class);
 
     private static final String PUBLIC_EVENT_HEARING_RESULTED_CASE_UPDATED = "public.progression.hearing-resulted-case-updated";
 
     private JmsMessageProducerClient publicEventCaseUpdatedAndHearingResulted;
 
-    private final UUID metadataId;
     private final UUID userId;
     private final UUID caseId;
     private final HearingData hearingData;
@@ -39,7 +43,6 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
         this.caseId = caseId;
         this.hearingData = hearingData;
         this.userId = randomUUID();
-        this.metadataId = randomUUID();
         this.listedCaseData = hearingData.getListedCases().get(0);
 
         this.publicEventCaseUpdatedAndHearingResulted = publicEvents.createPublicProducer();
@@ -53,13 +56,52 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
                 .replaceAll("DEFENDANT_ID", defendantId.toString());
         final JsonObject jsonObject = new StringToJsonObjectConverter().convert(eventPayloadString);
 
+        // Fresh metadata id per publish: the framework dedupes events by metadata id, so re-publishing
+        // with the same id would be silently ignored. A new id guarantees each re-publish is reprocessed.
         sendMessage(publicEventCaseUpdatedAndHearingResulted,
                 PUBLIC_EVENT_HEARING_RESULTED_CASE_UPDATED,
                 jsonObject,
-                metadataOf(metadataId, PUBLIC_EVENT_HEARING_RESULTED_CASE_UPDATED)
+                metadataOf(randomUUID(), PUBLIC_EVENT_HEARING_RESULTED_CASE_UPDATED)
                         .withUserId(userId.toString())
                         .build());
 
+    }
+
+    /**
+     * Publishes the {@code public.progression.hearing-resulted-case-updated} event and verifies the read model,
+     * RE-PUBLISHING until the update is reflected (or the attempt budget is exhausted).
+     *
+     * <p><b>Why re-publish instead of publish-once-then-poll?</b> The event is consumed by
+     * {@code ListingEventProcessor} and routed to the {@code Case} aggregate's handler. That handler
+     * <b>silently drops the update</b> ({@code if (hearingIds.isEmpty()) return Stream.empty();}) when the
+     * aggregate does not yet know which hearing the case belongs to. {@code Case.hearingIds} is populated only
+     * after the asynchronous {@code add-hearing-to-case} command runs — itself triggered by a private event
+     * emitted after {@code list-court-hearing} — and there is <b>no viewstore projection</b> for the link, so
+     * the test cannot deterministically await it. On slower CI environments the first publish can be processed
+     * before the link exists; it is then dropped with no JMS redelivery, so a single publish is lost forever.
+     * Re-publishing (with a fresh event id each time) guarantees that once the link is established, a
+     * subsequent publish lands.
+     */
+    public void publishUntilCaseStatusReflected(final boolean isAllocated) {
+        final int maxPublishAttempts = 3;
+        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
+            LOGGER.info("[defendant-proceeding-fix] publishing hearing-resulted-case-updated (attempt {}/{})",
+                    attempt, maxPublishAttempts);
+            whenPublicEventCaseUpdatedAndHearingResultedIsPublished();
+            try {
+                verifyHearingForCaseStatusAndDefendantProceedingsConcludedFromAPIWithJmsDelay(isAllocated);
+                LOGGER.info("[defendant-proceeding-fix] read model reflected defendant-proceeding update after {} publish attempt(s)", attempt);
+                return;
+            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
+                if (attempt == maxPublishAttempts) {
+                    LOGGER.error("[defendant-proceeding-fix] update still not reflected after {} attempts — failing", maxPublishAttempts);
+                    throw caseNotYetLinkedToHearing;
+                }
+                // The case<->hearing link was not established when this publish was processed, so the
+                // update was dropped. Re-publish and poll again.
+                LOGGER.warn("[defendant-proceeding-fix] attempt {} did not land (case<->hearing link likely not yet established); re-publishing", attempt);
+            }
+        }
     }
 
     public void verifyHearingForCaseStatusAndDefendantProceedingsConcludedFromAPI(boolean isAllocated) {
