@@ -253,6 +253,31 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
         }
     }
 
+    /**
+     * Publishes the deleted-only offences event and polls REST until the deletion is reflected,
+     * RE-PUBLISHING if the poll times out (case<->hearing link race — same root cause as
+     * {@link #publishUntilOffencesConsumed()}).
+     */
+    public void publishUntilOffencesDeletedOnlyReflected(final boolean isAllocated) {
+        final int maxPublishAttempts = 3;
+        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
+            LOGGER.info("[offences-fix] publishing defendant-offences-changed (deletedOnly) for case {} (attempt {}/{})",
+                    caseId, attempt, maxPublishAttempts);
+            whenCaseDefendantOffencesUpdatedPublicEventIsPublishedDeletedOnly();
+            try {
+                verifyDefendentOffenceDeletedOnlyFromAPI(isAllocated);
+                LOGGER.info("[offences-fix] deletedOnly reflected after {} publish attempt(s)", attempt);
+                return;
+            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
+                if (attempt == maxPublishAttempts) {
+                    LOGGER.error("[offences-fix] deletedOnly still not reflected after {} attempts — failing", maxPublishAttempts);
+                    throw caseNotYetLinkedToHearing;
+                }
+                LOGGER.warn("[offences-fix] deletedOnly attempt {} timed out (case<->hearing link likely not yet established); re-publishing", attempt);
+            }
+        }
+    }
+
     private void publishCaseDefendantOffencesUpdated(OffencesForDefendantUpdated offencesForDefendantUpdated) {
         final JsonObject updateCaseDefendantDetailsObject = (JsonObject) objectToJsonValueConverter.convert(offencesForDefendantUpdated);
 
