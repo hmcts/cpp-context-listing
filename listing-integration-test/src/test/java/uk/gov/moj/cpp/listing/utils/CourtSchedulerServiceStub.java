@@ -1297,6 +1297,37 @@ public class CourtSchedulerServiceStub {
     }
 
     /**
+     * searchAndBook stub for the CROWN "update removing the court room → unallocated" scenario.
+     * Mirrors {@link #stubSearchBookHearingSlotsForCrown} (lenient hearingId+courtCentreId matchers so
+     * it matches regardless of the request's date/duration/start-time params) but reports the booked
+     * session as {@code isDraft:true}. The update path ({@code handleCrownUpdateSearchAndBook}) takes
+     * only {@code courtScheduleId}+{@code isDraft} from this response and lets the aggregate unallocate
+     * — clearing the previously-allocated court room. A courtRoomId is still emitted purely to satisfy
+     * the parser ({@code searchAndBookSlots} reads it unconditionally); it is discarded downstream.
+     */
+    public static void stubSearchBookHearingSlotsForCrownDraft(final String hearingId, final String courtCentreId) {
+        final String payload = "{\n" +
+                "  \"hearingSlots\": {\n" +
+                "      \"hearingId\": \"" + hearingId + "\",\n" +
+                "      \"courtScheduleId\": \"" + UUID.randomUUID() + "\",\n" +
+                "      \"courtRoomId\": \"" + courtCentreId + "\",\n" +
+                "      \"hearingDate\": \"" + LocalDate.now().plusDays(5) + "\",\n" +
+                "      \"hearingStartTime\": \"" + ZonedDateTime.now(java.time.ZoneOffset.UTC).plusDays(5).withHour(10).withMinute(0).withSecond(0).withNano(0) + "\",\n" +
+                "      \"duration\": 30,\n" +
+                "      \"isDraft\": true\n" +
+                "  }\n" +
+                "}";
+
+        stubFor(get(WireMock.urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + "/searchlist/hearingslots")))
+                .withQueryParam("hearingId", matching(hearingId))
+                .withQueryParam("courtCentreId", matching(courtCentreId))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(payload)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    /**
      * Registers low-priority catch-all stubs for all court-scheduler endpoints.
      * These prevent 60s timeouts when the enrichment service makes calls that
      * don't match any specific stub. Individual test stubs (default priority 5)
