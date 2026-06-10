@@ -40,6 +40,7 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHea
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedulesWithJudiciaries;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrownDraft;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubUpdateAvailableHearingSlotsService;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
@@ -565,6 +566,12 @@ class HearingIT extends AbstractIT {
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataWithNoCourtRoom);
         stubGetAvailableHearingSlotsWithQueryParams(updateHearingSteps.getUpdatedHearingData());
         stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
+        // Removing the court room must resolve to a DRAFT searchAndBook slot so the aggregate unallocates
+        // and clears the previously-allocated room. whenHearingIsUpdatedForListingHmiEnabled() stubs no
+        // searchAndBook, and the courtRoom-gated stub in whenHearingIsUpdatedForListing only fires when a
+        // room is present — so without this the /searchlist/hearingslots call finds no slot, enrichment
+        // no-ops, and the original allocation (court room) survives → assertion sees a UUID, not null.
+        stubSearchBookHearingSlotsForCrownDraft(hearinId.toString(), courtCentreId.toString());
         updateHearingSteps.whenHearingIsUpdatedForListingHmiEnabled();
         updateHearingSteps.verifyHearingUpdatedWithNoCourtRoomAndUnallocatedWhenQueryingFromAPI();
         updateHearingSteps.verifyHearingUnallocatedCourtroomRemoveds(hearinId);
