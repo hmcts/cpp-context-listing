@@ -5,8 +5,11 @@ import static com.google.common.io.Resources.getResource;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.joining;
+import static javax.ws.rs.core.Response.Status.OK;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataOrganisationUnitCatchAll;
+import static uk.gov.moj.cpp.listing.utils.WebDavStub.acceptCourtListXmlFile;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProgressionNotesStubs;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProsecutionCaseByCaseUrn;
@@ -53,6 +56,13 @@ public class AbstractIT {
     @BeforeEach
     void setUp() {
         reset();
+        // ASYNC-VULNERABLE stubs are re-armed FIRST after reset(): in-flight EVENT_PROCESSOR
+        // work from the previous test (court-list export PUTs, org-unit lookups for allocations)
+        // can land in the reset()->arm gap and fail with 404/NULL-payload errors misattributed
+        // to this test (court-list export then marks publish status failed and the payload
+        // query 500s). Mirrors the team/ccsph2n hardening.
+        acceptCourtListXmlFile(OK);
+        stubGetReferenceDataOrganisationUnitCatchAll();
         setupAsAuthorisedUser(USER_ID_VALUE);
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased();
         setupProsecutionCaseByCaseUrn();
