@@ -76,7 +76,6 @@ public class NextHearingProcessor {
     private static final String PRIVATE_EVENT_OFFENCES_REMOVED_FROM_EXISTING_UNALLOCATED_HEARING = "listing.events.offences-removed-from-existing-unallocated-hearing";
     private static final String PUBLIC_EVENT_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING = "public.events.listing.offences-removed-from-existing-allocated-hearing";
     private static final String PUBLIC_EVENT_OFFENCES_REMOVED_FROM_EXISTING_UNALLOCATED_HEARING = "public.events.listing.offences-removed-from-existing-unallocated-hearing";
-    private static final String HEARING_ID = "hearingId";
     public static final String PUBLIC_EVENTS_LISTING_OFFENCES_REMOVED_FROM_ALLOCATED_HEARING = "public.events.listing.offences-removed-from-allocated-hearing";
     public static final String LISTING_EVENTS_NEXT_HEARING_REPLACED = "listing.events.next-hearing-replaced";
 
@@ -181,7 +180,7 @@ public class NextHearingProcessor {
             publishPublicOffencesRemovedFromUnallocatedHearing(envelope, hearingId, seededOffences);
         } else {
             final JsonObjectBuilder payloadBuilder = createObjectBuilder();
-            payloadBuilder.add(HEARING_ID, hearingId.toString() );
+            payloadBuilder.add("hearingId", hearingId.toString() );
             payloadBuilder.add("offenceIds", envelope.payloadAsJsonObject().getJsonArray("seededOffences"));
             // This public event uses for multiple purpose, we need to know it is raised by amend-reshare flow.
             payloadBuilder.add("isResultFlow", true);
@@ -223,15 +222,6 @@ public class NextHearingProcessor {
         final JsonObjectBuilder payloadBuilder = createObjectBuilder();
         envelope.payloadAsJsonObject().keySet().stream().filter(s -> !"sourceContext".equals(s))
                 .forEach(s -> payloadBuilder.add(s, envelope.payloadAsJsonObject().get(s)));
-
-        // [FLAKE-PROBE] TEMP (remove before final merge): the test subscribes to
-        // public.events.listing.offences-removed-from-existing-allocated-hearing (the "Listing" branch).
-        // Log which selector we actually publish to + sourceContext, to rule in/out a selector mismatch
-        // for ListNextHearingIT (sourceContext default is "LISTING" but the branch checks for "Listing").
-        LOGGER.warn("[FLAKE-PROBE] republish offences-removed-allocated sourceContext={} selector={} payloadHearingId={}",
-                sourceContext,
-                "Listing".equals(sourceContext) ? PUBLIC_EVENT_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING : PUBLIC_EVENTS_LISTING_OFFENCES_REMOVED_FROM_ALLOCATED_HEARING,
-                envelope.payloadAsJsonObject().getString(HEARING_ID, "?"));
 
         if ("Listing".equals(sourceContext) ) {
             sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING), payloadBuilder.build()));
@@ -283,7 +273,7 @@ public class NextHearingProcessor {
 
     private void sendUpdateCaseWithDuplicateHearing(final JsonEnvelope envelope, final UUID hearingId, final UUID caseId) {
         final JsonObject hearingMarkedAsDuplicateForCase = createObjectBuilder()
-                .add(HEARING_ID, hearingId.toString())
+                .add("hearingId", hearingId.toString())
                 .add("caseId", caseId.toString())
                 .build();
 

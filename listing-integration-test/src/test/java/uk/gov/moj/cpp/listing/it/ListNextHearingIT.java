@@ -220,7 +220,7 @@ public class ListNextHearingIT extends AbstractIT {
 
         listNextHearingSteps.clearStaleAllocatedHearingMessages();
         listNextHearingSteps.whenDeleteNextHearingSubmittedForListing();
-        listNextHearingSteps.verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(existedHearingId, oldNextHearings);
+        listNextHearingSteps.verifyOffencesRemovedFromAllocatedHearingFromApi(existedHearings, oldNextHearings);
 
         // Second iteration: re-add cases to existing hearing then delete again
         listNextHearingSteps.whenUpdateRelatedHearingSubmittedForListing(existedHearingId, oldNextHearings);
@@ -228,7 +228,7 @@ public class ListNextHearingIT extends AbstractIT {
 
         listNextHearingSteps.clearStaleAllocatedHearingMessages();
         listNextHearingSteps.whenDeleteNextHearingSubmittedForListing();
-        listNextHearingSteps.verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(existedHearingId, oldNextHearings);
+        listNextHearingSteps.verifyOffencesRemovedFromAllocatedHearingFromApi(existedHearings, oldNextHearings);
 
     }
 
