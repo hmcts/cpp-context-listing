@@ -11,7 +11,7 @@
 
     <groupId>uk.gov.moj.cpp.listing</groupId>
     <artifactId>listing-parent</artifactId>
-    <version>17.103.191-CCSPH2N-SNAPSHOT</version>
+    <version>17.103.192-CCSPH2N-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Listing Context Microservice Parent</name>
