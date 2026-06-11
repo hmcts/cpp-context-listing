@@ -16,6 +16,7 @@ import static java.time.ZoneOffset.UTC;
 import static java.util.Collections.emptyMap;
 import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.*;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetProsecutorPoliceFlag;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 
@@ -51,7 +52,7 @@ class TestSpiScenario extends AbstractIT {
         hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
         hearingId = randomUUID();
         caseId = randomUUID();
-        courtCentreId = randomUUID();
+        courtCentreId = getRandomCourtCenterId();
         hearingTypeId = randomUUID();
 
         stubGetReferenceDataCourtCentreById(courtCentreId);
@@ -80,7 +81,7 @@ class TestSpiScenario extends AbstractIT {
         hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
         hearingId = randomUUID();
         caseId = randomUUID();
-        courtCentreId = randomUUID();
+        courtCentreId = getRandomCourtCenterId();
         hearingTypeId = randomUUID();
 
         stubGetReferenceDataCourtCentreById(courtCentreId);
@@ -107,7 +108,7 @@ class TestSpiScenario extends AbstractIT {
         hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
         hearingId = randomUUID();
         caseId = randomUUID();
-        courtCentreId = randomUUID();
+        courtCentreId = getRandomCourtCenterId();
         hearingTypeId = randomUUID();
 
         stubGetReferenceDataCourtCentreById(courtCentreId);

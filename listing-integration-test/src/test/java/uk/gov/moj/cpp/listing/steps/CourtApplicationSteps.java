@@ -61,6 +61,7 @@ import javax.ws.rs.core.Response;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Filter;
 import io.restassured.path.json.JsonPath;
+import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.slf4j.Logger;
@@ -137,10 +138,45 @@ public class CourtApplicationSteps extends AbstractIT {
         LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n, \n\tHeader = {}", PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED, request, getLoggedInHeader());
     }
 
+    /**
+     * Publishes the {@code public.progression.court-application-changed} event and verifies the read model,
+     * RE-PUBLISHING until the update is reflected (or the attempt budget is exhausted).
+     *
+     * <p><b>Why re-publish instead of publish-once-then-poll?</b> The event is routed to a command handler
+     * that silently drops the update ({@code if (hearingIds.isEmpty()) return Stream.empty();}) when the
+     * Application aggregate is not yet linked to a hearing. The link is established asynchronously after
+     * {@code list-court-hearing} completes. On slower CI environments the single publish can be processed
+     * before the link exists; it is then dropped with no JMS redelivery, so the 90 s poll can never succeed.
+     * Re-publishing (with a fresh metadata/event id each time — the framework dedupes by metadata id) guarantees
+     * that once the link is established a subsequent publish lands.
+     */
+    public void publishUntilCourtApplicationReflected() {
+        final int maxPublishAttempts = 3;
+        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
+            LOGGER.info("[court-application-fix] publishing court-application-changed (attempt {}/{})",
+                    attempt, maxPublishAttempts);
+            whenCaseCourtApplicationUpdatedPublicEventIsPublished();
+            try {
+                verifyCourtApplicationUpdatedFromAPI();
+                LOGGER.info("[court-application-fix] read model reflected court-application update after {} publish attempt(s)", attempt);
+                return;
+            } catch (final ConditionTimeoutException applicationNotYetLinkedToHearing) {
+                if (attempt == maxPublishAttempts) {
+                    LOGGER.error("[court-application-fix] update still not reflected after {} attempts — failing", maxPublishAttempts);
+                    throw applicationNotYetLinkedToHearing;
+                }
+                // The application<->hearing link was not established when this publish was processed, so the
+                // update was dropped. Re-publish and poll again.
+                LOGGER.warn("[court-application-fix] attempt {} did not land (application<->hearing link likely not yet established); re-publishing", attempt);
+            }
+        }
+    }
+
     public void verifyPublicEventCourtApplicationAdded() {
         JsonPath jsRequest = new JsonPath(request);
 
-        JsonPath jsonResponse = retrieveMessage(publicMessageConsumerCourtApplicationAddedForHearing);
+        JsonPath jsonResponse = retrieveMessage(publicMessageConsumerCourtApplicationAddedForHearing,
+                org.hamcrest.CoreMatchers.containsString(jsRequest.getString("hearingId")));
         LOGGER.debug("jsonResponse from publicMessageConsumerCourtApplicationAddedForHearing: {}", jsonResponse.prettify());
         assertThat(jsonResponse.get("hearingId"), is(jsRequest.getString("hearingId")));
         assertThat(jsonResponse.get("courtApplication.id"), is(jsRequest.getString("courtApplication.id")));

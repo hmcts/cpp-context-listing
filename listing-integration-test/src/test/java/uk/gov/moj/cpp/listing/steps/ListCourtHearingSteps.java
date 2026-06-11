@@ -2264,7 +2264,8 @@ public class ListCourtHearingSteps extends AbstractIT {
         assertThat(jsonResponse.get("confirmedHearing.prosecutionCases.size()"), is(1));
         final String allocatedHearingCaseId = jsonResponse.get("confirmedHearing.prosecutionCases[0].id");
 
-        final JsonPath jsonResponse1 = retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing);
+        final JsonPath jsonResponse1 = retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing, isJson(Matchers.allOf(
+                withJsonPath("$.confirmedHearing.id", is(unAllocatedHearingId.toString())))));
 
         assertThat(jsonResponse1.getBoolean("sendNotificationToParties"), is(true));
         assertThat(jsonResponse1.get("confirmedHearing.id"), is(unAllocatedHearingId.toString()));
@@ -2300,13 +2301,15 @@ public class ListCourtHearingSteps extends AbstractIT {
     public void verifyPublicEventHearingConfirmedEventAndExtendPartialHearingFromProgression(final UUID allocatedHearingId, final UUID unAllocatedHearingId) {
         final List<String> newCaseIds = new ArrayList<>();
 
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing);
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing, isJson(Matchers.allOf(
+                withJsonPath("$.confirmedHearing.id", is(allocatedHearingId.toString())))));
 
         assertThat(jsonResponse.get("confirmedHearing.id"), is(allocatedHearingId.toString()));
         assertThat(jsonResponse.get("confirmedHearing.prosecutionCases.size()"), is(1));
         final String allocatedHearingCaseId = jsonResponse.get("confirmedHearing.prosecutionCases[0].id");
 
-        final JsonPath jsonResponse1 = retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing);
+        final JsonPath jsonResponse1 = retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing, isJson(Matchers.allOf(
+                withJsonPath("$.confirmedHearing.id", is(unAllocatedHearingId.toString())))));
 
         assertThat(jsonResponse1.get("confirmedHearing.id"), is(unAllocatedHearingId.toString()));
         assertThat(jsonResponse1.get("confirmedHearing.prosecutionCases.size()"), is(1));

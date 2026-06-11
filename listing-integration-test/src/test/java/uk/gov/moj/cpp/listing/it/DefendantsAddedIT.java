@@ -31,8 +31,7 @@ public class DefendantsAddedIT extends AbstractIT {
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
         HearingData hearingData = hearingsData.getHearingData().get(0);
         final AddDefendantSteps addDefendantSteps = new AddDefendantSteps(caseId, hearingData);
-        addDefendantSteps.whenCaseDefendantsAddedPublicEventIsPublished();
-        addDefendantSteps.verifyHearingListedFromAPIWithJmsDelay(false);
+        addDefendantSteps.publishUntilDefendantsAddedReflected(false);
     }
 
     @Test
@@ -54,8 +53,7 @@ public class DefendantsAddedIT extends AbstractIT {
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
         HearingData hearingData = hearingsData.getHearingData().get(0);
         final AddDefendantSteps addDefendantSteps = new AddDefendantSteps(caseId, hearingData);
-        addDefendantSteps.whenCaseDefendantsAddedPublicEventIsPublished();
-        addDefendantSteps.verifyHearingListedFromAPIWithJmsDelay(true);
+        addDefendantSteps.publishUntilDefendantsAddedReflected(true);
     }
 
 
@@ -78,8 +76,7 @@ public class DefendantsAddedIT extends AbstractIT {
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
         HearingData hearingData = hearingsData.getHearingData().get(0);
         final AddDefendantSteps addDefendantSteps = new AddDefendantSteps(caseId, hearingData);
-        addDefendantSteps.whenCaseDefendantsAddedPublicEventIsPublished();
-        addDefendantSteps.verifyPublicEventDefendantAddedInActiveMQ();
+        addDefendantSteps.publishUntilDefendantsAddedConsumed();
     }
 
     @Test
@@ -101,7 +98,6 @@ public class DefendantsAddedIT extends AbstractIT {
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
         HearingData hearingData = hearingsData.getHearingData().get(0);
         final AddDefendantSteps addDefendantSteps = new AddDefendantSteps(caseId, hearingData);
-        addDefendantSteps.whenCaseDefendantsAddedPublicEventIsPublished();
-        addDefendantSteps.verifyPublicEventDefendantAddedInActiveMQ();
+        addDefendantSteps.publishUntilDefendantsAddedConsumed();
     }
 }

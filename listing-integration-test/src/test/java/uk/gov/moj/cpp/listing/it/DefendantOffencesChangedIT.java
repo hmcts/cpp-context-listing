@@ -46,8 +46,12 @@ public class DefendantOffencesChangedIT extends AbstractIT {
         UpdatedOffenceData updatedOffenceData = updateOffenceData(offenceData);
 
         final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, offenceIdToBeDeleted);
-        steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublished();
-        steps.verifyPublicEventDefendantOffencesUpdatedInActiveMQ();
+        // Re-publishes until the update is REFLECTED via REST (gate). The Case aggregate silently
+        // drops the update when the case<->hearing link has not yet formed (async add-hearing-to-case
+        // race); a fresh metadata id per attempt avoids framework dedup. The gate polls REST (a read,
+        // not a JMS consume) so it does NOT steal the private events the verify* calls below assert —
+        // those run once REST proves the combined event was applied (hearing UNALLOCATED → isAllocated=false).
+        steps.publishUntilOffencesReflected(false);
         steps.verifyEventDefendantOffencesToBeUpdateInActiveMQ();
         steps.verifyEventDefendantOffencesToBeAddedInActiveMQ();
         steps.verifyEventDefendantOffencesToBeDeletedInActiveMQ();
@@ -70,8 +74,7 @@ public class DefendantOffencesChangedIT extends AbstractIT {
         UpdatedOffenceData updatedOffenceData = updateOffenceData(offenceData);
 
         final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, null);
-        steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedUpdatedOnly();
-        steps.verifyDefendentOffenceUpdatedOnlyFromAPI(false);
+        steps.publishUntilOffencesUpdatedOnlyReflected(false);
     }
 
     @Test
@@ -85,8 +88,7 @@ public class DefendantOffencesChangedIT extends AbstractIT {
         UpdatedOffenceData updatedOffenceData = updateOffenceData(offenceData);
 
         final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, null);
-        steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly();
-        steps.verifyDefendentOffenceAddedOnlyFromAPI(false);
+        steps.publishUntilOffencesAddedOnlyReflected(false);
     }
 
     @Test
@@ -100,8 +102,9 @@ public class DefendantOffencesChangedIT extends AbstractIT {
         UpdatedOffenceData updatedOffenceData = updateOffenceData(offenceData);
 
         final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, updatedOffenceData.getOffenceId());
-        steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedDeletedOnly();
-        steps.verifyDefendentOffenceDeletedOnlyFromAPI(false);
+        // Re-publish until reflected — closes the coverage gap left when the other offence-change
+        // variants were wrapped: the case<->hearing link race silently drops a single publish.
+        steps.publishUntilOffencesDeletedOnlyReflected(false);
     }
 
     private HearingsData listCourtHearing() {

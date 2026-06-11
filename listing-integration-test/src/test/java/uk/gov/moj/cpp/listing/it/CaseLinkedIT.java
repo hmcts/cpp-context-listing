@@ -32,17 +32,24 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class CaseLinkedIT extends AbstractIT {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CaseLinkedIT.class);
+
     private static final UUID CASE_TO_BE_LINKED_1 = randomUUID();
     private static final String CASE_URN_TO_BE_LINKED_1 = STRING.next();
     private static final UUID CASE_TO_BE_LINKED_2 = randomUUID();
@@ -70,24 +77,20 @@ class CaseLinkedIT extends AbstractIT {
         final int numberOfListedCases = hearingsData.getHearingData().get(0).getListedCases().size();
 
         //LINK EVENT
-        publishCasesLinkedEvent(createCaseLinkedEvent(caseId, caseUrn));
-
         final Matcher[] caseLinkedEventMatchers = new Matcher[]{
                 withJsonPath("$.id", equalTo(hearingId.toString())),
                 withJsonPath("$.listedCases.length()", equalTo(numberOfListedCases)),
                 anyOf(createLinkedCaseMatcher(0), createLinkedCaseMatcher(1))
         };
-
-        verifyHearing(hearingId, caseLinkedEventMatchers);
+        publishUntilHearingReflected(() -> createCaseLinkedEvent(caseId, caseUrn), hearingId, caseLinkedEventMatchers);
 
         //UNLINK EVENT
-        publishCasesLinkedEvent(createCaseUnlinkedEvent(caseId, caseUrn));
         final Matcher[] caseUnlinkedEventMatchers = new Matcher[]{
                 withJsonPath("$.id", equalTo(hearingId.toString())),
                 withJsonPath("$.listedCases.length()", equalTo(numberOfListedCases)),
                 anyOf(createUnlinkedCaseMatcher(0), createUnlinkedCaseMatcher(1))
         };
-        verifyHearing(hearingId, caseUnlinkedEventMatchers);
+        publishUntilHearingReflected(() -> createCaseUnlinkedEvent(caseId, caseUrn), hearingId, caseUnlinkedEventMatchers);
 
     }
 
@@ -119,6 +122,45 @@ class CaseLinkedIT extends AbstractIT {
                                 allOf(matchers)));
 
         return response.getPayload();
+    }
+
+    /**
+     * Publishes the cases-linked event (or unlink variant) and polls until the read model reflects it,
+     * re-publishing up to 3 times with a fresh event each attempt.
+     *
+     * <p><b>Why re-publish?</b> The event is processed by the {@code Case} aggregate's {@code linkCases}
+     * method, which silently drops the update ({@code hearingIds.isEmpty() → Stream.empty()}) when the
+     * aggregate does not yet know which hearing the case belongs to. The {@code add-hearing-to-case}
+     * command that populates {@code hearingIds} is asynchronous, so on slow CI the first publish can
+     * arrive before the link exists and is dropped with no JMS redelivery. Re-publishing (with a fresh
+     * event object and fresh metadata id each attempt) guarantees that once the link is established a
+     * subsequent publish lands.
+     */
+    private void publishUntilHearingReflected(final Supplier<CaseLinked> eventSupplier,
+                                               final UUID hearingId,
+                                               final Matcher[] matchers) {
+        final int maxAttempts = 3;
+        ConditionTimeoutException lastTimeout = null;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            LOGGER.info("[case-linked-fix] publishing cases-linked event for hearing {} (attempt {}/{})",
+                    hearingId, attempt, maxAttempts);
+            // Recreate the event inside the loop so each publish has a fresh payload AND a fresh
+            // metadata id (randomUUID() inside publishCasesLinkedEvent), preventing framework dedup.
+            publishCasesLinkedEvent(eventSupplier.get());
+            try {
+                verifyHearing(hearingId, matchers);
+                LOGGER.info("[case-linked-fix] read model reflected cases-linked update after {} publish attempt(s)", attempt);
+                return;
+            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
+                lastTimeout = caseNotYetLinkedToHearing;
+                if (attempt == maxAttempts) {
+                    LOGGER.error("[case-linked-fix] update still not reflected after {} attempts — failing", maxAttempts);
+                } else {
+                    LOGGER.warn("[case-linked-fix] attempt {} did not land (case<->hearing link likely not yet established); re-publishing", attempt);
+                }
+            }
+        }
+        throw lastTimeout;
     }
 
     private String generateUrlForFindingAHearingById(final String rawId) {

@@ -54,6 +54,7 @@ import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.path.json.JsonPath;
+import org.awaitility.core.ConditionTimeoutException;
 import org.skyscreamer.jsonassert.Customization;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.skyscreamer.jsonassert.comparator.CustomComparator;
@@ -100,7 +101,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
     private final OffenceData offenceData;
     private final UUID offenceIdToBeDeleted;
     private final UUID caseId;
-    private final UUID metadataId;
+    private UUID metadataId;
     private final UUID userId;
 
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
@@ -165,9 +166,134 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
         publishCaseDefendantOffencesUpdated(offencesForDefendantUpdated);
     }
 
+    /**
+     * Publishes the combined {@code public.progression.defendant-offences-changed} event
+     * (update + add + delete) and RE-PUBLISHES until the update is <b>reflected in the
+     * viewstore via REST</b>, or the attempt budget is exhausted.
+     *
+     * <p><b>Why re-publish?</b> The event is handled by the {@code Case} aggregate which
+     * <b>silently drops</b> the update ({@code hearingIds.isEmpty() → Stream.empty()}) when the
+     * case is not yet linked to a hearing. The async {@code add-hearing-to-case} command populates
+     * the link; on slow CI it may not complete before the first publish is processed, causing the
+     * event to be dropped with no JMS redelivery. Re-publishing (with a fresh metadata id each
+     * time) recovers once the link is established.
+     *
+     * <p><b>Why gate on REST, not on a JMS consume?</b> The previous gate consumed
+     * {@code verifyPublicEventDefendantOffencesUpdatedInActiveMQ()}, which reads back the test's
+     * <i>own</i> published event off the public topic — an echo that is ALWAYS present on the first
+     * attempt, so the loop never actually re-published and the case&lt;-&gt;hearing race was left
+     * unguarded. The downstream private-event verifies (called by the test after this gate) then
+     * died with {@code NoSuchElement} when the link had not yet formed. A REST poll is the true
+     * proof the aggregate <i>applied</i> the combined event, and — being a read — it does NOT consume
+     * the private JMS messages the test must subsequently assert. Once REST reflects the update, all
+     * downstream {@code offences-to-be-*} / {@code offence-*} events are guaranteed emitted and
+     * buffered on the consumers. This mirrors the proven gate used by the *Only variants.
+     *
+     * <p>The combined event's updated offence is built by the same {@code buildUpdatedOffences} /
+     * {@code buildOffence} as the {@code updatedOnly} variant, so {@link #verifyDefendentOffenceUpdatedOnlyFromAPI(boolean)}
+     * is a valid predicate here; the additional add (appended) and delete (offences[1]) do not shift offences[0].
+     */
+    public void publishUntilOffencesReflected(final boolean isAllocated) {
+        final int maxPublishAttempts = 3;
+        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
+            LOGGER.info("[offences-fix] publishing combined defendant-offences-changed for case {} (attempt {}/{})",
+                    caseId, attempt, maxPublishAttempts);
+            whenCaseDefendantOffencesUpdatedPublicEventIsPublished();
+            try {
+                verifyDefendentOffenceUpdatedOnlyFromAPI(isAllocated);
+                LOGGER.info("[offences-fix] combined update reflected after {} publish attempt(s)", attempt);
+                return;
+            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
+                if (attempt == maxPublishAttempts) {
+                    LOGGER.error("[offences-fix] combined update still not reflected after {} attempts — failing", maxPublishAttempts);
+                    throw caseNotYetLinkedToHearing;
+                }
+                LOGGER.warn("[offences-fix] combined attempt {} timed out (case<->hearing link likely not yet established); re-publishing", attempt);
+            }
+        }
+    }
+
+    /**
+     * Publishes the updated-only offences event and polls REST until the update is reflected,
+     * RE-PUBLISHING if the poll times out (case<->hearing link race — same root cause as
+     * {@link #publishUntilOffencesConsumed()}).
+     */
+    public void publishUntilOffencesUpdatedOnlyReflected(final boolean isAllocated) {
+        final int maxPublishAttempts = 3;
+        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
+            LOGGER.info("[offences-fix] publishing defendant-offences-changed (updatedOnly) for case {} (attempt {}/{})",
+                    caseId, attempt, maxPublishAttempts);
+            whenCaseDefendantOffencesUpdatedPublicEventIsPublishedUpdatedOnly();
+            try {
+                verifyDefendentOffenceUpdatedOnlyFromAPI(isAllocated);
+                LOGGER.info("[offences-fix] updatedOnly reflected after {} publish attempt(s)", attempt);
+                return;
+            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
+                if (attempt == maxPublishAttempts) {
+                    LOGGER.error("[offences-fix] updatedOnly still not reflected after {} attempts — failing", maxPublishAttempts);
+                    throw caseNotYetLinkedToHearing;
+                }
+                LOGGER.warn("[offences-fix] updatedOnly attempt {} timed out (case<->hearing link likely not yet established); re-publishing", attempt);
+            }
+        }
+    }
+
+    /**
+     * Publishes the added-only offences event and polls REST until the addition is reflected,
+     * RE-PUBLISHING if the poll times out (case<->hearing link race — same root cause as
+     * {@link #publishUntilOffencesConsumed()}).
+     */
+    public void publishUntilOffencesAddedOnlyReflected(final boolean isAllocated) {
+        final int maxPublishAttempts = 3;
+        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
+            LOGGER.info("[offences-fix] publishing defendant-offences-changed (addedOnly) for case {} (attempt {}/{})",
+                    caseId, attempt, maxPublishAttempts);
+            whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly();
+            try {
+                verifyDefendentOffenceAddedOnlyFromAPI(isAllocated);
+                LOGGER.info("[offences-fix] addedOnly reflected after {} publish attempt(s)", attempt);
+                return;
+            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
+                if (attempt == maxPublishAttempts) {
+                    LOGGER.error("[offences-fix] addedOnly still not reflected after {} attempts — failing", maxPublishAttempts);
+                    throw caseNotYetLinkedToHearing;
+                }
+                LOGGER.warn("[offences-fix] addedOnly attempt {} timed out (case<->hearing link likely not yet established); re-publishing", attempt);
+            }
+        }
+    }
+
+    /**
+     * Publishes the deleted-only offences event and polls REST until the deletion is reflected,
+     * RE-PUBLISHING if the poll times out (case<->hearing link race — same root cause as
+     * {@link #publishUntilOffencesConsumed()}).
+     */
+    public void publishUntilOffencesDeletedOnlyReflected(final boolean isAllocated) {
+        final int maxPublishAttempts = 3;
+        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
+            LOGGER.info("[offences-fix] publishing defendant-offences-changed (deletedOnly) for case {} (attempt {}/{})",
+                    caseId, attempt, maxPublishAttempts);
+            whenCaseDefendantOffencesUpdatedPublicEventIsPublishedDeletedOnly();
+            try {
+                verifyDefendentOffenceDeletedOnlyFromAPI(isAllocated);
+                LOGGER.info("[offences-fix] deletedOnly reflected after {} publish attempt(s)", attempt);
+                return;
+            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
+                if (attempt == maxPublishAttempts) {
+                    LOGGER.error("[offences-fix] deletedOnly still not reflected after {} attempts — failing", maxPublishAttempts);
+                    throw caseNotYetLinkedToHearing;
+                }
+                LOGGER.warn("[offences-fix] deletedOnly attempt {} timed out (case<->hearing link likely not yet established); re-publishing", attempt);
+            }
+        }
+    }
+
     private void publishCaseDefendantOffencesUpdated(OffencesForDefendantUpdated offencesForDefendantUpdated) {
         final JsonObject updateCaseDefendantDetailsObject = (JsonObject) objectToJsonValueConverter.convert(offencesForDefendantUpdated);
 
+        // Fresh event id per publish: the framework dedupes events by metadata id, so re-publishing
+        // with the same id would be ignored. A new id guarantees each re-publish is reprocessed.
+        metadataId = randomUUID();
         sendMessage(
                 publicEventDefendantOffencesUpdated,
                 PUBLIC_EVENT_PROGRESSION_OFFENCES_FOR_DEFENDANT_CHANGED,
