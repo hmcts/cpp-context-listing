@@ -223,6 +223,15 @@ public class NextHearingProcessor {
         envelope.payloadAsJsonObject().keySet().stream().filter(s -> !"sourceContext".equals(s))
                 .forEach(s -> payloadBuilder.add(s, envelope.payloadAsJsonObject().get(s)));
 
+        // [FLAKE-PROBE] TEMP (remove before final merge): the test subscribes to
+        // public.events.listing.offences-removed-from-existing-allocated-hearing (the "Listing" branch).
+        // Log which selector we actually publish to + sourceContext, to rule in/out a selector mismatch
+        // for ListNextHearingIT (sourceContext default is "LISTING" but the branch checks for "Listing").
+        LOGGER.warn("[FLAKE-PROBE] republish offences-removed-allocated sourceContext={} selector={} payloadHearingId={}",
+                sourceContext,
+                "Listing".equals(sourceContext) ? PUBLIC_EVENT_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING : PUBLIC_EVENTS_LISTING_OFFENCES_REMOVED_FROM_ALLOCATED_HEARING,
+                envelope.payloadAsJsonObject().getString("hearingId", "?"));
+
         if ("Listing".equals(sourceContext) ) {
             sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING), payloadBuilder.build()));
         } else {

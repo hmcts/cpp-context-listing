@@ -23,6 +23,13 @@ public class QueueUtil {
     private static final long RETRIEVE_TIMEOUT = 5000;
     private static final long MESSAGE_RETRIEVE_TRIAL_TIMEOUT = 60000;
 
+    // vld cross-pod / Istio mesh latency + the update-hearing-for-listing-enriched redelivery loop can
+    // push a downstream private/public event past the default 60s consume window even though it DOES
+    // eventually arrive (the command self-heals; the message is retained in the queue/subscription).
+    // Use this longer budget ONLY for the few latency-sensitive consumes proven to need it — same
+    // "wait for vld latency" philosophy as the HearingIT poll-matcher fix, NOT a rerun-style mask.
+    public static final long VLD_LATENCY_RETRIEVE_TIMEOUT = 150000;
+
     public static final QueueUtil publicEvents = new QueueUtil();
 
     public static final QueueUtil privateEvents = new QueueUtil();
@@ -50,14 +57,18 @@ public class QueueUtil {
     }
 
     public static JsonPath retrieveMessage(final JmsMessageConsumerClient consumer) {
+        return retrieveMessage(consumer, MESSAGE_RETRIEVE_TRIAL_TIMEOUT);
+    }
+
+    public static JsonPath retrieveMessage(final JmsMessageConsumerClient consumer, final long totalTimeoutMs) {
         final long startTime = System.currentTimeMillis();
         do {
             final Optional<JsonPath> message = consumer.retrieveMessageAsJsonPath(RETRIEVE_TIMEOUT);
             if (message.isPresent()) {
                 return message.get();
             }
-        } while (MESSAGE_RETRIEVE_TRIAL_TIMEOUT > (System.currentTimeMillis() - startTime));
-        throw new java.util.NoSuchElementException("No JMS message received within " + MESSAGE_RETRIEVE_TRIAL_TIMEOUT + "ms");
+        } while (totalTimeoutMs > (System.currentTimeMillis() - startTime));
+        throw new java.util.NoSuchElementException("No JMS message received within " + totalTimeoutMs + "ms");
     }
 
     public static String retrieveMessageString(final JmsMessageConsumerClient consumer) {
@@ -81,6 +92,10 @@ public class QueueUtil {
     }
 
     public static JsonPath retrieveMessage(final JmsMessageConsumerClient consumer, final Matcher matchers) {
+        return retrieveMessage(consumer, matchers, MESSAGE_RETRIEVE_TRIAL_TIMEOUT);
+    }
+
+    public static JsonPath retrieveMessage(final JmsMessageConsumerClient consumer, final Matcher matchers, final long totalTimeoutMs) {
         final long startTime = System.currentTimeMillis();
         do {
             final Optional<JsonPath> optMessage = consumer.retrieveMessageAsJsonPath(RETRIEVE_TIMEOUT);
@@ -90,11 +105,11 @@ public class QueueUtil {
                     return message;
                 }
             }
-        } while (MESSAGE_RETRIEVE_TRIAL_TIMEOUT > (System.currentTimeMillis() - startTime));
+        } while (totalTimeoutMs > (System.currentTimeMillis() - startTime));
         // B6: fail loudly instead of returning null (which produced opaque NPEs at every call site).
         // Mirrors the 1-arg overload — a missing/filtered-out event is a clear, actionable failure.
         throw new java.util.NoSuchElementException(
-                "No JMS message matching [" + matchers + "] received within " + MESSAGE_RETRIEVE_TRIAL_TIMEOUT + "ms");
+                "No JMS message matching [" + matchers + "] received within " + totalTimeoutMs + "ms");
     }
 
     public static void clearAllMessages(JmsMessageConsumerClient consumer) {
