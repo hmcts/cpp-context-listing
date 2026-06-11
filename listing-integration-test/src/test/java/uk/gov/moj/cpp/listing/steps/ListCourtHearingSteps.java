@@ -754,10 +754,18 @@ public class ListCourtHearingSteps extends AbstractIT {
         String courtCentreId = hearingData.getCourtCentreId().toString();
         String userId = getLoggedInUser().toString();
 
-        // Keep only caseReferenceFilter in poll for initial verification
-        // Use JMS-aware polling to handle asynchronous message processing
-        String jsonResponse = pollForHearingWithJmsDelay(courtCentreId, isAllocated, userId, new Matcher[]{
-                withJsonPath(caseReferenceFilter) });
+        // The caseReference filter is a jayway filter path and matches even an empty
+        // hearings[] response, so it cannot gate the poll on its own — every expected
+        // value must be matched INSIDE the poll (IT-guide rule 3) or the assertions
+        // below run against a pre-projection snapshot and fail on slow (vld) stacks.
+        final Map<String, Object> expectedPollValues = buildExpectedJsonValues(hearingData, courtScheduleSlots, courtRoomIds);
+        final List<Matcher> pollMatchers = new ArrayList<>();
+        pollMatchers.add(withJsonPath(caseReferenceFilter));
+        for (final Map.Entry<String, Object> entry : expectedPollValues.entrySet()) {
+            pollMatchers.add(withJsonPath(entry.getKey(), equalTo(entry.getValue())));
+        }
+        String jsonResponse = pollForHearingWithJmsDelay(courtCentreId, isAllocated, userId,
+                pollMatchers.toArray(new Matcher[0]));
 
         List<String> failedAssertions = new ArrayList<>();
 
