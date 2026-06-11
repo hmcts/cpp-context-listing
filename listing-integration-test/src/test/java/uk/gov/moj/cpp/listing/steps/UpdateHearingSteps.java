@@ -1481,17 +1481,23 @@ public class UpdateHearingSteps extends AbstractIT {
     public void verifyHearingPayloadProperty(final String hearingId, final String propertyName, final Matcher<Object> matcher) {
         final String hearingIdFilter = getHearingFilter(hearingId);
 
+        // Poll until the hearing is in the unallocated list AND the property has actually been cleared.
+        // Polling only on list membership and then reading the property outside the loop was racy: on a
+        // slower (pipeline/vld) read model the row shows up unallocated a beat before the property is
+        // nulled, so the stale original value leaked through (HearingIT:576 flake). A cleared property is
+        // omitted from the projection, so the filtered path resolves to an empty list -> hasSize(0).
         final String payload = pollForHearingWithJmsDelay(updatedHearingData.getCourtCentreId().toString(), UNALLOCATED, getLoggedInUser().toString(), new Matcher[]{
-                withJsonPath(hearingIdFilter, hasSize(1))
+                withJsonPath(hearingIdFilter, hasSize(1)),
+                withJsonPath(hearingIdFilter + "." + propertyName, hasSize(0))
         });
 
         final JsonObject payloadAsJsonObject = new StringToJsonObjectConverter().convert(payload);
-        Object courtRoomId = payloadAsJsonObject.getJsonArray("hearings").stream().
+        final Object propertyValue = payloadAsJsonObject.getJsonArray("hearings").stream().
                 map(h -> (JsonObject) h)
                 .filter(h -> h.getString("id").equals(hearingId))
                 .findFirst().get().get(propertyName);
 
-        assertThat(courtRoomId, matcher);
+        assertThat(propertyValue, matcher);
     }
 
     public void verifyJudiciaryChangedForHearingStatusPublicEvent() {
