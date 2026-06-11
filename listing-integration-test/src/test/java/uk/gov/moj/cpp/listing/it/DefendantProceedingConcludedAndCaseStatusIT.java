@@ -34,8 +34,7 @@ public class DefendantProceedingConcludedAndCaseStatusIT extends AbstractIT {
         HearingData hearingData = hearingsData.getHearingData().get(0);
 
         final CaseUpdatedAndDefendantProceedingsConcludedSteps caseUpdatedAndDefendantProceedingsConcludedSteps = new CaseUpdatedAndDefendantProceedingsConcludedSteps(caseId, hearingData);
-        caseUpdatedAndDefendantProceedingsConcludedSteps.whenPublicEventCaseUpdatedAndHearingResultedIsPublished();
-        caseUpdatedAndDefendantProceedingsConcludedSteps.verifyHearingForCaseStatusAndDefendantProceedingsConcludedFromAPIWithJmsDelay(UNALLOCATED);
+        caseUpdatedAndDefendantProceedingsConcludedSteps.publishUntilCaseStatusReflected(UNALLOCATED);
     }
 
     @Test
@@ -59,8 +58,7 @@ public class DefendantProceedingConcludedAndCaseStatusIT extends AbstractIT {
         HearingData hearingData = hearingsData.getHearingData().get(0);
 
         final CaseUpdatedAndDefendantProceedingsConcludedSteps caseUpdatedAndDefendantProceedingsConcludedSteps = new CaseUpdatedAndDefendantProceedingsConcludedSteps(caseId, hearingData);
-        caseUpdatedAndDefendantProceedingsConcludedSteps.whenPublicEventCaseUpdatedAndHearingResultedIsPublished();
-        caseUpdatedAndDefendantProceedingsConcludedSteps.verifyHearingForCaseStatusAndDefendantProceedingsConcludedFromAPIWithJmsDelay(ALLOCATED);
+        caseUpdatedAndDefendantProceedingsConcludedSteps.publishUntilCaseStatusReflected(ALLOCATED);
     }
 
     @Test

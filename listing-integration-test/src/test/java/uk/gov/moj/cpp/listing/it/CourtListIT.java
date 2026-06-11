@@ -6,6 +6,7 @@ import static java.util.UUID.fromString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.Matchers.contains;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocation;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
@@ -140,11 +141,16 @@ public class CourtListIT extends AbstractIT {
         final DefendantData defendantWithoutExParte = listedCaseWithoutExParte.getDefendants().stream().reduce((first, second) -> second).get();
         final OffenceData offenceWithoutExParte = defendantWithoutExParte.getOffences().stream().reduce((first, second) -> second).get();
         final String templateName = "PublicCourtListEnglishWelsh";
+        // The ExParte scenario can list more than one hearing in this timeslot, and the court-list JSON
+        // does not order them deterministically, so a positional hearings[0] matcher intermittently matched
+        // the wrong hearing (90s RestPoller ConditionTimeout). Anchor the assertions to THIS hearing by id.
+        final String exParteHearingPath =
+                "$.hearingDates[0].courtRooms[0].timeslots[0].hearings[?(@.id=='" + hearingData.getId().toString() + "')]";
         final Matcher[] allocatedMatchers = {
-                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].id", equalTo(hearingData.getId().toString())),
-                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].caseId", equalTo(listedCaseWithoutExParte.getCaseId().toString())),
-                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].id", equalTo(defendantWithoutExParte.getDefendantId().toString())),
-                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[0].id", equalTo(offenceWithoutExParte.getOffenceId().toString())),
+                withJsonPath(exParteHearingPath + ".id", contains(hearingData.getId().toString())),
+                withJsonPath(exParteHearingPath + ".caseId", contains(listedCaseWithoutExParte.getCaseId().toString())),
+                withJsonPath(exParteHearingPath + ".defendants[0].id", contains(defendantWithoutExParte.getDefendantId().toString())),
+                withJsonPath(exParteHearingPath + ".defendants[0].offences[0].id", contains(offenceWithoutExParte.getOffenceId().toString())),
                 withJsonPath("$.templateName", is(templateName))
         };
 
