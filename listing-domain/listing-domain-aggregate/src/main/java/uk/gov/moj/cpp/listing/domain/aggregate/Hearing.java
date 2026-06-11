@@ -557,11 +557,6 @@ public class Hearing implements Aggregate {
                 )
         ).collect(toList()));
 
-        // [FLAKE-PROBE] TEMP (remove before final merge): timestamp the split's HearingRequestedForListing
-        // emission so we can tell on vld whether HearingDaysIT's 60s consume timed out because the event
-        // was emitted late (enriched redelivery) vs never emitted.
-        LOGGER.warn("[FLAKE-PROBE] listForSplit EMIT HearingRequestedForListing courtCentreId={} nonDefaultDays={} startDate={}",
-                courtCentreId, nonDefaultDays == null ? 0 : nonDefaultDays.size(), startDate);
         return apply(Stream.of(HearingRequestedForListing.hearingRequestedForListing()
                 .withListNewHearing(builder.build())
                 .build()));
@@ -1508,14 +1503,7 @@ public class Hearing implements Aggregate {
     //isResultFlow -> These event uses for multiple purposes, we need to know it is raised by amend-reshare flow.
     public Stream<Object> removeSelectedOffencesFromExistingHearing(final UUID hearingId, final List<UUID> offenceIds, final String source, final Boolean isResultFlow) {
 
-        // [FLAKE-PROBE] TEMP (remove before final merge): trace the delete path for ListNextHearingIT so we
-        // can tell whether the public offences-removed event was emitted late (latency) or never (a guard
-        // short-circuit / wrong sourceContext).
-        LOGGER.warn("[FLAKE-PROBE] removeSelectedOffences ENTER hearingId={} reqOffences={} source={} isAllocated={} deleted={} duplicate={} resulted={}",
-                hearingId, offenceIds, source, isAllocated(), deleted, duplicate, resulted);
-
         if (deleted || duplicate || resulted) {
-            LOGGER.warn("[FLAKE-PROBE] removeSelectedOffences SKIP-flags hearingId={} -> NO event emitted", hearingId);
             return Stream.empty();
         }
         final List<UUID> existingOffenceIds = prosecutionCaseDefendantOffenceIds
@@ -1526,7 +1514,6 @@ public class Hearing implements Aggregate {
                 .collect(toList());
 
         if (existingOffenceIds.isEmpty()) {
-            LOGGER.warn("[FLAKE-PROBE] removeSelectedOffences SKIP-empty hearingId={} (no requested offence matches existing) -> NO event emitted", hearingId);
             return Stream.empty();
         }
 
@@ -1534,7 +1521,6 @@ public class Hearing implements Aggregate {
 
         if (isNotEmpty(offenceIds)) {
             if (isAllocated()) {
-                LOGGER.warn("[FLAKE-PROBE] removeSelectedOffences EMIT OffencesRemovedFromExistingAllocatedHearing hearingId={} offences={} source={}", hearingId, offenceIds, source);
                 eventStreamBuilder.add(OffencesRemovedFromExistingAllocatedHearing.offencesRemovedFromExistingAllocatedHearing()
                         .withHearingId(hearingId)
                         .withOffenceIds(offenceIds)

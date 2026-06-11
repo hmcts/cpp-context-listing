@@ -12,6 +12,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -622,11 +623,8 @@ public class ListNextHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(final UUID existedHearingId, final HearingsData hearingsData, final String... newOffence) {
-        // vld: this public event arrives via TWO mesh-crossing async hops (aggregate emits the private
-        // OffencesRemovedFromExistingAllocatedHearing, then NextHearingProcessor re-publishes it as public),
-        // so on a slow run it can land past the default 60s window though it is retained on the subscription.
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing,
-                containsString(existedHearingId.toString()), QueueUtil.VLD_LATENCY_RETRIEVE_TIMEOUT);
+                containsString(existedHearingId.toString()));
 
         final List<String> offenceIds = hearingsData.getHearingData().get(0).getListedCases().stream()
                 .flatMap(listedCaseData -> listedCaseData.getDefendants().stream())
@@ -640,6 +638,35 @@ public class ListNextHearingSteps extends AbstractIT {
         assertThat(jsonResponse.getList("offenceIds"), containsInAnyOrder(offenceIds.toArray()));
         assertThat(jsonResponse.get("isResultFlow"), is(true));
 
+    }
+
+    /**
+     * Robust, non-consuming alternative to {@link #verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ}:
+     * polls the (durable) read model until the deleted related-hearing's offences are no longer present on the
+     * existing allocated hearing, which stays allocated.
+     *
+     * <p>Why not consume the public event here: build 657334 (instrumented vld run) proved the transient
+     * {@code public.events.listing.offences-removed-from-existing-allocated-hearing} event is fragile to consume on
+     * vld — across the test's two add/delete iterations the event can be published before the consumer's poll window,
+     * and when an iteration's delete finds no offences still linked it emits nothing at all
+     * ({@code removeSelectedOffences ... reqOffences=[] -> SKIP-empty}). Asserting the durable end state instead
+     * removes the JMS consume-timing race entirely. The public-event contract is still covered by the other tests
+     * that call the InActiveMQ variant.
+     */
+    public void verifyOffencesRemovedFromAllocatedHearingFromApi(final HearingsData existedHearingsData, final HearingsData removedHearingsData) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), existedHearingsData.getHearingData().get(0).getCourtCentreId(), true));
+        final String hearingId = existedHearingsData.getHearingData().get(0).getId().toString();
+        final String removedOffenceId = removedHearingsData.getHearingData().get(0).getListedCases().get(0)
+                .getDefendants().get(0).getOffences().get(0).getOffenceId().toString();
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].allocated", hasItems(true)),
+                                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].listedCases[*].defendants[*].offences[*].id",
+                                        not(hasItem(removedOffenceId)))
+                        )));
     }
 
     private void verifyHearingListedFromAPI(final HearingData hearingData, final Boolean isAllocated) {
