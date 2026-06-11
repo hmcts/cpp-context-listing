@@ -622,8 +622,11 @@ public class ListNextHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(final UUID existedHearingId, final HearingsData hearingsData, final String... newOffence) {
+        // vld: this public event arrives via TWO mesh-crossing async hops (aggregate emits the private
+        // OffencesRemovedFromExistingAllocatedHearing, then NextHearingProcessor re-publishes it as public),
+        // so on a slow run it can land past the default 60s window though it is retained on the subscription.
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing,
-                containsString(existedHearingId.toString()));
+                containsString(existedHearingId.toString()), QueueUtil.VLD_LATENCY_RETRIEVE_TIMEOUT);
 
         final List<String> offenceIds = hearingsData.getHearingData().get(0).getListedCases().stream()
                 .flatMap(listedCaseData -> listedCaseData.getDefendants().stream())

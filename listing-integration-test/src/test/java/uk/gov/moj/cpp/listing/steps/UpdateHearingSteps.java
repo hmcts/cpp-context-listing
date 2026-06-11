@@ -45,6 +45,7 @@ import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.payloadToObject;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.VLD_LATENCY_RETRIEVE_TIMEOUT;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
@@ -936,7 +937,10 @@ public class UpdateHearingSteps extends AbstractIT {
 
 
     public void verifyHearingRequestedForListingEvent(final int count) {
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingRequestedForListing);
+        // vld: the split update routes through update-hearing-for-listing-enriched, whose read-after-write
+        // redelivery loop can hold the command's commit (and thus this private event's emission) well past
+        // the default 60s window. The event is retained on the private queue; wait the vld-sized budget.
+        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingRequestedForListing, VLD_LATENCY_RETRIEVE_TIMEOUT);
         assertThat(jsonResponse.getMap("listNewHearing").get("nonDefaultDays"), is(notNullValue()));
         assertThat(((ArrayList) jsonResponse.getMap("listNewHearing").get("nonDefaultDays")).size(), is(count));
     }
