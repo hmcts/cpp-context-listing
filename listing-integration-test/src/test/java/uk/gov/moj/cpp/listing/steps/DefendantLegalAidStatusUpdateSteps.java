@@ -6,6 +6,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
+import static uk.gov.moj.cpp.listing.it.util.PublishRetryHelper.publishUntilReflected;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
@@ -18,7 +19,6 @@ import java.util.UUID;
 
 import javax.json.JsonObject;
 
-import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,25 +82,9 @@ public class DefendantLegalAidStatusUpdateSteps extends AbstractIT {
      * fresh metadata id each attempt guarantees that once the link forms, a subsequent publish lands.
      */
     public void publishUntilLegalAidStatusReflected() {
-        final int maxPublishAttempts = 3;
-        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
-            LOGGER.info("[legalaid-fix] publishing defendant-legalaid-status-updated for case {} (attempt {}/{})",
-                    caseId, attempt, maxPublishAttempts);
-            whenCaseDefendantLegalAidStatusUpdatedPublicEventIsPublished();
-            try {
-                verifyLegalAidStatusGranted();
-                LOGGER.info("[legalaid-fix] read model reflected legalAidStatus update after {} publish attempt(s)", attempt);
-                return;
-            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
-                if (attempt == maxPublishAttempts) {
-                    LOGGER.error("[legalaid-fix] update still not reflected after {} attempts — failing", maxPublishAttempts);
-                    throw caseNotYetLinkedToHearing;
-                }
-                // The case<->hearing link was not established when this publish was processed, so the
-                // update was dropped. Re-publish with a fresh event id and poll again.
-                LOGGER.warn("[legalaid-fix] attempt {} did not land (case<->hearing link likely not yet established); re-publishing", attempt);
-            }
-        }
+        publishUntilReflected(LOGGER, "legalaid-fix", "defendant-legalaid-status-updated for case " + caseId,
+                this::whenCaseDefendantLegalAidStatusUpdatedPublicEventIsPublished,
+                this::verifyLegalAidStatusGranted);
     }
 
     private JsonObject getPayloadForPublicEventFromHearingData() {

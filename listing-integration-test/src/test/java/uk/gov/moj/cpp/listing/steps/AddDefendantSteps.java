@@ -16,6 +16,7 @@ import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProduc
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
+import static uk.gov.moj.cpp.listing.it.util.PublishRetryHelper.publishUntilReflected;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
@@ -51,7 +52,6 @@ import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.path.json.JsonPath;
-import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -199,25 +199,9 @@ public class AddDefendantSteps extends AbstractIT {
      * (framework dedupes by metadata id) recovers once the link is established.
      */
     public void publishUntilDefendantsAddedReflected(final boolean allocated) {
-        final int maxPublishAttempts = 3;
-        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
-            LOGGER.info("[defendants-added-fix] publishing defendants-added event for case {} (attempt {}/{})",
-                    caseId, attempt, maxPublishAttempts);
-            whenCaseDefendantsAddedPublicEventIsPublished();
-            try {
-                verifyHearingListedFromAPIWithJmsDelay(allocated);
-                LOGGER.info("[defendants-added-fix] read model reflected defendants-added update after {} publish attempt(s)", attempt);
-                return;
-            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
-                if (attempt == maxPublishAttempts) {
-                    LOGGER.error("[defendants-added-fix] update still not reflected after {} attempts — failing", maxPublishAttempts);
-                    throw caseNotYetLinkedToHearing;
-                }
-                // The case<->hearing link was not established when this publish was processed, so the
-                // update was dropped. Re-publish and poll again.
-                LOGGER.warn("[defendants-added-fix] attempt {} did not land (case<->hearing link likely not yet established); re-publishing", attempt);
-            }
-        }
+        publishUntilReflected(LOGGER, "defendants-added-fix", "defendants-added event for case " + caseId,
+                this::whenCaseDefendantsAddedPublicEventIsPublished,
+                () -> verifyHearingListedFromAPIWithJmsDelay(allocated));
     }
 
     private AddDefendantForCourtProceedingsData getAddDefendantDetails(final UUID caseId) {
