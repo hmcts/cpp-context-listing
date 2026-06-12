@@ -30,6 +30,7 @@ import static uk.gov.moj.cpp.listing.endpoint.UnscheduledHearingsEndpoint.pollFo
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
+import static uk.gov.moj.cpp.listing.it.util.PublishRetryHelper.verifyOrRepublishUntilReflected;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps.getJsonPathQueryForCaseReference;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps.getJsonPathQueryForDefendantLastName;
@@ -118,7 +119,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.ReadContext;
 import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
-import org.awaitility.core.ConditionTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -504,28 +504,9 @@ public class ListNextHearingSteps extends AbstractIT {
     public void verifyOrRepublishUntilOffenceReflected(final UpdateDefendantOffencesSteps offenceSteps,
                                                         final HearingsData existedHearingsData,
                                                         final String offenceId) {
-        final int maxPublishAttempts = 3;
-        ConditionTimeoutException lastFailure = null;
-        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
-            if (attempt > 1) {
-                // The previous verify timed out — re-publish with a fresh metadata id before retrying.
-                LOGGER.warn("[list-next-hearing-fix] attempt {} timed out; re-publishing offences-for-defendant-changed for offence {} (attempt {}/{})",
-                        attempt - 1, offenceId, attempt, maxPublishAttempts);
-                offenceSteps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly();
-            } else {
-                LOGGER.info("[list-next-hearing-fix] verifying offences-for-defendant-changed for offence {} (attempt {}/{})",
-                        offenceId, attempt, maxPublishAttempts);
-            }
-            try {
-                verifyOffenceAddedToAllocatedHearingFromApi(existedHearingsData, offenceId);
-                LOGGER.info("[list-next-hearing-fix] read model reflected offence update after {} attempt(s)", attempt);
-                return;
-            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
-                lastFailure = caseNotYetLinkedToHearing;
-            }
-        }
-        LOGGER.error("[list-next-hearing-fix] offence still not reflected after {} attempts — failing", maxPublishAttempts);
-        throw lastFailure;
+        verifyOrRepublishUntilReflected(LOGGER, "list-next-hearing-fix", "offences-for-defendant-changed for offence " + offenceId,
+                offenceSteps::whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly,
+                () -> verifyOffenceAddedToAllocatedHearingFromApi(existedHearingsData, offenceId));
     }
 
     public void verifyCasesAreInAllocatedHearingFromApi(HearingsData existedHearingsData, final HearingsData hearingsData) {

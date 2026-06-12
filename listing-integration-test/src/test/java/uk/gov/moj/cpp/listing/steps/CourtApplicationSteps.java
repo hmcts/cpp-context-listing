@@ -18,6 +18,7 @@ import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderF
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
+import static uk.gov.moj.cpp.listing.it.util.PublishRetryHelper.publishUntilReflected;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
@@ -61,7 +62,6 @@ import javax.ws.rs.core.Response;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Filter;
 import io.restassured.path.json.JsonPath;
-import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.slf4j.Logger;
@@ -151,25 +151,9 @@ public class CourtApplicationSteps extends AbstractIT {
      * that once the link is established a subsequent publish lands.
      */
     public void publishUntilCourtApplicationReflected() {
-        final int maxPublishAttempts = 3;
-        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
-            LOGGER.info("[court-application-fix] publishing court-application-changed (attempt {}/{})",
-                    attempt, maxPublishAttempts);
-            whenCaseCourtApplicationUpdatedPublicEventIsPublished();
-            try {
-                verifyCourtApplicationUpdatedFromAPI();
-                LOGGER.info("[court-application-fix] read model reflected court-application update after {} publish attempt(s)", attempt);
-                return;
-            } catch (final ConditionTimeoutException applicationNotYetLinkedToHearing) {
-                if (attempt == maxPublishAttempts) {
-                    LOGGER.error("[court-application-fix] update still not reflected after {} attempts — failing", maxPublishAttempts);
-                    throw applicationNotYetLinkedToHearing;
-                }
-                // The application<->hearing link was not established when this publish was processed, so the
-                // update was dropped. Re-publish and poll again.
-                LOGGER.warn("[court-application-fix] attempt {} did not land (application<->hearing link likely not yet established); re-publishing", attempt);
-            }
-        }
+        publishUntilReflected(LOGGER, "court-application-fix", "court-application-changed",
+                this::whenCaseCourtApplicationUpdatedPublicEventIsPublished,
+                this::verifyCourtApplicationUpdatedFromAPI);
     }
 
     public void verifyPublicEventCourtApplicationAdded() {
