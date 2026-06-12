@@ -19,13 +19,19 @@ import org.slf4j.Logger;
  * on vld this class of loop cost ~375s per run in full-budget first attempts. Non-final attempts
  * therefore poll with the short {@link RestPollerHelper#RETRY_ATTEMPT_TIMEOUT_IN_MILLIS} budget;
  * only the final attempt gets the full budget (preserving the original tail behaviour for a
- * genuinely slow, but not dropped, projection). Total worst-case coverage
- * (12 &times; 5s + 30s = 90s) matches the previous 3 &times; 30s loops, but a re-publish now
- * lands within ~5s of the link forming instead of up to 30s later.
+ * genuinely slow, but not dropped, projection).
+ *
+ * <p>The attempt count is derived so the short-probe phase spans the same wall clock as the
+ * previous 3 &times; full-budget loops' first two attempts — the last re-publish therefore
+ * happens no earlier than it used to, preserving coverage of slow link formation (measured at
+ * ~90s on vld), and total worst-case wall clock stays at 3 &times; the full budget. What changes
+ * is granularity: a re-publish lands within ~5s of the link forming instead of up to a full
+ * budget later.
  */
 public final class PublishRetryHelper {
 
-    private static final int MAX_PUBLISH_ATTEMPTS = 13;
+    private static final int MAX_PUBLISH_ATTEMPTS =
+            (int) (2 * RestPollerHelper.TIMEOUT_IN_MILLIS / RETRY_ATTEMPT_TIMEOUT_IN_MILLIS) + 1;
 
     private PublishRetryHelper() {
     }
