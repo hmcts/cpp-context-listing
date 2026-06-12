@@ -13,6 +13,7 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMa
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.it.util.PublishRetryHelper.publishUntilReflected;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
@@ -38,7 +39,6 @@ import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -139,28 +139,11 @@ class CaseLinkedIT extends AbstractIT {
     private void publishUntilHearingReflected(final Supplier<CaseLinked> eventSupplier,
                                                final UUID hearingId,
                                                final Matcher[] matchers) {
-        final int maxAttempts = 3;
-        ConditionTimeoutException lastTimeout = null;
-        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            LOGGER.info("[case-linked-fix] publishing cases-linked event for hearing {} (attempt {}/{})",
-                    hearingId, attempt, maxAttempts);
-            // Recreate the event inside the loop so each publish has a fresh payload AND a fresh
-            // metadata id (randomUUID() inside publishCasesLinkedEvent), preventing framework dedup.
-            publishCasesLinkedEvent(eventSupplier.get());
-            try {
-                verifyHearing(hearingId, matchers);
-                LOGGER.info("[case-linked-fix] read model reflected cases-linked update after {} publish attempt(s)", attempt);
-                return;
-            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
-                lastTimeout = caseNotYetLinkedToHearing;
-                if (attempt == maxAttempts) {
-                    LOGGER.error("[case-linked-fix] update still not reflected after {} attempts — failing", maxAttempts);
-                } else {
-                    LOGGER.warn("[case-linked-fix] attempt {} did not land (case<->hearing link likely not yet established); re-publishing", attempt);
-                }
-            }
-        }
-        throw lastTimeout;
+        // The event is recreated inside the loop so each publish has a fresh payload AND a fresh
+        // metadata id (randomUUID() inside publishCasesLinkedEvent), preventing framework dedup.
+        publishUntilReflected(LOGGER, "case-linked-fix", "cases-linked event for hearing " + hearingId,
+                () -> publishCasesLinkedEvent(eventSupplier.get()),
+                () -> verifyHearing(hearingId, matchers));
     }
 
     private String generateUrlForFindingAHearingById(final String rawId) {

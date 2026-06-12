@@ -12,6 +12,7 @@ import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 import static uk.gov.justice.core.courts.LaaReference.laaReference;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
+import static uk.gov.moj.cpp.listing.it.util.PublishRetryHelper.publishUntilReflected;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDelayForJms;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
@@ -54,7 +55,6 @@ import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.path.json.JsonPath;
-import org.awaitility.core.ConditionTimeoutException;
 import org.skyscreamer.jsonassert.Customization;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.skyscreamer.jsonassert.comparator.CustomComparator;
@@ -194,23 +194,9 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
      * is a valid predicate here; the additional add (appended) and delete (offences[1]) do not shift offences[0].
      */
     public void publishUntilOffencesReflected(final boolean isAllocated) {
-        final int maxPublishAttempts = 3;
-        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
-            LOGGER.info("[offences-fix] publishing combined defendant-offences-changed for case {} (attempt {}/{})",
-                    caseId, attempt, maxPublishAttempts);
-            whenCaseDefendantOffencesUpdatedPublicEventIsPublished();
-            try {
-                verifyDefendentOffenceUpdatedOnlyFromAPI(isAllocated);
-                LOGGER.info("[offences-fix] combined update reflected after {} publish attempt(s)", attempt);
-                return;
-            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
-                if (attempt == maxPublishAttempts) {
-                    LOGGER.error("[offences-fix] combined update still not reflected after {} attempts — failing", maxPublishAttempts);
-                    throw caseNotYetLinkedToHearing;
-                }
-                LOGGER.warn("[offences-fix] combined attempt {} timed out (case<->hearing link likely not yet established); re-publishing", attempt);
-            }
-        }
+        publishUntilReflected(LOGGER, "offences-fix", "combined defendant-offences-changed for case " + caseId,
+                this::whenCaseDefendantOffencesUpdatedPublicEventIsPublished,
+                () -> verifyDefendentOffenceUpdatedOnlyFromAPI(isAllocated));
     }
 
     /**
@@ -219,23 +205,9 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
      * {@link #publishUntilOffencesConsumed()}).
      */
     public void publishUntilOffencesUpdatedOnlyReflected(final boolean isAllocated) {
-        final int maxPublishAttempts = 3;
-        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
-            LOGGER.info("[offences-fix] publishing defendant-offences-changed (updatedOnly) for case {} (attempt {}/{})",
-                    caseId, attempt, maxPublishAttempts);
-            whenCaseDefendantOffencesUpdatedPublicEventIsPublishedUpdatedOnly();
-            try {
-                verifyDefendentOffenceUpdatedOnlyFromAPI(isAllocated);
-                LOGGER.info("[offences-fix] updatedOnly reflected after {} publish attempt(s)", attempt);
-                return;
-            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
-                if (attempt == maxPublishAttempts) {
-                    LOGGER.error("[offences-fix] updatedOnly still not reflected after {} attempts — failing", maxPublishAttempts);
-                    throw caseNotYetLinkedToHearing;
-                }
-                LOGGER.warn("[offences-fix] updatedOnly attempt {} timed out (case<->hearing link likely not yet established); re-publishing", attempt);
-            }
-        }
+        publishUntilReflected(LOGGER, "offences-fix", "defendant-offences-changed (updatedOnly) for case " + caseId,
+                this::whenCaseDefendantOffencesUpdatedPublicEventIsPublishedUpdatedOnly,
+                () -> verifyDefendentOffenceUpdatedOnlyFromAPI(isAllocated));
     }
 
     /**
@@ -244,23 +216,9 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
      * {@link #publishUntilOffencesConsumed()}).
      */
     public void publishUntilOffencesAddedOnlyReflected(final boolean isAllocated) {
-        final int maxPublishAttempts = 3;
-        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
-            LOGGER.info("[offences-fix] publishing defendant-offences-changed (addedOnly) for case {} (attempt {}/{})",
-                    caseId, attempt, maxPublishAttempts);
-            whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly();
-            try {
-                verifyDefendentOffenceAddedOnlyFromAPI(isAllocated);
-                LOGGER.info("[offences-fix] addedOnly reflected after {} publish attempt(s)", attempt);
-                return;
-            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
-                if (attempt == maxPublishAttempts) {
-                    LOGGER.error("[offences-fix] addedOnly still not reflected after {} attempts — failing", maxPublishAttempts);
-                    throw caseNotYetLinkedToHearing;
-                }
-                LOGGER.warn("[offences-fix] addedOnly attempt {} timed out (case<->hearing link likely not yet established); re-publishing", attempt);
-            }
-        }
+        publishUntilReflected(LOGGER, "offences-fix", "defendant-offences-changed (addedOnly) for case " + caseId,
+                this::whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly,
+                () -> verifyDefendentOffenceAddedOnlyFromAPI(isAllocated));
     }
 
     /**
@@ -269,23 +227,9 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
      * {@link #publishUntilOffencesConsumed()}).
      */
     public void publishUntilOffencesDeletedOnlyReflected(final boolean isAllocated) {
-        final int maxPublishAttempts = 3;
-        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
-            LOGGER.info("[offences-fix] publishing defendant-offences-changed (deletedOnly) for case {} (attempt {}/{})",
-                    caseId, attempt, maxPublishAttempts);
-            whenCaseDefendantOffencesUpdatedPublicEventIsPublishedDeletedOnly();
-            try {
-                verifyDefendentOffenceDeletedOnlyFromAPI(isAllocated);
-                LOGGER.info("[offences-fix] deletedOnly reflected after {} publish attempt(s)", attempt);
-                return;
-            } catch (final ConditionTimeoutException caseNotYetLinkedToHearing) {
-                if (attempt == maxPublishAttempts) {
-                    LOGGER.error("[offences-fix] deletedOnly still not reflected after {} attempts — failing", maxPublishAttempts);
-                    throw caseNotYetLinkedToHearing;
-                }
-                LOGGER.warn("[offences-fix] deletedOnly attempt {} timed out (case<->hearing link likely not yet established); re-publishing", attempt);
-            }
-        }
+        publishUntilReflected(LOGGER, "offences-fix", "defendant-offences-changed (deletedOnly) for case " + caseId,
+                this::whenCaseDefendantOffencesUpdatedPublicEventIsPublishedDeletedOnly,
+                () -> verifyDefendentOffenceDeletedOnlyFromAPI(isAllocated));
     }
 
     private void publishCaseDefendantOffencesUpdated(OffencesForDefendantUpdated offencesForDefendantUpdated) {
