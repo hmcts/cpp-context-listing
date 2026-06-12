@@ -91,6 +91,21 @@ public class DatabaseCleaner {
     /**
      * Deletes all the data in the Event-Store tables
      *
+     * <p>The relay queues are re-swept at the end. An {@code AsynchronousPrePublisher}
+     * transaction committing between these truncates (the timers fire every 10ms on the IT
+     * stack) can insert a {@code publish_queue} entry whose {@code published_event} row is then
+     * truncated; the publisher then fails every tick with "Failed to find PublishedEvent",
+     * rolls back, and the orphaned head entry wedges the whole relay — nothing the next test
+     * appends ever publishes. Observed as {@code ExtendHearingIT} "Not Found within 30 seconds"
+     * with 6116 publisher errors in one 31s window. A commit landing after the re-sweep inserts
+     * row and queue entry atomically, so it cannot create the orphan.
+     *
+     * <p>Deliberately does NOT wait for the relay to drain first: truncating mid-relay is what
+     * suppresses the previous test's unpublished stale events. Draining first releases them onto
+     * the durable subscriptions, where under-filtered JMS consumers read them as instant
+     * wrong-payload failures (observed: {@code HearingIT} consumed a neighbouring test's
+     * hearing-confirmed event).
+     *
      * @param contextName the name of the context to clean the tables from
      */
     public void cleanEventStoreTables(final String contextName) {
@@ -101,6 +116,11 @@ public class DatabaseCleaner {
             truncateTable("publish_queue", EVENT_STORE_DATABASE_NAME, connection);
             truncateTable("pre_publish_queue", EVENT_STORE_DATABASE_NAME, connection);
             truncateTable("published_event", EVENT_STORE_DATABASE_NAME, connection);
+
+            // Clear any relay entries that snuck in mid-sequence and now reference truncated
+            // rows — the orphan that causes the wedge.
+            truncateTable("publish_queue", EVENT_STORE_DATABASE_NAME, connection);
+            truncateTable("pre_publish_queue", EVENT_STORE_DATABASE_NAME, connection);
 
         } catch (SQLException e) {
             throw new DataAccessException("Failed to commit or close database connection", e);
