@@ -19,6 +19,7 @@ import uk.gov.moj.cpp.listing.steps.PublishCourtListSteps;
 import uk.gov.moj.cpp.listing.steps.RestrictCourtListSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -168,7 +169,7 @@ class RestrictListFromCourtIT extends AbstractIT {
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
-        final LocalDate startDate = LocalDate.now();
+        final LocalDate startDate = ItClock.today();
 
         stubGetReferenceDataCourtCentreById(courtCentreId);
 

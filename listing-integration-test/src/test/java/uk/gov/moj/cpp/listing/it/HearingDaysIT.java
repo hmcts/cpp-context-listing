@@ -35,6 +35,7 @@ import uk.gov.moj.cpp.listing.steps.SequenceHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -89,8 +90,8 @@ public class HearingDaysIT extends AbstractIT {
     void testHearingDaysWithCourtCentreForSplit() throws IOException {
         stubGetAvailableHearingSlots();
 
-        startDate = LocalDate.now();
-        endDate = LocalDate.now().plusDays(1);
+        startDate = ItClock.today();
+        endDate = ItClock.today().plusDays(1);
         hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
         hearingId = randomUUID();
         caseId = randomUUID();
@@ -169,7 +170,7 @@ public class HearingDaysIT extends AbstractIT {
 
     @Test
     void testHearingDaysCorrectedWithCourtCentre() throws IOException {
-        startDate = LocalDate.now();
+        startDate = ItClock.today();
         hearingId = randomUUID();
         caseId = randomUUID();
         courtCentreId = getRandomCourtCenterId();

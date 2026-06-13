@@ -15,6 +15,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.io.InputStream;
 import java.text.MessageFormat;
@@ -67,7 +68,7 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         final UUID courtRoomId = UUID.randomUUID();
         final UUID courtHouseId = UUID.randomUUID();
         final UUID startingCourtScheduleId = UUID.randomUUID();
-        final LocalDate startDate = LocalDate.now().plusDays(30);
+        final LocalDate startDate = ItClock.today().plusDays(30);
         // endDate spans ~2 months — deliberately much wider than the 3-day session window to prove
         // courtscheduler (not startDate→endDate iteration) is the authority on session count.
         final LocalDate endDate = startDate.plusDays(57);
@@ -110,7 +111,7 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         final UUID courtRoomId = UUID.randomUUID();
         final UUID courtHouseId = UUID.randomUUID();
         final UUID startingCourtScheduleId = UUID.randomUUID();
-        final LocalDate startDate = LocalDate.now().plusDays(30);
+        final LocalDate startDate = ItClock.today().plusDays(30);
         final LocalDate endDate = startDate.plusDays(57);
         final LocalDate nonSittingDay = startDate.plusDays(1);
         final ZonedDateTime sessionStart = startDate.atTime(9, 0).atZone(ZoneOffset.UTC);
@@ -153,7 +154,7 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         final UUID courtCentreId = UUID.randomUUID();
         final UUID courtRoomId = UUID.randomUUID();
         final UUID startingCourtScheduleId = UUID.randomUUID();
-        final LocalDate startDate = LocalDate.now().plusDays(30);
+        final LocalDate startDate = ItClock.today().plusDays(30);
         final LocalDate endDate = startDate.plusDays(57);
         final ZonedDateTime sessionStart = startDate.atTime(9, 0).atZone(ZoneOffset.UTC);
 

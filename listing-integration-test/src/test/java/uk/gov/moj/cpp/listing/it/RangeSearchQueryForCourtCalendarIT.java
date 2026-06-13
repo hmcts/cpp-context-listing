@@ -20,6 +20,7 @@ import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -66,9 +67,9 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
         {
             final UUID magestirateCourtRoomId = new ArrayList<>(COURT_ROOMS.keySet()).get(i % COURT_ROOMS.size());
             final int dayFromToday = i % 3;
-            final LocalDate hearingEndDate = LocalDate.now().plusDays(dayFromToday);
+            final LocalDate hearingEndDate = ItClock.today().plusDays(dayFromToday);
             //This was failing due to startDate/enDate new adjustment/shrinking
-            final ZonedDateTime hearingStartTime = ZonedDateTime.now().plusDays(dayFromToday);
+            final ZonedDateTime hearingStartTime = ItClock.nowUtc().plusDays(dayFromToday);
 
             final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciaryWithCourtCenterForMagistrate(magsCourtCenterId, magestirateCourtRoomId, hearingEndDate, hearingStartTime);
             final ListCourtHearingSteps listCourtHearingSteps = getListCourtHearingStepsWithStubbedBookingRef(hearingsData, hearingStartTime);
@@ -110,8 +111,8 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
             final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(hearingId, caseUrn, caseUrn, masterDefendantId, CASE_IN_HEARING, jurisdictionType, jurisdictionType,
                     null, null);
             final int dayFromToday = i % 3 ;
-            final LocalDate hearingEndDate = LocalDate.now().plusDays(dayFromToday + 1);
-            final ZonedDateTime hearingStartTime = ZonedDateTime.now().plusDays(dayFromToday);
+            final LocalDate hearingEndDate = ItClock.today().plusDays(dayFromToday + 1);
+            final ZonedDateTime hearingStartTime = ItClock.nowUtc().plusDays(dayFromToday);
 
             ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData, crownCourtCenterId, crownCourtRoomId, hearingEndDate, hearingStartTime));
             testDataList.add(new TestData(hearingStartTime.toLocalDate(), crownCourtRoomId, COURT_ROOMS.get(crownCourtRoomId), hearingStartTime));

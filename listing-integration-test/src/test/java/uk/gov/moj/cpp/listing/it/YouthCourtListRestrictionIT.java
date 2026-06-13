@@ -26,6 +26,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -69,7 +70,7 @@ class YouthCourtListRestrictionIT extends AbstractIT {
 
     @Test
     void shouldRestrictUnder18DefendantFromCourtListWhenWeekCommencingDateIsSet() throws IOException {
-        final LocalDate initialWeekCommencingStart = LocalDate.now();
+        final LocalDate initialWeekCommencingStart = ItClock.today();
         final HearingsData hearingsData = hearingsDataForWeekCommencingWithYoungDefendants(initialWeekCommencingStart, 1);
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();

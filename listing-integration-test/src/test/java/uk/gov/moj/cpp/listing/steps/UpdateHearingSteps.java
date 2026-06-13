@@ -89,6 +89,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import uk.gov.justice.services.messaging.JsonObjects;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -1129,8 +1130,8 @@ public class UpdateHearingSteps extends AbstractIT {
     }
 
     public String verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDateCourtCalendarWithPagination(UUID courtCentreId,int pageSize, int pageNumber, int itemCount) {
-        var startDate = LocalDate.now().toString();
-        var endDate = LocalDate.now().plusDays(3).toString();
+        var startDate = ItClock.today().toString();
+        var endDate = ItClock.today().plusDays(3).toString();
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.hearingscourt.calendar.by.allocated.court-centre-id.start-date.end-date-with-pagination"),
                         ALLOCATED,
@@ -1519,8 +1520,8 @@ public class UpdateHearingSteps extends AbstractIT {
                         .replaceAll("%DEFENDANT_ID%", hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString())
                         .replaceAll("%PROSECUTION_CASE_ID%", hearingData.getListedCases().get(0).getCaseId().toString())
                         .replaceAll("%CASE_URN%", hearingData.getListedCases().get(0).getCaseReference().toString())
-                        .replaceAll("%SHARED_TIME%", ZonedDateTime.now().format(DateTimeFormatter.ISO_INSTANT))
-                        .replaceAll("%HEARING_DAY%", LocalDate.now().toString())
+                        .replaceAll("%SHARED_TIME%", ItClock.nowUtc().format(DateTimeFormatter.ISO_INSTANT))
+                        .replaceAll("%HEARING_DAY%", ItClock.today().toString())
         );
 
         sendMessage(publicEventMessageProducer, EVENT_SELECTED_PUBLIC_HEARING_RESULTED, eventPayload,
