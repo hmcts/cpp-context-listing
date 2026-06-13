@@ -3,7 +3,7 @@
     <parent>
         <artifactId>listing-parent</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <version>17.103.172-SNAPSHOT</version>
+        <version>17.103.173-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -18,7 +18,7 @@
           failsafe systemPropertyVariables interpolation below resolves to "" when unset rather than
           leaking the literal ${it.clock}.
         -->
-        <it.clock/>
+        <it.clock />
     </properties>
 
     <dependencies>
