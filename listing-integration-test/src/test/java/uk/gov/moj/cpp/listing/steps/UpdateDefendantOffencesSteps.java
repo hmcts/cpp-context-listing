@@ -45,6 +45,7 @@ import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.steps.data.ReportingRestrictionData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -299,7 +300,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
                         "      \"prosecutionCaseId\": \"" + caseId + "\"\n" +
                         "    }\n" +
                         "  ],\n" +
-                        "  \"modifiedDate\": \"" + LocalDate.now() + "\",\n" +
+                        "  \"modifiedDate\": \"" + ItClock.today() + "\",\n" +
                         "  \"updatedOffences\": [\n" +
                         "    {\n" +
                         "      \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
@@ -753,7 +754,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
         return OffencesForDefendantUpdated.offencesForDefendantUpdated()
                 .withAddedOffences(buildAddedOffences(caseId, defendantId))
                 .withDeletedOffences(buildDeletedOffence(caseId, defendantId, offenceIdToBeDeleted))
-                .withModifiedDate(LocalDate.now().toString())
+                .withModifiedDate(ItClock.today().toString())
                 .withUpdatedOffences(buildUpdatedOffences(caseId, defendantId, updatedOffenceData))
                 .build();
     }
@@ -761,7 +762,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
     private OffencesForDefendantUpdated getOffencesForDefendantUpdatedOnly(UUID caseId, UUID defendantId) {
 
         return OffencesForDefendantUpdated.offencesForDefendantUpdated()
-                .withModifiedDate(LocalDate.now().toString())
+                .withModifiedDate(ItClock.today().toString())
                 .withUpdatedOffences(buildUpdatedOffences(caseId, defendantId, updatedOffenceData))
                 .build();
     }
@@ -770,7 +771,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
 
         return OffencesForDefendantUpdated.offencesForDefendantUpdated()
                 .withAddedOffences(buildAddedOffences(caseId, defendantId))
-                .withModifiedDate(LocalDate.now().toString())
+                .withModifiedDate(ItClock.today().toString())
                 .build();
     }
 
@@ -778,7 +779,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
 
         return OffencesForDefendantUpdated.offencesForDefendantUpdated()
                 .withDeletedOffences(buildDeletedOffence(caseId, defendantId, offenceIdToBeDeleted))
-                .withModifiedDate(LocalDate.now().toString())
+                .withModifiedDate(ItClock.today().toString())
                 .build();
     }
 

@@ -35,6 +35,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingTypeData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -109,7 +110,7 @@ class ExhibitScenarioIT extends AbstractIT {
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.DRAFT;
-        final LocalDate startDate = LocalDate.now();
+        final LocalDate startDate = ItClock.today();
 
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
                 courtCentreId,
@@ -195,7 +196,7 @@ class ExhibitScenarioIT extends AbstractIT {
         listNextHearingSteps.verifyUpdateRelatedHearingRequestedInActiveMQ(anotherHearing.getHearingData().get(0).getId());
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.FINAL;
-        final LocalDate startDate = LocalDate.now();
+        final LocalDate startDate = ItClock.today();
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
                 courtCentreId,
                 publishCourtListType,
@@ -277,7 +278,7 @@ class ExhibitScenarioIT extends AbstractIT {
         listNextHearingSteps.verifyUpdateRelatedHearingRequestedInActiveMQ(anotherHearing.getHearingData().get(0).getId());
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.FINAL;
-        final LocalDate startDate = LocalDate.now();
+        final LocalDate startDate = ItClock.today();
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
                 courtCentreId,
                 publishCourtListType,
@@ -359,7 +360,7 @@ class ExhibitScenarioIT extends AbstractIT {
         listNextHearingSteps.verifyUpdateRelatedHearingRequestedInActiveMQ(anotherHearing.getHearingData().get(0).getId());
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.FINAL;
-        final LocalDate startDate = LocalDate.now();
+        final LocalDate startDate = ItClock.today();
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
                 courtCentreId,
                 publishCourtListType,
@@ -402,20 +403,20 @@ class ExhibitScenarioIT extends AbstractIT {
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
 
-        final HearingsData hearingsData1 = hearingsDataForWeekCommencing(LocalDate.now(), 1, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
+        final HearingsData hearingsData1 = hearingsDataForWeekCommencing(ItClock.today(), 1, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
         hearingsData1.getHearingData().get(0).setName("Nottingham crown court");
         final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(hearingsData1);
         listCourtHearingSteps1.whenCaseIsSubmittedForListing();
         listCourtHearingSteps1.verifyHearingListedFromAPI(ALLOCATED);
 
-        final HearingsData hearingsData2 = hearingsDataForWeekCommencing(LocalDate.now(), 1, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
+        final HearingsData hearingsData2 = hearingsDataForWeekCommencing(ItClock.today(), 1, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
         hearingsData2.getHearingData().get(0).setName("Nottingham crown court");
         final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(hearingsData2);
         listCourtHearingSteps2.whenCaseIsSubmittedForListing();
         listCourtHearingSteps2.verifyHearingListedFromAPI(ALLOCATED);
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.WARN;
-        final LocalDate startDate = LocalDate.now();
+        final LocalDate startDate = ItClock.today();
 
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
                 courtCentreId,
@@ -469,20 +470,20 @@ class ExhibitScenarioIT extends AbstractIT {
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
 
-        final HearingsData hearingsData1 = hearingsDataForWeekCommencing(LocalDate.now(), 2, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
+        final HearingsData hearingsData1 = hearingsDataForWeekCommencing(ItClock.today(), 2, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
         hearingsData1.getHearingData().get(0).setName("Nottingham crown court");
         final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(hearingsData1);
         listCourtHearingSteps1.whenCaseIsSubmittedForListing();
         listCourtHearingSteps1.verifyHearingListedFromAPI(ALLOCATED);
 
-        final HearingsData hearingsData2 = hearingsDataForWeekCommencing(LocalDate.now(), 2, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
+        final HearingsData hearingsData2 = hearingsDataForWeekCommencing(ItClock.today(), 2, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
         hearingsData2.getHearingData().get(0).setName("Nottingham crown court");
         final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(hearingsData2);
         listCourtHearingSteps2.whenCaseIsSubmittedForListing();
         listCourtHearingSteps2.verifyHearingListedFromAPI(ALLOCATED);
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
-        final LocalDate startDate = LocalDate.now();
+        final LocalDate startDate = ItClock.today();
 
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
                 courtCentreId,
@@ -541,7 +542,7 @@ class ExhibitScenarioIT extends AbstractIT {
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
-        final LocalDate startDate = LocalDate.now();
+        final LocalDate startDate = ItClock.today();
 
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
                 courtCentreId,
@@ -645,8 +646,8 @@ class ExhibitScenarioIT extends AbstractIT {
         stubGetReferenceDataCourtMappings(new CourtCentreData(crownCourtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, crownCourtRoomUUID, "Leeds Crown Court"));
 
         // Set hearing data using reflection
-        final LocalDate hearingDate = LocalDate.now();
-        final ZonedDateTime hearingStartTime = ZonedDateTime.now().withHour(10).withMinute(0).withSecond(0).withNano(0);
+        final LocalDate hearingDate = ItClock.today();
+        final ZonedDateTime hearingStartTime = ItClock.nowUtc().withHour(10).withMinute(0).withSecond(0).withNano(0);
         setHearingDataFields(standaloneHearing, hearingTypeData, crownCourtCentreId, crownCourtRoomUUID, hearingDate, hearingStartTime);
         
         // Setup listing steps and stubs
@@ -736,7 +737,7 @@ class ExhibitScenarioIT extends AbstractIT {
                                           final PublishCourtListType publishType, final String weekCommencing,
                                           final String subjectFirstName, final String subjectLastName,
                                           final CourtListVerifier verifier) throws Exception {
-        final JsonObject commandPayload = buildPublishCourtListCommandPayload(courtCentreId, publishType, LocalDate.now());
+        final JsonObject commandPayload = buildPublishCourtListCommandPayload(courtCentreId, publishType, ItClock.today());
         final PublishCourtListSteps steps = new PublishCourtListSteps(hearingsData, commandPayload);
         
         steps.createMessageConsumer();

@@ -52,6 +52,7 @@ import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationUpdateData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -337,7 +338,7 @@ public class CourtApplicationSteps extends AbstractIT {
                         .withOffenceActiveOrder(OffenceActiveOrder.COURT_ORDER)
                         .build())
                 .withApplicationStatus(ApplicationStatus.LISTED)
-                .withApplicationReceivedDate(LocalDate.now().toString())
+                .withApplicationReceivedDate(ItClock.today().toString())
                 .withApplicationReference(STRING.next())
                 .withApplicationParticulars(STRING.next())
                 .build();

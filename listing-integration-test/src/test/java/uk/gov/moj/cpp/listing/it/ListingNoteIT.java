@@ -4,7 +4,6 @@ import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
-import static java.time.LocalDate.now;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -36,6 +35,7 @@ import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.NotesSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.sql.Connection;
 import java.sql.Date;
@@ -90,7 +90,7 @@ public class ListingNoteIT extends AbstractIT {
     @Test
     void shouldCreateNoteForListing() {
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
-        final LocalDate date = now();
+        final LocalDate date = ItClock.today();
         final UUID courtRoomId = getRandomCourtRoomId();
         final JmsMessageConsumerClient messageConsumerClientPublicForCreateNote = newPublicJmsMessageConsumerClientProvider()
                 .withEventNames( PUBLIC_LISTING_CREATED_LISTING_NOTE).getMessageConsumerClient();
@@ -106,7 +106,7 @@ public class ListingNoteIT extends AbstractIT {
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
 
         //Given 1 : A note created using create note command
-        UUID noteId = createRandomNote(now());
+        UUID noteId = createRandomNote(ItClock.today());
 
         //Given 2 :  consumer topic with selector "public.listing.note-edited" to capture public event raised
         final JmsMessageConsumerClient messageConsumerClientPublicForEditNote = newPublicJmsMessageConsumerClientProvider()
@@ -130,7 +130,7 @@ public class ListingNoteIT extends AbstractIT {
     void shouldDeleteListingNote() {
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
         //Given : A note created using create note command
-        final LocalDate hearingDate = now();
+        final LocalDate hearingDate = ItClock.today();
         final UUID noteId = createRandomNote(hearingDate);
         final JmsMessageConsumerClient  messageConsumerClientPublicForDeleteNote = newPublicJmsMessageConsumerClientProvider()
                 .withEventNames( PUBLIC_LISTING_DELETED_LISTING_NOTE).getMessageConsumerClient();
@@ -150,10 +150,10 @@ public class ListingNoteIT extends AbstractIT {
         //Given 1 : Hearing data
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate();
         List<HearingData> hearingData = hearingsData.getHearingData();
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", hearingData.get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", hearingData.get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(hearingData.get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
@@ -175,10 +175,10 @@ public class ListingNoteIT extends AbstractIT {
         //Given 1 : Hearing data and no Note data for this hearing
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         List<HearingData> hearingData = hearingsData.getHearingData();
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", hearingData.get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", hearingData.get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(hearingData.get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
@@ -195,7 +195,7 @@ public class ListingNoteIT extends AbstractIT {
 
         //Given 1 : No Hearing data but Note data exist for given courtRoom and date
         UUID courtRoomId = getRandomCourtRoomId();
-        LocalDate startDate = now();
+        LocalDate startDate = ItClock.today();
         notesSteps.createNoteForListing(courtRoomId, startDate.toString(), NOTE_DESCRIPTION);
         UUID noteId = verifyNoteExists(courtRoomId, startDate);
 
@@ -210,10 +210,10 @@ public class ListingNoteIT extends AbstractIT {
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         List<HearingData> hearingData = hearingsData.getHearingData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", hearingData.get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", hearingData.get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(hearingData.get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 

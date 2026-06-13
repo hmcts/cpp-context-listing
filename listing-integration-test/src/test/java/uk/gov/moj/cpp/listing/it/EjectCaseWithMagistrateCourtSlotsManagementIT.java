@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.it;
 
-import static java.time.LocalDate.now;
 import static java.time.LocalTime.of;
 import static java.time.ZonedDateTime.of;
 import static java.time.ZoneOffset.UTC;
@@ -22,6 +21,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomI
 import uk.gov.moj.cpp.listing.steps.EjectCaseApplicationSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 
 import org.junit.jupiter.api.Test;
@@ -81,7 +81,7 @@ class EjectCaseWithMagistrateCourtSlotsManagementIT extends AbstractIT {
         final UUID courtRoomUUID = getRandomCourtRoomId();
 
         // Create future dates for the hearing
-        final LocalDate futureHearingDate = now().plusDays(7); // 7 days in the future
+        final LocalDate futureHearingDate = ItClock.today().plusDays(7); // 7 days in the future
         final ZonedDateTime futureHearingStartTime = of(futureHearingDate, of(10, 0), UTC); // 10:00 AM UTC
         final LocalDate futureHearingEndDate = futureHearingDate.plusDays(1); // End date is next day
 
@@ -101,7 +101,7 @@ class EjectCaseWithMagistrateCourtSlotsManagementIT extends AbstractIT {
         final UUID courtRoomUUID = getRandomCourtRoomId();
 
         // Create future dates for the hearing
-        final LocalDate futureHearingDate = now().plusDays(7); // 7 days in the future
+        final LocalDate futureHearingDate = ItClock.today().plusDays(7); // 7 days in the future
         final ZonedDateTime futureHearingStartTime = of(futureHearingDate, of(10, 0), UTC); // 10:00 AM UTC
         final LocalDate futureHearingEndDate = futureHearingDate.plusDays(1); // End date is next day
         

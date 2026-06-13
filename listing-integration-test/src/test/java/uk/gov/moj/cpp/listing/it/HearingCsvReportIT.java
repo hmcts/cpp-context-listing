@@ -29,6 +29,7 @@ import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -117,7 +118,7 @@ public class HearingCsvReportIT extends AbstractIT {
         final UUID courtCentreId =  data.getHearingData().get(0).getCourtCentreId();
         final Integer numberOfWeeks = 2;
 
-        final LocalDate now = LocalDate.now();
+        final LocalDate now = ItClock.today();
         final String expectedCsvFileName = "hearing_report_%s.csv".formatted(now.toString());
         // When
         final String url = getDownloadUrl(courtCentreId, now, numberOfWeeks);
@@ -168,7 +169,7 @@ public class HearingCsvReportIT extends AbstractIT {
         assertThat(csvContent, containsString("RestrictionApplied"));
         assertThat(csvContent, containsString("C - Description"));
         assertThat(csvContent, Matchers.stringContainsInOrder("1 of 4","2 of 4","3 of 4","4 of 4"));
-        final LocalTime utcTime = ZonedDateTime.of(LocalDate.now(), LocalTime.of(10, 30), ZoneId.of("Europe/London"))
+        final LocalTime utcTime = ZonedDateTime.of(ItClock.today(), LocalTime.of(10, 30), ZoneId.of("Europe/London"))
                 .withZoneSameInstant(ZoneOffset.UTC).toLocalTime();
         final String expectedUtcTime = String.format("T%02d:%02d:00Z", utcTime.getHour(), utcTime.getMinute());
         assertThat(csvContent, Matchers.stringContainsInOrder(expectedUtcTime));

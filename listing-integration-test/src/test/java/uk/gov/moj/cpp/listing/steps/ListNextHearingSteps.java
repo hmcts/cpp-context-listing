@@ -108,6 +108,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import uk.gov.justice.services.messaging.JsonObjects;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
@@ -826,12 +827,12 @@ public class ListNextHearingSteps extends AbstractIT {
                                         .withOffenceCode(STRING.next())
                                         .withOffenceTitle(STRING.next())
                                         .withWording(STRING.next())
-                                        .withStartDate(LocalDate.now().toString())
+                                        .withStartDate(ItClock.today().toString())
                                         .build()))
                                 .build()))
                         .withParentApplicationId(hearingData.getCourtApplications().get(0).getParentApplicationId())
                         .withType(getCourtApplicationType(hearingData, LinkType.LINKED, Jurisdiction.CROWN))
-                        .withApplicationReceivedDate(LocalDate.now().toString())
+                        .withApplicationReceivedDate(ItClock.today().toString())
                         .withApplicationReference(STRING.next())
                         .withApplicationParticulars(hearingData.getCourtApplications().get(0).getApplicationParticulars())
                         .withApplicationStatus(ApplicationStatus.LISTED)
@@ -892,7 +893,7 @@ public class ListNextHearingSteps extends AbstractIT {
                         .withDefendants(lc.getDefendants().stream().map(d -> Defendant.defendant()
                                         .withId(d.getDefendantId())
                                         .withMasterDefendantId(d.getMasterDefendantId())
-                                        .withCourtProceedingsInitiated(ZonedDateTime.now())
+                                        .withCourtProceedingsInitiated(ItClock.nowUtc())
                                         .withIsYouth(d.getIsYouth())
                                         .withPersonDefendant(buildPersonDefendant(d))
                                         .withAssociatedPersons(singletonList(AssociatedPerson.associatedPerson()
@@ -906,14 +907,14 @@ public class ListNextHearingSteps extends AbstractIT {
                                                         .withOffenceCode(STRING.next())
                                                         .withOffenceDefinitionId(randomUUID())
                                                         .withWording(STRING.next())
-                                                        .withStartDate(LocalDate.now().toString())
+                                                        .withStartDate(ItClock.today().toString())
                                                         .withOrderIndex(INTEGER.next())
                                                         .withOffenceTitle(o.getStatementOfOffenceTitle())
                                                         .withLaaApplnReference(
                                                                 LaaReference.laaReference()
                                                                         .withApplicationReference(STRING.next())
                                                                         .withStatusCode(STRING.next())
-                                                                        .withStatusDate((format(LocalDate.now().toString())))
+                                                                        .withStatusDate((format(ItClock.today().toString())))
                                                                         .withStatusDescription(STRING.next())
                                                                         .withStatusId(randomUUID()).build())
                                                         .withSeedingHearing(SeedingHearing.seedingHearing()
@@ -924,7 +925,7 @@ public class ListNextHearingSteps extends AbstractIT {
                                                         .withReportingRestrictions(Arrays.asList(ReportingRestriction.reportingRestriction().withId(randomUUID())
                                                                 .withLabel("RestrictionApplied")
                                                                 .withJudicialResultId(JUDICIAL_RESULT_ID)
-                                                                .withOrderedDate(LocalDate.now().toString()).build()))
+                                                                .withOrderedDate(ItClock.today().toString()).build()))
                                                         .build())
                                                 .collect(Collectors.toList()))
                                         .withProsecutionCaseId(listedCaseData.getCaseId())
@@ -979,7 +980,7 @@ public class ListNextHearingSteps extends AbstractIT {
                                 .withObservedEthnicityId(randomUUID())
                                 .withObservedEthnicityDescription(STRING.next())
                                 .build())
-                        .withDateOfBirth(LocalDate.now().minusYears(21).toString())
+                        .withDateOfBirth(ItClock.today().minusYears(21).toString())
                         .build())
                 .build();
     }
