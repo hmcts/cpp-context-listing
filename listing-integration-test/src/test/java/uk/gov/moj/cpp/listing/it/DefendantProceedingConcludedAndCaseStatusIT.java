@@ -12,6 +12,7 @@ import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -41,10 +42,10 @@ public class DefendantProceedingConcludedAndCaseStatusIT extends AbstractIT {
     void shouldUpdateDefendantProceedingConcludedAndCaseStatusEventFromProgressionWhenAllocated() {
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ZonedDateTime.now(ZoneOffset.UTC)
+                ItClock.nowUtc()
                         .withHour(9)
                         .withMinute(0)
                         .withSecond(0)

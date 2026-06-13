@@ -13,6 +13,7 @@ import uk.gov.justice.listing.events.Defendants;
 import uk.gov.justice.listing.events.Offences;
 import uk.gov.justice.listing.events.ProsecutionCases;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -201,7 +202,7 @@ public class UpdatedHearingData {
         final UUID courtCentreId = getRandomCourtCenterId();
         final UUID roomId = getRandomCourtRoomId();
 
-        final LocalDate startDate = nextOrSameWorkingDay(LocalDate.now());
+        final LocalDate startDate = nextOrSameWorkingDay(ItClock.today());
         final ZonedDateTime startTimeWithZone = ZonedDateTime.of(startDate, DEFAULT_START_TIME, UTC);
 
         final List<String> nonSittingDays = singletonList(startDate.plusDays(1).toString());
@@ -250,7 +251,7 @@ public class UpdatedHearingData {
 
     public static UpdatedHearingData updatedHearingDataForPublicListNote(final HearingData hearingData, final Boolean hasVideoLink, final String publicListNote) {
 
-        final LocalDate startDate = nextOrSameWorkingDay(LocalDate.now());
+        final LocalDate startDate = nextOrSameWorkingDay(ItClock.today());
 
         final List<String> nonSittingDays = singletonList(startDate.plusDays(1).toString());
 
@@ -293,7 +294,7 @@ public class UpdatedHearingData {
     }
 
     public static UpdatedHearingData updatedHearingDataForAllocationWithNonDefaultDaysWithoutCourtRoomSelection(final UUID hearingId, final UUID courtCentreId) {
-        final String endDate = LocalDate.now().toString();
+        final String endDate = ItClock.today().toString();
         final LocalDate startDate = LocalDate.parse(endDate);
         final ZonedDateTime startTimeWithZone = ZonedDateTime.parse("2020-04-23T11:32:41.587Z");
 
@@ -322,7 +323,7 @@ public class UpdatedHearingData {
     }
 
     public static UpdatedHearingData updatedHearingData(final HearingData hearingData) {
-        return updatedHearingData(hearingData, LocalDate.now().plusDays(21));
+        return updatedHearingData(hearingData, ItClock.today().plusDays(21));
     }
 
     public static UpdatedHearingData updatedHearingData(final HearingData hearingData, final LocalDate startDate) {

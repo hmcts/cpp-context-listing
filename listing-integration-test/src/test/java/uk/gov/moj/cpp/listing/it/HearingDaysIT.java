@@ -35,6 +35,7 @@ import uk.gov.moj.cpp.listing.steps.SequenceHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -89,8 +90,8 @@ public class HearingDaysIT extends AbstractIT {
     void testHearingDaysWithCourtCentreForSplit() throws IOException {
         stubGetAvailableHearingSlots();
 
-        startDate = LocalDate.now();
-        endDate = LocalDate.now().plusDays(1);
+        startDate = ItClock.today();
+        endDate = ItClock.today().plusDays(1);
         hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
         hearingId = randomUUID();
         caseId = randomUUID();
@@ -127,11 +128,19 @@ public class HearingDaysIT extends AbstractIT {
 
         UpdateHearingSteps updateHearingStepsSplit = new UpdateHearingSteps();
 
+        // Anchor the split day span on working days. The split derives new hearing days from the base
+        // hearing date; built with raw plusDays(1)/plusDays(2) the span straddles a weekend whenever the
+        // suite runs Wed-Sat. Courts do not sit at weekends, so no hearing-requested-for-listing is emitted
+        // for the weekend day and verifyHearingRequestedForListingEvent(2) times out. plusWorkingDays keeps
+        // the span on Mon-Fri and is identical to plusDays on a weekday run with no weekend in range.
+        final LocalDate splitStartDate = ItClock.plusWorkingDays(hearingData.getHearingStartDate(), 1);
+        final LocalDate splitEndDate = ItClock.plusWorkingDays(splitStartDate, 2);
+
         final JsonObject updateHearingJsonObjectSplit =
                 updateHearingStepsSplit.preparePayloadToUpdateHearing(UPDATE_HEARING_FOR_LISTING_SPLIT_JSON,
                 getSplitPayloadValues(hearingData.getId().toString(), hearingData.getListedCases().get(0).getCaseId().toString(),
                         hearingData.getCourtCentreId().toString(), hearingData.getCourtRoomId().toString(),
-                        hearingData.getHearingStartDate().plusDays(1).toString(), hearingData.getHearingEndDate().plusDays(2).toString(),
+                        splitStartDate.toString(), splitEndDate.toString(),
                         hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString(),
                         hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().get(1).getOffenceId().toString(), courtScheduleId));
 
@@ -169,7 +178,7 @@ public class HearingDaysIT extends AbstractIT {
 
     @Test
     void testHearingDaysCorrectedWithCourtCentre() throws IOException {
-        startDate = LocalDate.now();
+        startDate = ItClock.today();
         hearingId = randomUUID();
         caseId = randomUUID();
         courtCentreId = getRandomCourtCenterId();

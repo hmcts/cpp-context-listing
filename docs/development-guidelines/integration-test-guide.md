@@ -449,9 +449,91 @@ mvn verify -pl listing-integration-test -P listing-integration-test
 
 ---
 
+## 13. Deterministic Time: `ItClock` and the Wall-Clock Ban
+
+The suite used to fail in a one-hour band at **00:00–01:00 BST**. British Summer Time is UTC+1, so in
+that hour a "today" computed in `Europe/London` and a "today" computed in UTC land on **different calendar
+days**. With many files independently calling `LocalDate.now()` / `ZonedDateTime.now()`, a test could build
+a hearing date in one zone and assert against another — flaky only during that hour, and "green local /
+red CI" because a UK laptop runs `Europe/London` while CI runs UTC.
+
+### 13.1 The rule: one anchor, one zone, derive everything
+
+All test time goes through **`ItClock`** (`listing-integration-test/.../it/util/ItClock.java`):
+
+| Instead of | Use | Returns |
+|---|---|---|
+| `LocalDate.now()` | `ItClock.today()` | `LocalDate` (anchored once per run, UTC) |
+| `ZonedDateTime.now()`, `ZonedDateTime.now(ZoneOffset.UTC)` | `ItClock.nowUtc()` | `ZonedDateTime` (UTC) |
+| `ZonedDateTime.now(ZoneId.of("Europe/London"))` | `ItClock.nowLondon()` | `ZonedDateTime` (London) |
+| `LocalDateTime.now()` | `ItClock.nowLocalDateTime()` | `LocalDateTime` |
+| `Instant.now()` (as a data date) | `ItClock.nowInstant()` | `Instant` |
+| bespoke London→UTC conversion | `ItClock.utc(date, londonTime)` | UTC instant `String` |
+
+`today()` is captured **once per JVM** and is **UTC-internal**, so (a) a test can never straddle midnight
+between building a date and asserting on it, and (b) a UK-laptop run and a UTC CI run agree on "today"
+without needing a JVM timezone pin — `ItClock` *is* the canonical UTC source. Chained arithmetic is
+unchanged: `ItClock.today().plusDays(7)`, `ItClock.nowUtc().truncatedTo(ChronoUnit.HOURS)`, etc.
+
+Elapsed-time measurement is **not** a date and stays as-is: `System.currentTimeMillis()` in `QueueUtil`
+timing loops and `Instant.now()` inside duration/log-marker infra.
+
+### 13.2 The guard rail
+
+A `forbidden-apis` check (in the IT module's default `build` profile, so it runs on `mvn install`) fails
+the build if any IT class calls a no-arg wall-clock `now()` or `new Date()` outside `ItClock`. Only the
+no-arg overloads are banned — `ItClock` itself uses the `Clock`-argument overloads (`LocalDate.now(CLOCK)`),
+so it is not flagged. The command-line `-P listing-integration-test` profile deactivates the `build`
+profile, so the guard adds zero overhead to the IT run itself.
+
+### 13.3 Midnight simulation (no waiting for real midnight)
+
+`ItClock` reads an optional `-Dit.clock` anchor (forwarded into the forked IT JVM by the failsafe
+`systemPropertyVariables`). `run-it-midnight.sh` at the repo root freezes the clock across the
+00:00–01:00 BST band and weekend boundaries and runs the date-sensitive subset:
+
+```bash
+./run-it-midnight.sh   # green at every anchor == midnight-safe
+```
+
+### 13.4 Day-of-week safety: working-day anchors for multi-day spans
+
+`ItClock.today()` removes *time-of-day* non-determinism (the midnight band) but it is still the **live
+calendar date**, so it can be any day of the week. **Courts do not sit at weekends.** A test that builds a
+**split / multi-day / extend** hearing span with raw `plusDays(...)` and then asserts per-day listing events
+(e.g. `verifyHearingRequestedForListingEvent`) silently straddles a Sat/Sun on some days of the week — the
+weekend day emits no listing request, the awaited JMS message never arrives, and the test times out. This is
+non-determinism by **day-of-week** rather than time-of-day, and it only surfaces on the days the run lands on.
+
+Anchor such spans on working days:
+
+| Use | Returns |
+|---|---|
+| `ItClock.nextWorkingDay()` | `today()`, or the next Mon-Fri if today is a weekend |
+| `ItClock.nextWorkingDay(date)` | `date`, or the next Mon-Fri if `date` is a weekend |
+| `ItClock.plusWorkingDays(date, n)` | `date` advanced by `n` working days, skipping weekends; result is always Mon-Fri |
+
+`plusWorkingDays` is identical to `plusDays` on a run with no weekend in range, so it does not perturb the
+passing weekday case. Example (`HearingDaysIT.testHearingDaysWithCourtCentreForSplit`):
+
+```java
+// before — span [start+1, start+3] hits a weekend whenever the suite runs Wed-Sat:
+hearingData.getHearingStartDate().plusDays(1), hearingData.getHearingEndDate().plusDays(2)
+// after — span endpoints are always working days:
+final LocalDate splitStartDate = ItClock.plusWorkingDays(hearingData.getHearingStartDate(), 1);
+final LocalDate splitEndDate   = ItClock.plusWorkingDays(splitStartDate, 2);
+```
+
+Single-day-on-`today()` tests are weekend-safe and need no change; only multi-day spans that assert
+sitting-day events do.
+
+---
+
 ## Summary Checklist
 
 When writing or reviewing integration tests, verify:
+- [ ] No raw wall-clock reads (`LocalDate.now()`, `ZonedDateTime.now()`, `new Date()`, …) — use `ItClock` (§13; the `forbidden-apis` guard enforces this on `mvn install`)
+- [ ] Multi-day / split / extend spans that assert sitting-day events use `ItClock.plusWorkingDays`/`nextWorkingDay`, never raw `plusDays` — so they never straddle a weekend (§13.4)
 
 - [ ] No usage of `javax.json.Json` — use `uk.gov.justice.services.messaging.JsonObjects` instead
 - [ ] No direct `RestPoller.poll()` calls — use `RestPollerHelper.pollWithDefaults()` or `pollWithDelayForJms()`
