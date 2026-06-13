@@ -580,6 +580,39 @@ provable on demand:
 ./run-it-midnight.sh   # green at every anchor == midnight-safe
 ```
 
+### 14.4 Day-of-week safety: working-day anchors for multi-day spans
+
+`ItClock.today()` removes *time-of-day* non-determinism (the midnight band) but it is still the **live
+calendar date**, so it can be any day of the week. **Courts do not sit at weekends.** A test that builds a
+**split / multi-day / extend** hearing span with raw `plusDays(...)` and then asserts per-day listing
+events (e.g. `verifyHearingRequestedForListingEvent`) silently straddles a Sat/Sun on some days of the
+week — the weekend day emits no listing request, the awaited JMS message never arrives, and the test
+times out. This is non-determinism by **day-of-week** rather than time-of-day, and it only surfaces on the
+days the run happens to land on (e.g. a weekend or late-week CI run).
+
+Anchor such spans on working days:
+
+| Use | Returns |
+|---|---|
+| `ItClock.nextWorkingDay()` | `today()`, or the next Mon-Fri if today is a weekend |
+| `ItClock.nextWorkingDay(date)` | `date`, or the next Mon-Fri if `date` is a weekend |
+| `ItClock.plusWorkingDays(date, n)` | `date` advanced by `n` working days, skipping weekends; result is always Mon-Fri |
+
+`plusWorkingDays` is identical to `plusDays` on a run with no weekend in range, so it does not perturb the
+passing weekday case — it only diverges to keep the span on Mon-Fri when it otherwise would not. Example
+(`HearingDaysIT.testHearingDaysWithCourtCentreForSplit`):
+
+```java
+// before — span [start+1, start+3] hits a weekend whenever the suite runs Wed-Sat:
+hearingData.getHearingStartDate().plusDays(1), hearingData.getHearingEndDate().plusDays(2)
+// after — span endpoints are always working days:
+final LocalDate splitStartDate = ItClock.plusWorkingDays(hearingData.getHearingStartDate(), 1);
+final LocalDate splitEndDate   = ItClock.plusWorkingDays(splitStartDate, 2);
+```
+
+Single-day-on-`today()` tests are weekend-safe and need no change; only multi-day spans that assert
+sitting-day events do.
+
 ---
 
 ## Summary Checklist
@@ -587,6 +620,7 @@ provable on demand:
 When writing or reviewing integration tests, verify:
 
 - [ ] No direct wall-clock reads (`LocalDate.now()`, `ZonedDateTime.now()`, `new Date()`, …) — use `ItClock` (the `forbidden-apis` guard enforces this on `mvn install`)
+- [ ] Multi-day / split / extend hearing spans that assert sitting-day events are anchored on working days (`ItClock.nextWorkingDay()` / `plusWorkingDays(...)`), so they never straddle a weekend — see §14.4
 
 - [ ] No usage of `javax.json.Json` — use `uk.gov.justice.services.messaging.JsonObjects` instead
 - [ ] No direct `RestPoller.poll()` calls — use `RestPollerHelper.pollWithDefaults()` or `pollWithDelayForJms()`

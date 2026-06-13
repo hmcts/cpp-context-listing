@@ -128,11 +128,19 @@ public class HearingDaysIT extends AbstractIT {
 
         UpdateHearingSteps updateHearingStepsSplit = new UpdateHearingSteps();
 
+        // Anchor the split day span on working days. The split derives new hearing days from the base
+        // hearing date; built with raw plusDays(1)/plusDays(2) the span straddles a weekend whenever the
+        // suite runs Wed-Sat. Courts do not sit at weekends, so no hearing-requested-for-listing is emitted
+        // for the weekend day and verifyHearingRequestedForListingEvent(2) times out. plusWorkingDays keeps
+        // the span on Mon-Fri and is identical to plusDays on a weekday run with no weekend in range.
+        final LocalDate splitStartDate = ItClock.plusWorkingDays(hearingData.getHearingStartDate(), 1);
+        final LocalDate splitEndDate = ItClock.plusWorkingDays(splitStartDate, 2);
+
         final JsonObject updateHearingJsonObjectSplit =
                 updateHearingStepsSplit.preparePayloadToUpdateHearing(UPDATE_HEARING_FOR_LISTING_SPLIT_JSON,
                 getSplitPayloadValues(hearingData.getId().toString(), hearingData.getListedCases().get(0).getCaseId().toString(),
                         hearingData.getCourtCentreId().toString(), hearingData.getCourtRoomId().toString(),
-                        hearingData.getHearingStartDate().plusDays(1).toString(), hearingData.getHearingEndDate().plusDays(2).toString(),
+                        splitStartDate.toString(), splitEndDate.toString(),
                         hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString(),
                         hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().get(1).getOffenceId().toString(), courtScheduleId));
 
