@@ -124,6 +124,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -451,7 +452,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         }
         final ZonedDateTime startTime = hearingData.getHearingStartTime() != null
                 ? hearingData.getHearingStartTime()
-                : ZonedDateTime.now();
+                : ItClock.nowUtc();
         final LocalDate sessionDate = hearingData.getHearingStartDate() != null
                 ? hearingData.getHearingStartDate()
                 : startTime.toLocalDate();
@@ -479,7 +480,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                 .forEach(slot -> {
                     final ZonedDateTime startTime = nonNull(slot.getStartTime())
                             ? slot.getStartTime()
-                            : (nonNull(hearingData.getHearingStartTime()) ? hearingData.getHearingStartTime() : ZonedDateTime.now());
+                            : (nonNull(hearingData.getHearingStartTime()) ? hearingData.getHearingStartTime() : ItClock.nowUtc());
                     final UUID roomId = nonNull(slot.getRoomId())
                             ? fromString(slot.getRoomId())
                             : hearingData.getCourtRoomId();
@@ -514,7 +515,7 @@ public class ListCourtHearingSteps extends AbstractIT {
             final UUID centreId = courtCentre != null && courtCentre.containsKey("id") && !courtCentre.isNull("id")
                     ? UUID.fromString(courtCentre.getString("id")) : fallbackCourtCentreId;
             final String hearingId = hearing.getString("id", null);
-            final ZonedDateTime startTime = ZonedDateTime.now();
+            final ZonedDateTime startTime = ItClock.nowUtc();
             stubSearchCourtSchedulesByIdSession(bookingReference, centreId, roomId, startTime.toLocalDate(), startTime, false);
             if (hearingId != null) {
                 stubListHearingInCourtSessionsForCourtSchedule(hearingId, bookingReference, startTime);
@@ -653,7 +654,7 @@ public class ListCourtHearingSteps extends AbstractIT {
     private void verifyCaseByPersonDefendantAndHearingDate(final String caseId, final String urn, final String defendantId,
                                                            final String firstName, final String lastName, final String dateOfBirth) {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.get.cases-by-person-defendant"), firstName, lastName, dateOfBirth, LocalDate.now()));
+                format(readConfig().getProperty("listing.get.cases-by-person-defendant"), firstName, lastName, dateOfBirth, ItClock.today()));
 
 
         setupAsAuthorizedUserToQueryCaseByDefendantAndHearingDate(getLoggedInUser());
@@ -682,7 +683,7 @@ public class ListCourtHearingSteps extends AbstractIT {
 
     private void verifyCaseByOrganisationDefendantAndHearingDate(final String caseId, final String urn, final String defendantId, final String organisationName) {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.get.cases-by-organisation-defendant"), organisationName, LocalDate.now()));
+                format(readConfig().getProperty("listing.get.cases-by-organisation-defendant"), organisationName, ItClock.today()));
 
         stubDefenceQueryApiForSearchCasesByOrganisationDefendant(caseId, defendantId);
         setupAsAuthorizedUserToQueryCaseByDefendantAndHearingDate(getLoggedInUser());
@@ -1214,7 +1215,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 withJsonPath("$.hearings[0].allocated",
                                         equalTo(true)),
                                 withJsonPath("$.hearings[0].endDate",
-                                        equalTo(LocalDate.now().toString())),
+                                        equalTo(ItClock.today().toString())),
                                 withJsonPath("$.hearings[0].listedCases[0].caseIdentifier.caseReference",
                                         equalTo(caseAndDefendantData.getCaseUrn())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
@@ -1239,7 +1240,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 withJsonPath("$.hearings[0].allocated",
                                         equalTo(true)),
                                 withJsonPath("$.hearings[0].endDate",
-                                        equalTo(LocalDate.now().toString())),
+                                        equalTo(ItClock.today().toString())),
                                 withJsonPath("$.hearings[0].listedCases[0].caseIdentifier.caseReference",
                                         equalTo(caseAndDefendantData.getCaseUrn())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
@@ -1267,7 +1268,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 withJsonPath("$.hearings[0].allocated",
                                         equalTo(true)),
                                 withJsonPath("$.hearings[0].endDate",
-                                        equalTo(LocalDate.now().toString())),
+                                        equalTo(ItClock.today().toString())),
                                 withJsonPath("$.hearings[0].listedCases[0].caseIdentifier.caseReference",
                                         not(caseAndDefendantData.getCaseUrn())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
@@ -1299,7 +1300,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 withJsonPath("$.hearings[0].allocated",
                                         equalTo(true)),
                                 withJsonPath("$.hearings[0].endDate",
-                                        equalTo(LocalDate.now().toString())),
+                                        equalTo(ItClock.today().toString())),
                                 withJsonPath("$.hearings[0].listedCases[0].caseIdentifier.caseReference",
                                         not(caseAndDefendantData.getCaseUrn())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
@@ -1325,7 +1326,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 withJsonPath("$.hearings[0].jurisdictionType",
                                         equalTo(JurisdictionType.CROWN.name())),
                                 withJsonPath("$.hearings[0].endDate",
-                                        equalTo(LocalDate.now().toString())),
+                                        equalTo(ItClock.today().toString())),
                                 withJsonPath("$.hearings[0].listedCases[0].caseIdentifier.caseReference",
                                         equalTo(caseAndDefendantData.getCaseUrn())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
@@ -1333,7 +1334,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 withJsonPath("$.hearings[1].jurisdictionType",
                                         equalTo(JurisdictionType.CROWN.name())),
                                 withJsonPath("$.hearings[1].endDate",
-                                        equalTo(LocalDate.now().toString())),
+                                        equalTo(ItClock.today().toString())),
                                 withJsonPath("$.hearings[1].listedCases[0].caseIdentifier.caseReference",
                                         equalTo(caseAndDefendantData.getCaseUrn())),
                                 withJsonPath("$.hearings[1].listedCases[0].defendants[0].masterDefendantId",
@@ -1367,7 +1368,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 withJsonPath("$.hearings[0].jurisdictionType",
                                         equalTo(JurisdictionType.CROWN.name())),
                                 withJsonPath("$.hearings[0].endDate",
-                                        equalTo(LocalDate.now().toString())),
+                                        equalTo(ItClock.today().toString())),
                                 withJsonPath("$.hearings[0].listedCases[0].caseIdentifier.caseReference",
                                         equalTo(caseAndDefendantData.getCaseUrn())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
@@ -1375,7 +1376,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 withJsonPath("$.hearings[1].jurisdictionType",
                                         equalTo(JurisdictionType.CROWN.name())),
                                 withJsonPath("$.hearings[1].endDate",
-                                        equalTo(LocalDate.now().toString())),
+                                        equalTo(ItClock.today().toString())),
                                 withJsonPath("$.hearings[1].listedCases[0].caseIdentifier.caseReference",
                                         equalTo(caseAndDefendantData.getCaseUrn())),
                                 withJsonPath("$.hearings[1].listedCases[0].defendants[0].masterDefendantId",
@@ -1457,7 +1458,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 withJsonPath("$.hearings[0].allocated",
                                         equalTo(true)),
                                 withJsonPath("$.hearings[0].endDate",
-                                        equalTo(LocalDate.now().toString())),
+                                        equalTo(ItClock.today().toString())),
                                 withJsonPath("$.hearings[0].listedCases[0].caseIdentifier.caseReference",
                                         equalTo(caseAndDefendantData.getCaseUrn())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
@@ -1486,7 +1487,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 withJsonPath("$.hearings[0].allocated",
                                         equalTo(true)),
                                 withJsonPath("$.hearings[0].endDate",
-                                        equalTo(LocalDate.now().toString())),
+                                        equalTo(ItClock.today().toString())),
                                 withJsonPath("$.hearings[0].listedCases[0].caseIdentifier.caseReference",
                                         equalTo(caseAndDefendantData.getCaseUrn())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
@@ -1580,7 +1581,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
 
         return ListCourtHearing.listCourtHearing()
-                .withAdjournedFromDate(LocalDate.now().toString())
+                .withAdjournedFromDate(ItClock.today().toString())
                 .withHearings(singletonList(HearingListingNeeds.hearingListingNeeds()
                         .withBookedSlots(hearingData.getBookedSlots())
                         .withCourtCentre(CourtCentre.courtCentre()
@@ -1644,7 +1645,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         stubCrownBookingReferenceResolution(hearingData, bookingReference);
 
         return ListCourtHearing.listCourtHearing()
-                .withAdjournedFromDate(LocalDate.now().toString())
+                .withAdjournedFromDate(ItClock.today().toString())
                 .withShadowListedOffences(shadowListedOffences)
                 .withHearings(List.of(HearingListingNeeds.hearingListingNeeds()
                         .withCourtCentre(CourtCentre.courtCentre()
@@ -1673,12 +1674,12 @@ public class ListCourtHearingSteps extends AbstractIT {
                                                 .withCount(OFFENCE_COUNT)
                                                 .withOrderIndex(OFFENCE_ORDER_INDEX)
                                                 .withOffenceLegislation(OFFENCE_LEGISLATION)
-                                                .withStartDate(LocalDate.now().toString())
+                                                .withStartDate(ItClock.today().toString())
                                                 .build()))
                                         .build()))
                                 .withParentApplicationId(hearingData.getCourtApplications().get(0).getParentApplicationId())
                                 .withType(getCourtApplicationType(hearingData))
-                                .withApplicationReceivedDate(LocalDate.now().toString())
+                                .withApplicationReceivedDate(ItClock.today().toString())
                                 .withApplicationReference(STRING.next())
                                 .withApplicationParticulars(hearingData.getCourtApplications().get(0).getApplicationParticulars())
                                 .withApplicationStatus(ApplicationStatus.LISTED)
@@ -1729,7 +1730,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                         .withDefendants(lc.getDefendants().stream().map(d -> Defendant.defendant()
                                                         .withId(d.getDefendantId())
                                                         .withMasterDefendantId(d.getMasterDefendantId())
-                                                        .withCourtProceedingsInitiated(ZonedDateTime.now())
+                                                        .withCourtProceedingsInitiated(ItClock.nowUtc())
                                                         .withIsYouth(d.getIsYouth())
                                                         .withPersonDefendant(gerPersonDefendant(d))
                                                         .withAssociatedPersons(singletonList(AssociatedPerson.associatedPerson()
@@ -1743,7 +1744,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                                                         .withOffenceCode(STRING.next())
                                                                         .withOffenceDefinitionId(randomUUID())
                                                                         .withWording(STRING.next())
-                                                                        .withStartDate(LocalDate.now().toString())
+                                                                        .withStartDate(ItClock.today().toString())
                                                                         .withOrderIndex(OFFENCE_ORDER_INDEX)
                                                                         .withOffenceTitle(o.getStatementOfOffenceTitle())
                                                                         .withOffenceLegislation(OFFENCE_LEGISLATION)
@@ -1751,13 +1752,13 @@ public class ListCourtHearingSteps extends AbstractIT {
                                                                                 LaaReference.laaReference()
                                                                                         .withApplicationReference(STRING.next())
                                                                                         .withStatusCode(STRING.next())
-                                                                                        .withStatusDate((format(LocalDate.now().toString())))
+                                                                                        .withStatusDate((format(ItClock.today().toString())))
                                                                                         .withStatusDescription(STRING.next())
                                                                                         .withStatusId(randomUUID()).build())
                                                                         .withReportingRestrictions(List.of(ReportingRestriction.reportingRestriction().withId(randomUUID())
                                                                                 .withLabel("RestrictionApplied")
                                                                                 .withJudicialResultId(JUDICIAL_RESULT_ID)
-                                                                                .withOrderedDate(LocalDate.now().toString()).build()))
+                                                                                .withOrderedDate(ItClock.today().toString()).build()))
                                                                         .withCivilOffence(CivilOffence.civilOffence().withIsExParte(o.getCivilOffenceData().getExParte()).build())
                                                                         .build())
                                                                 .collect(Collectors.toList()))
@@ -1790,7 +1791,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                 .withCourtCentreId(hearingData.getCourtCentreId().toString())
                 .withRoomId(hearingData.getCourtRoomId().toString())
                 .withDuration(hearingData.getHearingEstimateMinutes())
-                .withStartTime(hearingData.getHearingStartTime() != null ? hearingData.getHearingStartTime() : java.time.ZonedDateTime.now())
+                .withStartTime(hearingData.getHearingStartTime() != null ? hearingData.getHearingStartTime() : ItClock.nowUtc())
                 .build());
     }
 
@@ -1906,7 +1907,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 .withParentApplicationId(hearingData.getCourtApplications().get(0).getParentApplicationId())
                                 .withApplicationParticulars(hearingData.getCourtApplications().get(0).getApplicationParticulars())
                                 .withType(getCourtApplicationType(hearingData))
-                                .withApplicationReceivedDate(LocalDate.now().toString())
+                                .withApplicationReceivedDate(ItClock.today().toString())
                                 .withApplicationReference(STRING.next())
                                 .withApplicationStatus(ApplicationStatus.LISTED)
                                 .withApplicant(applicant)
@@ -1970,7 +1971,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         return Defendant.defendant()
                 .withId(d.getDefendantId())
                 .withMasterDefendantId(d.getMasterDefendantId())
-                .withCourtProceedingsInitiated(ZonedDateTime.now())
+                .withCourtProceedingsInitiated(ItClock.nowUtc())
                 .withLegalEntityDefendant(LegalEntityDefendant.legalEntityDefendant()
                         .withOrganisation(organisation()
                                 .withName(ORGANISATION_NAME)
@@ -1999,7 +2000,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 .withParentApplicationId(hearingData.getCourtApplications().get(0).getParentApplicationId())
                                 .withApplicationParticulars(hearingData.getCourtApplications().get(0).getApplicationParticulars())
                                 .withType(getCourtApplicationType(hearingData))
-                                .withApplicationReceivedDate(LocalDate.now().toString())
+                                .withApplicationReceivedDate(ItClock.today().toString())
                                 .withApplicationReference(STRING.next())
                                 .withApplicationStatus(ApplicationStatus.DRAFT)
                                 .withCourtApplicationCases(singletonList(CourtApplicationCase.courtApplicationCase()
@@ -2066,7 +2067,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         stubCrownBookingReferenceResolution(hearingData, bookingReference);
 
         return ListCourtHearing.listCourtHearing()
-                .withAdjournedFromDate(LocalDate.now().toString())
+                .withAdjournedFromDate(ItClock.today().toString())
                 .withShadowListedOffences(shadowListedOffences)
                 .withHearings(singletonList(HearingListingNeeds.hearingListingNeeds()
                         .withCourtCentre(CourtCentre.courtCentre()
@@ -2115,7 +2116,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                         .withDefendants(lc.getDefendants().stream().map(d -> Defendant.defendant()
                                                         .withId(d.getDefendantId())
                                                         .withMasterDefendantId(d.getMasterDefendantId())
-                                                        .withCourtProceedingsInitiated(ZonedDateTime.now())
+                                                        .withCourtProceedingsInitiated(ItClock.nowUtc())
                                                         .withIsYouth(d.getIsYouth())
                                                         .withPersonDefendant(gerPersonDefendant(d))
                                                         .withAssociatedPersons(singletonList(AssociatedPerson.associatedPerson()
@@ -2157,7 +2158,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                         .build()))
                 .withParentApplicationId(hearingData.getCourtApplications().get(0).getParentApplicationId())
                 .withType(getCourtApplicationType(hearingData))
-                .withApplicationReceivedDate(LocalDate.now().toString())
+                .withApplicationReceivedDate(ItClock.today().toString())
                 .withApplicationReference(STRING.next())
                 .withApplicationParticulars(hearingData.getCourtApplications().get(0).getApplicationParticulars())
                 .withApplicationStatus(ApplicationStatus.LISTED)
@@ -2195,14 +2196,14 @@ public class ListCourtHearingSteps extends AbstractIT {
                 .withOffenceCode(STRING.next())
                 .withOffenceDefinitionId(randomUUID())
                 .withWording(STRING.next())
-                .withStartDate(LocalDate.now().toString())
+                .withStartDate(ItClock.today().toString())
                 .withOrderIndex(INTEGER.next())
                 .withOffenceTitle(o.getStatementOfOffenceTitle())
                 .withLaaApplnReference(
                         LaaReference.laaReference()
                                 .withApplicationReference(STRING.next())
                                 .withStatusCode(STRING.next())
-                                .withStatusDate((format(LocalDate.now().toString())))
+                                .withStatusDate((format(ItClock.today().toString())))
                                 .withStatusDescription(STRING.next())
                                 .withStatusId(randomUUID()).build())
                 .build();

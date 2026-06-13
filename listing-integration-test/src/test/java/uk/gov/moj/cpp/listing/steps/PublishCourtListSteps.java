@@ -48,6 +48,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import uk.gov.justice.services.messaging.JsonObjects;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.ws.rs.core.Response;
@@ -106,7 +107,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     public void verifyCourtListPublishStatus(final String expectedPublishStatus, final String weekCommencing) {
         final String courtCentreId = commandJsonObject.getString("courtCentreId");
         final String courtListType = commandJsonObject.getString("publishCourtListType");
-        final String publishDate = LocalDate.now().toString();
+        final String publishDate = ItClock.today().toString();
         final String queryPart = format(readConfig().getProperty("listing.court.list.publish.status"),
                 courtCentreId,
                 courtListType,

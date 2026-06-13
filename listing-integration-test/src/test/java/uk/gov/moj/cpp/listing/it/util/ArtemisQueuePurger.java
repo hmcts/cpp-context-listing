@@ -32,6 +32,73 @@ public class ArtemisQueuePurger {
             "jms.queue.DLQ"
     );
 
+    /** Bounded budget for the consume-side quiescence wait before table truncation. */
+    private static final long QUIESCE_MAX_WAIT_MILLIS = 5000;
+    private static final long QUIESCE_POLL_INTERVAL_MILLIS = 100;
+
+    private static final List<String> EVENT_TOPICS = List.of(
+            "jms.topic.listing.event",
+            "jms.topic.public.event"
+    );
+
+    /**
+     * Waits (bounded) for the listing event processor to finish any in-flight projection before the
+     * caller truncates {@code stream_status} / {@code stream_buffer} / the view-store tables.
+     *
+     * <p>This closes the B2 teardown-vs-processor race: the next test's {@code @BeforeEach} truncation
+     * could yank {@code stream_status} out from under a projection transaction that the PREVIOUS test's
+     * event still has in flight, producing {@code JsonValue.NULL} / {@code StreamStatusLockingException}
+     * noise (and the occasional hang) in the server log.</p>
+     *
+     * <p>The signal is each listing/public subscriber queue's {@code DeliveringCount} (messages dispatched
+     * to the MDB but not yet acked). When it reaches zero, no projection is mid-flight. This is a pure
+     * <em>consume-side</em> read — it never drains the event-store publish relay, so it cannot republish
+     * the previous test's suppressed stale events (the explicit no-drain contract in
+     * {@code DatabaseCleaner.cleanEventStoreTables}). Best-effort: if the count has not settled within
+     * {@value #QUIESCE_MAX_WAIT_MILLIS}ms (e.g. a failing redelivery loop), it returns and lets cleanup
+     * proceed rather than blocking the run.</p>
+     */
+    public static void quiesceListingEventProcessing() {
+        final long deadline = System.currentTimeMillis() + QUIESCE_MAX_WAIT_MILLIS;
+        while (System.currentTimeMillis() < deadline) {
+            if (totalDeliveringCount() == 0) {
+                return;
+            }
+            try {
+                Thread.sleep(QUIESCE_POLL_INTERVAL_MILLIS);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+        LOGGER.warn("Event processing did not quiesce within {}ms; proceeding with cleanup", QUIESCE_MAX_WAIT_MILLIS);
+    }
+
+    private static long totalDeliveringCount() {
+        long total = 0;
+        for (final String topic : EVENT_TOPICS) {
+            for (final String subscriberQueue : getSubscriberQueues(topic)) {
+                total += readDeliveringCount(topic, subscriberQueue);
+            }
+        }
+        return total;
+    }
+
+    private static long readDeliveringCount(final String topicAddress, final String subscriberQueue) {
+        try {
+            final String url = JOLOKIA_BASE + "read/org.apache.activemq.artemis:address=%22"
+                    + topicAddress.replace(".", "%2E")
+                    + "%22,broker=%22default%22,component=addresses,queue=%22"
+                    + subscriberQueue.replace(".", "%2E")
+                    + "%22,routing-type=%22multicast%22,subcomponent=queues/DeliveringCount";
+            final String value = extractValue(httpGet(url));
+            return Long.parseLong(value.trim());
+        } catch (final Exception e) {
+            // Unreadable count must not block cleanup — treat as quiesced.
+            return 0;
+        }
+    }
+
     /**
      * Purges all listing-related Artemis queues (anycast queues, DLQ, and event topic subscriber queues).
      */

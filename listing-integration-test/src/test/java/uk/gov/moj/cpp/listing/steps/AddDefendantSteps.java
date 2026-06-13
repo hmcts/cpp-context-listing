@@ -42,6 +42,7 @@ import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClien
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.AddDefendantForCourtProceedingsData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -210,7 +211,7 @@ public class AddDefendantSteps extends AbstractIT {
         final List<uk.gov.justice.core.courts.Defendant> defendant = Arrays.asList(Defendant.defendant()
                 .withId(DEFENDANT_ID)
                 .withMasterDefendantId(MASTER_DEFENDANT_ID)
-                .withCourtProceedingsInitiated(ZonedDateTime.now())
+                .withCourtProceedingsInitiated(ItClock.nowUtc())
                 .withLegalEntityDefendant(LegalEntityDefendant.legalEntityDefendant()
                         .withOrganisation(Organisation.organisation()
                                 .withName("withOrganisationName")

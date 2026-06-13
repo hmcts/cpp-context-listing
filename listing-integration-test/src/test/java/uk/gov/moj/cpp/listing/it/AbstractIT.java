@@ -59,6 +59,10 @@ public class AbstractIT {
 
     @BeforeEach
     void setUp() {
+        // Quiesce BEFORE purge+truncate: let any projection the previous test left in flight finish
+        // against intact tables, so the truncation below cannot race it (B2). Consume-side only —
+        // does not drain the publish relay, so suppressed stale events stay suppressed.
+        ArtemisQueuePurger.quiesceListingEventProcessing();
         ArtemisQueuePurger.purgeAllListingQueues();
         reset();
         // ASYNC-VULNERABLE stubs are re-armed FIRST after reset(): in-flight EVENT_PROCESSOR work

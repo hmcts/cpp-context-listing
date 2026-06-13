@@ -44,6 +44,7 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import uk.gov.moj.cpp.listing.steps.data.JudicialRoleData;
 import uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 public class CourtSchedulerServiceStub {
 
@@ -235,7 +236,7 @@ public class CourtSchedulerServiceStub {
                                                               final String courtScheduleId,
                                                               final boolean isDraft,
                                                               final String source) {
-        final String sessionDate = LocalDate.now().plusDays(1).toString();
+        final String sessionDate = ItClock.today().plusDays(1).toString();
         final String startTime = sessionDate + "T09:00:00Z";
         final String endTime = sessionDate + "T17:00:00Z";
         final String body = format(
@@ -565,7 +566,7 @@ public class CourtSchedulerServiceStub {
                 .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULES_WITH_CUSTOM_PARAMS_JSON)
-                                .replace("%SESSION_DATE%", Optional.of(values.get("SESSION_DATE")).orElse(LocalDate.now().toString()))
+                                .replace("%SESSION_DATE%", Optional.of(values.get("SESSION_DATE")).orElse(ItClock.today().toString()))
                                 .replace("%COURT_ROOM_ID%", Optional.of(values.get("COURT_ROOM_ID")).orElse(UUID.randomUUID().toString()))
                                 .replace("%COURT_SCHEDULE_ID%", Optional.of(values.get("COURT_SCHEDULE_ID")).orElse(UUID.randomUUID().toString()))
                                 .replace("%BOOKING_ID%", Optional.of(values.get("BOOKING_ID")).orElse(UUID.randomUUID().toString()))
@@ -1281,8 +1282,8 @@ public class CourtSchedulerServiceStub {
                 "      \"hearingId\": \"" + hearingId + "\",\n" +
                 "      \"courtScheduleId\": \"" + UUID.randomUUID() + "\",\n" +
                 "      \"courtRoomId\": \"" + courtRoomId + "\",\n" +
-                "      \"hearingDate\": \"" + LocalDate.now().plusDays(5) + "\",\n" +
-                "      \"hearingStartTime\": \"" + ZonedDateTime.now(java.time.ZoneOffset.UTC).plusDays(5).withHour(10).withMinute(0).withSecond(0).withNano(0) + "\",\n" +
+                "      \"hearingDate\": \"" + ItClock.today().plusDays(5) + "\",\n" +
+                "      \"hearingStartTime\": \"" + ItClock.nowUtc().plusDays(5).withHour(10).withMinute(0).withSecond(0).withNano(0) + "\",\n" +
                 "      \"duration\": 30\n" +
                 "  }\n" +
                 "}";
@@ -1311,8 +1312,8 @@ public class CourtSchedulerServiceStub {
                 "      \"hearingId\": \"" + hearingId + "\",\n" +
                 "      \"courtScheduleId\": \"" + UUID.randomUUID() + "\",\n" +
                 "      \"courtRoomId\": \"" + courtCentreId + "\",\n" +
-                "      \"hearingDate\": \"" + LocalDate.now().plusDays(5) + "\",\n" +
-                "      \"hearingStartTime\": \"" + ZonedDateTime.now(java.time.ZoneOffset.UTC).plusDays(5).withHour(10).withMinute(0).withSecond(0).withNano(0) + "\",\n" +
+                "      \"hearingDate\": \"" + ItClock.today().plusDays(5) + "\",\n" +
+                "      \"hearingStartTime\": \"" + ItClock.nowUtc().plusDays(5).withHour(10).withMinute(0).withSecond(0).withNano(0) + "\",\n" +
                 "      \"duration\": 30,\n" +
                 "      \"isDraft\": true\n" +
                 "  }\n" +

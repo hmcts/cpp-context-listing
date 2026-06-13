@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.steps;
 
+import uk.gov.moj.cpp.listing.it.util.ItClock;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -91,7 +93,7 @@ public class PayloadGenerator {
         values.put("%%JURISDICTION_TYPE%%", "MAGISTRATES"); // Can be parameterized later
         
         // Generate dates and times
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = ItClock.nowLocalDateTime();
         LocalDateTime futureDateTime = now.plusDays(30);
         LocalDate futureDate = futureDateTime.toLocalDate();
         ZonedDateTime zonedDateTime = now

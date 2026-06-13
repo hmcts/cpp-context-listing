@@ -12,6 +12,7 @@ import uk.gov.justice.core.courts.DefenceOrganisation;
 import uk.gov.justice.core.courts.DefendantAlias;
 import uk.gov.justice.core.courts.FundingType;
 import uk.gov.justice.core.courts.Organisation;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.util.List;
 import java.util.Optional;
@@ -80,7 +81,7 @@ public class UpdatedDefendantData {
                         .withDescription(defendantData.getBailStatus().getDescription())
                         .withId(fromString(defendantData.getBailStatus().getId().toString())).build())
                 .withCustodyTimeLimit("2025-07-27")
-                .withDateOfBirth(LocalDate.now().minusYears(15).toString())
+                .withDateOfBirth(ItClock.today().minusYears(15).toString())
                 .withDefendantId(defendantData.getDefendantId())
                 .withMasterDefendantId(fromString(defendantData.getMasterDefendantId().toString()))
                 .withFirstName(defendantData.getFirstName())
