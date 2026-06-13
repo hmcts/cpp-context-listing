@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.it.util;
 
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -60,6 +61,44 @@ public final class ItClock {
     /** {@code today()} shifted by {@code days} (negative = past). */
     public static LocalDate todayPlusDays(final long days) {
         return TODAY.plusDays(days);
+    }
+
+    /** {@code today()} if it falls Mon-Fri, else rolled forward to the next working day. */
+    public static LocalDate nextWorkingDay() {
+        return nextWorkingDay(TODAY);
+    }
+
+    /**
+     * {@code date} if it falls Mon-Fri, else rolled forward to the next working day (skips Sat/Sun).
+     *
+     * <p>Courts do not sit at weekends, so any test that asserts per-day listing/scheduling events must
+     * anchor its dates on working days. {@link #today()} alone only removes <em>time-of-day</em>
+     * non-determinism (the midnight band); a span built with raw {@code plusDays} still silently
+     * straddles a weekend on some days of the week, leaving the suite non-deterministic by
+     * <em>day-of-week</em>. Use this (and {@link #plusWorkingDays(LocalDate, int)}) to close that gap.</p>
+     */
+    public static LocalDate nextWorkingDay(final LocalDate date) {
+        LocalDate d = date;
+        while (d.getDayOfWeek() == DayOfWeek.SATURDAY || d.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            d = d.plusDays(1);
+        }
+        return d;
+    }
+
+    /**
+     * {@code date} advanced by {@code workingDays} working days, skipping weekends; the result is
+     * guaranteed to be a working day. {@code plusWorkingDays(d, 0)} equals {@link #nextWorkingDay(LocalDate)}.
+     *
+     * <p>Use this instead of {@code plusDays} when building multi-day / split / extend hearing spans so the
+     * span endpoints never land on a Sat/Sun whichever day the suite runs. On a run with no weekend in the
+     * range it is identical to {@code plusDays}, so it does not perturb the passing weekday case.</p>
+     */
+    public static LocalDate plusWorkingDays(final LocalDate date, final int workingDays) {
+        LocalDate d = nextWorkingDay(date);
+        for (int i = 0; i < workingDays; i++) {
+            d = nextWorkingDay(d.plusDays(1));
+        }
+        return d;
     }
 
     /** "Now" as a UTC {@link ZonedDateTime}; replaces {@code ZonedDateTime.now()} / {@code now(ZoneOffset.UTC)}. */
