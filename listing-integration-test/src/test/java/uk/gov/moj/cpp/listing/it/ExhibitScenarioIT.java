@@ -12,9 +12,11 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHea
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubUpdateAvailableHearingSlotsService;
+import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCpCourtRooms;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCpXhibitMagsCourtMappingForOucode;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataXhibitCourtRoomMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
@@ -29,6 +31,7 @@ import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.ListNextHearingSteps;
 import uk.gov.moj.cpp.listing.steps.PublishCourtListSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
+import uk.gov.moj.cpp.listing.steps.data.CommittingCourtTestDetails;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -127,6 +130,102 @@ class ExhibitScenarioIT extends AbstractIT {
         final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayload);
         publishCourtListSteps.createMessageConsumer();
         publishCourtListSteps.verifyHearingListedFromAPI(true);
+        publishCourtListSteps.acceptCourtListXmlFiles();
+        publishCourtListSteps.sendPublishCourtListCommand();
+        publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "false");
+        publishCourtListSteps.verifySentPublishedCourtListHearingDataForDraft(true, "RestrictionApplied");
+    }
+
+    /**
+     * Crown venue (Preston): two allocated hearings on the draft list where offences carry different committing courts —
+     * one referencing a magistrates court centre (Liverpool, mags Xhibit mapping) and one referencing the crown court
+     * centre (Preston, empty mags then crown cp-xhibit-court-mappings). Exhibit export should complete successfully.
+     */
+    @Test
+    void testDraftCourtListExportWithMixedMagistratesAndCrownCommittingCourts() throws Exception {
+        stubUpdateAvailableHearingSlotsService();
+        final UUID prestonCourtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+        final UUID liverpoolCourtCentreId = fromString("9b583616-049b-30f9-a14f-028a53b7cfe8");
+        final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
+        final UUID courtListId = randomUUID();
+        final int courtRoomId = 231;
+        final String courtScheduleId = "8e837de0-743a-4a2c-9db3-b2e678c48729";
+
+        final HearingsData magsCommittingHearingData = HearingsData.singleHearingDataSingleCaseWithSingleOffence(
+                prestonCourtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
+        magsCommittingHearingData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0).getOffences().get(0)
+                .setCommittingCourtTestDetails(new CommittingCourtTestDetails(
+                        liverpoolCourtCentreId, "Liverpool Magistrates' Court", "MAGISTRATES"));
+
+        final HearingsData crownCommittingHearingData = HearingsData.singleHearingDataSingleCaseWithSingleOffence(
+                prestonCourtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
+        crownCommittingHearingData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0).getOffences().get(0)
+                .setCommittingCourtTestDetails(new CommittingCourtTestDetails(
+                        prestonCourtCentreId, "Preston Crown Court", "CROWN"));
+
+        final ListCourtHearingSteps listSteps1 = new ListCourtHearingSteps(magsCommittingHearingData);
+        final ZonedDateTime hearingStartTime1 = listSteps1.getHearingsData().getHearingData().get(0).getHearingStartTime();
+        final LocalDate hearingDate1 = hearingStartTime1.toLocalDate();
+        final UUID courtroomId1 = listSteps1.getHearingsData().getHearingData().get(0).getCourtRoomId();
+        final UUID bookingId1 = randomUUID();
+        final Map<String, String> stubParams1 = new HashMap<>();
+        stubParams1.put("SESSION_DATE", hearingDate1.toString());
+        stubParams1.put("COURT_CENTRE_ID", prestonCourtCentreId.toString());
+        stubParams1.put("COURT_SCHEDULE_ID", courtScheduleId);
+        stubParams1.put("COURT_ROOM_ID", courtroomId1.toString());
+        stubParams1.put("BOOKING_ID", bookingId1.toString());
+        stubParams1.put("HEARING_START_TIME", hearingStartTime1.toString());
+        stubProvisionalBookingWithCustomParams(stubParams1);
+        stubListHearingInCourtSessions(
+                listSteps1.getHearingsData().getHearingData().get(0).getId().toString(),
+                courtScheduleId,
+                hearingStartTime1);
+        listSteps1.whenCaseIsSubmittedForListing();
+        listSteps1.verifyHearingListedFromAPI(ALLOCATED);
+
+        final ListCourtHearingSteps listSteps2 = new ListCourtHearingSteps(crownCommittingHearingData);
+        final ZonedDateTime hearingStartTime2 = listSteps2.getHearingsData().getHearingData().get(0).getHearingStartTime();
+        final LocalDate hearingDate2 = hearingStartTime2.toLocalDate();
+        final UUID courtroomId2 = listSteps2.getHearingsData().getHearingData().get(0).getCourtRoomId();
+        final UUID bookingId2 = randomUUID();
+        final Map<String, String> stubParams2 = new HashMap<>();
+        stubParams2.put("SESSION_DATE", hearingDate2.toString());
+        stubParams2.put("COURT_CENTRE_ID", prestonCourtCentreId.toString());
+        stubParams2.put("COURT_SCHEDULE_ID", courtScheduleId);
+        stubParams2.put("COURT_ROOM_ID", courtroomId2.toString());
+        stubParams2.put("BOOKING_ID", bookingId2.toString());
+        stubParams2.put("HEARING_START_TIME", hearingStartTime2.toString());
+        stubProvisionalBookingWithCustomParams(stubParams2);
+        stubListHearingInCourtSessions(
+                listSteps2.getHearingsData().getHearingData().get(0).getId().toString(),
+                courtScheduleId,
+                hearingStartTime2);
+        listSteps2.whenCaseIsSubmittedForListing();
+        listSteps2.verifyHearingListedFromAPI(ALLOCATED);
+
+        final PublishCourtListType publishCourtListType = PublishCourtListType.DRAFT;
+        final LocalDate startDate = ItClock.today();
+        final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
+                prestonCourtCentreId,
+                publishCourtListType,
+                startDate);
+
+        stubGetReferenceDataCourtCentreById(prestonCourtCentreId);
+        stubIdMapperReturningExistingAssociation(courtListId);
+        stubOrganisationUnit(prestonCourtCentreId);
+        stubGetReferenceDataCpXhibitMagsCourtMappingForOucode("C04PR00", "{}");
+        stubGetReferenceDataCpXhibitMagsCourtMappingForOucode(
+                "C05LV00",
+                getPayload("stub-data/referencedata.query.cp-xhibit-mags-court-mapping-c05lv00.json"));
+        stubGetReferenceDataCourtMappings(new CourtCentreData(
+                prestonCourtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
+        stubGetReferenceDataCourtMappings(new CourtCentreData(
+                liverpoolCourtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
+        stubGetReferenceDataCpCourtRooms(magsCommittingHearingData.getHearingData().get(0).getCourtRoomId(), courtRoomId);
+        stubGetReferenceDataXhibitCourtRoomMappings(magsCommittingHearingData.getHearingData().get(0).getCourtRoomId());
+
+        final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(magsCommittingHearingData, publishCourtListCommandPayload);
+        publishCourtListSteps.createMessageConsumer();
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "false");
@@ -623,6 +722,7 @@ class ExhibitScenarioIT extends AbstractIT {
      * The hearing should have one court application with a subject but no prosecution cases or listed cases
      */
     @Test
+    @ExpectedServerErrors("court application hearings without a prosecution case -> WARN 'Hearing does not contain caseIdentifier' from the court-list export (application-only hearings are valid)")
     void testCrownAllocatedHearingWithSentenceTypeAndCourtApplicationWithSubject() throws Exception {
         stubUpdateAvailableHearingSlotsService();
         

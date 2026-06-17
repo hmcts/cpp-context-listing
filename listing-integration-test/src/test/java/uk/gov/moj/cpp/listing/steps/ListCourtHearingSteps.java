@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.steps;
 
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
-import static com.jayway.jsonpath.JsonPath.read;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
@@ -19,6 +18,7 @@ import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.apache.http.HttpStatus.SC_FORBIDDEN;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -27,8 +27,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static uk.gov.justice.core.courts.Organisation.organisation;
 import static uk.gov.justice.services.common.converter.LocalDates.to;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
@@ -48,6 +48,9 @@ import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWi
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDelayForJms;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForCourtSchedule;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrown;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchCourtSchedulesByIdSession;
 import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByOrganisationDefendant;
 import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByPersonDefendant;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
@@ -129,11 +132,9 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -177,6 +178,7 @@ public class ListCourtHearingSteps extends AbstractIT {
     private static final String PUBLIC_LISTING_HEARING_CHANGES_SAVED = "public.listing.hearing-changes-saved";
     private static final String PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING = "public.listing.court-application-added-for-hearing";
     private static final String LISTING_EVENTS_HEARING_DAY_COURT_SCHEDULE_UPDATED = "listing.events.hearing-day-court-schedule-updated";
+    static final String CROWN_COURT_SCHEDULE_ID = "8e837de0-743a-4a2c-9db3-b2e678c48729";
 
     protected static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
@@ -380,6 +382,7 @@ public class ListCourtHearingSteps extends AbstractIT {
     private Response getResponseCaseSubmittedForListingBookedSlot() {
 
         stubReferenceDataForFirstHearing();
+        hearingsData.getHearingData().forEach(ListCourtHearingSteps::stubCrownBookedSlotResolution);
 
         final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
                 (readConfig().getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
@@ -407,6 +410,12 @@ public class ListCourtHearingSteps extends AbstractIT {
         hearingsData.getHearingData().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
         hearingsData.getHearingData().stream().filter(hd -> hd.getJudiciary() != null)
                 .forEach(hearingData -> stubGetReferenceDataJudiciaries(judicialId));
+        hearingsData.getHearingData().stream()
+                .filter(hd -> "CROWN".equals(hd.getJurisdictionType()) && hd.getCourtRoomId() != null)
+                .forEach(hd -> stubSearchBookHearingSlotsForCrown(
+                        hd.getId().toString(),
+                        hd.getCourtCentreId().toString(),
+                        hd.getCourtRoomId().toString()));
     }
 
     protected void stubReferenceDataForFirstHearing() {
@@ -421,6 +430,98 @@ public class ListCourtHearingSteps extends AbstractIT {
         hearingsData.getHearingData().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
         hearingsData.getHearingData().stream().filter(hd -> hd.getJudiciary() != null)
                 .forEach(hearingData -> stubGetReferenceDataJudiciaries(hearingData.getJudiciary().get(0).getJudicialId()));
+        hearingsData.getHearingData().stream()
+                .filter(hd -> "CROWN".equals(hd.getJurisdictionType()) && hd.getCourtRoomId() != null)
+                .forEach(hd -> stubSearchBookHearingSlotsForCrown(
+                        hd.getId().toString(),
+                        hd.getCourtCentreId().toString(),
+                        hd.getCourtRoomId().toString()));
+    }
+
+    /**
+     * For a CROWN hearing the {@code bookingReference} IS the courtScheduleId. The listing command resolves
+     * it against courtscheduler ({@code search.court-schedules-by-id}) and then lists it
+     * ({@code list.hearings-in-court-sessions}). Stub both so the bookingReference resolves to a session
+     * echoing this hearing's own centre/room — keeping the enriched hearing consistent with the listed values.
+     * No-op for MAGISTRATES, unallocated hearings (no booking reference) or hearings without a court centre.
+     */
+    private static void stubCrownBookingReferenceResolution(final HearingData hearingData, final UUID bookingReference) {
+        if (bookingReference == null
+                || hearingData.getCourtCentreId() == null
+                || !"CROWN".equals(hearingData.getJurisdictionType())) {
+            return;
+        }
+        final ZonedDateTime startTime = hearingData.getHearingStartTime() != null
+                ? hearingData.getHearingStartTime()
+                : ItClock.nowUtc();
+        final LocalDate sessionDate = hearingData.getHearingStartDate() != null
+                ? hearingData.getHearingStartDate()
+                : startTime.toLocalDate();
+        stubSearchCourtSchedulesByIdSession(
+                bookingReference.toString(), hearingData.getCourtCentreId(), hearingData.getCourtRoomId(),
+                sessionDate, startTime, false);
+        stubListHearingInCourtSessionsForCourtSchedule(hearingData.getId().toString(), bookingReference.toString(), startTime);
+    }
+
+    /**
+     * Booked-slot analogue of {@link #stubCrownBookingReferenceResolution}: a CROWN hearing listed with
+     * pre-booked slots carries the chosen courtScheduleId on {@code bookedSlots[]}, which the listing command
+     * resolves against courtscheduler ({@code search.court-schedules-by-id}) and then lists
+     * ({@code list.hearings-in-court-sessions}). Stub both so each bookedSlot's courtScheduleId resolves to a
+     * non-draft session echoing this hearing's own centre/room — keeping the enriched hearing consistent with
+     * the listed values. Without these the enrichment degrades to the legacy bookedSlots fallback and logs a
+     * failed courtscheduler retrieve. No-op for MAGISTRATES or hearings without booked slots.
+     */
+    private static void stubCrownBookedSlotResolution(final HearingData hearingData) {
+        if (!"CROWN".equals(hearingData.getJurisdictionType()) || !isNotEmpty(hearingData.getBookedSlots())) {
+            return;
+        }
+        hearingData.getBookedSlots().stream()
+                .filter(slot -> nonNull(slot.getCourtScheduleId()))
+                .forEach(slot -> {
+                    final ZonedDateTime startTime = nonNull(slot.getStartTime())
+                            ? slot.getStartTime()
+                            : (nonNull(hearingData.getHearingStartTime()) ? hearingData.getHearingStartTime() : ItClock.nowUtc());
+                    final UUID roomId = nonNull(slot.getRoomId())
+                            ? fromString(slot.getRoomId())
+                            : hearingData.getCourtRoomId();
+                    stubSearchCourtSchedulesByIdSession(
+                            slot.getCourtScheduleId(), hearingData.getCourtCentreId(), roomId,
+                            startTime.toLocalDate(), startTime, false);
+                    stubListHearingInCourtSessionsForCourtSchedule(hearingData.getId().toString(), slot.getCourtScheduleId(), startTime);
+                });
+    }
+
+    /**
+     * Variant of {@link #stubCrownBookingReferenceResolution} for template-built payloads (e.g. group cases):
+     * reads the CROWN bookingReference / courtCentre / room straight from the list-court-hearing JSON and stubs
+     * the courtscheduler resolution + list calls so the bookingReference resolves to a matching session.
+     */
+    private static void stubCrownBookingReferenceResolutionFromPayload(final JsonObject payload, final UUID fallbackCourtCentreId) {
+        if (payload == null || !payload.containsKey("hearings") || payload.isNull("hearings")) {
+            return;
+        }
+        final JsonArray hearings = payload.getJsonArray("hearings");
+        for (int i = 0; i < hearings.size(); i++) {
+            final JsonObject hearing = hearings.getJsonObject(i);
+            if (!"CROWN".equals(hearing.getString("jurisdictionType", null))
+                    || !hearing.containsKey("bookingReference") || hearing.isNull("bookingReference")) {
+                continue;
+            }
+            final String bookingReference = hearing.getString("bookingReference");
+            final JsonObject courtCentre = hearing.containsKey("courtCentre") && !hearing.isNull("courtCentre")
+                    ? hearing.getJsonObject("courtCentre") : null;
+            final UUID roomId = courtCentre != null && courtCentre.containsKey("roomId") && !courtCentre.isNull("roomId")
+                    ? UUID.fromString(courtCentre.getString("roomId")) : null;
+            final UUID centreId = courtCentre != null && courtCentre.containsKey("id") && !courtCentre.isNull("id")
+                    ? UUID.fromString(courtCentre.getString("id")) : fallbackCourtCentreId;
+            final String hearingId = hearing.getString("id", null);
+            final ZonedDateTime startTime = ItClock.nowUtc();
+            stubSearchCourtSchedulesByIdSession(bookingReference, centreId, roomId, startTime.toLocalDate(), startTime, false);
+            if (hearingId != null) {
+                stubListHearingInCourtSessionsForCourtSchedule(hearingId, bookingReference, startTime);
+            }
+        }
     }
 
     private Response getResponseCaseSubmittedForListingWithLegalEntity() {
@@ -600,10 +701,15 @@ public class ListCourtHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicEventHearingListed() {
-        final JsonPath jsonResponse = retrieveMessage(publicEventHearingListed);
+        final String expectedHearingId = hearingsData.getHearingData().get(0).getId().toString();
+        // Match by hearingId so a stale hearing-listed event from another test on the shared
+        // public topic is skipped rather than consumed (drains until this hearing's event arrives).
+        final JsonPath jsonResponse = retrieveMessage(publicEventHearingListed,
+                org.hamcrest.CoreMatchers.containsString(expectedHearingId));
+        assertNotNull(jsonResponse, "No public hearing-listed event found for hearingId=" + expectedHearingId);
         LOGGER.info("jsonResponse from publicEventHearingListed: {}", jsonResponse.prettify());
 
-        assertThat(jsonResponse.get("hearingId"), is(hearingsData.getHearingData().get(0).getId().toString()));
+        assertThat(jsonResponse.get("hearingId"), is(expectedHearingId));
     }
 
     public void verifyHearingListedWithAnyAllocationFromAPI(final boolean isAllocated) {
@@ -768,40 +874,18 @@ public class ListCourtHearingSteps extends AbstractIT {
         String jsonResponse = pollForHearingWithJmsDelay(courtCentreId, isAllocated, userId,
                 pollMatchers.toArray(new Matcher[0]));
 
-        List<String> failedAssertions = new ArrayList<>();
+        // Poll until the WHOLE hearing projection is present, not just the case reference. The defendant
+        // lastName, the N hearingDays and the allocation fields are projected asynchronously and can lag the
+        // case-reference write under suite load; asserting them on the first snapshot where the case ref
+        // appears is racy (intermittent "Failed JsonPath check: lastName" / "Missing path: ..."). Keeping
+        // every check inside the poll lets it retry until the full hearing has materialised.
+        final List<Matcher> matchers = new ArrayList<>();
+        matchers.add(withJsonPath(caseReferenceFilter));
+        matchers.add(withJsonPath(lastNameFilter));
+        buildExpectedJsonValues(hearingData, courtScheduleSlots, courtRoomIds)
+                .forEach((path, value) -> matchers.add(withJsonPath(path, is(value))));
 
-        // Check other matchers separately for clearer debugging
-        validateJsonPath(jsonResponse, lastNameFilter, failedAssertions, "lastName");
-
-        Map<String, Object> expectedValues = buildExpectedJsonValues(hearingData, courtScheduleSlots, courtRoomIds);
-
-        for (Map.Entry<String, Object> entry : expectedValues.entrySet()) {
-            try {
-                Object actualValue = read(jsonResponse, entry.getKey());
-                if (!Objects.equals(actualValue, entry.getValue())) {
-                    failedAssertions.add(String.format("Mismatch at path '%s': expected '%s', but was '%s'",
-                            entry.getKey(), entry.getValue(), actualValue));
-                }
-            } catch (PathNotFoundException e) {
-                failedAssertions.add("Missing path: " + entry.getKey());
-            }
-        }
-
-        if (!failedAssertions.isEmpty()) {
-            fail("Following JSONPath assertions failed:\n" + String.join("\n", failedAssertions));
-        }
-    }
-
-    private void validateJsonPath(String json, com.jayway.jsonpath.JsonPath path,
-                                  List<String> failedAssertions, String label) {
-        try {
-            Object result = path.read(json);
-            if (result == null || (result instanceof Collection && ((Collection<?>) result).isEmpty())) {
-                failedAssertions.add("Failed JsonPath check: " + label);
-            }
-        } catch (Exception e) {
-            failedAssertions.add("Invalid JsonPath or value missing: " + label + " - " + e.getMessage());
-        }
+        pollForHearingWithJmsDelay(courtCentreId, isAllocated, userId, matchers.toArray(new Matcher[0]));
     }
 
     private Map<String, Object> buildExpectedJsonValues(HearingData hearingData, String[] courtScheduleSlots, String[] courtRoomIds) {
@@ -1568,6 +1652,11 @@ public class ListCourtHearingSteps extends AbstractIT {
 
         // Determine if hearing is allocated (has court room) or unallocated
         final boolean isAllocated = hearingData.getCourtRoomId() != null;
+        // CROWN treats the bookingReference as the courtScheduleId; the command resolves it via
+        // search.court-schedules-by-id. Stub that resolution (and the follow-up list call) to echo
+        // this hearing's own centre/room so the resolved session matches the listed values.
+        final UUID bookingReference = isAllocated ? randomUUID() : null;
+        stubCrownBookingReferenceResolution(hearingData, bookingReference);
 
         return ListCourtHearing.listCourtHearing()
                 .withAdjournedFromDate(ItClock.today().toString())
@@ -1579,7 +1668,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 .withRoomId(hearingData.getCourtRoomId())
                                 .build())
                         // Only add booking reference for allocated hearings
-                        .withBookingReference(isAllocated ? randomUUID() : null)
+                        .withBookingReference(bookingReference)
                         .withListedStartDateTime(hearingData.getHearingStartTime() != null ? hearingData.getHearingStartTime() : null)
                         .withCourtApplications(isNull(hearingData.getCourtApplications()) ? null : singletonList(CourtApplication.courtApplication()
                                 .withId(hearingData.getCourtApplications().get(0).getId())
@@ -1702,8 +1791,22 @@ public class ListCourtHearingSteps extends AbstractIT {
                         .withType(getHearingType(hearingData))
                         .withReportingRestrictionReason(hearingData.getReportingRestrictionReason())
                         .withIsGroupProceedings(false)
+                        .withNonDefaultDays(buildCrownNonDefaultDays(hearingData))
                         .build())).build();
 
+    }
+
+    private List<uk.gov.justice.core.courts.NonDefaultDay> buildCrownNonDefaultDays(final HearingData hearingData) {
+        if (!"CROWN".equals(hearingData.getJurisdictionType()) || hearingData.getCourtRoomId() == null) {
+            return null;
+        }
+        return singletonList(uk.gov.justice.core.courts.NonDefaultDay.nonDefaultDay()
+                .withCourtScheduleId(CROWN_COURT_SCHEDULE_ID)
+                .withCourtCentreId(hearingData.getCourtCentreId().toString())
+                .withRoomId(hearingData.getCourtRoomId().toString())
+                .withDuration(hearingData.getHearingEstimateMinutes())
+                .withStartTime(hearingData.getHearingStartTime() != null ? hearingData.getHearingStartTime() : ItClock.nowUtc())
+                .build());
     }
 
     private Person getPerson(final DefendantData d) {
@@ -1972,6 +2075,11 @@ public class ListCourtHearingSteps extends AbstractIT {
                 .map(offence -> offence.getOffenceId())
                 .collect(Collectors.toList());
 
+        // CROWN: resolve the bookingReference (= courtScheduleId) via search.court-schedules-by-id; stub it to
+        // echo this hearing's own centre/room so the resolved session matches the listed values.
+        final UUID bookingReference = randomUUID();
+        stubCrownBookingReferenceResolution(hearingData, bookingReference);
+
         return ListCourtHearing.listCourtHearing()
                 .withAdjournedFromDate(ItClock.today().toString())
                 .withShadowListedOffences(shadowListedOffences)
@@ -1981,7 +2089,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 .withName(hearingData.getName())
                                 .withRoomId(hearingData.getCourtRoomId())
                                 .build())
-                        .withBookingReference(randomUUID())
+                        .withBookingReference(bookingReference)
                         .withCourtApplications(singletonList(getCourtApplication(hearingData)))
                         .withCourtApplicationPartyListingNeeds(hearingData.getCourtApplicationPartyNeeds())
                         .withId(hearingData.getId())
@@ -2356,12 +2464,16 @@ public class ListCourtHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicEventHearingUpdatedPartially(final UUID hearingId) {
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingPartiallyUpdated);
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingPartiallyUpdated,
+                containsString(hearingId.toString()));
+        assertNotNull(jsonResponse, "No public hearing-partially-updated event found for hearingId=" + hearingId);
         assertThat(jsonResponse.get("hearingIdToBeUpdated"), is(hearingId.toString()));
     }
 
     public void verifyPublicEVentHearingChangesSaved(final UUID hearingId) {
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingChangesSaved);
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingChangesSaved,
+                containsString(hearingId.toString()));
+        assertNotNull(jsonResponse, "No public hearing-changes-saved event found for hearingId=" + hearingId);
         assertThat(jsonResponse.get("hearingId"), is(hearingId.toString()));
     }
 
@@ -2384,17 +2496,26 @@ public class ListCourtHearingSteps extends AbstractIT {
     }
 
     public JsonPath getHearingConfirmedPublicEventPayload() {
+        // NOTE: shared getter — callers (e.g. GroupCasesIT) use a Steps instance without hearingsData set,
+        // so it cannot be filtered by this.hearingsData. Filter at the call site where the expected id is known.
         return retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing);
     }
 
+    // noteId is derived server-side from (courtRoomId, hearingDate): creating the same pair twice
+    // makes the ListingNote aggregate log ERROR "Note already exists" and no-op, so both helpers
+    // de-duplicate before posting (hearings in shared test data often reuse a courtroom).
     public void createListingNotes() {
-        this.hearingsData.getHearingData().stream().filter(hearing -> hearing.getCourtRoomId() != null).
-                forEach(hearing -> notesSteps.createNoteForListing(hearing.getCourtRoomId(), "2020-05-21", "note 1"));
+        this.hearingsData.getHearingData().stream().filter(hearing -> hearing.getCourtRoomId() != null)
+                .map(HearingData::getCourtRoomId)
+                .distinct()
+                .forEach(courtRoomId -> notesSteps.createNoteForListing(courtRoomId, "2020-05-21", "note 1"));
     }
 
     public void createListingNotesForStartDays() {
-        this.hearingsData.getHearingData().stream().filter(hearing -> hearing.getCourtRoomId() != null).
-                forEach(hearing -> notesSteps.createNoteForListing(hearing.getCourtRoomId(), hearing.getHearingStartDate().toString(), "note 1"));
+        this.hearingsData.getHearingData().stream().filter(hearing -> hearing.getCourtRoomId() != null)
+                .map(hearing -> java.util.Map.entry(hearing.getCourtRoomId(), hearing.getHearingStartDate().toString()))
+                .distinct()
+                .forEach(roomAndDate -> notesSteps.createNoteForListing(roomAndDate.getKey(), roomAndDate.getValue(), "note 1"));
     }
 
     public void listCourtHearing(final JsonObject listCourtHearingJsonObject, Optional<LocalDate> adjournedFromDate, Optional<List<UUID>> shadowListedOffences) {
@@ -2446,6 +2567,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         final CourtCentreData courtCentreData = new CourtCentreData(courtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, null, "City of London Magistrates' Court");
         stubGetReferenceDataCourtCentreById(courtCentreData);
         stubGetReferenceDataHearingTypes(hearingTypeId);
+        stubCrownBookingReferenceResolutionFromPayload(listCourtHearingJsonObject, courtCentreId);
 
         final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
                 (readConfig().getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));

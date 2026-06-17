@@ -6,8 +6,10 @@ import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static uk.gov.justice.core.courts.Organisation.organisation;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClientProvider.newPublicJmsMessageConsumerClientProvider;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClientProvider.newPublicJmsMessageProducerClientProvider;
@@ -51,6 +53,7 @@ import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.path.json.JsonPath;
+import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,10 +103,13 @@ public class AddDefendantSteps extends AbstractIT {
     public void verifyPublicEventDefendantAddedInActiveMQ() {
         final JsonPath jsRequest = new JsonPath(request);
 
-        final JsonPath jsonResponse = retrieveMessage(publicEventsMessageNewDefendantAdded);
+        final String expectedHearingId = hearingData.getId().toString();
+        final JsonPath jsonResponse = retrieveMessage(publicEventsMessageNewDefendantAdded,
+                containsString(expectedHearingId));
+        assertNotNull(jsonResponse, "No public new-defendant-added event found for hearingId=" + expectedHearingId);
 
         assertThat(jsonResponse.get("caseId"), is(caseId.toString()));
-        assertThat(jsonResponse.get("hearingId"), is(hearingData.getId().toString()));
+        assertThat(jsonResponse.get("hearingId"), is(expectedHearingId));
         assertThat(jsonResponse.get("defendantId"), is(jsRequest.getString("defendants[0].id")));
         assertThat(jsonResponse.get("courtCentre.id"), is(hearingData.getCourtCentreId().toString()));
         assertThat(jsonResponse.get("courtCentre.roomId"), is(hearingData.getCourtRoomId().toString()));

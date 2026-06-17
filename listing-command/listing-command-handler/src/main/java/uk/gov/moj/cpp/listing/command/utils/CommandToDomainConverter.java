@@ -36,6 +36,7 @@ import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.CivilOffence;
 import uk.gov.moj.cpp.listing.domain.CommittingCourt;
+import uk.gov.moj.cpp.listing.domain.CourtHouseType;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.Hearing;
@@ -107,11 +108,15 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
 
     private static Optional<uk.gov.moj.cpp.listing.domain.CommittingCourt> buildCommittingCourt(final uk.gov.justice.core.courts.CommittingCourt committingCourt) {
 
-        return of(CommittingCourt.committingCourt().withCourtCentreId(committingCourt.getCourtCentreId())
+        final CommittingCourt.Builder builder = CommittingCourt.committingCourt()
+                .withCourtCentreId(committingCourt.getCourtCentreId())
                 .withCourtHouseCode(committingCourt.getCourtHouseCode())
                 .withCourtHouseName(committingCourt.getCourtHouseName())
-                .withCourtHouseShortName(committingCourt.getCourtHouseShortName())
-                .build());
+                .withCourtHouseShortName(committingCourt.getCourtHouseShortName());
+        if (committingCourt.getCourtHouseType() != null) {
+            CourtHouseType.valueFor(committingCourt.getCourtHouseType().name()).ifPresent(builder::withCourtHouseType);
+        }
+        return of(builder.build());
     }
 
     @SuppressWarnings({"squid:S3655"})

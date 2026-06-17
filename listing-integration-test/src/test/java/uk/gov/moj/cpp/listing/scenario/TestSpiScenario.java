@@ -23,9 +23,9 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 
 class TestSpiScenario extends AbstractIT {
 
-    private static final String LIST_SPI_ALLOCATED_HEARING_JSON = "test-data/list-court-hearing/spi_allocated.json";
-    private static final String LIST_SPI_UNALLOCATED_HEARING_JSON = "test-data/list-court-hearing/spi_unallocated.json";
-    private static final String LIST_SPI_TWO_DEFENDANTS_UNALLOCATED_JSON = "test-data/list-court-hearing/spi_two_defendants_unallocated.json";
+    private static final String LIST_SPI_ALLOCATED_HEARING_JSON = "test-data/MAGS/list-court-hearing/spi_allocated.json";
+    private static final String LIST_SPI_UNALLOCATED_HEARING_JSON = "test-data/MAGS/list-court-hearing/spi_unallocated.json";
+    private static final String LIST_SPI_TWO_DEFENDANTS_UNALLOCATED_JSON = "test-data/MAGS/list-court-hearing/spi_two_defendants_unallocated.json";
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
     private UUID hearingId;

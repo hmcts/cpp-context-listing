@@ -4,13 +4,13 @@ import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 import static uk.gov.moj.cpp.listing.common.utils.FileUtil.givenPayload;
@@ -18,7 +18,6 @@ import static uk.gov.moj.cpp.listing.common.utils.FileUtil.givenPayload;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.requester.Requester;
-import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.common.xhibit.exception.InvalidReferenceDataException;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtMapping;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtMappingsList;
@@ -238,6 +237,24 @@ public class ReferenceDataLoaderTest {
     }
 
     @Test
+    public void shouldReturnEmptyWhenGetXhibitCrownCourtMappingsNoParamsAndResponseEnvelopeIsNull() {
+        when(requester.requestAsAdmin(any(), eq(CourtMappingsList.class))).thenReturn(null);
+
+        final Optional<CourtMappingsList> courtMappingsList = referenceDataLoader.getXhibitCrownCourtMappings();
+
+        assertThat(courtMappingsList.isPresent(), is(false));
+    }
+
+    @Test
+    public void shouldReturnEmptyWhenGetXhibitCrownCourtMappingsByCourtCentreIdAndResponseEnvelopeIsNull() {
+        when(requester.requestAsAdmin(any(), eq(CourtMappingsList.class))).thenReturn(null);
+
+        final Optional<CourtMappingsList> courtMappingsList = referenceDataLoader.getXhibitCrownCourtMappings(UUID.randomUUID());
+
+        assertThat(courtMappingsList.isPresent(), is(false));
+    }
+
+    @Test
     public void shouldGetXhibitMagsCourtMappings() {
         final String ouCode = "OUCODE";
         final String courtId = "432";
@@ -267,6 +284,67 @@ public class ReferenceDataLoaderTest {
         assertThat(1, is(equalTo(courtMappingsList.get().getCpXhibitCourtMappings().size())));
         assertThat(ouCode, is(courtMappingsList.get().getCpXhibitCourtMappings().get(0).getOucode()));
         assertThat(courtId, is(courtMappingsList.get().getCpXhibitCourtMappings().get(0).getCrestCourtId()));
+    }
+
+    @Test
+    public void shouldReturnEmptyWhenMagsPayloadIsEmptyRecordFromReferencedata() {
+        when(requester.requestAsAdmin(any(), eq(CourtMapping.class)).payload()).thenReturn(new CourtMapping.Builder().build());
+
+        final Optional<CourtMappingsList> courtMappingsList = referenceDataLoader.getXhibitMagsCourtMappings("OUCODE");
+
+        assertThat(courtMappingsList.isPresent(), equalTo(false));
+    }
+
+    @Test
+    public void shouldReturnEmptyWhenGetXhibitMagsCourtMappingsAndResponseEnvelopeIsNull() {
+        when(requester.requestAsAdmin(any(), eq(CourtMapping.class))).thenReturn(null);
+
+        final Optional<CourtMappingsList> courtMappingsList = referenceDataLoader.getXhibitMagsCourtMappings("OUCODE");
+
+        assertThat(courtMappingsList.isPresent(), is(false));
+    }
+
+    @Test
+    public void shouldReturnEmptyWhenGetXhibitMagsCourtMappingsAndPayloadIsNull() {
+        when(requester.requestAsAdmin(any(), eq(CourtMapping.class)).payload()).thenReturn(null);
+
+        final Optional<CourtMappingsList> courtMappingsList = referenceDataLoader.getXhibitMagsCourtMappings("OUCODE");
+
+        assertThat(courtMappingsList.isPresent(), is(false));
+    }
+
+    @Test
+    public void shouldReturnMagsMappingsWhenPayloadHasOucodeOnlyAndIdNull() {
+        final String ouCode = "ONLY_OU";
+        final CourtMapping courtMapping = new CourtMapping.Builder()
+                .withOucode(ouCode)
+                .withCrestCourtId("432")
+                .build();
+
+        when(requester.requestAsAdmin(any(), eq(CourtMapping.class)).payload()).thenReturn(courtMapping);
+
+        final Optional<CourtMappingsList> courtMappingsList = referenceDataLoader.getXhibitMagsCourtMappings(ouCode);
+
+        assertThat(courtMappingsList.isPresent(), is(true));
+        assertThat(courtMappingsList.get().getCpXhibitCourtMappings().get(0).getOucode(), is(ouCode));
+        assertThat(courtMappingsList.get().getCpXhibitCourtMappings().get(0).getId(), is(nullValue()));
+    }
+
+    @Test
+    public void shouldReturnMagsMappingsWhenPayloadHasIdOnlyAndOucodeNull() {
+        final UUID mappingId = randomUUID();
+        final CourtMapping courtMapping = new CourtMapping.Builder()
+                .withId(mappingId)
+                .withCrestCourtId("432")
+                .build();
+
+        when(requester.requestAsAdmin(any(), eq(CourtMapping.class)).payload()).thenReturn(courtMapping);
+
+        final Optional<CourtMappingsList> courtMappingsList = referenceDataLoader.getXhibitMagsCourtMappings("ANY");
+
+        assertThat(courtMappingsList.isPresent(), is(true));
+        assertThat(courtMappingsList.get().getCpXhibitCourtMappings().get(0).getId(), is(mappingId));
+        assertThat(courtMappingsList.get().getCpXhibitCourtMappings().get(0).getOucode(), is(nullValue()));
     }
 
     @Test

@@ -2,11 +2,15 @@ package uk.gov.moj.cpp.listing.it;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.reset;
 import static com.google.common.io.Resources.getResource;
+import static javax.ws.rs.core.Response.Status.OK;
+import static uk.gov.moj.cpp.listing.utils.WebDavStub.acceptCourtListXmlFile;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.joining;
 import static javax.ws.rs.core.Response.Status.OK;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCourtSchedulerCatchAll;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubDeleteAvailableHearingSlotsServiceForAnyHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataOrganisationUnitCatchAll;
 import static uk.gov.moj.cpp.listing.utils.WebDavStub.acceptCourtListXmlFile;

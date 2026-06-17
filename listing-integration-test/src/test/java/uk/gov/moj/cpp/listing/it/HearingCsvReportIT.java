@@ -22,6 +22,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomI
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCpCourtRooms;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataXhibitCourtRoomMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 
@@ -74,12 +75,21 @@ public class HearingCsvReportIT extends AbstractIT {
 
         data = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
 
+        // The CSV report resolves judiciary names via referencedata.query.judiciaries; without
+        // this stub the response payload is null -> NPE -> WARN "Failed to resolve judiciary name".
+        data.getHearingData().get(0).getJudiciary()
+                .forEach(j -> stubGetReferenceDataJudiciaries(j.getJudicialId()));
+
         stubOrganisationUnit(courtCentreId);
         stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreId, LocalTime.of(10, 30), "6:30", null, STRING.next()));
         stubGetReferenceDataCpCourtRooms(data.getHearingData().get(0).getCourtRoomId(), courtRoomId);
         stubGetReferenceDataXhibitCourtRoomMappings(data.getHearingData().get(0).getCourtRoomId());
 
         var first  = data.getHearingData().get(0);
+        // The update below replaces the hearing's judiciary with a fresh random judge — that is
+        // the id the CSV report will resolve, so it needs its own judiciaries stub.
+        var updatedJudicialRole = randomJudicialRole("DISTRICT_JUDGE");
+        stubGetReferenceDataJudiciaries(updatedJudicialRole.getJudicialId());
         var updatedHearingDataWithoutNonDefaultDaysShouldPreservePrevRoomChange = new uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData(
                 first.getId(),
                 first.getCourtCentreId(),
@@ -91,7 +101,7 @@ public class HearingCsvReportIT extends AbstractIT {
                 emptyList(),
                 emptyList(),
                 "ENGLISH",
-                asList(randomJudicialRole("DISTRICT_JUDGE")),
+                asList(updatedJudicialRole),
                 first.getJurisdictionType(),
                 null,
                 null,

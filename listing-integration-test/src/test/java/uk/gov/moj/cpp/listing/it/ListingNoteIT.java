@@ -137,7 +137,7 @@ public class ListingNoteIT extends AbstractIT {
         //When:  delete note
         notesSteps.deleteNoteForListing(noteId);
         // then : verify note deleted
-        final UUID noteIdRetrieved = verifyNoteExists(noteId, hearingDate);
+        final UUID noteIdRetrieved = verifyNoteDeleted(noteId, hearingDate);
         assertThat(noteIdRetrieved, is(nullValue()));
         // Then: verify public messaging queue
         JsonPath message = messageConsumerClientPublicForDeleteNote.retrieveMessageAsJsonPath().get();
@@ -156,7 +156,7 @@ public class ListingNoteIT extends AbstractIT {
                 ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(ALLOCATED);
 
         //Given 2 : Note data using courtRoomId and date from hearing data
         notesSteps.createNoteForListing(hearingData.get(0).getCourtRoomId(), hearingData.get(0).getHearingStartDate().toString(), NOTE_DESCRIPTION);
@@ -181,7 +181,7 @@ public class ListingNoteIT extends AbstractIT {
                 ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(ALLOCATED);
 
         //When and Then
         verifyHearingDataWithoutNoteData(hearingsData.getHearingData());
@@ -215,14 +215,18 @@ public class ListingNoteIT extends AbstractIT {
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
                 ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(ALLOCATED);
 
-        //Given 2 : Note data using courtRoomId and date from hearing data
+        //Given 2 : Note data using courtRoomId and date from hearing data. noteId is derived
+        //server-side from (courtRoomId, hearingDate) -> de-duplicate, or the second create for a
+        //shared courtroom/date logs ERROR "Note already exists" in the aggregate and no-ops.
         List<UUID> noteIds = new ArrayList<>();
-        hearingData
-                .forEach(hearingData1 -> {
-                            notesSteps.createNoteForListing(hearingData1.getCourtRoomId(), hearingData1.getHearingStartDate().toString(), NOTE_DESCRIPTION);
-                            noteIds.add(verifyNoteExists(hearingData1.getCourtRoomId(), hearingData1.getHearingStartDate()));
+        hearingData.stream()
+                .map(hearingData1 -> java.util.Map.entry(hearingData1.getCourtRoomId(), hearingData1.getHearingStartDate()))
+                .distinct()
+                .forEach(roomAndDate -> {
+                            notesSteps.createNoteForListing(roomAndDate.getKey(), roomAndDate.getValue().toString(), NOTE_DESCRIPTION);
+                            noteIds.add(verifyNoteExists(roomAndDate.getKey(), roomAndDate.getValue()));
                         }
                 );
 
@@ -354,19 +358,24 @@ public class ListingNoteIT extends AbstractIT {
 
     private UUID verifyNoteExists(UUID courtRoomId, LocalDate date) {
         AtomicReference<UUID> noteByCourtRoomIdAndDate = new AtomicReference<>();
-        try {
-            with().pollDelay(DELAY, MILLISECONDS)
-                    .and()
-                    .pollInterval(POLL_INTERVAL)
-                    .atMost(TIMEOUT, TimeUnit.SECONDS)
-                    .until(() -> {
-                        noteByCourtRoomIdAndDate.set(getNoteByCourtRoomIdAndDate(courtRoomId, date, connection));
-                        return noteByCourtRoomIdAndDate.get() != null;
-                    });
-        } catch (ConditionTimeoutException e) {
-            e.printStackTrace();
-        }
+        with().pollDelay(DELAY, MILLISECONDS)
+                .and()
+                .pollInterval(POLL_INTERVAL)
+                .atMost(TIMEOUT, TimeUnit.SECONDS)
+                .until(() -> {
+                    noteByCourtRoomIdAndDate.set(getNoteByCourtRoomIdAndDate(courtRoomId, date, connection));
+                    return noteByCourtRoomIdAndDate.get() != null;
+                });
         return noteByCourtRoomIdAndDate.get();
+    }
+
+    private UUID verifyNoteDeleted(UUID courtRoomId, LocalDate date) {
+        with().pollDelay(DELAY, MILLISECONDS)
+                .and()
+                .pollInterval(POLL_INTERVAL)
+                .atMost(TIMEOUT, TimeUnit.SECONDS)
+                .until(() -> getNoteByCourtRoomIdAndDate(courtRoomId, date, connection) == null);
+        return null;
     }
 
 

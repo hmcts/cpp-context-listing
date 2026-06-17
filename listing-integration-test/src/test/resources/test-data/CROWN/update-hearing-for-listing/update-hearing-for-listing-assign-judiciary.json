@@ -1,0 +1,45 @@
+{
+    "selectedCourtCentre": {
+        "id": "89592405-c29b-3706-b1d3-b1dd3a08b227",
+        "courtRoomId": "d0624ee3-9198-3c8b-94d6-42fb197ebe5e",
+        "courtCentreName": "Blackfriars Crown Court"
+    },
+    "courtCentreId": "89592405-c29b-3706-b1d3-b1dd3a08b227",
+    "courtRoomId": "d0624ee3-9198-3c8b-94d6-42fb197ebe5e",
+    "type": {
+        "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+        "description": "Plea and Trial Preparation"
+    },
+    "startDate": "2026-02-16",
+    "endDate": "2026-02-16",
+    "nonSittingDays": [],
+    "nonDefaultDays": [
+        {
+            "startTime": "2026-02-16T10:00:00.000Z",
+            "courtCentreId": "89592405-c29b-3706-b1d3-b1dd3a08b227",
+            "roomId": "d0624ee3-9198-3c8b-94d6-42fb197ebe5e",
+            "duration": 180,
+            "virtual": true
+        }
+    ],
+    "judiciary": [
+        {
+            "judicialId": "abf63238-0c8f-3203-85c3-682b6bb263d2",
+            "judicialRoleType": {
+                "judiciaryType": "RECORDER"
+            }
+        },
+        {
+            "judicialId": "7ad3edfd-cfff-4f69-adef-503b2b413fd1",
+            "judicialRoleType": {
+                "judiciaryType": "CIRCUIT_JUDGE"
+            }
+        }
+    ],
+    "jurisdictionType": "CROWN",
+    "hearingLanguage": "ENGLISH",
+    "publicListNote": "",
+    "hasVideoLink": false,
+    "sendNotificationToParties": false,
+    "hearingId": "16e9796e-8912-4081-a573-80f1d1f81c7e"
+}

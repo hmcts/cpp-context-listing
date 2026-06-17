@@ -1,0 +1,33 @@
+{
+    "courtCentreId": "%%COURT_CENTRE_ID%%",
+    "courtRoomId": "%%COURT_ROOM_ID%%",
+    "selectedCourtCentre": {
+        "id": "%%COURT_CENTRE_ID%%",
+        "courtRoomId": "%%COURT_ROOM_ID%%",
+        "courtCentreName": "Test Court Centre",
+        "ouCode": "B01LY00"
+    },
+    "type": {
+        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+        "description": "Plea"
+    },
+    "startDate": "%%START_DATE%%",
+    "endDate": "%%END_DATE%%",
+    "nonSittingDays": [
+        "%%NON_SITTING_DAY%%"
+    ],
+    "nonDefaultDays": [
+        {
+            "startTime": "%%START_TIME%%",
+            "courtCentreId": "%%COURT_CENTRE_ID%%",
+            "roomId": "%%COURT_ROOM_ID%%",
+            "duration": 1080
+        }
+    ],
+    "judiciary": [],
+    "jurisdictionType": "CROWN",
+    "hearingLanguage": "ENGLISH",
+    "publicListNote": "",
+    "hasVideoLink": false,
+    "sendNotificationToParties": false
+}

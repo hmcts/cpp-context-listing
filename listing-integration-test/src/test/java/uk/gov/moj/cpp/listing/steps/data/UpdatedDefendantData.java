@@ -41,6 +41,30 @@ public class UpdatedDefendantData {
     private final AssociatedDefenceOrganisation associatedDefenceOrganisation;
 
     public static UpdatedDefendantData updatedDefendantData(DefendantData defendantData) {
+        return baseBuilder(defendantData).withIsYouth(Boolean.TRUE).build();
+    }
+
+    public static UpdatedDefendantData updatedDefendantDataWithIsYouth(final DefendantData defendantData, final Boolean isYouth) {
+        final Builder builder = baseBuilder(defendantData);
+        if (isYouth != null) {
+            builder.withIsYouth(isYouth);
+        }
+        return builder.build();
+    }
+
+    /**
+     * Partial progression update: omits {@code isYouth} from the public event payload (null in courts Defendant).
+     */
+    public static UpdatedDefendantData partialDefendantUpdateWithoutIsYouth(final DefendantData defendantData,
+                                                                            final String firstName,
+                                                                            final String lastName) {
+        return baseBuilder(defendantData)
+                .withFirstName(firstName)
+                .withLastName(lastName)
+                .build();
+    }
+
+    private static Builder baseBuilder(final DefendantData defendantData) {
         return Builder.UpdatedDefendantData()
                 .withBailStatus(new BailStatus.Builder().withCode(defendantData.getBailStatus().getCode())
                         .withDescription(defendantData.getBailStatus().getDescription())
@@ -57,7 +81,6 @@ public class UpdatedDefendantData {
                 .withSpecificRequirements("withSpecificRequirements")
                 .withCourtCentreId(randomUUID())
                 .withPncId("pncId")
-                .withIsYouth(Boolean.TRUE)
                 .withAssociatedDefenceOrganisation(AssociatedDefenceOrganisation.associatedDefenceOrganisation()
                         .withFundingType(FundingType.REPRESENTATION_ORDER)
                         .withAssociationStartDate("2018-10-10")
@@ -71,8 +94,7 @@ public class UpdatedDefendantData {
                 .withAliases(asList(DefendantAlias.defendantAlias()
                         .withFirstName("Alias First Name")
                         .withLastName("Alias Last Name")
-                        .build()))
-                .build();
+                        .build()));
     }
 
     public static UpdatedDefendantData updatedDefendantDataWithUnder18DateOfBirth(final DefendantData defendantData) {

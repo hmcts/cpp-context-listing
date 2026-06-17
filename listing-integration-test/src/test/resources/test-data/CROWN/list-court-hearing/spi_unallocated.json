@@ -1,0 +1,120 @@
+{
+    "hearings": [
+        {
+            "courtCentre": {
+                "id": "1e6f8561-2dff-3161-b7b3-6dcd679e7c65",
+                "name": "Coventry Crown Court",
+                "welshName": "Llys Y Goron Coventry"
+            },
+            "defendantListingNeeds": [
+                {
+                    "defendantId": "ef9e3ef1-b69c-41ff-9cce-3112e3177338",
+                    "hearingLanguageNeeds": "ENGLISH",
+                    "isYouth": false,
+                    "prosecutionCaseId": "938eaf1b-b8ce-4d40-bc3c-bc69852f365b"
+                }
+            ],
+            "estimatedMinutes": 20,
+            "id": "33efd505-a254-481d-8d43-1fa2cba3d846",
+            "isGroupProceedings": false,
+            "jurisdictionType": "MAGISTRATES",
+            "listedStartDateTime": "2026-02-05T10:15:00.000Z",
+            "numberOfGroupCases": 1,
+            "prosecutionCases": [
+                {
+                    "cpsOrganisation": "A30AB00",
+                    "defendants": [
+                        {
+                            "courtProceedingsInitiated": "2026-02-05T14:51:33.729Z",
+                            "id": "ef9e3ef1-b69c-41ff-9cce-3112e3177338",
+                            "masterDefendantId": "ef9e3ef1-b69c-41ff-9cce-3112e3177338",
+                            "offences": [
+                                {
+                                    "arrestDate": "2022-12-14",
+                                    "chargeDate": "2022-12-15",
+                                    "count": 0,
+                                    "endorsableFlag": false,
+                                    "id": "adcf8ace-b7f3-4c6f-9ad3-f3b85045de54",
+                                    "maxPenalty": "S:L3",
+                                    "modeOfTrial": "Summary",
+                                    "offenceCode": "CA03012",
+                                    "offenceDateCode": 1,
+                                    "offenceDefinitionId": "6588ffee-89ec-36a2-ab90-a54177cbda97",
+                                    "offenceLegislation": "Contrary to section 363(3)(b) and (4) of the Communications Act 2003.",
+                                    "offenceLegislationWelsh": "Yn groes i adran 363(3)(b) a (4) Deddf Cyfathrebu 2003.",
+                                    "offenceTitle": "Possess / control TV set with intent another use install without a licence",
+                                    "offenceTitleWelsh": "Meddu ar/mewn rheolaeth set deledu gan fwriadu i unigolyn arall ei ddefnyddio/osod heb drwydded",
+                                    "orderIndex": 1,
+                                    "startDate": "2022-12-12",
+                                    "wording": "Nicklaus Terry have set up a TV cable without a valid license."
+                                }
+                            ],
+                            "personDefendant": {
+                                "arrestSummonsNumber": "DEF018706298",
+                                "bailStatus": {
+                                    "code": "C",
+                                    "description": "Custody",
+                                    "id": "12e69486-4d01-3403-a50a-7419ca040635"
+                                },
+                                "personDetails": {
+                                    "address": {
+                                        "address1": "21",
+                                        "address2": "Furnburry Park Road",
+                                        "address3": "London",
+                                        "postcode": "SW11 3TQ"
+                                    },
+                                    "contact": {
+                                        "home": "015325443756"
+                                    },
+                                    "dateOfBirth": "2001-02-18",
+                                    "documentationLanguageNeeds": "ENGLISH",
+                                    "ethnicity": {
+                                        "observedEthnicityCode": "1",
+                                        "observedEthnicityDescription": "White",
+                                        "observedEthnicityId": "c4ca4238-a0b9-3382-8dcc-509a6f75849b",
+                                        "selfDefinedEthnicityCode": "W1",
+                                        "selfDefinedEthnicityDescription": "British",
+                                        "selfDefinedEthnicityId": "c4ca4238-a0b9-3382-8dcc-509a6f75849b"
+                                    },
+                                    "firstName": "Nicklaus",
+                                    "gender": "MALE",
+                                    "hearingLanguageNeeds": "ENGLISH",
+                                    "lastName": "Terry",
+                                    "occupation": "Accountant",
+                                    "occupationCode": "2201",
+                                    "title": "MR"
+                                }
+                            },
+                            "prosecutionAuthorityReference": "DEF018706298",
+                            "prosecutionCaseId": "938eaf1b-b8ce-4d40-bc3c-bc69852f365b"
+                        }
+                    ],
+                    "id": "938eaf1b-b8ce-4d40-bc3c-bc69852f365b",
+                    "initiationCode": "C",
+                    "originatingOrganisation": "GAFTL00",
+                    "prosecutionCaseIdentifier": {
+                        "address": {
+                            "address1": "6th Floor Windsor House",
+                            "address2": "42-50 Victoria Street",
+                            "address3": "London",
+                            "postcode": "SW1H 0TL"
+                        },
+                        "contact": {
+                            "primaryEmail": "tfl.enforcement@tfl.cjsm.net"
+                        },
+                        "majorCreditorCode": "TFL2",
+                        "prosecutionAuthorityCode": "TFL",
+                        "prosecutionAuthorityId": "31af405e-7b60-4dd8-a244-c24c2d3fa595",
+                        "prosecutionAuthorityName": "Transport for London",
+                        "prosecutionAuthorityOUCode": "GAFTL00",
+                        "caseURN": "28DI8706298"
+                    }
+                }
+            ],
+            "type": {
+                "description": "First hearing",
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776"
+            }
+        }
+    ]
+}

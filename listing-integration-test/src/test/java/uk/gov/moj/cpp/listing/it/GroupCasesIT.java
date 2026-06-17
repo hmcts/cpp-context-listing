@@ -24,6 +24,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
+import uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 import uk.gov.moj.cpp.listing.it.util.ItClock;
 
@@ -81,6 +82,8 @@ public class GroupCasesIT extends AbstractIT {
         final UUID newGroupMasterCaseId = randomUUID();
 
         stubGetReferenceDataCourtCentreById(courtCentreId);
+        CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrown(
+                hearingId.toString(), courtCentreId.toString(), "28b922c3-0396-3c68-970f-5b805c7ab1bb");
         postListCourtHearingCommand(masterCaseId);
 
         JsonPath jsonResponse = listCourtHearingSteps.getHearingConfirmedPublicEventPayload();
