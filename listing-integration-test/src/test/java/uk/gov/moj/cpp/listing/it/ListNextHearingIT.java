@@ -10,6 +10,7 @@ import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAll
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.notHmiEnabledHearingsData;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
+import static uk.gov.moj.cpp.listing.utils.HmiAllocationStubHelper.stubForAllocatedListing;
 
 import com.google.common.collect.ImmutableMap;
 import uk.gov.justice.core.courts.JurisdictionType;
@@ -291,13 +292,14 @@ public class ListNextHearingIT extends AbstractIT {
                         .withNano(0)
                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(ALLOCATED);
 
         // First hearing created
         final HearingsData firstHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
+        stubForAllocatedListing(listCourtHearingSteps.getHearingsData().getHearingData().get(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(ALLOCATED);
 
         // Second hearing share and extend to first hearing
         final UUID nextHearingId = firstHearings.getHearingData().get(0).getId();

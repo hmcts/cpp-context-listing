@@ -4,6 +4,7 @@ import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.util.UUID.randomUUID;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.core.courts.Organisation.organisation;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
@@ -63,7 +64,11 @@ public class UpdateDefendantSteps extends AbstractIT {
     }
 
     public void whenPublicEventProgressionCaseDefendantsUpdatedIsPublished() {
-        final UpdateCaseDefendantData updateCaseDefendantDetails = getUpdateCaseDefendantDetails(caseId, updatedDefendantData);
+        whenPublicEventProgressionCaseDefendantChangedIsPublished(updatedDefendantData);
+    }
+
+    public void whenPublicEventProgressionCaseDefendantChangedIsPublished(final UpdatedDefendantData defendantData) {
+        final UpdateCaseDefendantData updateCaseDefendantDetails = getUpdateCaseDefendantDetails(caseId, defendantData);
         final JsonObject updateCaseDefendantDetailsObject = (JsonObject) objectToJsonValueConverter.convert(updateCaseDefendantDetails);
 
         sendMessage(
@@ -71,6 +76,27 @@ public class UpdateDefendantSteps extends AbstractIT {
                 PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED,
                 updateCaseDefendantDetailsObject,
                 metadataOf(randomUUID(), PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED).withUserId(randomUUID().toString()).build());
+    }
+
+    /**
+     * Polls the hearing view until the first listed defendant's {@code isYouth} flag matches the expected value.
+     */
+    /**
+     * Polls until the target defendant (by hearing, case and defendant id) is present with the expected {@code isYouth} value.
+     * Uses a defendant-object filter so missing {@code isYouth} on the payload does not false-pass.
+     */
+    @SuppressWarnings("rawtypes")
+    public void verifyListedDefendantIsYouthWithJmsDelay(final boolean isAllocated, final boolean expectedIsYouth) {
+        pollForHearingWithJmsDelay(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(getJsonPathQueryForDefendantWithIsYouth(expectedIsYouth))
+        });
+    }
+
+    /**
+     * Verifies defendant field updates (name, id, etc.) without asserting {@code isYouth}.
+     */
+    public void verifyDefendantDetailsUpdatedWithJmsDelay(final boolean isAllocated) {
+        verifyHearingListedFromAPIWithJmsDelay(isAllocated, null);
     }
 
     public void verifyHearingListedFromAPI(final boolean isAllocated) {
@@ -94,28 +120,18 @@ public class UpdateDefendantSteps extends AbstractIT {
                         equalTo(hearingData.getHearingTypeData().getTypeDescription())),
                 withJsonPath("$.hearings[0].startDate",
                         equalTo(hearingData.getHearingStartDate().toString())),
-                withJsonPath("$.hearings[0].listedCases[0].defendants[0].id",
-                        equalTo(updatedDefendantData.getDefendantId().toString())),
-                withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
-                        equalTo(updatedDefendantData.getMasterDefendantId().toString())),
-//                withJsonPath("$.hearings[0].listedCases[0].defendants[0].custodyTimeLimit",
-//                        equalTo(updatedDefendantData.getCustodyTimeLimit())),
-//                withJsonPath("$.hearings[0].listedCases[0].defendants[0].dateOfBirth",
-//                        equalTo(updatedDefendantData.getDateOfBirth())),
-                withJsonPath("$.hearings[0].listedCases[0].defendants[0].bailStatus.code",
-                        equalTo(updatedDefendantData.getBailStatus().getCode())),
-                withJsonPath("$.hearings[0].listedCases[0].defendants[0].bailStatus.id",
-                        equalTo(updatedDefendantData.getBailStatus().getId().toString())),
-                withJsonPath("$.hearings[0].listedCases[0].defendants[0].firstName",
-                        equalTo(updatedDefendantData.getFirstName())),
-                withJsonPath("$.hearings[0].listedCases[0].defendants[0].lastName",
-                        equalTo(updatedDefendantData.getLastName())),
-//                withJsonPath("$.hearings[0].listedCases[0].defendants[0].specificRequirements",
-//                        equalTo(updatedDefendantData.getSpecificRequirements())),
-//                withJsonPath("$.hearings[0].listedCases[0].defendants[0].organisationName",
-//                        equalTo(updatedDefendantData.getLegalEntityName())),
-                withJsonPath("$.hearings[0].listedCases[0].defendants[0].restrictFromCourtList",
-                        equalTo(hearingData.getListedCases().get(0).getDefendants().get(0).getRestrictFromCourtList()))
+                withJsonPath(getJsonPathQueryForDefendantAttribute("id"),
+                        hasItem(equalTo(updatedDefendantData.getDefendantId().toString()))),
+                withJsonPath(getJsonPathQueryForDefendantAttribute("masterDefendantId"),
+                        hasItem(equalTo(updatedDefendantData.getMasterDefendantId().toString()))),
+                withJsonPath(getJsonPathQueryForDefendantAttribute("bailStatus.code"),
+                        hasItem(equalTo(updatedDefendantData.getBailStatus().getCode()))),
+                withJsonPath(getJsonPathQueryForDefendantAttribute("bailStatus.id"),
+                        hasItem(equalTo(updatedDefendantData.getBailStatus().getId().toString()))),
+                withJsonPath(getJsonPathQueryForDefendantAttribute("firstName"),
+                        hasItem(equalTo(updatedDefendantData.getFirstName()))),
+                withJsonPath(getJsonPathQueryForDefendantAttribute("restrictFromCourtList"),
+                        hasItem(equalTo(hearingData.getListedCases().get(0).getDefendants().get(0).getRestrictFromCourtList())))
         });
 
     }
@@ -151,27 +167,47 @@ public class UpdateDefendantSteps extends AbstractIT {
                 equalTo(hearingData.getHearingTypeData().getTypeDescription())));
         matchers.add(withJsonPath("$.hearings[0].startDate",
                 equalTo(hearingData.getHearingStartDate().toString())));
-        matchers.add(withJsonPath("$.hearings[0].listedCases[0].defendants[0].id",
-                equalTo(updatedDefendantData.getDefendantId().toString())));
-        matchers.add(withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
-                equalTo(updatedDefendantData.getMasterDefendantId().toString())));
-        matchers.add(withJsonPath("$.hearings[0].listedCases[0].defendants[0].bailStatus.code",
-                equalTo(updatedDefendantData.getBailStatus().getCode())));
-        matchers.add(withJsonPath("$.hearings[0].listedCases[0].defendants[0].bailStatus.id",
-                equalTo(updatedDefendantData.getBailStatus().getId().toString())));
-        matchers.add(withJsonPath("$.hearings[0].listedCases[0].defendants[0].firstName",
-                equalTo(updatedDefendantData.getFirstName())));
-        matchers.add(withJsonPath("$.hearings[0].listedCases[0].defendants[0].lastName",
-                equalTo(updatedDefendantData.getLastName())));
-        matchers.add(withJsonPath("$.hearings[0].listedCases[0].defendants[0].restrictFromCourtList",
-                equalTo(hearingData.getListedCases().get(0).getDefendants().get(0).getRestrictFromCourtList())));
+        matchers.add(withJsonPath(getJsonPathQueryForDefendantAttribute("id"),
+                hasItem(equalTo(updatedDefendantData.getDefendantId().toString()))));
+        matchers.add(withJsonPath(getJsonPathQueryForDefendantAttribute("masterDefendantId"),
+                hasItem(equalTo(updatedDefendantData.getMasterDefendantId().toString()))));
+        matchers.add(withJsonPath(getJsonPathQueryForDefendantAttribute("bailStatus.code"),
+                hasItem(equalTo(updatedDefendantData.getBailStatus().getCode()))));
+        matchers.add(withJsonPath(getJsonPathQueryForDefendantAttribute("bailStatus.id"),
+                hasItem(equalTo(updatedDefendantData.getBailStatus().getId().toString()))));
+        matchers.add(withJsonPath(getJsonPathQueryForDefendantAttribute("firstName"),
+                hasItem(equalTo(updatedDefendantData.getFirstName()))));
+        matchers.add(withJsonPath(getJsonPathQueryForDefendantAttribute("restrictFromCourtList"),
+                hasItem(equalTo(hearingData.getListedCases().get(0).getDefendants().get(0).getRestrictFromCourtList()))));
         if (expectedIsYouth != null) {
-            matchers.add(withJsonPath("$.hearings[0].listedCases[0].defendants[0].isYouth", equalTo(expectedIsYouth)));
+            matchers.add(withJsonPath(getJsonPathQueryForDefendantIsYouth(), hasItem(equalTo(expectedIsYouth))));
         }
 
         pollForHearingWithJmsDelay(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(),
                 matchers.toArray(new Matcher[0]));
 
+    }
+
+    private com.jayway.jsonpath.JsonPath getJsonPathQueryForDefendantIsYouth() {
+        return getJsonPathQueryForDefendantAttribute("isYouth");
+    }
+
+    private com.jayway.jsonpath.JsonPath getJsonPathQueryForDefendantWithIsYouth(final boolean expectedIsYouth) {
+        final HearingDefendantFilter hearingDefendantFilter = new HearingDefendantFilter(hearingData, listedCaseData, updatedDefendantData).invoke();
+        final Filter isYouthFilter = filter(where("isYouth").eq(expectedIsYouth));
+        return com.jayway.jsonpath.JsonPath.compile("$.hearings[?].listedCases[?].defendants[?][?]",
+                hearingDefendantFilter.getHearingFilter(),
+                hearingDefendantFilter.getListingCaseFilter(),
+                hearingDefendantFilter.getDefendantFilter(),
+                isYouthFilter);
+    }
+
+    private com.jayway.jsonpath.JsonPath getJsonPathQueryForDefendantAttribute(final String attribute) {
+        final HearingDefendantFilter hearingDefendantFilter = new HearingDefendantFilter(hearingData, listedCaseData, updatedDefendantData).invoke();
+        return com.jayway.jsonpath.JsonPath.compile("$.hearings[?].listedCases[?].defendants[?]." + attribute,
+                hearingDefendantFilter.getHearingFilter(),
+                hearingDefendantFilter.getListingCaseFilter(),
+                hearingDefendantFilter.getDefendantFilter());
     }
 
     private static com.jayway.jsonpath.JsonPath getJsonPathQueryForDefendantLastName(final HearingData hearing, final ListedCaseData listedCase, final UpdatedDefendantData defendant, final String expectedLastName) {

@@ -5,6 +5,7 @@ import static java.util.Collections.singletonMap;
 import static java.util.UUID.fromString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
 import static org.mockito.quality.Strictness.LENIENT;
 import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.DRAFT;
@@ -155,8 +156,8 @@ public class CourtListFileGeneratorTest {
 
         when(commonXhibitReferenceDataService.getCrownCourtDetails(courtCentreId1)).thenReturn(courtLocation1);
         when(commonXhibitReferenceDataService.getCrownCourtDetails(courtCentreId2)).thenReturn(courtLocation2);
-        when(commonXhibitReferenceDataService.getMagsCourtDetails(courtCentreId1)).thenReturn(courtLocation1);
-        when(commonXhibitReferenceDataService.getMagsCourtDetails(courtCentreId2)).thenReturn(courtLocation2);
+        when(commonXhibitReferenceDataService.getCriminalCourtDetails(eq(courtCentreId1), nullable(String.class))).thenReturn(courtLocation1);
+        when(commonXhibitReferenceDataService.getCriminalCourtDetails(eq(courtCentreId2), nullable(String.class))).thenReturn(courtLocation2);
         when(commonXhibitReferenceDataService.getCrownCourtCentreIdsForCrestId(crestCourtId)).thenReturn(courtCentreIds);
         when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(10);
         when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1, UUID.fromString("6508af42-e4d4-396d-a752-d676ebd38f6d"))).thenReturn(20);

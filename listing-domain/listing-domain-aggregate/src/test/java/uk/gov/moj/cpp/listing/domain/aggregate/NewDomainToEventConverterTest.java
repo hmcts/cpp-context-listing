@@ -14,7 +14,11 @@ import static uk.gov.moj.cpp.listing.domain.CourtApplication.courtApplication;
 import static uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.PERSON;
 import static uk.gov.moj.cpp.listing.domain.aggregate.NewDomainToEventConverter.buildCourtApplications;
 import static uk.gov.moj.cpp.listing.domain.aggregate.NewDomainToEventConverter.convertHearingDaysDomainToEvent;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
+import uk.gov.justice.listing.events.NewBaseDefendant;
 import uk.gov.moj.cpp.listing.domain.Address;
 import uk.gov.moj.cpp.listing.domain.HearingDay;
 import uk.gov.moj.cpp.listing.domain.CivilOffence;
@@ -27,6 +31,8 @@ import uk.gov.moj.cpp.listing.domain.Offence;
 import uk.gov.moj.cpp.listing.domain.ReportingRestriction;
 import uk.gov.moj.cpp.listing.domain.SeedingHearing;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
+import uk.gov.justice.listing.events.Defendant;
+import uk.gov.justice.listing.events.NewBaseDefendant;
 
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -188,6 +194,7 @@ public class NewDomainToEventConverterTest {
         assertThat(committingCourt.getCourtHouseCode(), is(courtHouseCode));
         assertThat(committingCourt.getCourtHouseName(), is(courtHouseName));
         assertThat(committingCourt.getCourtHouseShortName(), is(courtHouseShortName));
+        // justice listing events CommittingCourt does not expose courtHouseType on the current API
 
         final uk.gov.justice.listing.events.StatementOfOffence statementOfOffence = eventOffence.getStatementOfOffence();
         assertThat(statementOfOffence.getWelshLegislation(), is(welshLegislation));
@@ -336,6 +343,109 @@ public class NewDomainToEventConverterTest {
         assertThat(eventHearingDays.get(0).getIsDraft(), is((Boolean) null));
     }
 
+    @Test
+    public void existingIsYouthTrue_newIsNull_retainsTrue() {
+        final UUID defendantId = randomUUID();
+        final UUID masterDefendantId = randomUUID();
+        final Defendant existing = buildExistingDefendant(defendantId, "OldFirst", Boolean.TRUE, masterDefendantId);
+        final NewBaseDefendant update = buildNewBaseDefendant(defendantId, null, null, null);
+
+        final Defendant result = NewDomainToEventConverter.updateEventDefendant(update, existing);
+
+        assertNotNull(result);
+        assertTrue("isYouth should remain true when existing true and incoming null", Boolean.TRUE.equals(result.getIsYouth()));
+        assertEquals("First name should be preserved", "OldFirst", result.getFirstName());
+        assertEquals("Master id preserved", masterDefendantId, result.getMasterDefendantId());
+    }
+
+    @Test
+    public void existingIsYouthFalse_newIsTrue_becomesTrue() {
+        final UUID defendantId = randomUUID();
+        final Defendant existing = buildExistingDefendant(defendantId, "OldFirst", Boolean.FALSE, null);
+        final NewBaseDefendant update = buildNewBaseDefendant(defendantId, null, Boolean.TRUE, null);
+
+        final Defendant result = NewDomainToEventConverter.updateEventDefendant(update, existing);
+
+        assertNotNull(result);
+        assertTrue("isYouth should become true when incoming true", Boolean.TRUE.equals(result.getIsYouth()));
+    }
+
+    @Test
+    public void existingIsYouthTrue_newIsFalse_retainsTrue() {
+        final UUID defendantId = randomUUID();
+        final Defendant existing = buildExistingDefendant(defendantId, "OldFirst", Boolean.TRUE, null);
+        final NewBaseDefendant update = buildNewBaseDefendant(defendantId, null, Boolean.FALSE, null);
+
+        final Defendant result = NewDomainToEventConverter.updateEventDefendant(update, existing);
+
+        assertNotNull(result);
+        assertTrue("isYouth should remain true even if incoming is false", Boolean.TRUE.equals(result.getIsYouth()));
+    }
+
+    @Test
+    public void existingIsYouthFalse_newIsNull_remainsFalse() {
+        final UUID defendantId = randomUUID();
+        final Defendant existing = buildExistingDefendant(defendantId, "OldFirst", Boolean.FALSE, null);
+        final NewBaseDefendant update = buildNewBaseDefendant(defendantId, null, null, null);
+
+        final Defendant result = NewDomainToEventConverter.updateEventDefendant(update, existing);
+
+        assertNotNull(result);
+        assertEquals("isYouth remains false when no incoming value", Boolean.FALSE, result.getIsYouth());
+    }
+
+    @Test
+    public void firstName_updateWhenProvided_or_preserveWhenNull() {
+        final UUID defendantId = randomUUID();
+
+        final Defendant existing = buildExistingDefendant(defendantId, "ExistingFirst", Boolean.FALSE, null);
+
+        // incoming with null firstName -> preserve existing
+        final NewBaseDefendant updateNull = buildNewBaseDefendant(defendantId, null, null, null);
+        final Defendant resultPreserve = NewDomainToEventConverter.updateEventDefendant(updateNull, existing);
+        assertEquals("Existing first name preserved when incoming null", "ExistingFirst", resultPreserve.getFirstName());
+
+        // incoming with new firstName -> update to new
+        final NewBaseDefendant updateNew = buildNewBaseDefendant(defendantId, "NewFirst", null, null);
+        final Defendant resultUpdated = NewDomainToEventConverter.updateEventDefendant(updateNew, existing);
+        assertEquals("First name updated when incoming non-null", "NewFirst", resultUpdated.getFirstName());
+    }
+
+    @Test
+    public void masterDefendantId_updatesWhenProvided_or_preserveWhenNull() {
+        final UUID defendantId = randomUUID();
+        final UUID masterDefendantId = randomUUID();
+        final UUID masterDefendantId1 = randomUUID();
+        final Defendant existing = buildExistingDefendant(defendantId, "Name", Boolean.FALSE, masterDefendantId);
+
+        // incoming sets null master id -> preserve existing
+        final NewBaseDefendant updateNull = buildNewBaseDefendant(defendantId, null, null, null);
+        final Defendant preserved = NewDomainToEventConverter.updateEventDefendant(updateNull, existing);
+        assertEquals("Master id preserved when incoming null", masterDefendantId, preserved.getMasterDefendantId());
+
+        // incoming provides new master id -> update
+        final NewBaseDefendant updateNew = buildNewBaseDefendant(defendantId, null, null, masterDefendantId1);
+        final Defendant updated = NewDomainToEventConverter.updateEventDefendant(updateNew, existing);
+        assertEquals("Master id updated when incoming provided", masterDefendantId1, updated.getMasterDefendantId());
+    }
+
+    @Test
+    public void combination_existingTrue_and_incomingChanges_retainsIsYouthTrue_and_updatesOtherFields() {
+        final UUID defendantId = randomUUID();
+        final UUID masterDefendantId = randomUUID();
+        final Defendant existing = buildExistingDefendant(defendantId, "ExistFirst", Boolean.TRUE, masterDefendantId);
+        final NewBaseDefendant update = buildNewBaseDefendant(defendantId, "UpdatedFirst", Boolean.FALSE, null);
+
+        final Defendant result = NewDomainToEventConverter.updateEventDefendant(update, existing);
+
+        // isYouth should still be true (retained once true)
+        assertTrue("isYouth retained true", Boolean.TRUE.equals(result.getIsYouth()));
+        // first name should be updated
+        assertEquals("firstName updated", "UpdatedFirst", result.getFirstName());
+        // master id should remain (incoming null -> preserve)
+        assertEquals("master id preserved", masterDefendantId, result.getMasterDefendantId());
+    }
+
     private CourtApplication createCourtApplication() {
         return courtApplication()
                 .withApplicationParticulars(of(STRING.next()))
@@ -392,4 +502,31 @@ public class NewDomainToEventConverterTest {
         assertThat(addressBuilt.getPostcode(), is(notNullValue()));
         assertThat(addressBuilt.getPostcode(), is(address.getPostcode().get()));
     }
+
+    // Helper: build a NewBaseDefendant (incoming update) with fields we care about
+    private NewBaseDefendant buildNewBaseDefendant(final UUID id,
+                                                   final String firstName,
+                                                   final Boolean isYouth,
+                                                   final UUID masterDefendantId) {
+        return NewBaseDefendant.newBaseDefendant()
+                .withId(id)
+                .withFirstName(firstName)
+                .withMasterDefendantId(masterDefendantId)
+                .withIsYouth(isYouth != null ? isYouth : null)
+                .build();
+    }
+
+    // Helper: build an event Defendant with fields we care about
+    private Defendant buildExistingDefendant(final UUID id,
+                                             final String firstName,
+                                             final Boolean isYouth,
+                                             final UUID masterDefendantId) {
+        return Defendant.defendant()
+                .withId(id)
+                .withFirstName(firstName)
+                .withMasterDefendantId(masterDefendantId)
+                .withIsYouth(isYouth != null ? isYouth : null)
+                .build();
+    }
+
 }
