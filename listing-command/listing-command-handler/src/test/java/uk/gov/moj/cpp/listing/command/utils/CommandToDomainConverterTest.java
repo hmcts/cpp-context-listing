@@ -8,8 +8,14 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter.REFERRAL_REASON_FOR_DISQUALIFICATION;
+import static uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter.extractStartDate;
+import static uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter.getStartDateTime;
+import static uk.gov.moj.cpp.listing.domain.CourtHouseType.CROWN;
+import static uk.gov.moj.cpp.listing.domain.CourtHouseType.MAGISTRATES;
 
+import uk.gov.justice.core.courts.CommittingCourt;
 import uk.gov.justice.core.courts.DefendantListingNeeds;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
@@ -452,5 +458,113 @@ class CommandToDomainConverterTest {
 
         //then
         assertThat(actual.getIsPossibleDisqualification().isPresent(), is(false));
+    }
+
+    @Test
+    void shouldMapCommittingCourtMagistratesJurisdictionToDomainCourtHouseType() {
+        final UUID offenceId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final uk.gov.justice.core.courts.Offence commandOffence = uk.gov.justice.core.courts.Offence.offence()
+                .withId(offenceId)
+                .withOffenceCode("OC1")
+                .withWording("wording")
+                .withStartDate("2018-01-01")
+                .withOrderIndex(1)
+                .withCount(1)
+                .withOffenceTitle("title")
+                .withCommittingCourt(CommittingCourt.committingCourt()
+                        .withCourtCentreId(courtCentreId)
+                        .withCourtHouseName("Test Magistrates")
+                        .withCourtHouseCode("430")
+                        .withCourtHouseShortName("430")
+                        .withCourtHouseType(JurisdictionType.MAGISTRATES)
+                        .build())
+                .build();
+
+        final Offence domainOffence = commandToDomainConverter.buildOffence(commandOffence, Collections.emptyList());
+
+        assertThat(domainOffence.getCommittingCourt().isPresent(), is(true));
+        assertThat(domainOffence.getCommittingCourt().get().getCourtCentreId(), is(courtCentreId));
+        assertThat(domainOffence.getCommittingCourt().get().getCourtHouseName(), is("Test Magistrates"));
+        assertThat(domainOffence.getCommittingCourt().get().getCourtHouseCode().get(), is("430"));
+        assertThat(domainOffence.getCommittingCourt().get().getCourtHouseType(), is(MAGISTRATES));
+    }
+
+    @Test
+    void shouldMapCommittingCourtCrownJurisdictionToDomainCourtHouseType() {
+        final UUID offenceId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final uk.gov.justice.core.courts.Offence commandOffence = uk.gov.justice.core.courts.Offence.offence()
+                .withId(offenceId)
+                .withOffenceCode("OC1")
+                .withWording("wording")
+                .withStartDate("2018-01-01")
+                .withOrderIndex(1)
+                .withCount(1)
+                .withOffenceTitle("title")
+                .withCommittingCourt(CommittingCourt.committingCourt()
+                        .withCourtCentreId(courtCentreId)
+                        .withCourtHouseName("Test Crown")
+                        .withCourtHouseCode("001")
+                        .withCourtHouseShortName("001")
+                        .withCourtHouseType(JurisdictionType.CROWN)
+                        .build())
+                .build();
+
+        final Offence domainOffence = commandToDomainConverter.buildOffence(commandOffence, Collections.emptyList());
+
+        assertThat(domainOffence.getCommittingCourt().get().getCourtHouseType(), is(CROWN));
+    }
+
+    @Test
+    void shouldMapCommittingCourtWithoutJurisdictionLeavingDomainCourtHouseTypeUnset() {
+        final UUID offenceId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final uk.gov.justice.core.courts.Offence commandOffence = uk.gov.justice.core.courts.Offence.offence()
+                .withId(offenceId)
+                .withOffenceCode("OC1")
+                .withWording("wording")
+                .withStartDate("2018-01-01")
+                .withOrderIndex(1)
+                .withCount(1)
+                .withOffenceTitle("title")
+                .withCommittingCourt(CommittingCourt.committingCourt()
+                        .withCourtCentreId(courtCentreId)
+                        .withCourtHouseName("Unspecified type court")
+                        .withCourtHouseCode("999")
+                        .withCourtHouseShortName("999")
+                        .build())
+                .build();
+
+        final Offence domainOffence = commandToDomainConverter.buildOffence(commandOffence, Collections.emptyList());
+
+        assertThat(domainOffence.getCommittingCourt().isPresent(), is(true));
+        assertThat(domainOffence.getCommittingCourt().get().getCourtHouseName(), is("Unspecified type court"));
+        assertThat(domainOffence.getCommittingCourt().get().getCourtHouseType(), is(nullValue()));
+    }
+
+    @Test
+    void shouldMapOffenceWithoutCommittingCourtToDomainWithoutCommittingCourt() {
+        final UUID offenceId = UUID.randomUUID();
+        final uk.gov.justice.core.courts.Offence commandOffence = uk.gov.justice.core.courts.Offence.offence()
+                .withId(offenceId)
+                .withOffenceCode("OC1")
+                .withWording("wording")
+                .withStartDate("2018-01-01")
+                .withOrderIndex(1)
+                .withCount(1)
+                .withOffenceTitle("title")
+                .build();
+
+        final Offence domainOffence = commandToDomainConverter.buildOffence(commandOffence, Collections.emptyList());
+
+        assertThat(domainOffence.getCommittingCourt().isPresent(), is(false));
+    }
+
+    @Test
+    void extractStartDateShouldMatchGetStartDateTimeWhenListedStartPresent() {
+        final HearingListingNeeds commandHearing = commandBuilder.buildHearingWithListedStartDateTime();
+
+        assertThat(extractStartDate(commandHearing), is(getStartDateTime(commandHearing)));
     }
 }

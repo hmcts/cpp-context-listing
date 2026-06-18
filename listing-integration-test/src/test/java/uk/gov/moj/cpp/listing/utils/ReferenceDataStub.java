@@ -36,6 +36,8 @@ public class ReferenceDataStub {
 
     private static final String REFERENCE_DATA_COURT_MAPPINGS_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/cp-xhibit-court-mappings";
     private static final String REFERENCE_DATA_COURT_MAPPINGS_MEDIA_TYPE = "application/vnd.referencedata.query.cp-xhibit-court-mappings+json";
+    private static final String REFERENCE_DATA_CP_XHIBIT_MAGS_COURT_MAPPING_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/cp-xhibit-mags-court-mapping";
+    private static final String REFERENCE_DATA_CP_XHIBIT_MAGS_COURT_MAPPING_MEDIA_TYPE = "application/vnd.referencedata.query.cp-xhibit-mags-court-mapping+json";
     private static final String REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/cp-xhibit-courtroom-mappings";
     private static final String REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_MEDIA_TYPE = "application/vnd.referencedata.query.cp-xhibit-courtroom-mappings+json";
     private static final String REFERENCE_DATA_COURT_CENTRE_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/courtrooms/.*";
@@ -123,6 +125,19 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_COURT_MAPPINGS_MEDIA_TYPE)
                         .withBody(payload)));
+    }
+
+    /**
+     * Stub {@code referencedata.query.cp-xhibit-mags-court-mapping} for a specific {@code oucode} (WireMock matches query param).
+     */
+    public static void stubGetReferenceDataCpXhibitMagsCourtMappingForOucode(final String oucode, final String responseBody) {
+        stubPingForReferenceDataService();
+        stubFor(get(urlPathMatching(REFERENCE_DATA_CP_XHIBIT_MAGS_COURT_MAPPING_QUERY_URL))
+                .withQueryParam("oucode", equalTo(oucode))
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader("Content-Type", REFERENCE_DATA_CP_XHIBIT_MAGS_COURT_MAPPING_MEDIA_TYPE)
+                        .withBody(responseBody)));
     }
 
     public static void stubGetReferenceDataXhibitCourtRoomMappings(final UUID courtRoomUUID) {

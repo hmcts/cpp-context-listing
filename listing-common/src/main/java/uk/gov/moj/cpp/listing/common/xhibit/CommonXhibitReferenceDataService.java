@@ -31,14 +31,16 @@ public class CommonXhibitReferenceDataService {
 
     private static final String UNMAPPED_COURT_ROOM_NAME = "Court -99";
     private static final String CREST_COURT_SITE_CODE = "crestCourtSiteCode";
-    private static final String DEFAULT_CREST_COURT_SITE_CODE = "A";
     private static final String CREST_COURT_SITE_ID = "crestCourtSiteId";
+    private static final String MAGISTRATES_COURT_TYPE = "MAGISTRATES_COURT";
 
     private final ConcurrentMap<String, List<JsonObject>> crestCourtSitesCache = new ConcurrentHashMap<>();
 
 
     private final XhibitReferenceDataValidator xhibitReferenceDataValidator = new XhibitReferenceDataValidator();
     private static final String COURT_DETAILS_NOT_FOUND = "Cannot find court details with courtCentre %s";
+    private static final String COURT_MAPPING_NOT_FOUND_FOR_TYPE =
+            "Cannot find court mapping for courtCentre %s with court type %s";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonXhibitReferenceDataService.class);
 
@@ -90,16 +92,47 @@ public class CommonXhibitReferenceDataService {
         return createCrownCourtLocation(court);
     }
 
-    public CourtLocation getMagsCourtDetails(final UUID courtCentreId) {
+    /**
+     * Xhibit court location for a committing court (magistrates or crown). Resolution uses
+     * {@link ReferenceDataCache#getCpXhibitCourtMappingsMapCache(UUID)}: mags
+     * ({@code referencedata.query.cp-xhibit-mags-court-mapping}, including empty {@code {}}), else
+     * {@code referencedata.query.cp-xhibit-court-mappings}.
+     * <p>
+     * When {@code courtHouseType} is set (e.g. from offence committing court), the mapping with that
+     * {@link CourtMapping#getCourtType()} is used; otherwise the first mapping from the cache is used.
+     */
+    public CourtLocation getCriminalCourtDetails(final UUID courtCentreId, final String courtHouseType) {
 
-        final CourtMapping court = referenceDataCache.getMagsCourtMappingsMapCache(courtCentreId)
-                .orElseThrow(() -> new InvalidReferenceDataException(format(COURT_DETAILS_NOT_FOUND, courtCentreId)))
-                .stream()
-                .findFirst()
+        final List<CourtMapping> mappings = referenceDataCache.getCpXhibitCourtMappingsMapCache(courtCentreId)
                 .orElseThrow(() -> new InvalidReferenceDataException(format(COURT_DETAILS_NOT_FOUND, courtCentreId)));
+        if (mappings.isEmpty()) {
+            throw new InvalidReferenceDataException(format(COURT_DETAILS_NOT_FOUND, courtCentreId));
+        }
 
-        return createMagsCourtLocation(court);
+        final CourtMapping court;
+        if (courtHouseType != null && !courtHouseType.isBlank()) {
+            court = mappings.stream()
+                    .filter(m -> courtHouseType.equals(m.getCourtType()))
+                    .findFirst()
+                    .orElseThrow(() -> new InvalidReferenceDataException(
+                            format(COURT_MAPPING_NOT_FOUND_FOR_TYPE, courtCentreId, courtHouseType)));
+        } else {
+            court = mappings.stream()
+                    .findFirst()
+                    .orElseThrow(() -> new InvalidReferenceDataException(format(COURT_DETAILS_NOT_FOUND, courtCentreId)));
+        }
+
+        return createCourtLocationFromCourtMapping(court);
     }
+
+    /**
+     * Same as {@link #getCriminalCourtDetails(UUID, String)} with no {@code courtHouseType} (first combined mapping).
+     */
+    public CourtLocation getCriminalCourtDetails(final UUID courtCentreId) {
+        return getCriminalCourtDetails(courtCentreId, null);
+    }
+
+
 
     public List<JsonObject> getCrestCourtSitesForCrownCourtCentre(UUID courtCentreId) {
         return crestCourtSitesCache.computeIfAbsent(courtCentreId.toString(), id -> fetchCrestCourtSitesFromDatabase(courtCentreId));
@@ -213,5 +246,12 @@ public class CommonXhibitReferenceDataService {
                 courtMapping.getCrestCourtSiteName(),
                 courtMapping.getCrestCourtSiteCode(),
                 courtMapping.getCourtType());
+    }
+
+    private CourtLocation createCourtLocationFromCourtMapping(final CourtMapping courtMapping) {
+        if (MAGISTRATES_COURT_TYPE.equals(courtMapping.getCourtType())) {
+            return createMagsCourtLocation(courtMapping);
+        }
+        return createCrownCourtLocation(courtMapping);
     }
 }

@@ -22,6 +22,7 @@ import java.util.UUID;
 
 import javax.json.JsonObject;
 
+import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

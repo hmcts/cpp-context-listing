@@ -109,6 +109,9 @@ public class CourtServicesMapper {
     private static final String DEFENDANTS = "defendants";
     private static final String COMMA = ", ";
     public static final String SUBJECT = "subject";
+    public static final String COURT_HOUSE_TYPE = "courtHouseType";
+    private static final String MAGISTRATES_COURT_TYPE = "MAGISTRATES_COURT";
+
 
     private final RequestedNameMapper judicialRequestedName = new RequestedNameMapper();
 
@@ -382,7 +385,21 @@ public class CourtServicesMapper {
 
             final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
 
-            final String crestCourtId = threadLocalCommonXhibitReferenceDataService.get().getMagsCourtDetails(fromString(committingCourt.getString("courtCentreId"))).getCourtSiteCode();
+            final String courtHouseType = committingCourt.containsKey(COURT_HOUSE_TYPE) && !committingCourt.isNull(COURT_HOUSE_TYPE)
+                    ? committingCourt.getString(COURT_HOUSE_TYPE)
+                    : null;
+            // DailyList.xsd CourtHouseCodeType is [0-9]{3,4} — use CREST site id, not the single-letter courtSiteCode
+            final CourtLocation courtLocation = threadLocalCommonXhibitReferenceDataService.get()
+                    .getCriminalCourtDetails(fromString(committingCourt.getString("courtCentreId")), courtHouseType);
+
+             String crestCourtId;
+
+            if (courtLocation.getCourtType().equalsIgnoreCase(MAGISTRATES_COURT_TYPE)) {
+                 crestCourtId = courtLocation.getCourtSiteCode();
+
+            } else {
+                crestCourtId = courtLocation.getCrestCourtId();
+            }
 
             courtHouseStructure.setCourtHouseType(CourtType.MAGISTRATES_COURT);
             courtHouseStructure.setCourtHouseCode(generateCourtHouseCode(crestCourtId));
