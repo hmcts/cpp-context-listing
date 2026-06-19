@@ -3,7 +3,7 @@
     <parent>
         <artifactId>listing-parent</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <version>17.103.188-cct-1981-SNAPSHOT</version>
+        <version>17.103.189-cct-1981-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
