@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/commands/listing.command.handler.delete-listing-note.json",
+  "type": "object",
+  "properties": {
+    "noteId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "noteId"
+  ]
+}

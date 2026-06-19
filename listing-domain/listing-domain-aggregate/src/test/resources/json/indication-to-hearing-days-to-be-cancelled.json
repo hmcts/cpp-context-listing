@@ -1,0 +1,29 @@
+{
+  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+  "hearingDays": [
+    {
+      "durationMinutes": 1,
+      "endTime": "2020-09-14T09:01:00.000Z",
+      "hearingDate": "2020-09-14",
+      "isCancelled": false,
+      "sequence": 0,
+      "startTime": "2020-09-14T09:00:00.000Z"
+    },
+    {
+      "durationMinutes": 1,
+      "endTime": "2020-09-15T11:01:00.000Z",
+      "hearingDate": "2020-09-15",
+      "isCancelled": true,
+      "sequence": 0,
+      "startTime": "2020-09-15T11:00:00.000Z"
+    },
+    {
+      "durationMinutes": 1,
+      "endTime": "2020-09-16T13:01:00.000Z",
+      "hearingDate": "2020-09-16",
+      "isCancelled": true,
+      "sequence": 0,
+      "startTime": "2020-09-16T13:00:00.000Z"
+    }
+  ]
+}

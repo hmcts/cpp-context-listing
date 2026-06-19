@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/judicialRole.json",
+  "type": "object",
+  "properties": {
+    "judicialId": {
+      "description": "The reference data identify for the judicial role.",
+      "$ref": "listing-definitions.json#/definitions/uuid"
+    },
+    "judicialRoleType": {
+      "description": "The classification of the judicial role",
+      "$ref": "http://justice.gov.uk/listing/events/judicialRoleType.json"
+    },
+    "isDeputy": {
+      "description": "Indicates if the judiciary acts as a deputy.  This is applicable to circuit and district judges",
+      "type": "boolean"
+    },
+    "isBenchChairman": {
+      "description": "Indicates if the magistrate acts as a bench chairman.  This is only applicable to magistrate roles",
+      "type": "boolean"
+    },
+    "userId": {
+      "description": "The reference data identify for the user id.",
+      "$ref": "listing-definitions.json#/definitions/uuid"
+    }
+  },
+  "required": [
+    "judicialId",
+    "judicialRoleType"
+  ],
+  "additionalProperties": false
+}

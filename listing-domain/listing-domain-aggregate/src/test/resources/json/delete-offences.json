@@ -1,0 +1,14 @@
+{
+  "caseId": "31bf5d91-f90e-4117-a018-d1290e107692",
+  "defendantId": "0baecac5-222b-402d-9047-84803679edac",
+  "offences": [
+    {
+      "id": "0baecac5-222b-402d-9047-84803679edad",
+      "defendantId": "0baecac5-222b-402d-9047-84803679edac"
+    },
+    {
+      "id": "d5e03eb8-3274-457c-9db3-e67638c0e8b0",
+      "defendantId": "0baecac5-222b-402d-9047-84803679edac"
+    }
+  ]
+}

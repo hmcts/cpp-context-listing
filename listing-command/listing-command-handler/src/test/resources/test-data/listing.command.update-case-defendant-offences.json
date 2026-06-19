@@ -1,0 +1,145 @@
+{
+  "modifiedDate": "2018-03-01",
+  "updatedOffences": [
+    {
+      "prosecutionCaseId": "CASE_ID",
+      "defendantId": "DEFENDANT_ID1",
+      "offences": [
+        {
+          "id": "UPDATED_OFFENCE_ID1",
+          "offenceCode": "H8189",
+          "wording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, John Smith",
+          "startDate": "2010-08-01",
+          "endDate": "2011-08-01",
+          "count": 2,
+          "orderIndex": 0,
+          "convictionDate": "2017-08-01",
+          "offenceTitle": "Wounding with intent",
+          "offenceLegislation": "Welsh legislation",
+          "offenceTitleWelsh": "Wounding with intent in Welsh",
+          "offenceLegislationWelsh": "legislation"
+        },
+        {
+          "id": "UPDATED_OFFENCE_ID2",
+          "offenceCode": "H8189",
+          "wording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, Fred Smith",
+          "startDate": "2010-08-01",
+          "endDate": "2011-08-01",
+          "count": 2,
+          "orderIndex": 1,
+          "convictionDate": "2017-08-01",
+          "offenceTitle": "Wounding with intent",
+          "offenceLegislation": "Welsh legislation",
+          "offenceTitleWelsh": "Wounding with intent in Welsh",
+          "offenceLegislationWelsh": "legislation"
+        }
+      ]
+    },
+    {
+      "defendantId": "DEFENDANT_ID2",
+      "prosecutionCaseId": "CASE_ID",
+      "offences": [
+        {
+          "id": "UPDATED_OFFENCE_ID2",
+          "offenceCode": "H8189",
+          "wording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, Jack Smith",
+          "startDate": "2010-08-01",
+          "endDate": "2011-08-01",
+          "count": 2,
+          "orderIndex": 0,
+          "convictionDate": "2017-08-01",
+          "offenceTitle": "Wounding with intent",
+          "offenceLegislation": "Welsh legislation",
+          "offenceTitleWelsh": "Wounding with intent in Welsh",
+          "offenceLegislationWelsh": "legislation"
+        },
+        {
+          "id": "UPDATED_OFFENCE_ID3",
+          "offenceCode": "H8189",
+          "wording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, Jack Smith",
+          "startDate": "2010-08-01",
+          "endDate": "2011-08-01",
+          "count": 2,
+          "orderIndex": 1,
+          "convictionDate": "2017-08-01",
+          "offenceTitle": "Wounding with intent",
+          "offenceLegislation": "Welsh legislation",
+          "offenceTitleWelsh": "Wounding with intent in Welsh",
+          "offenceLegislationWelsh": "legislation"
+        }
+      ]
+    }
+  ],
+  "deletedOffences": [
+    {
+      "prosecutionCaseId": "CASE_ID",
+      "defendantId": "DEFENDANT_ID1",
+      "offences": [
+        "DELETED_OFFENCE_ID1", "DELETED_OFFENCE_ID2"
+      ]
+    },
+    {
+      "prosecutionCaseId": "CASE_ID",
+      "defendantId": "DEFENDANT_ID2",
+      "offences": [
+        "DELETED_OFFENCE_ID3", "DELETED_OFFENCE_ID4"
+      ]
+    }
+  ],
+  "addedOffences": [
+    {
+      "defendantId": "DEFENDANT_ID1",
+      "prosecutionCaseId": "CASE_ID",
+      "offences": [
+        {
+          "id": "ADDED_OFFENCE_ID1",
+          "offenceCode": "H8189",
+          "wording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, Billy Smith",
+          "startDate": "2010-08-01",
+          "endDate": "2011-08-01",
+          "count": 2,
+          "orderIndex": 0,
+          "convictionDate": "2017-08-01",
+          "offenceTitle": "Wounding with intent",
+          "offenceLegislation": "Welsh legislation",
+          "offenceTitleWelsh": "Wounding with intent in Welsh",
+          "offenceLegislationWelsh": "legislation"
+        }
+      ]
+    },
+    {
+      "defendantId": "DEFENDANT_ID2",
+      "prosecutionCaseId": "CASE_ID",
+      "offences": [
+        {
+          "id": "ADDED_OFFENCE_ID2",
+          "offenceCode": "H8189",
+          "wording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, Jack Smith",
+          "startDate": "2010-08-01",
+          "endDate": "2011-08-01",
+          "count": 2,
+          "orderIndex": 0,
+          "convictionDate": "2017-08-01",
+          "offenceTitle": "Wounding with intent",
+          "offenceLegislation": "Welsh legislation",
+          "offenceTitleWelsh": "Wounding with intent in Welsh",
+          "offenceLegislationWelsh": "legislation"
+        },
+        {
+          "id": "ADDED_OFFENCE_ID3",
+          "offenceCode": "H8189",
+          "wording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, Jack Smith",
+          "startDate": "2010-08-01",
+          "endDate": "2011-08-01",
+          "count": 2,
+          "orderIndex": 1,
+          "convictionDate": "2017-08-01",
+          "offenceTitle": "Wounding with intent",
+          "offenceLegislation": "Welsh legislation",
+          "offenceTitleWelsh": "Wounding with intent in Welsh",
+          "offenceLegislationWelsh": "legislation"
+        }
+      ]
+    }
+  ]
+}

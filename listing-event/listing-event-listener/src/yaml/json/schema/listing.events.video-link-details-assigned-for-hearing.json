@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.video-link-details-assigned-for-hearing.json",
+  "type": "object",
+  "properties": {
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "hasVideoLink": {
+      "type": "boolean"
+    },
+    "videoLinkDetails": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "hearingId",
+    "hasVideoLink"
+  ],
+  "additionalProperties": false
+}

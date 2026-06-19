@@ -1,0 +1,114 @@
+{
+    "hearings": [
+        {
+            "courtCentre": {
+                "id": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+                "name": "Croydon Crown Court"
+            },
+            "defendantListingNeeds": [
+                {
+                    "defendantId": "43642b64-522d-4835-b976-1a3625f20f8c",
+                    "isYouth": false,
+                    "prosecutionCaseId": "47869eb8-9aea-4d66-9237-43cc0334fb3a"
+                }
+            ],
+            "estimatedMinutes": 720,
+            "id": "6a571bd4-cac5-42c1-a234-c7a581ea5bd7",
+            "isGroupProceedings": false,
+            "jurisdictionType": "CROWN",
+            "numberOfGroupCases": 1,
+            "prosecutionCases": [
+                {
+                    "classOfCase": "Class 1",
+                    "defendants": [
+                        {
+                            "courtProceedingsInitiated": "2026-02-06T09:49:07.188Z",
+                            "id": "43642b64-522d-4835-b976-1a3625f20f8c",
+                            "masterDefendantId": "43642b64-522d-4835-b976-1a3625f20f8c",
+                            "offences": [
+                                {
+                                    "committingCourt": {
+                                        "courtCentreId": "31b3d313-7a7c-4598-bb4b-c1bff9b00e26",
+                                        "courtHouseCode": "EF",
+                                        "courtHouseName": "Croydon Magistrates' Court",
+                                        "courtHouseShortName": "Croydon Magistrates' Court",
+                                        "courtHouseType": "MAGISTRATES"
+                                    },
+                                    "count": 0,
+                                    "endorsableFlag": false,
+                                    "id": "52fbe9be-247f-4f31-93e2-30fa9efae1da",
+                                    "maxPenalty": "Indictable only",
+                                    "modeOfTrial": "Indictable",
+                                    "offenceCode": "TH68023",
+                                    "offenceDateCode": 1,
+                                    "offenceDefinitionId": "6795cbe7-3e0f-3f6a-b59d-29a87a9d6f8d",
+                                    "offenceLegislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                                    "offenceLegislationWelsh": "Yn groes i adran 8(1) Deddf Dwyn 1968.",
+                                    "offenceTitle": "Robbery",
+                                    "offenceTitleWelsh": "Ysbeilio/Lladrad",
+                                    "orderIndex": 1,
+                                    "startDate": "2026-01-05",
+                                    "wording": "On or in 05 Jan 2026 at london robbed xyz of abc  of a value unknown ."
+                                }
+                            ],
+                            "personDefendant": {
+                                "arrestSummonsNumber": "0800PP0100000000001P",
+                                "bailStatus": {
+                                    "code": "A",
+                                    "description": "Not applicable",
+                                    "id": "86009c70-759d-3308-8de4-194886ff9a77"
+                                },
+                                "personDetails": {
+                                    "address": {
+                                        "address1": "No fixed abode"
+                                    },
+                                    "documentationLanguageNeeds": "ENGLISH",
+                                    "firstName": "Robert",
+                                    "gender": "MALE",
+                                    "hearingLanguageNeeds": "ENGLISH",
+                                    "lastName": "Cook",
+                                    "nationalityCode": "ZWE",
+                                    "nationalityDescription": "Zimbabwean",
+                                    "nationalityId": "8b32c862-0254-48bf-aa95-73c4dfbb8f1e",
+                                    "title": "Mr"
+                                }
+                            },
+                            "prosecutionCaseId": "47869eb8-9aea-4d66-9237-43cc0334fb3a"
+                        }
+                    ],
+                    "id": "47869eb8-9aea-4d66-9237-43cc0334fb3a",
+                    "initiationCode": "O",
+                    "isCivil": false,
+                    "isRetrial": false,
+                    "originatingOrganisation": "0480000",
+                    "prosecutionCaseIdentifier": {
+                        "address": {
+                            "address1": "Bishopsgate police station",
+                            "address2": "182, Bishopsgate",
+                            "address5": "London",
+                            "postcode": "EC2M 4NP"
+                        },
+                        "contact": {
+                            "primaryEmail": "casebuilderscpsmemos@cityoflondon.police.uk"
+                        },
+                        "majorCreditorCode": "COLP",
+                        "prosecutionAuthorityCode": "CITYPF",
+                        "prosecutionAuthorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+                        "prosecutionAuthorityName": "City of London Police",
+                        "prosecutionAuthorityOUCode": "0480000",
+                        "caseURN": "95GD4157229"
+                    },
+                    "trialReceiptType": "Either way case"
+                }
+            ],
+            "type": {
+                "description": "Bail Variation Application",
+                "id": "3b5fdf13-7033-4ce0-857d-b7ea463da91d"
+            },
+            "weekCommencingDate": {
+                "duration": 1,
+                "startDate": "2026-02-23"
+            }
+        }
+    ]
+}

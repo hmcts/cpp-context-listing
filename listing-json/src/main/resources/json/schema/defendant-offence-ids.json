@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/defendant-offence-ids.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "offenceIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+      }
+    }
+  },
+  "required": [
+    "id",
+    "offenceIds"
+  ],
+  "additionalProperties":false
+}

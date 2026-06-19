@@ -1,0 +1,50 @@
+{
+  "_metadata": {
+    "name": "listing.events.hearing-days-changed-for-hearing"
+  },
+  "hearingDays": [
+    {
+      "hearingDate": "2018-06-01",
+      "startTime": "2018-06-01T10:00:00.000Z",
+      "endTime" : "2018-06-01T10:30:00.000Z",
+      "durationMinutes": 30,
+      "sequence" : 0
+    },
+    {
+      "hearingDate": "2018-06-02",
+      "startTime": "2018-06-02T10:00:00.000Z",
+      "endTime" : "2018-06-02T10:30:00.000Z",
+      "durationMinutes": 30,
+      "sequence" : 0
+    },
+    {
+      "hearingDate": "2018-06-04",
+      "startTime": "2018-06-04T10:30:00.000Z",
+      "endTime" : "2018-06-04T11:15:00.000Z",
+      "durationMinutes": 45,
+      "sequence" : 0
+    },
+    {
+      "hearingDate": "2018-06-05",
+      "startTime": "2018-06-05T10:00:00.000Z",
+      "endTime" : "2018-06-05T10:30:00.000Z",
+      "durationMinutes": 30,
+      "sequence" : 0
+    },
+    {
+      "hearingDate": "2018-06-06",
+      "startTime": "2018-06-06T10:00:00.000Z",
+      "endTime" : "2018-06-06T10:30:00.000Z",
+      "durationMinutes": 30,
+      "sequence" : 0
+    },
+    {
+      "hearingDate": "2018-06-07",
+      "startTime": "2018-06-07T10:00:00.000Z",
+      "endTime" : "2018-06-07T10:30:00.000Z",
+      "durationMinutes": 30,
+      "sequence" : 0
+    }
+  ],
+  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671"
+}

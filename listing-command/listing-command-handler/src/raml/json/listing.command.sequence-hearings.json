@@ -1,0 +1,30 @@
+{
+  "sequenceHearing" : [
+    {
+      "id":"a6156814-67b5-4942-8dd5-7253e87ec41a",
+      "sequenceHearingDays": [
+        {
+          "hearingDate":"2012-12-12",
+          "sequence":"1"
+        },
+        {
+          "hearingDate":"2012-12-13",
+          "sequence":"2"
+        }
+      ]
+    },
+    {
+      "id":"b7156814-67b5-4942-8dd5-7253e87ec42b",
+      "sequenceHearingDays": [
+        {
+          "hearingDate":"2012-13-13",
+          "sequence":"1"
+        },
+        {
+          "hearingDate":"2012-13-15",
+          "sequence":"2"
+        }
+      ]
+    }
+  ]
+}

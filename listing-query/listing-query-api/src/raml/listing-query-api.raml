@@ -1,0 +1,685 @@
+#%RAML 0.8
+title: Listing Query API
+baseUri: http://localhost:8080/listing-query-api/query/api/rest/listing
+protocols: [ HTTP, HTTPS ]
+
+/hearings:
+   get:
+      description: |
+        ...
+        (mapping):
+            responseType: application/vnd.listing.search.hearings+json
+            name: listing.search.hearings
+        ...
+      queryParameters:
+        allocated:
+          description: true for allocated hearings, false for unallocated hearings
+          type: boolean
+          required: true
+        courtCentreId:
+          description: reference data id for the court centre
+          type: string
+          required: false
+        courtRoomId:
+          description: reference data id for the court room
+          type: string
+          required: false
+        authorityId:
+          description: reference data id for the authority code
+          type: string
+          required: false
+        hearingTypeId:
+          description: reference data id for the hearing type
+          type: string
+          required: false
+        jurisdictionType:
+          description: the jurisdiction under which the hearing is being prosecuted, for example CROWN or MAGISTRATES
+          type: string
+          required: false
+        searchDate:
+          description: Search for hearings where the searchDate parameter is between the start and end date of the hearing.
+          type: date
+          required: true
+        startTime:
+          description: e.g. '10:30'. Search for hearings that have a start time greater than or equal to this startTime parameter.  Default is 00:00 (midnight) on the day of the searchDate
+          type: string
+          required: false
+        endTime:
+          description: e.g. '11:30'. Search for hearings that have a start time less than or equal to this endTime parameter.  Default is '23:59:59.999999999' on the day of the searchDate
+          type: string
+          required: false
+
+      responses:
+            200:
+                description: OK
+                body:
+                  application/vnd.listing.search.hearings+json:
+                    example:  !include json/listing.search.hearings.json
+                    schema:  !include  json/schema/listing.search.hearings.json
+
+/hearings/available-search:
+   get:
+      description: |
+        ...
+        (mapping):
+            responseType: application/vnd.listing.search.hearings+json
+            name: listing.available.search.hearings
+        ...
+      queryParameters:
+        hearingId:
+          description: hearing id
+          type: string
+          required: false
+        caseUrn:
+          description: Comma seperated specific case urns
+          type: string
+          required: false
+        searchCriteria:
+          description: comma seperated list of search criteria. Must be at least one/both of the following values CASE_IN_HEARING, MATCHED_DEFENDANTS
+          type: string
+          required: false
+        jurisdictionType:
+           description: it one of type of jurisdictionType i.e. CROWN, MAGISTRATES
+           type: string
+           required: false
+        matchedDefendantIds:
+           description: comma separated matched defendant id's
+           type: string
+           required: false
+        caseUrnForLinkedCases:
+           description: case urn used to search linked cases
+           type: string
+           required: false
+        returnAllHearings:
+           description: for true returns allocated and unallocated hearings
+           type: boolean
+           required: false
+      responses:
+            200:
+                description: OK
+                body:
+                  application/vnd.listing.search.hearings+json:
+                    example:  !include json/listing.search.hearings.json
+                    schema:  !include  json/schema/listing.search.hearings.json
+
+/hearings/allocated-and-unallocated:
+   get:
+      description: |
+        ...
+        (mapping):
+            responseType: application/vnd.listing.search.hearings+json
+            name: listing.allocated.and.unallocated.hearings
+        ...
+      queryParameters:
+        caseId:
+          description: case id
+          type: string
+          required: false
+        applicationId:
+          description: application id
+          type: string
+          required: false
+      responses:
+            200:
+                description: OK
+                body:
+                  application/vnd.listing.search.hearings+json:
+                    example:  !include json/listing.search.hearings.json
+                    schema:  !include  json/schema/listing.search.hearings.json
+
+/hearings/range-search:
+   get:
+      description: |
+        ...
+        (mapping):
+            responseType: application/vnd.listing.search.hearings+json
+            name: listing.range.search.hearings
+        (mapping):
+            responseType: application/vnd.listing.search.hearings.court.calendar+json
+            name: listing.range.search.hearings.court.calendar
+        ...
+      queryParameters:
+        allocated:
+          description: true for allocated hearings, false for unallocated hearings
+          type: boolean
+          required: true
+        courtCentreId:
+          description: reference data id for the court centre
+          type: string
+          required: false
+        ouCode:
+          description: Courthouse oucode, this is an alternative to the courtCentreId.  Used only for MAGs with ouCode and (courtSession or businessType) only. Otherwise, BAD_REQUEST.
+          type: string
+          required: false
+        courtRoomId:
+          description: reference data id for the court room
+          type: string
+          required: false
+        authorityId:
+          description: reference data id for the authority code
+          type: string
+          required: false
+        hearingTypeId:
+          description: reference data id for the hearng type
+          type: string
+          required: false
+        jurisdictionType:
+          description: the jurisdiction under which the hearing is being prosecuted, for example CROWN or MAGISTRATES
+          type: string
+          required: false
+        startDate:
+          description: If not provided then startdate is defaulted to '1900-01-01'.  (hearingStartDate between startDate and endDate) or (hearingEndDate between startDate and endDate) or (hearingStartDate <= startDate and hearingEndDate >= endDate)
+          type: date
+          required: false
+        endDate:
+          description: If not provided then endDate is defaulted to '9999-01-01'.  (hearingStartDate between startDate and endDate) or (hearingEndDate between startDate and endDate) or (hearingStartDate <= startDate and hearingEndDate >= endDate)
+          type: date
+          required: false
+        weekCommencingStartDate:
+          description: (hearingWeekCommencingStartDate between weekCommencingStartDate and weekCommencingEndDate) or (hearingWeekCommencingStartDate <= weekCommencingStartDate and hearingWeekCommencingEndDate >= weekCommencingEndDate)
+          type: date
+          required: false
+        weekCommencingEndDate:
+          description: (hearingWeekCommencingEndDate between weekCommencingStartDate and weekCommencingEndDate) or (hearingWeekCommencingStartDate <= weekCommencingStartDate and hearingWeekCommencingEndDate >= weekCommencingEndDate)
+          type: date
+          required: false
+        pageSize:
+          description: Number of records to be displayed per page
+          type: integer
+          required: false
+        useMaxPageSize:
+          description: WARNING use only if you know what you are doing. This is a flag to specify that we want to load all possible hearings from the backend during pagination. The listing.query.rangeSearch.maxPageSize is a JNDI variable that control the value. The default value is 4000.
+          type: boolean
+          required: false
+        pageNumber:
+          description: currentPageNumber details
+          type: integer
+          required: false
+        possibleDisqualification:
+          description: identifier if hearing has cases with the possible disqualification from driving flag
+          type: boolean
+          required: false
+        businessType:
+          description: businessType. Used only for MAGs with ouCode and (courtSession or businessType) only. Otherwise, BAD_REQUEST.
+          type: string
+          required: false
+        courtSession:
+          description: Any/AM/PM/AD.  Used only for MAGs with ouCode and (courtSession or businessType) only. Otherwise, BAD_REQUEST.
+          type: string
+          required: false
+        exactHearingStartDateTime:
+          description: Optional parameter to perform an exact match (equal) on hd.start_time. Must be in ISO date-time format in UTC i.e "2025-09-15T18:35:00.00Z". This is used by court calendar only and seconds/millisecs/nanos are stripped
+          type: string
+          required: false
+      responses:
+            200:
+                description: OK
+                body:
+                  application/vnd.listing.search.hearings+json:
+                    example:  !include json/listing.search.hearings.json
+                    schema:  !include  json/schema/listing.search.hearings.json
+                  application/vnd.listing.search.hearings.court.calendar+json:
+                    example: !include json/listing.search.hearings.json
+                    schema: !include  json/schema/listing.search.hearings.json
+
+/hearings/{id}:
+  uriParameters:
+    id:
+      description: The ID of the Hearing; must be a valid UUID
+      type: string
+  get:
+    description: |
+      ...
+      (mapping):
+          responseType: application/vnd.listing.search.hearing+json
+          name: listing.search.hearing
+      ...
+    responses:
+          200:
+              description: OK
+              body:
+                application/vnd.listing.search.hearing+json:
+                  example: !include json/listing.search.hearing.json
+                  schema:  !include json/schema/listing.search.hearing.json
+
+/courtlist:
+  description: get court list document
+  get:
+    description: |
+      ...
+      (mapping):
+          responseType: application/vnd.listing.search.court.list+json
+          name: listing.search.court.list
+      ...
+    queryParameters:
+        courtCentreId:
+          description: reference data id for the court centre
+          type: string
+          required: true
+        courtRoomId:
+          description: reference data id for the court room
+          type: string
+          required: false
+        listId:
+          description: court list name to generate ( e.g. PUBLIC, STANDAND, ALPHABETICAL)
+          type: string
+          required: true
+        startDate:
+          description: hearing start date in format 'YYYY-MM-DD'.
+          type: date
+          required: true
+        endDate:
+          description: hearing end date in format 'YYYY-MM-DD'
+          type: date
+          required: true
+        restricted:
+          description: only applicable for standard courtlist. Set true to get restricted standard court list
+          type: boolean
+          required: false
+          default: false
+    responses:
+      200:
+        body:
+          application/vnd.listing.search.court.list+json:
+
+/dailylistpayload:
+  description: get exhibit daily list as JSON payload
+  get:
+    description: |
+      ...
+      (mapping):
+          responseType: application/vnd.listing.search.daily.list.payload+json
+          name: listing.search.daily.list.payload
+      ...
+    queryParameters:
+        courtCentreId:
+          description: reference data id for the court centre
+          type: string
+          required: true
+        startDate:
+          description: hearing start date in format 'YYYY-MM-DD'. Used for daily list (DRAFT/FINAL) requests.
+          type: date
+          required: false
+        publishCourtListType:
+          description: type of court list to retrieve (DRAFT or FINAL for daily list; WARN or FIRM for week commencing list)
+          type: string
+          required: true
+        endDate:
+          description: hearing end date in format 'YYYY-MM-DD'. Used for daily list (DRAFT/FINAL) multi-day requests.
+          type: date
+          required: false
+        weekCommencingStartDate:
+          description: week commencing start date in format 'YYYY-MM-DD'. Required for week commencing (WARN/FIRM) requests.
+          type: date
+          required: false
+        weekCommencingEndDate:
+          description: week commencing end date in format 'YYYY-MM-DD'. Required for week commencing (WARN/FIRM) requests.
+          type: date
+          required: false
+    responses:
+      200:
+        body:
+          application/vnd.listing.search.daily.list.payload+json:
+            example: !include json/listing.search.daily.list.payload.json
+            schema: !include json/schema/listing.search.daily.list.payload.json
+
+/courtlistpayload:
+  description: get court list payload
+  get:
+    description: |
+      ...
+      (mapping):
+          responseType: application/vnd.listing.search.court.list.payload+json
+          name: listing.search.court.list.payload
+      ...
+    queryParameters:
+        courtCentreId:
+          description: reference data id for the court centre
+          type: string
+          required: true
+        courtRoomId:
+          description: reference data id for the court room
+          type: string
+          required: false
+        listId:
+          description: court list name to generate ( e.g. PUBLIC, STANDAND, ALPHABETICAL)
+          type: string
+          required: true
+        startDate:
+          description: hearing start date in format 'YYYY-MM-DD'.
+          type: date
+          required: true
+        endDate:
+          description: hearing end date in format 'YYYY-MM-DD'
+          type: date
+          required: true
+        restricted:
+          description: only applicable for standard courtlist. Set true to get restricted standard court list
+          type: boolean
+          required: false
+          default: false
+        includeApplications:
+          description: when true, include court applications in the payload even when the hearing has prosecution cases (listedCases). When false (default), court applications are only included when there are no listed cases
+          type: boolean
+          required: false
+          default: false
+    responses:
+      200:
+        body:
+          application/vnd.listing.search.court.list.payload+json:
+            example: !include json/listing.search.court.list.payload.json
+            schema: !include json/schema/listing.search.court.list.payload.json
+
+/courtListPublishStatus/{courtCentreId}:
+  description: get status of latest publish court list document
+  get:
+    description: |
+      ...
+      (mapping):
+          responseType: application/vnd.listing.court.list.publish.status+json
+          name: listing.court.list.publish.status
+      ...
+    queryParameters:
+        publishCourtListTypes:
+          description: publish court list types delimited by comma(,) (example FIRM,WARN)
+          type: string
+          required: true
+        publishDate:
+          description: publish date in format 'YYYY-MM-DD'
+          type: date
+          required: true
+        weekCommencing:
+          description: set true when the request is for getting the details
+          type: boolean
+          required: false
+          default: false
+    responses:
+      200:
+        body:
+          application/vnd.listing.court.list.publish.status+json:
+            example:  !include json/listing.court.list.publish.status.json
+            schema:  !include  json/schema/listing.court.list.publish.status.json
+
+/hearingSlots:
+  get:
+    description: |
+      Retrieve available hearing slots from Azure scsl database for the given criteria
+      ...
+      (mapping):
+          responseType: application/vnd.listing.search.hearing.slots+json
+          name: listing.search.hearing.slots
+      ...
+    queryParameters:
+        panel:
+            description: panel Type ( ADULT/YOUTH/ADULT,YOUTH)
+            type: string
+            required: true
+        sessionStartDate:
+            description: startDate
+            type: string
+            required: true
+        sessionEndDate:
+            description: endDate
+            type: string
+            required: true
+        hearingStartTime:
+            description: Hearing Start Time
+            type: string
+            required: false
+        oucodeL2Code:
+            description: Operational unit
+            type: string
+            required: false
+        ouCode:
+            description: Courthouse oucode
+            type: string
+            required: false
+        courtRoomId:
+            description: courtRoomId
+            type: string
+            required: false
+        courtRoomNumber:
+            description: courtRoomNumber
+            type: string
+            required: false
+        businessType:
+            description: businessType
+            type: string
+            required: false
+        courtSession:
+            description: AM/PM/All day
+            type: string
+            required: false
+        isSlotBased:
+          description: slot based or not
+          type: boolean
+          required: false
+        showOverbookedSlots:
+          description: show overbooked slots or not
+          type: boolean
+          required: false
+        pageSize:
+            description: Number of records to be displayed per page
+            type: string
+            required: true
+        pageNumber:
+            description: currentPageNumber details
+            type: string
+            required: true
+        availableDurationMins:
+            description: Available duration of the hearing in minutes
+            type: integer
+            required: false
+    responses:
+        200:
+            description: OK
+            body:
+                application/vnd.listing.search.hearing.slots+json:
+                  example:  !include json/listing.search.hearing.slots.json
+                  schema:  !include  json/schema/listing.search.hearing.slots.json
+
+/hearings/unscheduled:
+   get:
+      description: |
+        ...
+        (mapping):
+            responseType: application/vnd.listing.search.hearings+json
+            name: listing.unscheduled.search.hearings
+        ...
+      queryParameters:
+        caseUrn:
+          type: string
+          required: false
+        typeOfList:
+          type: string
+          required: false
+        oucodeL2Code:
+          type: string
+          required: false
+        courtCentreId:
+          description: reference data id for the court centre
+          type: string
+          required: false
+        pageSize:
+          description: Number of records to be displayed per page
+          type: integer
+          required: false
+        pageNumber:
+          description: currentPageNumber details
+          type: integer
+          required: false
+
+      responses:
+            200:
+                description: OK
+                body:
+                  application/vnd.listing.search.hearings+json:
+                    example:  !include json/listing.search.hearings.json
+                    schema:  !include  json/schema/listing.search.hearings.json
+
+/hearings/any-allocation:
+   get:
+      description: |
+        ...
+        (mapping):
+            responseType: application/vnd.listing.search.hearings+json
+            name: listing.any-allocation.search.hearings
+        ...
+      queryParameters:
+        caseUrn:
+          type: string
+          required: true
+          description: Specific case urn
+        startDate:
+          description: hearing start date to include from
+          type: date
+          required: true
+      responses:
+            200:
+                description: OK
+                body:
+                  application/vnd.listing.search.hearings+json:
+                    example:  !include json/listing.search.hearings.json
+                    schema:  !include  json/schema/listing.search.hearings.json
+
+/hearings/cotr-search:
+   get:
+      description: |
+        ...
+        (mapping):
+            responseType: application/vnd.listing.search.hearings+json
+            name: listing.cotr.search.hearings
+        ...
+      queryParameters:
+        courtCentreId:
+          description: court certre id
+          type: string
+          required: true
+        startDate:
+          description: hearing start date
+          type: date
+          required: true
+        endDate:
+          description: hearing end date
+          type: date
+          required: true
+      responses:
+            200:
+                description: OK
+                body:
+                  application/vnd.listing.search.hearings+json:
+                    example:  !include json/listing.search.hearings.json
+                    schema:  !include  json/schema/listing.search.hearings.json
+
+/cases/by-person-defendant-and-hearingDate:
+   get:
+      description: |
+        Get all cases for the given person defendant details and hearing date
+        ...
+        (mapping):
+            responseType: application/vnd.listing.get.cases-by-person-defendant+json
+            name: listing.get.cases-by-person-defendant
+        ...
+      queryParameters:
+        firstName:
+           type: string
+           required: true
+        lastName:
+           type: string
+           required: true
+        dateOfBirth:
+           type: string
+           required: false
+        hearingDate:
+           type: string
+           required: true
+        isCivil:
+           type: boolean
+           required: false
+        isGroupMember:
+            type: boolean
+            required: false
+      responses:
+           200:
+               description: OK
+               body:
+                 application/vnd.listing.get.cases-by-person-defendant+json:
+                   example: !include json/listing.search.cases-by-defendant-and-hearingDate.json
+                   schema: !include json/schema/listing.search.cases-by-defendant-and-hearingDate.json
+
+/cases/by-organisation-defendant-and-hearingDate:
+   get:
+      description: |
+        Get all cases for the given organisation defendant details and hearing date
+        ...
+        (mapping):
+            responseType: application/vnd.listing.get.cases-by-organisation-defendant+json
+            name: listing.get.cases-by-organisation-defendant
+        ...
+      queryParameters:
+        organisationName:
+           type: string
+           required: true
+        hearingDate:
+           type: string
+           required: true
+        isCivil:
+            type: boolean
+            required: false
+        isGroupMember:
+            type: boolean
+            required: false
+      responses:
+           200:
+               description: OK
+               body:
+                 application/vnd.listing.get.cases-by-organisation-defendant+json:
+                   example: !include json/listing.search.cases-by-defendant-and-hearingDate.json
+                   schema: !include json/schema/listing.search.cases-by-defendant-and-hearingDate.json
+
+/cache-refdata-courtrooms/refresh:
+  get:
+    description: |
+      No payload needed, this will refresh the court room cache from refdata
+      ...
+      (mapping):
+          responseType: application/vnd.listing.get.cache-refdata-courtrooms-refresh+json
+          name: listing.get.cache-refdata-courtrooms-refresh
+      ...
+    responses:
+      200:
+        description: OK
+        body:
+          application/vnd.listing.get.cache-refdata-courtrooms-refresh+json:
+            schema:  !include json/schema/listing.get.cache-refdata-courtrooms-refresh.json
+
+
+/hearings/download-hearing-csv-report:
+  get:
+    description: |
+      Retrieve hearing Data into CSV.
+      ...
+      (mapping):
+          responseType: text/csv
+          name: listing.query.download-hearing-csv-report
+      ...
+    queryParameters:
+      courtCentreId:
+        description: The court centre UUID
+        type: string
+        required: true
+      startDate:
+        description: The startDate. If not a Monday, backend will go back to the Monday of the week the date belongs to
+        type: string
+        required: true
+      numberOfWeeks:
+        description: The number of weeks worth of data. Default is 2
+        type: integer
+        required: false
+        default: 2
+    responses:
+      200:
+        description: OK
+        body:
+           text/csv:
+

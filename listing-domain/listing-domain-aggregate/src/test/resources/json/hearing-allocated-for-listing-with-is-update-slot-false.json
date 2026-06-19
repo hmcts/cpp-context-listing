@@ -1,0 +1,51 @@
+{
+  "_metadata": {
+    "name": "listing.events.hearing-allocated-for-listing-v2"
+  },
+  "courtApplicationIds": [
+    "26b856a8-ae01-4aad-814c-7cdff8db19bf"
+  ],
+  "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
+  "courtRoomId": "ad80a0b4-d285-4496-a514-43cb8d500051",
+  "estimatedMinutes": 15,
+  "estimatedDuration": "15 minutes",
+  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+  "judiciary": [],
+  "jurisdictionType": "CROWN",
+  "hearingLanguage": "WELSH",
+  "updateSlot": false,
+  "hasAdjournmentDate": false,
+  "hearingDays": [
+    {
+      "hearingDate": "2018-06-01",
+      "startTime": "2018-06-01T10:00:00.000Z",
+      "endTime": "2018-06-01T10:30:00.000Z",
+      "durationMinutes": 30,
+      "sequence": 0,
+      "isCancelled": false
+    }
+  ],
+  "prosecutionCaseDefendantsOffenceIds": [
+    {
+      "defendants": [
+        {
+          "id": "0baecac5-222b-402d-9047-84803679edac",
+          "offenceIds": [
+            {
+              "id":  "0baecac5-222b-402d-9047-84803679edad"
+            }
+          ]
+        }
+      ],
+      "id": "31bf5d91-f90e-4117-a018-d1290e107692"
+    }
+  ],
+  "reportingRestrictionReason": "aReason",
+  "type": {
+    "id": "efa4e01b-1dc5-48c5-80b5-c3858a7622d6",
+    "description": "Trial"
+  },
+  "applicationOffenceIds": [],
+  "sendNotificationToParties": false,
+  "isNotificationAllocationFieldUpdated":false
+}

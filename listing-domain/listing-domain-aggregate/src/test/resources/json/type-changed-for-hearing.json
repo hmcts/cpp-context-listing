@@ -1,0 +1,10 @@
+{
+  "_metadata": {
+    "name": "listing.events.type-changed-for-hearing"
+  },
+  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+  "type": {
+    "id": "efa4e01b-1dc5-48c5-80b5-c3858a7622d6",
+    "description": "PTP"
+  }
+}

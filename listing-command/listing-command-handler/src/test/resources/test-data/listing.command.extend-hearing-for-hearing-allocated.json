@@ -1,0 +1,139 @@
+{
+  "id": "HEARING_ID1",
+  "type": {
+    "id": "07744c84-3de5-472b-bc64-5b0e1f90b73f",
+    "description": "Sentence"
+  },
+  "endDate": "2020-04-20",
+  "allocated": true,
+  "judiciary": [
+    {
+      "isDeputy": false,
+      "judicialId": "e78305b8-3250-4c69-86dc-bbbd9a0871d7",
+      "isBenchChairman": true,
+      "judicialRoleType": {
+        "judiciaryType": "CIRCUIT_JUDGE"
+      }
+    }
+  ],
+  "startDate": "2020-04-20",
+  "courtRoomId": "91a2a140-6792-481c-902f-6c066d99c3fc",
+  "hearingDays": [
+    {
+      "endTime": "2020-04-20T12:00:00.000Z",
+      "sequence": 0,
+      "startTime": "2020-04-20T10:00:00.000Z",
+      "hearingDate": "2020-04-20",
+      "durationMinutes": 120
+    }
+  ],
+  "listedCases": [
+    {
+      "id": "CASE_ID1",
+      "markers": [
+        {
+          "id": "257c15a7-f444-4230-8046-5b5b7173e8d4",
+          "markerTypeid": "b9c9dcf3-4992-449e-9a71-db7ba326bd85",
+          "markerTypeCode": "C",
+          "markerTypeDescription": "Description"
+        }
+      ],
+      "defendants": [
+        {
+          "id": "0b7041de-9a62-40e8-a952-04729993fb9c",
+          "address": {
+            "address1": "address1",
+            "address2": "address2",
+            "address3": "address3",
+            "address4": "address4",
+            "address5": "address5",
+            "postcode": "CR1 4BX"
+          },
+          "isYouth": true,
+          "lastName": "2YT83rOcm9",
+          "offences": [
+            {
+              "id": "74180c8d-38c7-464b-a43b-315c744adf36",
+              "startDate": "2020-03-30",
+              "offenceCode": "VXtGCGgNq4",
+              "offenceWording": "RUSBQjGt4y",
+              "laaApplnReference": {
+                "statusId": "5ac311a1-db14-4137-8cc8-4ce183a6bebf",
+                "statusCode": "9yUREHUJZp",
+                "statusDate": "2020-03-30",
+                "statusDescription": "VgpKEXbqNK",
+                "applicationReference": "Lxqq4Dz0rj"
+              },
+              "statementOfOffence": {
+                "title": "CGKGg13jer",
+                "welshTitle": "CGKGg13jer"
+              },
+              "restrictFromCourtList": false
+            }
+          ],
+          "firstName": "iwe9trpVnz",
+          "bailStatus": {
+            "id": "34443c87-fa6f-34c0-897f-0cce45773df5",
+            "code": "P",
+            "description": "Custody or remanded into custody"
+          },
+          "dateOfBirth": "1999-03-30",
+          "masterDefendantId": "1c117a1f-0612-4e87-85c0-572eae930fce",
+          "restrictFromCourtList": false,
+          "nationalityDescription": "British",
+          "courtProceedingsInitiated": "2020-03-30T15:37:54.165Z"
+        }
+      ],
+      "caseIdentifier": {
+        "authorityId": "3ef221c5-14db-45dd-abcc-9754cae77868",
+        "authorityCode": "eKGwPJdos9",
+        "caseReference": "CASE_URN1"
+      },
+      "restrictFromCourtList": false
+    }
+  ],
+  "courtCentreId": "c8264c46-8bb4-473b-9fd7-3c23c872e345",
+  "nonDefaultDays": [
+    {
+      "duration": 120,
+      "startTime": "2020-04-20T10:00:00.000Z"
+    }
+  ],
+  "nonSittingDays": [
+
+  ],
+  "hearingLanguage": "WELSH",
+  "estimatedMinutes": 15,
+  "jurisdictionType": "CROWN",
+  "adjournedFromDate": "2020-03-30",
+  "courtApplications": [
+    {
+      "id": "6f82fb9a-e9a8-411d-bc70-2e3f482d7cb3",
+      "applicant": {
+        "id": "a50a0bff-aece-4c22-abbe-6286101c10a6",
+        "lastName": "iIVVeIwxtJ",
+        "firstName": "BuJQPgxNjJ",
+        "isRespondent": false,
+        "restrictFromCourtList": false,
+        "courtApplicationPartyType": "PERSON"
+      },
+      "respondents": [
+        {
+          "id": "05b08528-960b-4ed9-8209-7ed3f5c168e7",
+          "lastName": "eWD1PvUmtC",
+          "firstName": "7dIznT54uU",
+          "isRespondent": true,
+          "restrictFromCourtList": false,
+          "courtApplicationPartyType": "PERSON"
+        }
+      ],
+      "linkedCaseId": "fb138bd4-f021-4257-9624-69c4bcd2e8bc",
+      "applicationType": "4enlVrk0Di",
+      "parentApplicationId": "5c3ce6da-7447-42eb-a0f1-8c649cf2c095",
+      "applicationReference": "03hQVye5IJ",
+      "restrictFromCourtList": false,
+      "restrictCourtApplicationType": false
+    }
+  ],
+  "reportingRestrictionReason": "mLYnOMIOyw"
+}

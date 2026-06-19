@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.hearing-allocated-for-listing-v2.json",
+  "type": "object",
+  "properties": {
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "bookingId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "jurisdictionType": {
+      "$ref": "http://justice.gov.uk/core/courts/jurisdictionType.json"
+    },
+    "judiciary": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/judicialRole.json"
+      }
+    },
+    "courtRoomId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "courtCentreId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "type": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/hearingType"
+    },
+    "reportingRestrictionReason": {
+      "type": "string"
+    },
+    "hearingLanguage": {
+      "$ref": "http://justice.gov.uk/core/courts/hearingLanguage.json"
+    },
+    "prosecutionCaseDefendantsOffenceIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": [
+        {
+          "$ref": "http://justice.gov.uk/listing/events/prosecution-case-defendant-offence-ids-v2.json"
+        }
+      ]
+    },
+    "estimatedMinutes": {
+      "type": "integer"
+    },
+    "estimatedDuration": {
+      "type": "string"
+    },
+    "courtApplicationIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+      }
+    },
+    "hearingDays": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/hearingDay.json"
+      }
+    },
+    "updateSlot":{
+      "type" : "boolean"
+    },
+    "hasAdjournmentDate":{
+      "type" : "boolean"
+    },
+    "isGroupProceedings": {
+      "description": "The hearing is a logical grouping of cases when it is true",
+      "type": "boolean"
+    },
+    "numberOfGroupCases": {
+      "description": "The number of group cases",
+      "type": "integer"
+    },
+    "applicationOffenceIds": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+      }
+    },
+    "source": {
+      "type": "string"
+    },
+    "sendNotificationToParties": {
+      "type" : "boolean"
+    },
+    "isNotificationAllocationFieldUpdated": {
+      "type" : "boolean"
+    }
+  },
+  "required": [
+    "hearingId",
+    "type",
+    "jurisdictionType",
+    "hearingLanguage",
+    "hearingDays",
+    "courtCentreId",
+    "courtRoomId"
+  ],
+  "additionalProperties": false
+}

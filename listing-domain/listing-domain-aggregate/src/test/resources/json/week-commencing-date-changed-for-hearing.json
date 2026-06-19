@@ -1,0 +1,9 @@
+{
+  "_metadata": {
+    "name": "listing.events.week-commencing-date-changed-for-hearing"
+  },
+  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+  "weekCommencingStartDate": "2018-02-11",
+  "weekCommencingEndDate": "2019-02-22",
+  "weekCommencingDurationInWeeks": 1
+}

@@ -1,0 +1,19 @@
+{
+  "judiciaries": [
+    {
+      "id": "JUDICIARY_ID",
+      "seqId": 1,
+      "titlePrefix": "Mr",
+      "titleJudicialPrefix": "Recorder",
+      "titleSuffix": "judge",
+      "titlePrefixWelsh": "Mr",
+      "titleJudiciaryPrefixWelsh": "Recorder",
+      "titleSuffixWelsh": "",
+      "surname": "Ainsworth",
+      "forenames": "Mark J",
+      "judiciaryType": "RECORDER",
+      "validFrom": "2017-08-01",
+      "validTo": "2017-08-01"
+    }
+  ]
+}

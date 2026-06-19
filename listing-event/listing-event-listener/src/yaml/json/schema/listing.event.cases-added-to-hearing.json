@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.event.cases-added-to-hearing.json",
+  "type": "object",
+  "properties": {
+    "unAllocatedListedCases": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/listedCase.json"
+      }
+    },
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "seedingHearingId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "addCasesToUnAllocatedHearing": {
+      "type" : "boolean"
+    }
+  },
+  "required": [
+    "hearingId",
+    "unAllocatedListedCases"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.new-case-marker-updated.json",
+  "type": "object",
+  "properties": {
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "caseId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "caseMarkers": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/marker.json"
+      }
+    }
+  },
+  "required": [
+    "caseId",
+    "hearingId",
+    "caseMarkers"
+  ],
+  "additionalProperties": false
+}

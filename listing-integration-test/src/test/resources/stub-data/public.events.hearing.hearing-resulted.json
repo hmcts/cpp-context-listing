@@ -1,0 +1,195 @@
+{
+  "isReshare": false,
+  "hearing": {
+    "courtCentre": {
+      "address": {
+        "address1": "1-15 Pocock Street",
+        "address2": "London",
+        "address3": "",
+        "address4": "",
+        "address5": "",
+        "postcode": "SE1 0BJ"
+      },
+      "code": "C01BL00",
+      "courtHearingLocation": "C01BL00",
+      "id": "bd050057-d0ec-4762-ac16-c422b0e04be9",
+      "lja": {
+        "ljaCode": "2570",
+        "ljaName": "Central London Magistrates' Court"
+      },
+      "name": "Carmarthen Magistrates Court",
+      "roomId": "4a5e9bbd-6523-43c3-97fd-5fefcb6854d2",
+      "roomName": "Courtroom 01"
+    },
+    "defendantAttendance": [
+      {
+        "attendanceDays": [
+          {
+            "attendanceType": "IN_PERSON",
+            "day": "2025-11-06"
+          }
+        ],
+        "defendantId": "%DEFENDANT_ID%"
+      }
+    ],
+    "estimatedDuration": "30 MINUTES",
+    "hasSharedResults": true,
+    "hearingDays": [
+      {
+        "courtCentreId": "89592405-c29b-3706-b1d3-b1dd3a08b227",
+        "courtRoomId": "d0624ee3-9198-3c8b-94d6-42fb197ebe5e",
+        "hasSharedResults": true,
+        "isCancelled": false,
+        "listedDurationMinutes": 30,
+        "listingSequence": 0,
+        "sittingDay": "2025-11-06T10:00:00.000Z"
+      }
+    ],
+    "hearingLanguage": "ENGLISH",
+    "id": "%HEARING_ID%",
+    "jurisdictionType": "CROWN",
+    "prosecutionCases": [
+      {
+        "caseStatus": "ACTIVE",
+        "cpsOrganisation": "A30AB00",
+        "defendants": [
+          {
+            "courtProceedingsInitiated": "2025-10-27T15:38:06.923Z",
+            "croNumber": "croNO66118",
+            "id": "%DEFENDANT_ID%",
+            "isYouth": false,
+            "masterDefendantId": "%DEFENDANT_ID%",
+            "numberOfPreviousConvictionsCited": 3,
+            "offences": [
+              {
+                "allocationDecision": {
+                  "allocationDecisionDate": "2025-11-06",
+                  "motReasonCode": "02",
+                  "motReasonDescription": "Indictable-only offence",
+                  "motReasonId": "4ba29b9f-9e57-32ed-b376-1840f4ba6c53",
+                  "offenceId": "2595f668-eed7-4298-a5d2-921b2eeff16a",
+                  "originatingHearingId": "243f62b3-9199-40c7-b00c-ef164a260035",
+                  "sequenceNumber": 100
+                },
+                "chargeDate": "2025-10-02",
+                "convictionDate": "2025-11-06",
+                "count": 0,
+                "endDate": "2025-10-02",
+                "endorsableFlag": false,
+                "id": "2595f668-eed7-4298-a5d2-921b2eeff16a",
+                "isDisposed": false,
+                "lastAdjournDate": "2025-10-27",
+                "lastAdjournedHearingType": "",
+                "listingNumber": 2,
+                "maxPenalty": "Indictable only",
+                "modeOfTrial": "Indictable",
+                "offenceCode": "TH68023",
+                "offenceDateCode": 1,
+                "offenceDefinitionId": "6795cbe7-3e0f-3f6a-b59d-29a87a9d6f8d",
+                "offenceLegislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                "offenceLegislationWelsh": "Yn groes i adran 8(1) Deddf Dwyn 1968.",
+                "offenceTitle": "Robbery",
+                "offenceTitleWelsh": "Ysbeilio/Lladrad",
+                "orderIndex": 1,
+                "plea": {
+                  "offenceId": "2595f668-eed7-4298-a5d2-921b2eeff16a",
+                  "originatingHearingId": "243f62b3-9199-40c7-b00c-ef164a260035",
+                  "pleaDate": "2025-11-06",
+                  "pleaValue": "GUILTY"
+                },
+                "proceedingsConcluded": false,
+                "startDate": "2025-09-29",
+                "wording": "Robbery"
+              }
+            ],
+            "personDefendant": {
+              "bailConditions": "",
+              "bailStatus": {
+                "code": "U",
+                "description": "Unconditional bail",
+                "id": "eaf18bf8-9569-3656-a4ab-64299f9bd513"
+              },
+              "personDetails": {
+                "additionalNationalityCode": "HUN",
+                "additionalNationalityDescription": "Hungarian",
+                "additionalNationalityId": "bfa3e272-cefa-4388-8377-7eae79b6cfae",
+                "address": {
+                  "address1": "No 1 Exeter Test Street",
+                  "address2": "line 2",
+                  "address3": "line 3",
+                  "address4": "line 4",
+                  "address5": "line 5",
+                  "postcode": "M62 1NW"
+                },
+                "contact": {
+                  "home": "020111223",
+                  "mobile": "07572222943",
+                  "primaryEmail": "scrooge.mcduck@mail.com",
+                  "secondaryEmail": "scrooge.mcduck2@mail.com",
+                  "work": "020111222"
+                },
+                "dateOfBirth": "2000-01-01",
+                "documentationLanguageNeeds": "WELSH",
+                "ethnicity": {
+                  "selfDefinedEthnicityCode": "M3",
+                  "selfDefinedEthnicityDescription": "White and Asian",
+                  "selfDefinedEthnicityId": "8f14e45f-ceea-367a-9a36-dedd4bea2543"
+                },
+                "firstName": "Prudence",
+                "gender": "MALE",
+                "hearingLanguageNeeds": "WELSH",
+                "lastName": "Lubowitz",
+                "nationalityCode": "SVK",
+                "nationalityDescription": "Slovak",
+                "nationalityId": "18fbe86e-e1bb-4a5b-88f2-76af6105b8dd",
+                "occupation": "Software Developer",
+                "occupationCode": "43",
+                "title": "Baron"
+              },
+              "policeBailConditions": "test",
+              "policeBailStatus": {
+                "code": "B",
+                "description": "Conditional bail",
+                "id": "dd4073b6-22be-3875-9d63-5da286bb3ece"
+              }
+            },
+            "pncId": "pncID76879",
+            "prosecutionAuthorityReference": "DEFENDANT_REFERENCE1",
+            "prosecutionCaseId": "22f0f953-2d78-3b6a-b2a2-9660a1a27f24"
+          }
+        ],
+        "id": "%PROSECUTION_CASE_ID%",
+        "initiationCode": "C",
+        "migrationSourceSystem": {
+          "migrationSourceSystemCaseIdentifier": "2298788598",
+          "migrationSourceSystemName": "LIBRA"
+        },
+        "originatingOrganisation": "0480000",
+        "prosecutionCaseIdentifier": {
+          "address": {
+            "address1": "Bishopsgate police station",
+            "address2": "182, Bishopsgate",
+            "address5": "London",
+            "postcode": "EC2M 4NP"
+          },
+          "contact": {
+            "primaryEmail": "casebuilderscpsmemos@cityoflondon.police.uk"
+          },
+          "majorCreditorCode": "COLP",
+          "prosecutionAuthorityCode": "CITYPF",
+          "prosecutionAuthorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+          "prosecutionAuthorityName": "City of London Police",
+          "prosecutionAuthorityOUCode": "0480000",
+          "caseURN": "%CASE_URN%"
+        }
+      }
+    ],
+    "shadowListedOffences": [],
+    "type": {
+      "description": "Plea",
+      "id": "511fe0a3-1391-4954-8158-6b10eed0dad9"
+    }
+  },
+  "sharedTime": "%SHARED_TIME%",
+  "hearingDay": "%HEARING_DAY%"
+}

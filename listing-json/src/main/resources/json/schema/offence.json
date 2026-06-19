@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/offence.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "offenceCode": {
+      "type": "string"
+    },
+    "offenceWording": {
+      "type": "string"
+    },
+    "startDate": {
+      "type": "string"
+    },
+    "endDate": {
+      "type": "string"
+    },
+    "count": {
+      "type": "integer"
+    },
+    "orderIndex": {
+      "type": "integer"
+    },
+    "statementOfOffence": {
+      "$ref": "http://justice.gov.uk/listing/events/statementOfOffence.json"
+    },
+    "restrictFromCourtList": {
+      "type": "boolean"
+    },
+    "laaApplnReference": {
+      "description": "A record of legal aid applications for this offence",
+      "$ref": "http://justice.gov.uk/listing/events/laaReference.json"
+    },
+    "laidDate": {
+      "type": "string"
+    },
+    "shadowListed": {
+      "type": "boolean"
+    },
+    "committingCourt": {
+      "description": "Sending court details",
+      "$ref": "http://justice.gov.uk/listing/events/committingCourt.json"
+    },
+    "reportingRestrictions": {
+      "description": "Reporting restrictions",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/reportingRestriction.json"
+      }
+    },
+    "seedingHearing" : {
+      "$ref": "http://justice.gov.uk/listing/events/seedingHearing.json"
+    },
+    "listingNumber" : {
+      "type": "integer"
+    },
+    "indictmentParticular": {
+      "type": "string"
+    },
+    "civilOffence": {
+      "description": "The Offence data object related to civil cases",
+      "$ref": "http://justice.gov.uk/core/courts/civilOffence.json"
+    }
+  },
+  "required": [
+    "id",
+    "offenceCode",
+    "offenceWording",
+    "startDate",
+    "statementOfOffence"
+  ],
+  "additionalProperties": false
+}

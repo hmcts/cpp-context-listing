@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/json/courtlist.json",
+  "type": "object",
+  "properties": {
+    "sittings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sittingDate": {
+            "$ref": "#/definitions/localDate"
+          },
+          "courtRoomId": {
+            "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+          },
+          "judiciary": {
+            "type": "array",
+            "items": {
+              "$ref": "http://justice.gov.uk/listing/events/judicialRole.json"
+            }
+          },
+          "hearings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "startTime": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "endTime": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "hearingType": {
+                  "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+                },
+                "restrictFromCourtList": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "weekCommencing": {
+                  "type": "boolean"
+                },
+                "committingCourtCentreId": {
+                  "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+                },
+                "caseIdentifier": {
+                  "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/caseIdentifier"
+                },
+                "defendants": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "$ref": "http://justice.gov.uk/listing/events/defendant.json"
+                  },
+                  "applicationReference": {
+                    "type": "string"
+                  },
+                  "applicant": {
+                    "$ref": "http://justice.gov.uk/listing/events/applicantRespondent.json"
+                  },
+                  "respondents": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "http://justice.gov.uk/listing/events/applicantRespondent.json"
+                    }
+                  }
+                }
+              },
+              "required": [
+                "startTime",
+                "endTime",
+                "hearingType",
+                "restrictFromCourtList",
+                "weekCommencing"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "sittingDate",
+          "judiciary",
+          "hearings"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "definitions": {
+    "localDate": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "sittings"
+  ],
+  "additionalProperties": false
+}
