@@ -1,0 +1,297 @@
+{
+  "id": "7c5e9d0c-9e28-46a9-b139-68fc0813842c",
+  "type": {
+    "id": "52edf232-3c09-4c74-a6ad-737985c2e662",
+    "description": "PTP"
+  },
+  "endDate": "2019-11-12",
+  "allocated": true,
+  "judiciary": [
+    {
+      "isDeputy": false,
+      "judicialId": "afb38d77-e03b-438e-bd52-0cd48a6346e6",
+      "judicialRoleType": {
+        "judiciaryType": "MAGISTRATE"
+      }
+    }
+  ],
+  "startDate": "2019-11-11",
+  "courtRoomId": "fdc6ccae-e6df-4957-9a99-382f64e22d97",
+  "hearingDays": [
+    {
+      "endTime": "2019-11-11T11:05:31.637Z",
+      "sequence": 0,
+      "startTime": "2019-11-11T10:50:31.637Z",
+      "hearingDate": "2019-11-11",
+      "durationMinutes": 15
+    },
+    {
+      "endTime": "2019-11-12T17:00:00.000Z",
+      "sequence": 0,
+      "startTime": "2019-11-12T10:30:00.000Z",
+      "hearingDate": "2019-11-12",
+      "durationMinutes": 390
+    }
+  ],
+  "listedCases": [
+    {
+      "id": "40c2c362-5574-4756-8790-3faa7da5e7a6",
+      "defendants": [
+        {
+          "id": "6b0ba25b-7eb2-444c-b350-89ecf255a3cf",
+          "masterDefendantId": "6b0ba25b-7eb2-444c-b350-89ecf255a3cf",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+          "lastName": "kPHQzsJTEF",
+          "offences": [
+            {
+              "id": "c4e30b88-638c-4664-ab90-d3b70a1b9a97",
+              "startDate": "2019-11-11",
+              "offenceCode": "JZ5IApDwUW",
+              "offenceWording": "JwDAOJputx",
+              "statementOfOffence": {
+                "title": "Ar926xO3dr",
+                "welshTitle": "Ar926xO3dr"
+              },
+              "restrictFromCourtList": false
+            },
+            {
+              "id": "79f74b97-9653-4f36-8731-8234ca3d98aa",
+              "startDate": "2019-11-11",
+              "offenceCode": "sY7K3vpn0R",
+              "offenceWording": "7B6f5YDMcG",
+              "statementOfOffence": {
+                "title": "DDYd2jKvVu",
+                "welshTitle": "DDYd2jKvVu"
+              },
+              "restrictFromCourtList": false
+            },
+            {
+              "id": "40940c22-8af0-45f5-9ed5-144c58fdafa7",
+              "startDate": "2019-11-11",
+              "offenceCode": "14qSImGltK",
+              "offenceWording": "U1FkD1yoZF",
+              "statementOfOffence": {
+                "title": "BSkrycDeiq",
+                "welshTitle": "BSkrycDeiq"
+              },
+              "restrictFromCourtList": false
+            }
+          ],
+          "firstName": "yz7y1GS21K",
+          "bailStatus": {
+            "id": "34443c87-fa6f-34c0-897f-0cce45773df5",
+            "code": "P",
+            "description": "Custody or remanded into custody"
+          },
+          "dateOfBirth": "1998-11-11",
+          "restrictFromCourtList": false
+        },
+        {
+          "id": "f871ad14-3b3e-47b1-b2b5-9a5036e1ed7d",
+          "masterDefendantId": "f871ad14-3b3e-47b1-b2b5-9a5036e1ed7d",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+          "lastName": "yhmxMaoKTh",
+          "offences": [
+            {
+              "id": "24c399b3-4936-43f8-b846-35b8a1b21844",
+              "startDate": "2019-11-11",
+              "offenceCode": "DIwu2USuf6",
+              "offenceWording": "cZIUz2aIoY",
+              "statementOfOffence": {
+                "title": "8EWZ19IRxK",
+                "welshTitle": "8EWZ19IRxK"
+              },
+              "restrictFromCourtList": false
+            },
+            {
+              "id": "3ae6dfd1-2d2e-4beb-8104-679d46a6c638",
+              "startDate": "2019-11-11",
+              "offenceCode": "JE7QPpPJ5n",
+              "offenceWording": "FGLW41OibQ",
+              "statementOfOffence": {
+                "title": "u7b4SBJDm0",
+                "welshTitle": "u7b4SBJDm0"
+              },
+              "restrictFromCourtList": false
+            },
+            {
+              "id": "0d9578a2-f5e3-435b-9eb2-a8f3da554538",
+              "startDate": "2019-11-11",
+              "offenceCode": "ovOmsYA5GY",
+              "offenceWording": "TkGJFzWCOk",
+              "statementOfOffence": {
+                "title": "D98uGcYHYn",
+                "welshTitle": "D98uGcYHYn"
+              },
+              "restrictFromCourtList": false
+            }
+          ],
+          "firstName": "dVT9nKGxu6",
+          "bailStatus": {
+            "id": "34443c87-fa6f-34c0-897f-0cce45773df5",
+            "code": "P",
+            "description": "Custody or remanded into custody"
+          },
+          "dateOfBirth": "1998-11-11",
+          "restrictFromCourtList": false
+        }
+      ],
+      "caseIdentifier": {
+        "authorityId": "81bf2378-29c8-4804-8c2a-bc42abd154b4",
+        "authorityCode": "JHhjmAeG96",
+        "caseReference": "a0jCGQCgTg"
+      },
+      "restrictFromCourtList": false
+    },
+    {
+      "id": "f008a7b3-fb77-494e-91a6-c9ae8fe3df8e",
+      "defendants": [
+        {
+          "id": "c27d15c4-90c8-4337-9c2b-fed5bd905879",
+          "masterDefendantId": "c27d15c4-90c8-4337-9c2b-fed5bd905879",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+          "lastName": "AxqHnyQ5X8",
+          "offences": [
+            {
+              "id": "44a0804e-97d4-475c-9a52-0b40c5001506",
+              "startDate": "2019-11-11",
+              "offenceCode": "g55XqPvduE",
+              "offenceWording": "wYxMPHTfYk",
+              "statementOfOffence": {
+                "title": "iIJ31vhfWz",
+                "welshTitle": "iIJ31vhfWz"
+              },
+              "restrictFromCourtList": false
+            },
+            {
+              "id": "254790f7-ee19-4468-abcd-8b60c79447af",
+              "startDate": "2019-11-11",
+              "offenceCode": "GkPGzfPP82",
+              "offenceWording": "M21svX7xyn",
+              "statementOfOffence": {
+                "title": "wKOJSrDYg6",
+                "welshTitle": "wKOJSrDYg6"
+              },
+              "restrictFromCourtList": false
+            },
+            {
+              "id": "0a9aa9be-97f1-4eb9-a061-d10803debc4d",
+              "startDate": "2019-11-11",
+              "offenceCode": "cwpDjlkVkd",
+              "offenceWording": "l3Sd5JuzXV",
+              "statementOfOffence": {
+                "title": "Nt5TE5Ymjp",
+                "welshTitle": "Nt5TE5Ymjp"
+              },
+              "restrictFromCourtList": false
+            }
+          ],
+          "firstName": "T6cfjHqIDo",
+          "bailStatus": {
+            "id": "34443c87-fa6f-34c0-897f-0cce45773df5",
+            "code": "P",
+            "description": "Custody or remanded into custody"
+          },
+          "dateOfBirth": "1998-11-11",
+          "restrictFromCourtList": false
+        },
+        {
+          "id": "b48122a6-ca36-4255-83cf-cccc6550e711",
+          "masterDefendantId": "b48122a6-ca36-4255-83cf-cccc6550e711",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+          "lastName": "tjSfV5dsub",
+          "offences": [
+            {
+              "id": "cb0ced6d-b9a6-428e-9c23-c764395ad017",
+              "startDate": "2019-11-11",
+              "offenceCode": "DzYSA9P56P",
+              "offenceWording": "q8H8rHGikD",
+              "statementOfOffence": {
+                "title": "4OvZoQ3l1f",
+                "welshTitle": "4OvZoQ3l1f"
+              },
+              "restrictFromCourtList": false
+            },
+            {
+              "id": "f4cc9d9f-e879-4b34-859b-847881ff1011",
+              "startDate": "2019-11-11",
+              "offenceCode": "kq7SV7X4X2",
+              "offenceWording": "XoIdtcMyln",
+              "statementOfOffence": {
+                "title": "dS2cyPCceD",
+                "welshTitle": "dS2cyPCceD"
+              },
+              "restrictFromCourtList": false
+            },
+            {
+              "id": "b43c7d64-bf17-4e41-b32d-6cf9e8e38b83",
+              "startDate": "2019-11-11",
+              "offenceCode": "lUSZiipt9F",
+              "offenceWording": "95VBXjAj8C",
+              "statementOfOffence": {
+                "title": "xLSscHuMg6",
+                "welshTitle": "xLSscHuMg6"
+              },
+              "restrictFromCourtList": false
+            }
+          ],
+          "firstName": "9Pkh3jUqCj",
+          "bailStatus": {
+            "id": "34443c87-fa6f-34c0-897f-0cce45773df5",
+            "code": "P",
+            "description": "Custody or remanded into custody"
+          },
+          "dateOfBirth": "1998-11-11",
+          "restrictFromCourtList": false
+        }
+      ],
+      "caseIdentifier": {
+        "authorityId": "2e610c0c-05c9-48be-95aa-7bf519906477",
+        "authorityCode": "ztcHA6wesd",
+        "caseReference": "T3R1AsNDYA"
+      },
+      "restrictFromCourtList": false
+    }
+  ],
+  "courtCentreId": "9c51794d-f9fc-4054-a2ae-a4e2eb6730fc",
+  "nonDefaultDays": [
+    {
+      "duration": 15,
+      "startTime": "2019-11-11T10:50:31.637Z"
+    }
+  ],
+  "nonSittingDays": [],
+  "hearingLanguage": "ENGLISH",
+  "estimatedMinutes": 15,
+  "jurisdictionType": "CROWN",
+  "courtApplications": [
+    {
+      "id": "659fde81-206b-4c41-a6e5-f75c8acfa1d0",
+      "applicant": {
+        "id": "faa0c458-f5a3-49aa-aa32-9ffbcfd255f3",
+        "lastName": "QSWqCRTliP",
+        "firstName": "dBDnNhnoiA",
+        "isRespondent": false,
+        "restrictFromCourtList": false,
+        "courtApplicationPartyType": "PERSON"
+      },
+      "respondents": [
+        {
+          "id": "a337c4d2-1866-4611-aa0c-6ed69b11c8a4",
+          "lastName": "IQtu8afFi9",
+          "firstName": "STTw8alv56",
+          "isRespondent": true,
+          "restrictFromCourtList": false,
+          "courtApplicationPartyType": "PERSON"
+        }
+      ],
+      "linkedCaseId": "40c2c362-5574-4756-8790-3faa7da5e7a6",
+      "applicationType": "KclYn05mwj",
+      "parentApplicationId": "8966bb80-26ac-4cf1-a197-7383fd31a3df",
+      "applicationReference": "Dgyl7h95z3",
+      "restrictFromCourtList": false,
+      "restrictCourtApplicationType": false
+    }
+  ],
+  "reportingRestrictionReason": "U2SQQ7NYOT"
+}

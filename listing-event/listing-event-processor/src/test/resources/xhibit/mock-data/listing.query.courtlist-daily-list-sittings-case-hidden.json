@@ -1,0 +1,122 @@
+{
+  "courtLists": [
+    {
+      "sittings": [
+        {
+          "hearings": [
+            {
+              "endTime": "2020-04-06T10:09",
+              "startTime": "2020-04-06T09:24",
+              "defendants": [
+                {
+                  "id": "1b2f5a43-4da3-4206-9a78-5e2f36545e5b",
+                  "address": {
+                    "address1": ""
+                  },
+                  "lastName": "OHNO",
+                  "offences": [
+                    {
+                      "id": "b7193bff-63c7-44e5-96dd-48f482b2a15e",
+                      "endDate": "2020-04-04",
+                      "startDate": "2020-04-03",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Kascos uh zezejozi nubinu az hulan vulehtel piele nevas gahutsu feisiaw coace gekhab udsu ol zilwig.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Adeline",
+                  "dateOfBirth": "1990-04-02",
+                  "custodyTimeLimit": "2020-05-02",
+                  "specificRequirements": "Dir ka hasilew kim higwelit zere hu labbupje pizihag vagiku ke wutip saavo uczucvu fo.",
+                  "restrictFromCourtList": false
+                },
+                {
+                  "id": "40643557-7f69-4e3e-96c3-0126eb8ba1ac",
+                  "address": {
+                    "address1": ""
+                  },
+                  "lastName": "RAMIREZ",
+                  "offences": [
+                    {
+                      "id": "20ee6eb9-7416-4389-b6b8-4b18c5b0b1c0",
+                      "endDate": "2020-04-04",
+                      "startDate": "2020-04-03",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Sarkuow sid kuca hewek caktetwu sativ necohduh luzvakoce ovaaw di filbumazu uwu gervob dedpe ja.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Sophie",
+                  "dateOfBirth": "1990-04-02",
+                  "custodyTimeLimit": "2020-05-02",
+                  "specificRequirements": "Fivir rorefma pivma ce ocuzo ni ja ge nowjiz cu ivivel ma vu.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+                "description": "Trial"
+              },
+              "caseIdentifier": {
+                "authorityId": "52636428-d2b6-4bc5-b128-89e518f7e8c7",
+                "authorityCode": "CPS",
+                "caseReference": "12YD370587"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": true
+            }
+          ],
+          "judiciary": [
+            {
+              "judicialId": "c0c7c76d-30bd-3dca-afc9-6f40275bdc0a",
+              "judicialRoleType": {
+                "judiciaryType": "CIRCUIT_JUDGE"
+              }
+            }
+          ],
+          "courtRoomId": "7cb09222-49e1-3622-a5a6-ad253d2b3c39",
+          "sittingDate": "2020-04-06",
+          "weekCommencing": false
+        }
+      ],
+      "crestCourtSite": {
+        "id": "fd8ab902-f421-3c96-8e2b-6d504e5e7e2a",
+        "oucode": "C05LV00",
+        "courtType": "CROWN_COURT",
+        "crestCourtId": "433",
+        "crestCourtName": "LIVERPOOL",
+        "crestCourtSiteId": "433",
+        "crestCourtFullName": "LIVERPOOL",
+        "crestCourtSiteCode": "A",
+        "crestCourtSiteName": "LIVERPOOL",
+        "crestCourtShortName": "LIVER"
+      }
+    },
+    {
+      "sittings": [],
+      "crestCourtSite": {
+        "id": "7a71d194-df69-33b9-b703-d33a36add376",
+        "oucode": "C05LV00",
+        "courtType": "CROWN_COURT",
+        "crestCourtId": "433",
+        "crestCourtName": "LIVERPOOL",
+        "crestCourtSiteId": "433",
+        "crestCourtFullName": "LIVERPOOL",
+        "crestCourtSiteCode": "B",
+        "crestCourtSiteName": "LIVERPOOL COMMUNITY JUSTICE CENTRE",
+        "crestCourtShortName": "LIVER"
+      }
+    }
+  ],
+  "courtCentreId": "9b583616-049b-30f9-a14f-028a53b7cfe8"
+}

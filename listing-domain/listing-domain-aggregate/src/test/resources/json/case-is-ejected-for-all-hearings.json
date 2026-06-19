@@ -1,0 +1,11 @@
+{
+  "_metadata": {
+    "name": "listing.events.case-ejected-for-hearings"
+  },
+  "hearingIds": [
+    "5c5a1d30-0414-11e7-93ae-92361f002671",
+    "93c0ee7b-2e6f-43de-b500-3423b0169821"
+  ],
+  "prosecutionCaseId": "31bf5d91-f90e-4117-a018-d1290e107692",
+  "removalReason": "ejected"
+}

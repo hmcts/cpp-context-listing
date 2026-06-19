@@ -1,0 +1,8 @@
+{
+  "results": 1,
+  "pageCount": 1,
+  "hearingIds": [
+    {"hearingId":"ed4f666a-866a-4fcb-8c3b-e89f6ce1e7e5", "courtScheduleId":"71e0e229-f22e-4ab6-87fa-2b1c07f97028", "hearingDate": "2025-06-04", "hearingDayCount": 1, "hearingDayPosition": 1}
+  ]
+}
+

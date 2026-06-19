@@ -1,0 +1,13 @@
+{
+  "hearingDays": [
+    {
+      "courtCentreId": "cba9367b-3e4f-4f53-b51a-0d1e19d3ff89",
+      "durationMinutes": 390,
+      "endTime": "2022-04-05T16:00:00.000Z",
+      "hearingDate": "2022-04-05",
+      "sequence": 0,
+      "startTime": "2022-04-05T09:30:00.000Z"
+    }
+  ],
+  "hearingId": "992cbb85-fa5c-4983-a385-5d16492c66cc"
+}

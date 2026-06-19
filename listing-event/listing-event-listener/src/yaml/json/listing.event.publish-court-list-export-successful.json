@@ -1,0 +1,10 @@
+{
+  "_metadata": {
+    "name": "listing.event.publish-court-list-export-successful"
+  },
+  "courtListId": "8472d2de-faf8-4ad6-861d-30637daf37c6",
+  "courtCentreId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+  "publishCourtListType": "FINAL",
+  "startDate": "2010-01-10",
+  "exportedTime": "2016-09-09T08:31:40Z"
+}

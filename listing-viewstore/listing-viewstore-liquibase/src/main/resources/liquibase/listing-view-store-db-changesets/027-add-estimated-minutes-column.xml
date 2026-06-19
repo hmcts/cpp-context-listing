@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet author="listing" id="027-add-estimated-minutes-column" logicalFilePath="027-add-estimated-minutes-column.xml">
+        <addColumn tableName="hearing">
+            <column name="estimated_minutes" type="INTEGER"/>
+        </addColumn>
+
+        <createIndex tableName="hearing" indexName="hearing_week_commencing_start_date_idx">
+            <column name="week_commencing_start_date"/>
+        </createIndex>
+
+        <sql>
+            UPDATE hearing
+            SET estimated_minutes = (properties->>'estimatedMinutes')::INTEGER
+            WHERE (start_date>=now() or week_commencing_start_date>=now()) and properties->>'estimatedMinutes' IS NOT NULL
+            AND (properties->>'estimatedMinutes') ~ '^[0-9]+$';
+        </sql>
+
+        <dropIndex tableName="hearing" indexName="hearing_week_commencing_start_date_idx"/>
+        
+        <rollback>
+            <dropColumn tableName="hearing" columnName="estimated_minutes"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

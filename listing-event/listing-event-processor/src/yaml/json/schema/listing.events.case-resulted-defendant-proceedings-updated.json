@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/case-resulted-defendant-proceeding-concluded.json",
+  "type": "object",
+  "properties": {
+    "hearingIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+      }
+    },
+    "prosecutionCase": {
+      "$ref": "http://justice.gov.uk/core/courts/prosecutionCase.json#"
+    }
+  },
+  "required": [
+    "hearingIds",
+    "prosecutionCase"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,15 @@
+{
+  "hearingId": "HEARING_ID",
+  "prosecutionCaseIds": [
+    "CASE_ID_1",
+    "CASE_ID_2"
+    ],
+  "defendantIds": [
+    "DEFENDANT_ID_1",
+    "DEFENDANT_ID_2"
+  ],
+  "offenceIds": [
+    "OFFENCE_ID_1",
+    "OFFENCE_ID_2"
+  ]
+}

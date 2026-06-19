@@ -1,0 +1,73 @@
+{
+  "type": {
+    "id": "52edf232-3c09-4c74-a6ad-737985c2e662",
+    "description": "PTP"
+  },
+  "startDate": "2018-10-09",
+  "jurisdictionType": "CROWN",
+  "hearingLanguage": "ENGLISH",
+  "courtCentreId": "9689207b-a9d2-4c2e-bd38-269b78a132a8",
+  "judiciary": [
+    {
+      "judicialId": "1cc7aa0d-fa17-4a79-9cdf-c71751e1bc37",
+      "judicialRoleType": {
+        "judiciaryType": "MAGISTRATE"
+      },
+      "isDeputy": true,
+      "isBenchChairman": null,
+      "userId": "379de9da-c18f-4f11-852f-40096dbe856d"
+    }
+  ],
+  "nonDefaultDays": [
+    {
+      "startTime": "2018-10-09T15:16:56Z",
+      "duration": null
+    }
+  ],
+  "nonSittingDays": [],
+  "endDate": null,
+  "courtRoomId": "e0e04581-8f66-4bbf-b5b4-2d41fcc2ae7c",
+  "prosecutionCases": [
+    {
+      "caseId": "7883a169-3b16-4303-ad3e-7d5c29b00948",
+      "defendants": [
+        {
+          "defendantId": "54827173-3747-48c0-b1a4-f91af36ee428",
+          "offences": [
+            {
+              "offenceId": "fa79c873-fcf0-45c8-918b-bd8455b5be3d"
+            },
+            {
+              "offenceId": "ad5ad065-49f2-4c33-ae13-56ea2c974dfa"
+            }
+          ]
+        },
+        {
+          "defendantId": "33dcdc11-0f5f-4296-ac47-ef9dda8f93da",
+          "offences": [
+            {
+              "offenceId": "ababf8f9-a5cf-4e4d-8dee-c6ca02805251"
+            },
+            {
+              "offenceId": "ea298331-a60c-4946-8555-9f9bf9ba3fbe"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "43764980-79b9-4bdd-aa8a-77e2d5e79b92",
+      "defendants": [
+        {
+          "defendantId": "174562bd-b5c4-4569-bc8e-24c0731117d5",
+          "offences": [
+            {
+              "offenceId": "930a3b63-5a35-40f5-81fd-d4a4916cbb93"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sendNotificationToParties": false
+}

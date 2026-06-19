@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/defendant.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "masterDefendantId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid",
+      "description": "Technical identifier that uniquely identifies the defendant on CPP i.e. across prosecution cases.  Case defendants that are the same person will be matched and provided the same defendantMasterId"
+    },
+    "courtProceedingsInitiated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The date time that court proceedings for this defendant were initiated.  Optional for PCF but needs to be set when initiateCourtProceedings or referCasesToCourt progression commands are executed and in that sense is mandatory for the end to end court journey.  Required for hearing to understand the most recent defendant information, latest details must be rendered for initiated hearings so that the defendant is always arraigned against the latest known details."
+    },
+    "datesToAvoid": {
+      "type": "string"
+    },
+    "hearingLanguageNeeds": {
+      "$ref": "http://justice.gov.uk/core/courts/hearingLanguage.json"
+    },
+    "specificRequirements": {
+      "description": "The person special needs indicted any special needs that must be met by the courts process e.g. wheelchair access",
+      "type": "string"
+    },
+    "firstName": {
+      "description": "The person first name",
+      "type": "string"
+    },
+    "lastName": {
+      "description": "The person last name",
+      "type": "string"
+    },
+    "dateOfBirth": {
+      "description": "The person date of birth",
+      "type": "string",
+      "format": "date"
+    },
+    "bailStatus": {
+      "$ref": "http://justice.gov.uk/core/courts/bailStatus.json"
+    },
+    "custodyTimeLimit": {
+      "description": "Custody Time Limit",
+      "type": "string",
+      "format": "date"
+    },
+    "organisationName": {
+      "description": "Where the defendant is an organisation",
+      "type": "string"
+    },
+    "defenceOrganisation": {
+      "type": "string"
+    },
+    "offences": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/offence.json"
+      }
+    },
+    "restrictFromCourtList": {
+      "type": "boolean"
+    },
+    "isYouth": {
+      "type": "boolean"
+    },
+    "nationalityDescription": {
+      "type": "string"
+    },
+    "address": {
+      "$ref": "http://justice.gov.uk/core/courts/address.json"
+    },
+    "legalAidStatus": {
+      "description": "Defendant Legal Aid Status",
+      "type": "string"
+    },
+    "proceedingsConcluded": {
+      "type": "boolean"
+    },
+    "associatedDefenceOrganisation": {
+      "description": "The associated defence representation details",
+      "$ref": "http://justice.gov.uk/core/courts/associatedDefenceOrganisation.json"
+    }
+  },
+  "required": [
+    "id",
+    "offences"
+  ],
+  "additionalProperties": false
+}

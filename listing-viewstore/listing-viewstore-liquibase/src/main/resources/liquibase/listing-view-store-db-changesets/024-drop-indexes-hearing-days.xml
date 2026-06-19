@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+    <changeSet author="siby.george" id="024_drop_indexes_hearing_days" logicalFilePath="024-drop-indexes-hearing-days.xml">
+        <sql>DROP INDEX IF EXISTS hearing_days_idx CASCADE</sql>
+        <sql>CREATE INDEX IF NOT EXISTS hearing_days_hearing_id_court_centre_id_idx ON hearing_days (hearing_id, court_centre_id)</sql>
+    </changeSet>
+</databaseChangeLog>

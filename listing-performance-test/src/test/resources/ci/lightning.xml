@@ -1,0 +1,40 @@
+<testSet>
+
+    <passedTransactionsTest>
+        <testName>sendCaseForListing - failed tests</testName>
+        <transactionName>sendCaseForListing</transactionName>
+        <allowedNumberOfFailedTransactions>0</allowedNumberOfFailedTransactions>
+    </passedTransactionsTest>
+
+    <avgRespTimeTest>
+        <testName>sendCaseForListing - average response time</testName>
+        <transactionName>sendCaseForListing</transactionName>
+        <maxAvgRespTime>2000</maxAvgRespTime>
+    </avgRespTimeTest>
+
+
+    <passedTransactionsTest>
+        <testName>updateHearingForListing - failed tests</testName>
+        <transactionName>updateHearingForListing</transactionName>
+        <allowedNumberOfFailedTransactions>0</allowedNumberOfFailedTransactions>
+    </passedTransactionsTest>
+
+    <avgRespTimeTest>
+        <testName>updateHearingForListing - average response time</testName>
+        <transactionName>updateHearingForListing</transactionName>
+        <maxAvgRespTime>2000</maxAvgRespTime>
+    </avgRespTimeTest>
+
+    <passedTransactionsTest>
+        <testName>searchUnallocatedHearingsForCourtCentre - failed tests</testName>
+        <transactionName>searchUnallocatedHearingsForCourtCentre</transactionName>
+        <allowedNumberOfFailedTransactions>0</allowedNumberOfFailedTransactions>
+    </passedTransactionsTest>
+
+    <avgRespTimeTest>
+        <testName>searchUnallocatedHearingsForCourtCentre - average response time</testName>
+        <transactionName>searchUnallocatedHearingsForCourtCentre</transactionName>
+        <maxAvgRespTime>2000</maxAvgRespTime>
+    </avgRespTimeTest>
+
+</testSet>

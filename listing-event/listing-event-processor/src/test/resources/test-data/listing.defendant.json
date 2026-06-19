@@ -1,0 +1,42 @@
+{
+  "id": "1ff3b576-3d28-4dc7-8e64-ccffef93b70b",
+  "address": {
+    "address1": "Address line 1",
+    "address2": "Address line 2",
+    "address3": "Address line 3",
+    "address4": "Address line 4",
+    "address5": "Norachester",
+    "postcode": "TW14 9XD"
+  },
+  "lastName": "Yost",
+  "offences": [
+    {
+      "id": "695b0727-ad34-4248-b06b-d707f50822b8",
+      "count": 0,
+      "endDate": "2023-02-12",
+      "startDate": "2023-01-15",
+      "orderIndex": 1,
+      "offenceCode": "CA03010",
+      "shadowListed": false,
+      "offenceWording": "From 15 January 2023, used a television receiver without a licence.",
+      "statementOfOffence": {
+        "title": "Use / install a television set without a licence",
+        "welshTitle": "Defnyddio / gosod set deledu heb drwydded",
+        "legislation": "Contrary to section 363(2) and (4) of the Communications Act 2003.",
+        "welshLegislation": "Yn groes i adran 363(2) a (4) Deddf Cyfathrebu 2003."
+      },
+      "restrictFromCourtList": false
+    }
+  ],
+  "firstName": "Josue",
+  "bailStatus": {
+    "id": "86009c70-759d-3308-8de4-194886ff9a77",
+    "code": "A",
+    "description": "Not applicable"
+  },
+  "dateOfBirth": "2000-02-15",
+  "masterDefendantId": "1ff3b576-3d28-4dc7-8e64-ccffef93b70b",
+  "hearingLanguageNeeds": "ENGLISH",
+  "restrictFromCourtList": false,
+  "courtProceedingsInitiated": "2023-02-14T12:48:30.682Z"
+}

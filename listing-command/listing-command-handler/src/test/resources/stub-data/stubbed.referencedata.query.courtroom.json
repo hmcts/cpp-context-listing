@@ -1,0 +1,39 @@
+{
+  "id": "COURT_CENTRE_ID",
+  "oucode": "C55BN00",
+  "oucodeL1Code": "C",
+  "oucodeL1Name": "Magistrates' Courts",
+  "oucodeL3Name": "COURT_CENTRE_NAME",
+  "oucodeL3WelshName": "COURT_CENTRE_NAME_WELSH",
+  "address1": "ADDRESS_1",
+  "address2": "ADDRESS_2",
+  "address3": "ADDRESS_3",
+  "address4": "ADDRESS_4",
+  "address5": "ADDRESS_5",
+  "postcode": "POSTCODE",
+  "welshAddress1": "WELSH_ADDRESS_1",
+  "welshAddress2": "WELSH_ADDRESS_2",
+  "welshAddress3": "WELSH_ADDRESS_3",
+  "welshAddress4": "WELSH_ADDRESS_4",
+  "welshAddress5": "WELSH_ADDRESS_5",
+  "defaultStartTime": "DEFAULT_START_TIME",
+  "defaultDurationHrs": "DEFAULT_DURATION_HOURS_MINS",
+  "courtrooms": [
+    {
+      "id": "COURT_ROOM_UUID_1",
+      "courtroomId": 294,
+      "venueName": "BOURNEMOUTH COMBINED COURT",
+      "venueNameWelsh": "COURT CYFFREDINOL BOURNEMOUTH",
+      "courtroomName": "Courtroom 04",
+      "courtroomNameWelsh": "Ystafell y Llys 04"
+    },
+    {
+      "id": "COURT_ROOM_UUID_2",
+      "courtroomId": 295,
+      "venueName": "BOURNEMOUTH COMBINED COURT",
+      "venueNameWelsh": "COURT CYFFREDINOL BOURNEMOUTH",
+      "courtroomName": "Courtroom 05",
+      "courtroomNameWelsh": "Ystafell y Llys 05"
+    }
+  ]
+}

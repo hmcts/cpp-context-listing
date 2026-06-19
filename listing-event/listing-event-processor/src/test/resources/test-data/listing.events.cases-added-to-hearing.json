@@ -1,0 +1,147 @@
+{
+  "hearingId": "6749e9a8-d1a9-4509-9dfc-244b663e9146",
+  "unAllocatedListedCases": [
+    {
+      "caseIdentifier": {
+        "authorityCode": "AVSPF",
+        "authorityId": "bccf3481-a538-34a7-b351-e9649b82f2b6",
+        "caseReference": "52SE0064723"
+      },
+      "caseStatus": "ACTIVE",
+      "defendants": [
+        {
+          "address": {
+            "address1": "176 CITY VIEW",
+            "address2": "ILFORD",
+            "postcode": "IG1 1NL"
+          },
+          "bailStatus": {
+            "code": "C",
+            "description": "Custody",
+            "id": "12e69486-4d01-3403-a50a-7419ca040635"
+          },
+          "courtProceedingsInitiated": "2023-05-30T06:59:48.815Z",
+          "dateOfBirth": "1990-08-30",
+          "defenceOrganisation": "ARIF & CO SOLICITORS LTD",
+          "firstName": "XXXX",
+          "id": "3c49bc9f-ad58-467f-9784-e2c3f85ee799",
+          "isYouth": false,
+          "lastName": "XXXXX",
+          "masterDefendantId": "3c49bc9f-ad58-467f-9784-e2c3f85ee799",
+          "offences": [
+            {
+              "id": "03370bf5-12a5-49c1-9cd9-1de9d984910f",
+              "laaApplnReference": {
+                "applicationReference": "7620800",
+                "effectiveEndDate": "2023-05-30",
+                "effectiveStartDate": "2023-05-30",
+                "statusCode": "GR",
+                "statusDate": "2023-05-30",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "OF61016",
+              "offenceWording": "on the 25th day of May 2023 unlawfully and maliciously wounded XXX with intent to do her grievous bodily harm.",
+              "restrictFromCourtList": false,
+              "shadowListed": false,
+              "startDate": "2023-05-25",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 18 of the Offences Against the    Person Act 1861.",
+                "title": "Section 18 - wounding with intent",
+                "welshLegislation": "Yn groes i adran 18 Deddf Troseddau Corfforol 1861.",
+                "welshTitle": "Adran 18 - clwyfo gan fwriadu"
+              }
+            },
+            {
+              "id": "d9f09665-6e57-4188-9716-06b02c256a35",
+              "laaApplnReference": {
+                "applicationReference": "7620800",
+                "effectiveEndDate": "2023-05-30",
+                "effectiveStartDate": "2023-05-30",
+                "statusCode": "GR",
+                "statusDate": "2023-05-30",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "OF61102",
+              "offenceWording": "on the 18th day of January 2023 assaulted XXXXX  thereby occasioning her actual bodily harm.",
+              "restrictFromCourtList": false,
+              "shadowListed": false,
+              "startDate": "2023-01-18",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 47 of the Offences Against the Person Act 1861.",
+                "title": "Assault a person thereby occasioning them actual bodily harm",
+                "welshLegislation": "Yn groes i adran 47 Deddf Troseddau Corfforol 1861.",
+                "welshTitle": "Ymosod ar berson gan achosi gwir niwed corfforol"
+              }
+            },
+            {
+              "id": "42d59211-d327-4077-a41b-438074a740c8",
+              "laaApplnReference": {
+                "applicationReference": "7620800",
+                "effectiveEndDate": "2023-05-30",
+                "effectiveStartDate": "2023-05-30",
+                "statusCode": "GR",
+                "statusDate": "2023-05-30",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "CJ88144",
+              "offenceWording": "XXX",
+              "restrictFromCourtList": false,
+              "shadowListed": false,
+              "startDate": "2023-05-25",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 139(1) and (6) of the Criminal Justice Act 1988.",
+                "title": "Possess knife blade / sharp pointed article in a public place - Criminal Justice Act 1988",
+                "welshLegislation": "Yn groes i adran 139(1) a (6) Deddf Cyfiawnder Troseddol 1988.",
+                "welshTitle": "Meddu ar lafn cyllell / eitem â blaen miniog mewn man cyhoeddus – Deddf Cyfiawnder Troseddol 1988"
+              }
+            },
+            {
+              "id": "de79ea2b-1521-4255-9214-6582f2976c05",
+              "laaApplnReference": {
+                "applicationReference": "7620800",
+                "effectiveEndDate": "2023-05-30",
+                "effectiveStartDate": "2023-05-30",
+                "statusCode": "GR",
+                "statusDate": "2023-05-30",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "OF61014",
+              "offenceWording": "XXXXXX.",
+              "restrictFromCourtList": false,
+              "shadowListed": false,
+              "startDate": "2023-05-25",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 16 of the Offences Against the Person Act 1861.",
+                "title": "Threats to kill",
+                "welshLegislation": "Yn groes i adran 16 Deddf Troseddau Corfforol 1861.",
+                "welshTitle": "Bygythiadau i ladd"
+              }
+            }
+          ],
+          "restrictFromCourtList": false
+        }
+      ],
+      "id": "c1719b68-8503-4645-b049-2b1772149662",
+      "markers": [],
+      "prosecutor": {
+        "address": {
+          "address1": "Kite Wing, 5th Floor",
+          "address2": "Temple Quay House",
+          "address3": "2 The Square",
+          "address4": "Temple Quay",
+          "address5": "Bristol",
+          "postcode": "BS1 6PN"
+        },
+        "prosecutorCode": "CPS-SW",
+        "prosecutorId": "6f20d293-77d6-3e79-991a-657372106cd6",
+        "prosecutorName": "CPS South West"
+      },
+      "restrictFromCourtList": false,
+      "shadowListed": false
+    }
+  ]
+}

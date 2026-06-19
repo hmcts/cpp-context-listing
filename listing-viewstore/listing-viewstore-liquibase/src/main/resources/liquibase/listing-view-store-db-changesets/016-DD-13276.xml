@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+
+    <changeSet author="listing" id="16" logicalFilePath="016-DD-13276.xml">
+        <addColumn tableName="listed_cases">
+            <column name="is_ejected" type="BOOLEAN"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="listing" id="16.1" logicalFilePath="016-DD-13276.xml">
+        <addColumn tableName="court_applications">
+            <column name="is_ejected" type="BOOLEAN"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="listing" id="16.2" logicalFilePath="016-DD-13276.xml">
+        <sql>DROP INDEX IF EXISTS listed_cases_idx</sql>
+        <sql>CREATE INDEX listed_cases_idx
+            ON listed_cases USING btree
+            (
+            hearing_id,
+            case_id,
+            authority_id,
+            case_reference,
+            authority_code,
+            prosecutor_id,
+            prosecutor_code,
+            is_ejected
+            )
+        </sql>
+
+        <sql>DROP INDEX IF EXISTS court_applications_idx</sql>
+        <sql>CREATE INDEX court_applications_idx
+            ON court_applications USING btree
+            (
+            hearing_id,
+            application_id,
+            application_type,
+            parent_application_id,
+            application_reference,
+            application_particulars,
+            is_ejected
+            )
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

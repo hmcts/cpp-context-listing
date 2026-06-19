@@ -1,0 +1,15 @@
+{
+  "courtCentreId": "f34a5dba-8c4b-4ec8-8b9a-6af405c00ebf",
+  "courtLists": [
+    {
+      "crestCourtSite": {
+        "crestCourtSiteId": "001",
+        "crestCourtSiteName": "MOCKCOURTNAME1",
+        "courtType": "CROWN_COURT"
+      },
+      "sittings": [
+
+      ]
+    }
+  ]
+}

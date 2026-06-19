@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/listing.command.remove-selected-offences-from-existing-hearing.json",
+  "type": "object",
+  "properties": {
+    "hearingId": {
+      "description": "Existing hearing from where the offences to be removed.",
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "offenceIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+      }
+    }
+  },
+  "required": [
+    "hearingId",
+    "offenceIds"
+  ],
+  "additionalProperties": false
+}

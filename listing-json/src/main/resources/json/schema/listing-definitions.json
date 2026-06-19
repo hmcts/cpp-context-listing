@@ -1,0 +1,143 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing-definitions.json",
+  "definitions": {
+    "localDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+    },
+    "bailStatus": {
+      "description": "BailStatus of core domain with property of id,code,description",
+      "$ref": "http://justice.gov.uk/core/courts/bailStatus.json"
+    },
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "caseIdentifier": {
+      "type": "object",
+      "properties": {
+        "authorityId": {
+          "$ref": "#/definitions/uuid"
+        },
+        "authorityCode": {
+          "type": "string"
+        },
+        "caseReference": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "authorityId",
+        "authorityCode",
+        "caseReference"
+      ],
+      "additionalProperties": false
+    },
+    "hearingType": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/uuid"
+        },
+        "description": {
+          "type": "string"
+        },
+        "welshDescription" : {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "description"
+      ],
+      "additionalProperties": false
+    },
+    "prosecutor": {
+      "type": "object",
+      "properties": {
+        "prosecutorId": {
+          "$ref": "#/definitions/uuid"
+        },
+        "prosecutorCode": {
+          "type": "string"
+        },
+        "prosecutorName": {
+          "type": "string",
+          "description": "The name of the prosecution authority from reference data.  Required for documentation purposes.  Required to be enriched when publishing hearing results"
+        },
+        "address": {
+          "$ref": "#/definitions/address"
+        }
+      },
+      "required": [
+        "prosecutorId",
+        "prosecutorCode"
+      ],
+      "additionalProperties": true
+    },
+    "address": {
+      "type": "object",
+      "properties": {
+        "address1": {
+          "description": "The address1",
+          "type": "string"
+        },
+        "welshAddress1": {
+          "description": "The address1 in Welsh",
+          "type": "string"
+        },
+        "address2": {
+          "description": "The address2",
+          "type": "string"
+        },
+        "welshAddress2": {
+          "description": "The address2 in Welsh",
+          "type": "string"
+        },
+        "address3": {
+          "description": "The address3",
+          "type": "string"
+        },
+        "welshAddress3": {
+          "description": "The address3 in Welsh",
+          "type": "string"
+        },
+        "address4": {
+          "description": "The address4",
+          "type": "string"
+        },
+        "welshAddress4": {
+          "description": "The address4 in Welsh",
+          "type": "string"
+        },
+        "address5": {
+          "description": "The address5",
+          "type": "string"
+        },
+        "welshAddress5": {
+          "description": "The address5 in Welsh",
+          "type": "string"
+        },
+        "postcode": {
+          "description": "The post code",
+          "$ref": "listing-definitions.json#/definitions/ukGovPostCode"
+        }
+      },
+      "required": [
+        "address1"
+      ],
+      "additionalProperties": false
+    },
+    "ukGovPostCode": {
+      "description": "UK Gov post code validation following CJS Data Standards",
+      "type": "string",
+      "pattern": "^(([gG][iI][rR] {0,}0[aA]{2})|(([aA][sS][cC][nN]|[sS][tT][hH][lL]|[tT][dD][cC][uU]|[bB][bB][nN][dD]|[bB][iI][qQ][qQ]|[fF][iI][qQ][qQ]|[pP][cC][rR][nN]|[sS][iI][qQ][qQ]|[iT][kK][cC][aA]) {0,}1[zZ]{2})|((([a-pr-uwyzA-PR-UWYZ][a-hk-yxA-HK-XY]?[0-9][0-9]?)|(([a-pr-uwyzA-PR-UWYZ][0-9][a-hjkstuwA-HJKSTUW])|([a-pr-uwyzA-PR-UWYZ][a-hk-yA-HK-Y][0-9][abehmnprv-yABEHMNPRV-Y]))) [0-9][abd-hjlnp-uw-zABD-HJLNP-UW-Z]{2}))$",
+      "maxLength": 8
+    }
+  }
+}

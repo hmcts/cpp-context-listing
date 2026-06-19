@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/progression/events/progression-interpreter.json",
+  "type": "object",
+  "properties": {
+    "needed": {
+      "type": "boolean"
+    },
+    "language": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    }
+  }
+}

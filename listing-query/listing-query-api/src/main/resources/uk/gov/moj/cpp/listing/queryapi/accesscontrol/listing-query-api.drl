@@ -1,0 +1,177 @@
+package uk.gov.moj.cpp.listing.queryapi.accesscontrol;
+
+import uk.gov.moj.cpp.accesscontrol.drools.Outcome;
+import uk.gov.moj.cpp.accesscontrol.drools.Action;
+import uk.gov.moj.cpp.listing.domain.RuleConstants;
+
+import java.util.Arrays;
+
+global uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider userAndGroupProvider;
+
+rule "Query - API - listing.search.hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.search.hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.COURT_ASSOCIATE, RuleConstants.NON_CPS_PROSECUTOR_GROUP, RuleConstants.OPERATIONAL_DELIVERY_ADMIN));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.available.search.hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.available.search.hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.range.search.hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.range.search.hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.PRISON_ADMIN, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.COURT_ASSOCIATE, RuleConstants.GROUP_POLICE_ADMIN, RuleConstants.GROUP_VICTIMS_WITNESS_CARE_ADMIN, RuleConstants.NON_CPS_PROSECUTOR_GROUP));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.range.search.hearings.court.calendar"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.range.search.hearings.court.calendar");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.PRISON_ADMIN, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.COURT_ASSOCIATE, RuleConstants.GROUP_POLICE_ADMIN, RuleConstants.GROUP_VICTIMS_WITNESS_CARE_ADMIN, RuleConstants.NON_CPS_PROSECUTOR_GROUP));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.allocated.and.unallocated.hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.allocated.and.unallocated.hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.COURT_ASSOCIATE, RuleConstants.GROUP_POLICE_ADMIN, RuleConstants.GROUP_VICTIMS_WITNESS_CARE_ADMIN, RuleConstants.JUDGE, RuleConstants.DJMC, RuleConstants.DEPUTIES, RuleConstants.RECORDERS, RuleConstants.SYSTEM_USERS));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.public.list"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.public.list");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_CLERKS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+rule "Query - API - listing.search.court.list"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.search.court.list");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.GROUP_VICTIMS_WITNESS_CARE_ADMIN, RuleConstants.GROUP_POLICE_ADMIN, RuleConstants.COURT_ASSOCIATE, RuleConstants.NON_CPS_PROSECUTOR_GROUP));
+  then
+    $outcome.setSuccess(true);
+end
+rule "Query - API - listing.search.court.list.payload"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.search.court.list.payload");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.GROUP_VICTIMS_WITNESS_CARE_ADMIN, RuleConstants.GROUP_POLICE_ADMIN, RuleConstants.COURT_ASSOCIATE, RuleConstants.SYSTEM_USERS));
+  then
+    $outcome.setSuccess(true);
+end
+rule "Query - API - listing.search.daily.list.payload"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.search.daily.list.payload");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.GROUP_VICTIMS_WITNESS_CARE_ADMIN, RuleConstants.GROUP_POLICE_ADMIN, RuleConstants.COURT_ASSOCIATE, RuleConstants.SYSTEM_USERS));
+  then
+    $outcome.setSuccess(true);
+end
+rule "Query - API - listing.search.hearing"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.search.hearing");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.COURT_CLERKS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.LISTING_OFFICERS, RuleConstants.LEGAL_ADVISERS, RuleConstants.SYSTEM_USERS, RuleConstants.COURT_ASSOCIATE, RuleConstants.OPERATIONAL_DELIVERY_ADMIN));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.court.list.publish.status"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.court.list.publish.status");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.search.hearing.slots"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.search.hearing.slots");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.COURT_CLERKS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.LISTING_OFFICERS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.unscheduled.search.hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.unscheduled.search.hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.any-allocation.search.hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.any-allocation.search.hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.SYSTEM_USERS));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.cotr.search.hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.cotr.search.hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.COURT_ASSOCIATE, RuleConstants.SYSTEM_USERS));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.get.cases-by-person-defendant"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.get.cases-by-person-defendant");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.DEFENCE_LAWYER, RuleConstants.CHAMBERS_CLERK, RuleConstants.CHAMBERS_ADMIN, RuleConstants.ADVOCATES));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.get.cases-by-organisation-defendant"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.get.cases-by-organisation-defendant");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.DEFENCE_LAWYER, RuleConstants.CHAMBERS_CLERK, RuleConstants.CHAMBERS_ADMIN, RuleConstants.ADVOCATES));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.get.cache-refdata-courtrooms-refresh"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.get.cache-refdata-courtrooms-refresh");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.SYSTEM_USERS));
+  then
+    $outcome.setSuccess(true);
+end
+
+
+rule "Query - API - listing.query.download-hearing-csv-report"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.query.download-hearing-csv-report");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.COURT_ASSOCIATE, RuleConstants.GROUP_POLICE_ADMIN, RuleConstants.GROUP_VICTIMS_WITNESS_CARE_ADMIN, RuleConstants.NON_CPS_PROSECUTOR_GROUP));
+  then
+    $outcome.setSuccess(true);
+end
