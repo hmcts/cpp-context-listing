@@ -1,0 +1,198 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.unscheduled-next-hearing-requested.json",
+  "type": "object",
+  "properties": {
+    "hearing": {
+      "$ref": "#/definitions/hearingUnscheduledListingNeeds"
+    },
+    "courtCentreDetails": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/court-centre-details.json"
+      }
+    },
+    "hearingDay": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    }
+  },
+  "required": [
+    "hearing",
+    "courtCentreDetails",
+    "hearingDay"
+  ],
+  "definitions": {
+    "defendantListingNeeds": {
+      "id": "http://justice.gov.uk/core/courts/defendantListingNeeds.json",
+      "type": "object",
+      "properties": {
+        "prosecutionCaseId": {
+          "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+        },
+        "defendantId": {
+          "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+        },
+        "datesToAvoid": {
+          "type": "string"
+        },
+        "isYouth": {
+          "description": "Indicates that the defendant must be dealt with as a Youth for listing purposes.  This is calculated based on teh requested listing date compared to date of birth",
+          "type": "boolean"
+        },
+        "listingReason": {
+          "type": "string"
+        },
+        "hearingLanguageNeeds": {
+          "$ref": "http://justice.gov.uk/core/courts/hearingLanguage.json"
+        }
+      },
+      "required": [
+        "prosecutionCaseId",
+        "defendantId"
+      ]
+    },
+    "courtApplicationPartyListingNeeds": {
+      "id": "http://justice.gov.uk/core/courts/courtApplicationPartyListingNeeds.json",
+      "type": "object",
+      "properties": {
+        "courtApplicationId": {
+          "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+        },
+        "courtApplicationPartyId": {
+          "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+        },
+        "hearingLanguageNeeds": {
+          "$ref": "http://justice.gov.uk/core/courts/hearingLanguage.json"
+        }
+      },
+      "required": [
+        "courtApplicationId",
+        "courtApplicationPartyId"
+      ],
+      "additionalProperties": false
+    },
+    "hearingUnscheduledListingNeeds": {
+      "id": "http://justice.gov.uk/core/courts/hearingUnscheduledListingNeeds.json",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+        },
+        "type": {
+          "$ref": "http://justice.gov.uk/core/courts/hearingType.json"
+        },
+        "jurisdictionType": {
+          "$ref": "http://justice.gov.uk/core/courts/jurisdictionType.json"
+        },
+        "courtCentre": {
+          "$ref": "http://justice.gov.uk/core/courts/courtCentre.json"
+        },
+        "listedStartDateTime": {
+          "description": "The date and time that has been pre-arranged and therefore must be listed accordingly.  Since the Police grant bail, Police requests will arrive at court with a pre-agreed date and time as per the bail arrangements.  Similarly adjournments will result in a pre-arranged date and time",
+          "type": "string",
+          "format": "date-time"
+        },
+        "earliestStartDateTime": {
+          "description": "The date before which a hearing must NOT be listed",
+          "type": "string",
+          "format": "date-time"
+        },
+        "endDate": {
+          "description": "The requested end date of a hearing",
+          "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+        },
+        "estimatedMinutes": {
+          "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/positiveInteger"
+        },
+        "estimatedDuration" :{
+          "description": "Estimated duration",
+          "type": "string"
+        },
+        "typeOfList": {
+          "description": "Type of Unscheduled Listing Reason (Bench Warrant etc)",
+          "type": "object",
+          "id": "http://justice.gov.uk/listing/courts/typeOfList.json",
+          "properties": {
+            "id": {
+              "description": "Id of Unscheduled Listing Reason",
+              "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+            },
+            "description": {
+              "description": "Type of Unscheduled Listing Reason",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "description"
+          ]
+        },
+        "prosecutorDatesToAvoid": {
+          "type": "string"
+        },
+        "listingDirections": {
+          "type": "string"
+        },
+        "reportingRestrictionReason": {
+          "type": "string"
+        },
+        "judiciary": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "http://justice.gov.uk/core/courts/judicialRole.json"
+          }
+        },
+        "prosecutionCases": {
+          "description": "The prosecution cases(s) when listing a court hearing",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "http://justice.gov.uk/core/courts/prosecutionCase.json"
+          }
+        },
+        "courtApplications": {
+          "description": "The court application(s) when requesting an application hearing or when listing an application with a prosecution case",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "http://justice.gov.uk/core/courts/courtApplication.json"
+          }
+        },
+        "defendantListingNeeds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/defendantListingNeeds"
+          }
+        },
+        "courtApplicationPartyListingNeeds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/courtApplicationPartyListingNeeds"
+          }
+        },
+        "bookingReference": {
+          "description": "Booking reference for provisionally booked slots in magistrates courts schedules.",
+          "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+        },
+        "weekCommencingDate": {
+          "$ref": "http://justice.gov.uk/core/courts/weekCommencingDate.json"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "jurisdictionType",
+        "courtCentre",
+        "typeOfList"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
+
+

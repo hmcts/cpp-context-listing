@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/courtApplication.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "linkedCaseIds": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+      }
+    },
+    "parentApplicationId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "respondents": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/applicantRespondent.json"
+      }
+    },
+    "applicant": {
+      "$ref": "http://justice.gov.uk/listing/events/applicantRespondent.json"
+    },
+    "subject": {
+      "$ref": "http://justice.gov.uk/listing/events/applicantRespondent.json"
+    },
+    "applicationType": {
+      "type": "string"
+    },
+    "applicationReference": {
+      "type": "string"
+    },
+    "applicationParticulars": {
+      "type": "string"
+    },
+    "restrictFromCourtList": {
+      "type": "boolean"
+    },
+    "restrictCourtApplicationType": {
+      "type": "boolean"
+    },
+    "isEjected": {
+      "type": "boolean"
+    },
+    "offences": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/offence.json"
+      }
+    },
+    "laaApplnReference": {
+      "description": "A record of legal aid applications for this offence",
+      "$ref": "http://justice.gov.uk/core/courts/laaReference.json"
+    }
+  },
+  "required": [
+    "id",
+    "applicant",
+    "applicationType"
+  ],
+  "additionalProperties": false
+}

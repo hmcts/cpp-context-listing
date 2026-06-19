@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/commands/listing.command.handler.modify-hearing-counsel-command.json",
+  "type": "object",
+  "properties": {
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "counselType": {
+      "type": "string",
+      "enum": [
+        "PROSECUTION",
+        "DEFENCE"
+      ]
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "ADD",
+        "UPDATE",
+        "REMOVE"
+      ]
+    },
+    "payload": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "hearingId",
+    "counselType",
+    "action",
+    "payload"
+  ],
+  "additionalProperties": false
+}

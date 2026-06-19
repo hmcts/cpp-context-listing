@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/offence-ids.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "seedingHearing": {
+      "$ref": "http://justice.gov.uk/listing/events/seedingHearing.json"
+    }
+  },
+  "required": [
+    "id"
+  ],
+  "additionalProperties": false
+}

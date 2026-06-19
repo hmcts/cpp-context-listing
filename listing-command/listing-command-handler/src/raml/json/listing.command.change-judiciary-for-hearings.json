@@ -1,0 +1,20 @@
+{
+  "hearings": [
+    "a6156814-67b5-4942-8dd5-7253e87ec41a",
+    "425e1e11-268d-4630-b7b1-1f838efec8ed"
+  ],
+  "judiciary": [
+    {
+      "judicialId": "b959059c-6663-462a-a4d1-d83439f0b4a6",
+      "judicialRoleType": "MAGISTRATE",
+      "isDeputy": false,
+      "isBenchChairman": true
+    },
+    {
+      "judicialId": "1ce71397-e923-4193-97f6-1395720a6a21",
+      "judicialRoleType": "MAGISTRATE",
+      "isDeputy": true,
+      "isBenchChairman": false
+    }
+  ]
+}

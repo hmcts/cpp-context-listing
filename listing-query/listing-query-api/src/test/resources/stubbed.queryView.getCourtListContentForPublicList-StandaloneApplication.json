@@ -1,0 +1,215 @@
+{
+  "hearings": [
+    {
+      "judiciary": [
+        {
+          "judicialId": "JUDICIARY_ID"
+        }
+      ],
+      "courtCentreId": "COURT_CENTRE_ID",
+      "hearingsByCourtCentreId": [
+        {
+          "hearingDate": "START_DATE1",
+          "hearingsByHearingDate": [
+            {
+              "hearing": {
+                "id": "1f889523-4a2b-4662-a5a8-9fa949d97697",
+                "courtRoomId": "COURT_ROOM_ID",
+                "reportingRestrictionReason": "REPORTING_RESTRICTION_REASON",
+                "welshReportingRestrictionReason": "WelshREPORTING_RESTRICTION_REASON",
+                "allocated": true,
+                "judiciary": [
+                  {
+                    "isDeputy": true,
+                    "judicialId": "JUDICIARY_ID",
+                    "isBenchChairman": true,
+                    "judicialRoleType": {
+                      "judiciaryType": "MAGISTRATE"
+                    }
+                  }
+                ],
+                "hearingDays": [
+                  {
+                    "endTime": "2018-11-21T14:37:00.000Z",
+                    "sequence": 65,
+                    "startTime": "2018-11-21T12:37:00.000Z",
+                    "hearingDate": "2018-11-21",
+                    "durationMinutes": 120
+                  },
+                  {
+                    "endTime": "2018-11-20T14:37:00.000Z",
+                    "sequence": 0,
+                    "startTime": "2018-11-20T12:37:00.000Z",
+                    "hearingDate": "2018-11-20",
+                    "durationMinutes": 120
+                  },
+                  {
+                    "endTime": "2018-11-22T14:37:00.000Z",
+                    "sequence": 0,
+                    "startTime": "2018-11-22T10:30:00.000Z",
+                    "hearingDate": "2018-11-22",
+                    "durationMinutes": 120
+                  }
+                ],
+                "listedCases": [
+                  {
+                    "id": "9a93f51e-7938-4abc-9156-1656aca7177e",
+                    "defendants": [
+                      {
+                        "id": "788e242e-fcfd-41ba-b06a-b1156d37e191",
+                        "masterDefendantId": "788e242e-fcfd-41ba-b06a-b1156d37e191",
+                        "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+                        "lastName": "LAST_NAME1",
+                        "offences": [
+                          {
+                            "id": "785c2a46-175c-4032-ad26-4c79642048ad",
+                            "startDate": "2018-11-21",
+                            "offenceCode": "yGRsfUEVpn",
+                            "listingNumber" : 1,
+                            "offenceWording": "On 01/11/2017 at Chelmsford intentionally obstructed a person authorised by the BBC in the exercise of a power conferred by virtue of a search warrant issued under section 366 of the Communications Act 2003 by Chelmsford Magistrates Court on 25/10/2017 ",
+                            "statementOfOffence": {
+                              "title": "OFFENCE_TITLE",
+                              "welshTitle": "WelshOFFENCE_TITLE"
+                            },
+                            "reportingRestrictions": [
+                              {
+                                "id": "b0faf7dc-9459-4857-a184-fe498123c5ba",
+                                "label": "RestrictionApplied",
+                                "orderedDate": "2020-11-24",
+                                "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047"
+                              }
+                            ],
+                            "restrictFromCourtList": false
+                          }
+                        ],
+                        "firstName": "FIRST_NAME1",
+                        "bailStatus": "CONDITIONAL",
+                        "dateOfBirth": "1954-03-22",
+                        "nationalityDescription": "British"
+                      }
+                    ],
+                    "caseIdentifier": {
+                      "authorityId": "fa356cdf-6697-41e1-bfb5-a3813469b666",
+                      "authorityCode": "GytGt7BqP4",
+                      "caseReference": "CASE_REFERENCE1"
+                    },
+                    "restrictFromCourtList": false
+                  }
+                ],
+                "type": {
+                  "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+                  "description": "HEARING_TYPE1"
+                },
+                "courtApplications": []
+              }
+            }
+          ]
+        },
+        {
+          "hearingDate": "START_DATE2",
+          "hearingsByHearingDate": [
+            {
+              "hearing": {
+                "id": "2a889523-4a2b-4662-a5a8-9fa949d97697",
+                "courtRoomId": "COURT_ROOM_ID",
+                "reportingRestrictionReason": "REPORTING_RESTRICTION_REASON",
+                "welshReportingRestrictionReason": "Welsh_REPORTING_RESTRICTION_REASON",
+                "allocated": true,
+                "hearingLanguage": "ENGLISH",
+                "estimatedMinutes": 30,
+                "jurisdictionType": "MAGISTRATES",
+                "judiciary": [
+                  {
+                    "isDeputy": true,
+                    "judicialId": "JUDICIARY_ID",
+                    "isBenchChairman": true,
+                    "judicialRoleType": {
+                      "judiciaryType": "MAGISTRATE"
+                    }
+                  }
+                ],
+                "hearingDays": [
+                  {
+                    "endTime": "2018-11-21T14:37:00.000Z",
+                    "sequence": 0,
+                    "startTime": "2018-11-21T12:37:00.000Z",
+                    "hearingDate": "2018-11-21",
+                    "durationMinutes": 120
+                  },
+                  {
+                    "endTime": "2018-11-20T14:37:00.000Z",
+                    "sequence": 0,
+                    "startTime": "2018-11-20T12:37:00.000Z",
+                    "hearingDate": "2018-11-20",
+                    "durationMinutes": 120
+                  },
+                  {
+                    "endTime": "2018-11-22T14:37:00.000Z",
+                    "sequence": 1,
+                    "startTime": "2018-11-22T10:30:00.000Z",
+                    "hearingDate": "2018-11-22",
+                    "durationMinutes": 120
+                  }
+                ],
+                "courtApplications": [
+                  {
+                    "id": "16139251-90e6-11e9-ad85-e79bbff93e2f",
+                    "applicant": {
+                      "id": "89a87ce1-1cf4-4f10-adb3-004e20baab08",
+                      "lastName": "LAST_NAME2",
+                      "firstName": "FIRST_NAME2",
+                      "isRespondent": false,
+                      "address": {
+                        "address1": "ADDRESS_1",
+                        "address2": "ADDRESS_2",
+                        "address3": "ADDRESS_3",
+                        "address4": "ADDRESS_4",
+                        "address5": "ADDRESS_5",
+                        "postcode": "POSTCODE"
+                      },
+                      "restrictFromCourtList": false,
+                      "courtApplicationPartyType": "PERSON"
+                    },
+                    "respondents": [
+                      {
+                        "id": "b2de787c-6000-4d74-9951-a6b25cc96608",
+                        "lastName": "LAST_NAME3",
+                        "firstName": "FIRST_NAME3",
+                        "isRespondent": true,
+                        "address": {
+                          "address1": "ADDRESS_1",
+                          "address2": "ADDRESS_2",
+                          "address3": "ADDRESS_3",
+                          "address4": "ADDRESS_4",
+                          "address5": "ADDRESS_5",
+                          "postcode": "POSTCODE"
+                        },
+                        "restrictFromCourtList": false,
+                        "courtApplicationPartyType": "PERSON"
+                      }
+                    ],
+                    "applicationType": "APPLICATION_TYPE",
+                    "applicationParticulars": "APPLICATION_PARTICULARS",
+                    "applicationReference": "CASE_REFERENCE2",
+                    "restrictFromCourtList": false,
+                    "restrictCourtApplicationType": false,
+                    "offences": [
+                      {
+                        "id": "785c2a46-175c-4032-ad26-4c79642048ad",
+                        "listingNumber" : 1
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+                  "description": "HEARING_TYPE2"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet author="listing" id="1" logicalFilePath="005-GPE-6050.xml">
+
+        <sql>DROP INDEX idx_allocated</sql>
+        <sql>CREATE INDEX search_hearings_idx ON hearing USING GIN ((properties -> 'courtCentreId'), (properties -> 'type'), (properties -> 'jurisdictionType'), (properties -> 'allocated'))</sql>
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cs:FirmList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice">
+    <cs:CourtLists>
+        <cs:CourtList SittingDate="2020-03-09">
+            <cs:CourtHouse/>
+            <cs:Sittings>
+                <cs:Sitting>
+                    <cs:CourtRoomNumber>0</cs:CourtRoomNumber>
+                    <cs:SittingNote>TESTNOTE</cs:SittingNote>
+                </cs:Sitting>
+            </cs:Sittings>
+        </cs:CourtList>
+        <cs:CourtList SittingDate="2020-03-16">
+            <cs:CourtHouse/>
+            <cs:Sittings>
+                <cs:Sitting>
+                    <cs:CourtRoomNumber>0</cs:CourtRoomNumber>
+                    <cs:SittingNote>TESTNOTE</cs:SittingNote>
+                </cs:Sitting>
+                <cs:Sitting>
+                    <cs:CourtRoomNumber>0</cs:CourtRoomNumber>
+                    <cs:SittingNote>TESTNOTE</cs:SittingNote>
+                </cs:Sitting>
+            </cs:Sittings>
+        </cs:CourtList>
+        <cs:CourtList SittingDate="2020-03-17">
+            <cs:CourtHouse/>
+            <cs:Sittings>
+                <cs:Sitting>
+                    <cs:CourtRoomNumber>0</cs:CourtRoomNumber>
+                    <cs:SittingNote>TESTNOTE</cs:SittingNote>
+                </cs:Sitting>
+            </cs:Sittings>
+        </cs:CourtList>
+        <cs:CourtList SittingDate="2020-03-18">
+            <cs:CourtHouse/>
+            <cs:Sittings>
+                <cs:Sitting>
+                    <cs:CourtRoomNumber>0</cs:CourtRoomNumber>
+                    <cs:SittingNote>TESTNOTE</cs:SittingNote>
+                </cs:Sitting>
+            </cs:Sittings>
+        </cs:CourtList>
+        <cs:CourtList SittingDate="2020-03-20">
+            <cs:CourtHouse/>
+            <cs:Sittings>
+                <cs:Sitting>
+                    <cs:CourtRoomNumber>0</cs:CourtRoomNumber>
+                    <cs:SittingNote>TESTNOTE</cs:SittingNote>
+                </cs:Sitting>
+            </cs:Sittings>
+        </cs:CourtList>
+        <cs:CourtList>
+            <cs:Sittings/>
+        </cs:CourtList>
+    </cs:CourtLists>
+</cs:FirmList>

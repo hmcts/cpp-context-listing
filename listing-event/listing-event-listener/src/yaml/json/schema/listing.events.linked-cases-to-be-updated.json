@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.linked-cases-to-be-updated.json",
+  "type": "object",
+  "properties": {
+    "linkActionType": {
+      "type": "string"
+    },
+    "caseId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "caseUrn": {
+      "type": "string"
+    },
+    "hearingIds":{
+      "type": "array",
+      "minItems": 1,
+      "items":{
+        "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+      }
+    },
+    "linkedToCases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "caseId": {
+            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          },
+          "caseUrn": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "caseId",
+          "caseUrn"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "linkActionType",
+    "hearingIds",
+    "caseId",
+    "caseUrn",
+    "linkedToCases"
+  ],
+  "additionalProperties": false
+}

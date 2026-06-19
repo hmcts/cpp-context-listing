@@ -1,0 +1,125 @@
+{
+  "hearings": [
+    {
+      "id": "0eb4d7d1-a75c-4e24-920e-5d825a995ec8",
+      "type": {
+        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+        "description": "First hearing"
+      },
+      "endDate": "2026-02-04",
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2026-02-04",
+      "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "hearingDays": [
+        {
+          "endTime": "2026-02-04T17:21:01.001Z",
+          "sequence": 1,
+          "startTime": "2026-02-04T17:01:01.001Z",
+          "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "hearingDate": "2026-02-04",
+          "isCancelled": false,
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "courtScheduleId": "4f075298-c155-40a6-bcf9-5f88b9330ccf",
+          "durationMinutes": 20,
+          "matchedWithQuery": true
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "654f4790-4d00-4d85-8745-5200c3467d6d",
+          "markers": [
+            {
+              "id": "0ea4b5b8-7e1e-4618-ac56-a6e9de9abc43",
+              "markerTypeid": "e7eff972-189c-4957-8b1e-cb45213aa64e",
+              "markerTypeCode": "HT",
+              "markerTypeDescription": "Human Trafficking"
+            }
+          ],
+          "defendants": [
+            {
+              "id": "10808cef-f1a1-48d9-bb2e-3d19514317ff",
+              "address": {
+                "address1": "56saon",
+                "address2": "56Police House",
+                "address3": "StreetDescription1",
+                "address4": "Locality1",
+                "address5": "Town2",
+                "postcode": "TW14 9XD"
+              },
+              "isYouth": true,
+              "lastName": "Balistreri93",
+              "offences": [
+                {
+                  "id": "de8e48e9-c675-478b-8ee7-b2c0b5f80cac",
+                  "endDate": "2023-04-12",
+                  "startDate": "2023-04-12",
+                  "offenceCode": "RT03014",
+                  "shadowListed": false,
+                  "offenceWording": "Has a violent past and fear that he will commit further offences and interfere with witnesse",
+                  "laaApplnReference": {
+                    "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5",
+                    "statusCode": "GR",
+                    "statusDate": "2026-02-03",
+                    "effectiveEndDate": "2026-02-03",
+                    "statusDescription": "Granted (One Advocate)",
+                    "effectiveStartDate": "2026-02-03",
+                    "applicationReference": "SNI-2950-1"
+                  },
+                  "statementOfOffence": {
+                    "title": "Off duty seaman - alcohol in breath / blood / urine over prescribed limit - transport safety",
+                    "welshTitle": "Off duty seaman - alcohol in breath / blood / urine over prescribed limit - transport safety",
+                    "legislation": "Contrary to sections 79(3) and 82 of the Railways and Transport Safety Act 2003."
+                  },
+                  "reportingRestrictions": [
+                    {
+                      "id": "c9d7a08f-a148-46a5-8027-43bb94cf00b0",
+                      "label": "Section 49 of the Children and Young Persons Act 1933 applies",
+                      "orderedDate": "2026-02-03"
+                    }
+                  ],
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Amina",
+              "dateOfBirth": "2010-08-08",
+              "legalAidStatus": "Granted",
+              "masterDefendantId": "10808cef-f1a1-48d9-bb2e-3d19514317ff",
+              "hearingLanguageNeeds": "ENGLISH",
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-02-03T12:44:54.423Z"
+            }
+          ],
+          "prosecutor": {
+            "prosecutorId": "42880989-5d09-332e-a711-8797af06ecea",
+            "prosecutorCode": "CPS-EM"
+          },
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+            "authorityCode": "CITYPF",
+            "caseReference": "03FebVTC953"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "MAGISTRATES",
+      "courtApplications": [],
+      "courtCentreDetails": {
+        "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+        "defaultDuration": 420,
+        "defaultStartTime": "10:00:00"
+      },
+      "isGroupProceedings": false,
+      "numberOfGroupCases": 1,
+      "sendNotificationToParties": false
+    }
+  ],
+  "notes": []
+}

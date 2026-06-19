@@ -1,0 +1,14 @@
+{
+  "_metadata": {
+    "name": "listing.events.non-default-days-changed-for-hearing"
+  },
+  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+  "nonDefaultDays": [
+    {
+      "startTime": "2018-01-21T10:00:00.000Z"
+    },
+    {
+      "startTime": "2018-01-22T11:00:00.000Z"
+    }
+  ]
+}

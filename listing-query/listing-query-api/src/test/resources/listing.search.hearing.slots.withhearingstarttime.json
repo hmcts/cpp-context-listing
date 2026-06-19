@@ -1,0 +1,56 @@
+{
+  "results": 2,
+  "pageCount": 1,
+  "hearingSlots": [
+    {
+      "courtScheduleId": "0205eb29-5d01-4779-a8c1-3038bc39dc09",
+      "listingProfileId": "CS2398863",
+      "ouCode": "B01LY00",
+      "courtRoomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+      "courtRoomNumber": 2331,
+      "courtHouseName": "Lavender Hill Magistrates' Court",
+      "courtRoomName": "Courtroom 02",
+      "operationalUnit": "1",
+      "businessType": "G1T",
+      "panel": "ADULT",
+      "courtSession": "AD",
+      "sessionDate": "2020-06-01",
+      "maxSlots": 10,
+      "maxDuration": 0,
+      "availableSlots": 5,
+      "availableDuration": 0,
+      "judiciaries": [],
+      "slotStartTimes": [
+        {
+          "hearingStartTime": "2017-10-11T09:00:00.000Z",
+          "count": 5
+        }
+      ]
+    },
+    {
+      "courtScheduleId": "0674a9fb-5a8e-4d56-9ea2-e6073dee0c1a",
+      "listingProfileId": null,
+      "ouCode": "B01LY00",
+      "courtRoomId": "d776fb8a-4114-461c-b4d3-ff6fed6fc543",
+      "courtRoomNumber": 2331,
+      "courtHouseName": "Lavender Hill Magistrates' Court",
+      "courtRoomName": "Courtroom 02",
+      "operationalUnit": "1",
+      "businessType": "G1T",
+      "panel": "ADULT",
+      "courtSession": "AD",
+      "sessionDate": "2020-06-01",
+      "maxSlots": 0,
+      "maxDuration": 0,
+      "availableSlots": -1,
+      "availableDuration": -1,
+      "judiciaries": [],
+      "slotStartTimes": [
+        {
+          "hearingStartTime": "2017-10-11T09:00:00.000Z",
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

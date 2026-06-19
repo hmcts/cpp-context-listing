@@ -1,0 +1,13 @@
+{
+  "hearingId": "ad3fa69f-5568-403d-8e11-21ccb13d6862",
+  "hearingDayCourtSchedules": [
+    {
+      "hearingDate": "2024-03-22",
+      "courtScheduleId": "d4b9299c-c6c6-3747-8dac-01ca82239c27"
+    },
+    {
+      "hearingDate": "2024-03-25",
+      "courtScheduleId": "d4b9299c-c6c6-3747-8dac-01ca82239c27"
+    }
+  ]
+}

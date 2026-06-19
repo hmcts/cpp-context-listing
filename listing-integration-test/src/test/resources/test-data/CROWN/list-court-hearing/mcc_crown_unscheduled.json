@@ -1,0 +1,101 @@
+{
+    "hearings": [
+        {
+            "courtCentre": {
+                "id": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+                "name": "Croydon Crown Court"
+            },
+            "estimatedMinutes": 0,
+            "id": "6d091ea9-a9b3-4ca9-abf2-d5014b454e75",
+            "jurisdictionType": "CROWN",
+            "prosecutionCases": [
+                {
+                    "classOfCase": "Class 1",
+                    "defendants": [
+                        {
+                            "courtProceedingsInitiated": "2026-02-06T11:30:23.189Z",
+                            "id": "515333e9-8f07-4c08-a7b7-1cf3efaee55f",
+                            "masterDefendantId": "515333e9-8f07-4c08-a7b7-1cf3efaee55f",
+                            "offences": [
+                                {
+                                    "committingCourt": {
+                                        "courtCentreId": "31b3d313-7a7c-4598-bb4b-c1bff9b00e26",
+                                        "courtHouseCode": "EF",
+                                        "courtHouseName": "Croydon Magistrates' Court",
+                                        "courtHouseShortName": "Croydon Magistrates' Court",
+                                        "courtHouseType": "MAGISTRATES"
+                                    },
+                                    "count": 0,
+                                    "endorsableFlag": false,
+                                    "id": "c5610b06-ad4c-4a61-a6d2-17878a17e641",
+                                    "maxPenalty": "Indictable only",
+                                    "modeOfTrial": "Indictable",
+                                    "offenceCode": "TH68023A",
+                                    "offenceDateCode": 1,
+                                    "offenceDefinitionId": "42916c3b-128f-3b6e-ad14-b51fc36fbf1a",
+                                    "offenceLegislation": "Contrary to section 1(1) of the Criminal Attempts Act 1981.",
+                                    "offenceLegislationWelsh": "Yn groes i adran 1(1) Deddf Ymgeisiau i Droseddu 1981.",
+                                    "offenceTitle": "Attempt robbery",
+                                    "offenceTitleWelsh": "Ymgais i ysbeilio (robbery)",
+                                    "orderIndex": 1,
+                                    "startDate": "2026-01-05",
+                                    "wording": "On or in 05 Jan 2026 at london attempted to rob qwe of asda  of a value unknown ."
+                                }
+                            ],
+                            "personDefendant": {
+                                "arrestSummonsNumber": "0800PP0100000000001Q",
+                                "bailStatus": {
+                                    "code": "A",
+                                    "description": "Not applicable",
+                                    "id": "86009c70-759d-3308-8de4-194886ff9a77"
+                                },
+                                "personDetails": {
+                                    "address": {
+                                        "address1": "No fixed abode"
+                                    },
+                                    "documentationLanguageNeeds": "ENGLISH",
+                                    "firstName": "abz",
+                                    "gender": "MALE",
+                                    "hearingLanguageNeeds": "ENGLISH",
+                                    "lastName": "zcv",
+                                    "nationalityCode": "KHM",
+                                    "nationalityDescription": "Cambodian",
+                                    "nationalityId": "7262d2bb-40d3-447d-a303-27b528be2a43",
+                                    "title": "Mr"
+                                }
+                            },
+                            "prosecutionCaseId": "d85c46f8-03ad-44c4-8c7f-c798ff95b2c5"
+                        }
+                    ],
+                    "id": "d85c46f8-03ad-44c4-8c7f-c798ff95b2c5",
+                    "initiationCode": "O",
+                    "isCivil": false,
+                    "isRetrial": false,
+                    "prosecutionCaseIdentifier": {
+                        "address": {
+                            "address1": "CPS",
+                            "address2": "2nd Floor",
+                            "address3": "102 Petty France",
+                            "address4": "London",
+                            "postcode": "SW1H 9EA"
+                        },
+                        "majorCreditorCode": "2070C",
+                        "prosecutionAuthorityCode": "CPS-LS",
+                        "prosecutionAuthorityId": "c8e6c4c8-f31f-3e48-b40a-6e7d33fe5652",
+                        "prosecutionAuthorityName": "CPS London South",
+                        "caseURN": "95GD4157228"
+                    },
+                    "trialReceiptType": "Either way case"
+                }
+            ],
+            "type": {
+                "description": "Application to Break Fixture",
+                "id": "7dfff260-6f83-496b-a68e-f32f5e8aef10"
+            },
+            "typeOfList": {
+                "description": "Date and time to be fixed",
+                "id": "fbed768b-ee95-4434-87c8-e81cbc8d24c8"
+            }
+        }
+    ]
+}

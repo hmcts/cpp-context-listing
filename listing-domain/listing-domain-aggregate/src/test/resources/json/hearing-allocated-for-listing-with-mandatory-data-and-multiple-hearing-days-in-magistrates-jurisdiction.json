@@ -1,0 +1,188 @@
+[
+  {
+    "_metadata": {
+      "name": "listing.events.hearing-listed"
+    },
+    "hearing": {
+      "id": "04ce8fb2-b181-4379-81af-d0c26fc8c273",
+      "type": {
+        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+        "description": "First hearing"
+      },
+      "endDate": "2020-09-16",
+      "allocated": false,
+      "judiciary": [],
+      "startDate": "2020-09-14",
+      "courtRoomId": "fce80cd4-0c00-3c30-9471-2c2ee7a52453",
+      "hearingDays": [
+        {
+          "endTime": "2020-09-14T09:01:00.000Z",
+          "sequence": 0,
+          "startTime": "2020-09-14T09:00:00.000Z",
+          "hearingDate": "2020-09-14",
+          "durationMinutes": 1
+        },
+        {
+          "endTime": "2020-09-15T11:01:00.000Z",
+          "sequence": 0,
+          "startTime": "2020-09-15T11:00:00.000Z",
+          "hearingDate": "2020-09-15",
+          "durationMinutes": 1
+        },
+        {
+          "endTime": "2020-09-16T13:01:00.000Z",
+          "sequence": 0,
+          "startTime": "2020-09-16T13:00:00.000Z",
+          "hearingDate": "2020-09-16",
+          "durationMinutes": 1
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "1cc16c17-fa32-495c-b0e6-0c7adaad44f3",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "8ae38797-6ec2-4b0a-b761-e1c270b6916a",
+              "address": {
+                "address1": "291 MALLERTON WAY",
+                "address2": "DUNSTABLE",
+                "postcode": "LN5 5TT"
+              },
+              "isYouth": false,
+              "lastName": "Smith",
+              "offences": [
+                {
+                  "id": "1a7f6ee8-f489-4877-87b6-a59e10f34860",
+                  "startDate": "2019-09-12",
+                  "offenceCode": "CA03014",
+                  "shadowListed": false,
+                  "offenceWording": "On TEST  at  TEST  used or threatened unlawful violence towards another and your conduct was such as would cause a person of reasonable firmness present at the scene to fear for his personal safety. Contrary to section 3(1) and (7) of the Public Order Act 1986.",
+                  "statementOfOffence": {
+                    "title": "Fail    / refuse give assistance to person executing Communications Act search warrant",
+                    "welshTitle": "Fail    / refuse give assistance to person executing Communications Act search warrant",
+                    "legislation": "Contrary to section 366(8)(b) and    (9) of the Communications Act 2003."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "John",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody or remanded into custody"
+              },
+              "dateOfBirth": "1993-08-02",
+              "masterDefendantId": "8ae38797-6ec2-4b0a-b761-e1c270b6916a",
+              "hearingLanguageNeeds": "ENGLISH",
+              "proceedingsConcluded": false,
+              "restrictFromCourtList": false,
+              "nationalityDescription": "British",
+              "courtProceedingsInitiated": "2020-09-10T08:12:37.337Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "9d38428b-7f9d-3aab-8269-f1427dd15c57",
+            "authorityCode": "GLOSPF",
+            "caseReference": "53NP6251720"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "31b3d313-7a7c-4598-bb4b-c1bff9b00e26",
+      "isSlotsBooked": false,
+      "isVacatedTrial": false,
+      "nonDefaultDays": [
+        {
+          "oucode": "B01EF00",
+          "session": "AD",
+          "duration": 1,
+          "startTime": "2020-09-14T09:00:00.000Z",
+          "courtRoomId": 793,
+          "courtScheduleId": "4b0f329c-a03b-3262-8089-f3dd12516a67"
+        },
+        {
+          "oucode": "B01EF00",
+          "session": "AD",
+          "duration": 1,
+          "startTime": "2020-09-15T11:00:00.000Z",
+          "courtRoomId": 793,
+          "courtScheduleId": "fca2526f-077e-3c0a-8394-2cf01ea0df9e"
+        },
+        {
+          "oucode": "B01EF00",
+          "session": "AD",
+          "duration": 1,
+          "startTime": "2020-09-16T13:00:00.000Z",
+          "courtRoomId": 793,
+          "courtScheduleId": "0d0b83d7-aac6-3a11-a084-d5cbb9365a3c"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "MAGISTRATES",
+      "courtApplications": [],
+      "courtCentreDetails": {
+        "id": "7e967376-eacf-4fca-9b30-21b0c5aad427",
+        "defaultDuration": 420,
+        "defaultStartTime": "10:00:00"
+      },
+      "vacatedTrialReasonId": ""
+    }
+  },
+  {
+    "_metadata": {
+      "name": "listing.events.hearing-allocated-for-listing"
+    },
+    "courtCentreId": "31b3d313-7a7c-4598-bb4b-c1bff9b00e26",
+    "courtRoomId": "fce80cd4-0c00-3c30-9471-2c2ee7a52453",
+    "estimatedMinutes": 20,
+    "hearingId": "04ce8fb2-b181-4379-81af-d0c26fc8c273",
+    "judiciary": [],
+    "jurisdictionType": "MAGISTRATES",
+    "hearingLanguage": "ENGLISH",
+    "hearingDays": [
+      {
+        "endTime": "2020-09-14T09:01:00.000Z",
+        "sequence": 0,
+        "startTime": "2020-09-14T09:00:00.000Z",
+        "hearingDate": "2020-09-14",
+        "durationMinutes": 1
+      },
+      {
+        "endTime": "2020-09-15T11:01:00.000Z",
+        "sequence": 0,
+        "startTime": "2020-09-15T11:00:00.000Z",
+        "hearingDate": "2020-09-15",
+        "durationMinutes": 1
+      },
+      {
+        "endTime": "2020-09-16T13:01:00.000Z",
+        "sequence": 0,
+        "startTime": "2020-09-16T13:00:00.000Z",
+        "hearingDate": "2020-09-16",
+        "durationMinutes": 1
+      }
+    ],
+    "prosecutionCaseDefendantsOffenceIds": [
+      {
+        "defendants": [
+          {
+            "id": "8ae38797-6ec2-4b0a-b761-e1c270b6916a",
+            "offenceIds": [
+              "1a7f6ee8-f489-4877-87b6-a59e10f34860"
+
+            ]
+          }
+        ],
+        "id": "1cc16c17-fa32-495c-b0e6-0c7adaad44f3"
+      }
+    ],
+    "type": {
+      "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+      "description": "First hearing"
+    }
+  }
+]

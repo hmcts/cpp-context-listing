@@ -1,0 +1,53 @@
+{
+  "id": "8de7f2e2-5705-3be5-af9a-321a891ab708",
+  "oucode": "C10NE00",
+  "oucodeL3Code": "NE",
+  "oucodeL3Name": "Newcastle upon Tyne Crown Court",
+  "oucodeL1Code": "C",
+  "oucodeL1Name": "Crown Courts",
+  "oucodeL2Code": "10",
+  "oucodeL2Name": "Northumbria",
+  "region": "North East",
+  "lja": "2360",
+  "oucodeEffectiveFromDate": "2016-01-01",
+  "address1": "Newcastle upon Tyne Combined Court",
+  "address2": "The Law Courts",
+  "address3": "Quayside",
+  "address4": "Newcastle upon Tyne",
+  "postcode": "NE1 3LA",
+  "oucodeL3WelshName": "Llys Y Goron Newcastle upon Tyne",
+  "defaultStartTime": "10:30:00",
+  "defaultDurationHrs": "06:00:00",
+  "lastModified": "2021-10-27T16:05:04.748Z",
+  "cpsEmailAddress": "Northumbria.CrownCourt@cps.gov.uk",
+  "pecsContractorEmail": "newcastlecc@geoamey.co.uk",
+  "divisionCode": "3",
+  "courtLocationCode": "0439",
+  "courtId": "439",
+  "courtrooms": [
+    {
+      "id": "1d0199f8-8812-48a2-b13c-837e1c03ff19",
+      "venueName": "DONCASTER COMBINED COURT",
+      "courtroomId": 852,
+      "courtroomName": "Courtroom 02"
+    },
+    {
+      "id": "18982e9c-2475-36a4-a852-09ab720acfc9",
+      "venueName": "AYLESBURY COMBINED COURT",
+      "courtroomId": 3859,
+      "courtroomName": "Courtroom 03"
+    },
+    {
+      "id": "28b922c3-0396-3c68-970f-5b805c7ab1bb",
+      "venueName": "WOOD GREEN COMBINED COURT",
+      "courtroomId": 2874,
+      "courtroomName": "Courtroom 04"
+    },
+    {
+      "id": "02d9847e-00e9-3c6c-b25c-1adbf5355a52",
+      "venueName": "GUILDFORD COMBINED COURT",
+      "courtroomId": 985,
+      "courtroomName": "Courtroom 05",
+      "venueId": 375
+    }]
+}

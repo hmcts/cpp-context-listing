@@ -1,0 +1,29 @@
+{
+  "hearingId": "e8821a38-546d-4b56-9992-ebdd772a561f",
+  "bookingId": "a0000a00-546d-4b56-9992-ebdd772a561f",
+  "type": {
+    "id": "efa4e01b-1dc5-48c5-80b5-c3858a7622d6",
+    "description": "TRIAL"
+  },
+  "estimateMinutes": 22,
+  "judgeId": "0baecac5-222b-402d-9047-84803679edae",
+  "courtRoomId": "e8821a38-546d-4b56-9992-ebdd772a561f",
+  "courtCentreId": "b2321a38-546d-2b56-9992-ebd4472a561a",
+  "courtApplicationIds":["26b856a8-ae01-4aad-814c-7cdff8db19bf"],
+  "caseId": "46ce00f4-14cc-4049-8a12-65cd276f96e1",
+  "urn": "87GD9945217",
+  "defendantIdsToOffenceIdsMap": {
+    "5656f4a3-950f-4b11-a5df-e2a1474999ee": [
+      "eaa0be6a-91a0-4285-8d90-2c783a1d6be7",
+      "7e8abbc0-fe27-4cde-8bd9-cd508ce44c20"
+    ],
+    "cb882543-15c0-4eb3-a2b4-004a3982edcf": [
+      "b7e4aa06-2ac7-4b73-be6d-3e652fb74a57",
+      "656b4ae9-861b-4061-88c2-3cc9f54f9319"
+    ]
+  },
+  "hearingDate": {
+    "startDate": "2017-06-01",
+    "startTime": "10:11"
+  }
+}

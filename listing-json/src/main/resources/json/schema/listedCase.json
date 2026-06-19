@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listedCase.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "caseIdentifier": {
+      "$ref": "listing-definitions.json#/definitions/caseIdentifier"
+    },
+    "caseStatus" : {
+      "type" : "string"
+    },
+    "defendants": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/defendant.json"
+      }
+    },
+    "markers": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/marker.json"
+      }
+    },
+    "restrictFromCourtList": {
+      "type":"boolean"
+    },
+    "isEjected":{
+      "type": "boolean"
+    },
+    "linkedCases": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/linked-cases.json"
+      }
+    },
+    "shadowListed": {
+      "type": "boolean"
+    },
+    "trialReceiptType": {
+      "type": "string",
+      "description": "Trial case type E.g Either way case, Indictable, Transfer, Voluntary bail"
+    },
+    "prosecutor": {
+      "$ref": "listing-definitions.json#/definitions/prosecutor"
+    },
+    "groupId": {
+      "description": "Indicates the Staging.CivilProsecutor assigned group id for bulk cases",
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "isCivil": {
+      "description": "Marker to indicate that MoJ offence reference data should be used as opposed to criminal offence reference data",
+      "type": "boolean"
+    },
+    "isGroupMember": {
+      "description": "Indicates if a case is part of a group of cases within the hearing",
+      "type": "boolean"
+    },
+    "isGroupMaster": {
+      "description": "Indicates which case within a group (isGroupMember = true) is the master and should be returned by the backend to the UI",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "caseIdentifier",
+    "defendants"
+  ],
+  "additionalProperties": false
+}

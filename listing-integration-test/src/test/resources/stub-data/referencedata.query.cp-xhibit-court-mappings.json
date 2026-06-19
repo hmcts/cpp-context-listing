@@ -1,0 +1,100 @@
+{
+  "cpXhibitCourtMappings": [
+    {
+      "id": "0a43a1dd-9ba7-33d9-a306-554784e5b116",
+      "oucode": "C04PR00",
+      "crestCourtId": "448",
+      "crestCourtSiteId": "448",
+      "crestCourtSiteName": "PRESTON",
+      "crestCourtName": "PRESTON",
+      "crestCourtShortName": "PREST",
+      "crestCourtFullName": "PRESTON",
+      "crestCourtSiteCode": "C",
+      "courtType": "CROWN_COURT"
+    },
+    {
+      "id": "6c5f4e7f-a684-33e9-8ef9-7493e033ea87",
+      "oucode": "C14DN00",
+      "crestCourtId": "420",
+      "crestCourtSiteId": "420",
+      "crestCourtSiteName": "DONCASTER",
+      "crestCourtName": "DONCASTER",
+      "crestCourtShortName": "DONCA",
+      "crestCourtFullName": "DONCASTER",
+      "crestCourtSiteCode": "C",
+      "courtType": "CROWN_COURT"
+    },
+    {
+      "id": "ec4f3aa7-8249-340a-a7e3-7755b46d027b",
+      "oucode": "C43AY00",
+      "crestCourtId": "401",
+      "crestCourtSiteId": "401",
+      "crestCourtSiteName": "AMERSHAM LAW COURTS",
+      "crestCourtName": "AYLESBURY",
+      "crestCourtShortName": "AYLES",
+      "crestCourtFullName": "AMERSHAM LAW COURTS",
+      "crestCourtSiteCode": "C",
+      "courtType": "CROWN_COURT"
+    },
+    {
+      "id": "0e0ffc91-793c-3c94-96e6-5c46ee4d6a3d",
+      "oucode": "C01WG00",
+      "crestCourtId": "469",
+      "crestCourtSiteId": "469",
+      "crestCourtSiteName": "WOOD GREEN",
+      "crestCourtName": "WOOD GREEN",
+      "crestCourtShortName": "WOODG",
+      "crestCourtFullName": "WOOD GREEN",
+      "crestCourtSiteCode": "C",
+      "courtType": "CROWN_COURT"
+    },
+    {
+      "id": "26f1599b-d3f9-350c-8e51-85b62510823a",
+      "oucode": "C45GU00",
+      "crestCourtId": "474",
+      "crestCourtSiteId": "474",
+      "crestCourtSiteName": "GUILDFORD",
+      "crestCourtName": "GUILDFORD",
+      "crestCourtShortName": "GUILD",
+      "crestCourtFullName": "GUILDFORD",
+      "crestCourtSiteCode": "C",
+      "courtType": "CROWN_COURT"
+    },
+    {
+      "id": "53dbd459-4a09-3f34-bc49-fc738a456815",
+      "oucode": "C05LV00",
+      "crestCourtId": "433",
+      "crestCourtSiteId": "6415",
+      "crestCourtSiteName": "LIVERPOOL HILTON HOTEL",
+      "crestCourtName": "LIVERPOOL",
+      "crestCourtShortName": "LIVER",
+      "crestCourtFullName": "LIVERPOOL HILTON HOTEL",
+      "crestCourtSiteCode": "C",
+      "courtType": "CROWN_COURT"
+    },
+    {
+      "id": "7b1f4c2e-9d3a-3f88-9c41-2e85a0b6d914",
+      "oucode": "C06MC00",
+      "crestCourtId": "435",
+      "crestCourtSiteId": "435",
+      "crestCourtSiteName": "MANCHESTER",
+      "crestCourtName": "MANCHESTER",
+      "crestCourtShortName": "MANCH",
+      "crestCourtFullName": "MANCHESTER",
+      "crestCourtSiteCode": "C",
+      "courtType": "CROWN_COURT"
+    },
+    {
+      "id": "4e9d72a1-6c5b-3a17-8f02-9b34c8e1f527",
+      "oucode": "C10NE00",
+      "crestCourtId": "439",
+      "crestCourtSiteId": "439",
+      "crestCourtSiteName": "NEWCASTLE UPON TYNE",
+      "crestCourtName": "NEWCASTLE",
+      "crestCourtShortName": "NEWCA",
+      "crestCourtFullName": "NEWCASTLE UPON TYNE",
+      "crestCourtSiteCode": "C",
+      "courtType": "CROWN_COURT"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "_metadata": {
+    "name": "listing.events.defendant-legalaid-status-updated"
+  },
+  "caseId": "291c84d1-3b5d-4697-bb3a-eb0506f54ed9",
+  "defendantId": "0baecac5-222b-402d-9047-84803679edac",
+  "hearingIds":[
+    "93c0ee7b-2e6f-43de-b500-3423b0169821"
+  ],
+  "legalAidStatus":"Granted"
+}

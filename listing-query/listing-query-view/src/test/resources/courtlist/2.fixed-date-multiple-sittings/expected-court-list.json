@@ -1,0 +1,223 @@
+{
+  "courtCentreId": "eeb81654-eb5b-443f-ad4b-911606732e53",
+  "courtLists": [
+    {
+      "crestCourtSite": {
+        "crestCourtSiteId": "001",
+        "crestCourtSiteCode": "A",
+        "crestCourtSiteName": "SITENAME A",
+        "courtType": "CROWN_COURT"
+      },
+      "sittings": [
+        {
+          "sittingDate": "2019-12-16",
+          "weekCommencing": false,
+          "courtRoomId": "6508af42-e4d4-396d-a752-d676ebd38f6d",
+          "judiciary": [
+            {
+              "judicialId": "fe6ac6e5-a087-3488-98cd-ca68c8c447d4",
+              "judicialRoleType": {
+                "judiciaryType": "DISTRICT_JUDGE"
+              }
+            }
+          ],
+          "hearings": [
+            {
+              "startTime": "2019-12-16T09:22",
+              "hearingType": {
+                "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
+                "description": "Sentence"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": false,
+              "endTime": "2019-12-16T10:07",
+              "caseIdentifier": {
+                "authorityId": "3cd8e977-d53b-471f-85dc-9e19bb36e49a",
+                "authorityCode": "CPS",
+                "caseReference": "44FE772625"
+              },
+              "defendants": [
+                {
+                  "id": "6e4c5278-f63f-4760-bd20-77b96f955db5",
+                  "lastName": "LAZZERI",
+                  "offences": [
+                    {
+                      "id": "326f75ec-2403-4107-a525-c4ab550e9882",
+                      "endDate": "2019-12-16",
+                      "startDate": "2019-12-14",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Facap tifujra vab zavukke tedas fiskuk vij iruhe wujhop botduzo eppa vecu hasisus hu dak.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Harriett",
+                  "dateOfBirth": "1989-12-13",
+                  "custodyTimeLimit": "2020-01-13",
+                  "specificRequirements": "Esihez ojwir kuhgebti piwum farmapsel woruh nofri jipte zid ozsic iveulies ma odseil bemki idtotni paoweim kuh.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hasVideoLink": false
+            },
+            {
+              "startTime": "2019-12-16T09:21:11",
+              "hearingType": {
+                "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
+                "description": "Sentence"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": false,
+              "endTime": "2019-12-16T09:51:11",
+              "applicationReference": "41TL769069",
+              "applicant": {
+                "id": "cb9ee4d4-369f-422e-8a5f-fa2af408247b",
+                "lastName": "BENINI",
+                "firstName": "Olga",
+                "isRespondent": false,
+                "restrictFromCourtList": false,
+                "courtApplicationPartyType": "PERSON_DEFENDANT"
+              },
+              "respondents": [
+                {
+                  "id": "a1ac08ac-99e9-4507-ad84-77ec9b674e06",
+                  "lastName": "MARIE",
+                  "firstName": "Eula",
+                  "isRespondent": true,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON"
+                }
+              ],
+              "hasVideoLink": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "crestCourtSite": {
+        "crestCourtSiteId": "001",
+        "crestCourtSiteCode": "B",
+        "crestCourtSiteName": "SITENAME B",
+        "courtType": "CROWN_COURT"
+      },
+      "sittings": [
+        {
+          "sittingDate": "2019-12-16",
+          "weekCommencing": false,
+          "courtRoomId": "7cb09222-49e1-3622-a5a6-ad253d2b3c39",
+          "judiciary": [
+            {
+              "judicialId": "fe6ac6e5-a087-3488-98cd-ca68c8c447d4",
+              "judicialRoleType": {
+                "judiciaryType": "DISTRICT_JUDGE"
+              }
+            }
+          ],
+          "hearings": [
+            {
+              "startTime": "2019-12-16T09:20",
+              "hearingType": {
+                "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
+                "description": "Sentence"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": false,
+              "endTime": "2019-12-16T09:50",
+              "caseIdentifier": {
+                "authorityId": "11d09fab-0591-48d3-a916-9bf153d1a60b",
+                "authorityCode": "CPS",
+                "caseReference": "71JC777146"
+              },
+              "defendants": [
+                {
+                  "id": "2819baf4-940d-4b4c-b2f4-96330a5bb8f2",
+                  "lastName": "BERTINI",
+                  "offences": [
+                    {
+                      "id": "f6a5f414-d78c-4875-96b8-b4908d874912",
+                      "endDate": "2019-12-16",
+                      "startDate": "2019-12-14",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Nuzid leh umiidipis bezbolivu so cihnejhof faslone doru sol pufges vad iroraku.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Corey",
+                  "dateOfBirth": "1989-12-13",
+                  "custodyTimeLimit": "2020-01-13",
+                  "specificRequirements": "Pu vuc ih kegjiv ibtas jururlo unu su podo lohvuzna roltepru nenavbik cewhu tu.",
+                  "restrictFromCourtList": false
+                },
+                {
+                  "id": "4bf39b43-dad8-4e02-a63c-b6a5d3fd89b8",
+                  "lastName": "NEWMAN",
+                  "offences": [
+                    {
+                      "id": "28faf0b3-f37d-4980-85eb-36c02dc76b2e",
+                      "endDate": "2019-12-16",
+                      "startDate": "2019-12-14",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Muluf ro ajhut gazfa wilitib soate nuduc ho akilus honel zupdan loco okuto vuodiok jiarib.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Mable",
+                  "dateOfBirth": "1989-12-13",
+                  "custodyTimeLimit": "2020-01-13",
+                  "specificRequirements": "Efgo dajsu gino ru pet ihva ikijagce puzceg pa co enewutev sadeit.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hasVideoLink": false
+            },
+            {
+              "startTime": "2019-12-16T09:21",
+              "hearingType": {
+                "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
+                "description": "Sentence"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": false,
+              "endTime": "2019-12-16T09:51",
+              "applicationReference": "19RV576068",
+              "applicant": {
+                "id": "8d41b127-ad50-4175-b590-3d253356f1de",
+                "lastName": "LUCAS",
+                "firstName": "Vernon",
+                "isRespondent": false,
+                "restrictFromCourtList": false,
+                "courtApplicationPartyType": "PERSON_DEFENDANT"
+              },
+              "respondents": [
+                {
+                  "id": "9cc9b614-ccc6-42b0-aa1b-1bfc27382e32",
+                  "lastName": "BOUVIER",
+                  "firstName": "Adele",
+                  "isRespondent": true,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON"
+                }
+              ],
+              "hasVideoLink": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

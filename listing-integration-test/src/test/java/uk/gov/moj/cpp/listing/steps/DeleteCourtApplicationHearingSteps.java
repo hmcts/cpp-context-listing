@@ -1,0 +1,56 @@
+package uk.gov.moj.cpp.listing.steps;
+
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.text.MessageFormat.format;
+import static java.util.UUID.randomUUID;
+import static javax.ws.rs.core.Response.Status.OK;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
+import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
+
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
+import uk.gov.moj.cpp.listing.it.AbstractIT;
+
+import uk.gov.justice.services.messaging.JsonObjects;
+import javax.json.JsonObject;
+
+public class DeleteCourtApplicationHearingSteps extends AbstractIT {
+
+    private final JmsMessageProducerClient publicCourtApplicationHearingDeleted;
+
+    public DeleteCourtApplicationHearingSteps() {
+        publicCourtApplicationHearingDeleted = publicEvents.createPublicProducer();
+    }
+
+    public void whenRaisedCourtApplicationHearingPublicEvent(final String hearingId, final String applicationId) {
+        final JsonObject payload = JsonObjects.createObjectBuilder()
+                .add("hearingId", hearingId)
+                .add("applicationId", applicationId)
+                .build();
+        sendMessage(
+                publicCourtApplicationHearingDeleted,
+                "public.progression.events.court-application-deleted",
+                payload,
+                metadataOf(randomUUID(), "public.progression.events.court-application-deleted").withUserId(randomUUID().toString()).build());
+    }
+
+    public void verifyOldHearingDeleted(final String hearingId, final String courtCentreId) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"),
+                        courtCentreId, false));
+
+        pollWithDefaults(requestParams(searchHearingUrl, "application/vnd.listing.search.hearings+json").withHeader(USER_ID, getLoggedInUser()).build())
+                .until(
+                        status().is(OK),
+                        payload().isJson(not(withJsonPath("$.hearings[0].id", equalTo(hearingId)))));
+    }
+}

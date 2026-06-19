@@ -1,0 +1,50 @@
+{
+  "caseId": "0baecac5-222b-402d-9047-84803679edae",
+  "urn": "87GD9945217",
+  "hearings": [
+    {
+      "id": "1baecac5-222b-402d-9047-84803679edaf",
+      "caseId": "0baecac5-222b-402d-9047-84803679edae",
+      "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
+      "type": {
+        "id": "efa4e01b-1dc5-48c5-80b5-c3858a7622d6",
+        "description": "Trial"
+      },
+      "startDate": "2018-07-01",
+      "estimateMinutes": 3600,
+      "judgeId": "c3b83875-8f59-4a5e-9c36-c65490282691",
+      "courtRoomId": "bd80a0b4-d285-4496-a514-43cb8d500052",
+      "defendants": [
+        {
+          "id": "0baecac5-222b-402d-9047-84803679edac",
+          "masterDefendantId": "0baecac5-222b-402d-9047-84803679edac",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+          "personId": "0baecac5-222b-402d-9047-84803679edad",
+          "firstName": "David",
+          "lastName": "Lloyd",
+          "dateOfBirth": "1995-03-23",
+          "bailStatus": {
+            "id":"12e69486-4d01-3403-a50a-7419ca040635",
+            "code":"C",
+            "description":"Custody or remanded into custody"
+          },
+          "custodyTimeLimit": "1995-03-23",
+          "defenceOrganisation": "Solicitor XYZ",
+          "offences": [
+            {
+              "id": "0baecac5-222b-402d-9047-84803679edad",
+              "defendantId": "0baecac5-222b-402d-9047-84803679edac",
+              "offenceCode": "OF61131",
+              "startDate": "2016-06-21",
+              "endDate": "2017-08-01",
+              "statementOfOffence": {
+                "title": "Wounding with intent",
+                "legislation": "legislation"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

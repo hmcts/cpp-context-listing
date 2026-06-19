@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet author="listing" id="15" logicalFilePath="015-CPI-504.xml">
+        <createTable tableName="court_applications">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="application_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="hearing_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="application_type" type="TEXT"/>
+            <column name="parent_application_id" type="UUID"/>
+            <column name="application_reference" type="TEXT"/>
+            <column name="application_particulars" type="TEXT"/>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="court_applications"/>
+        </rollback>
+
+    </changeSet>
+
+    <changeSet author="listing" id="15.1" logicalFilePath="015-CPI-504.xml">
+        <addColumn tableName="hearing">
+            <column name="allocated" type="BOOLEAN"/>
+            <column name="type_of_list_id" type="UUID"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="listing" id="15.2" logicalFilePath="015-CPI-504.xml">
+        <createTable tableName="linked_case">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="case_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="listed_case_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="case_urn" type="TEXT"/>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="linked_case"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet author="listing" id="15.3" logicalFilePath="015-CPI-504.xml">
+        <createTable tableName="defendant">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="defendant_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="master_defendant_id" type="UUID"/>
+            <column name="listed_case_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="defendant"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet author="listing" id="15.4" logicalFilePath="015-CPI-504.xml">
+        <sql>DROP INDEX IF EXISTS hearings_idx</sql>
+        <sql>CREATE INDEX hearings_idx
+            ON hearing USING btree
+            (
+                court_centre_id,
+                court_room_id,
+                unscheduled,
+                is_vacated_trial,
+                type_id,
+                jurisdiction_type,
+                week_commencing_start_date,
+                week_commencing_end_date,
+                start_date,
+                end_date,
+                allocated
+            )
+        </sql>
+
+        <sql>DROP INDEX IF EXISTS hearing_days_idx</sql>
+        <sql>CREATE INDEX hearing_days_idx
+            ON hearing_days USING btree
+            (
+                hearing_id,
+                court_centre_id,
+                court_room_id,
+                hearing_date,
+                start_time,
+                end_time
+            )
+        </sql>
+
+        <sql>DROP INDEX IF EXISTS listed_cases_idx</sql>
+        <sql>CREATE INDEX listed_cases_idx
+            ON listed_cases USING btree
+            (
+                hearing_id,
+                case_id,
+                authority_id,
+                case_reference,
+                authority_code
+            )
+        </sql>
+    </changeSet>
+
+    <changeSet id="15.5" author="listing">
+        <addColumn tableName="listed_cases">
+            <column type="UUID" name="prosecutor_id"></column>
+            <column type="TEXT" name="prosecutor_code"></column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="listing" id="15.6" logicalFilePath="015-CPI-504.xml">
+        <sql>DROP INDEX IF EXISTS hearing_date_idx</sql>
+        <sql>CREATE INDEX hearing_date_idx
+            ON hearing_days USING btree
+            (
+            hearing_date
+            )
+        </sql>
+
+        <sql>DROP INDEX IF EXISTS listed_cases_idx</sql>
+        <sql>CREATE INDEX listed_cases_idx
+            ON listed_cases USING btree
+            (
+            hearing_id,
+            case_id,
+            authority_id,
+            case_reference,
+            authority_code,
+            prosecutor_id,
+            prosecutor_code
+            )
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

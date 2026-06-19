@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/court-schedule-slot-start-time.json",
+  "type": "object",
+  "properties": {
+    "hearingStartTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "count": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "hearingStartTime",
+    "count"
+  ],
+  "additionalProperties": false
+}

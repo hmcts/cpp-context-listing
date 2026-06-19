@@ -1,0 +1,71 @@
+{
+  "hearingId" : "HEARING_ID",
+  "courtApplication":
+  {
+    "applicant": {
+      "id": "22b1078b-9430-4cef-ba46-eea40a129ca8",
+      "personDetails": {
+        "firstName": "David",
+        "gender": "MALE",
+        "lastName": "Dell",
+        "address": {
+          "address1": "Address1",
+          "address2": "Address2",
+          "address3": "Address3",
+          "address4": "Address4",
+          "address5": "Address5",
+          "postcode": "SW13 0AA"
+        }
+      }
+    },
+    "applicationReceivedDate": "2019-03-04",
+    "applicationReference": "REF-1",
+    "applicationParticulars": "Application particulars",
+    "applicationStatus": "LISTED",
+    "id": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
+    "parentApplicationId": "9d9a431a-0f12-4386-878a-2bf6c4a0877e",
+    "respondents": [
+      {
+          "id": "48ddbd0a-31db-4814-b052-aa3ba9afb800",
+          "personDetails": {
+            "firstName": "Luise",
+            "gender": "FEMALE",
+            "lastName": "Miller",
+            "address": {
+              "address1": "Address1",
+              "address2": "Address2",
+              "address3": "Address3",
+              "address4": "Address4",
+              "address5": "Address5",
+              "postcode": "SW13 0AA"
+            }
+          }
+      }
+    ],
+    "type": {
+      "categoryCode": "KsZPM4vFrU",
+      "code": "A9mRuXXZ9Q",
+      "jurisdiction": "CROWN",
+      "legislation": "UoLO7ofTVm",
+      "type": "9vBchM49Go",
+      "id": "46171453-3b64-4a43-91af-cfc09e6d8889",
+      "linkType": "LINKED",
+      "summonsTemplateType": "NOT_APPLICABLE",
+      "breachType": "GENERIC_BREACH",
+      "appealFlag": false,
+      "applicantAppellantFlag": false,
+      "pleaApplicableFlag": false,
+      "commrOfOathFlag": false,
+      "courtOfAppealFlag": false,
+      "courtExtractAvlFlag": false,
+      "prosecutorThirdPartyFlag": false,
+      "spiOutApplicableFlag": false,
+      "offenceActiveOrder": "NOT_APPLICABLE"
+    },
+    "courtApplicationCases": [
+      {
+        "prosecutionCaseId": "19e9d562-6abb-4871-bfb3-2d777aa90371"
+      }
+    ]
+  }
+}
