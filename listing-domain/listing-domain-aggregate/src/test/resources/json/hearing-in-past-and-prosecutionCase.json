@@ -1,0 +1,141 @@
+{
+  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+  "prosecutionCase": {
+    "defendants": [
+      {
+        "associatedPersons": [
+          {
+            "person": {
+              "additionalNationalityId": "9aa0ffba-67a4-4137-b392-3c01951eb9c2",
+              "address": {
+                "address1": "22",
+                "address2": "Acacia Avenue",
+                "address3": "Acacia Town",
+                "address4": "Acacia City",
+                "address5": "Acacia Country",
+                "postcode": "GIR 0AA"
+              },
+              "contact": {
+                "fax": "3425678",
+                "home": "123456",
+                "mobile": "45678910",
+                "primaryEmail": "harry.kane@spurs.co.uk",
+                "secondaryEmail": "harry.kane@hotmail.com",
+                "work": "7891011"
+              },
+              "dateOfBirth": "1995-01-01",
+              "disabilityStatus": "a",
+              "documentationLanguageNeeds": "WELSH",
+              "firstName": "Harry",
+              "gender": "MALE",
+              "interpreterLanguageNeeds": "Hindi",
+              "lastName": "Kane",
+              "middleName": "Jack",
+              "nationalInsuranceNumber": "NH222222B",
+              "nationalityId": "0f36a570-46ef-41d1-b290-9037a64fa1a4",
+              "occupation": "Footballer",
+              "occupationCode": "F",
+              "title": "MR"
+            },
+            "role": "parent"
+          }
+        ],
+        "id": "e1d32d9d-29ec-4934-a932-22a50f223966",
+        "proceedingsConcluded": true,
+        "numberOfPreviousConvictionsCited": 5,
+        "offences": [
+          {
+            "arrestDate": "2018-01-01",
+            "chargeDate": "2018-01-01",
+            "count": 0,
+            "endDate": "2018-01-01",
+            "id": "3789ab16-0bb7-4ef1-87ef-c936bf0364f1",
+            "notifiedPlea": {
+              "notifiedPleaDate": "2018-04-01",
+              "notifiedPleaValue": "NOTIFIED_GUILTY",
+              "offenceId": "3789ab16-0bb7-4ef1-87ef-c936bf0364f1"
+            },
+            "offenceDefinitionId": "490dce00-8591-49af-b2d0-1e161e7d0c36",
+            "offenceFacts": {
+              "alcoholReadingMethodCode": "2222",
+              "vehicleRegistration": "AA12345"
+            },
+            "orderIndex": 1,
+            "startDate": "2018-01-01",
+            "wording": "No Travel Card",
+            "wordingWelsh": "No Travel Card In Welsh"
+          }
+        ],
+        "personDefendant": {
+          "arrestSummonsNumber": "arrest123",
+          "custodyTimeLimit": "2018-01-01",
+          "driverNumber": "AACC12345",
+          "employerOrganisation": {
+            "address": {
+              "address1": "Disney Road",
+              "address2": "Disney Town",
+              "address3": "Disney District",
+              "address4": "Paris",
+              "address5": "France",
+              "postcode": "DI5 9EY"
+            },
+            "contact": {
+              "fax": "a",
+              "primaryEmail": "person@hotmail.com",
+              "secondaryEmail": "associate@hotmail.com",
+              "work": "0207 654 3246 extn 1234"
+            },
+            "incorporationNumber": "Mickeymouse1",
+            "name": "Disneyland Paris"
+          },
+          "employerPayrollReference": "payyou1234",
+          "perceivedBirthYear": 2015,
+          "personDetails": {
+            "additionalNationalityId": "9aa0ffba-67a4-4137-b392-3c01951eb9c2",
+            "address": {
+              "address1": "22",
+              "address2": "Acacia Avenue",
+              "address3": "Acacia Town",
+              "address4": "Acacia City",
+              "address5": "Acacia Country",
+              "postcode": "GIR 0AA"
+            },
+            "contact": {
+              "fax": "3425678",
+              "home": "123456",
+              "mobile": "45678910",
+              "primaryEmail": "harry.kanejunior@spurs.co.uk",
+              "secondaryEmail": "harry.kanejunior@hotmail.com",
+              "work": "7891011"
+            },
+            "dateOfBirth": "2010-01-01",
+            "disabilityStatus": "a",
+            "documentationLanguageNeeds": "WELSH",
+            "firstName": "Harry",
+            "gender": "MALE",
+            "interpreterLanguageNeeds": "Welsh",
+            "lastName": "Kane Junior",
+            "middleName": "Jack",
+            "nationalInsuranceNumber": "NH323232B",
+            "nationalityId": "0f36a570-46ef-41d1-b290-9037a64fa1a4",
+            "occupation": "Kid",
+            "occupationCode": "F",
+            "specificRequirements": "Screen",
+            "title": "MR"
+          }
+        },
+        "prosecutionAuthorityReference": "TFL12345-ABC",
+        "prosecutionCaseId": "2279b2c3-b0d3-4889-ae8e-1ecc20c39e27"
+      }
+    ],
+    "id": "291c84d1-3b5d-4697-bb3a-eb0506f54ed9",
+    "caseStatus": "CLOSED",
+    "initiationCode": "J",
+    "originatingOrganisation": "G01FT01AB",
+    "prosecutionCaseIdentifier": {
+      "prosecutionAuthorityCode": "TFL",
+      "prosecutionAuthorityId": "cf73207f-3ced-488a-82a0-3fba79c2ce85",
+      "prosecutionAuthorityReference": "TFL12345"
+    }
+  }
+}

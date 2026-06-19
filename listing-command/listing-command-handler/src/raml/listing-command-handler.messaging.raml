@@ -1,0 +1,297 @@
+#%RAML 0.8
+title: Listing - Command Handler
+baseUri: message://command/handler/message/listing
+
+/listing.handler.command:
+  post:
+    body:
+      application/vnd.listing.command.list-court-hearing-enriched+json:
+        example: !include json/listing.command.list-court-hearing-enriched.json
+        schema:  !include json/schema/listing.command.list-court-hearing-enriched.json
+
+      application/vnd.listing.command.list-unscheduled-court-hearing-enriched+json:
+        example: !include json/listing.command.list-unscheduled-court-hearing-enriched.json
+        schema:  !include json/schema/listing.command.list-unscheduled-court-hearing-enriched.json
+
+      application/vnd.listing.command.list-unscheduled-next-hearings-enriched+json:
+        example: !include json/listing.command.list-unscheduled-next-hearings-enriched.json
+        schema:  !include json/schema/listing.command.list-unscheduled-next-hearings-enriched.json
+
+      application/vnd.listing.command.list-unscheduled-next-hearing+json:
+        example: !include json/listing.command.list-unscheduled-next-hearing.json
+        schema: !include json/schema/listing.command.list-unscheduled-next-hearing.json
+
+      application/vnd.listing.command.update-hearing-for-listing-enriched+json:
+        example: !include json/listing.command.update-hearing-for-listing-enriched.json
+        schema: !include json/schema/listing.command.update-hearing-for-listing-enriched.json
+
+      application/vnd.listing.command.update-hearings-for-listing-enriched+json:
+        example: !include json/listing.command.update-hearings-for-listing-enriched.json
+        schema: !include json/schema/listing.command.update-hearings-for-listing-enriched.json
+
+      application/vnd.listing.command.update-case-defendant-details+json:
+        schema: !include json/schema/listing.command.update-case-defendant-details.json
+        example: !include json/listing.command.update-case-defendant-details.json
+
+      application/vnd.listing.command.update-case-defendant-offences+json:
+        schema: !include json/schema/listing.command.update-case-defendant-offences.json
+        example: !include json/listing.command.update-case-defendant-offences.json
+
+      application/vnd.listing.command.update-defendants-for-hearing+json:
+        schema: !include json/schema/listing.command.update-defendants-for-hearing.json
+        example: !include json/listing.command.update-defendants-for-hearing.json
+
+      application/vnd.listing.command.update-offences-for-hearing+json:
+        schema: !include json/schema/listing.command.update-offences-for-hearing.json
+        example: !include json/listing.command.update-offences-for-hearing.json
+
+      application/vnd.listing.command.delete-offences-for-hearing+json:
+        schema: !include json/schema/listing.command.delete-offences-for-hearing.json
+        example: !include json/listing.command.delete-offences-for-hearing.json
+
+      application/vnd.listing.command.add-hearing-to-case+json:
+        schema: !include json/schema/listing.command.add-hearing-to-case.json
+        example: !include json/listing.command.add-hearing-to-case.json
+
+      application/vnd.listing.command.update-hearing-to-case+json:
+        schema: !include json/schema/listing.command.update-hearing-to-case.json
+        example: !include json/listing.command.add-hearing-to-case.json
+
+      application/vnd.listing.command.add-offences-for-hearing+json:
+        schema: !include json/schema/listing.command.add-offences-for-hearing.json
+        example: !include json/listing.command.add-offences-for-hearing.json
+
+      application/vnd.listing.command.change-judiciary-for-hearings+json:
+        schema: !include json/schema/listing.command.change-judiciary-for-hearings.json
+        example: !include json/listing.command.change-judiciary-for-hearings.json
+
+      application/vnd.listing.command.sequence-hearings+json:
+        schema: !include json/schema/listing.command.sequence-hearings.json
+        example: !include json/listing.command.sequence-hearings.json
+
+      application/vnd.listing.command.update-court-application-for-hearings+json:
+        schema: !include json/schema/listing.command.update-court-application-for-hearings.json
+        example: !include json/listing.command.update-court-application-for-hearings.json
+
+      application/vnd.listing.command.add-court-application-for-hearing+json:
+        schema: !include json/schema/listing.command.add-court-application-for-hearing.json
+        example: !include json/listing.command.add-court-application-for-hearing.json
+
+      application/vnd.listing.command.add-defendants-to-court-proceedings+json:
+        schema: !include json/schema/listing.command.add-defendants-to-court-proceedings.json
+        example: !include json/listing.command.add-defendants-to-court-proceedings.json
+
+      application/vnd.listing.command.add-court-application-to-hearing+json:
+        schema: !include json/schema/listing.command.add-court-application-to-hearing.json
+        example: !include json/listing.command.add-court-application-to-hearing.json
+
+      application/vnd.listing.command.update-case-markers-to-hearing+json:
+        schema: !include json/schema/listing.command.update-case-markers-to-hearing.json
+        example: !include json/listing.command.update-case-markers-to-hearing.json
+
+      application/vnd.listing.command.update-court-application+json:
+        schema: !include json/schema/listing.command.update-court-application.json
+        example: !include json/listing.command.update-court-application.json
+
+      application/vnd.listing.command.update-laa-reference-for-application+json:
+        schema: !include json/schema/listing.command.update-laa-reference-for-application.json
+        example: !include json/listing.command.update-laa-reference-for-application.json
+
+      application/vnd.listing.command.add-defendants-to-court-proceedings-for-hearing+json:
+        schema: !include json/schema/listing.command.add-defendants-to-court-proceedings-for-hearing.json
+        example: !include json/listing.command.add-defendants-to-court-proceedings-for-hearing.json
+
+      application/vnd.listing.command.restrict-court-list+json:
+        schema: !include json/schema/listing.command.restrict-court-list.json
+        example: !include json/listing.command.restrict-court-list.json
+
+      application/vnd.listing.command.eject-case-or-application+json:
+        schema: !include json/schema/listing.command.eject-case-or-application.json
+        example: !include json/listing.command.eject-case-or-application.json
+
+      application/vnd.listing.command.update-case-markers+json:
+         schema: !include json/schema/listing.command.update-case-markers.json
+         example: !include json/listing.command.update-case-markers.json
+
+      application/vnd.listing.command.eject-case+json:
+        schema: !include json/schema/listing.command.eject-case.json
+        example: !include json/listing.command.eject-case.json
+
+      application/vnd.listing.command.eject-application+json:
+        schema: !include json/schema/listing.command.eject-application.json
+        example: !include json/listing.command.eject-application.json
+
+      application/vnd.listing.command.update-defendant-legalaid-status+json:
+        schema: !include json/schema/listing.command.update-defendant-legalaid-status.json
+        example: !include json/listing.command.update-defendant-legalaid-status.json
+
+      application/vnd.listing.command.update-defendant-legalaid-status-for-hearing+json:
+        schema: !include json/schema/listing.command.update-defendant-legalaid-status-for-hearing.json
+        example: !include json/listing.command.update-defendant-legalaid-status-for-hearing.json
+
+      application/vnd.listing.command.update-case-resulted-defendant-proceedings-concluded+json:
+        schema: !include json/schema/listing.command.update-case-resulted-defendant-proceedings-concluded.json
+        example: !include json/listing.command.update-case-resulted-defendant-proceedings-concluded.json
+
+      application/vnd.listing.command.update-defendant-court-proceedings+json:
+        schema: !include json/schema/listing.command.update-defendant-court-proceedings.json
+        example: !include json/listing.command.update-defendant-court-proceedings.json
+
+      application/vnd.listing.command.record-court-list-export-successful+json:
+        schema: !include json/schema/listing.command.record-court-list-export-successful.json
+        example: !include json/listing.command.record-court-list-export-successful.json
+
+      application/vnd.listing.command.record-court-list-export-failed+json:
+        schema: !include json/schema/listing.command.record-court-list-export-failed.json
+        example: !include json/listing.command.record-court-list-export-failed.json
+
+      application/vnd.listing.command.publish-court-list+json:
+        schema: !include json/schema/listing.command.publish-court-list.json
+        example: !include json/listing.command.publish-court-list.json
+
+      application/vnd.listing.command.record-court-list-produced+json:
+        schema: !include json/schema/listing.command.record-court-list-produced.json
+        example: !include json/listing.command.record-court-list-produced.json
+
+      application/vnd.listing.command.publish-court-lists-for-crown-courts+json:
+          schema: !include json/schema/listing.command.publish-court-lists-for-crown-courts.json
+          example: !include json/listing.command.publish-court-lists-for-crown-courts.json
+
+      application/vnd.listing.command.store-published-court-list+json:
+          schema: !include json/schema/listing.command.store-published-court-list.json
+          example: !include json/listing.command.store-published-court-list.json
+
+      application/vnd.listing.command.court-list-request-export+json:
+          schema: !include json/schema/listing.command.court-list-request-export.json
+          example: !include json/listing.command.court-list-request-export.json
+
+      application/vnd.listing.command.extend-hearing-for-hearing-enriched+json:
+        example: !include json/listing.command.extend-hearing-for-hearing-enriched.json
+        schema:  !include json/schema/listing.command.extend-hearing-for-hearing-enriched.json
+
+      application/vnd.listing.command.remove-partially-merged-offences-from-original-hearing+json:
+        example: !include json/listing.command.remove-partially-merged-offences-from-original-hearing.json
+        schema:  !include json/schema/listing.command.remove-partially-merged-offences-from-original-hearing.json
+
+      application/vnd.listing.command.mark-hearing-as-deleted+json:
+        example: !include json/listing.command.mark-hearing-as-deleted.json
+        schema:  !include json/schema/listing.command.mark-hearing-as-deleted.json
+
+      application/vnd.listing.command.add-cases-to-hearing+json:
+        example: !include json/listing.command.add-cases-to-hearing.json
+        schema:  !include json/schema/listing.command.add-cases-to-hearing.json
+
+      application/vnd.listing.command.update-linked-cases+json:
+        example: !include json/listing.command.update-linked-cases.json
+        schema:  !include json/schema/listing.command.update-linked-cases.json
+
+      application/vnd.listing.command.update-linked-case-in-hearing+json:
+        example: !include json/listing.command.update-linked-case-in-hearing.json
+        schema:  !include json/schema/listing.command.update-linked-case-in-hearing.json
+
+      application/vnd.listing.command.vacate-trial-enriched+json:
+        example: !include json/listing.command.vacate-trial-enriched.json
+        schema: !include json/schema/listing.command.vacate-trial-enriched.json
+
+      application/vnd.listing.command.hearing-vacate-trial+json:
+        example: !include json/listing.command.hearing-vacate-trial.json
+        schema: !include json/schema/listing.command.hearing-vacate-trial.json
+
+      application/vnd.listing.command.create-listing-note+json:
+        schema: !include json/schema/listing.command.create-listing-note.json
+        example: !include json/listing.command.create-listing-note.json
+
+      application/vnd.listing.command.handler.delete-listing-note+json:
+        schema: !include json/schema/listing.command.handler.delete-listing-note.json
+        example: !include json/listing.command.handler.delete-listing-note.json
+
+      application/vnd.listing.command.handler.edit-listing-note+json:
+        schema: !include json/schema/listing.command.edit-note-for-listing.json
+        example: !include json/listing.command.edit-note-for-listing.json
+
+      application/vnd.listing.command.cancel-hearing-days+json:
+        example: !include json/listing.command.cancel-hearing-days.json
+        schema: !include json/schema/listing.command.cancel-hearing-days.json
+
+      application/vnd.listing.command.handler.modify-hearing-counsel+json:
+        schema: !include json/schema/listing.command.handler.modify-hearing-counsel.json
+        example: !include json/listing.command.handler.modify-hearing-counsel.json
+
+      application/vnd.listing.command.correct-hearing-days-without-court-centre+json:
+        schema: !include json/schema/listing.command.correct-hearing-days-without-court-centre.json
+        example: !include json/listing.command.correct-hearing-days-without-court-centre.json
+
+      application/vnd.listing.command.update-hearing-day-court-schedule+json:
+        schema: !include json/schema/listing.command.update-hearing-day-court-schedule.json
+        example: !include json/listing.command.update-hearing-day-court-schedule.json
+
+      application/vnd.listing.command.mark-hearing-as-duplicate+json:
+        example: !include json/listing.command.mark-hearing-as-duplicate.json
+        schema: !include json/schema/listing.command.mark-hearing-as-duplicate.json
+
+      application/vnd.listing.command.mark-hearing-as-duplicate-for-case+json:
+        example: !include json/listing.command.mark-hearing-as-duplicate-for-case.json
+        schema: !include json/schema/listing.command.mark-hearing-as-duplicate-for-case.json
+
+      application/vnd.listing.command.update-cps-prosecutor-with-associated-hearings+json:
+              schema: !include json/schema/listing.command.update-cps-prosecutor-with-associated-hearings.json
+              example: !include json/listing.command.update-cps-prosecutor-with-associated-hearings.json
+
+      application/vnd.listing.command.mark-unallocated-hearing-as-duplicate+json:
+        example: !include json/listing.command.mark-unallocated-hearing-as-duplicate.json
+        schema: !include json/schema/listing.command.mark-unallocated-hearing-as-duplicate.json
+
+      application/vnd.listing.command.list-next-hearing+json:
+        example: !include json/listing.command.list-next-hearing.json
+        schema: !include json/schema/listing.command.list-next-hearing.json
+
+      application/vnd.listing.command.list-next-hearings-enriched-v2+json:
+        example: !include json/listing.command.list-next-hearings-enriched-v2.json
+        schema:  !include json/schema/listing.command.list-next-hearings-enriched-v2.json
+
+      application/vnd.listing.command.delete-seeded-hearing+json:
+          example: !include json/listing.command.delete-seeded-hearing.json
+          schema:  !include json/schema/listing.command.delete-seeded-hearing.json
+
+      application/vnd.listing.command.update-existing-hearing+json:
+        example: !include json/listing.command.update-existing-hearing.json
+        schema:  !include json/schema/listing.command.update-existing-hearing.json
+
+      application/vnd.listing.command.delete-next-hearings+json:
+        example: !include json/listing.command.delete-next-hearings.json
+        schema:  !include json/schema/listing.command.delete-next-hearings.json
+
+      application/vnd.listing.command.change-next-hearing-day+json:
+        example: !include json/listing.command.change-next-hearing-day.json
+        schema:  !include json/schema/listing.command.change-next-hearing-day.json
+
+      application/vnd.listing.command.remove-offences-from-existing-hearing+json:
+        example: !include json/listing.command.remove-offences-from-existing-hearing.json
+        schema:  !include json/schema/listing.command.remove-offences-from-existing-hearing.json
+
+      application/vnd.listing.command.remove-selected-offences-from-existing-hearing+json:
+        example: !include json/listing.command.remove-selected-offences-from-existing-hearing.json
+        schema:  !include json/schema/listing.command.remove-selected-offences-from-existing-hearing.json
+      application/vnd.listing.command.delete-hearing+json:
+        schema: !include json/schema/listing.command.handler.delete-hearing.json
+        example: !include json/listing.command.handler.delete-hearing.json
+
+      application/vnd.listing.command.delete-court-application-hearing+json:
+        schema: !include json/schema/listing.command.delete-court-application-hearing.json
+        example: !include json/listing.command.delete-court-application-hearing.json
+
+      application/vnd.listing.command.remove-case-from-group-cases+json:
+        example: !include json/listing.command.remove-case-from-group-cases.json
+        schema: !include json/schema/listing.command.remove-case-from-group-cases.json
+
+      application/vnd.listing.command.delete-previous-hearings-and-create-next-hearing+json:
+        example: !include json/listing.command.delete-previous-hearings-and-create-next-hearing.json
+        schema: !include json/schema/listing.command.delete-previous-hearings-and-create-next-hearing.json
+        
+      application/vnd.listing.command.set-hearing-resulted-status+json:
+        example: !include json/listing.command.set-hearing-resulted-status.json
+        schema: !include json/schema/listing.command.set-hearing-resulted-status.json
+
+      application/vnd.listing.command.update-hearing-add-case-bdf+json:
+        example: !include json/listing.command.update-hearing-add-case-bdf.json
+        schema: !include json/schema/listing.command.update-hearing-add-case-bdf.json

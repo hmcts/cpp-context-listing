@@ -1,0 +1,320 @@
+{
+  "hearings": [
+    {
+      "id": "HEARING_ID1",
+      "type": {
+        "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+        "description": "Trial"
+      },
+      "endDate": "2020-10-10",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "JUDICIARY_ID",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2020-10-04",
+      "courtRoomId": "COURT_ROOM_ID",
+      "hearingDays": [
+        {
+          "endTime": "2019-01-29T14:00:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-01-29T08:00:00.000Z",
+          "hearingDate": "2019-01-29",
+          "isCancelled": false,
+          "durationMinutes": 360
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "CASE_ID1",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "ccf458e1-d543-41cd-a639-8a2f8ab3b43e",
+              "address": {
+                "address1": "No fixed abode"
+              },
+              "lastName": "Jack",
+              "offences": [
+                {
+                  "id": "94092e95-dff9-48ed-ae62-3a39d2bb77e9",
+                  "startDate": "2020-09-01",
+                  "offenceCode": "CA12055",
+                  "shadowListed": false,
+                  "offenceWording": "On or in 1 September 2020 at Oldham being an employer, failed to ensure that thorough examinations and tests of exhaust ventilation equipment, provided to meet the requirements of the Control of Asbestos Regulations 2012 were carried out at suitable intervals by a competent person",
+                  "statementOfOffence": {
+                    "title": "Employer fail to ensure tests of exhaust ventilation / respiratory protective equipment carried out by competent person",
+                    "welshTitle": "Employer fail to ensure tests of exhaust ventilation / respiratory protective equipment carried out by competent person",
+                    "legislation": "Contrary to regulation 13(2) of the Control of Asbestos Regulations 2012 and section 33(1)(c) of, and Schedule 3A to, the Health and Safety at Work etc Act 1974."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Rayen",
+              "bailStatus": {
+                "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                "code": "A",
+                "description": "Not applicable"
+              },
+              "masterDefendantId": "316bff6e-580a-4b38-bdd2-0e6edfc84981",
+              "restrictFromCourtList": false,
+              "nationalityDescription": "British",
+              "courtProceedingsInitiated": "2020-09-23T08:44:23.576Z"
+            },
+            {
+              "id": "ccf458e1-d543-41cd-a639-8a2f8ab3b43e",
+              "address": {
+                "address1": "No fixed abode"
+              },
+              "lastName": "Ray",
+              "offences": [
+                {
+                  "id": "94092e95-dff9-48ed-ae62-3a39d2bb77e9",
+                  "startDate": "2020-09-01",
+                  "offenceCode": "CA12055",
+                  "shadowListed": false,
+                  "offenceWording": "On or in 1 September 2020 at Oldham being an employer, failed to ensure that thorough examinations and tests of exhaust ventilation equipment, provided to meet the requirements of the Control of Asbestos Regulations 2012 were carried out at suitable intervals by a competent person",
+                  "statementOfOffence": {
+                    "title": "Employer fail to ensure tests of exhaust ventilation / respiratory protective equipment carried out by competent person",
+                    "welshTitle": "Employer fail to ensure tests of exhaust ventilation / respiratory protective equipment carried out by competent person",
+                    "legislation": "Contrary to regulation 13(2) of the Control of Asbestos Regulations 2012 and section 33(1)(c) of, and Schedule 3A to, the Health and Safety at Work etc Act 1974."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Mike",
+              "bailStatus": {
+                "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                "code": "A",
+                "description": "Not applicable"
+              },
+              "masterDefendantId": "316bff6e-580a-4b38-bdd2-0e6edfc84981",
+              "restrictFromCourtList": false,
+              "nationalityDescription": "British",
+              "courtProceedingsInitiated": "2020-09-23T08:44:23.576Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "a98164fc-fd80-3307-9fd1-e8dca4ea7969",
+            "authorityCode": "MERSPF",
+            "caseReference": "CAJ4BGEAG7"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "COURT_CENTRE_ID",
+      "isSlotsBooked": false,
+      "isVacatedTrial": false,
+      "nonDefaultDays": [
+        {
+          "duration": 360,
+          "startTime": "2020-10-04T08:00:00.000Z"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 360,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2020-09-23",
+      "courtApplications": [],
+      "courtCentreDetails": {
+        "id": "COURT_CENTRE_ID",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:30:00"
+      },
+      "vacatedTrialReasonId": ""
+    },
+    {
+      "id": "HEARING_ID2",
+      "type": {
+        "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+        "description": "Trial"
+      },
+      "endDate": "2020-10-10",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "JUDICIARY_ID1",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2020-10-04",
+      "courtRoomId": "COURT_ROOM_ID",
+      "hearingDays": [
+        {
+          "endTime": "2019-01-29T14:00:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-01-29T09:00:00.000Z",
+          "hearingDate": "2019-01-29",
+          "isCancelled": false,
+          "durationMinutes": 360
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "CASE_ID2",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "ccf458e1-d543-41cd-a639-8a2f8ab3b43e",
+              "address": {
+                "address1": "No fixed abode"
+              },
+              "lastName": "Smith",
+              "offences": [
+                {
+                  "id": "94092e95-dff9-48ed-ae62-3a39d2bb77e9",
+                  "startDate": "2020-09-01",
+                  "offenceCode": "CA12055",
+                  "shadowListed": false,
+                  "offenceWording": "On or in 1 September 2020 at Oldham being an employer, failed to ensure that thorough examinations and tests of exhaust ventilation equipment, provided to meet the requirements of the Control of Asbestos Regulations 2012 were carried out at suitable intervals by a competent person",
+                  "statementOfOffence": {
+                    "title": "Employer fail to ensure tests of exhaust ventilation / respiratory protective equipment carried out by competent person",
+                    "welshTitle": "Employer fail to ensure tests of exhaust ventilation / respiratory protective equipment carried out by competent person",
+                    "legislation": "Contrary to regulation 13(2) of the Control of Asbestos Regulations 2012 and section 33(1)(c) of, and Schedule 3A to, the Health and Safety at Work etc Act 1974."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Bob",
+              "bailStatus": {
+                "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                "code": "A",
+                "description": "Not applicable"
+              },
+              "masterDefendantId": "316bff6e-580a-4b38-bdd2-0e6edfc84981",
+              "restrictFromCourtList": false,
+              "nationalityDescription": "British",
+              "courtProceedingsInitiated": "2020-09-23T08:44:23.576Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "a98164fc-fd80-3307-9fd1-e8dca4ea7969",
+            "authorityCode": "MERSPF",
+            "caseReference": "CAJ4BGEAG7"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "COURT_CENTRE_ID",
+      "isSlotsBooked": false,
+      "isVacatedTrial": false,
+      "nonDefaultDays": [
+        {
+          "duration": 360,
+          "startTime": "2020-10-04T08:00:00.000Z"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 360,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2020-09-23",
+      "courtApplications": [],
+      "courtCentreDetails": {
+        "id": "COURT_CENTRE_ID",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:30:00"
+      },
+      "vacatedTrialReasonId": ""
+    },
+    {
+      "id": "HEARING_ID3",
+      "type": {
+        "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+        "description": "Trial"
+      },
+      "endDate": "2020-10-10",
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2020-10-04",
+      "courtRoomId": "COURT_ROOM_ID",
+      "hearingDays": [
+        {
+          "endTime": "2019-01-29T14:00:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-01-29T09:00:00.000Z",
+          "hearingDate": "2019-01-29",
+          "isCancelled": false,
+          "durationMinutes": 360
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "CASE_ID3",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "ccf458e1-d543-41cd-a639-8a2f8ab3b43e",
+              "address": {
+                "address1": "No fixed abode"
+              },
+              "lastName": "Smith1",
+              "offences": [
+                {
+                  "id": "94092e95-dff9-48ed-ae62-3a39d2bb77e9",
+                  "startDate": "2020-09-01",
+                  "offenceCode": "CA12055",
+                  "shadowListed": false,
+                  "offenceWording": "On or in 1 September 2020 at Oldham being an employer, failed to ensure that thorough examinations and tests of exhaust ventilation equipment, provided to meet the requirements of the Control of Asbestos Regulations 2012 were carried out at suitable intervals by a competent person",
+                  "statementOfOffence": {
+                    "title": "Employer fail to ensure tests of exhaust ventilation / respiratory protective equipment carried out by competent person",
+                    "welshTitle": "Employer fail to ensure tests of exhaust ventilation / respiratory protective equipment carried out by competent person",
+                    "legislation": "Contrary to regulation 13(2) of the Control of Asbestos Regulations 2012 and section 33(1)(c) of, and Schedule 3A to, the Health and Safety at Work etc Act 1974."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Bob1",
+              "bailStatus": {
+                "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                "code": "A",
+                "description": "Not applicable"
+              },
+              "masterDefendantId": "316bff6e-580a-4b38-bdd2-0e6edfc84981",
+              "restrictFromCourtList": false,
+              "nationalityDescription": "British",
+              "courtProceedingsInitiated": "2020-09-23T08:44:23.576Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "a98164fc-fd80-3307-9fd1-e8dca4ea7969",
+            "authorityCode": "MERSPF",
+            "caseReference": "CAJ4BGEAG7"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "COURT_CENTRE_ID",
+      "isSlotsBooked": false,
+      "isVacatedTrial": false,
+      "nonDefaultDays": [
+        {
+          "duration": 360,
+          "startTime": "2020-10-04T08:00:00.000Z"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 360,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2020-09-23",
+      "courtApplications": [],
+      "courtCentreDetails": {
+        "id": "COURT_CENTRE_ID",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:30:00"
+      },
+      "vacatedTrialReasonId": ""
+    }
+  ]
+}

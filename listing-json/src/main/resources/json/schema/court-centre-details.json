@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/court-centre-details.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "defaultStartTime": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/localTime"
+    },
+    "defaultDuration": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/positiveInteger"
+    }
+  },
+  "required": [
+    "id",
+    "defaultStartTime",
+    "defaultDuration"
+  ],
+  "additionalProperties": false
+}

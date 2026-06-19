@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/prosecutionCase.json",
+  "description": "The details of the prosecution matter brought before court. This is v1 which accepts an empty array of defendants. There is a v2 in core-domain which requires at least one defendant",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "prosecutionCaseIdentifier": {
+      "$ref": "http://justice.gov.uk/core/courts/prosecutionCaseIdentifier.json"
+    },
+    "originatingOrganisation": {
+      "type": "string"
+    },
+    "cpsOrganisation": {
+      "type": "string"
+    },
+    "initiationCode": {
+      "$ref": "http://justice.gov.uk/core/courts/initiationCode.json"
+    },
+    "caseStatus": {
+      "description": "The status of the case.  When SJP Referrals are received this will be set to SJPReferral by the receiving Progression API ",
+      "type": "string"
+    },
+    "policeOfficerInCase": {
+      "$ref": "http://justice.gov.uk/core/courts/policeOfficerInCase.json"
+    },
+    "statementOfFacts": {
+      "type": "string"
+    },
+    "statementOfFactsWelsh": {
+      "type": "string"
+    },
+    "breachProceedingsPending": {
+      "type": "boolean"
+    },
+    "removalReason": {
+      "type": "string"
+    },
+    "appealProceedingsPending": {
+      "type": "boolean"
+    },
+    "defendants": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/defendant.json"
+      }
+    },
+    "caseMarkers": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/marker.json"
+      }
+    },
+    "classOfCase": {
+      "description": "Class of case received. E.g Class 1, Class 2",
+      "type": "string"
+    },
+    "isCpsOrgVerifyError": {
+      "description": "Flag to determine if CPS organisation verified",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "prosecutionCaseIdentifier",
+    "initiationCode",
+    "defendants"
+  ],
+  "additionalProperties": false
+}

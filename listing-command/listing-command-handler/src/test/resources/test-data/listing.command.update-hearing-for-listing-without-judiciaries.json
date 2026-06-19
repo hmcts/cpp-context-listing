@@ -1,0 +1,93 @@
+{
+  "updateHearingForListing": {
+    "hearingId": "HEARING_ID",
+    "type": {
+      "id": "HEARING_TYPE_ID",
+      "description": "HEARING_TYPE_DESCRIPTION"
+    },
+    "panel": "YOUTH",
+    "startDate": "START_DATE",
+    "endDate": "END_DATE",
+    "hearingLanguage": "HEARING_LANGUAGE",
+    "courtCentreId": "COURT_CENTRE_ID",
+    "jurisdictionType": "JURISDICTION_TYPE",
+    "judiciary": [
+      {
+        "judicialId": "0fd0233e-a8f9-3dc8-8bef-4f6b1d4799f3",
+        "judicialRoleType": {
+          "judiciaryType": "MAGISTRATE"
+        },
+        "isDeputy": true,
+        "isBenchChairman": false
+      },
+      {
+        "judicialId": "d424f73e-4a19-396d-a00c-f4c38d1c864e",
+        "judicialRoleType": {
+          "judiciaryType": "MAGISTRATE"
+        },
+        "isDeputy": false,
+        "isBenchChairman": true
+      },
+      {
+        "judicialId": "f0cd595c-be23-3539-9aed-7f1aab1d1e19",
+        "judicialRoleType": {
+          "judiciaryType": "MAGISTRATE"
+        },
+        "isDeputy": true,
+        "isBenchChairman": false
+      }
+    ],
+    "nonDefaultDays": [
+      {
+        "startTime": "NON_DEFAULT_DAY",
+        "duration": "SLOT_DURATION",
+        "courtCentreId": "COURT_CENTRE_ID",
+        "courtRoomId": "COURT_ROOM_NUMBER",
+        "oucode": "OU_CODE",
+        "roomId": "COURT_ROOM_ID",
+        "session": "SLOT_SESSION",
+        "courtScheduleId": "COURT_SCHEDULE_ID_1"
+      },
+      {
+        "courtCentreId": "COURT_CENTRE_ID",
+        "courtRoomId": "COURT_ROOM_NUMBER",
+        "courtScheduleId": "COURT_SCHEDULE_ID_2",
+        "duration": "SLOT_DURATION",
+        "oucode": "OU_CODE",
+        "roomId": "ROOM_ID_1",
+        "session": "SESSION_1",
+        "startTime": "DEFAULT_DAY_1"
+      }
+    ],
+    "nonSittingDays": [
+      "NON_SITTING_DAY"
+    ],
+    "courtRoomId": "COURT_ROOM_ID",
+    "hasVideoLink": "HAS_VIDEO_LINK",
+    "publicListNote": "PUBLIC_LIST_NOTE",
+    "sendNotificationToParties": false
+  },
+  "courtCentreDetails": {
+    "id": "f0e04581-8f66-4bbf-b5b4-2d41fcc2ae7c",
+    "defaultDuration": "DEFAULT_DURATION",
+    "defaultStartTime": "DEFAULT_START_TIME"
+  },
+  "prosecutionCases": [
+    {
+      "caseId": "2279b2c3-b0d3-4889-ae8e-1ecc20c39e27",
+      "defendants": [
+        {
+          "defendantId": "e1d32d9d-29ec-4934-a932-22a50f223966",
+          "offences": [
+            {
+              "offenceId": "3789ab16-0bb7-4ef1-87ef-c936bf0364f1"
+            },
+            {
+              "offenceId": "4789ab16-0bb7-4ef1-87ef-c936bf0364f2"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

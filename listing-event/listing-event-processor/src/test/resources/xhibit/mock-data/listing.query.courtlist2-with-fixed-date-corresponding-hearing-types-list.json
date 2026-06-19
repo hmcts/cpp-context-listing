@@ -1,0 +1,422 @@
+{
+  "courtLists": [
+    {
+      "sittings": [
+        {
+          "hearings": [
+            {
+              "endTime": "2020-03-30T10:15",
+              "startTime": "2020-03-30T10:00",
+              "defendants": [
+                {
+                  "id": "028d9d29-486c-4847-8872-d1f4c71d00b1",
+                  "lastName": "GIANNINI",
+                  "offences": [
+                    {
+                      "id": "5f7dd932-80c1-424f-a94e-bd501efa3d47",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Ecuccot junorwu lila wehub az abfovhe gubo viponwa kovnaji mobup ruda pag dama.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Douglas",
+                  "dateOfBirth": "1990-03-05",
+                  "custodyTimeLimit": "2020-04-05",
+                  "specificRequirements": "Ubifana kema sukagsen zi pausu ruub ro ucnih mowuz podoab supbefe va nudtecol.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+                "description": "Trial"
+              },
+              "caseIdentifier": {
+                "authorityId": "00460a3d-7490-4219-b15d-3666cb22d220",
+                "authorityCode": "CPS",
+                "caseReference": "35RG682958"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            },
+            {
+              "endTime": "2020-03-30T10:45",
+              "startTime": "2020-03-30T10:30",
+              "defendants": [
+                {
+                  "id": "e21e4311-8677-4695-ad6e-ee563ecd2d37",
+                  "lastName": "BRAVO",
+                  "offences": [
+                    {
+                      "id": "153e9eab-5eee-46fb-81c9-b8feccca8a02",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Jaf dumfimam ufwo imnife mitsad tig naghurnaf piumaoti fol festek tobgohi dewijov tikel ove lomi olurif ozaletak zacvaj.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "4a645e7d-3f36-42fd-bede-4fcfaeeee18f",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Ko edcocow gipzu wijtonsid hofivtuc filuvel cejahe jowam mokot cik fez ujuva wosugma meme lu ca omges.",
+                      "statementOfOffence": {
+                        "title": "Robbery",
+                        "welshTitle": "Robbery",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "5db562e2-5f73-4faf-9e2b-0c9fa62b09f6",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Bemuogu win meppu iwsifa ugo po kin ko mal rol afetu aduugeog bahjelpub midag.",
+                      "statementOfOffence": {
+                        "title": "Armed robbery",
+                        "welshTitle": "Armed robbery",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "74b70911-c3b9-4c01-859e-cb3c780d4e68",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Nifdaiji iga luhifomu ru vebihe hicgocise ebunedi higak azi fibdifih hu li selco.",
+                      "statementOfOffence": {
+                        "title": "Murder",
+                        "welshTitle": "Murder",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Gertrude",
+                  "dateOfBirth": "1990-03-05",
+                  "custodyTimeLimit": "2020-04-05",
+                  "defenceOrganisation": "EY Solicitors",
+                  "specificRequirements": "Mimces wubepzen so mogvuwlu fiburvud um git jiz amobigok sa mopasa ziezfot kig.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+                "description": "Trial"
+              },
+              "caseIdentifier": {
+                "authorityId": "363594f1-0389-415d-9922-119a1833fb01",
+                "authorityCode": "CPS",
+                "caseReference": "34UC737169"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            },
+            {
+              "endTime": "2020-03-30T10:45",
+              "startTime": "2020-03-30T10:30",
+              "defendants": [
+                {
+                  "id": "e21e4311-8677-4695-ad6e-ee563ecd2d37",
+                  "lastName": "BRAVO",
+                  "offences": [
+                    {
+                      "id": "153e9eab-5eee-46fb-81c9-b8feccca8a02",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Jaf dumfimam ufwo imnife mitsad tig naghurnaf piumaoti fol festek tobgohi dewijov tikel ove lomi olurif ozaletak zacvaj.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "4a645e7d-3f36-42fd-bede-4fcfaeeee18f",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Ko edcocow gipzu wijtonsid hofivtuc filuvel cejahe jowam mokot cik fez ujuva wosugma meme lu ca omges.",
+                      "statementOfOffence": {
+                        "title": "Robbery",
+                        "welshTitle": "Robbery",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "5db562e2-5f73-4faf-9e2b-0c9fa62b09f6",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Bemuogu win meppu iwsifa ugo po kin ko mal rol afetu aduugeog bahjelpub midag.",
+                      "statementOfOffence": {
+                        "title": "Armed robbery",
+                        "welshTitle": "Armed robbery",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "74b70911-c3b9-4c01-859e-cb3c780d4e68",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Nifdaiji iga luhifomu ru vebihe hicgocise ebunedi higak azi fibdifih hu li selco.",
+                      "statementOfOffence": {
+                        "title": "Murder",
+                        "welshTitle": "Murder",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Gertrude",
+                  "dateOfBirth": "1990-03-05",
+                  "custodyTimeLimit": "2020-04-05",
+                  "defenceOrganisation": "EY Solicitors",
+                  "specificRequirements": "Mimces wubepzen so mogvuwlu fiburvud um git jiz amobigok sa mopasa ziezfot kig.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "c6b0c2bf-3f98-46ed-ab7e-56efaf9ecceb",
+                "description": "Trial"
+              },
+              "caseIdentifier": {
+                "authorityId": "363594f1-0389-415d-9922-119a1833fb01",
+                "authorityCode": "CPS",
+                "caseReference": "34UC737169"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [
+            {
+              "judicialId": "c0c7c76d-30bd-3dca-afc9-6f40275bdc0a",
+              "judicialRoleType": {
+                "judiciaryType": "CIRCUIT_JUDGE"
+              }
+            }
+          ],
+          "courtRoomId": "1f9630dc-e4ba-3378-8880-2369883394b2",
+          "sittingDate": "2020-03-30",
+          "weekCommencing": false
+        }
+      ],
+      "crestCourtSite": {
+        "id": "eb1cea9e-ae67-38eb-8966-f55d038d1350",
+        "oucode": "C62SS00",
+        "courtType": "CROWN_COURT",
+        "crestCourtId": "457",
+        "crestCourtName": "SWANSEA",
+        "crestCourtSiteId": "756",
+        "crestCourtFullName": "SWANSEA",
+        "crestCourtSiteCode": "B",
+        "crestCourtSiteName": "CARMARTHEN",
+        "crestCourtShortName": "SWANS"
+      }
+    },
+    {
+      "sittings": [
+        {
+          "hearings": [
+            {
+              "endTime": "2020-03-30T10:15",
+              "startTime": "2020-03-30T10:00",
+              "defendants": [
+                {
+                  "id": "028d9d29-486c-4847-8872-d1f4c71d00b1",
+                  "lastName": "GIANNINI",
+                  "offences": [
+                    {
+                      "id": "5f7dd932-80c1-424f-a94e-bd501efa3d47",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Ecuccot junorwu lila wehub az abfovhe gubo viponwa kovnaji mobup ruda pag dama.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Douglas",
+                  "dateOfBirth": "1990-03-05",
+                  "custodyTimeLimit": "2020-04-05",
+                  "specificRequirements": "Ubifana kema sukagsen zi pausu ruub ro ucnih mowuz podoab supbefe va nudtecol.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+                "description": "Trial"
+              },
+              "caseIdentifier": {
+                "authorityId": "00460a3d-7490-4219-b15d-3666cb22d220",
+                "authorityCode": "CPS",
+                "caseReference": "35RG682958"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            },
+            {
+              "endTime": "2020-03-30T10:45",
+              "startTime": "2020-03-30T10:30",
+              "defendants": [
+                {
+                  "id": "e21e4311-8677-4695-ad6e-ee563ecd2d37",
+                  "lastName": "BRAVO",
+                  "offences": [
+                    {
+                      "id": "153e9eab-5eee-46fb-81c9-b8feccca8a02",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Jaf dumfimam ufwo imnife mitsad tig naghurnaf piumaoti fol festek tobgohi dewijov tikel ove lomi olurif ozaletak zacvaj.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "4a645e7d-3f36-42fd-bede-4fcfaeeee18f",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Ko edcocow gipzu wijtonsid hofivtuc filuvel cejahe jowam mokot cik fez ujuva wosugma meme lu ca omges.",
+                      "statementOfOffence": {
+                        "title": "Robbery",
+                        "welshTitle": "Robbery",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "5db562e2-5f73-4faf-9e2b-0c9fa62b09f6",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Bemuogu win meppu iwsifa ugo po kin ko mal rol afetu aduugeog bahjelpub midag.",
+                      "statementOfOffence": {
+                        "title": "Armed robbery",
+                        "welshTitle": "Armed robbery",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "74b70911-c3b9-4c01-859e-cb3c780d4e68",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Nifdaiji iga luhifomu ru vebihe hicgocise ebunedi higak azi fibdifih hu li selco.",
+                      "statementOfOffence": {
+                        "title": "Murder",
+                        "welshTitle": "Murder",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Gertrude",
+                  "dateOfBirth": "1990-03-05",
+                  "custodyTimeLimit": "2020-04-05",
+                  "defenceOrganisation": "EY Solicitors",
+                  "specificRequirements": "Mimces wubepzen so mogvuwlu fiburvud um git jiz amobigok sa mopasa ziezfot kig.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+                "description": "Trial"
+              },
+              "caseIdentifier": {
+                "authorityId": "363594f1-0389-415d-9922-119a1833fb01",
+                "authorityCode": "CPS",
+                "caseReference": "34UC737169"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [
+            {
+              "judicialId": "c0c7c76d-30bd-3dca-afc9-6f40275bdc0a",
+              "judicialRoleType": {
+                "judiciaryType": "CIRCUIT_JUDGE"
+              }
+            }
+          ],
+          "courtRoomId": "1f9630dc-e4ba-3378-8880-2369883394b2",
+          "sittingDate": "2020-03-30",
+          "weekCommencing": false
+        }
+      ],
+      "crestCourtSite": {
+        "id": "eb1cea9e-ae67-38eb-8966-f55d038d1350",
+        "oucode": "C62SS00",
+        "courtType": "CROWN_COURT",
+        "crestCourtId": "457",
+        "crestCourtName": "SWANSEA",
+        "crestCourtSiteId": "756",
+        "crestCourtFullName": "SWANSEA",
+        "crestCourtSiteCode": "B",
+        "crestCourtSiteName": "CARMARTHEN",
+        "crestCourtShortName": "SWANS"
+      }
+    },
+    {
+      "sittings": [],
+      "crestCourtSite": {
+        "id": "c0966b48-ddb3-3fea-91ac-01c2ba7cd1a2",
+        "oucode": "C62SS00",
+        "courtType": "CROWN_COURT",
+        "crestCourtId": "457",
+        "crestCourtName": "SWANSEA",
+        "crestCourtSiteId": "761",
+        "crestCourtFullName": "SWANSEA",
+        "crestCourtSiteCode": "C",
+        "crestCourtSiteName": "HAVERFORDWEST",
+        "crestCourtShortName": "SWANS"
+      }
+    },
+    {
+      "sittings": [],
+      "crestCourtSite": {
+        "id": "97ae1b36-2c7e-3270-a1da-820f0ecee64b",
+        "oucode": "C62SS00",
+        "courtType": "CROWN_COURT",
+        "crestCourtId": "457",
+        "crestCourtName": "SWANSEA",
+        "crestCourtSiteId": "457",
+        "crestCourtFullName": "SWANSEA",
+        "crestCourtSiteCode": "D",
+        "crestCourtSiteName": "THE CRIMINAL COURT GUILDHALL",
+        "crestCourtShortName": "SWANS"
+      }
+    }
+  ],
+  "courtCentreId": "ddce58c9-446f-33f4-89cb-914ed173dfb8"
+}

@@ -1,0 +1,212 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/listing.command.update-court-application-for-hearings.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "courtApplication": {
+      "$ref": "#/definitions/courtApplication"
+    },
+    "hearingIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+      }
+    }
+  },
+  "required": [
+    "courtApplication",
+    "hearingIds"
+  ],
+  "definitions": {
+    "courtApplication": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+        },
+        "linkedCaseIds": {
+          "type": "array",
+          "minItems": 0,
+          "items": {
+            "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+          }
+        },
+        "parentApplicationId": {
+          "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+        },
+        "applicant": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+            },
+            "firstName": {
+              "description": "The person first name",
+              "type": "string"
+            },
+            "lastName": {
+              "description": "The person last name",
+              "type": "string"
+            },
+            "restrictFromCourtList": {
+              "description": "Restrict applicant details from listing",
+              "type":"boolean"
+            },
+            "courtApplicationPartyType": {
+              "description": "The type of court application party",
+              "type": "string",
+              "enum": [
+                "PERSON",
+                "ORGANISATION",
+                "PROSECUTING_AUTHORITY",
+                "PERSON_DEFENDANT"
+              ]
+            },
+            "address": {
+              "$ref": "http://justice.gov.uk/core/courts/address.json"
+            },
+            "masterDefendantId": {
+              "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+            },
+            "dateOfBirth": {
+              "description": "The date of birth of the party",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "lastName",
+            "isRespondent",
+            "courtApplicationPartyType"
+          ]
+        },
+        "applicationType": {
+          "type": "string"
+        },
+        "applicationReference": {
+          "type": "string"
+        },
+        "applicationParticulars": {
+          "type": "string"
+        },
+        "respondents": {
+          "type": "array",
+          "minItems": 0,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+              },
+              "firstName": {
+                "description": "The person first name",
+                "type": "string"
+              },
+              "lastName": {
+                "description": "The person last name",
+                "type": "string"
+              },
+              "restrictFromCourtList": {
+                "description": "Restrict respondent details from listing",
+                "type":"boolean"
+              },
+              "courtApplicationPartyType": {
+                "description": "The type of court application party",
+                "type": "string",
+                "enum": [
+                  "PERSON",
+                  "ORGANISATION",
+                  "PROSECUTING_AUTHORITY",
+                  "PERSON_DEFENDANT"
+                ]
+              },
+              "address": {
+                "$ref": "http://justice.gov.uk/core/courts/address.json"
+              },
+              "masterDefendantId": {
+                "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+              },
+              "dateOfBirth": {
+                "description": "The date of birth of the party",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "lastName",
+              "isRespondent",
+              "courtApplicationPartyType"
+            ]
+          }
+        },
+        "subject": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+            },
+            "firstName": {
+              "description": "The person first name",
+              "type": "string"
+            },
+            "lastName": {
+              "description": "The person last name",
+              "type": "string"
+            },
+            "restrictFromCourtList": {
+              "description": "Restrict subject details from listing",
+              "type":"boolean"
+            },
+            "courtApplicationPartyType": {
+              "description": "The type of court application party",
+              "type": "string",
+              "enum": [
+                "PERSON",
+                "ORGANISATION",
+                "PROSECUTING_AUTHORITY",
+                "PERSON_DEFENDANT"
+              ]
+            },
+            "address": {
+              "$ref": "http://justice.gov.uk/core/courts/address.json"
+            },
+            "masterDefendantId": {
+              "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+            },
+            "dateOfBirth": {
+              "description": "The date of birth of the party",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "lastName",
+            "isRespondent",
+            "courtApplicationPartyType"
+          ]
+        },
+        "restrictFromCourtList": {
+          "type":"boolean"
+        },
+        "restrictCourtApplicationType": {
+          "type":"boolean"
+        },
+        "offences": {
+          "type": "array",
+          "minItems": 0,
+          "items": {
+            "$ref": "http://justice.gov.uk/listing/events/offence.json"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "applicant",
+        "applicationType"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

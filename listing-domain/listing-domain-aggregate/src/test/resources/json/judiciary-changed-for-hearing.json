@@ -1,0 +1,14 @@
+{
+  "_metadata": {
+    "name": "listing.events.judiciary-changed-for-hearing"
+  },
+  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+  "judiciary": [
+    {
+      "judicialId": "e1a22d9e-088b-4af4-acb5-bc6e78aaf5ef",
+      "judicialRoleType": {
+        "judiciaryType": "CIRCUIT_JUDGE"
+      }
+    }
+  ]
+}

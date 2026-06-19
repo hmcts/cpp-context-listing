@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet author="listing" id="13" logicalFilePath="013-GPE-15215.xml">
+        <createTable tableName="listing_notes">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="date" type="DATE"/>
+            <column name="court_room_id" type="UUID"/>
+            <column name="note" type="TEXT"/>
+        </createTable>
+
+        <sql>CREATE UNIQUE INDEX pk_notes_range ON listing_notes(date date_ops, court_room_id uuid_ops)</sql>
+    </changeSet>
+
+</databaseChangeLog>

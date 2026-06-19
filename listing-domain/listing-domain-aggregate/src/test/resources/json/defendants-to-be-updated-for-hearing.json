@@ -1,0 +1,28 @@
+{
+  "_metadata": {
+    "name": "listing.events.defendants-to-be-updated"
+  },
+  "caseId": "31fd0edf-9692-46fa-a6be-4b78bf88fec6",
+  "defendants": [
+    {
+      "bailStatus": {
+        "id": "12e69486-4d01-3403-a50a-7419ca040635",
+        "code": "C",
+        "description": "Custody or remanded into custody"
+      },
+      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+      "custodyTimeLimit": "2018-01-30",
+      "dateOfBirth": "1980-07-15",
+      "defenceOrganisation": "XYZ Solicitors",
+      "firstName": "David",
+      "id": "5b0b19ef-f50f-45fc-ad46-41821c6cf00a",
+      "lastName": "LLOYD",
+      "masterDefendantId": "5b0b19ef-f50f-45fc-ad46-41821c6cf00a",
+      "restrictFromCourtList":false,
+      "offences": []
+    }
+  ],
+  "hearings": [
+    "93c0ee7b-2e6f-43de-b500-3423b0169821"
+  ]
+}

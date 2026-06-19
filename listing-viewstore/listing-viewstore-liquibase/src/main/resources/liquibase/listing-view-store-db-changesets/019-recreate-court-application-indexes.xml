@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+    <changeSet author="baris.ozturkmen" id="modify_court_application_indexes" logicalFilePath="019-recreate-court-application-indexes.xml">
+        <sql>DROP INDEX IF EXISTS court_applications_idx</sql>
+        <sql>CREATE INDEX IF NOT EXISTS court_applications_hearing_id_application_id_idx ON court_applications (hearing_id, application_id)
+        </sql>
+        <sql>CREATE INDEX IF NOT EXISTS court_applications_application_reference_idx ON court_applications (application_reference);
+        </sql>
+    </changeSet>
+</databaseChangeLog>

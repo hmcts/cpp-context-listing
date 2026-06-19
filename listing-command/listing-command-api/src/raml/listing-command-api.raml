@@ -1,0 +1,334 @@
+#%RAML 0.8
+title: Listing - Command API
+baseUri: http://localhost:8080/listing-command-api/command/api/rest/listing
+protocols: [ HTTP, HTTPS ]
+
+/cases:
+  post:
+    description: |
+      List case for hearing
+      ...
+      (mapping):
+        requestType: application/vnd.listing.command.list-court-hearing+json
+        name: listing.command.list-court-hearing
+      (mapping):
+        requestType: application/vnd.listing.command.list-unscheduled-court-hearing+json
+        name: listing.command.list-unscheduled-court-hearing
+      ...
+    body:
+      application/vnd.listing.command.list-court-hearing+json:
+        example: !include json/listing.command.list-court-hearing.json
+        schema: !include json/schema/listing.command.list-court-hearing.json
+      application/vnd.listing.command.list-unscheduled-court-hearing+json:
+        example: !include json/listing.command.list-unscheduled-court-hearing.json
+        schema: !include json/schema/listing.command.list-unscheduled-court-hearing.json
+
+    responses:
+      202:
+        description: Request accepted
+
+/hearings:
+  post:
+    description: |
+      Update hearings for a listing
+      ...
+      (mapping):
+        requestType: application/vnd.listing.command.change-judiciary-for-hearings+json
+        name: listing.command.change-judiciary-for-hearings
+      (mapping):
+        requestType: application/vnd.listing.command.restrict-court-list+json
+        name: listing.command.restrict-court-list
+        (mapping):
+        requestType: application/vnd.listing.delete-previous-hearings-and-create-next-hearing+json
+        name: listing.delete-previous-hearings-and-create-next-hearing
+      ...
+    body:
+      application/vnd.listing.command.change-judiciary-for-hearings+json:
+        schema: !include json/schema/listing.command.change-judiciary-for-hearings.json
+        example: !include json/listing.command.change-judiciary-for-hearings.json
+      application/vnd.listing.command.restrict-court-list+json:
+        schema: !include json/schema/listing.command.restrict-court-list.json
+        example: !include json/listing.command.restrict-court-list.json
+      application/vnd.listing.delete-previous-hearings-and-create-next-hearing+json:
+        schema: !include json/schema/listing.delete-previous-hearings-and-create-next-hearing.json
+        example: !include json/listing.delete-previous-hearings-and-create-next-hearing.json
+
+
+    responses:
+      202:
+        description: Request accepted
+
+
+/hearings/update-hearings:
+  post:
+    description: |
+      Update multiple hearings in a batch and raise a single public event
+      ...
+      (mapping):
+        requestType: application/vnd.listing.command.update-hearings-for-listing+json
+        name: listing.command.update-hearings-for-listing      
+      ...
+    body:
+      application/vnd.listing.command.update-hearings-for-listing+json:
+        example: !include json/listing.command.update-hearings-for-listing.json
+        schema: !include json/schema/listing.command.update-hearings-for-listing.json
+
+    responses:
+      202:
+        description: Request accepted
+
+/hearings/{hearingId}:
+  post:
+    description: |
+      Update hearing for listing
+      ...
+      (mapping):
+      requestType: application/vnd.listing.command.update-hearing-for-listing+json
+        name: listing.command.update-hearing-for-listing
+      (mapping):
+        requestType: application/vnd.listing.command.update-defendants-for-hearing+json
+        name: listing.command.update-defendants-for-hearing
+      (mapping):
+        requestType: application/vnd.listing.command.delete-offences-for-hearing+json
+        name: listing.command.delete-offences-for-hearing
+      (mapping):
+        requestType: application/vnd.listing.command.update-offences-for-hearing+json
+        name: listing.command.update-offences-for-hearing
+      (mapping):
+        requestType: application/vnd.listing.command.add-offences-for-hearing+json
+        name: listing.command.add-offences-for-hearing
+      (mapping):
+        requestType: application/vnd.listing.command.extend-hearing-for-hearing+json
+        name: listing.command.extend-hearing-for-hearing
+      (mapping):
+        requestType: application/vnd.listing.command.vacate-trial+json
+        name: listing.command.vacate-trial
+      (mapping):
+        requestType: application/vnd.listing.duplicate-unallocated-hearing+json
+        name: listing.mark-unallocated-hearing-as-duplicate
+      (mapping):
+        requestType: application/vnd.listing.next-hearings-v2+json
+        name: listing.list-next-hearings-v2
+      (mapping):
+        requestType: application/vnd.listing.list-unscheduled-next-hearings+json
+        name: listing.list-unscheduled-next-hearings
+      (mapping):
+        requestType: application/vnd.listing.related-hearing+json
+        name: listing.update-related-hearing
+      (mapping):
+        requestType: application/vnd.listing.delete-next-hearings+json
+        name: listing.delete-next-hearings
+      (mapping):
+        requestType: application/vnd.listing.update-hearing-add-case-bdf+json
+        name: listing.update-hearing-add-case-bdf
+      ...
+    body:
+      application/vnd.listing.command.update-hearing-for-listing+json:
+        example: !include json/listing.command.update-hearing-for-listing.json
+        schema: !include json/schema/listing.command.update-hearing-for-listing.json
+      application/vnd.listing.command.update-defendants-for-hearing+json:
+        example: !include json/listing.command.update-defendants-for-hearing.json
+        schema: !include json/schema/listing.command.update-defendants-for-hearing.json
+      application/vnd.listing.command.delete-offences-for-hearing+json:
+        example: !include json/listing.command.delete-offences-for-hearing.json
+        schema: !include json/schema/listing.command.delete-offences-for-hearing.json
+      application/vnd.listing.command.add-offences-for-hearing+json:
+        example: !include json/listing.command.add-offences-for-hearing.json
+        schema: !include json/schema/listing.command.add-offences-for-hearing.json
+      application/vnd.listing.command.update-offences-for-hearing+json:
+        example: !include json/listing.command.update-offences-for-hearing.json
+        schema: !include json/schema/listing.command.update-offences-for-hearing.json
+      application/vnd.listing.command.extend-hearing-for-hearing+json:
+        example: !include json/listing.command.extend-hearing-for-hearing.json
+        schema: !include json/schema/listing.command.extend-hearing-for-hearing.json
+      application/vnd.listing.command.vacate-trial+json:
+        example: !include json/listing.command.vacate-trial.json
+        schema: !include json/schema/listing.command.vacate-trial.json
+      application/vnd.listing.duplicate-unallocated-hearing+json: !!null
+      application/vnd.listing.next-hearings-v2+json:
+        example: !include json/listing.list-next-hearings-v2.json
+        schema: !include json/schema/listing.list-next-hearings-v2.json
+      application/vnd.listing.list-unscheduled-next-hearings+json:
+        example: !include json/listing.list-unscheduled-next-hearings.json
+        schema: !include json/schema/listing.list-unscheduled-next-hearings.json
+      application/vnd.listing.related-hearing+json:
+        example: !include json/listing.update-related-hearing.json
+        schema: !include json/schema/listing.update-related-hearing.json
+      application/vnd.listing.delete-next-hearings+json:
+        example: !include json/listing.delete-next-hearings.json
+        schema: !include json/schema/listing.delete-next-hearings.json
+      application/vnd.listing.update-hearing-add-case-bdf+json:
+        example: !include json/listing.update-hearing-add-case-bdf.json
+        schema: !include json/schema/listing.update-hearing-add-case-bdf.json
+    responses:
+      202:
+        description: Request accepted
+
+/hearings/sequence:
+  post:
+    description: |
+      Squence  hearings
+      ...
+      (mapping):
+        requestType: application/vnd.listing.command.sequence-hearings+json
+        name: listing.command.sequence-hearings
+      ...
+    body:
+      application/vnd.listing.command.sequence-hearings+json:
+        schema: !include json/schema/listing.command.sequence-hearings.json
+        example: !include json/listing.command.sequence-hearings.json
+
+    responses:
+      202:
+        description: Request accepted
+
+
+/publishCourtList/{courtCentreId}:
+  post:
+    description: |
+      Publish court list
+      ...
+      (mapping):
+        requestType: application/vnd.listing.command.publish-court-list+json
+        name: listing.command.publish-court-list
+      ...
+    body:
+      application/vnd.listing.command.publish-court-list+json:
+        schema: !include json/schema/listing.command.publish-court-list.json
+        example: !include json/listing.command.publish-court-list.json
+
+    responses:
+      202:
+        description: Request accepted
+
+/publishCourtListsForCrownCourts:
+   post:
+      description: |
+        Publish 'final' lists for all crown courts, for the next weekday.
+        ...
+        (mapping):
+          requestType: application/vnd.listing.command.publish-court-lists-for-crown-courts+json
+          name: listing.command.publish-court-lists-for-crown-courts
+        ...
+      body:
+        application/vnd.listing.command.publish-court-lists-for-crown-courts+json:
+          schema: !include json/schema/listing.command.publish-court-lists-for-crown-courts.json
+          example: !include json/listing.command.publish-court-lists-for-crown-courts.json
+
+      responses:
+        202:
+          description: Request accepted
+
+/courtlist/{courtCentreId}/{publishCourtListType}/{startDate}:
+   post:
+      description: |
+        Export court list
+        ...
+        (mapping):
+          requestType: application/vnd.listing.command.court-list-request-export+json
+          name: listing.command.court-list-request-export
+        ...
+      body:
+        application/vnd.listing.command.court-list-request-export+json:
+            schema: !include json/schema/listing.command.court-list-request-export.json
+            example: !include json/listing.command.court-list-request-export.json
+
+      responses:
+        202:
+          description: Request accepted
+/listing-note:
+   post:
+      description: |
+        Create listing note
+        ...
+        (mapping):
+          requestType: application/vnd.listing.command.create-listing-note+json
+          name: listing.command.create-listing-note
+        ...
+      body:
+        application/vnd.listing.command.create-listing-note+json:
+            schema: !include json/schema/listing.command.create-listing-note.json
+            example: !include json/listing.command.create-listing-note.json
+
+      responses:
+        202:
+          description: Request accepted
+
+/listing-notes/{noteId}:
+  post:
+      description:  |
+        Edit and delete existing note.
+        ...
+        (mapping):
+          requestType: application/vnd.listing.command.edit-listing-note+json
+          name: listing.command.edit-listing-note
+        (mapping):
+          requestType: application/vnd.listing.command.delete-listing-note+json
+          name: listing.command.delete-listing-note
+        ...
+      body:
+        application/vnd.listing.command.edit-listing-note+json:
+            schema: !include json/schema/listing.command.edit-note-for-listing.json
+            example: !include json/listing.command.edit-note-for-listing.json
+        application/vnd.listing.command.delete-listing-note+json:
+            schema: !include json/schema/listing.command.delete-listing-note.json
+            example: !include json/listing.command.delete-listing-note.json
+
+      responses:
+        202:
+          description: Request accepted
+
+
+/correct-hearing-days-without-court-centre:
+   post:
+      description: |
+        Update HearingDays without CourtCentre
+        ...
+        (mapping):
+          requestType: application/vnd.listing.correct-hearing-days-without-court-centre+json
+          name: listing.correct-hearing-days-without-court-centre
+        ...
+      body:
+        application/vnd.listing.correct-hearing-days-without-court-centre+json:
+            schema: !include json/schema/listing.correct-hearing-days-without-court-centre.json
+            example: !include json/listing.correct-hearing-days-without-court-centre.json
+
+      responses:
+        202:
+          description: Request accepted
+
+/update-hearing-day-court-schedule:
+   post:
+      description: |
+        Update Hearing Day Court Schedule ID if and only if it's not already present
+        ...
+        (mapping):
+          requestType: application/vnd.listing.update-hearing-day-court-schedule+json
+          name: listing.update-hearing-day-court-schedule
+        ...
+      body:
+        application/vnd.listing.update-hearing-day-court-schedule+json:
+            schema: !include json/schema/listing.update-hearing-day-court-schedule.json
+            example: !include json/listing.update-hearing-day-court-schedule.json
+
+      responses:
+        202:
+          description: Request accepted
+
+/delete-hearing/{hearingId}:
+    post:
+      description: |
+        Update HearingDays without CourtCentre
+        ...
+        (mapping):
+          requestType: application/vnd.listing.delete-hearing+json
+          name: listing.command.delete-hearing
+        ...
+      body:
+        application/vnd.listing.delete-hearing+json:
+            schema: !include json/schema/listing.command.delete-hearing.json
+            example: !include json/listing.command.delete-hearing.json
+
+      responses:
+        202:
+          description: Request accepted

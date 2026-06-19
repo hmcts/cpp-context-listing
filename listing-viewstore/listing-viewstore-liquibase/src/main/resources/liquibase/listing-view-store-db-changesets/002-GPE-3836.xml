@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet author="listing" id="1" logicalFilePath="002-GPE-3836.xml">
+
+
+    <dropColumn tableName="hearing" columnName="not_before"/>
+    <dropColumn tableName="hearing" columnName="start_time"/>
+
+    <addColumn tableName="hearing">
+        <column name="end_date" type="DATE"/>
+        <column name="non_sitting_days" type="TEXT"/>
+        <column name="start_times" type="TEXT"/>
+    </addColumn>
+
+
+    </changeSet>
+
+</databaseChangeLog>

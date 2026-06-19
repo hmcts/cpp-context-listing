@@ -1,0 +1,372 @@
+package uk.gov.moj.cpp.listing.event.listener;
+
+import static java.util.Collections.singletonList;
+import static java.util.UUID.randomUUID;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+
+import uk.gov.justice.core.courts.Address;
+import uk.gov.justice.listing.events.ApplicantRespondent;
+import uk.gov.justice.listing.events.ApplicationEjected;
+import uk.gov.justice.listing.events.CaseEjected;
+import uk.gov.justice.listing.events.CaseIdentifier;
+import uk.gov.justice.listing.events.CourtApplication;
+import uk.gov.justice.listing.events.Defendant;
+import uk.gov.justice.listing.events.ListedCase;
+import uk.gov.justice.listing.events.Offence;
+import uk.gov.justice.listing.events.StatementOfOffence;
+import uk.gov.justice.services.common.converter.LocalDates;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+
+import java.io.IOException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+public class EjectEventListenerTest {
+
+    private static final UUID HEARING_ID = randomUUID();
+    private static final UUID CASE_ID = randomUUID();
+    private static final UUID COURT_APPLICATIONS_ID = randomUUID();
+    private static final String LISTED_CASES = "listedCases";
+    private static final String COURT_APPLICATION_FIELD = "courtApplications";
+    private static final String COURT_APPLICATION_TYPE = STRING.next();
+    private static final String APPLICATION_PARTICULARS = STRING.next();
+    private static final Address APPLICANT_ADDRESS = Address
+            .address()
+            .withAddress1(STRING.next())
+            .withAddress2(STRING.next())
+            .withAddress3(STRING.next())
+            .withAddress4(STRING.next())
+            .withAddress5(STRING.next())
+            .withPostcode(STRING.next())
+            .build();
+    private static final Address RESPONDENT_ADDRESS = Address
+            .address()
+            .withAddress1(STRING.next())
+            .withAddress2(STRING.next())
+            .withAddress3(STRING.next())
+            .withAddress4(STRING.next())
+            .withAddress5(STRING.next())
+            .withPostcode(STRING.next())
+            .build();
+
+    @Mock
+    private HearingRepository hearingRepository;
+
+
+    @Mock
+    private Hearing hearing;
+
+    @Mock
+    private ObjectNode properties;
+
+
+    @Mock
+    private Envelope<CaseEjected> ejectCaseEnvelopeForCase;
+
+    @Mock
+    private Envelope<ApplicationEjected> ejectApplicationEnvelopeForCase;
+
+    @Spy
+    private ObjectMapper mapper = new ObjectMapperProducer().objectMapper();
+
+    @Mock
+    private HearingSearchSyncService hearingSearchSyncService;
+
+    @InjectMocks
+    private EjectEventListener ejectEventListener;
+
+    @Test
+    public void shouldEjectCaseForListingIfThereIsNoHearing() throws IOException {
+
+        CaseEjected ejectCase = CaseEjected.caseEjected()
+                .withHearingId(HEARING_ID)
+                .withProsecutionCaseId(CASE_ID)
+                .build();
+        given(ejectCaseEnvelopeForCase.payload()).willReturn(ejectCase);
+
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(null);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        ejectEventListener.caseEjected(ejectCaseEnvelopeForCase);
+        verify(properties, never()).replace(any(), objectNodeCaptor.capture());
+        verify(hearingRepository, never()).save(hearing);
+        verify(hearingSearchSyncService, never()).sync(any());
+
+    }
+
+    @Test
+    public void shouldEjectCaseForListing() throws IOException {
+        ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+
+        List<ListedCase> testCases = createListedCases();
+        List<CourtApplication> testCourtApplications = createCourtApplications(singletonList(CASE_ID));
+
+        String testCasesString = objectMapper.writeValueAsString(testCases);
+        JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+
+        String testApplicationsString = mapper.writeValueAsString(testCourtApplications);
+        JsonNode testApplicationProperties = objectMapper.readTree(testApplicationsString);
+
+        final Envelope<CaseEjected> caseEjectedEnvelope = (Envelope<CaseEjected>) mock(Envelope.class);
+
+        CaseEjected ejectCase = CaseEjected.caseEjected()
+                .withHearingId(HEARING_ID)
+                .withProsecutionCaseId(CASE_ID)
+                .build();
+        given(ejectCaseEnvelopeForCase.payload()).willReturn(ejectCase);
+
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+        given(properties.get(COURT_APPLICATION_FIELD)).willReturn(testApplicationProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        ejectEventListener.caseEjected(ejectCaseEnvelopeForCase);
+        verify(properties, times(2)).replace(any(), objectNodeCaptor.capture());
+        verify(hearingRepository, times(2)).save(hearing);
+
+    }
+
+    @Test
+    public void shouldEjectCaseForListingWithoutLinkedCaseId() throws IOException {
+        ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+
+        List<ListedCase> testCases = createListedCases();
+        List<CourtApplication> testCourtApplications = createCourtApplications(null);
+
+        String testCasesString = objectMapper.writeValueAsString(testCases);
+        JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+
+        String testApplicationsString = mapper.writeValueAsString(testCourtApplications);
+        JsonNode testApplicationProperties = objectMapper.readTree(testApplicationsString);
+
+        final Envelope<CaseEjected> caseEjectedEnvelope = (Envelope<CaseEjected>) mock(Envelope.class);
+
+        CaseEjected ejectCase = CaseEjected.caseEjected()
+                .withHearingId(HEARING_ID)
+                .withProsecutionCaseId(CASE_ID)
+                .build();
+        given(ejectCaseEnvelopeForCase.payload()).willReturn(ejectCase);
+
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+        given(properties.get(COURT_APPLICATION_FIELD)).willReturn(testApplicationProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        ejectEventListener.caseEjected(ejectCaseEnvelopeForCase);
+        verify(properties, times(2)).replace(any(), objectNodeCaptor.capture());
+        verify(hearingRepository, times(2)).save(hearing);
+    }
+
+    @Test
+    public void shouldEjectApplicationForListing() throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        List<CourtApplication> testCourtApplications = createCourtApplications(singletonList(CASE_ID));
+        String testApplicationsString = mapper.writeValueAsString(testCourtApplications);
+        JsonNode testCasesProperties = objectMapper.readTree(testApplicationsString);
+
+        final Envelope<ApplicationEjected> applicationEjectedEnvelope = (Envelope<ApplicationEjected>) mock(Envelope.class);
+
+        ApplicationEjected ejectApplication = ApplicationEjected.applicationEjected()
+                .withHearingId(HEARING_ID)
+                .withApplicationId(COURT_APPLICATIONS_ID)
+                .build();
+        given(applicationEjectedEnvelope.payload()).willReturn(ejectApplication);
+
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(COURT_APPLICATION_FIELD)).willReturn(testCasesProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        ejectEventListener.applicationEjected(applicationEjectedEnvelope);
+
+        verify(properties).replace(any(), objectNodeCaptor.capture());
+        final ArrayNode applicationArrayNode = objectNodeCaptor.getValue();
+        applicationArrayNode.forEach(applicationNode -> {
+            if (applicationNode.get("id").asText().equals(COURT_APPLICATIONS_ID.toString()) || (applicationNode.get("parentApplicationId").asText().equals(COURT_APPLICATIONS_ID.toString())
+                    && isNotEmpty(applicationNode.path("isEjected").asText()))) {
+                assertEquals("true",
+                        applicationNode.path("isEjected").asText(),
+                        "Check if the application status is ejected");
+            } else {
+                assertEquals(true,
+                        applicationNode.path("isEjected").isMissingNode(),
+                        "Check if the application status is ejected");
+            }
+            assertThat(APPLICATION_PARTICULARS, equalTo(applicationNode.get("applicationParticulars").asText()));
+            validateAddress(applicationNode.get("applicant").get("address"), APPLICANT_ADDRESS);
+            validateAddress(applicationNode.get("respondents").get(0).get("address"), RESPONDENT_ADDRESS);
+        });
+        verify(hearingRepository).save(hearing);
+
+    }
+
+    @Test
+    public void shouldEjectApplicationForListingIfThereIsNoHearing() throws IOException {
+
+        final Envelope<ApplicationEjected> applicationEjectedEnvelope = (Envelope<ApplicationEjected>) mock(Envelope.class);
+
+        ApplicationEjected ejectApplication = ApplicationEjected.applicationEjected()
+                .withHearingId(HEARING_ID)
+                .withApplicationId(COURT_APPLICATIONS_ID)
+                .build();
+        given(applicationEjectedEnvelope.payload()).willReturn(ejectApplication);
+
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(null);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        ejectEventListener.applicationEjected(applicationEjectedEnvelope);
+
+        verify(properties, never()).replace(any(), objectNodeCaptor.capture());
+        verify(hearingRepository, never()).save(hearing);
+        verify(hearingSearchSyncService, never()).sync(any());
+
+    }
+
+    private void validateAddress(final JsonNode actualAddress, final Address expectedAddress) {
+        assertThat(actualAddress.get("address1").asText(), equalTo(expectedAddress.getAddress1()));
+        assertThat(actualAddress.get("address2").asText(), equalTo(expectedAddress.getAddress2()));
+        assertThat(actualAddress.get("address3").asText(), equalTo(expectedAddress.getAddress3()));
+        assertThat(actualAddress.get("address4").asText(), equalTo(expectedAddress.getAddress4()));
+        assertThat(actualAddress.get("address5").asText(), equalTo(expectedAddress.getAddress5()));
+        assertThat(actualAddress.get("postcode").asText(), equalTo(expectedAddress.getPostcode()));
+    }
+
+    private List<ListedCase> createListedCases() {
+
+        return singletonList(ListedCase.listedCase()
+                .withCaseIdentifier(CaseIdentifier.caseIdentifier()
+                        .withAuthorityCode(STRING.next())
+                        .withAuthorityId(randomUUID())
+                        .withCaseReference(STRING.next())
+                        .build())
+                .withDefendants(singletonList(Defendant.defendant()
+                        .withId(randomUUID())
+                        .withOffences(singletonList(Offence.offence()
+                                .withId(randomUUID())
+                                .withOffenceCode(STRING.next())
+                                .withStartDate(LocalDates.to(LocalDate.now()))
+                                .withStatementOfOffence(StatementOfOffence.statementOfOffence()
+                                        .withTitle(STRING.next())
+                                        .build())
+                                .build()))
+                        .build()))
+                .withId(CASE_ID)
+                .build());
+    }
+
+    private List<CourtApplication> createCourtApplications(final List<UUID> linkedCaseIds) {
+        CourtApplication parentCourtApplication = CourtApplication.courtApplication()
+                .withLinkedCaseIds(linkedCaseIds)
+                .withParentApplicationId(randomUUID())
+                .withId(COURT_APPLICATIONS_ID)
+                .withApplicationType(COURT_APPLICATION_TYPE)
+                .withApplicationParticulars(APPLICATION_PARTICULARS)
+                .withApplicant(ApplicantRespondent.applicantRespondent()
+                        .withFirstName(STRING.next())
+                        .withLastName(STRING.next())
+                        .withIsRespondent(false)
+                        .withId(randomUUID())
+                        .withAddress(APPLICANT_ADDRESS)
+                        .build())
+                .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
+                        .withFirstName(STRING.next())
+                        .withLastName(STRING.next())
+                        .withIsRespondent(true)
+                        .withId(randomUUID())
+                        .withAddress(RESPONDENT_ADDRESS)
+                        .build()))
+                .build();
+        CourtApplication childApplication = CourtApplication.courtApplication()
+                .withLinkedCaseIds(singletonList(CASE_ID))
+                .withParentApplicationId(COURT_APPLICATIONS_ID)
+                .withId(randomUUID())
+                .withApplicationType(COURT_APPLICATION_TYPE)
+                .withApplicationParticulars(APPLICATION_PARTICULARS)
+                .withApplicant(ApplicantRespondent.applicantRespondent()
+                        .withFirstName(STRING.next())
+                        .withLastName(STRING.next())
+                        .withIsRespondent(false)
+                        .withId(randomUUID())
+                        .withAddress(APPLICANT_ADDRESS)
+                        .build())
+                .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
+                        .withFirstName(STRING.next())
+                        .withLastName(STRING.next())
+                        .withIsRespondent(true)
+                        .withId(randomUUID())
+                        .withAddress(RESPONDENT_ADDRESS)
+                        .build()))
+                .build();
+        CourtApplication noChildApplication = CourtApplication.courtApplication()
+                .withLinkedCaseIds(singletonList(CASE_ID))
+                .withParentApplicationId(randomUUID())
+                .withId(randomUUID())
+                .withApplicationType(COURT_APPLICATION_TYPE)
+                .withApplicationParticulars(APPLICATION_PARTICULARS)
+                .withApplicant(ApplicantRespondent.applicantRespondent()
+                        .withFirstName(STRING.next())
+                        .withLastName(STRING.next())
+                        .withIsRespondent(false)
+                        .withId(randomUUID())
+                        .withAddress(APPLICANT_ADDRESS)
+                        .build())
+                .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
+                        .withFirstName(STRING.next())
+                        .withLastName(STRING.next())
+                        .withIsRespondent(true)
+                        .withId(randomUUID())
+                        .withAddress(RESPONDENT_ADDRESS)
+                        .build()))
+                .build();
+
+        List<CourtApplication> courtApplications = new ArrayList<>();
+        courtApplications.add(parentCourtApplication);
+        courtApplications.add(childApplication);
+        courtApplications.add(noChildApplication);
+        return courtApplications;
+
+    }
+
+}

@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/nonDefaultDay.json",
+  "type": "object",
+  "properties": {
+    "startTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "duration": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/positiveInteger"
+    },
+    "courtScheduleId": {
+      "type": "string"
+    },
+    "session": {
+      "type": "string"
+    },
+    "oucode": {
+      "type": "string"
+    },
+    "courtRoomId": {
+      "type": "integer"
+    },
+    "courtCentreId": {
+      "type": "string"
+    },
+    "roomId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "startTime"
+  ],
+  "additionalProperties": false
+}

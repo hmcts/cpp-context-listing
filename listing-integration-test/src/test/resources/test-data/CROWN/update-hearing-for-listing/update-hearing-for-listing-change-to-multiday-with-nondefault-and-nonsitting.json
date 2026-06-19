@@ -1,0 +1,48 @@
+{
+    "selectedCourtCentre": {
+        "id": "1e6f8561-2dff-3161-b7b3-6dcd679e7c65",
+        "courtRoomId": "a0f7a73e-e99d-3e93-b0f1-f86fcfdab315",
+        "courtCentreName": "Coventry Crown Court",
+        "ouCode": "C20CO00"
+    },
+    "courtCentreId": "1e6f8561-2dff-3161-b7b3-6dcd679e7c65",
+    "courtRoomId": "a0f7a73e-e99d-3e93-b0f1-f86fcfdab315",
+    "type": {
+        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+        "description": "First hearing"
+    },
+    "startDate": "2026-02-06",
+    "endDate": "2026-02-09",
+    "nonSittingDays": [
+        "2026-02-08",
+        "2026-02-07"
+    ],
+    "nonDefaultDays": [
+        {
+            "startTime": "2026-02-09T11:30:00.000Z",
+            "courtCentreId": "1e6f8561-2dff-3161-b7b3-6dcd679e7c65",
+            "roomId": "a0f7a73e-e99d-3e93-b0f1-f86fcfdab315",
+            "duration": 360
+        }
+    ],
+    "judiciary": [
+        {
+            "judicialId": "1469b4c7-74ab-3ff1-a754-e19586d08714",
+            "judicialRoleType": {
+                "judiciaryType": "RECORDER"
+            }
+        },
+        {
+            "judicialId": "7ad3edfd-cfff-4f69-adef-503b2b413fd1",
+            "judicialRoleType": {
+                "judiciaryType": "CIRCUIT_JUDGE"
+            }
+        }
+    ],
+    "jurisdictionType": "CROWN",
+    "hearingLanguage": "ENGLISH",
+    "publicListNote": "",
+    "hasVideoLink": false,
+    "sendNotificationToParties": false,
+    "hearingId": "2cdfa174-a970-401e-80d1-a72fbfae4c35"
+}

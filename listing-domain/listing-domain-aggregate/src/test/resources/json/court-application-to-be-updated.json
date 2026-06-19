@@ -1,0 +1,32 @@
+{
+  "_metadata": {
+    "name": "listing.events.court-application-to-be-updated"
+  },
+  "courtApplication": {
+    "applicant": {
+      "firstName": "App First",
+      "isRespondent": false,
+      "lastName": "App Last",
+      "restrictFromCourtList":false,
+      "courtApplicationPartyType": "PERSON"
+    },
+    "applicationType": "APP Type",
+    "id": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
+    "parentApplicationId": "9d9a431a-0f12-4386-878a-2bf6c4a0877e",
+    "respondents": [
+      {
+        "firstName": "Resp first",
+        "isRespondent": true,
+        "lastName": "Resp Last",
+        "restrictFromCourtList":false,
+        "courtApplicationPartyType": "PERSON"
+      }
+    ],
+    "restrictFromCourtList":false,
+    "restrictCourtApplicationType":false,
+    "offences": []
+  },
+  "hearingIds": [
+    "5c5a1d30-0414-11e7-93ae-92361f002671"
+  ]
+}

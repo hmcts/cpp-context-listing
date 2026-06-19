@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/listing.command.eject-case.json",
+  "type": "object",
+  "properties": {
+    "hearingId":{
+        "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "prosecutionCaseId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "removalReason": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "hearingId",
+    "prosecutionCaseId",
+    "removalReason"
+  ],
+  "additionalProperties": false
+}

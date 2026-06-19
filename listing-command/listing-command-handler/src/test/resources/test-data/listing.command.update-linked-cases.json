@@ -1,0 +1,15 @@
+{
+  "linkActionType": "LINK",
+  "cases": [
+    {
+      "caseId": "CASE_ID",
+      "caseUrn": "CASE_URN",
+      "linkedToCases": [
+        {
+          "caseId": "e8821a38-546d-4b56-9992-ebdd772a561f",
+          "caseUrn": "URN6789"
+        }
+      ]
+    }
+  ]
+}

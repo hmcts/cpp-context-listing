@@ -1,0 +1,98 @@
+{
+  "courtCentreId": "eeb81654-eb5b-443f-ad4b-911606732e53",
+  "courtLists": [
+    {
+      "crestCourtSite": {
+        "courtType": "CROWN_COURT",
+        "crestCourtSiteCode": "A",
+        "crestCourtSiteName": "SITENAME A",
+        "crestCourtSiteId": "001"
+      },
+      "sittings": [
+        {
+          "weekCommencing": false,
+          "hearings": [
+            {
+              "weekCommencing": false,
+              "respondents": [
+                {
+                  "lastName": "CPS-EM",
+                  "courtApplicationPartyType": "PROSECUTING_AUTHORITY",
+                  "address": {
+                    "address2": "Nottingham",
+                    "address1": "King Edward Court",
+                    "postcode": "NG1 1EL"
+                  },
+                  "isRespondent": true,
+                  "id": "a7c51d98-4def-4328-8775-8675e69fc7a3",
+                  "restrictFromCourtList": false
+                },
+                {
+                  "lastName": "Olaf",
+                  "firstName": "Rolando",
+                  "courtApplicationPartyType": "PERSON_DEFENDANT",
+                  "address": {
+                    "address1": "Cir3VJCL9d"
+                  },
+                  "isRespondent": true,
+                  "id": "edc625d0-4670-4863-b1bf-19dd7afdd4a6",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "description": "Sentence",
+                "id": "5ae4c090-0f70-4694-b4fc-707633d2b430"
+              },
+              "subject": {
+                "firstName": "Robert12",
+                "lastName": "Smith12",
+                "courtApplicationPartyType": "PROSECUTING_AUTHORITY",
+                "address": {
+                  "address3": "London",
+                  "address2": "Victoria Embankment",
+                  "address1": "New Scotland Yard",
+                  "postcode": "SW1A 2JL"
+                },
+                "isRespondent": false,
+                "id": "88a8b808-2e8b-40ca-8590-3750cd1f3b34",
+                "restrictFromCourtList": false
+              },
+              "hasVideoLink": false,
+              "applicationReference": "52GD7078825",
+              "startTime": "2019-12-16T10:30",
+              "endTime": "2019-12-16T10:50",
+              "restrictFromCourtList": false,
+              "applicant": {
+                "lastName": "DVLA",
+                "courtApplicationPartyType": "PROSECUTING_AUTHORITY",
+                "address": {
+                  "address3": "DVLA",
+                  "address2": "C3 East",
+                  "address1": "Finance Operations",
+                  "postcode": "SA6 7JL",
+                  "address5": "Swansea",
+                  "address4": "Longview Road"
+                },
+                "isRespondent": false,
+                "id": "4464dc2a-8d59-4eed-b0c5-0d943cf19f92",
+                "restrictFromCourtList": false
+              }
+            }
+          ],
+          "courtRoomId": "3b800175-f1b8-30f0-b2a4-2fd86b3e3713",
+          "judiciary": [],
+          "sittingDate": "2019-12-16"
+        }
+      ]
+    },
+    {
+      "crestCourtSite": {
+        "courtType": "CROWN_COURT",
+        "crestCourtSiteCode": "B",
+        "crestCourtSiteName": "SITENAME B",
+        "crestCourtSiteId": "001"
+      },
+      "sittings": []
+    }
+  ]
+}

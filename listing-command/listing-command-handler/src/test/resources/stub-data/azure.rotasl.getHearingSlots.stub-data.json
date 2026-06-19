@@ -1,0 +1,53 @@
+{
+  "results": 1,
+  "pageCount": 1,
+  "hearingSlots": [
+    {
+      "courtScheduleId": "0d9c4454-46db-305d-bb48-dcf423a6d2a5",
+      "listingProfileId": "CS2339681",
+      "ouCode": "B06AN00",
+      "courtRoomId": "a91a93e6-d704-3cf1-9f20-e267b5a7eeeb",
+      "courtRoomNumber": 2564,
+      "courtHouseId": "40725a45-9ded-3c1b-908f-88b6a766fe40",
+      "courtHouseName": "Tameside Magistrates' Court",
+      "courtRoomName": "Courtroom 10",
+      "operationalUnit": "6",
+      "businessType": "TRL",
+      "panel": "YOUTH",
+      "courtSession": "AD",
+      "slotBased": false,
+      "sessionDate": "2020-05-26",
+      "maxSlots": 0,
+      "maxDuration": 0,
+      "availableSlots": 0,
+      "availableDuration": 0,
+      "judiciaries": [
+        {
+          "judiciaryId": "0fd0233e-a8f9-3dc8-8bef-4f6b1d4799f3",
+          "courtScheduleId": "0d9c4454-46db-305d-bb48-dcf423a6d2a5",
+          "courtListingProfileId": "CS2339681",
+          "judiciaryType": "MAGISTRATE",
+          "deputy": true,
+          "benchChairman": false
+        },
+        {
+          "judiciaryId": "d424f73e-4a19-396d-a00c-f4c38d1c864e",
+          "courtScheduleId": "0d9c4454-46db-305d-bb48-dcf423a6d2a5",
+          "courtListingProfileId": "CS2339681",
+          "judiciaryType": "MAGISTRATE",
+          "deputy": false,
+          "benchChairman": true
+        },
+        {
+          "judiciaryId": "f0cd595c-be23-3539-9aed-7f1aab1d1e19",
+          "courtScheduleId": "0d9c4454-46db-305d-bb48-dcf423a6d2a5",
+          "courtListingProfileId": "CS2339681",
+          "judiciaryType": "MAGISTRATE",
+          "deputy": true,
+          "benchChairman": false
+        }
+      ],
+      "slotStartTimes": []
+    }
+  ]
+}

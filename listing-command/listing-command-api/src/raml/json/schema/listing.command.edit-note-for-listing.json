@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/commands/listing.command.edit-listing-note.json",
+  "type": "object",
+  "properties": {
+    "noteDescription": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "noteDescription"
+  ],
+  "additionalProperties": false
+}

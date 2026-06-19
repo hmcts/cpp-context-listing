@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+    <changeSet id="drop-hearing-index" author="Jayen">
+        <preConditions onFail="CONTINUE">
+            <indexExists indexName="hearings_idx"/>
+        </preConditions>
+        <dropIndex tableName="hearing" indexName="hearings_idx"/>
+    </changeSet>
+    <changeSet id="drop-listed-case-index" author="Jayen">
+        <preConditions onFail="CONTINUE">
+            <indexExists indexName="listed_cases_idx"/>
+        </preConditions>
+        <dropIndex tableName="listed_cases" indexName="listed_cases_idx"/>
+    </changeSet>
+    <changeSet author="Jayen" id="hearing-court-centre-id-court-room-id-index" logicalFilePath="018-recreate-hearing-index.xml">
+        <sql>DROP INDEX IF EXISTS hearing_court_centre_id_court_room_id_idx</sql>
+        <sql>CREATE INDEX hearing_court_centre_id_court_room_id_idx
+            ON hearing USING GIN
+            (
+            (properties -> 'courtCentreId'),
+            (properties -> 'courtRoomId')
+            )
+        </sql>
+
+        <sql>DROP INDEX IF EXISTS hearing_start_date_end_date_idx</sql>
+        <sql>CREATE INDEX hearing_start_date_end_date_idx
+            ON hearing USING GIN
+            (
+            (properties -> 'startDate'),
+            (properties -> 'endDate')
+            )
+        </sql>
+
+        <sql>DROP INDEX IF EXISTS listed_cases_hearing_id_idx</sql>
+        <sql>CREATE INDEX listed_cases_hearing_id_idx
+            ON listed_cases USING btree
+            (
+            hearing_id
+            )
+        </sql>
+
+        <sql>DROP INDEX IF EXISTS listed_cases_case_id_idx</sql>
+        <sql>CREATE INDEX listed_cases_case_id_idx
+            ON listed_cases USING btree
+            (
+            case_id
+            )
+        </sql>
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,188 @@
+{
+    "hearings": [
+        {
+            "courtCentre": {
+                "id": "1e6f8561-2dff-3161-b7b3-6dcd679e7c65",
+                "name": "Coventry Crown Court",
+                "welshName": "Llys Y Goron Coventry"
+            },
+            "defendantListingNeeds": [
+                {
+                    "defendantId": "0db01398-0746-41e3-b9aa-8cb94e384ba5",
+                    "hearingLanguageNeeds": "ENGLISH",
+                    "isYouth": false,
+                    "prosecutionCaseId": "83c99a90-6196-4db3-8cb0-2a875de4db53"
+                },
+                {
+                    "defendantId": "78f18f6f-5b7e-4545-bfe5-75c1ef664cad",
+                    "hearingLanguageNeeds": "ENGLISH",
+                    "isYouth": false,
+                    "prosecutionCaseId": "83c99a90-6196-4db3-8cb0-2a875de4db53"
+                }
+            ],
+            "estimatedMinutes": 20,
+            "id": "17737975-2102-40d5-832e-0ab500721535",
+            "isGroupProceedings": false,
+            "jurisdictionType": "MAGISTRATES",
+            "listedStartDateTime": "2026-02-05T10:30:00.000Z",
+            "numberOfGroupCases": 1,
+            "prosecutionCases": [
+                {
+                    "cpsOrganisation": "A30AB00",
+                    "defendants": [
+                        {
+                            "courtProceedingsInitiated": "2026-02-05T14:53:31.253Z",
+                            "id": "0db01398-0746-41e3-b9aa-8cb94e384ba5",
+                            "masterDefendantId": "0db01398-0746-41e3-b9aa-8cb94e384ba5",
+                            "offences": [
+                                {
+                                    "arrestDate": "2022-12-14",
+                                    "chargeDate": "2022-12-15",
+                                    "count": 0,
+                                    "endorsableFlag": false,
+                                    "id": "f27fe31b-4af1-4978-9139-46cd4e74560d",
+                                    "maxPenalty": "Indictable only",
+                                    "modeOfTrial": "Indictable",
+                                    "offenceCode": "OF61102C",
+                                    "offenceDateCode": 1,
+                                    "offenceDefinitionId": "3acf5ee8-6ba0-3b95-8c80-4a4b7dc84d7c",
+                                    "offenceLegislation": "Contrary to sections 1,1A and 3 of the Criminal Law Act 1977.",
+                                    "offenceLegislationWelsh": "Yn groes i adran 1, 1A a 3 Deddf Cyfraith Trosedd 1977.",
+                                    "offenceTitle": "Conspire to assault a person thereby occasioning them actual bodily harm",
+                                    "offenceTitleWelsh": "Cynllwynio i ymosod ar unigolyn a thrwy hynny beri gwir niwed corfforol iddynt",
+                                    "orderIndex": 1,
+                                    "startDate": "2022-12-12",
+                                    "wording": "Randy Hodkiewicz at Cormier Isle, conspired together with Wesley Jaskolski to assault Muriel Franecki, thereby occasioning actual bodily harm"
+                                }
+                            ],
+                            "personDefendant": {
+                                "arrestSummonsNumber": "DEF012621258",
+                                "bailStatus": {
+                                    "code": "C",
+                                    "description": "Custody",
+                                    "id": "12e69486-4d01-3403-a50a-7419ca040635"
+                                },
+                                "personDetails": {
+                                    "address": {
+                                        "address1": "21",
+                                        "address2": "Furnburry Park Road",
+                                        "address3": "London",
+                                        "postcode": "SW11 3TQ"
+                                    },
+                                    "contact": {
+                                        "home": "015325443756"
+                                    },
+                                    "dateOfBirth": "2000-02-18",
+                                    "documentationLanguageNeeds": "ENGLISH",
+                                    "ethnicity": {
+                                        "observedEthnicityCode": "1",
+                                        "observedEthnicityDescription": "White",
+                                        "observedEthnicityId": "c4ca4238-a0b9-3382-8dcc-509a6f75849b",
+                                        "selfDefinedEthnicityCode": "W1",
+                                        "selfDefinedEthnicityDescription": "British",
+                                        "selfDefinedEthnicityId": "c4ca4238-a0b9-3382-8dcc-509a6f75849b"
+                                    },
+                                    "firstName": "Randy",
+                                    "gender": "MALE",
+                                    "hearingLanguageNeeds": "ENGLISH",
+                                    "lastName": "Hodkiewicz",
+                                    "occupation": "Accountant",
+                                    "occupationCode": "2201",
+                                    "title": "MR"
+                                }
+                            },
+                            "prosecutionAuthorityReference": "DEF012621258",
+                            "prosecutionCaseId": "83c99a90-6196-4db3-8cb0-2a875de4db53"
+                        },
+                        {
+                            "courtProceedingsInitiated": "2026-02-05T14:53:31.253Z",
+                            "id": "78f18f6f-5b7e-4545-bfe5-75c1ef664cad",
+                            "masterDefendantId": "78f18f6f-5b7e-4545-bfe5-75c1ef664cad",
+                            "offences": [
+                                {
+                                    "arrestDate": "2022-12-14",
+                                    "chargeDate": "2022-12-15",
+                                    "count": 0,
+                                    "endorsableFlag": false,
+                                    "id": "09f7bb33-a824-4573-8d48-ec6765b8db29",
+                                    "offenceCode": "TH68025A",
+                                    "offenceDateCode": 1,
+                                    "offenceDefinitionId": "14d0b0fc-3c5c-3eb3-880a-a46556d365eb",
+                                    "offenceLegislation": "",
+                                    "offenceTitle": "Attempted assault with intent to rob",
+                                    "orderIndex": 1,
+                                    "startDate": "2022-12-12",
+                                    "wording": "On TEST  at  TEST  used or threatened unlawful violence towards another and your conduct was such as would cause a person of reasonable firmness present at the scene to fear for his personal safety. Contrary to section 3(1) and (7) of the Public Order Act 1986."
+                                }
+                            ],
+                            "personDefendant": {
+                                "arrestSummonsNumber": "DEF022621258",
+                                "bailStatus": {
+                                    "code": "C",
+                                    "description": "Custody",
+                                    "id": "12e69486-4d01-3403-a50a-7419ca040635"
+                                },
+                                "personDetails": {
+                                    "address": {
+                                        "address1": "14",
+                                        "address2": "North Westbridge Street",
+                                        "address3": "London",
+                                        "postcode": "SW11 2TQ"
+                                    },
+                                    "contact": {
+                                        "home": "020824653791"
+                                    },
+                                    "dateOfBirth": "2000-03-24",
+                                    "documentationLanguageNeeds": "ENGLISH",
+                                    "ethnicity": {
+                                        "observedEthnicityCode": "1",
+                                        "observedEthnicityDescription": "White",
+                                        "observedEthnicityId": "c4ca4238-a0b9-3382-8dcc-509a6f75849b",
+                                        "selfDefinedEthnicityCode": "W1",
+                                        "selfDefinedEthnicityDescription": "British",
+                                        "selfDefinedEthnicityId": "c4ca4238-a0b9-3382-8dcc-509a6f75849b"
+                                    },
+                                    "firstName": "Nathan",
+                                    "gender": "MALE",
+                                    "hearingLanguageNeeds": "ENGLISH",
+                                    "lastName": "Legros",
+                                    "occupation": "Accountant",
+                                    "occupationCode": "2201",
+                                    "title": "MR"
+                                }
+                            },
+                            "prosecutionAuthorityReference": "DEF022621258",
+                            "prosecutionCaseId": "83c99a90-6196-4db3-8cb0-2a875de4db53"
+                        }
+                    ],
+                    "id": "83c99a90-6196-4db3-8cb0-2a875de4db53",
+                    "initiationCode": "C",
+                    "originatingOrganisation": "G94DV00",
+                    "prosecutionCaseIdentifier": {
+                        "address": {
+                            "address1": "Finance Operations",
+                            "address2": "C3 East",
+                            "address3": "DVLA",
+                            "address4": "Longview Road",
+                            "address5": "Swansea",
+                            "postcode": "SA6 7JL"
+                        },
+                        "contact": {
+                            "primaryEmail": "sjp@dvla.gov.uk"
+                        },
+                        "majorCreditorCode": "DVL2",
+                        "prosecutionAuthorityCode": "DVLA",
+                        "prosecutionAuthorityId": "6ae4b163-658b-3ae2-a66d-43401cac2f96",
+                        "prosecutionAuthorityName": "Driver and Vehicle Licensing Agency",
+                        "prosecutionAuthorityOUCode": "G94DV00",
+                        "caseURN": "28DI2621258"
+                    }
+                }
+            ],
+            "type": {
+                "description": "First hearing",
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776"
+            }
+        }
+    ]
+}

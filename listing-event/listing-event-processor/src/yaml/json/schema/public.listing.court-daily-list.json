@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/court-list-daily-list.json",
+  "type": "object",
+  "properties": {
+    "courtListId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "courtCentreId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "publishCourtListType": {
+      "type": "string",
+      "enum": [
+        "DRAFT",
+        "FINAL"
+      ]
+    },
+    "dailyListDocument" : {
+      "type": "string"
+    }
+  },
+  "required": [
+    "courtListId",
+    "courtCentreId",
+    "publishCourtListType",
+    "dailyListDocument"
+  ],
+  "additionalProperties": false
+}

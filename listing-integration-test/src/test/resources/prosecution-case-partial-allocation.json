@@ -1,0 +1,92 @@
+{
+  "hearingId": "HEARING_ID",
+  "prosecutionCases": [
+    {
+      "id": "CASE_ID_1",
+      "prosecutionCaseIdentifier": {
+        "prosecutionAuthorityId": "cf73207f-3ced-488a-82a0-3fba79c2ce85",
+        "prosecutionAuthorityCode": "TFL",
+        "prosecutionAuthorityReference": "TFL12345"
+      },
+      "originatingOrganisation": "G01FT01AB",
+      "initiationCode": "J",
+      "statementOfFacts": "You did it",
+      "statementOfFactsWelsh": "You did it in Welsh",
+      "defendants": [
+        {
+          "id": "DEFENDANT_ID_1",
+          "masterDefendantId": "DEFENDANT_ID_1",
+          "prosecutionCaseId": "2279b2c3-b0d3-4889-ae8e-1ecc20c39e27",
+          "numberOfPreviousConvictionsCited": 5,
+          "prosecutionAuthorityReference": "TFL12345-ABC",
+          "witnessStatement": "he did not do it",
+          "witnessStatementWelsh": "he did not do it in Welsh",
+          "mitigation": "I was not there",
+          "mitigationWelsh": "I was not there in Welsh",
+          "courtProceedingsInitiated": "2020-02-21T11:49:18.116Z",
+          "offences": [
+            {
+              "id": "OFFENCE_ID_1",
+              "offenceDefinitionId": "OFFENCE_ID_1",
+              "offenceCode": "code",
+              "offenceTitle": "title",
+              "wording": "No Travel Card",
+              "wordingWelsh": "No Travel Card In Welsh",
+              "startDate": "2018-01-01",
+              "endDate": "2018-01-01",
+              "arrestDate": "2018-01-01",
+              "chargeDate": "2018-01-01",
+              "orderIndex": 1,
+              "count": 0,
+              "notifiedPlea": {
+                "offenceId": "3789ab16-0bb7-4ef1-87ef-c936bf0364f1",
+                "notifiedPleaDate": "2018-04-01",
+                "notifiedPleaValue": "NOTIFIED_GUILTY"
+              },
+              "offenceFacts": {
+                "vehicleRegistration": "AA12345",
+                "alcoholReadingAmount": 111,
+                "alcoholReadingMethodCode": "2222"
+              }
+            }
+          ],
+          "personDefendant": {
+            "personDetails": {
+              "title": "MR",
+              "firstName": "Harry",
+              "middleName": "Jack",
+              "lastName": "Kane Junior",
+              "dateOfBirth": "2010-01-01",
+              "nationalityId": "0f36a570-46ef-41d1-b290-9037a64fa1a4",
+              "additionalNationalityId": "9aa0ffba-67a4-4137-b392-3c01951eb9c2",
+              "disabilityStatus": "a",
+              "gender": "MALE",
+              "interpreterLanguageNeeds": "Welsh",
+              "documentationLanguageNeeds": "WELSH",
+              "nationalInsuranceNumber": "NH323232B",
+              "occupation": "Kid",
+              "occupationCode": "F",
+              "specificRequirements": "Screen",
+              "address": {
+                "address1": "22",
+                "address2": "Acacia Avenue",
+                "address3": "Acacia Town",
+                "address4": "Acacia City",
+                "address5": "Acacia Country",
+                "postcode": "GIR 0AA"
+              },
+              "contact": {
+                "home": "123456",
+                "work": "7891011",
+                "mobile": "45678910",
+                "primaryEmail": "harry.kanejunior@spurs.co.uk",
+                "secondaryEmail": "harry.kanejunior@hotmail.com",
+                "fax": "3425678"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

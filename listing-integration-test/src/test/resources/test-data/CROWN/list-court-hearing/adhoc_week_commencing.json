@@ -1,0 +1,137 @@
+{
+    "hearings": [
+        {
+            "courtCentre": {
+                "id": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+                "name": "Croydon Crown Court"
+            },
+            "defendantListingNeeds": [
+                {
+                    "defendantId": "9d36988a-ca31-4415-8996-401e63b69f53",
+                    "isYouth": false,
+                    "prosecutionCaseId": "8f5ed077-f4c2-435a-bdaa-adf5263497f6"
+                }
+            ],
+            "earliestStartDateTime": "2026-02-23T10:00:00.000Z",
+            "estimatedMinutes": 720,
+            "id": "95544f87-87f6-453f-87cc-14bdaa322391",
+            "jurisdictionType": "CROWN",
+            "prosecutionCases": [
+                {
+                    "caseStatus": "ACTIVE",
+                    "cpsOrganisation": "A30AB00",
+                    "defendants": [
+                        {
+                            "courtProceedingsInitiated": "2026-01-29T15:57:17.736Z",
+                            "id": "9d36988a-ca31-4415-8996-401e63b69f53",
+                            "masterDefendantId": "9d36988a-ca31-4415-8996-401e63b69f53",
+                            "offences": [
+                                {
+                                    "arrestDate": "2026-01-27",
+                                    "chargeDate": "2026-01-28",
+                                    "count": 0,
+                                    "endDate": "2026-01-27",
+                                    "endorsableFlag": false,
+                                    "id": "6a179ca6-774d-4a0f-b717-4980991a01b6",
+                                    "maxPenalty": "EW:6M &/or Ultd Fine",
+                                    "modeOfTrial": "Either Way",
+                                    "offenceCode": "SX03007A",
+                                    "offenceDateCode": 1,
+                                    "offenceDefinitionId": "f97aa83c-d818-3022-9056-70dd9ad6d480",
+                                    "offenceLegislation": "Contrary to section 1(1) of the Criminal Attempts Act 1981.",
+                                    "offenceTitle": "Attempt sexual assault on a female - SOA 2003",
+                                    "orderIndex": 1,
+                                    "reportingRestrictions": [
+                                        {
+                                            "id": "956c3edb-d2c5-422f-a2f1-0344c8b3d753",
+                                            "label": "Complainant's anonymity protected by virtue of Section 1 of the Sexual Offences Amendment Act 1992",
+                                            "orderedDate": "2026-01-29"
+                                        }
+                                    ],
+                                    "startDate": "2025-12-30",
+                                    "wording": "From 30 December 2025, used a television receiver without a licence."
+                                }
+                            ],
+                            "personDefendant": {
+                                "arrestSummonsNumber": "036DS1ZJ66834653288X",
+                                "bailConditions": "Bail condition 1",
+                                "bailStatus": {
+                                    "code": "A",
+                                    "description": "Not applicable",
+                                    "id": "86009c70-759d-3308-8de4-194886ff9a77"
+                                },
+                                "personDetails": {
+                                    "address": {
+                                        "address1": "Address line 1",
+                                        "address2": "Address line 2",
+                                        "address3": "Address line 3",
+                                        "address4": "Address line 4",
+                                        "address5": "Swaniawskiside",
+                                        "postcode": "TW14 9XD"
+                                    },
+                                    "contact": {
+                                        "mobile": "07890123456",
+                                        "primaryEmail": "Beulah.Senger@example.com"
+                                    },
+                                    "dateOfBirth": "1992-08-06",
+                                    "documentationLanguageNeeds": "ENGLISH",
+                                    "ethnicity": {
+                                        "observedEthnicityCode": "4",
+                                        "observedEthnicityDescription": "Other",
+                                        "observedEthnicityId": "a87ff679-a2f3-371d-9181-a67b7542122c",
+                                        "selfDefinedEthnicityCode": "W1",
+                                        "selfDefinedEthnicityDescription": "British",
+                                        "selfDefinedEthnicityId": "c4ca4238-a0b9-3382-8dcc-509a6f75849b"
+                                    },
+                                    "firstName": "Joel",
+                                    "gender": "FEMALE",
+                                    "hearingLanguageNeeds": "ENGLISH",
+                                    "lastName": "Lockman",
+                                    "occupation": "District Tactics Specialist",
+                                    "occupationCode": "1",
+                                    "title": "Dr."
+                                },
+                                "policeBailConditions": "Bail condition 1",
+                                "policeBailStatus": {
+                                    "code": "A",
+                                    "description": "Not applicable",
+                                    "id": "86009c70-759d-3308-8de4-194886ff9a77"
+                                }
+                            },
+                            "prosecutionAuthorityReference": "036DS1ZJ66834653288X",
+                            "prosecutionCaseId": "8f5ed077-f4c2-435a-bdaa-adf5263497f6"
+                        }
+                    ],
+                    "id": "8f5ed077-f4c2-435a-bdaa-adf5263497f6",
+                    "initiationCode": "C",
+                    "originatingOrganisation": "0480000",
+                    "prosecutionCaseIdentifier": {
+                        "address": {
+                            "address1": "Bishopsgate police station",
+                            "address2": "182, Bishopsgate",
+                            "address5": "London",
+                            "postcode": "EC2M 4NP"
+                        },
+                        "contact": {
+                            "primaryEmail": "casebuilderscpsmemos@cityoflondon.police.uk"
+                        },
+                        "majorCreditorCode": "COLP",
+                        "prosecutionAuthorityCode": "CITYPF",
+                        "prosecutionAuthorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+                        "prosecutionAuthorityName": "City of London Police",
+                        "prosecutionAuthorityOUCode": "0480000",
+                        "caseURN": "95GD4154526"
+                    },
+                    "statementOfFacts": "Prosecution facts"
+                }
+            ],
+            "type": {
+                "description": "Committal for Sentence",
+                "id": "1466e2a6-3760-41de-9d23-17deac22d0a2"
+            },
+            "weekCommencingDate": {
+                "startDate": "2026-02-23"
+            }
+        }
+    ]
+}
