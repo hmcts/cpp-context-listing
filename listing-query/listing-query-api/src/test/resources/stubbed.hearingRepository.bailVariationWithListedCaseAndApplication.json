@@ -1,0 +1,183 @@
+[
+  {
+    "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+    "judiciary": [],
+    "hearingsByCourtCentreId": [
+      {
+        "hearingDate": "2026-04-24",
+        "hearingsByHearingDate": [
+          {
+            "hearing": {
+              "id": "8bc3b796-c3da-45b1-a7db-3b812ef38ae0",
+              "type": {
+                "id": "3b5fdf13-7033-4ce0-857d-b7ea463da91d",
+                "description": "Bail Variation Application"
+              },
+              "endDate": "2026-04-24",
+              "allocated": true,
+              "judiciary": [],
+              "startDate": "2026-04-24",
+              "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+              "hearingDays": [
+                {
+                  "endTime": "2026-04-24T09:10:00.000Z",
+                  "sequence": 1,
+                  "startTime": "2026-04-24T09:00:00.000Z",
+                  "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+                  "hearingDate": "2026-04-24",
+                  "isCancelled": false,
+                  "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                  "courtScheduleId": "edccc82a-993b-4bd2-99b5-37c345ec2957",
+                  "durationMinutes": 10
+                }
+              ],
+              "listedCases": [
+                {
+                  "id": "e327f735-0454-43fc-89fb-179b5ed03cda",
+                  "markers": [],
+                  "defendants": [
+                    {
+                      "id": "7c426281-eab8-4cb6-946b-b27d6b4397a2",
+                      "address": {
+                        "address1": "098",
+                        "address2": "56Police House",
+                        "address3": "StreetDescription",
+                        "address4": "Locality2O",
+                        "address5": "TownD",
+                        "postcode": "TW14 9XD"
+                      },
+                      "isYouth": false,
+                      "lastName": "Smith",
+                      "offences": [
+                        {
+                          "id": "b66cf806-88bb-4aeb-95c1-eee4b15dd0c5",
+                          "count": 0,
+                          "startDate": "2004-12-09",
+                          "orderIndex": 500,
+                          "offenceCode": "TW01040",
+                          "shadowListed": false,
+                          "offenceWording": "Has a violent past and fear that he will commit further offences and\n                interfere with witnesse",
+                          "statementOfOffence": {
+                            "title": "Fail to carry an animal on a moving escalator on the Tyne and Wear Metro",
+                            "welshTitle": "Fail to carry an animal on a moving escalator on the Tyne and Wear Metro",
+                            "legislation": "Contrary to byelaw 16(6) and 31(1) of the Tyne and Wear Metro Byelaws made under sections 58 and 62 of the Tyneside Metropolitan Railway Act 1973."
+                          },
+                          "restrictFromCourtList": false
+                        },
+                        {
+                          "id": "aa8c0f24-42a1-42a1-a4f4-2589982292c1",
+                          "count": 0,
+                          "startDate": "2014-02-09",
+                          "orderIndex": 502,
+                          "offenceCode": "TW01046",
+                          "shadowListed": false,
+                          "offenceWording": "Has a violent past and fear that he will commit further offences and\n                interfere with witnesse",
+                          "statementOfOffence": {
+                            "title": "Occupy reserved seat / berth without a valid ticket on the Tyne and Wear Metro",
+                            "welshTitle": "Occupy reserved seat / berth without a valid ticket on the Tyne and Wear Metro",
+                            "legislation": "Contrary to byelaw 19 and 31(1) of the Tyne and Wear Metro Byelaws made under sections 58 and 62 of the Tyneside Metropolitan Railway Act 1973."
+                          },
+                          "restrictFromCourtList": false
+                        }
+                      ],
+                      "firstName": "John",
+                      "bailStatus": {
+                        "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                        "code": "C",
+                        "description": "Custody"
+                      },
+                      "dateOfBirth": "1977-11-26",
+                      "masterDefendantId": "7c426281-eab8-4cb6-946b-b27d6b4397a2",
+                      "restrictFromCourtList": false,
+                      "courtProceedingsInitiated": "2026-03-09T09:40:10.330Z"
+                    }
+                  ],
+                  "shadowListed": false,
+                  "caseIdentifier": {
+                    "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+                    "authorityCode": "DERPF",
+                    "caseReference": "95GD5309226"
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+              "isSlotsBooked": true,
+              "nonDefaultDays": [],
+              "nonSittingDays": [],
+              "hearingLanguage": "ENGLISH",
+              "estimatedMinutes": 10,
+              "jurisdictionType": "MAGISTRATES",
+              "courtApplications": [
+                {
+                  "id": "7db3f286-0f0b-4ae0-9bba-eb09dbfb1e35",
+                  "subject": {
+                    "id": "38af0cd0-f3b8-464d-8cf3-08c35545f6f4",
+                    "address": {
+                      "address1": "098",
+                      "address2": "56Police House",
+                      "address3": "StreetDescription",
+                      "address4": "Locality2O",
+                      "address5": "TownD",
+                      "postcode": "TW14 9XD"
+                    },
+                    "lastName": "Smith",
+                    "firstName": "John",
+                    "isRespondent": false,
+                    "restrictFromCourtList": false,
+                    "courtApplicationPartyType": "PERSON_DEFENDANT"
+                  },
+                  "offences": [],
+                  "applicant": {
+                    "id": "38af0cd0-f3b8-464d-8cf3-08c35545f6f4",
+                    "address": {
+                      "address1": "098",
+                      "address2": "56Police House",
+                      "address3": "StreetDescription",
+                      "address4": "Locality2O",
+                      "address5": "TownD",
+                      "postcode": "TW14 9XD"
+                    },
+                    "lastName": "Smith",
+                    "firstName": "John",
+                    "isRespondent": false,
+                    "restrictFromCourtList": false,
+                    "courtApplicationPartyType": "PERSON_DEFENDANT"
+                  },
+                  "respondents": [
+                    {
+                      "id": "f844aa53-288e-4337-b2a8-1a3dedc4202d",
+                      "address": {
+                        "address1": "Criminal Justice Department",
+                        "address2": "Derbyshire Constabulary",
+                        "address3": "Butterley Hall",
+                        "address4": "Ripley",
+                        "address5": "Derby",
+                        "postcode": "DE5 3RS"
+                      },
+                      "lastName": "DERPF",
+                      "isRespondent": true,
+                      "restrictFromCourtList": false,
+                      "courtApplicationPartyType": "PROSECUTING_AUTHORITY"
+                    }
+                  ],
+                  "linkedCaseIds": ["e327f735-0454-43fc-89fb-179b5ed03cda"],
+                  "applicationType": "Application to vary conditions of bail",
+                  "applicationReference": "95GD5309226",
+                  "restrictFromCourtList": false,
+                  "restrictCourtApplicationType": false
+                }
+              ],
+              "courtCentreDetails": {
+                "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                "defaultDuration": 420,
+                "defaultStartTime": "10:00:00"
+              },
+              "sendNotificationToParties": false
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

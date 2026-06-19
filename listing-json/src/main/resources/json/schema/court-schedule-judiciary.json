@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/court-schedule-judiciary.json",
+  "type": "object",
+  "properties": {
+    "judiciaryId": {
+      "type": "string"
+    },
+    "rotaJudiciaryId": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "forenames": {
+      "type": "string"
+    },
+    "surname": {
+      "type": "string"
+    },
+    "emailAddress": {
+      "type": "string"
+    },
+    "courtScheduleId": {
+      "type": "string"
+    },
+    "courtListingProfileId": {
+      "type": "string"
+    },
+    "judiciaryType": {
+      "type": "string"
+    },
+    "position": {
+      "type": "string"
+    },
+    "isBenchChairman": {
+      "type": "boolean"
+    },
+    "isDeputy": {
+      "$ref": "boolean"
+    }
+  },
+  "required": [
+    "courtScheduleId"
+  ],
+  "additionalProperties": false
+}

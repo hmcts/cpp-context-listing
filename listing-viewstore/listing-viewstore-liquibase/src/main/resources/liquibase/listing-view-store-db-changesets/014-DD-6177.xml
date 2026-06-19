@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet author="listing" id="14" logicalFilePath="014-DD-6177.xml">
+        <createTable tableName="hearing_days">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="hearing_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sequence" type="INTEGER"/>
+            <column name="end_time" type="timestamp with time zone"/>
+            <column name="start_time" type="timestamp with time zone"/>
+            <column name="court_room_id" type="UUID"/>
+            <column name="hearing_date" type="DATE"/>
+            <column name="court_centre_id" type="UUID"/>
+            <column name="duration_minutes" type="INTEGER"/>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="hearing_days"/>
+        </rollback>
+
+    </changeSet>
+
+    <changeSet author="listing" id="14.1" logicalFilePath="014-DD-6177.xml">
+        <createTable tableName="listed_cases">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="case_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="hearing_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="authority_id" type="UUID"/>
+            <column name="authority_code" type="TEXT"/>
+            <column name="case_reference" type="TEXT"/>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="listed_cases"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet author="listing" id="14.2" logicalFilePath="014-DD-6177.xml">
+        <addColumn tableName="hearing">
+            <column name="court_centre_id" type="UUID"/>
+            <column name="court_room_id" type="UUID"/>
+            <column name="is_vacated_trial" type="BOOLEAN"/>
+            <column name="unscheduled" type="BOOLEAN"/>
+            <column name="type_id" type="UUID"/>
+            <column name="jurisdiction_type" type="TEXT"/>
+            <column name="week_commencing_start_date" type="DATE"/>
+            <column name="week_commencing_end_date" type="DATE"/>
+            <column name="start_date" type="DATE"/>
+            <column name="end_date" type="DATE"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

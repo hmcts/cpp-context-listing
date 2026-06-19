@@ -1,0 +1,16 @@
+{
+  "startDate": "2018-06-01",
+  "endDate": "2018-06-02",
+  "nonSittingDays": [],
+  "nonDefaultDays": [
+    {
+      "startTime": "2018-06-01T13:00:00.000Z",
+      "duration" : 60
+    }
+  ],
+  "defaultStartTime": "10:30",
+  "defaultDuration": "30",
+  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671"
+}
+
+

@@ -1,0 +1,13 @@
+{
+  "_metadata": {
+    "name": "listing.events.non-default-days-changed-for-hearing"
+  },
+  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+  "nonDefaultDays": [
+    {
+      "courtScheduleId": "4b0f329c-a03b-3262-8089-f3dd12516a67",
+      "duration": 1,
+      "startTime": "2020-09-14T09:00:00.000Z"
+    }
+  ]
+}

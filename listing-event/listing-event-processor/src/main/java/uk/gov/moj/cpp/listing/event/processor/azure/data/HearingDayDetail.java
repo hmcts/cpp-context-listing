@@ -1,0 +1,101 @@
+package uk.gov.moj.cpp.listing.event.processor.azure.data;
+
+import java.util.Objects;
+import java.util.Optional;
+
+public class HearingDayDetail {
+    private String date;
+    private String time;
+    private int duration;
+    private String hearingStartTime;
+    private Optional<String> courtScheduleId;
+    private Optional<String> courtCentreId;
+    private Optional<String> courtRoomId;
+
+
+    public HearingDayDetail(final String date, final String time, final int duration, final String hearingStartTime, final Optional<String> courtScheduleId, final Optional<String> courtCentreId, final Optional<String> courtRoomId) {
+        this.date = date;
+        this.time = time;
+        this.duration = duration;
+        this.hearingStartTime = hearingStartTime;
+        this.courtScheduleId = courtScheduleId;
+        this.courtCentreId = courtCentreId;
+        this.courtRoomId = courtRoomId;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public void setDate(final String date) {
+        this.date = date;
+    }
+
+    public String getTime() {
+        return time;
+    }
+
+    public void setTime(final String time) {
+        this.time = time;
+    }
+
+    public int getDuration() {
+        return duration;
+    }
+
+    public void setDuration(final int duration) {
+        this.duration = duration;
+    }
+
+    public Optional<String> getCourtScheduleId() {
+        return courtScheduleId;
+    }
+
+    public void setCourtScheduleId(final Optional<String> courtScheduleId) {
+        this.courtScheduleId = courtScheduleId;
+    }
+
+    public String getHearingStartTime() {
+        return hearingStartTime;
+    }
+
+    public void setHearingStartTime(final String hearingStartTime) {
+        this.hearingStartTime = hearingStartTime;
+    }
+
+    public Optional<String> getCourtCentreId() {
+        return courtCentreId;
+    }
+
+    public Optional<String> getCourtRoomId() {
+        return courtRoomId;
+    }
+
+    public void setCourtCentreId(final Optional<String> courtCentreId) {
+        this.courtCentreId = courtCentreId;
+    }
+
+    public void setCourtRoomId(final Optional<String> courtRoomId) {
+        this.courtRoomId = courtRoomId;
+    }
+
+    @SuppressWarnings("squid:S1067")
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {return true;}
+        if (o == null || getClass() != o.getClass()) {return false;}
+        final HearingDayDetail that = (HearingDayDetail) o;
+        return duration == that.duration &&
+                Objects.equals(date, that.date) &&
+                Objects.equals(time, that.time) &&
+                Objects.equals(hearingStartTime, that.hearingStartTime) &&
+                Objects.equals(courtScheduleId, that.courtScheduleId) &&
+                Objects.equals(courtCentreId, that.courtCentreId) &&
+                Objects.equals(courtRoomId, that.courtRoomId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(date, time, duration, hearingStartTime, courtScheduleId, courtCentreId, courtRoomId);
+    }
+}

@@ -1,0 +1,1068 @@
+package uk.gov.moj.cpp.listing.steps;
+
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.text.MessageFormat.format;
+import static java.util.Collections.singletonList;
+import static java.util.UUID.randomUUID;
+import static javax.ws.rs.core.Response.Status.OK;
+import static org.apache.http.HttpStatus.SC_ACCEPTED;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
+import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INTEGER;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.endpoint.UnscheduledHearingsEndpoint.pollForUnscheduledHearings;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
+import static uk.gov.moj.cpp.listing.it.util.PublishRetryHelper.verifyOrRepublishUntilReflected;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
+import static uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps.getJsonPathQueryForCaseReference;
+import static uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps.getJsonPathQueryForDefendantLastName;
+import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.clearAllMessages;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForCourtSchedule;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrown;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchCourtSchedulesByIdSession;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
+
+import uk.gov.justice.core.courts.Address;
+import uk.gov.justice.core.courts.ApplicationStatus;
+import uk.gov.justice.core.courts.AssociatedPerson;
+import uk.gov.justice.core.courts.BailStatus;
+import uk.gov.justice.core.courts.BreachType;
+import uk.gov.justice.core.courts.CourtApplication;
+import uk.gov.justice.core.courts.CourtApplicationCase;
+import uk.gov.justice.core.courts.CourtApplicationParty;
+import uk.gov.justice.core.courts.CourtApplicationType;
+import uk.gov.justice.core.courts.CourtCentre;
+import uk.gov.justice.core.courts.Defendant;
+import uk.gov.justice.core.courts.DefendantListingNeeds;
+import uk.gov.justice.core.courts.Ethnicity;
+import uk.gov.justice.core.courts.Gender;
+import uk.gov.justice.core.courts.HearingType;
+import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
+import uk.gov.justice.core.courts.InitiationCode;
+import uk.gov.justice.core.courts.JudicialRole;
+import uk.gov.justice.core.courts.JudicialRoleType;
+import uk.gov.justice.core.courts.Jurisdiction;
+import uk.gov.justice.core.courts.JurisdictionType;
+import uk.gov.justice.core.courts.LaaReference;
+import uk.gov.justice.core.courts.LinkType;
+import uk.gov.justice.core.courts.Marker;
+import uk.gov.justice.core.courts.Offence;
+import uk.gov.justice.core.courts.OffenceActiveOrder;
+import uk.gov.justice.core.courts.Person;
+import uk.gov.justice.core.courts.PersonDefendant;
+import uk.gov.justice.core.courts.ProsecutionCase;
+import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
+import uk.gov.justice.core.courts.ReportingRestriction;
+import uk.gov.justice.core.courts.SeedingHearing;
+import uk.gov.justice.core.courts.SummonsTemplateType;
+import uk.gov.justice.core.courts.WeekCommencingDate;
+import uk.gov.justice.listing.commands.HearingListingNeeds;
+import uk.gov.justice.listing.courts.TypeOfList;
+import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
+import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
+import uk.gov.moj.cpp.listing.it.AbstractIT;
+import uk.gov.moj.cpp.listing.steps.data.CourtApplicationPartyData;
+import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
+import uk.gov.moj.cpp.listing.steps.data.DefendantData;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
+import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
+import uk.gov.moj.cpp.listing.steps.data.OffenceData;
+import uk.gov.moj.cpp.listing.utils.QueueUtil;
+import uk.gov.moj.cpp.listing.steps.UpdateDefendantOffencesSteps;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import uk.gov.justice.services.messaging.JsonObjects;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
+import javax.json.JsonObject;
+import javax.ws.rs.core.Response;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.ReadContext;
+import io.restassured.path.json.JsonPath;
+import org.hamcrest.Matcher;
+import org.awaitility.core.ConditionTimeoutException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class ListNextHearingSteps extends AbstractIT {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ListNextHearingSteps.class);
+
+    private final HearingData firstHearing;
+
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final String PERSON_TITLE = "Baroness";
+    private static final String PERSON_NATIONALITY_DESCRIPTION = "British";
+    private static final String POSTCODE = "CR1 4BX";
+    private static final UUID JUDICIAL_RESULT_ID = UUID.fromString("065b6fcb-0787-4f0d-a9cd-af4b5c36e047");
+    private static final String LISTING_API_LIST_NEXT_HEARINGS = "listing.list-next-hearings-v2";
+    private static final String LISTING_API_DELETE_NEXT_HEARINGS = "listing.delete-next-hearings";
+    private static final String LISTING_API_UNSCHEDULED_NEXT_HEARINGS = "listing.list-unscheduled-next-hearings";
+    private static final String LISTING_API_UPDATE_RELATED_HEARING = "listing.update-related-hearing";
+    private static final String MEDIA_TYPE_LIST_NEXT_HEARINGS = "application/vnd.listing.next-hearings-v2+json";
+    private static final String MEDIA_TYPE_DELETE_NEXT_HEARINGS = "application/vnd.listing.delete-next-hearings+json";
+    private static final String MEDIA_TYPE_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING = "application/vnd.listing.delete-previous-hearings-and-create-next-hearing+json";
+    private static final String MEDIA_TYPE_UNSCHEDULED_NEXT_HEARINGS = "application/vnd.listing.list-unscheduled-next-hearings+json";
+    private static final String MEDIA_TYPE_UPDATE_RELATED_HEARING = "application/vnd.listing.related-hearing+json";
+    private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
+
+    private static final String EVENT_SELECTOR_UPDATE_RELATED_HEARING_REQUESTED = "listing.events.update-existing-hearing-requested";
+    private static final String PUBLIC_EVENT_SELECTED_UNALLOCATED_HEARING_DELETED = "public.events.listing.unallocated-hearing-deleted";
+    private static final String PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_HEARING = "public.events.listing.offences-removed-from-existing-unallocated-hearing";
+    private static final String PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING = "public.events.listing.offences-removed-from-existing-allocated-hearing";
+    private static final String LISTING_API_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING = "listing.delete-previous-hearings-and-create-new-hearing";
+
+    private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
+    private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
+
+
+
+
+    private final JmsMessageConsumerClient privateMessageConsumerUpdateRelatedHearingRequested;
+    private final JmsMessageConsumerClient publicMessageConsumerUnallocatedHearingDeleted;
+    private final JmsMessageConsumerClient publicMessageConsumerOffencesRemovedFromExistingHearing;
+    private final JmsMessageConsumerClient publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing;
+    private final JmsMessageConsumerClient publicMessageConsumerHearingAddedToCase;
+
+    private final JmsMessageConsumerClient publicMessageConsumerOffencesMovedToHearing;
+    private final JmsMessageProducerClient publicEventAdhocCreated ;
+
+
+    private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+    private final ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
+    private String request;
+
+
+    public ListNextHearingSteps(final HearingData firstHearing) {
+        this.firstHearing = firstHearing;
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
+
+        privateMessageConsumerUpdateRelatedHearingRequested = privateEvents.createPrivateConsumer(EVENT_SELECTOR_UPDATE_RELATED_HEARING_REQUESTED);
+
+        publicMessageConsumerUnallocatedHearingDeleted = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_UNALLOCATED_HEARING_DELETED);
+        publicMessageConsumerOffencesRemovedFromExistingHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_HEARING);
+        publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING);
+        publicMessageConsumerHearingAddedToCase =publicEvents.createPublicConsumer("public.listing.hearing-added-to-case");
+        publicMessageConsumerOffencesMovedToHearing = publicEvents.createPublicConsumer("public.listing.offences-moved-to-next-hearing");
+        publicEventAdhocCreated =  publicEvents.createPublicProducer();
+    }
+
+    public void clearStaleAllocatedHearingMessages() {
+        clearAllMessages(publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing);
+    }
+
+    public void clearHearingAddedToCaseMessages() {
+        clearAllMessages(publicMessageConsumerHearingAddedToCase);
+    }
+
+    public void waitForCaseEventStreamUpdate(final UUID hearingId) {
+        verifyPublicHearingAddedToCaseInActiveMQ(hearingId);
+    }
+
+    public void whenNextHearingSubmittedForListing(final HearingsData hearingsData) {
+        hearingsData.getHearingData().stream()
+                .filter(hd -> "CROWN".equals(hd.getJurisdictionType()) && hd.getCourtRoomId() != null)
+                .forEach(hd -> stubSearchBookHearingSlotsForCrown(
+                        hd.getId().toString(),
+                        hd.getCourtCentreId().toString(),
+                        hd.getCourtRoomId().toString()));
+        final Response response = getResponseNextHearingsSubmittedForListing(hearingsData);
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+
+    public void whenDeleteNextHearingSubmittedForListing() {
+        final Response response = getResponseDeleteNextHearingsSubmittedForListing();
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    public void whenDeletePreviousHearingAndCreateNextHearingForListing(final HearingsData nextHearingData) {
+        final Response response = getResponseDeletePreviousHearingAndCreateNextHearingForListing(nextHearingData);
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+
+
+    public void whenUnscheduledNextHearingSubmittedForListing(final HearingsData hearingsData) {
+        final Response response = getResponseUnscheduleNextHearingsSubmittedForListing(hearingsData);
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    public void whenUpdateRelatedHearingSubmittedForListing(final UUID existedHearingId, final HearingsData hearingsData) {
+        final Response response = getResponseUpdatedRelatedHearingSubmittedForListing(existedHearingId, hearingsData);
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    public void whenUpdateRelatedHearingSubmittedForListingForAdhocHearing(final UUID existedHearingId, final HearingsData hearingsData) {
+        final HearingData nextHearing = hearingsData.getHearingData().get(0);
+
+        final List<ProsecutionCase> prosecutionCases = buildProsecutionCases(nextHearing);
+
+
+        final JsonObject listNextHearingsJsonObject = JsonObjects.createObjectBuilder()
+                .add("hearingId", existedHearingId.toString())
+                .add("prosecutionCases", objectToJsonValueConverter.convert(prosecutionCases))
+                .build();
+
+        request = listNextHearingsJsonObject.toString();
+
+        clearAllMessages(publicMessageConsumerHearingAddedToCase);
+        QueueUtil.sendMessage(
+                publicEventAdhocCreated,
+                "public.progression.related-hearing-updated-for-adhoc-hearing",
+                listNextHearingsJsonObject,
+                metadataOf(randomUUID(), "public.progression.related-hearing-updated-for-adhoc-hearing").withUserId(randomUUID().toString()).build());
+
+    }
+
+
+    private Response getResponseNextHearingsSubmittedForListing(final HearingsData hearingsData) {
+
+        final String listNextHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_API_LIST_NEXT_HEARINGS), firstHearing.getId()));
+
+        final HearingData nextHearing1 = hearingsData.getHearingData().get(0);
+        final List<HearingListingNeeds> hearings = new ArrayList<>();
+        hearings.add( buildHearingListingNeeds(nextHearing1));
+
+        if( hearingsData.getHearingData().size() ==2){
+            final HearingData nextHearing2 = hearingsData.getHearingData().get(1);
+            hearings.add(buildHearingListingNeeds(nextHearing2));
+        }
+
+
+
+        final JsonObject listNextHearingsJsonObject = JsonObjects.createObjectBuilder()
+                .add("hearings", objectToJsonValueConverter.convert(hearings))
+                .add("seedingHearing", objectToJsonValueConverter.convert(
+                        SeedingHearing.seedingHearing()
+                                .withSeedingHearingId(firstHearing.getId())
+                                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueOf(firstHearing.getJurisdictionType()))
+                                .withSittingDay(firstHearing.getHearingStartDate().toString())
+                                .build()))
+                .build();
+
+        request = listNextHearingsJsonObject.toString();
+
+        return restClient.postCommand(listNextHearingUrl, MEDIA_TYPE_LIST_NEXT_HEARINGS,
+                request, getLoggedInHeader());
+    }
+
+    public Response getResponseDeleteNextHearingsSubmittedForListing() {
+        final String deleteNextHearingsUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_API_DELETE_NEXT_HEARINGS), firstHearing.getId()));
+
+        final JsonObject deleteNextHearingsJsonObject = JsonObjects.createObjectBuilder()
+                .add("seedingHearing", objectToJsonValueConverter.convert(
+                        SeedingHearing.seedingHearing()
+                                .withSeedingHearingId(firstHearing.getId())
+                                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueOf(firstHearing.getJurisdictionType()))
+                                .withSittingDay(firstHearing.getHearingStartDate().toString())
+                                .build()))
+
+                .build();
+
+        request = deleteNextHearingsJsonObject.toString();
+
+        return restClient.postCommand(deleteNextHearingsUrl, MEDIA_TYPE_DELETE_NEXT_HEARINGS,
+                request, getLoggedInHeader());
+    }
+
+    public Response getResponseDeletePreviousHearingAndCreateNextHearingForListing(final HearingsData nextHearingData) {
+        final String deletePreviousHearingsAndCreateNextHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_API_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING)));
+        final String eventPayloadString = getPayload("listing.delete-previous-hearings-and-create-next-hearing.json")
+
+                .replaceAll("SEEDING_HEARING_ID",firstHearing.getId().toString())
+                .replaceAll("HEARING_ID_TO_DELETE", firstHearing.getId().toString())
+                .replaceAll("HEARING_ID", nextHearingData.getHearingData().get(0).getId().toString())
+                .replaceAll("SITTING_DAY_1", firstHearing.getHearingStartDate().toString())
+                .replaceAll("SITTING_DAY_2", firstHearing.getHearingStartDate().plusDays(10).toString());
+
+        JsonObject deletePreviousHearingsAndCreateNextHearingDataObject = new StringToJsonObjectConverter().convert(eventPayloadString);
+        request = deletePreviousHearingsAndCreateNextHearingDataObject.toString();
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\tHeader = {}\n\n", deletePreviousHearingsAndCreateNextHearingUrl, MEDIA_TYPE_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING, request, getLoggedInHeader());
+
+        return restClient.postCommand(deletePreviousHearingsAndCreateNextHearingUrl, MEDIA_TYPE_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING,
+                request, getLoggedInHeader());
+
+
+    }
+
+    private Response getResponseUnscheduleNextHearingsSubmittedForListing(final HearingsData hearingsData) {
+
+        final String listNextHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_API_UNSCHEDULED_NEXT_HEARINGS), firstHearing.getId()));
+
+        final HearingData nextHearing1 = hearingsData.getHearingData().get(0);
+        final HearingData nextHearing2 = hearingsData.getHearingData().get(1);
+
+        final List<HearingUnscheduledListingNeeds> hearings = Arrays.asList(
+                buildUnscheduledHearingListingNeeds(nextHearing1),
+                buildUnscheduledHearingListingNeeds(nextHearing2));
+
+
+        final JsonObject listNextHearingsJsonObject = JsonObjects.createObjectBuilder()
+                .add("hearings", objectToJsonValueConverter.convert(hearings))
+                .add("seedingHearing", objectToJsonValueConverter.convert(
+                        SeedingHearing.seedingHearing()
+                                .withSeedingHearingId(firstHearing.getId())
+                                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueOf(firstHearing.getJurisdictionType()))
+                                .withSittingDay(firstHearing.getHearingStartDate().toString())
+                                .build()))
+
+                .build();
+
+        request = listNextHearingsJsonObject.toString();
+
+        return restClient.postCommand(listNextHearingUrl, MEDIA_TYPE_UNSCHEDULED_NEXT_HEARINGS,
+                request, getLoggedInHeader());
+    }
+
+    public void stubReferenceDataForNextHearings(final HearingsData hearingsData) {
+
+        hearingsData.getHearingData().stream()
+                .map(HearingData::getCourtCentreId)
+                .forEach(cci -> {
+                    stubGetReferenceDataCourtCentre(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, hearingsData.getHearingData().get(0).getCourtRoomId(), hearingsData.getHearingData().get(0).getName()));
+                    stubGetReferenceDataCourtCentreById(cci);
+                    stubGetReferenceDataCourtMappings(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, hearingsData.getHearingData().get(0).getCourtRoomId(), hearingsData.getHearingData().get(0).getName()));
+                });
+        hearingsData.getHearingData().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
+        hearingsData.getHearingData().stream().filter(hd -> hd.getJudiciary() != null)
+                .forEach(hearingData -> stubGetReferenceDataJudiciaries(hearingData.getJudiciary().get(0).getJudicialId()));
+        hearingsData.getHearingData().stream()
+                .filter(hd -> "CROWN".equals(hd.getJurisdictionType()) && hd.getCourtRoomId() != null)
+                .forEach(hd -> stubSearchBookHearingSlotsForCrown(
+                        hd.getId().toString(),
+                        hd.getCourtCentreId().toString(),
+                        hd.getCourtRoomId().toString()));
+    }
+
+    private Response getResponseUpdatedRelatedHearingSubmittedForListing(final UUID existedHearingId, final HearingsData hearingsData) {
+
+        final String updateRelatedHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_API_UPDATE_RELATED_HEARING), existedHearingId));
+
+        final HearingData nextHearing = hearingsData.getHearingData().get(0);
+
+        final List<ProsecutionCase> prosecutionCases = buildProsecutionCases(nextHearing);
+
+
+        final JsonObject listNextHearingsJsonObject = JsonObjects.createObjectBuilder()
+                .add("prosecutionCases", objectToJsonValueConverter.convert(prosecutionCases))
+                .add("seedingHearing", objectToJsonValueConverter.convert(
+                        SeedingHearing.seedingHearing()
+                                .withSeedingHearingId(firstHearing.getId())
+                                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueOf(firstHearing.getJurisdictionType()))
+                                .withSittingDay(firstHearing.getHearingStartDate().toString())
+                                .build()))
+
+                .build();
+
+        request = listNextHearingsJsonObject.toString();
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\tHeader = {}\n\n", updateRelatedHearingUrl, MEDIA_TYPE_UPDATE_RELATED_HEARING, request, getLoggedInHeader());
+
+        return restClient.postCommand(updateRelatedHearingUrl, MEDIA_TYPE_UPDATE_RELATED_HEARING,
+                request, getLoggedInHeader());
+    }
+
+    public void verifyUpdateRelatedHearingRequestedInActiveMQ(final UUID hearingId) {
+        final JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerUpdateRelatedHearingRequested);
+        LOGGER.debug("jsonResponse from privateMessageConsumerUpdateRelatedHearingRequested: {}", jsonResponse.prettify());
+
+        assertThat(jsonResponse.get("hearingId"), is(hearingId.toString()));
+    }
+
+    public void verifyHearingListedFromAPI(final HearingsData hearingsData) {
+        verifyHearingListedFromAPI(hearingsData.getHearingData().get(0), false);
+        verifyHearingListedFromAPI(hearingsData.getHearingData().get(1), false);
+
+    }
+
+    /**
+     * JMS-aware version of verifyHearingListedFromAPI for handling asynchronous message processing timing issues.
+     */
+    public void verifyHearingListedFromAPIWithJmsDelay(final HearingsData hearingsData) {
+        verifyHearingListedFromAPIWithJmsDelay(hearingsData.getHearingData().get(0), false);
+        verifyHearingListedFromAPIWithJmsDelay(hearingsData.getHearingData().get(1), false);
+
+    }
+
+    public void verifySingleHearingListedFromAPI(final HearingData hearingsData, final Boolean isAllocated) {
+        verifyHearingListedFromAPI(hearingsData, isAllocated);
+
+
+    }
+
+    public void verifyUnscheduledHearingListedFromApi(final HearingsData hearingsData) {
+        verifyHearingUnscheduledListedFromAPI(hearingsData.getHearingData().get(0));
+        verifyHearingUnscheduledListedFromAPI(hearingsData.getHearingData().get(1));
+    }
+
+    public void verifyCasesAddedToHearingFromApi(HearingsData existedHearingsData, final HearingsData hearingsData, final boolean isAllocated) {
+        final String hearingId = existedHearingsData.getHearingData().get(0).getId().toString();
+        pollForHearing(existedHearingsData.getHearingData().get(0).getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
+
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].id",
+                        contains(existedHearingsData.getHearingData().get(0).getId().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].listedCases[?(@.id == '" +hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId().toString() + "')].id",
+                        contains(hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].listedCases[?(@.id == '" +hearingsData.getHearingData().get(0).getListedCases().get(1).getCaseId().toString() + "')].id",
+                        contains(hearingsData.getHearingData().get(0).getListedCases().get(1).getCaseId().toString()))
+        });
+    }
+
+    public void verifyCasesAddedToAllocatedHearingFromApi(HearingsData existedHearingsData, final HearingsData hearingsData) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), existedHearingsData.getHearingData().get(0).getCourtCentreId(), true));
+        final String hearingId = existedHearingsData.getHearingData().get(0).getId().toString();
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].allocated",
+                                        hasItems(true)),
+                                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].listedCases[?(@.id == '" + hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId().toString() + "')].id"),
+                                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].listedCases[?(@.id == '" + hearingsData.getHearingData().get(0).getListedCases().get(1).getCaseId().toString() + "')].id")
+                        )));
+    }
+
+    public void verifyOffenceAddedToAllocatedHearingFromApi(HearingsData existedHearingsData,  final String offenceId) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), existedHearingsData.getHearingData().get(0).getCourtCentreId(), true));
+        final String hearingId = existedHearingsData.getHearingData().get(0).getId().toString();
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].allocated",
+                                        hasItems(true)),
+                                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].listedCases[*].defendants[*].offences[*].id", hasItems(offenceId))
+                        )));
+    }
+
+    /**
+     * Verifies the read model reflects a new offence, re-publishing the
+     * {@code public.progression.offences-for-defendant-changed} event (with a fresh metadata id each time)
+     * if the first verify times out, up to {@code maxPublishAttempts} total attempts.
+     *
+     * <p><b>Why re-publish instead of publish-once-then-poll?</b> The event is consumed async by
+     * {@code ListingEventProcessor} and routed to the {@code Case} aggregate. If the case's hearing-link
+     * has not yet been established when the first publish is processed, the update is silently dropped with
+     * no JMS redelivery, so a single publish is lost forever on slow CI (vld pipeline). Re-publishing with
+     * a fresh metadata id each time (the steps instance regenerates it in
+     * {@code publishCaseDefendantOffencesUpdated}) guarantees that once the link is established, a
+     * subsequent publish lands. Root-cause class: cross-aggregate eventual-consistency race, same pattern
+     * as {@code UpdateCaseMarkersSteps#publishUntilCaseMarkersReflected}.
+     *
+     * <p>The caller is expected to have already done the <em>initial</em> publish and to pass the offence
+     * id extracted from that publish's return value. This method first tries to verify the existing
+     * publish; only if that times out does it re-publish and retry.
+     */
+    public void verifyOrRepublishUntilOffenceReflected(final UpdateDefendantOffencesSteps offenceSteps,
+                                                        final HearingsData existedHearingsData,
+                                                        final String offenceId) {
+        verifyOrRepublishUntilReflected(LOGGER, "list-next-hearing-fix", "offences-for-defendant-changed for offence " + offenceId,
+                offenceSteps::whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly,
+                () -> verifyOffenceAddedToAllocatedHearingFromApi(existedHearingsData, offenceId));
+    }
+
+    public void verifyCasesAreInAllocatedHearingFromApi(HearingsData existedHearingsData, final HearingsData hearingsData) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), existedHearingsData.getHearingData().get(0).getCourtCentreId(), true));
+        final String hearingId = existedHearingsData.getHearingData().get(0).getId().toString();
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].allocated",
+                                        hasItems(true)),
+                                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].listedCases.length()", hasItems(2)),
+                                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].listedCases[?(@.id == '" + hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId().toString() + "')].id"),
+                                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].listedCases[?(@.id == '" + hearingsData.getHearingData().get(0).getListedCases().get(1).getCaseId().toString() + "')].id")
+                        )));
+    }
+
+    public void verifyOldHearingDeleted(final HearingsData hearingsData) {
+        pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), false, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(getHearingFilter(hearingsData.getHearingData().get(0).getId().toString()), hasSize(0))
+        });
+
+    }
+
+    public void verifyPublicUnallocatedOldHearingDeletedInPublicMQ(final HearingsData hearingsData) {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerUnallocatedHearingDeleted,
+                anyOf(containsString(hearingsData.getHearingData().get(0).getId().toString()),
+                        containsString(hearingsData.getHearingData().get(1).getId().toString())));
+        final JsonPath jsonResponse2 = QueueUtil.retrieveMessage(publicMessageConsumerUnallocatedHearingDeleted,
+                anyOf(containsString(hearingsData.getHearingData().get(0).getId().toString()),
+                        containsString(hearingsData.getHearingData().get(1).getId().toString())));
+
+        final List<String> actualHearingIds = Arrays.asList(jsonResponse.get("hearingId"), jsonResponse2.get("hearingId"));
+        final List<String> expectedHearingIds = hearingsData.getHearingData().stream()
+                .map(hearingData -> hearingData.getId().toString()).toList();
+        assertThat(expectedHearingIds.containsAll(actualHearingIds), is(true));
+        assertThat(expectedHearingIds.size(), is(actualHearingIds.size()));
+
+    }
+
+    public void verifyPublicOffencesRemovedFromExistingHearingInActiveMQ(final UUID existedHearingId, final HearingsData hearingsData) {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesRemovedFromExistingHearing,
+                containsString(existedHearingId.toString()));
+
+        hearingsData.getHearingData().get(0).getListedCases().stream()
+                .flatMap(listedCaseData -> listedCaseData.getDefendants().stream())
+                .flatMap(defendantData -> defendantData.getOffences().stream())
+                .map(OffenceData::getOffenceId)
+                .map(UUID::toString)
+                .forEach(id ->  assertThat(jsonResponse.get("offenceIds"), hasItem(id)));
+
+        assertThat(jsonResponse.get("hearingId"), is(existedHearingId.toString()));
+    }
+
+    public void verifyPublicHearingAddedToCaseInActiveMQ(final UUID existedHearingId) {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingAddedToCase,
+                containsString(existedHearingId.toString()));
+
+        assertThat(jsonResponse.get("hearingId"), is(existedHearingId.toString()));
+
+    }
+
+    public void verifyPublicOffencesMovedToHearingInActiveMQ(final HearingsData hearingsData, final HearingsData oldHearingsData, final UUID seedingHearingId) {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesMovedToHearing,
+                anyOf(containsString(hearingsData.getHearingData().get(0).getId().toString()),
+                        containsString(hearingsData.getHearingData().get(1).getId().toString())));
+
+        final JsonPath jsonResponse2 = QueueUtil.retrieveMessage(publicMessageConsumerOffencesMovedToHearing,
+                anyOf(containsString(hearingsData.getHearingData().get(0).getId().toString()),
+                        containsString(hearingsData.getHearingData().get(1).getId().toString())));
+
+        assertThat(jsonResponse.get("seedingHearingId"), is(seedingHearingId.toString()));
+
+        assertThat(Arrays.asList(jsonResponse.get("newHearingId"), jsonResponse2.get("newHearingId")),
+                hasItems(hearingsData.getHearingData().get(0).getId().toString(),
+                        hearingsData.getHearingData().get(1).getId().toString()));
+
+
+        assertThat(jsonResponse.get("oldHearingIds"),
+                hasItems(oldHearingsData.getHearingData().get(0).getId().toString(),
+                        oldHearingsData.getHearingData().get(1).getId().toString()));
+
+        assertThat(jsonResponse2.get("oldHearingIds"),
+                hasItems(oldHearingsData.getHearingData().get(0).getId().toString(),
+                        oldHearingsData.getHearingData().get(1).getId().toString()));
+
+    }
+
+    public void verifyPublicOffencesMovedToHearingInActiveMQ() {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesMovedToHearing);
+
+        assertThat(jsonResponse.get("seedingHearingId"), is(notNullValue()));
+
+    }
+
+    public void verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(final UUID existedHearingId, final HearingsData hearingsData, final String... newOffence) {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing,
+                containsString(existedHearingId.toString()));
+
+        final List<String> offenceIds = hearingsData.getHearingData().get(0).getListedCases().stream()
+                .flatMap(listedCaseData -> listedCaseData.getDefendants().stream())
+                .flatMap(defendantData -> defendantData.getOffences().stream())
+                .map(OffenceData::getOffenceId)
+                .map(UUID::toString)
+                .collect(Collectors.toList());
+        offenceIds.addAll(Arrays.stream(newOffence).toList());
+
+        assertThat(jsonResponse.get("hearingId"), is(existedHearingId.toString()));
+        assertThat(jsonResponse.getList("offenceIds"), containsInAnyOrder(offenceIds.toArray()));
+        assertThat(jsonResponse.get("isResultFlow"), is(true));
+
+    }
+
+    private void verifyHearingListedFromAPI(final HearingData hearingData, final Boolean isAllocated) {
+        final String hearingId = hearingData.getId().toString();
+        pollForHearing(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].jurisdictionType",
+                        contains(hearingData.getJurisdictionType())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].courtCentreId",
+                        contains(hearingData.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].type.id",
+                        contains(hearingData.getHearingTypeData().getTypeId().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].type.description",
+                        contains(hearingData.getHearingTypeData().getTypeDescription())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].startDate",
+                        contains(hearingData.getHearingStartDate().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].listedCases[0].defendants[0].isYouth",
+                        contains(true))
+        });
+    }
+
+    /**
+     * JMS-aware version of verifyHearingListedFromAPI private method for handling asynchronous message processing timing issues.
+     */
+    private void verifyHearingListedFromAPIWithJmsDelay(final HearingData hearingData, final Boolean isAllocated) {
+        final String hearingId = hearingData.getId().toString();
+        // Use JMS-aware polling to handle asynchronous message processing
+        pollForHearingWithJmsDelay(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].jurisdictionType",
+                        contains(hearingData.getJurisdictionType())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].courtCentreId",
+                        contains(hearingData.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].type.id",
+                        contains(hearingData.getHearingTypeData().getTypeId().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].type.description",
+                        contains(hearingData.getHearingTypeData().getTypeDescription())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].startDate",
+                        contains(hearingData.getHearingStartDate().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].listedCases[0].defendants[0].isYouth",
+                        contains(true))
+        });
+    }
+
+    public void verifyAllocatedHearingListedFromAPI(final HearingData hearingData) {
+        final String hearingId = hearingData.getId().toString();
+        // Match the hearing by id at ANY position. This scenario lists three hearings in one court centre,
+        // so a positional hearings[0]/[1] matcher races under load when the target lands at index >= 2
+        // (manifested as a 90s RestPoller ConditionTimeout). Mirrors verifyHearingListedFromAPI.
+        pollForHearing(hearingData.getCourtCentreId().toString(), true, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].jurisdictionType",
+                        contains(hearingData.getJurisdictionType())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].courtCentreId",
+                        contains(hearingData.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].type.id",
+                        contains(hearingData.getHearingTypeData().getTypeId().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].type.description",
+                        contains(hearingData.getHearingTypeData().getTypeDescription())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].startDate",
+                        contains(hearingData.getHearingStartDate().toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].listedCases[0].defendants[0].isYouth",
+                        contains(true))
+        });
+    }
+
+    public void verifyHearingUnscheduledListedFromAPI(final HearingData hearingData) {
+
+        final UUID courtCentreId = hearingData.getCourtCentreId();
+
+        final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
+
+        final DefendantData defendant = listedCaseData.getDefendants().get(0);
+
+        final com.jayway.jsonpath.JsonPath lastNameFilter = getJsonPathQueryForDefendantLastName(hearingData, listedCaseData, defendant, defendant.getLastName());
+        final com.jayway.jsonpath.JsonPath caseReferenceFilter = getJsonPathQueryForCaseReference(hearingData, listedCaseData, defendant, listedCaseData.getCaseReference());
+
+        final Matcher<ReadContext> unscheduledHearingVerifiedMatcher = anyOf(allOf(
+                        withJsonPath(lastNameFilter),
+                        withJsonPath(caseReferenceFilter),
+                        withJsonPath("$.hearings[0].id",
+                                equalTo(hearingData.getId().toString())),
+                        withJsonPath("$.hearings[0].jurisdictionType",
+                                equalTo(hearingData.getJurisdictionType())),
+                        withJsonPath("$.hearings[0].courtCentreId",
+                                equalTo(hearingData.getCourtCentreId().toString())),
+                        withJsonPath("$.hearings[0].type.id",
+                                equalTo(hearingData.getHearingTypeData().getTypeId().toString())),
+                        withJsonPath("$.hearings[0].type.description",
+                                equalTo(hearingData.getHearingTypeData().getTypeDescription())),
+                        withJsonPath("$.hearings[0].startDate",
+                                equalTo(hearingData.getHearingStartDate().toString())),
+                        withJsonPath("$.hearings[0].listedCases[0].defendants[0].isYouth",
+                                equalTo(true))
+                ),
+                allOf(
+                        withJsonPath(lastNameFilter),
+                        withJsonPath(caseReferenceFilter),
+                        withJsonPath("$.hearings[1].id",
+                                equalTo(hearingData.getId().toString())),
+                        withJsonPath("$.hearings[0].jurisdictionType",
+                                equalTo(hearingData.getJurisdictionType())),
+                        withJsonPath("$.hearings[0].courtCentreId",
+                                equalTo(hearingData.getCourtCentreId().toString())),
+                        withJsonPath("$.hearings[0].type.id",
+                                equalTo(hearingData.getHearingTypeData().getTypeId().toString())),
+                        withJsonPath("$.hearings[0].type.description",
+                                equalTo(hearingData.getHearingTypeData().getTypeDescription())),
+                        withJsonPath("$.hearings[0].startDate",
+                                equalTo(hearingData.getHearingStartDate().toString())),
+                        withJsonPath("$.hearings[0].listedCases[0].defendants[0].isYouth",
+                                equalTo(true))
+                ));
+
+        pollForUnscheduledHearings(getLoggedInUser(), courtCentreId, unscheduledHearingVerifiedMatcher);
+    }
+
+    /**
+     * For a CROWN hearing the {@code bookingReference} IS the courtScheduleId. The listing command resolves
+     * it against courtscheduler ({@code search.court-schedules-by-id}) then lists it. Stub both so the
+     * bookingReference resolves to a session echoing this hearing's own centre/room. No-op for MAGISTRATES
+     * or hearings without a court centre.
+     */
+    private static void stubCrownBookingReferenceResolution(final HearingData hearingData, final UUID bookingReference) {
+        if (bookingReference == null
+                || hearingData.getCourtCentreId() == null
+                || !"CROWN".equals(hearingData.getJurisdictionType())) {
+            return;
+        }
+        final ZonedDateTime startTime = hearingData.getHearingStartTime() != null
+                ? hearingData.getHearingStartTime()
+                : ItClock.nowUtc();
+        final LocalDate sessionDate = hearingData.getHearingStartDate() != null
+                ? hearingData.getHearingStartDate()
+                : startTime.toLocalDate();
+        stubSearchCourtSchedulesByIdSession(
+                bookingReference.toString(), hearingData.getCourtCentreId(), hearingData.getCourtRoomId(),
+                sessionDate, startTime, false);
+        stubListHearingInCourtSessionsForCourtSchedule(hearingData.getId().toString(), bookingReference.toString(), startTime);
+    }
+
+    private HearingListingNeeds buildHearingListingNeeds(final HearingData hearingData) {
+        // CROWN treats the bookingReference as the courtScheduleId; the command resolves it via
+        // search.court-schedules-by-id. Stub that resolution to echo this hearing's own centre/room.
+        final UUID bookingReference = randomUUID();
+        stubCrownBookingReferenceResolution(hearingData, bookingReference);
+        return HearingListingNeeds.hearingListingNeeds()
+                .withCourtCentre(CourtCentre.courtCentre()
+                        .withId(hearingData.getCourtCentreId())
+                        .withName(hearingData.getName())
+                        .withRoomId(hearingData.getCourtRoomId())
+                        .build())
+                .withBookingReference(bookingReference)
+                .withId(hearingData.getId())
+                .withEarliestStartDateTime(hearingData.getHearingStartTime() != null ? hearingData.getHearingStartTime() : null)
+                .withEndDate(hearingData.getHearingEndDate() != null ? hearingData.getHearingEndDate().toString() : null)
+                .withEstimatedMinutes(hearingData.getHearingEstimateMinutes())
+                .withEstimatedDuration(hearingData.getEstimatedDuration())
+                .withJudiciary(hearingData.getJudiciary() != null
+                        ? singletonList(JudicialRole.judicialRole()
+                        .withJudicialId(hearingData.getJudiciary().get(0).getJudicialId())
+                        .withJudicialRoleType(JudicialRoleType.judicialRoleType()
+                                .withJudiciaryType(hearingData.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType())
+                                .withJudicialRoleTypeId(hearingData.getJudiciary().get(0).getJudicialRoleType().getJudicialRoleTypeId().orElse(null))
+                                .build())
+                        .withIsDeputy(hearingData.getJudiciary().get(0).getIsDeputy().orElse(null))
+                        .withIsBenchChairman(hearingData.getJudiciary().get(0).getIsBenchChairman().orElse(null))
+                        .withUserId(hearingData.getJudiciary().get(0).getUserId())
+                        .build())
+                        : null)
+                .withJurisdictionType(hearingData.getJurisdictionType() != null ? JurisdictionType.valueFor(hearingData.getJurisdictionType()).get() : null)
+                .withWeekCommencingDate(hearingData.getWeekCommencingStartDate() == null ? null :
+                        WeekCommencingDate.weekCommencingDate()
+                                .withStartDate(FORMATTER.format(hearingData.getWeekCommencingStartDate()))
+                                .withDuration(hearingData.getWeekCommencingDuration())
+                                .build())
+                .withProsecutionCases(buildProsecutionCases(hearingData))
+                .withDefendantListingNeeds(hearingData.getListedCases().stream()
+                        .map(lc -> lc.getDefendants().stream().map(d ->
+                                        getDefendantListingNeeds(lc, d))
+                                .collect(Collectors.toList()))
+                        .flatMap(List::stream)
+                        .collect(Collectors.toList()))
+
+                .withType(getHearingType(hearingData))
+                .withReportingRestrictionReason(hearingData.getReportingRestrictionReason())
+                .withCourtApplications(buildApplication(hearingData))
+                .build();
+    }
+
+    private HearingUnscheduledListingNeeds buildUnscheduledHearingListingNeeds(final HearingData hearingData) {
+        return HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds()
+                .withTypeOfList(TypeOfList.typeOfList()
+                        .withId(randomUUID())
+                        .withDescription("Warrant for arrest without bail")
+                        .build())
+                .withCourtCentre(CourtCentre.courtCentre()
+                        .withId(hearingData.getCourtCentreId())
+                        .withName(hearingData.getName())
+                        .withRoomId(hearingData.getCourtRoomId())
+                        .build())
+                .withBookingReference(randomUUID())
+                .withId(hearingData.getId())
+                .withEarliestStartDateTime(hearingData.getHearingStartTime() != null ? hearingData.getHearingStartTime() : null)
+                .withEndDate(hearingData.getHearingEndDate() != null ? hearingData.getHearingEndDate().toString() : null)
+                .withEstimatedMinutes(hearingData.getHearingEstimateMinutes())
+                .withJudiciary(hearingData.getJudiciary() != null
+                        ? singletonList(JudicialRole.judicialRole()
+                        .withJudicialId(hearingData.getJudiciary().get(0).getJudicialId())
+                        .withJudicialRoleType(JudicialRoleType.judicialRoleType()
+                                .withJudiciaryType(hearingData.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType())
+                                .withJudicialRoleTypeId(hearingData.getJudiciary().get(0).getJudicialRoleType().getJudicialRoleTypeId().orElse(null))
+                                .build())
+                        .withIsDeputy(hearingData.getJudiciary().get(0).getIsDeputy().orElse(null))
+                        .withIsBenchChairman(hearingData.getJudiciary().get(0).getIsBenchChairman().orElse(null))
+                        .withUserId(hearingData.getJudiciary().get(0).getUserId())
+                        .build())
+                        : null)
+                .withJurisdictionType(hearingData.getJurisdictionType() != null ? JurisdictionType.valueFor(hearingData.getJurisdictionType()).get() : null)
+                .withWeekCommencingDate(hearingData.getWeekCommencingStartDate() == null ? null :
+                        WeekCommencingDate.weekCommencingDate()
+                                .withStartDate(FORMATTER.format(hearingData.getWeekCommencingStartDate()))
+                                .withDuration(hearingData.getWeekCommencingDuration())
+                                .build())
+                .withProsecutionCases(buildProsecutionCases(hearingData))
+                .withDefendantListingNeeds(hearingData.getListedCases().stream()
+                        .map(lc -> lc.getDefendants().stream().map(d ->
+                                        getDefendantListingNeeds(lc, d))
+                                .collect(Collectors.toList()))
+                        .flatMap(List::stream)
+                        .collect(Collectors.toList()))
+
+                .withType(getHearingType(hearingData))
+                .withReportingRestrictionReason(hearingData.getReportingRestrictionReason())
+                .build();
+    }
+
+    private final List<CourtApplication> buildApplication(final HearingData hearingData) {
+        return hearingData.getCourtApplications().stream()
+                .map(applicationData -> CourtApplication.courtApplication()
+                        .withId(hearingData.getCourtApplications().get(0).getId())
+                        .withCourtApplicationCases(singletonList(CourtApplicationCase.courtApplicationCase()
+                                .withProsecutionCaseId(hearingData.getCourtApplications().get(0).getLinkedCaseId())
+                                .withProsecutionCaseIdentifier(ProsecutionCaseIdentifier.prosecutionCaseIdentifier()
+                                        .withCaseURN(STRING.next())
+                                        .withProsecutionAuthorityId(randomUUID())
+                                        .withProsecutionAuthorityCode(STRING.next()).build())
+                                .withIsSJP(false)
+                                .withCaseStatus("ACTIVE")
+                                .withOffences(singletonList(Offence.offence().withId(hearingData.getCourtApplications().get(0).getOffenceId())
+                                        .withOffenceDefinitionId(randomUUID())
+                                        .withOffenceCode(STRING.next())
+                                        .withOffenceTitle(STRING.next())
+                                        .withWording(STRING.next())
+                                        .withStartDate(ItClock.today().toString())
+                                        .build()))
+                                .build()))
+                        .withParentApplicationId(hearingData.getCourtApplications().get(0).getParentApplicationId())
+                        .withType(getCourtApplicationType(hearingData, LinkType.LINKED, Jurisdiction.CROWN))
+                        .withApplicationReceivedDate(ItClock.today().toString())
+                        .withApplicationReference(STRING.next())
+                        .withApplicationParticulars(hearingData.getCourtApplications().get(0).getApplicationParticulars())
+                        .withApplicationStatus(ApplicationStatus.LISTED)
+                        .withApplicant(getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
+                        .withRespondents(getRespondents(hearingData))
+                        .withSubject(getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private List<CourtApplicationParty> getRespondents(final HearingData hearingData) {
+        return singletonList(
+                getApplicant(hearingData.getCourtApplications().get(0).getRespondent()));
+    }
+
+    private CourtApplicationType getCourtApplicationType(final HearingData hearingData, final LinkType either, final Jurisdiction crown) {
+        return CourtApplicationType.courtApplicationType()
+                .withId(randomUUID())
+                .withCode(STRING.next())
+                .withType(hearingData.getCourtApplications().get(0).getType())
+                .withLegislation(STRING.next())
+                .withCategoryCode(STRING.next())
+                .withLinkType(LinkType.LINKED)
+                .withJurisdiction(Jurisdiction.CROWN)
+                .withSummonsTemplateType(SummonsTemplateType.GENERIC_APPLICATION)
+                .withBreachType(BreachType.GENERIC_BREACH)
+                .withAppealFlag(false)
+                .withApplicantAppellantFlag(false)
+                .withPleaApplicableFlag(false)
+                .withCommrOfOathFlag(false)
+                .withCourtOfAppealFlag(false)
+                .withCourtExtractAvlFlag(false)
+                .withProsecutorThirdPartyFlag(false)
+                .withSpiOutApplicableFlag(false)
+                .withOffenceActiveOrder(OffenceActiveOrder.COURT_ORDER)
+                .build();
+    }
+
+    private List<ProsecutionCase> buildProsecutionCases(final HearingData hearingData) {
+        final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
+        return hearingData.getListedCases().stream()
+                .map(lc -> ProsecutionCase.prosecutionCase().withId(lc.getCaseId())
+                        .withIsCivil(lc.getCivil())
+                        .withGroupId(lc.getAuthorityId())
+                        .withIsGroupMaster(lc.getGroupMaster())
+                        .withIsGroupMember(lc.getGroupMember())
+                        .withInitiationCode(InitiationCode.C)
+                        .withProsecutionCaseIdentifier(ProsecutionCaseIdentifier.prosecutionCaseIdentifier()
+                                .withProsecutionAuthorityCode(lc.getAuthorityCode())
+                                .withProsecutionAuthorityId(lc.getAuthorityId())
+                                .withProsecutionAuthorityReference(lc.getCaseReference())
+                                .build())
+                        .withCaseMarkers(singletonList(Marker.marker()
+                                .withId(randomUUID())
+                                .withMarkerTypeCode("C")
+                                .withMarkerTypeDescription("Description")
+                                .withMarkerTypeid(randomUUID()).build()))
+                        .withDefendants(lc.getDefendants().stream().map(d -> Defendant.defendant()
+                                        .withId(d.getDefendantId())
+                                        .withMasterDefendantId(d.getMasterDefendantId())
+                                        .withCourtProceedingsInitiated(ItClock.nowUtc())
+                                        .withIsYouth(d.getIsYouth())
+                                        .withPersonDefendant(buildPersonDefendant(d))
+                                        .withAssociatedPersons(singletonList(AssociatedPerson.associatedPerson()
+                                                .withRole(STRING.next())
+                                                .withPerson(getPerson(d))
+                                                .build()))
+                                        .withOffences(d.getOffences().stream()
+                                                .map(o -> Offence.offence()
+                                                        .withCount(INTEGER.next())
+                                                        .withId(o.getOffenceId())
+                                                        .withOffenceCode(STRING.next())
+                                                        .withOffenceDefinitionId(randomUUID())
+                                                        .withWording(STRING.next())
+                                                        .withStartDate(ItClock.today().toString())
+                                                        .withOrderIndex(INTEGER.next())
+                                                        .withOffenceTitle(o.getStatementOfOffenceTitle())
+                                                        .withLaaApplnReference(
+                                                                LaaReference.laaReference()
+                                                                        .withApplicationReference(STRING.next())
+                                                                        .withStatusCode(STRING.next())
+                                                                        .withStatusDate((format(ItClock.today().toString())))
+                                                                        .withStatusDescription(STRING.next())
+                                                                        .withStatusId(randomUUID()).build())
+                                                        .withSeedingHearing(SeedingHearing.seedingHearing()
+                                                                .withSeedingHearingId(firstHearing.getId())
+                                                                .withSittingDay(firstHearing.getHearingStartDate().toString())
+                                                                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueOf(firstHearing.getJurisdictionType()))
+                                                                .build())
+                                                        .withReportingRestrictions(Arrays.asList(ReportingRestriction.reportingRestriction().withId(randomUUID())
+                                                                .withLabel("RestrictionApplied")
+                                                                .withJudicialResultId(JUDICIAL_RESULT_ID)
+                                                                .withOrderedDate(ItClock.today().toString()).build()))
+                                                        .build())
+                                                .collect(Collectors.toList()))
+                                        .withProsecutionCaseId(listedCaseData.getCaseId())
+                                        .build())
+                                .collect(Collectors.toList()))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private Person getPerson(final DefendantData d) {
+        return Person.person()
+                .withAdditionalNationalityId(randomUUID())
+                .withGender(Gender.FEMALE)
+                .withLastName(d.getLastName())
+                .withNationalityId(randomUUID())
+                .withTitle(PERSON_TITLE)
+                .withEthnicity(Ethnicity.ethnicity()
+                        .withObservedEthnicityId(randomUUID())
+                        .withObservedEthnicityDescription(STRING.next())
+                        .build())
+                .build();
+    }
+
+    private DefendantListingNeeds getDefendantListingNeeds(final ListedCaseData lc, final DefendantData d) {
+        return DefendantListingNeeds.defendantListingNeeds()
+                .withDefendantId(d.getDefendantId())
+                .withProsecutionCaseId(lc.getCaseId())
+                .build();
+    }
+
+    private HearingType getHearingType(final HearingData hearingData) {
+        return HearingType.hearingType()
+                .withDescription(hearingData.getHearingTypeData().getTypeDescription())
+                .withId(hearingData.getHearingTypeData().getTypeId())
+                .build();
+    }
+
+
+    private PersonDefendant buildPersonDefendant(final DefendantData d) {
+        return PersonDefendant.personDefendant()
+                .withBailStatus(new BailStatus.Builder().withCode(d.getBailStatus().getCode()).withDescription(d.getBailStatus().getDescription()).withId(d.getBailStatus().getId()).build())
+                .withPersonDetails(Person.person()
+                        .withTitle(PERSON_TITLE)
+                        .withNationalityId(randomUUID())
+                        .withNationalityDescription(PERSON_NATIONALITY_DESCRIPTION)
+                        .withAddress(buildAddress())
+                        .withFirstName(d.getFirstName())
+                        .withLastName(d.getLastName())
+                        .withGender(Gender.MALE)
+                        .withAdditionalNationalityId(randomUUID())
+                        .withEthnicity(Ethnicity.ethnicity()
+                                .withObservedEthnicityId(randomUUID())
+                                .withObservedEthnicityDescription(STRING.next())
+                                .build())
+                        .withDateOfBirth(ItClock.today().minusYears(21).toString())
+                        .build())
+                .build();
+    }
+
+    private Address buildAddress() {
+        return Address.address()
+                .withAddress1(STRING.next())
+                .withAddress2(STRING.next())
+                .withAddress3(STRING.next())
+                .withAddress4(STRING.next())
+                .withAddress5(STRING.next())
+                .withPostcode(POSTCODE)
+                .build();
+    }
+
+    private CourtApplicationParty getApplicant(final CourtApplicationPartyData applicant) {
+        return CourtApplicationParty.courtApplicationParty()
+                .withId(applicant.getId())
+                .withPersonDetails(Person.person().withLastName(applicant.getLastName())
+                        .withFirstName(applicant.getFirstName())
+                        .withGender(Gender.FEMALE)
+                        .withAddress(getAddress(applicant.getAddress()))
+                        .build())
+                .withSummonsRequired(false)
+                .withNotificationRequired(false)
+                .build();
+    }
+
+    private Address getAddress(final uk.gov.moj.cpp.listing.domain.Address address) {
+        return Address
+                .address()
+                .withAddress1(address.getAddress1())
+                .withAddress2(address.getAddress2().orElse(null))
+                .withAddress3(address.getAddress3().orElse(null))
+                .withAddress4(address.getAddress4().orElse(null))
+                .withAddress5(address.getAddress5().orElse(null))
+                .withPostcode(address.getPostcode().orElse(null))
+                .build();
+    }
+
+}

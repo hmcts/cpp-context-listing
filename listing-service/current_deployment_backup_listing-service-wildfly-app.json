@@ -1,0 +1,264 @@
+{
+    "apiVersion": "apps/v1",
+    "kind": "Deployment",
+    "metadata": {
+        "annotations": {
+            "deployment.kubernetes.io/revision": "4",
+            "meta.helm.sh/release-name": "listing-service",
+            "meta.helm.sh/release-namespace": "ns-ste-ccm-72"
+        },
+        "creationTimestamp": "2025-08-01T18:46:18Z",
+        "generation": 71,
+        "labels": {
+            "app": "listing",
+            "app.kubernetes.io/instance": "listing-service",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/name": "wildfly-app",
+            "app.kubernetes.io/version": "040825",
+            "context": "listing",
+            "helm.sh/chart": "wildfly-app-0.24.0",
+            "istio-config/routing-mesh-internal-include": "true",
+            "istio-policy": "core",
+            "version": "26.1.3.Finaljdk17_040825_17.0.88-SPIPH2-SNAPSHOT"
+        },
+        "name": "listing-service-wildfly-app",
+        "namespace": "ns-ste-ccm-72",
+        "resourceVersion": "1443492059",
+        "uid": "ba4c2d08-38ce-4c88-a7d2-1b25ad7b0af8"
+    },
+    "spec": {
+        "progressDeadlineSeconds": 600,
+        "replicas": 1,
+        "revisionHistoryLimit": 10,
+        "selector": {
+            "matchLabels": {
+                "app": "listing",
+                "app.kubernetes.io/instance": "listing-service",
+                "app.kubernetes.io/name": "wildfly-app",
+                "context": "listing"
+            }
+        },
+        "strategy": {
+            "rollingUpdate": {
+                "maxSurge": "25%",
+                "maxUnavailable": 0
+            },
+            "type": "RollingUpdate"
+        },
+        "template": {
+            "metadata": {
+                "annotations": {
+                    "checksum/standalonconf": "247fd8099b2b9ff935446575137c86b2149262d5ee179fb1d86f8ccee6f18a65",
+                    "checksum/standalonexml": "44de746b76f3024afa03d9ad3f9a961e8b60f6c87f56539decd2d8b0f04032c3",
+                    "proxy.istio.io/config": "{ \"holdApplicationUntilProxyStarts\": true }"
+                },
+                "creationTimestamp": null,
+                "labels": {
+                    "app": "listing",
+                    "app.kubernetes.io/instance": "listing-service",
+                    "app.kubernetes.io/name": "wildfly-app",
+                    "context": "listing"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "env": [
+                            {
+                                "name": "LAUNCH_JBOSS_IN_BACKGROUND",
+                                "value": "true"
+                            },
+                            {
+                                "name": "DT_RELEASE_VERSION",
+                                "value": "040825"
+                            },
+                            {
+                                "name": "DT_RELEASE_BUILD_VERSION",
+                                "value": "26.1.3.Finaljdk17_040825_17.0.88-SPIPH2-SNAPSHOT"
+                            },
+                            {
+                                "name": "DT_RELEASE_PRODUCT",
+                                "value": "wildfly-app-26.1.2.Final"
+                            },
+                            {
+                                "name": "DT_RELEASE_STAGE",
+                                "value": "ns-ste-ccm-72"
+                            },
+                            {
+                                "name": "LANG",
+                                "value": "en_GB.UTF-8"
+                            },
+                            {
+                                "name": "LC_ALL",
+                                "value": "en_GB.UTF-8"
+                            },
+                            {
+                                "name": "DEBUG",
+                                "value": "true"
+                            }
+                        ],
+                        "envFrom": [
+                            {
+                                "secretRef": {
+                                    "name": "listing-service-wildfly-app-pg-secret"
+                                }
+                            }
+                        ],
+                        "image": "crmdvrepo01.azurecr.io/hmcts/listing-service:26.1.3.Finaljdk17_040825_17.0.88-SPIPH2-SNAPSHOT",
+                        "imagePullPolicy": "Always",
+                        "lifecycle": {
+                            "preStop": {
+                                "exec": {
+                                    "command": [
+                                        "/bin/sh",
+                                        "-c",
+                                        "pkill java"
+                                    ]
+                                }
+                            }
+                        },
+                        "livenessProbe": {
+                            "failureThreshold": 100,
+                            "httpGet": {
+                                "httpHeaders": [
+                                    {
+                                        "name": "Host",
+                                        "value": "api"
+                                    }
+                                ],
+                                "path": "/listing-service/internal/metrics/ping",
+                                "port": "http",
+                                "scheme": "HTTP"
+                            },
+                            "initialDelaySeconds": 150,
+                            "periodSeconds": 3600,
+                            "successThreshold": 1,
+                            "timeoutSeconds": 15
+                        },
+                        "name": "wildfly-app",
+                        "ports": [
+                            {
+                                "containerPort": 9080,
+                                "name": "http",
+                                "protocol": "TCP"
+                            },
+                            {
+                                "containerPort": 9990,
+                                "name": "tcp-jmx",
+                                "protocol": "TCP"
+                            },
+                            {
+                                "containerPort": 8787,
+                                "name": "debug",
+                                "protocol": "TCP"
+                            }
+                        ],
+                        "readinessProbe": {
+                            "failureThreshold": 30,
+                            "httpGet": {
+                                "httpHeaders": [
+                                    {
+                                        "name": "Host",
+                                        "value": "api"
+                                    }
+                                ],
+                                "path": "/listing-service/internal/metrics/ping",
+                                "port": "http",
+                                "scheme": "HTTP"
+                            },
+                            "initialDelaySeconds": 60,
+                            "periodSeconds": 2,
+                            "successThreshold": 1,
+                            "timeoutSeconds": 15
+                        },
+                        "resources": {
+                            "limits": {
+                                "cpu": "2",
+                                "memory": "2Gi"
+                            },
+                            "requests": {
+                                "cpu": "1",
+                                "memory": "1503238553600m"
+                            }
+                        },
+                        "securityContext": {
+                            "runAsNonRoot": true,
+                            "runAsUser": 1000
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/opt/jboss/wildfly/standalone/configuration/standalone.xml",
+                                "name": "wildfly-standalone-xml",
+                                "subPath": "standalone.xml"
+                            },
+                            {
+                                "mountPath": "/opt/jboss/wildfly/bin/standalone.conf",
+                                "name": "wildfly-standalone-conf",
+                                "subPath": "standalone.conf"
+                            }
+                        ]
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "nodeSelector": {
+                    "agentpool": "wrkagentpool"
+                },
+                "restartPolicy": "Always",
+                "schedulerName": "default-scheduler",
+                "securityContext": {},
+                "serviceAccount": "listing-service-wildfly-app",
+                "serviceAccountName": "listing-service-wildfly-app",
+                "terminationGracePeriodSeconds": 30,
+                "volumes": [
+                    {
+                        "configMap": {
+                            "defaultMode": 420,
+                            "name": "listing-service-wildfly-app-standalone.conf"
+                        },
+                        "name": "wildfly-standalone-conf"
+                    },
+                    {
+                        "configMap": {
+                            "defaultMode": 420,
+                            "items": [
+                                {
+                                    "key": "standalone.xml",
+                                    "path": "standalone.xml"
+                                }
+                            ],
+                            "name": "listing-service-wildfly-app-standalone.xml"
+                        },
+                        "name": "wildfly-standalone-xml"
+                    }
+                ]
+            }
+        }
+    },
+    "status": {
+        "availableReplicas": 1,
+        "conditions": [
+            {
+                "lastTransitionTime": "2025-08-01T18:46:18Z",
+                "lastUpdateTime": "2025-08-05T11:02:25Z",
+                "message": "ReplicaSet \"listing-service-wildfly-app-5558fb966f\" has successfully progressed.",
+                "reason": "NewReplicaSetAvailable",
+                "status": "True",
+                "type": "Progressing"
+            },
+            {
+                "lastTransitionTime": "2025-08-18T20:49:47Z",
+                "lastUpdateTime": "2025-08-18T20:49:47Z",
+                "message": "Deployment has minimum availability.",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            }
+        ],
+        "observedGeneration": 71,
+        "readyReplicas": 1,
+        "replicas": 1,
+        "updatedReplicas": 1
+    }
+}

@@ -1,0 +1,28 @@
+{
+  "sequenceHearing": {
+    "id": "a6156814-67b5-4942-8dd5-7253e87ec41a",
+    "hearingDays": [
+      {
+        "hearingDate": "2018-06-01",
+        "sequence": "1",
+        "durationMinutes": "100",
+        "endTime": "2018-06-01T10:00:00.000Z",
+        "startTime": "2018-06-01T10:00:00.000Z"
+      },
+      {
+        "hearingDate": "2018-06-02",
+        "sequence": "0",
+        "durationMinutes": "100",
+        "endTime": "2018-06-02T10:00:00.000Z",
+        "startTime": "2018-06-02T10:00:00.000Z"
+      },
+      {
+        "hearingDate": "2012-12-13",
+        "sequence": "2",
+        "durationMinutes": "100",
+        "endTime": "2018-06-01T10:00:00.000Z",
+        "startTime": "2018-06-01T10:00:00.000Z"
+      }
+    ]
+  }
+}

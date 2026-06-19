@@ -1,0 +1,26 @@
+{
+  "hearings": [
+    "HEARING_ID_1",
+    "HEARING_ID_2"
+  ],
+  "judiciary": [
+    {
+      "judicialId": "JUDICIAL_ID_1",
+      "judicialRoleType": {
+        "judiciaryType": "MAGISTRATE"
+      },
+      "isDeputy": false,
+      "isBenchChairman": true,
+      "userId": "USER_ID_1"
+    },
+    {
+      "judicialId": "JUDICIAL_ID_2",
+      "judicialRoleType": {
+        "judiciaryType": "MAGISTRATE"
+      },
+      "isDeputy": true,
+      "isBenchChairman": false,
+      "userId": "USER_ID_2"
+    }
+  ]
+}

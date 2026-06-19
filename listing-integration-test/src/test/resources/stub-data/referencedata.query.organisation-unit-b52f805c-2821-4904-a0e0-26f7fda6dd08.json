@@ -1,0 +1,45 @@
+{
+  "id": "b52f805c-2821-4904-a0e0-26f7fda6dd08",
+  "oucode": "B04KO00",
+  "lja": "1790",
+  "oucodeL1Code": "B",
+  "courtId": "278",
+  "oucodeL1Name": "Magistrates' Courts",
+  "oucodeL3Name": "Preston Crown Court",
+  "oucodeL3WelshName": "Llys Ynadon Preston",
+  "address1": "Lawson Street",
+  "address2": "Preston",
+  "address3": "Lancs.",
+  "postcode": "PR1 2QT",
+  "defaultStartTime": "10:00:00",
+  "defaultDurationHrs": "07:00:00",
+  "oucodeL2Code": "4",
+  "oucodeL2Name": "Lancashire",
+  "region": "North West",
+  "courtrooms": [
+    {
+      "id": "1d0199f8-8812-48a2-b13c-837e1c03ff19",
+      "venueName": "DONCASTER COMBINED COURT",
+      "courtroomId": 852,
+      "courtroomName": "Courtroom 02"
+    },
+    {
+      "id": "18982e9c-2475-36a4-a852-09ab720acfc9",
+      "venueName": "AYLESBURY COMBINED COURT",
+      "courtroomId": 3859,
+      "courtroomName": "Courtroom 03"
+    },
+    {
+      "id": "28b922c3-0396-3c68-970f-5b805c7ab1bb",
+      "venueName": "WOOD GREEN COMBINED COURT",
+      "courtroomId": 2874,
+      "courtroomName": "Courtroom 04"
+    },
+    {
+      "id": "02d9847e-00e9-3c6c-b25c-1adbf5355a52",
+      "venueName": "GUILDFORD COMBINED COURT",
+      "courtroomId": 985,
+      "courtroomName": "Courtroom 05",
+      "venueId": 375
+    }]
+}

@@ -1,0 +1,28 @@
+{
+  "provisionalSlots": [
+    {
+      "courtScheduleId": "8e837de0-743a-4a2c-9db3-b2e678c48729",
+      "listingProfileId": "CS2393820",
+      "ouCode": "B01EF00",
+      "courtRoomId": "%COURT_ROOM_ID%",
+      "courtRoomNumber": 793,
+      "courtHouseId": "e6986943-68d9-36fc-bbd0-68fa32efdd4f",
+      "courtHouseName": "Croydon Magistrates' Court",
+      "courtRoomName": "Courtroom 06",
+      "operationalUnit": "1",
+      "businessType": "REM",
+      "panel": "ADULT",
+      "courtSession": "AD",
+      "sessionDate": "%SESSION_DATE%",
+      "maxSlots": 20,
+      "maxDuration": 0,
+      "availableSlots": 20,
+      "availableDuration": 0,
+      "judiciaries": [],
+      "slotStartTimes": [],
+      "bookingId": "62883cad-6dfa-4485-8e97-c766a1d45c37",
+      "hearingStartTime": "%HEARING_START_TIME%"
+
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "id": "e3e762ed-8271-3454-b59b-8a13f7cc8870",
+  "oucode": "C06MC00",
+  "oucodeL3Code": "MC",
+  "oucodeL3Name": "Manchester Crown Court",
+  "oucodeL1Code": "C",
+  "oucodeL1Name": "Crown Courts",
+  "oucodeL2Code": "6",
+  "oucodeL2Name": "Greater Manchester",
+  "region": "North West",
+  "lja": "1720",
+  "oucodeEffectiveFromDate": "2016-01-01",
+  "address1": "Courts of Justice",
+  "address2": "Crown Square",
+  "address3": "Manchester",
+  "postcode": "M3 3FL",
+  "oucodeL3WelshName": "Llys Y Goron Manceinion",
+  "defaultStartTime": "10:30:00",
+  "defaultDurationHrs": "06:00:00",
+  "lastModified": "2023-01-17T17:06:50.430Z",
+  "cpsEmailAddress": "manchester.cchub@cps.gov.uk",
+  "pecsContractorEmail": "ManchesterCSCC@geoamey.co.uk",
+  "divisionCode": "4",
+  "courtLocationCode": "435",
+  "courtId": "435",
+  "courtrooms": [
+    {
+      "id": "1d0199f8-8812-48a2-b13c-837e1c03ff19",
+      "venueName": "DONCASTER COMBINED COURT",
+      "courtroomId": 852,
+      "courtroomName": "Courtroom 02"
+    },
+    {
+      "id": "18982e9c-2475-36a4-a852-09ab720acfc9",
+      "venueName": "AYLESBURY COMBINED COURT",
+      "courtroomId": 3859,
+      "courtroomName": "Courtroom 03"
+    },
+    {
+      "id": "28b922c3-0396-3c68-970f-5b805c7ab1bb",
+      "venueName": "WOOD GREEN COMBINED COURT",
+      "courtroomId": 2874,
+      "courtroomName": "Courtroom 04"
+    },
+    {
+      "id": "02d9847e-00e9-3c6c-b25c-1adbf5355a52",
+      "venueName": "GUILDFORD COMBINED COURT",
+      "courtroomId": 985,
+      "courtroomName": "Courtroom 05",
+      "venueId": 375
+    }]
+}

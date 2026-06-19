@@ -1,0 +1,60 @@
+{
+  "_metadata": {
+    "name": "listing.events.allocated-hearing-updated-for-listing-v2"
+  },
+  "courtCentreId": "31b3d313-7a7c-4598-bb4b-c1bff9b00e26",
+  "courtRoomId": "fce80cd4-0c00-3c30-9471-2c2ee7a52453",
+  "estimatedMinutes": 20,
+  "hearingDays": [
+    {
+      "durationMinutes": 1,
+      "endTime": "2020-09-14T09:01:00.000Z",
+      "hearingDate": "2020-09-14",
+      "isCancelled": false,
+      "sequence": 2,
+      "startTime": "2020-09-14T09:00:00.000Z"
+    },
+    {
+      "durationMinutes": 1,
+      "endTime": "2020-09-15T11:01:00.000Z",
+      "hearingDate": "2020-09-15",
+      "isCancelled": true,
+      "sequence": 0,
+      "startTime": "2020-09-15T11:00:00.000Z"
+    },
+    {
+      "durationMinutes": 1,
+      "endTime": "2020-09-16T13:01:00.000Z",
+      "hearingDate": "2020-09-16",
+      "isCancelled": true,
+      "sequence": 0,
+      "startTime": "2020-09-16T13:00:00.000Z"
+    }
+  ],
+  "hearingId": "04ce8fb2-b181-4379-81af-d0c26fc8c273",
+  "hearingLanguage": "ENGLISH",
+  "judiciary": [],
+  "jurisdictionType": "CROWN",
+  "prosecutionCaseDefendantsOffenceIds": [
+    {
+      "defendants": [
+        {
+          "id": "8ae38797-6ec2-4b0a-b761-e1c270b6916a",
+          "offenceIds": [
+            {
+              "id": "1a7f6ee8-f489-4877-87b6-a59e10f34860"
+            }
+          ]
+        }
+      ],
+      "id": "1cc16c17-fa32-495c-b0e6-0c7adaad44f3"
+    }
+  ],
+  "type": {
+    "description": "First hearing",
+    "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776"
+  },
+  "updateSlot": false,
+  "sendNotificationToParties": false,
+  "isNotificationAllocationFieldUpdated": false
+}

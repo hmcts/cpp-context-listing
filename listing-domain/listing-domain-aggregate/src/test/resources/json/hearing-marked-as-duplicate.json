@@ -1,0 +1,10 @@
+{
+  "_metadata": {
+    "name": "listing.events.hearing-marked-as-duplicate"
+  },
+  "hearingId": "93c0ee7b-2e6f-43de-b500-3423b0169821",
+  "caseIds": [
+    "e1d32d9d-29ec-4934-a932-22a50f223966",
+    "a2741005-8127-4638-9bd3-817ff6effe81"
+  ]
+}

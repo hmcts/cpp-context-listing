@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/listing.command.delete-next-hearings.json",
+  "type": "object",
+  "properties": {
+    "seedingHearing": {
+      "$ref": "http://justice.gov.uk/core/courts/seedingHearing.json#"
+    }
+  },
+  "required": [
+    "seedingHearing"
+  ],
+  "additionalProperties": false
+}

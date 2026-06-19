@@ -1,0 +1,56 @@
+{
+  "id": "COURT_CENTRE_ID",
+  "oucode": "C55BN00",
+  "oucodeL1Code": "C",
+  "oucodeL1Name": "Magistrates' Courts",
+  "oucodeL3Name": "Port Talbot",
+  "oucodeL3WelshName": "Welsh Name",
+  "address1": "The Court House",
+  "address2": "Cramic Way",
+  "address3": "Port Talbot",
+  "address4": "West Glam.",
+  "address5": "address line 5",
+  "postcode": "SA13 1RU",
+  "welshAddress1": "Llys Ynadon",
+  "welshAddress2": "Adeilad y Llys",
+  "welshAddress3": "Adeilad y Llys",
+  "welshAddress4": "Gorllewin Morgannwgc",
+  "welshAddress5": "Caerdydd",
+  "defaultStartTime": "DEFAULT_START_TIME",
+  "defaultDurationHrs": "DEFAULT_DURATION_HOURS_MINS",
+  "isWelsh":true,
+  "courtrooms": [
+    {
+      "courtroomId": 852,
+      "id": "1d0199f8-8812-48a2-b13c-837e1c03ff19",
+      "venueName": "DONCASTER COMBINED COURT",
+      "venueNameWelsh": "COURT CYFFREDINOL DONCASTER",
+      "courtroomName": "Courtroom 02",
+      "courtroomNameWelsh": "Ystafell y Llys 02"
+    },
+    {
+      "courtroomId": 3859,
+      "id": "18982e9c-2475-36a4-a852-09ab720acfc9",
+      "venueName": "AYLESBURY COMBINED COURT",
+      "venueNameWelsh": "COURT CYFFREDINOL AYLESBURY",
+      "courtroomName": "Courtroom 03",
+      "courtroomNameWelsh": "Ystafell y Llys 03"
+    },
+    {
+      "courtroomId": 2874,
+      "id": "28b922c3-0396-3c68-970f-5b805c7ab1bb",
+      "venueName": "WOOD GREEN COMBINED COURT",
+      "venueNameWelsh": "COURT CYFFREDINOL WOOD GREEN",
+      "courtroomName": "Courtroom 04",
+      "courtroomNameWelsh": "Ystafell y Llys 01"
+    },
+    {
+      "id": "02d9847e-00e9-3c6c-b25c-1adbf5355a52",
+      "venueName": "GUILDFORD COMBINED COURT",
+      "courtroomId": 985,
+      "courtroomName": "Courtroom 05",
+      "venueId": 375
+    }
+
+  ]
+}

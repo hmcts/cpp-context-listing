@@ -1,0 +1,10 @@
+{
+  "results": 4,
+  "pageCount": 1,
+  "hearingIds": [
+    {"hearingId":"573bd1e6-92fa-49c2-8fa9-a355c1a4cded", "courtScheduleId":"673bd1e6-92fa-49c2-8fa9-a355c1a4cded", "hearingDate": "2525-06-06", "hearingDayCount": 1, "hearingDayPosition": 1},
+    {"hearingId":"1f8d53c6-8601-4403-988c-a7b7d3d0a233", "courtScheduleId":"673bd1e6-92fa-49c2-8fa9-a355c1a4cded", "hearingDate": "2525-06-06", "hearingDayCount": 1, "hearingDayPosition": 1},
+    {"hearingId":"23681024-8eac-4890-8c44-4651ad48cb24", "courtScheduleId":"673bd1e6-92fa-49c2-8fa9-a355c1a4cded", "hearingDate": "2525-06-06", "hearingDayCount": 1, "hearingDayPosition": 1},
+    {"hearingId":"5416c10a-0cf1-49d5-a7c9-5761ff3bdf2c", "courtScheduleId":"673bd1e6-92fa-49c2-8fa9-a355c1a4cded", "hearingDate": "2525-06-06", "hearingDayCount": 1, "hearingDayPosition": 1}
+  ]
+}

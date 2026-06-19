@@ -1,0 +1,83 @@
+package uk.gov.moj.cpp.listing.event.processor.command;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.core.Is.is;
+
+import uk.gov.justice.listing.events.DefendantsToBeUpdated;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
+import uk.gov.moj.cpp.listing.domain.BailStatus;
+import uk.gov.moj.cpp.listing.domain.Defendant;
+import uk.gov.moj.cpp.listing.event.utils.EventBuilder;
+
+import java.util.List;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+public class UpdateDefendantsForHearingCommandCollectionConverterTest {
+
+    private UpdateDefendantsForHearingCommandCollectionConverter  updateDefendantsForHearingCommandCollectionConverter = new UpdateDefendantsForHearingCommandCollectionConverter();
+
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+
+    @Spy
+    private JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
+
+    @InjectMocks
+    private EventBuilder eventBuilder;
+
+    @Test
+    public void convertFromDefendantsToBeUpdatedEventToListOfUpdateDefendantsForHearingCommands() {
+        //given
+        DefendantsToBeUpdated defendantsToBeUpdated = eventBuilder.buildDefendantsToBeUpdated();
+
+        //when
+        List<UpdateDefendantsForHearingCommand> actualList = updateDefendantsForHearingCommandCollectionConverter.convert(defendantsToBeUpdated);
+
+        //then
+        assertThat(actualList.size(),is(1));
+        UpdateDefendantsForHearingCommand actualCommand = actualList.get(0);
+        assertThat(actualCommand.getHearingId(),is(defendantsToBeUpdated.getHearings().get(0)));
+        assertThat(actualCommand.getDefendants().size(),is(1));
+        Defendant actualDefendant = actualCommand.getDefendants().get(0);
+        assertDefendant(actualDefendant, defendantsToBeUpdated);
+    }
+
+    private void assertDefendant(final Defendant actualDefendant, DefendantsToBeUpdated sourceEvent) {
+        final uk.gov.justice.listing.events.Defendant eventDefendant = sourceEvent.getDefendants().get(0);
+        assertThat(actualDefendant.getDateOfBirth().get(), is(eventDefendant.getDateOfBirth()));
+        assertThat(actualDefendant.getFirstName().get(), is(eventDefendant.getFirstName()));
+        assertThat(actualDefendant.getLastName().get(), is(eventDefendant.getLastName()));
+        assertThat(actualDefendant.getOffences(), is(empty()));
+
+        BailStatus actualBailStatus = actualDefendant.getBailStatus().get();
+        uk.gov.justice.core.courts.BailStatus expectedBailStatus = eventDefendant.getBailStatus();
+        assertThat(actualBailStatus.getCode(), is(expectedBailStatus.getCode()));
+        assertThat(actualBailStatus.getDescription(), is(expectedBailStatus.getDescription()));
+        assertThat(actualBailStatus.getId(), equalTo(expectedBailStatus.getId()));
+        assertThat(actualDefendant.getCustodyTimeLimit().get(), is(eventDefendant.getCustodyTimeLimit()));
+        assertThat(actualDefendant.getDefenceOrganisation().get(), is(eventDefendant.getDefenceOrganisation()));
+        assertThat(actualDefendant.getId(), is(eventDefendant.getId()));
+        assertThat(actualDefendant.getDefenceOrganisation().get(), is(eventDefendant.getDefenceOrganisation()));
+        assertThat(actualDefendant.getId(), is(eventDefendant.getId()));
+
+        assertThat(actualDefendant.getAddress().isPresent(), is(true));
+        assertThat(actualDefendant.getAddress().get().getAddress1(), is("defenceOrganisation"));
+        assertThat(actualDefendant.getAddress().get().getAddress2().get(), is("225"));
+        assertThat(actualDefendant.getAddress().get().getAddress3().get(), is("FuseRoad"));
+        assertThat(actualDefendant.getAddress().get().getAddress4().get(), is("East Croydon"));
+        assertThat(actualDefendant.getAddress().get().getAddress5().get(), is("SouthLondon"));
+        assertThat(actualDefendant.getAddress().get().getPostcode().get(), is("LN72 9NG"));
+
+    }
+}

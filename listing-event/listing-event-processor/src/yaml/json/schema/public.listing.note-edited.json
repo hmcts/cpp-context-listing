@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/note-edited.json",
+  "type": "object",
+  "properties": {
+    "noteId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "noteDescription": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "noteId",
+    "noteDescription"
+  ],
+  "additionalProperties": false
+}

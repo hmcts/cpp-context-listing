@@ -1,0 +1,421 @@
+{
+  "hearings": [
+    {
+      "id": "0eb4d7d1-a75c-4e24-920e-5d825a995ec8",
+      "type": {
+        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+        "description": "First hearing"
+      },
+      "endDate": "2026-02-04",
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2026-02-04",
+      "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "hearingDays": [
+        {
+          "endTime": "2026-02-04T17:21:01.001Z",
+          "sequence": 1,
+          "startTime": "2026-02-04T17:01:01.001Z",
+          "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "hearingDate": "2026-02-04",
+          "isCancelled": false,
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "courtScheduleId": "4f075298-c155-40a6-bcf9-5f88b9330ccf",
+          "durationMinutes": 20,
+          "matchedWithQuery": true
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "654f4790-4d00-4d85-8745-5200c3467d6d",
+          "markers": [
+            {
+              "id": "0ea4b5b8-7e1e-4618-ac56-a6e9de9abc43",
+              "markerTypeid": "e7eff972-189c-4957-8b1e-cb45213aa64e",
+              "markerTypeCode": "HT",
+              "markerTypeDescription": "Human Trafficking"
+            }
+          ],
+          "defendants": [
+            {
+              "id": "10808cef-f1a1-48d9-bb2e-3d19514317ff",
+              "address": {
+                "address1": "56saon",
+                "address2": "56Police House",
+                "address3": "StreetDescription1",
+                "address4": "Locality1",
+                "address5": "Town2",
+                "postcode": "TW14 9XD"
+              },
+              "isYouth": true,
+              "lastName": "Balistreri93",
+              "offences": [
+                {
+                  "id": "de8e48e9-c675-478b-8ee7-b2c0b5f80cac",
+                  "endDate": "2023-04-12",
+                  "startDate": "2023-04-12",
+                  "offenceCode": "RT03014",
+                  "shadowListed": false,
+                  "offenceWording": "Has a violent past and fear that he will commit further offences and interfere with witnesse",
+                  "laaApplnReference": {
+                    "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5",
+                    "statusCode": "GR",
+                    "statusDate": "2026-02-03",
+                    "effectiveEndDate": "2026-02-03",
+                    "statusDescription": "Granted (One Advocate)",
+                    "effectiveStartDate": "2026-02-03",
+                    "applicationReference": "SNI-2950-1"
+                  },
+                  "statementOfOffence": {
+                    "title": "Off duty seaman - alcohol in breath / blood / urine over prescribed limit - transport safety",
+                    "welshTitle": "Off duty seaman - alcohol in breath / blood / urine over prescribed limit - transport safety",
+                    "legislation": "Contrary to sections 79(3) and 82 of the Railways and Transport Safety Act 2003."
+                  },
+                  "reportingRestrictions": [
+                    {
+                      "id": "c9d7a08f-a148-46a5-8027-43bb94cf00b0",
+                      "label": "Section 49 of the Children and Young Persons Act 1933 applies",
+                      "orderedDate": "2026-02-03"
+                    }
+                  ],
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Amina",
+              "dateOfBirth": "2010-08-08",
+              "legalAidStatus": "Granted",
+              "masterDefendantId": "10808cef-f1a1-48d9-bb2e-3d19514317ff",
+              "hearingLanguageNeeds": "ENGLISH",
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-02-03T12:44:54.423Z"
+            }
+          ],
+          "prosecutor": {
+            "prosecutorId": "42880989-5d09-332e-a711-8797af06ecea",
+            "prosecutorCode": "CPS-EM"
+          },
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+            "authorityCode": "CITYPF",
+            "caseReference": "03FebVTC953"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "MAGISTRATES",
+      "courtApplications": [],
+      "courtCentreDetails": {
+        "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+        "defaultDuration": 420,
+        "defaultStartTime": "10:00:00"
+      },
+      "isGroupProceedings": false,
+      "numberOfGroupCases": 1,
+      "sendNotificationToParties": false
+    },
+    {
+      "id": "4bf3f2e8-dbe0-4727-976e-5fbad6794e0b",
+      "type": {
+        "id": "3449743b-95d6-4836-8941-57f588b52068",
+        "description": "Application"
+      },
+      "endDate": "2026-02-04",
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2026-02-04",
+      "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "hearingDays": [
+        {
+          "endTime": "2026-02-04T10:20:00.000Z",
+          "sequence": 3,
+          "startTime": "2026-02-04T10:00:00.000Z",
+          "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "hearingDate": "2026-02-04",
+          "isCancelled": false,
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "courtScheduleId": "8f24f044-b4c2-4df3-97d1-71d64f2c5a0b",
+          "durationMinutes": 20,
+          "matchedWithQuery": true
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "e1cfda9a-c951-4911-b770-e0516ca3cd0f",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "ea1a4794-7daa-4aa4-ba4a-9a81eb012f5c",
+              "address": {
+                "address1": "15 Station Road",
+                "address2": "Station Road",
+                "address3": "Manchester",
+                "address4": "Greater Manchester",
+                "postcode": "NW1 5BR"
+              },
+              "isYouth": false,
+              "lastName": "Rosenbaum",
+              "offences": [
+                {
+                  "id": "85f71662-4108-4e06-9240-50cdfb3c3fa9",
+                  "count": 0,
+                  "startDate": "2025-12-04",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68023A",
+                  "shadowListed": false,
+                  "offenceWording": "",
+                  "statementOfOffence": {
+                    "title": "Attempt robbery",
+                    "welshTitle": "Ymgais i ysbeilio (robbery)",
+                    "legislation": "Contrary to section 1(1) of the Criminal Attempts Act 1981.",
+                    "welshLegislation": "Yn groes i adran 1(1) Deddf Ymgeisiau i Droseddu 1981."
+                  },
+                  "restrictFromCourtList": false
+                },
+                {
+                  "id": "ac45489d-41ab-4449-ad77-dbd517859056",
+                  "startDate": "2026-02-04",
+                  "orderIndex": 2,
+                  "offenceCode": "LM98002",
+                  "shadowListed": false,
+                  "offenceWording": "Before 04 Feb 2026 at test developed or produced an anti-personnel mine.",
+                  "statementOfOffence": {
+                    "title": "Develop / produce an anti-personnel mine",
+                    "welshTitle": "Develop / produce an anti-personnel mine",
+                    "legislation": "Contrary to section 2(1)(b) and (8) of the Landmines Act 1998."
+                  },
+                  "restrictFromCourtList": false
+                },
+                {
+                  "id": "9a08bcf1-1ed7-4782-9911-1746d756e021",
+                  "startDate": "2026-02-02",
+                  "orderIndex": 3,
+                  "offenceCode": "RT88343",
+                  "shadowListed": false,
+                  "offenceWording": "Before 02 Feb 2026 at test attempted to drive a mechanically propelled vehicle, namely 1234 on a public place London whilst unfit to drive through drink.",
+                  "statementOfOffence": {
+                    "title": "Attempt to drive vehicle whilst unfit through drink",
+                    "welshTitle": "Attempt to drive vehicle whilst unfit through drink",
+                    "legislation": "Contrary to section 4(1) of the Road Traffic Act 1988 and Schedule 2 to the Road Traffic Offenders Act 1988."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Andrew",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "1993-02-02",
+              "masterDefendantId": "ea1a4794-7daa-4aa4-ba4a-9a81eb012f5c",
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-02-02T15:18:15.418Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+            "authorityCode": "CITYPF",
+            "caseReference": "DW643181917"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "isSlotsBooked": true,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "MAGISTRATES",
+      "courtApplications": [
+        {
+          "id": "7ab2ed6a-bf9a-4539-848b-48012032c97c",
+          "subject": {
+            "id": "3823bbba-c6f3-4d64-9d1a-fe62e989f398",
+            "address": {
+              "address1": "15 Station Road",
+              "address2": "Station Road",
+              "address3": "Manchester",
+              "address4": "Greater Manchester",
+              "postcode": "NW1 5BR"
+            },
+            "lastName": "Rosenbaum",
+            "firstName": "Andrew",
+            "isRespondent": false,
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PERSON_DEFENDANT"
+          },
+          "offences": [],
+          "applicant": {
+            "id": "3823bbba-c6f3-4d64-9d1a-fe62e989f398",
+            "address": {
+              "address1": "15 Station Road",
+              "address2": "Station Road",
+              "address3": "Manchester",
+              "address4": "Greater Manchester",
+              "postcode": "NW1 5BR"
+            },
+            "lastName": "Rosenbaum",
+            "firstName": "Andrew",
+            "isRespondent": false,
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PERSON_DEFENDANT"
+          },
+          "respondents": [
+            {
+              "id": "9821fe50-8226-4728-a4fe-62effca0e21e",
+              "address": {
+                "address1": "Bishopsgate police station",
+                "address2": "182, Bishopsgate",
+                "address5": "London",
+                "postcode": "EC2M 4NP"
+              },
+              "lastName": "CITYPF",
+              "isRespondent": true,
+              "restrictFromCourtList": false,
+              "courtApplicationPartyType": "PROSECUTING_AUTHORITY"
+            }
+          ],
+          "linkedCaseIds": [
+            "e1cfda9a-c951-4911-b770-e0516ca3cd0f"
+          ],
+          "applicationType": "Application within criminal proceedings",
+          "applicationReference": "DW643181917",
+          "restrictFromCourtList": false,
+          "restrictCourtApplicationType": false
+        }
+      ],
+      "courtCentreDetails": {
+        "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+        "defaultDuration": 420,
+        "defaultStartTime": "10:00:00"
+      },
+      "sendNotificationToParties": false
+    },
+    {
+      "id": "c08d3aaa-ff2c-40a1-bc20-a68f04a83da8",
+      "type": {
+        "id": "3449743b-95d6-4836-8941-57f588b52068",
+        "description": "Application"
+      },
+      "endDate": "2026-02-04",
+      "resulted": true,
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2026-02-04",
+      "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "hearingDays": [
+        {
+          "endTime": "2026-02-04T10:20:00.000Z",
+          "sequence": 2,
+          "startTime": "2026-02-04T10:00:00.000Z",
+          "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "hearingDate": "2026-02-04",
+          "isCancelled": false,
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "courtScheduleId": "8f24f044-b4c2-4df3-97d1-71d64f2c5a0b",
+          "durationMinutes": 20,
+          "matchedWithQuery": true
+        }
+      ],
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "isSlotsBooked": true,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "MAGISTRATES",
+      "courtApplications": [
+        {
+          "id": "170fec9f-b8a3-4e64-92ce-ed051cfd405e",
+          "subject": {
+            "id": "907ecc88-b8f3-4f88-bcf6-661e57b98d38",
+            "address": {
+              "address1": "FLAT - 25A",
+              "address2": "Constable Street",
+              "address3": "Bristol",
+              "address4": "England",
+              "address5": "UK",
+              "postcode": "IG1 1YY"
+            },
+            "lastName": "Stark",
+            "firstName": "Gordon",
+            "isRespondent": false,
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PERSON_DEFENDANT"
+          },
+          "offences": [
+            {
+              "id": "64c04a0e-3b8c-4b80-a210-29f359db97ae",
+              "count": 0,
+              "startDate": "2026-01-08",
+              "orderIndex": 0,
+              "offenceCode": "VE94015",
+              "offenceWording": "Wording: Keep a vehicle without a valid vehicle licence",
+              "statementOfOffence": {
+                "title": "Keep a vehicle without a valid vehicle licence",
+                "welshTitle": "Keep a vehicle without a valid vehicle licence",
+                "legislation": "Contrary to section 29(1) and (3) of the Vehicle Excise and    Registration Act 1994."
+              }
+            }
+          ],
+          "applicant": {
+            "id": "907ecc88-b8f3-4f88-bcf6-661e57b98d38",
+            "address": {
+              "address1": "FLAT - 25A",
+              "address2": "Constable Street",
+              "address3": "Bristol",
+              "address4": "England",
+              "address5": "UK",
+              "postcode": "IG1 1YY"
+            },
+            "lastName": "Stark",
+            "firstName": "Gordon",
+            "isRespondent": false,
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PERSON_DEFENDANT"
+          },
+          "respondents": [
+            {
+              "id": "e983c3cb-6c94-4c8f-9cc7-aae139e8e4bb",
+              "address": {
+                "address1": "Finance Operations",
+                "address2": "C3 East",
+                "address3": "DVLA",
+                "address4": "Longview Road",
+                "address5": "Swansea",
+                "postcode": "SA6 7JL"
+              },
+              "lastName": "DVLA",
+              "isRespondent": true,
+              "restrictFromCourtList": false,
+              "courtApplicationPartyType": "PROSECUTING_AUTHORITY"
+            }
+          ],
+          "linkedCaseIds": [
+            "9fd6840c-2f16-4bf4-b4fb-02e68979d46e"
+          ],
+          "applicationType": "Appearance to make statutory declaration (SJP case)",
+          "applicationReference": "SJ235869767",
+          "restrictFromCourtList": false,
+          "restrictCourtApplicationType": false
+        }
+      ],
+      "courtCentreDetails": {
+        "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+        "defaultDuration": 420,
+        "defaultStartTime": "10:00:00"
+      },
+      "sendNotificationToParties": false
+    }
+  ],
+  "notes": []
+}
