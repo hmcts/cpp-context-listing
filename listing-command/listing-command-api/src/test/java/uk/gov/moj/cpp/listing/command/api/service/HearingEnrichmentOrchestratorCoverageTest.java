@@ -428,7 +428,12 @@ public class HearingEnrichmentOrchestratorCoverageTest {
                 .withNonSittingDays(List.of("2020-08-19"))
                 .build();
 
-        HearingEnrichmentOrchestrator.logEnrichedHearings(List.of(hearingWithNullDays, hearingWithDays));
-        // no exception = success
+        List<HearingListingNeeds> input = List.of(hearingWithNullDays, hearingWithDays);
+
+        HearingEnrichmentOrchestrator.logEnrichedHearings(input);
+
+        assertThat(input.get(0).getHearingDays(), is(hearingWithNullDays.getHearingDays()));
+        assertThat(input.get(1).getHearingDays(), hasSize(1));
+        assertThat(input.get(1).getNonSittingDays(), is(List.of("2020-08-19")));
     }
 }
