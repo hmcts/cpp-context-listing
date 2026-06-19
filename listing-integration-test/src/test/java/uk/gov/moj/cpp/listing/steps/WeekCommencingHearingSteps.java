@@ -7,7 +7,7 @@ import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.core.IsEqual.equalTo;
+import static org.hamcrest.Matchers.is;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.DEFAULT_DURATION_HOURS_MINS;
@@ -46,10 +46,17 @@ public class WeekCommencingHearingSteps extends AbstractIT {
 
         request = prepareJsonForUpdatedHearingData(updatedHearingData);
 
-        final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
-                request, getLoggedInHeader());
+        try (Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,  request, getLoggedInHeader())) {
 
-        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+            String responseBody = "";
+            try {
+                responseBody = response.readEntity(String.class);
+            } catch (IllegalStateException e) {
+                //no-op in case of no response
+            }
+            assertThat(format("Post returned not expected status code with body: %s", responseBody),
+                    response.getStatus(), is(SC_ACCEPTED));
+        }
     }
 
     public void verifyHearingUpdatedWithWeekCommencingDateAndUnallocatedWhenQueryingFromAPI() {
