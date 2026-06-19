@@ -1,0 +1,53 @@
+package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
+
+import static java.lang.String.format;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.apache.commons.lang3.StringUtils.SPACE;
+import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+
+import javax.json.JsonObject;
+
+public class RequestedNameMapper {
+
+    private static final String REQUESTED_NAME = "requestedName";
+    private static final String TITLE_PREFIX = "titlePrefix";
+    private static final String FORENAMES = "forenames";
+    private static final String SURNAME = "surname";
+    private static final String TITLE_JUDICIAL_PREFIX = "titleJudicialPrefix";
+    private static final String TITLE_SUFFIX = "titleSuffix";
+
+    public String getRequestedJudgeName(final JsonObject judiciary) {
+        final String requestedName = judiciary.getString(REQUESTED_NAME, EMPTY);
+        if (isNotBlank(requestedName)) {
+            return requestedName;
+        }
+
+        final String titleSuffix = judiciary.getString(TITLE_SUFFIX, EMPTY).replace("QC","KC");
+
+        return format("%s %s %s", judiciary.getString(TITLE_JUDICIAL_PREFIX, judiciary.getString(TITLE_PREFIX, EMPTY)),  judiciary.getString(SURNAME), titleSuffix).trim();
+    }
+
+    public String getRequestedJusticeName(final JsonObject judiciary) {
+        return format("%s %s %s %s", judiciary.getString(TITLE_PREFIX, EMPTY), judiciary.getString(FORENAMES), judiciary.getString(SURNAME), judiciary.getString(TITLE_SUFFIX, EMPTY)).trim();
+    }
+
+    public String getCitizenNameSurname(final String lastOrOrganisationName) {
+        if (isNotEmpty(lastOrOrganisationName) && lastOrOrganisationName.length() > 35) {
+            return  lastOrOrganisationName.substring(0, 35);
+        }
+
+        return lastOrOrganisationName;
+    }
+
+    public String getRequestedCitizenName(final String firstNameValue, final String lastNameValue) {
+        final String requestedCitizenName = format("%s %s", firstNameValue, lastNameValue).trim();
+
+        if (isEmpty(requestedCitizenName)) {
+            return SPACE;
+        }
+
+        return requestedCitizenName.length() > 35 ? requestedCitizenName.substring(0, 35) : requestedCitizenName;
+    }
+}

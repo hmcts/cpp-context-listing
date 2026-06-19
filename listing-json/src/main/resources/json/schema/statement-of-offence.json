@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/statementOfOffence.json",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "welshTitle": {
+      "type": "string"
+    },
+    "legislation": {
+      "type": "string"
+    },
+    "welshLegislation": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "welshTitle"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,39 @@
+{
+  "hearings": [
+    "0baecac5-222b-402d-9047-84803679edaf"
+  ],
+  "offences": [
+    {
+      "id": "0baecac5-222b-402d-9047-84803679edad",
+      "defendantId": "bd9f602d-428e-4aec-adee-91cc45d71ebf",
+      "offenceCode": "OF61131",
+      "startDate": "2016-06-21",
+      "endDate": "2017-08-01",
+      "count": 1,
+      "orderIndex": 0,
+      "statementOfOffence": {
+        "title": "Wounding with intent",
+        "legislation": "legislation",
+        "welshTitle": "Wounding with intent in welsh",
+        "welshLegislation": "legislation in welsh"
+      },
+      "seedingHearing": {
+        "seedingHearingId": "97834953-3f0e-4290-9cef-9e6c0a218469",
+        "sittingDay": "2016-06-22",
+        "jurisdictionType": "CROWN"
+      },
+      "laaApplnReference": {
+        "applicationReference": "AB746921",
+        "effectiveEndDate": "2010-09-01",
+        "effectiveStartDate": "2011-09-01",
+        "statusCode": "FPTP",
+        "statusDate": "2010-12-01",
+        "statusDescription": "Further Plea & Trial Preparation",
+        "statusId": "7e2f843e-d639-40b3-8611-8015f3a18612"
+      },
+      "civilOffence": {
+        "isExParte": true
+      }
+    }
+  ]
+}

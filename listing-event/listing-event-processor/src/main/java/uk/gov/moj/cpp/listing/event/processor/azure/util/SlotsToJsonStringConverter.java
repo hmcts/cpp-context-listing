@@ -1,0 +1,227 @@
+package uk.gov.moj.cpp.listing.event.processor.azure.util;
+
+import static java.lang.String.format;
+import static java.util.Objects.nonNull;
+import static java.util.Optional.empty;
+import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.toIsoString;
+import static uk.gov.moj.cpp.listing.event.processor.azure.util.HearingDayDetailConverter.getHearingDayDetails;
+
+import uk.gov.justice.core.courts.ConfirmedHearing;
+import uk.gov.justice.core.courts.CourtCentre;
+import uk.gov.justice.listing.events.HearingDay;
+import uk.gov.justice.listing.events.NonDefaultDay;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.domain.SlotDetail;
+import uk.gov.moj.cpp.listing.domain.builder.SlotDetailBuilder;
+import uk.gov.moj.cpp.listing.event.processor.azure.data.HearingDayDetail;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Predicate;
+
+import javax.inject.Inject;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.json.JSONArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@SuppressWarnings({"squid:S3655"})
+public class SlotsToJsonStringConverter {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SlotsToJsonStringConverter.class);
+    private static final String BOOKING_ID = "bookingId";
+
+    @Inject
+    private ListingReferenceDataService listingReferenceDataService;
+
+    @Inject
+    private JsonObjectToObjectConverter jsonObjectConverter;
+
+    public List<SlotDetail> getSlotDetailFromHearingConfirmed(final JsonEnvelope jsonEnvelope, final ConfirmedHearing confirmedHearing, final boolean isForAdjournmentHearing, final List<HearingDay> hearingDays) {
+
+        final CourtCentre courtCentre = confirmedHearing.getCourtCentre();
+
+        final UUID roomId;
+
+        if (nonNull(courtCentre.getRoomId())) {
+            roomId = courtCentre.getRoomId();
+        } else {
+            throw new IllegalArgumentException(format("No room id specified %s to lookup court room number", courtCentre.getRoomId()));
+        }
+
+        final Map<UUID, JsonEnvelope> courtRoomPayloadMap = new HashMap<>();
+        courtRoomPayloadMap.put(courtCentre.getId(), listingReferenceDataService.getPayLoadForCourtRoom(jsonEnvelope, courtCentre.getId().toString()));
+
+        final List<HearingDayDetail> hearingDayDetails = getHearingDayDetails(hearingDays, isForAdjournmentHearing);
+
+        if (hearingDayDetails.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        final String hearingId = confirmedHearing.getId().toString();
+        final Optional<String> bookingId = jsonEnvelope.payloadAsJsonObject().keySet().contains(BOOKING_ID) ? Optional.of(jsonEnvelope.payloadAsJsonObject().getString(BOOKING_ID)) : empty();
+
+        hearingDayDetails.stream().filter(hearingDay -> hearingDay.getCourtCentreId().isPresent()).forEach(hearingDay -> {
+            final UUID courtCentreId = UUID.fromString(hearingDay.getCourtCentreId().get());
+            if (courtRoomPayloadMap.get(courtCentreId) == null) {
+                final JsonEnvelope payLoadForCourtRoom = listingReferenceDataService.getPayLoadForCourtRoom(jsonEnvelope, courtCentreId.toString());
+                if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info(format("Court Room Payload = %s looked up with Court Centre Id %s", payLoadForCourtRoom, courtCentreId.toString()));
+                }
+                courtRoomPayloadMap.put(courtCentreId, payLoadForCourtRoom);
+            }
+        });
+
+        return hearingDayDetails.stream()
+                .map(hearingDayDetail -> {
+                    final Predicate<HearingDayDetail> defaultCourtCentre = getHearingDayDetailPredicate();
+                    final UUID courtCentreId = defaultCourtCentre.test(hearingDayDetail) ? courtCentre.getId() : hearingDayDetail.getCourtCentreId().map(UUID::fromString).orElse(null);
+                    final UUID courtRoomUUID = defaultCourtCentre.test(hearingDayDetail) ? roomId : hearingDayDetail.getCourtRoomId().map(UUID::fromString).orElse(null);
+                    if (courtCentreId == null) {
+                        return null;
+                    }
+                    final JsonEnvelope payLoadForCourtRoom = courtRoomPayloadMap.get(courtCentreId);
+                    final int courtRoomId = listingReferenceDataService.retrieveCourtRoomId(payLoadForCourtRoom.payloadAsJsonObject(), courtRoomUUID, courtCentreId);
+                    final String ouCode = payLoadForCourtRoom.payloadAsJsonObject().getString("oucode");
+
+                    return retrieveSlotDetail(hearingDayDetail, ouCode, courtRoomId, hearingId, bookingId);
+                })
+                .filter(Objects::nonNull)
+                .collect(toList());
+    }
+
+    private Predicate<HearingDayDetail> getHearingDayDetailPredicate() {
+        return dayDetail -> !dayDetail.getCourtRoomId().isPresent() && !dayDetail.getCourtCentreId().isPresent();
+    }
+
+    public JsonArrayBuilder convertNonDefaultDaysToJson(final UUID hearingId, final List<NonDefaultDay> nonDefaultDays) {
+
+        final List<SlotDetail> slots = nonDefaultDays.stream().
+                map(nonDefaultDay -> buildSlotDetailFromNonDefaultDay(hearingId, nonDefaultDay))
+                .collect(toList());
+
+        return buildJsonArrayBuilder(slots);
+    }
+
+    private static SlotDetail retrieveSlotDetail(final HearingDayDetail hearingDayDetail,
+                                                 final String ouCode,
+                                                 final int courtRoomId,
+                                                 final String hearingId,
+                                                 final Optional<String> bookingId) {
+
+        final SlotDetailBuilder slotDetailBuilder = SlotDetailBuilder.slotDetail()
+                .withOuCode(ouCode)
+                .withCourtRoomId(courtRoomId)
+                .withHearingId(hearingId)
+                .withSessionDate(hearingDayDetail.getDate())
+                .withSession(hearingDayDetail.getTime())
+                .withDuration(hearingDayDetail.getDuration())
+                .withHearingStartTime(hearingDayDetail.getHearingStartTime());
+
+        bookingId.ifPresent(slotDetailBuilder::withBookingId);
+        hearingDayDetail.getCourtScheduleId().ifPresent(slotDetailBuilder::withCourtScheduleId);
+
+        return slotDetailBuilder.build();
+    }
+
+    private static SlotDetail buildSlotDetailFromNonDefaultDay(final UUID hearingId, final NonDefaultDay nonDefaultDay) {
+        final SlotDetailBuilder builder = SlotDetailBuilder.slotDetail()
+                .withHearingId(hearingId.toString())
+                .withSessionDate(nonDefaultDay.getStartTime().toLocalDate().toString());
+
+        ofNullable(nonDefaultDay.getCourtScheduleId()).ifPresent(builder::withCourtScheduleId);
+        ofNullable(nonDefaultDay.getDuration()).ifPresent(builder::withDuration);
+        ofNullable(nonDefaultDay.getOucode()).ifPresent(builder::withOuCode);
+        ofNullable(nonDefaultDay.getCourtRoomId()).ifPresent(builder::withCourtRoomId);
+        ofNullable(nonDefaultDay.getSession()).ifPresent(builder::withSession);
+        builder.withHearingStartTime(toIsoString(nonDefaultDay.getStartTime()));
+
+        return builder.build();
+    }
+
+    public static String toJSONString(final List<SlotDetail> slotDetail) {
+
+        final JSONArray jsonSlotArray = buildJsonArray(slotDetail);
+
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(jsonSlotArray.toString());
+        }
+
+        return jsonSlotArray.toString();
+    }
+
+    public static JsonArrayBuilder buildJsonArrayBuilder(final List<SlotDetail> slotDetail) {
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
+        slotDetail.forEach(
+                slot -> addBuilderParams(slot, arrayBuilder));
+
+        return arrayBuilder;
+    }
+
+    private static void addBuilderParams(final SlotDetail slot, final JsonArrayBuilder arrayBuilder) {
+        JsonObjectBuilder objectBuilder = createObjectBuilder();
+        objectBuilder.add("duration", slot.getDuration());
+        objectBuilder.add("courtRoomId", slot.getCourtRoomId());
+        if (nonNull(slot.getHearingStartTime())){
+            objectBuilder.add("hearingStartTime", slot.getHearingStartTime());
+        }
+        if (nonNull(slot.getSessionDate())) {
+            objectBuilder.add("sessionDate", slot.getSessionDate());
+        }
+        if (nonNull(slot.getSession())) {
+            objectBuilder.add("session", slot.getSession());
+        }
+        if (nonNull(slot.getOuCode())) {
+            objectBuilder.add("ouCode", slot.getOuCode());
+        }
+        if (nonNull(slot.getHearingId())) {
+            objectBuilder.add("hearingId", slot.getHearingId());
+        }
+        if (nonNull(slot.getBookingId())) {
+            objectBuilder.add(BOOKING_ID, slot.getBookingId());
+        }
+        if (nonNull(slot.getCourtScheduleId())) {
+            objectBuilder.add("courtScheduleId", slot.getCourtScheduleId());
+        }
+        arrayBuilder.add(objectBuilder.build());
+    }
+
+
+    private static JSONArray buildJsonArray(final List<SlotDetail> slotDetail) {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final JsonNode listNode = objectMapper.valueToTree(slotDetail);
+
+        stripNulls(listNode);
+
+        return new JSONArray(listNode.toString());
+    }
+
+    private static void stripNulls(final JsonNode node) {
+        final Iterator<JsonNode> it = node.iterator();
+
+        while (it.hasNext()) {
+            final JsonNode child = it.next();
+
+            if (child.isNull()) {
+                it.remove();
+            } else {
+                stripNulls(child);
+            }
+        }
+    }
+}

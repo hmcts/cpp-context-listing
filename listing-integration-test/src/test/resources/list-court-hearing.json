@@ -1,0 +1,104 @@
+{
+  "courtCentre": {
+    "id": "COURT_CENTRE_ID",
+    "name": "City of London Magistrates' Court",
+    "welshName": "Llys Ynadon Dinas Llundain"
+  },
+  "defendantListingNeeds": [
+    {
+      "defendantId": "6bb8b459-96e3-4800-8f9f-975b72b0e01b",
+      "hearingLanguageNeeds": "ENGLISH",
+      "isYouth": false,
+      "listingReason": "For trial",
+      "prosecutionCaseId": "CASE_ID"
+    }
+  ],
+  "earliestStartDateTime": "EARLIEST_START_TIME",
+  "estimatedMinutes": ESTIMATED_MINUTES,
+  "id": "HEARING_ID",
+  "jurisdictionType": "MAGISTRATES",
+  "prosecutionCases": [
+    {
+      "caseStatus": "SJP_REFERRAL",
+      "defendants": [
+        {
+          "id": "6bb8b459-96e3-4800-8f9f-975b72b0e01b",
+          "numberOfPreviousConvictionsCited": 2,
+          "offences": [
+            {
+              "chargeDate": "2019-11-13",
+              "count": 1,
+              "id": "7fa69024-ddb1-4316-a157-13dfe0547ccf",
+              "modeOfTrial": "Summary",
+              "notifiedPlea": {
+                "notifiedPleaDate": "2019-12-16",
+                "notifiedPleaValue": "NO_NOTIFICATION",
+                "offenceId": "7fa69024-ddb1-4316-a157-13dfe0547ccf"
+              },
+              "offenceCode": "CA03011",
+              "offenceDefinitionId": "a2804f0e-ecb1-3855-947d-01ea5bb2a70b",
+              "offenceLegislation": "Contrary to section 363(3)(a) and (4) of the    Communications Act 2003.",
+              "offenceLegislationWelsh": "Yn groes i adran 363(3)(a) a (4) Deddf Cyfathrebu 2003.",
+              "offenceTitle": "Possess a television set with intent to install / use without a licence",
+              "offenceTitleWelsh": "Bod â meddiant teledu gan fwriadu'i osod/ddefnyddio heb drwydded",
+              "orderIndex": 1,
+              "startDate": "2019-11-01",
+              "wording": "On 01/11/2017 at Chelmsford intentionally obstructed a person authorised by the BBC in the exercise of a power conferred by virtue of a search warrant issued under section 366 of the Communications Act 2003 by Chelmsford Magistrates Court on 25/10/2017 ",
+              "wordingWelsh": "On 01/11/2017 at Chelmsford intentionally obstructed a person authorised by the BBC in the exercise of a power conferred by virtue of a search warrant issued under section 366 of the Communications Act 2003 by Chelmsford Magistrates Court on 25/10/2017 "
+            }
+          ],
+          "personDefendant": {
+            "personDetails": {
+              "address": {
+                "address1": "Flat 1, Armageddon House",
+                "address2": "13 Old Road",
+                "address3": "Giggleswick",
+                "address4": "Merton",
+                "address5": "London",
+                "postcode": "CR0 1AB"
+              },
+              "contact": {
+                "home": "02099999999",
+                "mobile": "0754321007",
+                "primaryEmail": "email_primary@ghijkl.com"
+              },
+              "dateOfBirth": "1992-12-22",
+              "documentationLanguageNeeds": "ENGLISH",
+              "ethnicity": {
+
+              },
+              "firstName": "Sofian Sofian Sofian",
+              "gender": "MALE",
+              "lastName": "Smith",
+              "nationalInsuranceNumber": "AE123456C",
+              "nationalityCode": "GBR",
+              "nationalityDescription": "British",
+              "nationalityId": "49433158-3542-49c8-a9af-581a0e746152",
+              "occupation": "TA",
+              "occupationCode": "666",
+              "specificRequirements": "no special needs",
+              "title": "MR"
+            }
+          },
+          "prosecutionCaseId": "CASE_ID",
+          "masterDefendantId": "6bb8b459-96e3-4800-8f9f-975b72b0e01b",
+          "courtProceedingsInitiated": "2020-09-18T09:04:57.169Z"
+        }
+      ],
+      "id": "CASE_ID",
+      "initiationCode": "J",
+      "prosecutionCaseIdentifier": {
+        "prosecutionAuthorityCode": "TVL",
+        "prosecutionAuthorityId": "6b7b9adc-ccee-4b13-b2c7-499c28e98962",
+        "prosecutionAuthorityReference": "CASE_URN"
+      },
+      "statementOfFacts": "On 01/11/2017 at Chelmsford, the defendant intentionally obstructed a person authorised by BBC in the exercise of a power conferred by virtue of a search warrant issued under section 366 of the Communications Act 2003 by Chelmsford Magistrates Court on 25/10/2017",
+      "statementOfFactsWelsh": "On 01/11/2017 at Chelmsford, the defendant intentionally obstructed a person authorised by BBC in the exercise of a power conferred by virtue of a search warrant issued under section 366 of the Communications Act 2003 by Chelmsford Magistrates Court on 25/10/2017"
+    }
+  ],
+  "type": {
+    "description": "Trial",
+    "description": "welshTrial",
+    "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4"
+  }
+}

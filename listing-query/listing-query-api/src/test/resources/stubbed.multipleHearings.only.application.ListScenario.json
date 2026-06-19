@@ -1,0 +1,266 @@
+{
+  "hearings": [
+    {
+      "id": "HEARING_ID1",
+      "type": {
+        "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+        "description": "Trial"
+      },
+      "endDate": "2020-10-10",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "JUDICIARY_ID",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2020-10-04",
+      "courtRoomId": "COURT_ROOM_ID",
+      "hearingDays": [
+        {
+          "endTime": "2019-01-29T14:00:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-01-29T08:00:00.000Z",
+          "hearingDate": "2019-01-29",
+          "isCancelled": false,
+          "durationMinutes": 360
+        }
+      ],
+      "prosecutionCounsels": [
+        {
+          "id": "60a43b02-8c66-4fb6-8412-a3d002055ba7",
+          "title": "Mr",
+          "firstName": "Prosecution John",
+          "middleName": "Barclays",
+          "lastName": "Prosecution Turkey",
+          "status": "Junior",
+          "prosecutionCases": [
+            "CASE_ID1"
+          ],
+          "attendanceDays": [
+            "2019-07-17",
+            "2019-07-18",
+            "2019-07-19",
+            "2019-07-21",
+            "2019-07-22"
+          ]
+        },
+        {
+          "id": "f73c4150-18f1-424a-82b3-ba23186ba720",
+          "title": "Mr",
+          "firstName": "Prosecution Barry",
+          "middleName": "Llyods",
+          "lastName": "Prosecution tony",
+          "status": "Senior",
+          "prosecutionCases": [
+            "CASE_ID2"
+          ],
+          "attendanceDays": [
+            "2019-07-17",
+            "2019-07-18",
+            "2019-07-19",
+            "2019-07-21",
+            "2019-07-22"
+          ]
+        }
+      ],
+      "defenceCounsels": [
+        {
+          "id": "60a43b02-8c66-4fb6-8412-a3d002055ba7",
+          "title": "Mr",
+          "firstName": "Defence Rosy",
+          "middleName": "Barclays",
+          "lastName": "Defence Mary",
+          "status": "Junior",
+          "defendants": [
+            "ccf458e1-d543-41cd-a639-8a2f8ab3b43e"
+          ],
+          "attendanceDays": [
+            "2019-07-17",
+            "2019-07-18",
+            "2019-07-19",
+            "2019-07-21",
+            "2019-07-22"
+          ]
+        },
+        {
+          "id": "f73c4150-18f1-424a-82b3-ba23186ba720",
+          "title": "Mr",
+          "firstName": "Sam",
+          "middleName": "Llyods",
+          "lastName": "Lory",
+          "status": "Senior",
+          "defendants": [
+            "1ab168d5-c7e2-4142-b1d8-21324c07c4ed"
+          ],
+          "attendanceDays": [
+            "2019-07-17",
+            "2019-07-18",
+            "2019-07-19",
+            "2019-07-21",
+            "2019-07-22"
+          ]
+        }
+      ],
+      "courtApplications": [
+        {
+          "id": "16139251-90e6-11e9-ad85-e79bbff93e2f",
+          "applicant": {
+            "id": "89a87ce1-1cf4-4f10-adb3-004e20baab08",
+            "lastName": "LAST_NAME2",
+            "firstName": "FIRST_NAME2",
+            "isRespondent": false,
+            "address": {
+              "address1": "ADDRESS_1",
+              "address2": "ADDRESS_2",
+              "address3": "ADDRESS_3",
+              "address4": "ADDRESS_4",
+              "address5": "ADDRESS_5",
+              "postcode": "POSTCODE"
+            },
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PERSON"
+          },
+          "respondents": [
+            {
+              "id": "b2de787c-6000-4d74-9951-a6b25cc96608",
+              "lastName": "LAST_NAME3",
+              "firstName": "FIRST_NAME3",
+              "isRespondent": true,
+              "address": {
+                "address1": "ADDRESS_1",
+                "address2": "ADDRESS_2",
+                "address3": "ADDRESS_3",
+                "address4": "ADDRESS_4",
+                "address5": "ADDRESS_5",
+                "postcode": "POSTCODE"
+              },
+              "restrictFromCourtList": false,
+              "courtApplicationPartyType": "PERSON"
+            }
+          ],
+          "applicationType": "APPLICATION_TYPE",
+          "applicationParticulars": "APPLICATION_PARTICULARS",
+          "applicationReference": "CASE_REFERENCE2",
+          "restrictFromCourtList": false,
+          "restrictCourtApplicationType": false
+        }
+      ],
+      "courtCentreId": "COURT_CENTRE_ID",
+      "isSlotsBooked": false,
+      "isVacatedTrial": false,
+      "nonDefaultDays": [
+        {
+          "duration": 360,
+          "startTime": "2020-10-04T08:00:00.000Z"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 360,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2020-09-23",
+      "courtCentreDetails": {
+        "id": "COURT_CENTRE_ID",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:30:00"
+      },
+      "vacatedTrialReasonId": ""
+    },
+    {
+      "id": "HEARING_ID2",
+      "type": {
+        "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+        "description": "Trial"
+      },
+      "endDate": "2020-10-10",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "JUDICIARY_ID1",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2020-10-04",
+      "courtRoomId": "COURT_ROOM_ID",
+      "hearingDays": [
+        {
+          "endTime": "2019-01-29T14:00:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-01-29T09:00:00.000Z",
+          "hearingDate": "2019-01-29",
+          "isCancelled": false,
+          "durationMinutes": 360
+        }
+      ],
+      "courtApplications": [
+        {
+          "id": "16139251-90e6-11e9-ad85-e79bbff93e2f",
+          "applicant": {
+            "id": "89a87ce1-1cf4-4f10-adb3-004e20baab08",
+            "lastName": "LAST_NAME2",
+            "firstName": "FIRST_NAME2",
+            "isRespondent": false,
+            "address": {
+              "address1": "ADDRESS_1",
+              "address2": "ADDRESS_2",
+              "address3": "ADDRESS_3",
+              "address4": "ADDRESS_4",
+              "address5": "ADDRESS_5",
+              "postcode": "POSTCODE"
+            },
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PERSON"
+          },
+          "respondents": [
+            {
+              "id": "b2de787c-6000-4d74-9951-a6b25cc96608",
+              "lastName": "LAST_NAME3",
+              "firstName": "FIRST_NAME3",
+              "isRespondent": true,
+              "address": {
+                "address1": "ADDRESS_1",
+                "address2": "ADDRESS_2",
+                "address3": "ADDRESS_3",
+                "address4": "ADDRESS_4",
+                "address5": "ADDRESS_5",
+                "postcode": "POSTCODE"
+              },
+              "restrictFromCourtList": false,
+              "courtApplicationPartyType": "PERSON"
+            }
+          ],
+          "applicationType": "APPLICATION_TYPE",
+          "applicationParticulars": "APPLICATION_PARTICULARS",
+          "applicationReference": "CASE_REFERENCE2",
+          "restrictFromCourtList": false,
+          "restrictCourtApplicationType": false
+        }
+      ],
+      "courtCentreId": "COURT_CENTRE_ID",
+      "isSlotsBooked": false,
+      "isVacatedTrial": false,
+      "nonDefaultDays": [
+        {
+          "duration": 360,
+          "startTime": "2020-10-04T08:00:00.000Z"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 360,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2020-09-23",
+      "courtCentreDetails": {
+        "id": "COURT_CENTRE_ID",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:30:00"
+      },
+      "vacatedTrialReasonId": ""
+    }
+  ]
+}

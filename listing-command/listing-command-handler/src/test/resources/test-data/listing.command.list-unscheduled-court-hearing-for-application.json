@@ -1,0 +1,126 @@
+{
+  "hearings": [
+    {
+      "id": "HEARING_ID",
+      "type": {
+        "id": "6e1bef55-7e13-4615-b3ba-8663f4438e16",
+        "description": "Trial"
+      },
+      "typeOfList": {
+        "id": "0b1e1e98-a5b2-460a-a851-17dd6f47c1a7",
+        "description": "Warrant for arrest without bail"
+      },
+      "jurisdictionType": "JURISDICTION_TYPE",
+      "courtCentre": {
+        "id": "COURT_CENTRE_ID",
+        "name": "Carmarthen Magistrates' Court",
+        "welshName": "Llys Ynadon Caernarfon",
+        "roomId": "COURT_ROOM_ID",
+        "roomName": "Room 1",
+        "welshRoomName": "Ystafell 1"
+      },
+      "courtApplications": [
+        {
+          "applicant": {
+            "id": "9f85ccfb-e57d-4339-adb2-4764f5cd1e5f",
+            "personDetails": {
+              "address": {
+                "address1": "9 Beverley Heights",
+                "address2": "Elise Forge",
+                "address3": "London",
+                "postcode": "SA7 0AN"
+              },
+              "firstName": "Katelynn",
+              "gender": "NOT_SPECIFIED",
+              "lastName": "Nienow",
+              "middleName": "Test"
+            }
+          },
+          "applicationReceivedDate": "2020-06-22",
+          "applicationReference": "QCIUATYHQN",
+          "applicationStatus": "FINALISED",
+          "id": "bf5e2df3-0c37-490e-8b92-f2ebdd5f6723",
+          "respondents": [
+            {
+              "id": "2ada34cf-5fbf-4526-974e-feb073b032bf",
+              "personDetails": {
+                "address": {
+                  "address1": "56 Gottlieb Court",
+                  "address2": "Welch Islands",
+                  "address3": "Bristol",
+                  "postcode": "BA9 2AS"
+                },
+                "firstName": "Renna",
+                "gender": "NOT_SPECIFIED",
+                "lastName": "Jaskolski",
+                "middleName": "Ruecker"
+              }
+            }
+          ],
+          "type": {
+            "categoryCode": "VP",
+            "code": "SX03531",
+            "jurisdiction": "MAGISTRATES",
+            "legislation": "In accordance with section 104(5) of the Sexual Offences Act 2003.",
+            "type": "Application for a sexual offences prevention order",
+            "id": "0826fc90-6c49-3a1f-9fc6-b0547679f348",
+            "linkType": "STANDALONE",
+            "summonsTemplateType": "NOT_APPLICABLE",
+            "breachType": "GENERIC_BREACH",
+            "appealFlag": false,
+            "applicantAppellantFlag": false,
+            "pleaApplicableFlag": false,
+            "commrOfOathFlag": false,
+            "courtOfAppealFlag": false,
+            "courtExtractAvlFlag": false,
+            "prosecutorThirdPartyFlag": false,
+            "spiOutApplicableFlag": false,
+            "offenceActiveOrder": "NOT_APPLICABLE"
+          }
+        }
+      ],
+      "courtApplicationPartyListingNeeds": [
+        {
+          "courtApplicationId": "48ddbd0a-31db-4814-b052-aa3ba9afb800",
+          "courtApplicationPartyId": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
+          "hearingLanguageNeeds": "ENGLISH"
+        }
+      ],
+      "earliestStartDateTime": "EARLIEST_START_TIME",
+      "estimatedMinutes": 640,
+      "prosecutorDatesToAvoid": "PROSECUTOR_DATES_TO_AVOID",
+      "listingDirections": "LISTING_DIRECTIONS",
+      "reportingRestrictionReason": "Automatic anonymity under the Sexual Offences (Amendment) Act 1992",
+      "judiciary": [
+        {
+          "judicialId": "JUDICIAL_ID",
+          "judicialRoleType": {
+            "judiciaryType": "MAGISTRATE"
+          },
+          "isDeputy": false,
+          "isBenchChairman": true
+        }
+      ],
+      "defendantListingNeeds": [
+        {
+          "prosecutionCaseId": "CASE_ID",
+          "defendantId": "DEFENDANT_ID",
+          "datesToAvoid": "wednesdays",
+          "referralReason": "for Trial",
+          "hearingLanguageNeeds": "ENGLISH"
+        }
+      ],
+      "weekCommencingDate": {
+        "startDate": "WEEK_COMMENCING_START_DATE",
+        "duration": "WEEK_COMMENCING_DURATION"
+      }
+    }
+  ],
+  "courtCentresDetails": [
+    {
+      "id": "COURT_CENTRE_ID",
+      "defaultDuration": "DEFAULT_DURATION",
+      "defaultStartTime": "DEFAULT_START_TIME"
+    }
+  ]
+}

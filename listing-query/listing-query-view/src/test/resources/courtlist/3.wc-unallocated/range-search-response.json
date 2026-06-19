@@ -1,0 +1,65 @@
+{
+  "hearings": [
+    {
+      "id": "82326678-cfa6-46b5-9102-c44b43fad12f",
+      "type": {
+        "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+        "description": "Plea and Trial Preparation"
+      },
+      "allocated": false,
+      "judiciary": [],
+      "hearingDays": [],
+      "listedCases": [
+        {
+          "id": "0430d668-1374-4493-a348-2e984f7d7c65",
+          "defendants": [
+            {
+              "id": "c06083e4-3d23-4cda-88b8-65b208cc1a5e",
+              "lastName": "Protractor-6355968360",
+              "offences": [
+                {
+                  "id": "7a282a0c-ae53-49b9-82f8-15d9a655c351",
+                  "startDate": "2019-11-06",
+                  "offenceCode": "PS90010",
+                  "offenceWording": "On 10/08/2016 At threadneedle street EC2 Being a passenger on a Public service Vehicle operated on behalf of London Bus Services Limited being used for the carriage of passengers at separate fares where the vehicle was being operated by a Driver without a Conductor did not as directed by the Driver an Inspector or a Notice displayed on the vehicle pay the fare for the journey in accordance with the direction",
+                  "statementOfOffence": {
+                    "title": "Public service vehicle - passenger use altered / defaced   ticket",
+                    "welshTitle": "",
+                    "legislation": "Contrary to regulation 7(1)(a) of the Public Service Vehicles (Conduct of Drivers, Inspectors, Conductors and Passengers) Regulations 1990 and section 25 of the Public Passenger Vehicles Act 1981.",
+                    "welshLegislation": ""
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "John",
+              "dateOfBirth": "1977-10-17",
+              "hearingLanguageNeeds": "ENGLISH",
+              "restrictFromCourtList": false
+            }
+          ],
+          "caseIdentifier": {
+            "authorityId": "31af405e-7b60-4dd8-a244-c24c2d3fa595",
+            "authorityCode": "TFL",
+            "caseReference": "TFL6355968360"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "f4f9d37b-7ffd-3cb7-b089-2d342037f884",
+      "nonDefaultDays": [
+        {
+          "duration": 20,
+          "startTime": "2019-12-29T00:00:00.000Z"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "CROWN",
+      "courtApplications": [],
+      "weekCommencingEndDate": "2020-01-06",
+      "weekCommencingStartDate": "2019-12-16",
+      "weekCommencingDurationInWeeks": "1"
+    }
+  ]
+}

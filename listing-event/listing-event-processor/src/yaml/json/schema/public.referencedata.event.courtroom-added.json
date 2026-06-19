@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "$id": "http://cpp.moj.gov.uk/referencedata/event/public.referencedata.event.courtroom-added.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "courtroomName": {
+      "type": "string"
+    },
+    "requestId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    }
+  },
+  "required": [
+    "id",
+    "courtroomName"
+  ],
+  "additionalProperties": false
+}

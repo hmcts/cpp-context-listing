@@ -1,0 +1,212 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/hearing.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "allocated": {
+      "type": "boolean"
+    },
+    "type": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/hearingType"
+    },
+    "sequence": {
+      "type": "integer"
+    },
+    "jurisdictionType": {
+      "$ref": "http://justice.gov.uk/core/courts/jurisdictionType.json"
+    },
+    "courtCentreId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "courtRoomId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "judiciary": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/judicialRole.json"
+      }
+    },
+    "reportingRestrictionReason": {
+      "type": "string"
+    },
+    "hearingLanguage": {
+      "$ref": "http://justice.gov.uk/core/courts/hearingLanguage.json"
+    },
+    "estimatedMinutes": {
+      "$ref": "listing-definitions.json#/definitions/positiveInteger"
+    },
+    "estimatedDuration": {
+      "type": "string"
+    },
+    "prosecutorDatesToAvoid": {
+      "type": "string"
+    },
+    "listingDirections": {
+      "type": "string"
+    },
+    "listedCases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/listedCase.json"
+      }
+    },
+    "startDate": {
+      "$ref": "listing-definitions.json#/definitions/localDate"
+    },
+    "endDate": {
+      "$ref": "listing-definitions.json#/definitions/localDate"
+    },
+    "adjournedFromDate": {
+      "description": "Adjournment date",
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
+    "weekCommencingStartDate": {
+      "$ref": "#/definitions/localDate"
+    },
+    "weekCommencingEndDate": {
+      "$ref": "#/definitions/localDate"
+    },
+    "weekCommencingDurationInWeeks": {
+      "$ref": "listing-definitions.json#/definitions/positiveInteger"
+    },
+    "hearingDays": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/hearingDay.json"
+      }
+    },
+    "nonDefaultDays": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/nonDefaultDay.json"
+      }
+    },
+    "nonSittingDays": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/localDate"
+      }
+    },
+    "courtApplications": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/courtApplication.json"
+      }
+    },
+    "vacatedTrialReasonId": {
+      "type": "string"
+    },
+    "isVacated": {
+      "type": "boolean"
+    },
+    "isSlotsBooked": {
+      "type": "boolean"
+    },
+    "isPossibleDisqualification": {
+      "type": "boolean"
+    },
+    "isGroupProceedings": {
+      "description": "The hearing is a logical grouping of cases when it is true",
+      "type": "boolean"
+    },
+    "numberOfGroupCases": {
+      "description": "The number of group cases",
+      "type": "integer"
+    },
+    "courtCentreDetails": {
+      "$ref": "http://justice.gov.uk/listing/events/court-centre-details.json"
+    },
+    "unscheduled": {
+      "description": "Unscheduled Listing flag",
+      "type": "boolean"
+    },
+    "typeOfList": {
+      "description": "Type of Unscheduled Listing Reason (Bench Warrant etc)",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Id of Unscheduled Listing Reason",
+          "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+        },
+        "description": {
+          "description": "Type of Unscheduled Listing Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "description"
+      ]
+    },
+    "hasVideoLink": {
+      "type": "boolean"
+    },
+    "publicListNote": {
+      "type": "string"
+    },
+    "prosecutionCounsels": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/prosecutionCounsel.json"
+      }
+    },
+    "defenceCounsels": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/defenceCounsel.json"
+      }
+    },
+    "bookingType": {
+      "description": "A choice of in-court, or video conference options",
+      "type": "string"
+    },
+    "priority": {
+      "description": "Priority marking on hearings/cases",
+      "type": "string"
+    },
+    "specialRequirements": {
+      "description": "Special requirements on hearings/cases",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      },
+      "isGroupProceedings": {
+        "description": "The hearing is a logical grouping of cases when it is true",
+        "type": "boolean"
+      },
+      "numberOfGroupCases": {
+        "description": "The number of group cases",
+        "type": "integer"
+      }
+    }
+  },
+  "definitions": {
+    "localDate": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "id",
+    "allocated",
+    "type",
+    "jurisdictionType",
+    "hearingLanguage",
+    "courtCentreId",
+    "judiciary",
+    "estimatedMinutes",
+    "hearingDays",
+    "nonSittingDays",
+    "courtApplications"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/defendant-legalaid-status-updated.json",
+  "type": "object",
+  "properties": {
+    "hearingIds":{
+      "type": "array",
+      "minItems": 1,
+      "items":{
+        "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+      }
+    },
+    "caseId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+     "defendantId": {
+          "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+        },
+    "legalAidStatus": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "hearingIds",
+    "caseId",
+    "defendantId",
+    "legalAidStatus"
+  ],
+  "additionalProperties": false
+}

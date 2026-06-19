@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns="http://www.courtservice.gov.uk/schemas/courtservice"
+            targetNamespace="http://www.courtservice.gov.uk/schemas/courtservice"
+            elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xsd:complexType name="DLDataStructure">
+        <xsd:sequence>
+            <xsd:element name="Court" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+            <xsd:element name="CourtSite" type="xsd:string" minOccurs="1" maxOccurs="unbounded"/>
+            <xsd:element name="CourtRoom" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+            <xsd:element name="Case" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+            <xsd:element name="Hearing" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+            <xsd:element name="HearingList" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+            <xsd:element name="Sitting" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+            <xsd:element name="ScheduledHearing" type="xsd:string" minOccurs="0"
+                         maxOccurs="unbounded"/>
+            <xsd:element name="Defendant" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+            <xsd:element name="DefendantRefLoc" type="xsd:string" minOccurs="0"
+                         maxOccurs="unbounded"/>
+            <xsd:element name="DefendantRefID" type="xsd:string" minOccurs="0"
+                         maxOccurs="unbounded"/>
+            <xsd:element name="DefendantOnCase" type="xsd:string" minOccurs="0"
+                         maxOccurs="unbounded"/>
+            <xsd:element name="ScheduledHearingDefendant" type="xsd:string" minOccurs="0"
+                         maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:element name="DLData" type="DLDataStructure"/>
+</xsd:schema>

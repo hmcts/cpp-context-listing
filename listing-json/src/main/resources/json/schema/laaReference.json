@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/laaReference.json",
+  "type": "object",
+  "description": "The status of an application for legal aid funding",
+  "properties": {
+    "applicationReference": {
+      "description": "The human readable reference to the application supplied by legal aid agency",
+      "type": "string"
+    },
+    "statusId": {
+      "description": "Reference data identifer for the agreed status",
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "statusCode": {
+      "description": "The status code from reference data",
+      "type": "string"
+    },
+    "statusDescription": {
+      "description": "The status description from reference data",
+      "type": "string"
+    },
+    "statusDate": {
+      "description": "The date that the status was recorded",
+      "type": "string",
+      "format": "date"
+    },
+    "effectiveStartDate": {
+      "description": "The start date for legal aid, set when the status represents an approved representation order",
+      "type": "string",
+      "format": "date"
+    },
+    "effectiveEndDate": {
+      "description": "The end date for legal aid, set when the status represents an approved representation order",
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "applicationReference",
+    "statusId",
+    "statusCode",
+    "statusDescription",
+    "statusDate"
+  ],
+  "additionalProperties": false
+}

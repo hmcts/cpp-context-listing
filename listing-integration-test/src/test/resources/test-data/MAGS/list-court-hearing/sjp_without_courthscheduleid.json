@@ -1,0 +1,158 @@
+{
+    "hearings":
+    [
+        {
+            "courtCentre":
+            {
+                "address":
+                {
+                    "address1": "176A Lavender Hill",
+                    "address2": "London",
+                    "address3": "",
+                    "address4": "",
+                    "address5": "",
+                    "postcode": "SW11 1JU"
+                },
+                "code": "B01LY00",
+                "courtHearingLocation": "B01LY01",
+                "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                "lja":
+                {
+                    "ljaCode": "2577",
+                    "ljaName": "South West London Magistrates' Court"
+                },
+                "name": "Lavender Hill Magistrates' Court",
+                "roomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+                "roomName": "Courtroom 01"
+            },
+            "defendantListingNeeds":
+            [
+                {
+                    "defendantId": "8718476e-74b9-4b2c-8fa3-ed8ae9e63e9c",
+                    "hearingLanguageNeeds": "ENGLISH",
+                    "isYouth": false,
+                    "listingReason": "For sentencing hearing - defendant to attend",
+                    "prosecutionCaseId": "19bf7837-b3ad-42ee-bb49-0f7bc87581b3"
+                }
+            ],
+            "estimatedMinutes": 30,
+            "id": "3888bbb6-308a-4716-8c6f-5d889d2f7862",
+            "jurisdictionType": "MAGISTRATES",
+            "listedStartDateTime": "2025-05-28T09:00:00.000Z",
+            "prosecutionCases":
+            [
+                {
+                    "caseStatus": "SJP_REFERRAL",
+                    "defendants":
+                    [
+                        {
+                            "courtProceedingsInitiated": "2025-05-26T16:06:19.779Z",
+                            "id": "8718476e-74b9-4b2c-8fa3-ed8ae9e63e9c",
+                            "masterDefendantId": "8718476e-74b9-4b2c-8fa3-ed8ae9e63e9c",
+                            "numberOfPreviousConvictionsCited": 3,
+                            "offences":
+                            [
+                                {
+                                    "chargeDate": "2016-01-01",
+                                    "count": 1,
+                                    "dvlaOffenceCode": "",
+                                    "endorsableFlag": false,
+                                    "id": "6cde2539-4417-4c6b-8625-25d1b2c3be20",
+                                    "maxPenalty": "S:Ultd Fine",
+                                    "modeOfTrial": "Summary",
+                                    "notifiedPlea":
+                                    {
+                                        "notifiedPleaDate": "2025-05-26",
+                                        "notifiedPleaValue": "NO_NOTIFICATION",
+                                        "offenceId": "6cde2539-4417-4c6b-8625-25d1b2c3be20"
+                                    },
+                                    "offenceCode": "CA03014",
+                                    "offenceDateCode": 1,
+                                    "offenceDefinitionId": "b86778e9-bf52-3b40-9549-a8710c2e77cb",
+                                    "offenceLegislation": "Contrary to section 366(8)(b) and (9) of the Communications Act 2003.",
+                                    "offenceLegislationWelsh": "Yn groes i adran 366(8)(b) a (9) Deddf Cyfathrebu 2003.",
+                                    "offenceTitle": "Fail / refuse give assistance to person executing Communications Act search warrant",
+                                    "offenceTitleWelsh": "Methu / gwrthod rhoi cymorth i unigolyn sy'n gweithredu gwarant chwilio dan y Ddeddf Cyfathrebu",
+                                    "orderIndex": 1,
+                                    "startDate": "2015-07-02",
+                                    "wording": "On 12/07/2018 at Brighton, without reasonable excuse, failed to give assistance that you were under a duty to give to a person authorised to execute a search warrant granted under section 366 of the Communications Act 2003 by the Liverpool Magistrates' Court on 02/07/2018",
+                                    "wordingWelsh": "On 12/07/2018 at Brighton, without reasonable excuse, failed to give assistance that you were under a duty to give to a person authorised to execute a search warrant granted under section 366 of the Communications Act 2003 by the Liverpool Magistrates' Court on 02/07/2018"
+                                }
+                            ],
+                            "personDefendant":
+                            {
+                                "arrestSummonsNumber": "arrest/summons",
+                                "driverNumber": "MORGA657054460BF",
+                                "personDetails":
+                                {
+                                    "address":
+                                    {
+                                        "address1": "Flat 25",
+                                        "address2": "Cathays Park",
+                                        "address3": "Cardiff",
+                                        "address4": "Wales",
+                                        "address5": "UK",
+                                        "postcode": "CF10 3NP"
+                                    },
+                                    "contact":
+                                    {
+                                        "home": "1231231230",
+                                        "mobile": "1231231230",
+                                        "primaryEmail": "aer@af.com"
+                                    },
+                                    "dateOfBirth": "1980-09-03",
+                                    "documentationLanguageNeeds": "ENGLISH",
+                                    "ethnicity":
+                                    {
+                                        "selfDefinedEthnicityCode": "W1",
+                                        "selfDefinedEthnicityDescription": "British",
+                                        "selfDefinedEthnicityId": "c4ca4238-a0b9-3382-8dcc-509a6f75849b"
+                                    },
+                                    "firstName": "Fred",
+                                    "gender": "MALE",
+                                    "hearingLanguageNeeds": "ENGLISH",
+                                    "lastName": "Smith",
+                                    "nationalInsuranceNumber": "AB123456C",
+                                    "occupation": "TA",
+                                    "occupationCode": "666",
+                                    "specificRequirements": "no special needs",
+                                    "title": "MR"
+                                }
+                            },
+                            "prosecutionCaseId": "19bf7837-b3ad-42ee-bb49-0f7bc87581b3"
+                        }
+                    ],
+                    "id": "19bf7837-b3ad-42ee-bb49-0f7bc87581b3",
+                    "initiationCode": "J",
+                    "originatingOrganisation": "GAEAA01",
+                    "prosecutionCaseIdentifier":
+                    {
+                        "address":
+                        {
+                            "address1": "Barton House",
+                            "address2": "Bond Street",
+                            "address3": "Bristol",
+                            "postcode": "BS98 1TL"
+                        },
+                        "contact":
+                        {
+                            "primaryEmail": "court.results@tvl.cjsm.net"
+                        },
+                        "majorCreditorCode": "TVL3",
+                        "prosecutionAuthorityCode": "TVL",
+                        "prosecutionAuthorityId": "6b7b9adc-ccee-4b13-b2c7-499c28e98962",
+                        "prosecutionAuthorityName": "TV Licensing",
+                        "prosecutionAuthorityOUCode": "GAEAA01",
+                        "prosecutionAuthorityReference": "40GD3786225"
+                    },
+                    "statementOfFacts": "Prosecution Facts"
+                }
+            ],
+            "type":
+            {
+                "description": "Sentence",
+                "id": "5ae4c090-0f70-4694-b4fc-707633d2b430"
+            }
+        }
+    ]
+}

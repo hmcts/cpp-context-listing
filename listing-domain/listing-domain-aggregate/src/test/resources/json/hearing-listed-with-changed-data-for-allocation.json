@@ -1,0 +1,111 @@
+{
+  "_metadata": {
+    "name": "listing.events.hearing-listed"
+  },
+  "hearing": {
+    "courtApplications":[
+      {
+        "offences": [],
+        "applicant":{
+          "firstName":"5o5NzB5ewT",
+          "isRespondent":false,
+          "lastName":"nYhjupYT63",
+          "courtApplicationPartyType": "PERSON"
+        },
+        "applicationType":"9vBchM49Go",
+        "id":"26b856a8-ae01-4aad-814c-7cdff8db19bf",
+        "parentApplicationId":"9d9a431a-0f12-4386-878a-2bf6c4a0877e",
+        "linkedCaseId":"19e9d562-6abb-4871-bfb3-2d777aa90371",
+        "respondents":[
+          {
+            "firstName":"ijgX3B9Vy7",
+            "isRespondent":true,
+            "lastName":"pGk5CoFbDb",
+            "courtApplicationPartyType": "PERSON"
+          }
+        ]
+      }
+    ],
+    "allocated": true,
+    "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
+    "courtRoomId": "d99f0272-977f-4aaa-b30d-65a2d19a7f3b",
+    "estimatedMinutes": 15,
+    "hearingLanguage": "WELSH",
+    "id": "5c5a1d30-0414-11e7-93ae-92361f002671",
+    "jurisdictionType": "CROWN",
+    "listedCases": [
+      {
+        "caseIdentifier": {
+          "authorityCode": "POLICE",
+          "authorityId": "31fd0edf-9692-46fa-a6be-4b78bf88fec6",
+          "caseReference": "87GD9945217"
+        },
+        "defendants": [
+          {
+            "bailStatus": {
+              "id":"12e69486-4d01-3403-a50a-7419ca040635",
+              "code":"C",
+              "description":"Custody or remanded into custody"
+            },
+            "custodyTimeLimit": "2018-01-30",
+            "dateOfBirth": "1995-03-23",
+            "datesToAvoid": "Hospital appointment 2018-11-07",
+            "defenceOrganisation": "Flynch and Fleece Solicitors",
+            "firstName": "David",
+            "hearingLanguageNeeds": "WELSH",
+            "id": "0baecac5-222b-402d-9047-84803679edac",
+            "lastName": "Lloyd",
+            "offences": [
+              {
+                "endDate": "2017-08-01",
+                "id": "0baecac5-222b-402d-9047-84803679edad",
+                "offenceCode": "OF61131",
+                "startDate": "2016-06-21",
+                "restrictFromCourtList":false,
+                "statementOfOffence": {
+                  "legislation": "Offences against the Person Act 1861",
+                  "title": "Wounding with intent",
+                  "welshLegislation": "Deddf Troseddau yn erbyn y Person 1861",
+                  "welshTitle": "Colli â bwriad"
+                }
+              }
+            ],
+            "specificRequirements": "wheelchair access required",
+            "restrictFromCourtList":false
+          }
+        ],
+        "id": "31bf5d91-f90e-4117-a018-d1290e107692",
+        "restrictFromCourtList":false
+      }
+    ],
+    "listingDirections": "Child care difficulty on Tuesdays",
+    "prosecutorDatesToAvoid": "Prosecutor on holiday 2018-11-01",
+    "reportingRestrictionReason": "aReason",
+    "startDate": "2018-06-01",
+    "nonDefaultDays": [
+      {
+        "startTime": "2018-06-01T10:00:00.000Z"
+      }
+    ],
+    "nonSittingDays": [],
+    "endDate": "2018-06-02",
+    "type": {
+      "id": "efa4e01b-1dc5-48c5-80b5-c3858a7622d6",
+      "description": "Trial"
+    },
+    "hearingDays": [
+      {
+        "durationMinutes": 30,
+        "endTime": "2018-06-01T10:00:00.000Z",
+        "sequence": 0,
+        "startTime": "2018-06-01T09:30:00.000Z"
+      },
+      {
+        "durationMinutes": 30,
+        "endTime": "2018-06-02T10:00:00.000Z",
+        "sequence": 0,
+        "startTime": "2018-06-02T09:30:00.000Z"
+      }
+    ]
+  }
+}

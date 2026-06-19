@@ -1,0 +1,58 @@
+package uk.gov.moj.cpp.listing.event.processor.command;
+
+import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
+
+import uk.gov.justice.listing.events.OffencesToBeDeleted;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
+import uk.gov.moj.cpp.listing.event.utils.EventBuilder;
+
+import java.util.List;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+public class DeleteOffencesForHearingCommandCollectionConverterTest {
+
+    private DeleteOffencesForHearingCommandCollectionConverter deleteOffencesForHearingCommandCollectionConverter = new DeleteOffencesForHearingCommandCollectionConverter();
+
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+
+    @Spy
+    private JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
+
+    @InjectMocks
+    EventBuilder eventBuilder;
+
+    @Test
+    public void convertFromDefendantsToBeUpdatedEventToListOfUpdateDefendantsForHearingCommands() throws Exception {
+        //given
+        OffencesToBeDeleted event = eventBuilder.buildOffencesToBeDeleted();
+
+        //when
+        List<DeleteOffencesForHearingCommand> actualList = deleteOffencesForHearingCommandCollectionConverter.convert(event);
+
+        //then
+        String expected =
+                "[\n" +
+                        "  {\n" +
+                        "    \"offences\": [\n" +
+                        "      {\n" +
+                        "        \"id\": \"0baecac5-222b-402d-9047-84803679edad\",\n" +
+                        "        \"defendantId\": \"bd9f602d-428e-4aec-adee-91cc45d71ebf\"\n" +
+                        "      }\n" +
+                        "    ],\n" +
+                        "    \"hearingId\": \"0baecac5-222b-402d-9047-84803679edaf\"\n" +
+                        "  }\n" +
+                        "]\n";
+
+        assertEquals(expected, objectMapper.writeValueAsString(actualList), true);
+    }
+}

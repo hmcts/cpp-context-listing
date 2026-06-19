@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet author="listing" id="026-lpt-989-create-table-cache-refdata-courtroom" logicalFilePath="026-lpt-989-create-table-cache-refdata-courtroom.xml">
+        <createTable tableName="cache_refdata_courtroom">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="courtroom_name" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="cache_refdata_courtroom"
+                     indexName="cache_refdata_courtroom_name_idx">
+            <column name="courtroom_name"/>
+        </createIndex>
+        <rollback>
+            <dropTable tableName="cache_refdata_courtroom"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

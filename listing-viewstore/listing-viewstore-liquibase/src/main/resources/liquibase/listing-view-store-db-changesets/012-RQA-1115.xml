@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet author="listing" id="12" logicalFilePath="012-RQA-1115.xml">
+
+        <sql>DROP INDEX range_search_idx</sql>
+        <sql>CREATE INDEX range_search_idx
+            ON hearing USING GIN
+            (
+            (properties -> 'courtCentreId'),
+            (properties -> 'allocated'),
+            (properties -> 'jurisdictionType'),
+            (properties -> 'weekCommencingStartDate'),
+            (properties -> 'weekCommencingEndDate'),
+            (properties -> 'startDate'),
+            (properties -> 'endDate'),
+            (properties -> 'courtRoomId'),
+            (properties -> 'type' ->'id')
+            )
+        </sql>
+
+    </changeSet>
+
+</databaseChangeLog>

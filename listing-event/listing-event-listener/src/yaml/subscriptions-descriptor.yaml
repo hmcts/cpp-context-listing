@@ -1,0 +1,257 @@
+subscriptions_descriptor:
+  spec_version: 1.0.0
+  service: listing
+  service_component: EVENT_LISTENER
+  subscriptions:
+    - name: event listener subscription
+      events:
+        - name: listing.events.hearing-listed
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-listed.json
+
+        - name: listing.events.court-centre-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.court-centre-changed-for-hearing.json
+
+        - name: listing.events.court-room-assigned-to-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.court-room-assigned-to-hearing.json
+
+        - name: listing.events.court-room-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.court-room-changed-for-hearing.json
+
+        - name: listing.events.court-room-removed-from-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.court-room-removed-from-hearing.json
+
+        - name: listing.events.hearing-days-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-days-changed-for-hearing.json
+
+        - name: listing.events.judiciary-assigned-to-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.judiciary-assigned-to-hearing.json
+
+        - name: listing.events.jurisdiction-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.jurisdiction-changed-for-hearing.json
+
+        - name: listing.events.judiciary-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.judiciary-changed-for-hearing.json
+
+        - name: listing.events.judiciary-removed-from-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.judiciary-removed-from-hearing.json
+
+        - name: listing.events.non-sitting-days-assigned-to-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.non-sitting-days-assigned-to-hearing.json
+
+        - name: listing.events.non-sitting-days-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.non-sitting-days-changed-for-hearing.json
+
+        - name: listing.events.non-default-days-assigned-to-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.non-default-days-assigned-to-hearing.json
+
+        - name: listing.events.non-default-days-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.non-default-days-changed-for-hearing.json
+
+        - name: listing.events.start-date-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.start-date-changed-for-hearing.json
+
+        - name: listing.events.end-date-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.end-date-changed-for-hearing.json
+
+        - name: listing.events.type-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.type-changed-for-hearing.json
+
+        - name: listing.events.hearing-allocated-for-listing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-allocated-for-listing.json
+
+        - name: listing.events.hearing-allocated-for-listing-v2
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-allocated-for-listing-v2.json
+
+        - name: listing.events.hearing-unallocated-for-listing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-unallocated-for-listing.json
+
+        - name: listing.events.hearing-unallocated-for-listing-v2
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-unallocated-for-listing-v2.json
+
+        - name: listing.events.trial-vacated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.trial-vacated.json
+
+        - name: listing.events.hearing-trial-vacated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-trial-vacated.json
+
+        - name: listing.events.hearing-language-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-language-changed-for-hearing.json
+
+        - name: listing.events.new-defendant-details-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.new-defendant-details-updated.json
+
+        - name: listing.events.new-case-marker-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.new-case-marker-updated.json
+
+        - name: listing.events.offence-added
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.offence-added.json
+
+        - name: listing.events.offence-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.offence-updated.json
+
+        - name: listing.events.offence-deleted
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.offence-deleted.json
+
+        - name: listing.events.hearing-days-sequenced
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-days-sequenced.json
+
+        - name: listing.events.court-application-updated-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.court-application-updated-for-hearing.json
+
+        - name: listing.events.laa-reference-for-application-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.laa-reference-for-application-updated.json
+
+        - name: listing.events.court-application-added-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.court-application-added-for-hearing.json
+
+        - name: listing.events.new-defendant-added-for-court-proceedings
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.new-defendant-added-for-court-proceedings.json
+
+        - name: listing.events.court-list-restricted
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.court-list-restricted.json
+
+        - name: listing.events.case-ejected
+          schema_uri: http://justice.gov.uk/listing/events/case-ejected.json
+
+        - name: listing.events.application-ejected
+          schema_uri: http://justice.gov.uk/listing/events/application-ejected.json
+
+        - name: listing.events.defendant-legalaid-status-updated-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/defendant-legalaid-status-updated-for-hearing.json
+
+        - name: listing.events.case-update-defendant-proceedings-updated
+          schema_uri: http://justice.gov.uk/listing/events/case-update-defendant-proceedings-updated.json
+
+        - name: listing.events.defendant-court-proceedings-updated
+          schema_uri: http://justice.gov.uk/listing/events/defendant-court-proceedings-updated.json
+
+        - name: listing.events.defendant-court-proceedings-updated-v2
+          schema_uri: http://justice.gov.uk/listing/events/defendant-court-proceedings-updated-v2.json
+
+        - name: listing.events.adjourned-hearing-date-added
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.adjourned-hearing-date-added.json
+
+        - name: listing.events.start-date-removed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.start-date-removed-for-hearing.json
+
+        - name: listing.events.end-date-removed-from-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.end-date-removed-for-hearing.json
+
+        - name: listing.events.week-commencing-date-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.week-commencing-date-changed-for-hearing.json
+
+        - name: listing.events.week-commencing-date-removed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.week-commencing-date-removed-for-hearing.json
+
+        - name: listing.event.publish-court-list-export-failed
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-export-failed.json
+
+        - name: listing.event.publish-court-list-produced
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-produced.json
+
+        - name: listing.event.publish-court-list-produced
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-produced.json
+
+        - name: listing.event.publish-court-list-export-successful
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-export-successful.json
+
+        - name: listing.event.publish-court-list-requested
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-requested.json
+
+        - name: listing.event.published-court-list-stored
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.published-court-list-stored.json
+
+        - name: listing.events.adjourned-hearing-date-added
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.adjourned-hearing-date-added.json
+
+        - name: listing.event.added-cases-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.event.added-cases-for-hearing.json
+
+        - name: listing.event.cases-added-to-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.event.cases-added-to-hearing.json
+
+        - name: listing.events.hearing-deleted
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-deleted.json
+
+        - name: listing.events.hearing-partially-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-partially-updated.json
+
+        - name: listing.events.linked-cases-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.linked-cases-updated.json
+
+        - name: listing.events.hearing-rescheduled
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-rescheduled.json
+
+        - name: listing.events.video-link-details-assigned-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.video-link-details-assigned-for-hearing.json
+
+        - name: listing.events.video-link-details-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.video-link-details-changed-for-hearing.json
+
+        - name: listing.events.video-link-details-removed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.video-link-details-removed-for-hearing.json
+
+        - name: listing.events.public-list-note-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.public-list-note-changed-for-hearing.json
+
+        - name: listing.events.public-list-note-removed-from-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.public-list-note-removed-from-hearing.json
+
+        - name: listing.events.video-link-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.video-link-changed-for-hearing.json
+
+        - name: listing.events.hearing-days-cancelled
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-days-cancelled.json
+
+        - name: listing.events.created-listing-note
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.created-listing-note.json
+
+        - name: listing.events.listing-note-edited
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.listing-note-edited.json
+
+        - name: listing.events.deleted-listing-note
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.delete-listing-note.json
+
+        - name: listing.event.hearing-counsel-modified
+          schema_uri: http://justice.gov.uk/listing/events/listing.event.hearing-counsel-modified.json
+
+        - name: listing.events.hearing-days-without-court-centre-corrected
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-days-without-court-centre-corrected.json
+
+        - name: listing.events.hearing-day-court-schedule-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-day-court-schedule-updated.json
+
+        - name: listing.events.hearing-marked-as-duplicate
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-marked-as-duplicate.json
+
+        - name: listing.events.case-identifier-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.case-identifier-updated.json
+
+        - name: listing.events.allocated-hearing-deleted
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.allocated-hearing-deleted.json
+
+        - name: listing.events.unallocated-hearing-deleted
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.unallocated-hearing-deleted.json
+
+        - name: listing.events.offences-removed-from-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.offences-removed-from-hearing.json
+
+        - name: listing.events.offences-removed-from-existing-unallocated-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.offences-removed-from-existing-unallocated-hearing.json
+
+        - name: listing.events.offences-removed-from-existing-allocated-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.offences-removed-from-existing-allocated-hearing.json
+
+        - name: listing.events.updated-hmi-fields-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.updated-hmi-fields-for-hearing.json
+
+        - name: listing.events.case-removed-from-group-cases
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.case-removed-from-group-cases.json
+
+        - name: listing.events.court-application-hearing-deleted
+          schema_uri: http://justice.gov.uk/listing/event/listing.events.court-application-hearing-deleted.json
+
+        - name: listing.events.hearing-result-status-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-result-status-updated.json
+
+      event_source_name: listing

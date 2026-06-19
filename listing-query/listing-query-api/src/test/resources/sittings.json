@@ -1,0 +1,140 @@
+[
+  {
+    "judiciaryNames": [
+      "Her Majistry ...",
+      "first Name, Last Name"
+    ],
+    "sittingTime": "03:30 pm",
+    "hearings": [
+      {
+        "hearingType": "Hearing Type Description",
+        "hearingDay": {
+          "endTime": "09:01 am",
+          "startTime": "09:00 am",
+          "hearingDate": "2019-01-25",
+          "durationMinutes": 1
+        },
+        "caseNumber": "T12890",
+        "defendants": [
+          {
+            "firstName": "firstName",
+            "surname": "surname"
+          }
+        ],
+        "prosecutionCounsels": [
+          {
+            "firstName": "firstName",
+            "lastName": "lastName"
+          }
+        ],
+        "defenceCounsels": [
+          {
+            "firstName": "firstName",
+            "lastName": "lastName"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "judiciaryNames": [
+    ],
+    "sittingTime": "04:30 pm",
+    "hearings": [
+      {
+        "hearingType": "Hearing Type Description",
+        "hearingDay": {
+          "endTime": "09:01 am",
+          "startTime": "09:00 am",
+          "hearingDate": "2019-01-25",
+          "durationMinutes": 1
+        },
+        "caseNumber": "T12890",
+        "defendants": [
+          {
+            "firstName": "firstName",
+            "surname": "surname"
+          }
+        ],
+        "prosecutionCounsels": [
+          {
+            "firstName": "firstName",
+            "lastName": "lastName"
+          }
+        ],
+        "defenceCounsels": [
+          {
+            "firstName": "firstName",
+            "lastName": "lastName"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "judiciaryNames": [
+      "ZZZZ",
+      "AAAAA"
+    ],
+    "sittingTime": "07:30 am",
+    "hearings": [
+      {
+        "hearingType": "Hearing Type Description",
+        "hearingDay": {
+          "endTime": "09:10 am",
+          "startTime": "09:00 am",
+          "hearingDate": "2019-01-25",
+          "durationMinutes": 1
+        },
+        "caseNumber": "T12890",
+        "defendants": [
+          {
+            "firstName": "firstName",
+            "surname": "surname"
+          }
+        ],
+        "prosecutionCounsels": [
+          {
+            "firstName": "firstName",
+            "lastName": "lastName"
+          }
+        ],
+        "defenceCounsels": [
+          {
+            "firstName": "firstName",
+            "lastName": "lastName"
+          }
+        ]
+      },
+      {
+        "hearingType": "Hearing Type Description",
+        "hearingDay": {
+          "endTime": "08:01 am",
+          "startTime": "08:00 am",
+          "hearingDate": "2019-01-25",
+          "durationMinutes": 1
+        },
+        "caseNumber": "T13890",
+        "defendants": [
+          {
+            "firstName": "firstName",
+            "surname": "surname"
+          }
+        ],
+        "prosecutionCounsels": [
+          {
+            "firstName": "firstName",
+            "lastName": "lastName"
+          }
+        ],
+        "defenceCounsels": [
+          {
+            "firstName": "firstName",
+            "lastName": "lastName"
+          }
+        ]
+      }
+    ]
+  }
+]
+

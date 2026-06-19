@@ -1,0 +1,32 @@
+{
+  "courtCentreId": "COURT_CENTRE_ID",
+  "courtRoomId": "COURT_ROOM_ID",
+  "jurisdictionType": "MAGISTRATES",
+  "endDate": "END_DATE",
+  "hearingLanguage": "ENGLISH",
+  "nonSittingDays": [],
+  "startDate": "START_DATE",
+  "publicListNote": "",
+  "hasVideoLink": false,
+  "type": {
+    "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+    "description": "First hearing"
+  },
+  "panel": "ADULT",
+  "judiciary": [],
+  "prosecutionCases": [
+    {
+      "caseId": "CASE_ID",
+      "defendants": [
+        {
+          "defendantId": "DEFENDANT_ID",
+          "offences": [
+            {
+              "offenceId": "OFFENCE_ID"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

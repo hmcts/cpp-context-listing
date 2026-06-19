@@ -1,0 +1,131 @@
+{
+    "hearings": [
+        {
+            "courtCentre": {
+                "id": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+                "name": "Croydon Crown Court",
+                "roomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0",
+                "roomName": "Courtroom 01"
+            },
+            "defendantListingNeeds": [
+                {
+                    "defendantId": "43232572-d6b7-4af2-b2b8-de3d48289357",
+                    "isYouth": false,
+                    "prosecutionCaseId": "dc22f5ca-d180-4a30-9814-525153e70e98"
+                }
+            ],
+            "earliestStartDateTime": "2026-02-25T10:00:00.000Z",
+            "estimatedMinutes": 180,
+            "id": "747645ab-5792-4bda-a053-b57ac018f9bb",
+            "jurisdictionType": "CROWN",
+            "prosecutionCases": [
+                {
+                    "caseStatus": "ACTIVE",
+                    "cpsOrganisation": "A30AB00",
+                    "defendants": [
+                        {
+                            "courtProceedingsInitiated": "2026-01-29T16:04:35.247Z",
+                            "id": "43232572-d6b7-4af2-b2b8-de3d48289357",
+                            "masterDefendantId": "43232572-d6b7-4af2-b2b8-de3d48289357",
+                            "offences": [
+                                {
+                                    "arrestDate": "2026-01-27",
+                                    "chargeDate": "2026-01-28",
+                                    "count": 0,
+                                    "endDate": "2026-01-27",
+                                    "endorsableFlag": false,
+                                    "id": "b2e4bd57-fdf8-495d-a3ea-7f31ad7349f6",
+                                    "maxPenalty": "S:L3",
+                                    "modeOfTrial": "Summary",
+                                    "offenceCode": "CA03010",
+                                    "offenceDateCode": 1,
+                                    "offenceDefinitionId": "6d4e6673-a075-35e9-9ded-448284bf316b",
+                                    "offenceLegislation": "Contrary to section 363(2) and (4) of the Communications Act 2003.",
+                                    "offenceLegislationWelsh": "Yn groes i adran 363(2) a (4) Deddf Cyfathrebu 2003.",
+                                    "offenceTitle": "Use a television set without a licence",
+                                    "offenceTitleWelsh": "Defnyddio set deledu heb drwydded",
+                                    "orderIndex": 1,
+                                    "startDate": "2025-12-30",
+                                    "wording": "From 30 December 2025, used a television receiver without a licence."
+                                }
+                            ],
+                            "personDefendant": {
+                                "arrestSummonsNumber": "09B5WRNI27795320294G",
+                                "bailConditions": "Bail condition 1",
+                                "bailStatus": {
+                                    "code": "A",
+                                    "description": "Not applicable",
+                                    "id": "86009c70-759d-3308-8de4-194886ff9a77"
+                                },
+                                "personDetails": {
+                                    "address": {
+                                        "address1": "Address line 1",
+                                        "address2": "Address line 2",
+                                        "address3": "Address line 3",
+                                        "address4": "Address line 4",
+                                        "address5": "Port Chanceside",
+                                        "postcode": "TW14 9XD"
+                                    },
+                                    "contact": {
+                                        "mobile": "07890123456",
+                                        "primaryEmail": "Rodolfo_Ortiz40@example.org"
+                                    },
+                                    "dateOfBirth": "1981-07-11",
+                                    "documentationLanguageNeeds": "ENGLISH",
+                                    "ethnicity": {
+                                        "observedEthnicityCode": "4",
+                                        "observedEthnicityDescription": "Other",
+                                        "observedEthnicityId": "a87ff679-a2f3-371d-9181-a67b7542122c",
+                                        "selfDefinedEthnicityCode": "W1",
+                                        "selfDefinedEthnicityDescription": "British",
+                                        "selfDefinedEthnicityId": "c4ca4238-a0b9-3382-8dcc-509a6f75849b"
+                                    },
+                                    "firstName": "Eldora",
+                                    "gender": "FEMALE",
+                                    "hearingLanguageNeeds": "ENGLISH",
+                                    "lastName": "Ward",
+                                    "occupation": "National Group Architect",
+                                    "occupationCode": "0",
+                                    "title": "Mrs."
+                                },
+                                "policeBailConditions": "Bail condition 1",
+                                "policeBailStatus": {
+                                    "code": "A",
+                                    "description": "Not applicable",
+                                    "id": "86009c70-759d-3308-8de4-194886ff9a77"
+                                }
+                            },
+                            "prosecutionAuthorityReference": "09B5WRNI27795320294G",
+                            "prosecutionCaseId": "dc22f5ca-d180-4a30-9814-525153e70e98"
+                        }
+                    ],
+                    "id": "dc22f5ca-d180-4a30-9814-525153e70e98",
+                    "initiationCode": "C",
+                    "originatingOrganisation": "0480000",
+                    "prosecutionCaseIdentifier": {
+                        "address": {
+                            "address1": "Bishopsgate police station",
+                            "address2": "182, Bishopsgate",
+                            "address5": "London",
+                            "postcode": "EC2M 4NP"
+                        },
+                        "contact": {
+                            "primaryEmail": "casebuilderscpsmemos@cityoflondon.police.uk"
+                        },
+                        "majorCreditorCode": "COLP",
+                        "prosecutionAuthorityCode": "CITYPF",
+                        "prosecutionAuthorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+                        "prosecutionAuthorityName": "City of London Police",
+                        "prosecutionAuthorityOUCode": "0480000",
+                        "caseURN": "56GD9514026"
+                    },
+                    "statementOfFacts": "Prosecution facts"
+                }
+            ],
+            "type": {
+                "description": "Bail Variation Application",
+                "id": "3b5fdf13-7033-4ce0-857d-b7ea463da91d"
+            }
+        }
+    ]
+}

@@ -1,0 +1,97 @@
+{
+  "id": "HEARING_ID_FIELD",
+  "type": {
+    "id": "HEARING_TYPE_ID_FIELD",
+    "description": "Trial"
+  },
+  "endDate": "END_DATE_FIELD",
+  "isVacatedTrial": VACATED_TRIAL_FIELD,
+  "allocated": false,
+  "unscheduled": true,
+  "typeOfList": {
+    "id": "069eaa40-b5d1-44d3-9493-596a194e221c",
+    "description": "Warrant for arrest without bail"
+  },
+  "judiciary": [
+    {
+      "isDeputy": false,
+      "judicialId": "d1a22d9e-088b-4af4-acb5-bc6e78aaf5ea",
+      "isBenchChairman": false,
+      "judicialRoleType": {
+        "judiciaryType": "CIRCUIT_JUDGE"
+      }
+    },
+    {
+      "isDeputy": false,
+      "judicialId": "JUDICIAL_ID",
+      "isBenchChairman": false,
+      "judicialRoleType": {
+        "judiciaryType": "CIRCUIT_JUDGE"
+      }
+    }
+  ],
+  "startDate": "START_DATE_FIELD",
+  "courtRoomId": "COURT_ROOM_ID_FIELD",
+  "hearingDays": [
+    {
+      "endTime": "END_TIME_FIELD",
+      "sequence": 1,
+      "startTime": "START_TIME_FIELD",
+      "hearingDate": "HEARING_DATE_FIELD",
+      "durationMinutes": 15
+    },
+    {
+      "endTime": "2018-11-04T11:30:00+00:00",
+      "sequence": 1,
+      "startTime": "2018-11-04T10:30:00+00:00",
+      "hearingDate": "HEARING_DATE_FIELD",
+      "durationMinutes": 15
+    }
+  ],
+  "courtApplications": [
+    {
+      "id": "741b8f7d-4738-4e49-9a14-21a09cf9b456",
+      "applicant": {
+        "id": "4d02bc0c-be0d-46d5-a412-f725e891d5f4",
+        "lastName": "TFL",
+        "isRespondent": false,
+        "restrictFromCourtList": false,
+        "courtApplicationPartyType": "PROSECUTING_AUTHORITY"
+      },
+      "respondents": [
+        {
+          "id": "db423a88-b4c2-4c5f-a774-dc2af893d492",
+          "address": {
+            "address1": "lXS2vnzuYS",
+            "address2": "1 Old Road",
+            "address3": "London",
+            "address4": "Merton",
+            "postcode": "SW99 1AA"
+          },
+          "lastName": "Smith",
+          "firstName": "Fred",
+          "isRespondent": true,
+          "restrictFromCourtList": false,
+          "courtApplicationPartyType": "PERSON_DEFENDANT"
+        }
+      ],
+      "linkedCaseId": "263e0643-6a02-45cc-bc55-304bcab02e7a",
+      "applicationType": "Failing to comply with the requirements of a community order",
+      "applicationReference": "TFL7328425-1",
+      "restrictFromCourtList": false,
+      "applicationParticulars": "Particulars for Breach Application API Testing",
+      "restrictCourtApplicationType": false
+    }
+  ],
+  "courtCentreId": "COURT_CENTRE_ID_FIELD",
+  "nonDefaultDays": [
+    {
+      "startTime": "2018-11-03T11:53:16.000Z"
+    }
+  ],
+  "nonSittingDays": [],
+  "hearingLanguage": "ENGLISH",
+  "estimatedMinutes": 45,
+  "jurisdictionType": "JURISDICTION_TYPE_FIELD",
+  "reportingRestrictionReason": "ZJljvnxVPx"
+}

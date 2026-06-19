@@ -1,0 +1,16 @@
+{
+  "hearingId": "HEARING_ID",
+  "caseId": "CASE_ID",
+  "defendantId": "DEFENDANT_ID1",
+  "offences": [
+    {
+      "id": "DELETED_OFFENCE_ID1",
+      "defendantId": "DEFENDANT_ID1"
+
+    },
+    {
+      "id": "DELETED_OFFENCE_ID2",
+      "defendantId": "DEFENDANT_ID1"
+    }
+  ]
+}

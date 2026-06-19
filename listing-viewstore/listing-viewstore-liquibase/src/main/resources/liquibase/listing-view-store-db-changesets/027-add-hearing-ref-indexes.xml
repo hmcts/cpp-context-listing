@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+    <changeSet author="koray.kaya" id="add_hearing_reference_indexes" logicalFilePath="027-add-hearing-ref-indexes.xml">
+        <sql>create index listed_cases_case_ref_idx on listed_cases (case_reference, hearing_id);</sql>
+        <sql>create index court_applications_app_ref_idx on court_applications (application_reference, hearing_id);</sql>
+    </changeSet>
+</databaseChangeLog>

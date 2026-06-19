@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.reporting-restriction-reason-changed-for-hearing.json",
+  "type": "object",
+  "properties": {
+    "reportingRestrictionReason": {
+      "type": "string"
+    },
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    }
+  },
+  "required": [
+    "reportingRestrictionReason",
+    "hearingId"
+  ],
+  "additionalProperties": false
+}

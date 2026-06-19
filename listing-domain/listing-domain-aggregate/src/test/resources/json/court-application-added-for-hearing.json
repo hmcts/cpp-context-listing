@@ -1,0 +1,23 @@
+{
+  "_metadata": {
+    "name": "listing.events.court-application-added-for-hearing"
+  },
+  "courtApplication": {
+    "applicant": {"id":"22b1078b-9430-4cef-ba46-eea40a129ca8",
+      "restrictFromCourtList":false,
+      "courtApplicationPartyType": "PERSON"
+    },
+    "id": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
+    "parentApplicationId": "9d9a431a-0f12-4386-878a-2bf6c4a0877e",
+    "applicationReference": "REF-1",
+    "respondents": [
+      {"restrictFromCourtList":false,
+        "courtApplicationPartyType": "PERSON"
+      }
+    ],
+    "restrictFromCourtList":false,
+    "restrictCourtApplicationType":false,
+    "offences": []
+  },
+  "hearingId": "ab746921-d839-4867-bcf9-b41db8ebc852"
+}

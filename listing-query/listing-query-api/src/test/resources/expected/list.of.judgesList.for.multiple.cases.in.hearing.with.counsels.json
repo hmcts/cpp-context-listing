@@ -1,0 +1,116 @@
+{
+  "courtRoomName": "Room 1",
+  "hearingDate": "2019-01-29",
+  "sittings": [
+    {
+      "judiciaryNames": [
+        "Her Majesty"
+      ],
+      "sittingTime": "08:00 am",
+      "hearings": [
+        {
+          "hearingType": "Trial",
+          "caseNumber": "CAJ4BGEAG7",
+          "hearingDay": {
+            "hearingDate": "2019-01-29",
+            "endTime": "02:00 pm",
+            "startTime": "08:00 am",
+            "durationMinutes": 360
+          },
+          "defendants": [
+            {
+              "firstName": "Rayen",
+              "surname": "Jack"
+            },
+            {
+              "firstName": "Mike",
+              "surname": "Ray"
+            }
+          ],
+          "prosecutionCounsels": [
+            {
+              "title": "Mr",
+              "firstName": "Prosecution John",
+              "middleName": "Barclays",
+              "lastName": "Prosecution Turkey"
+            }
+          ],
+          "defenceCounsels": [
+            {
+              "title": "Mr",
+              "firstName": "Defence Rosy",
+              "middleName": "Barclays",
+              "lastName": "Defence Mary"
+            }
+          ]
+        },
+        {
+          "hearingType": "Trial",
+          "caseNumber": "CAJ4BGEAG2",
+          "hearingDay": {
+            "hearingDate": "2019-01-29",
+            "endTime": "02:00 pm",
+            "startTime": "08:00 am",
+            "durationMinutes": 360
+          },
+          "defendants": [
+            {
+              "firstName": "Second Rayen",
+              "surname": "Second Jack"
+            },
+            {
+              "firstName": "Second Mike",
+              "surname": "Second Ray"
+            }
+          ],
+          "prosecutionCounsels": [
+            {
+              "title": "Mr",
+              "firstName": "Prosecution Barry",
+              "middleName": "Llyods",
+              "lastName": "Prosecution tony"
+            }
+          ],
+          "defenceCounsels": [
+            {
+              "title": "Mr",
+              "firstName": "Sam",
+              "middleName": "Llyods",
+              "lastName": "Lory"
+            },
+            {
+              "title": "Mr",
+              "firstName": "Defence Rosy",
+              "middleName": "Barclays",
+              "lastName": "Defence Mary"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "judiciaryNames": [
+        "Her Majesty Honour"
+      ],
+      "sittingTime": "09:00 am",
+      "hearings": [
+        {
+          "hearingType": "Trial",
+          "caseNumber": "CAJ4BGEAG7",
+          "hearingDay": {
+            "hearingDate": "2019-01-29",
+            "endTime": "02:00 pm",
+            "startTime": "09:00 am",
+            "durationMinutes": 360
+          },
+          "defendants": [
+            {
+              "firstName": "Bob",
+              "surname": "Smith"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

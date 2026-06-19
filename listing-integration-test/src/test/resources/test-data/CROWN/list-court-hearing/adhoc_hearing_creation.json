@@ -1,0 +1,134 @@
+{
+    "hearings": [
+        {
+            "courtCentre": {
+                "id": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+                "name": "Croydon Crown Court",
+                "roomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0",
+                "roomName": "Courtroom 01"
+            },
+            "defendantListingNeeds": [
+                {
+                    "defendantId": "de845291-6ce0-46df-abe3-e5f1bd9ab5b1",
+                    "isYouth": false,
+                    "prosecutionCaseId": "6c3b65fe-c189-4a0a-9f10-908b47bdb0a2"
+                }
+            ],
+            "earliestStartDateTime": "2026-02-23T10:00:00.000Z",
+            "estimatedMinutes": 240,
+            "id": "3e6d96eb-111f-472c-a87e-9b8b6309e346",
+            "jurisdictionType": "CROWN",
+            "prosecutionCases": [
+                {
+                    "caseStatus": "ACTIVE",
+                    "defendants": [
+                        {
+                            "courtProceedingsInitiated": "2026-02-05T14:58:53.672Z",
+                            "id": "de845291-6ce0-46df-abe3-e5f1bd9ab5b1",
+                            "masterDefendantId": "de845291-6ce0-46df-abe3-e5f1bd9ab5b1",
+                            "offences": [
+                                {
+                                    "allocationDecision": {
+                                        "motReasonCode": "01",
+                                        "motReasonDescription": "Summary-only offence",
+                                        "motReasonId": "b8c37e33-defd-351c-b91e-1e03e51657da",
+                                        "offenceId": "3e1cb93b-95c5-497f-b8e6-1081f93fd733",
+                                        "sequenceNumber": 90
+                                    },
+                                    "committingCourt": {
+                                        "courtCentreId": "89592405-c29b-3706-b1d3-b1dd3a08b227",
+                                        "courtHouseCode": "BL",
+                                        "courtHouseName": "Blackfriars Crown Court",
+                                        "courtHouseShortName": "Blackfriars Crown Court",
+                                        "courtHouseType": "CROWN"
+                                    },
+                                    "convictingCourt": {
+                                        "id": "c133d0de-c989-48b9-bd20-0431943e347e",
+                                        "lja": {
+                                            "ljaCode": "2570",
+                                            "ljaName": "Central London Magistrates' Court"
+                                        },
+                                        "name": "City of London Magistrates' Court",
+                                        "welshName": "Llys Ynadon Dinas Llundain"
+                                    },
+                                    "convictionDate": "2026-01-11",
+                                    "count": 0,
+                                    "endorsableFlag": false,
+                                    "id": "3e1cb93b-95c5-497f-b8e6-1081f93fd733",
+                                    "listingNumber": 1,
+                                    "maxPenalty": "S:Ultd Fine",
+                                    "modeOfTrial": "Summary",
+                                    "offenceCode": "HA04005",
+                                    "offenceDateCode": 1,
+                                    "offenceDefinitionId": "d2c9ff60-7cca-3218-b594-9a24a4fc9e8c",
+                                    "offenceLegislation": "Contrary to sections 5(1)(b) and 6 of the Hunting Act 2004.",
+                                    "offenceTitle": "Attend a hare coursing event - Hunting Act 2004",
+                                    "orderIndex": 1,
+                                    "plea": {
+                                        "offenceId": "3e1cb93b-95c5-497f-b8e6-1081f93fd733",
+                                        "pleaDate": "2026-01-11",
+                                        "pleaValue": "INDICATED_GUILTY"
+                                    },
+                                    "startDate": "2026-01-01",
+                                    "wording": "On or in 01 Jan 2026 at london attended a hare coursing event at london."
+                                }
+                            ],
+                            "personDefendant": {
+                                "arrestSummonsNumber": "0800PP0100000000001H",
+                                "bailStatus": {
+                                    "code": "A",
+                                    "description": "Not applicable",
+                                    "id": "86009c70-759d-3308-8de4-194886ff9a77"
+                                },
+                                "personDetails": {
+                                    "address": {
+                                        "address1": "No fixed abode"
+                                    },
+                                    "documentationLanguageNeeds": "ENGLISH",
+                                    "firstName": "abc",
+                                    "gender": "MALE",
+                                    "hearingLanguageNeeds": "ENGLISH",
+                                    "lastName": "xyz",
+                                    "nationalityCode": "BHR",
+                                    "nationalityDescription": "Bahraini",
+                                    "nationalityId": "e038fd6e-923c-4d79-88a9-2b57230aca28",
+                                    "title": "Mr"
+                                },
+                                "policeBailStatus": {
+                                    "code": "A",
+                                    "description": "Not applicable",
+                                    "id": "86009c70-759d-3308-8de4-194886ff9a77"
+                                }
+                            },
+                            "prosecutionCaseId": "6c3b65fe-c189-4a0a-9f10-908b47bdb0a2"
+                        }
+                    ],
+                    "id": "6c3b65fe-c189-4a0a-9f10-908b47bdb0a2",
+                    "initiationCode": "O",
+                    "originatingOrganisation": "0480000",
+                    "prosecutionCaseIdentifier": {
+                        "address": {
+                            "address1": "Bishopsgate police station",
+                            "address2": "182, Bishopsgate",
+                            "address5": "London",
+                            "postcode": "EC2M 4NP"
+                        },
+                        "contact": {
+                            "primaryEmail": "casebuilderscpsmemos@cityoflondon.police.uk"
+                        },
+                        "majorCreditorCode": "COLP",
+                        "prosecutionAuthorityCode": "CITYPF",
+                        "prosecutionAuthorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+                        "prosecutionAuthorityName": "City of London Police",
+                        "prosecutionAuthorityOUCode": "0480000",
+                        "caseURN": "99GD3716224"
+                    }
+                }
+            ],
+            "type": {
+                "description": "Bail Application",
+                "id": "633224da-6db3-4df5-8097-62cee52f7a61"
+            }
+        }
+    ]
+}

@@ -1,0 +1,106 @@
+{
+  "isCivil": IS_CIVIL,
+  "isGroupMember": IS_GROUP_MEMBER,
+  "isGroupMaster": IS_GROUP_MASTER,
+  "groupId": "GROUP_ID",
+  "caseMarkers": [
+    {
+      "id": "CASE_MARKER_ID",
+      "markerTypeCode": "C",
+      "markerTypeDescription": "Description",
+      "markerTypeid": "aee0baf6-5897-448e-98f1-bc7c2b7f5891"
+    }
+  ],
+  "defendants": [
+    {
+      "associatedPersons": [
+        {
+          "person": {
+            "additionalNationalityId": "54884d17-5352-4230-a2a2-7513db1a52bf",
+            "ethnicity": {
+              "observedEthnicityDescription": "ojvaYkPA8M",
+              "observedEthnicityId": "8cad5e8e-f6d7-4210-8103-b3ca1c19b349"
+            },
+            "gender": "FEMALE",
+            "lastName": "b1TM80dz0F",
+            "nationalityId": "83e61e4a-ae04-49fd-978e-dc493a305a44",
+            "title": "Baroness"
+          },
+          "role": "jL6mq6Y9hi"
+        }
+      ],
+      "courtProceedingsInitiated": "2021-07-02T10:33:17.825Z",
+      "id": "DEFENDANT_ID",
+      "isYouth": true,
+      "masterDefendantId": "DEFENDANT_ID",
+      "offences": [
+        {
+          "count": 1123306351,
+          "id": "OFFENCE_ID",
+          "laaApplnReference": {
+            "applicationReference": "FCtz77PSFo",
+            "statusCode": "2vA8NZWGQt",
+            "statusDate": "2021-07-02",
+            "statusDescription": "D8DydB6NPj",
+            "statusId": "ac63efb5-95f5-4772-9b6c-89450e0bda12"
+          },
+          "offenceCode": "uhQkxnPy99",
+          "offenceDefinitionId": "c28df2d5-db3f-4e74-b69d-ff4edc708e4f",
+          "offenceTitle": "clfxnu6nMg",
+          "orderIndex": 752076586,
+          "reportingRestrictions": [
+            {
+              "id": "c15e8429-39f8-417d-a5ad-0ccc1a4f5794",
+              "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047",
+              "label": "RestrictionApplied",
+              "orderedDate": "2021-07-02"
+            }
+          ],
+          "startDate": "2021-07-02",
+          "wording": "ZHfBwSeB6o"
+        }
+      ],
+      "personDefendant": {
+        "bailStatus": {
+          "code": "P",
+          "description": "Custody or remanded into custody",
+          "id": "34443c87-fa6f-34c0-897f-0cce45773df5"
+        },
+        "personDetails": {
+          "additionalNationalityId": "5e7c676f-d947-4d6f-9e64-11f3b2924ba3",
+          "address": {
+            "address1": "OSdEDdgDxm",
+            "address2": "NbREckwciN",
+            "address3": "6HZV4DFVv4",
+            "address4": "fD7HTdeiMH",
+            "address5": "AMDMzQMy1k",
+            "postcode": "CR1 4BX"
+          },
+          "dateOfBirth": "2000-07-02",
+          "ethnicity": {
+            "observedEthnicityDescription": "QY84TAVRYH",
+            "observedEthnicityId": "62766d09-ba25-4858-a8c7-848867517392"
+          },
+          "firstName": "1uyugJL351",
+          "gender": "MALE",
+          "lastName": "b1TM80dz0F",
+          "nationalityDescription": "British",
+          "nationalityId": "9849afd7-315d-4ec2-8295-825380de50ab",
+          "title": "Baroness"
+        }
+      },
+      "prosecutionCaseId": "CASE_ID"
+    }
+  ],
+  "id": "CASE_ID",
+  "initiationCode": "C",
+  "prosecutionCaseIdentifier": {
+    "prosecutionAuthorityCode": "T6c4nUWrZ9",
+    "prosecutionAuthorityId": "a14583f5-14a7-4af8-9cde-099500a240f6",
+    "prosecutionAuthorityReference": "CASE_URN"
+  },
+  "prosecutor": {
+    "prosecutorCode": "T6c4nUWrZ9",
+    "prosecutorId": "a14583f5-14a7-4af8-9cde-099500a240f6"
+  }
+}

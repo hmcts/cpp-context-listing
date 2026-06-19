@@ -1,0 +1,80 @@
+{
+    "courtCentreId": "%%COURT_CENTRE_ID%%",
+    "courtRoomId": "%%COURT_ROOM_ID%%",
+    "jurisdictionType": "MAGISTRATES",
+    "hearingLanguage": "ENGLISH",
+    "nonDefaultDays":
+    [
+        {
+            "startTime": "2025-05-27T13:00:00.000Z",
+            "duration": 20,
+            "courtScheduleId": "%%COURT_SCHEDULE_ID%%",
+            "courtCentreId": "%%COURT_CENTRE_ID%%",
+            "session": "PM",
+            "oucode": "B01LY00",
+            "courtRoomId": 2330,
+            "roomId": "%%COURT_ROOM_ID%%"
+        }
+    ],
+    "nonSittingDays":
+    [],
+    "publicListNote": "",
+    "hasVideoLink": false,
+    "type":
+    {
+        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+        "description": "First hearing"
+    },
+    "panel": "ADULT",
+    "sendNotificationToParties": false,
+    "startDate": "2025-05-27",
+    "endDate": "2025-05-27",
+    "judiciary":
+    [
+        {
+            "judicialId": "96d362ac-5b2f-4aa3-a4de-9d2969fa3404",
+            "judicialRoleType":
+            {
+                "judiciaryType": "MAGISTRATE"
+            },
+            "isBenchChairman": true,
+            "isDeputy": false
+        },
+        {
+            "judicialId": "5ad14972-4584-48b4-ab1b-cef786093c2b",
+            "judicialRoleType":
+            {
+                "judiciaryType": "MAGISTRATE"
+            },
+            "isBenchChairman": false,
+            "isDeputy": true
+        },
+        {
+            "judicialId": "5818a055-35da-4c62-b0aa-a98c85698378",
+            "judicialRoleType":
+            {
+                "judiciaryType": "MAGISTRATE"
+            },
+            "isBenchChairman": false,
+            "isDeputy": true
+        }
+    ],
+    "prosecutionCases":
+    [
+        {
+            "caseId": "61e2b4e6-6d93-471e-9049-fe9c0964f0bd",
+            "defendants":
+            [
+                {
+                    "defendantId": "d78a1e3c-d6fc-4a8b-bbd2-d0d761c1191d",
+                    "offences":
+                    [
+                        {
+                            "offenceId": "7663ea97-4d15-4449-a8cd-1e0ef9db99ff"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

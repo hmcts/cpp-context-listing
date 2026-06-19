@@ -1,0 +1,34 @@
+{
+    "courtCentreId": "89592405-c29b-3706-b1d3-b1dd3a08b227",
+    "courtRoomId": "d0624ee3-9198-3c8b-94d6-42fb197ebe5e",
+    "endDate": "2026-02-24",
+    "hearingLanguage": "ENGLISH",
+    "jurisdictionType": "CROWN",
+    "nonDefaultDays": [],
+    "nonSittingDays": [],
+    "startDate": "2026-02-23",
+    "publicListNote": "",
+    "hasVideoLink": false,
+    "type": {
+        "id": "c6d76309-c912-436b-a21b-a4c4450bc052",
+        "description": "Pre-Trial Review"
+    },
+    "sendNotificationToParties": false,
+    "judiciary": [],
+    "prosecutionCases": [
+        {
+            "caseId": "938eaf1b-b8ce-4d40-bc3c-bc69852f365b",
+            "defendants": [
+                {
+                    "defendantId": "ef9e3ef1-b69c-41ff-9cce-3112e3177338",
+                    "offences": [
+                        {
+                            "offenceId": "adcf8ace-b7f3-4c6f-9ad3-f3b85045de54"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "hearingId": "6473e5d2-24f4-4048-8647-e97f2392ec94"
+}

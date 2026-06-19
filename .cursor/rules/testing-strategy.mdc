@@ -1,0 +1,502 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Multi-Layer Testing Strategy Guide
+
+This project follows a comprehensive multi-layer testing strategy that addresses command-to-event validation, real payload testing, and scenario coverage while maintaining fast development cycles.
+
+## Test Architecture Overview
+
+### Multi-Layer Testing Approach
+The testing strategy uses four distinct layers to balance speed, reliability, and comprehensive coverage:
+
+1. **Unit Tests**: Fast, isolated tests with minimal mocking
+2. **Contract Tests**: Command-to-event validation with real serialization
+3. **Integration Tests**: Full stack with external dependencies
+4. **Scenario Tests**: End-to-end user journeys (on-demand)
+
+### Test Categories
+
+#### Unit Tests (Each Module)
+- **Location**: `src/test/java` in each module
+- **Purpose**: Test individual classes and methods in isolation
+- **Dependencies**: Minimal, use mocks for external dependencies
+- **Execution**: Fast, run during development (default)
+- **Coverage**: Individual handler methods, domain logic, utilities
+
+#### Contract Tests (New - In existing modules)
+- **Location**: `src/test/java/.../contract/` in relevant modules
+- **Purpose**: Validate command-to-event mappings with real serialization
+- **Dependencies**: Mock external services but use real JSON payloads
+- **Execution**: Medium speed, high confidence
+- **Coverage**: Command handler flow, event generation, payload structure
+
+#### Integration Tests (Existing Module)
+- **Module**: [listing-integration-test](mdc:listing-integration-test)
+- **Purpose**: Test complete end-to-end scenarios
+- **Scope**: Full application stack with real dependencies
+- **Configuration**: [endpoint.properties](mdc:listing-integration-test/src/test/resources/endpoint.properties)
+- **Execution**: Slower, comprehensive validation
+
+#### Scenario Tests (New Module)
+- **Module**: `listing-scenario-test` (to be created)
+- **Purpose**: Complex business scenarios and cross-context interactions
+- **Scope**: Multi-step workflows, public event processing
+- **Execution**: On-demand only, comprehensive scenario validation
+
+## Testing Patterns
+
+### Command-to-Event Validation (Contract Tests)
+- **Purpose**: Ensure commands generate expected events with correct payload structure
+- **Pattern**: Load real test data, execute command, validate generated events
+- **Example**: `listing.command.list-court-hearing` → `hearing-listed-event` + `listing.list-next-hearings-v2`
+- **Validation**: Event presence, payload structure, value mapping from command to event
+
+```java
+@Test
+@Category(ContractTest.class)
+public void shouldGenerateExpectedEventsForAdhocHearingCreation() {
+    // Given: Real command payload
+    JsonEnvelope command = loadTestCommand("adhoc_hearing_creation.json", 
+                                         "listing.command.list-court-hearing");
+    
+    // When: Execute through real handler
+    List<JsonEnvelope> events = executeCommandAndCaptureEvents(command);
+    
+    // Then: Verify expected events and payload structure
+    assertThat(events, hasSize(2));
+    assertEventPresent(events, "hearing-listed-event");
+    assertEventPresent(events, "listing.list-next-hearings-v2");
+    assertCommandValuesMapToEvent(command, findEvent(events, "hearing-listed-event"), 
+                                "hearingId", "courtCentreId");
+}
+```
+
+### Domain Feature Tests
+- **Location**: `src/test/resources/domain-features/` in domain modules
+- **Format**: Gherkin/Cucumber scenarios
+- **Purpose**: Behavior-driven testing of domain logic
+- **Examples**: Business rule validation, aggregate behavior
+
+### Event Handler Testing
+- **Pattern**: Test event processing end-to-end
+- **Setup**: Use test data in `src/test/resources/test-data/`
+- **Verification**: Assert state changes and side effects
+- **Isolation**: Mock external event sources
+
+### Command Handler Testing
+- **Pattern**: Test command processing pipeline
+- **Setup**: Use JSON test data matching command schemas
+- **Verification**: Check domain events raised and state changes
+- **Authentication**: Test access control rules
+
+### Public Event Processing Tests
+- **Purpose**: Validate processing of events from other contexts
+- **Pattern**: Send public event, verify command generation
+- **Example**: `public.hearing.hearing-days-cancelled` → `listing.command.cancel-hearing-days`
+- **Validation**: Correct command generation, payload transformation
+
+## Test Data Management
+
+### Organized Test Data Structure
+Test data is organized by command endpoint and scenario to enable systematic testing:
+
+```
+src/test/resources/
+├── contract-test-data/
+│   ├── commands/
+│   │   ├── list-court-hearing/
+│   │   │   ├── adhoc_hearing_creation.json
+│   │   │   ├── magistrates_simple.json
+│   │   │   └── crown_court_complex.json
+│   │   ├── cancel-hearing/
+│   │   └── update-hearing/
+│   ├── expected-events/
+│   │   ├── list-court-hearing/
+│   │   │   ├── adhoc_hearing_creation_events.json
+│   │   │   └── magistrates_simple_events.json
+│   │   └── cancel-hearing/
+│   └── public-events/
+│       ├── hearing-days-cancelled/
+│       │   ├── input_event.json
+│       │   └── expected_commands.json
+│       └── case-resulted/
+├── scenarios/  # For scenario tests
+│   ├── adhoc-hearing-creation/
+│   │   ├── 01_command_list_court_hearing.json
+│   │   ├── 02_expected_hearing_listed_event.json
+│   │   └── 03_expected_list_next_hearings_event.json
+│   └── multi-step-workflows/
+└── stub-data/  # Existing mock responses
+    └── external-services/
+```
+
+### Test Data Categories
+
+#### Contract Test Data
+- **Location**: `src/test/resources/contract-test-data/`
+- **Purpose**: Real payloads for command-to-event validation
+- **Organization**: Grouped by command endpoint and scenario
+- **Validation**: Must be valid against corresponding JSON schemas
+
+#### Scenario Test Data
+- **Location**: `src/test/resources/scenarios/` (in scenario-test module)
+- **Purpose**: Multi-step business scenarios
+- **Organization**: Sequential steps with expected outcomes
+- **Format**: Numbered files showing workflow progression
+
+#### Stub Data (Existing)
+- **Location**: `src/test/resources/stub-data/` directories
+- **Purpose**: Mock external service responses
+- **Format**: JSON files matching expected schemas
+- **Usage**: Use in unit and integration tests
+
+#### Mock Data (Existing)
+- **Location**: `src/test/resources/mock-data/` in [listing-common](mdc:listing-common)
+- **Purpose**: Shared mock data across modules
+- **Examples**: Azure service responses, external API stubs
+
+## Multi-Layer Test Execution
+
+### Test Execution Commands
+
+```bash
+# Daily development - Fast unit tests only (default)
+mvn test
+
+# CI Pipeline - Contract tests for command-to-event validation
+mvn test -Pcontract-test
+
+# Full integration validation - Complete stack testing
+mvn test -Pintegration-test -pl listing-integration-test -DINTEGRATION_HOST_KEY=localhost
+
+# Comprehensive scenario validation - On-demand only
+mvn test -Pscenario-test -pl listing-scenario-test
+
+# All tests (for release validation)
+mvn test -Pall-tests
+```
+
+### Maven Profiles Configuration
+
+The project uses Maven profiles to control test execution:
+
+```xml
+<profiles>
+    <!-- Default: Unit tests only -->
+    <profile>
+        <id>unit-test</id>
+        <activation><activeByDefault>true</activeByDefault></activation>
+        <properties>
+            <excludedGroups>integration,scenario,contract</excludedGroups>
+        </properties>
+    </profile>
+    
+    <!-- Contract tests for CI -->
+    <profile>
+        <id>contract-test</id>
+        <properties>
+            <groups>contract</groups>
+        </properties>
+    </profile>
+    
+    <!-- Integration tests -->
+    <profile>
+        <id>integration-test</id>
+        <properties>
+            <groups>integration</groups>
+        </properties>
+    </profile>
+    
+    <!-- Scenario tests (on-demand) -->
+    <profile>
+        <id>scenario-test</id>
+        <properties>
+            <groups>scenario</groups>
+        </properties>
+    </profile>
+</profiles>
+```
+
+## Testing Best Practices by Layer
+
+### Unit Testing (Fast, Isolated)
+```java
+@Test
+public void shouldProcessCommandSuccessfully() {
+    // Given: Minimal setup with mocks
+    Command command = createTestCommand();
+    when(mockRepository.save(any())).thenReturn(savedEntity);
+    
+    // When: Execute single method
+    CommandResult result = handler.handle(command);
+    
+    // Then: Verify behavior
+    assertThat(result.isSuccess()).isTrue();
+    verify(mockRepository).save(any(Entity.class));
+}
+```
+
+### Contract Testing (Real Serialization)
+```java
+@Test
+@Category(ContractTest.class)
+public void shouldGenerateExpectedEventsForRealPayload() {
+    // Given: Real JSON payload from test data
+    JsonEnvelope command = loadTestCommand("adhoc_hearing_creation.json");
+    
+    // When: Execute through real handler (mock external services only)
+    List<JsonEnvelope> events = executeCommandAndCaptureEvents(command);
+    
+    // Then: Verify event structure and payload mapping
+    assertThat(events, hasSize(2));
+    assertEventPresent(events, "hearing-listed-event");
+    JsonEnvelope event = findEvent(events, "hearing-listed-event");
+    assertJsonSchema(event, "hearing-listed-event.schema.json");
+    assertFieldMapping(command, event, "hearingId", "courtCentreId");
+}
+```
+
+### Integration Testing (Full Stack)
+```java
+@Test
+@Category(IntegrationTest.class)
+public void shouldProcessEndToEndScenario() {
+    // Given: Real payload and full application context
+    String requestBody = loadTestData("scenarios/adhoc_hearing_creation.json");
+    
+    // When: Call actual REST endpoint
+    Response response = given()
+        .contentType(JSON)
+        .body(requestBody)
+        .post("/api/commands/list-court-hearing");
+    
+    // Then: Verify response and side effects
+    response.then().statusCode(200);
+    await().atMost(5, SECONDS).until(() -> 
+        eventStore.getEventsForStream(hearingId).size() >= 2);
+}
+```
+
+### Scenario Testing (Business Workflows)
+```java
+@Test
+@Category(ScenarioTest.class)
+public void shouldCompleteAdhocHearingCreationWorkflow() {
+    // Given: Multi-step scenario data
+    ScenarioData scenario = loadScenario("adhoc-hearing-creation");
+    
+    // When: Execute scenario steps
+    ScenarioResult result = scenarioExecutor.execute(scenario);
+    
+    // Then: Verify complete workflow outcome
+    assertThat(result.isSuccessful()).isTrue();
+    assertThat(result.getGeneratedEvents()).hasSize(3);
+    assertThat(result.getFinalState()).matches(scenario.getExpectedOutcome());
+}
+```
+
+## Test Categories and JUnit Annotations
+
+### Test Category Interfaces
+Create test category interfaces to enable selective test execution:
+
+```java
+// In listing-common/src/test/java/.../categories/
+public interface ContractTest {}
+public interface ScenarioTest {}
+public interface IntegrationTest {}
+```
+
+### Test Annotation Usage
+```java
+@Test
+@Category(ContractTest.class)
+public void shouldValidateCommandToEventMapping() { ... }
+
+@Test
+@Category(IntegrationTest.class)
+public void shouldProcessFullWorkflow() { ... }
+
+@Test
+@Category(ScenarioTest.class)
+public void shouldCompleteBusinessScenario() { ... }
+```
+
+## Implementation Guidelines
+
+### Contract Test Implementation
+1. **Test Data**: Use real JSON payloads from `contract-test-data/`
+2. **Mocking**: Mock external services but use real serialization
+3. **Validation**: Verify event generation, payload structure, and field mapping
+4. **Location**: Add to existing test classes in command handler modules
+
+### Scenario Test Module Creation
+1. **Module Structure**: Create `listing-scenario-test/` similar to `listing-integration-test/`
+2. **Dependencies**: Lighter than integration tests, focused on workflow testing
+3. **Test Data**: Organized sequential scenarios in `scenarios/` directory
+4. **Execution**: On-demand only, not part of regular CI pipeline
+
+### Command Coverage Priority
+Focus contract tests on these critical command endpoints:
+- `listing.command.list-court-hearing` (highest priority)
+- `listing.command.cancel-hearing`
+- `listing.command.update-hearing`
+- `listing.command.publish-court-list`
+- `listing.command.eject-case`
+
+### Public Event Processing Coverage
+Focus on these key public events:
+- `public.hearing.hearing-days-cancelled`
+- `public.progression.case-resulted`
+- `public.hearing.hearing-confirmed`
+
+## Test Environment Setup by Layer
+
+### Unit Test Environment
+- **Database**: No database dependencies
+- **External Services**: Mock all external dependencies
+- **Speed**: Fastest execution, in-memory only
+- **Isolation**: Complete isolation between tests
+
+### Contract Test Environment
+- **Database**: In-memory or embedded database for event storage
+- **External Services**: Mock HTTP services but use real JSON serialization
+- **Message Queue**: Embedded message queue for event capture
+- **Focus**: Real payload processing with controlled environment
+
+### Integration Test Environment
+- **Database**: Test database with real schema
+- **External Services**: Real or containerized services
+- **Message Queue**: Real message queue implementation
+- **Configuration**: [endpoint.properties](mdc:listing-integration-test/src/test/resources/endpoint.properties)
+
+### Scenario Test Environment
+- **Database**: Shared test database or containerized
+- **External Services**: Real services or sophisticated mocks
+- **Workflow**: Multi-step scenario execution
+- **Cleanup**: Comprehensive cleanup between scenarios
+
+## Continuous Integration Pipeline
+
+### Multi-Stage CI Configuration
+Update [azure-pipelines.yaml](mdc:azure-pipelines.yaml) for layered testing:
+
+```yaml
+stages:
+- stage: UnitTests
+  displayName: 'Unit Tests (Fast)'
+  jobs:
+  - job: unit_tests
+    steps:
+    - script: mvn test
+      displayName: 'Run Unit Tests'
+
+- stage: ContractTests
+  displayName: 'Contract Tests (Medium)'
+  jobs:
+  - job: contract_tests
+    steps:
+    - script: mvn test -Pcontract-test
+      displayName: 'Run Contract Tests'
+
+- stage: IntegrationTests
+  displayName: 'Integration Tests (Slow)'
+  jobs:
+  - job: integration_tests
+    steps:
+    - script: mvn test -Pintegration-test -pl listing-integration-test -DINTEGRATION_HOST_KEY=localhost
+      displayName: 'Run Integration Tests'
+
+- stage: ScenarioTests
+  displayName: 'Scenario Tests (On-Demand)'
+  condition: manual
+  jobs:
+  - job: scenario_tests
+    steps:
+    - script: mvn test -Pscenario-test -pl listing-scenario-test
+      displayName: 'Run Scenario Tests'
+```
+
+### Quality Gates by Layer
+- **Unit Tests**: Must pass for all commits
+- **Contract Tests**: Must pass for PR approval
+- **Integration Tests**: Must pass for deployment
+- **Scenario Tests**: Manual execution for major releases
+
+## Schema and Test Data Validation
+
+### Automated Schema Validation
+```java
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public class SchemaValidationTest {
+    
+    @ParameterizedTest
+    @MethodSource("allTestDataFiles")
+    public void shouldValidateTestDataAgainstSchemas(String filePath, String schemaPath) {
+        JsonObject testData = loadTestData(filePath);
+        JsonSchema schema = loadSchema(schemaPath);
+        
+        ValidationResults results = schema.validate(testData);
+        assertThat("Invalid test data in " + filePath + ": " + results.getErrors(), 
+                  results.isValid(), is(true));
+    }
+}
+```
+
+### Test Data Maintenance
+- **Validation**: All test data must validate against corresponding schemas
+- **Versioning**: Test data versions aligned with schema versions
+- **Coverage**: Each command endpoint must have multiple scenario variations
+- **Maintenance**: Regular review and update of test scenarios
+
+## Problem Resolution
+
+### Addressing Mock Fragility
+- **Contract Tests**: Use real serialization to catch payload changes
+- **Schema Validation**: Automatic validation prevents schema drift
+- **Real Test Data**: Use actual payloads from integration scenarios
+- **Field Mapping**: Verify command-to-event field mapping
+
+### Test Execution Speed
+- **Layered Approach**: Run only necessary tests during development
+- **Parallel Execution**: Use Maven parallel testing capabilities
+- **Selective Testing**: Target specific test categories based on changes
+- **Fast Feedback**: Unit tests provide immediate feedback
+
+### Test Maintenance
+- **Organized Structure**: Clear test data organization by endpoint/scenario
+- **Reusable Utilities**: Common test utilities for contract validation
+- **Documentation**: Clear guidelines for adding new test scenarios
+- **Regular Review**: Periodic review of test coverage and relevance
+
+## Summary
+
+This multi-layer testing strategy addresses the key challenges in testing event-driven microservices:
+
+### Problems Solved
+1. **Mock Fragility**: Contract tests use real serialization to catch payload changes
+2. **Event Validation**: Systematic command-to-event mapping verification
+3. **Test Speed**: Layered approach enables fast development cycles
+4. **Scenario Coverage**: Comprehensive business workflow validation
+
+### Implementation Approach
+- **Incremental**: Add contract tests to existing modules without disruption
+- **Organized**: Structured test data by command endpoint and scenario
+- **Selective**: Maven profiles enable targeted test execution
+- **Maintainable**: Clear patterns and reusable utilities
+
+### Expected Benefits
+- **Faster Development**: Fast unit tests for daily development
+- **Higher Confidence**: Contract tests catch integration issues early
+- **Better Coverage**: Systematic validation of critical workflows
+- **Reduced Maintenance**: Organized test data and clear patterns
+
+### Next Steps
+1. Start with Task 1-5: Foundation and first contract tests
+2. Focus on `listing.command.list-court-hearing` as the first implementation
+3. Gradually expand to other critical command endpoints
+4. Add scenario tests for complex business workflows
+5. Integrate with CI pipeline for automated validation
