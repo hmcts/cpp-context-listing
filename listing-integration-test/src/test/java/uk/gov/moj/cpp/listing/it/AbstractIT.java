@@ -2,6 +2,8 @@ package uk.gov.moj.cpp.listing.it;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.reset;
 import static com.google.common.io.Resources.getResource;
+import static javax.ws.rs.core.Response.Status.OK;
+import static uk.gov.moj.cpp.listing.utils.WebDavStub.acceptCourtListXmlFile;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.joining;
@@ -9,6 +11,7 @@ import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCourtSchedulerCatchAll;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubDeleteAvailableHearingSlotsServiceForAnyHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataOrganisationUnitCatchAll;
 import uk.gov.moj.cpp.listing.it.util.ArtemisQueuePurger;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProgressionNotesStubs;
@@ -35,6 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @SuppressWarnings("WeakerAccess")
+@ExtendWith(ServerLogTestMarkerExtension.class) // first: markers must bracket the other extensions + setUp()
 @ExtendWith(JmsResourceManagementExtension.class)
 @ExtendWith(TestDurationExtension.class)
 public class AbstractIT {
@@ -55,8 +59,19 @@ public class AbstractIT {
 
     @BeforeEach
     void setUp() {
+        // Quiesce BEFORE purge+truncate: let any projection the previous test left in flight finish
+        // against intact tables, so the truncation below cannot race it (B2). Consume-side only —
+        // does not drain the publish relay, so suppressed stale events stay suppressed.
+        ArtemisQueuePurger.quiesceListingEventProcessing();
         ArtemisQueuePurger.purgeAllListingQueues();
         reset();
+        // ASYNC-VULNERABLE stubs are re-armed FIRST after reset(): in-flight EVENT_PROCESSOR work
+        // from the previous test (court-list export PUTs, org-unit lookups for allocations) can
+        // land in the reset()->arm gap and fail with 404/NULL-payload errors misattributed to this
+        // test. The gap cannot be fully closed (WireMock state is wiped atomically), only kept
+        // minimal. Tests that re-arm later still win — most recent stub wins at equal priority.
+        acceptCourtListXmlFile(OK);
+        stubGetReferenceDataOrganisationUnitCatchAll();
         stubCourtSchedulerCatchAll();
         setupAsAuthorisedUser(USER_ID_VALUE);
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased();

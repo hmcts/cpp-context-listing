@@ -36,6 +36,8 @@ public class ReferenceDataStub {
 
     private static final String REFERENCE_DATA_COURT_MAPPINGS_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/cp-xhibit-court-mappings";
     private static final String REFERENCE_DATA_COURT_MAPPINGS_MEDIA_TYPE = "application/vnd.referencedata.query.cp-xhibit-court-mappings+json";
+    private static final String REFERENCE_DATA_CP_XHIBIT_MAGS_COURT_MAPPING_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/cp-xhibit-mags-court-mapping";
+    private static final String REFERENCE_DATA_CP_XHIBIT_MAGS_COURT_MAPPING_MEDIA_TYPE = "application/vnd.referencedata.query.cp-xhibit-mags-court-mapping+json";
     private static final String REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/cp-xhibit-courtroom-mappings";
     private static final String REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_MEDIA_TYPE = "application/vnd.referencedata.query.cp-xhibit-courtroom-mappings+json";
     private static final String REFERENCE_DATA_COURT_CENTRE_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/courtrooms/.*";
@@ -125,6 +127,19 @@ public class ReferenceDataStub {
                         .withBody(payload)));
     }
 
+    /**
+     * Stub {@code referencedata.query.cp-xhibit-mags-court-mapping} for a specific {@code oucode} (WireMock matches query param).
+     */
+    public static void stubGetReferenceDataCpXhibitMagsCourtMappingForOucode(final String oucode, final String responseBody) {
+        stubPingForReferenceDataService();
+        stubFor(get(urlPathMatching(REFERENCE_DATA_CP_XHIBIT_MAGS_COURT_MAPPING_QUERY_URL))
+                .withQueryParam("oucode", equalTo(oucode))
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader("Content-Type", REFERENCE_DATA_CP_XHIBIT_MAGS_COURT_MAPPING_MEDIA_TYPE)
+                        .withBody(responseBody)));
+    }
+
     public static void stubGetReferenceDataXhibitCourtRoomMappings(final UUID courtRoomUUID) {
         InternalEndpointMockUtils.stubPingFor("referencedata-service");
 
@@ -163,13 +178,39 @@ public class ReferenceDataStub {
                         .withBody(payload)));
     }
 
+    /**
+     * The courtrooms array in referencedata.query.courtroom.json is HARDCODED to the four pool rooms
+     * (COURT_ROOM_IDS). These methods historically also did .replace("COURT_ROOM_ID", ...) — a silent
+     * no-op, because the template contains no such placeholder. Tests passing a custom (non-pool)
+     * courtRoomId therefore got refdata WITHOUT their room, and any flow resolving the cp courtroom
+     * number (HearingDaysEnrichmentService.getCpCourtRoomNumber via ReferenceDataCache) failed with
+     * InvalidReferenceDataException "Cannot find court room uuid ..." → HTTP 500 + undertow ERROR.
+     * This helper makes the parameter real: a custom room is injected as an extra courtrooms entry;
+     * pool rooms (already in the template) and null pass through unchanged.
+     */
+    private static String withCourtRoom(final String payload, final UUID courtRoomId) {
+        if (courtRoomId == null || payload.contains(courtRoomId.toString())) {
+            return payload;
+        }
+        final String injectedRoom = "\"courtrooms\": [\n" +
+                "    {\n" +
+                "      \"courtroomId\": 1966,\n" +
+                "      \"id\": \"" + courtRoomId + "\",\n" +
+                "      \"venueName\": \"STUB CUSTOM COURT\",\n" +
+                "      \"venueNameWelsh\": \"STUB CUSTOM COURT\",\n" +
+                "      \"courtroomName\": \"Courtroom 06\",\n" +
+                "      \"courtroomNameWelsh\": \"Ystafell y Llys 06\"\n" +
+                "    },";
+        return payload.replace("\"courtrooms\": [", injectedRoom);
+    }
+
     public static void stubGetReferenceDataCourtCentre(final CourtCentreData courtReferenceData) {
         stubPingForReferenceDataService();
-        String payload = getPayload("stub-data/referencedata.query.courtroom.json")
+        String payload = withCourtRoom(getPayload("stub-data/referencedata.query.courtroom.json")
                 .replace("COURT_CENTRE_ID", courtReferenceData.getCourtCentreId().toString())
                 .replace("DEFAULT_START_TIME", courtReferenceData.getDefaultStartTime().toString())
-                .replace("DEFAULT_DURATION_HOURS_MINS", courtReferenceData.getDefaultDurationHoursMins())
-                .replace("COURT_ROOM_ID", courtReferenceData.getCourtRoomId() != null ? courtReferenceData.getCourtRoomId().toString() : getRandomCourtRoomId().toString());
+                .replace("DEFAULT_DURATION_HOURS_MINS", courtReferenceData.getDefaultDurationHoursMins()),
+                courtReferenceData.getCourtRoomId());
 
         stubFor(get(urlPathMatching(REFERENCE_DATA_COURT_CENTRE_QUERY_URL))
                 .willReturn(aResponse().withStatus(SC_OK)
@@ -182,11 +223,11 @@ public class ReferenceDataStub {
         stubPingForReferenceDataService();
         final JsonArrayBuilder jsonArrBuilder = createArrayBuilder();
         stream(courtCenters).toList().forEach( cc -> {
-                    String payload = getPayload("stub-data/referencedata.query.courtroom.json")
+                    String payload = withCourtRoom(getPayload("stub-data/referencedata.query.courtroom.json")
                             .replace("COURT_CENTRE_ID", cc.getCourtCentreId().toString())
                             .replace("DEFAULT_START_TIME", cc.getDefaultStartTime().toString())
-                            .replace("DEFAULT_DURATION_HOURS_MINS", cc.getDefaultDurationHoursMins())
-                            .replace("COURT_ROOM_ID", cc.getCourtRoomId() != null ? cc.getCourtRoomId().toString() : getRandomCourtRoomId().toString());
+                            .replace("DEFAULT_DURATION_HOURS_MINS", cc.getDefaultDurationHoursMins()),
+                            cc.getCourtRoomId());
                     jsonArrBuilder.add(createReader(new java.io.StringReader(payload)).readObject());
                 });
         final JsonObject rootJsonObj = createObjectBuilder().add("organisationunits", jsonArrBuilder.build()).build();
@@ -216,11 +257,11 @@ public class ReferenceDataStub {
 
         final String urlPath = String.format(REFERENCE_DATA_COURT_ROOM_QUERY_URL, courtReferenceData.getCourtCentreId());
 
-        String payload = getPayload("stub-data/referencedata.query.courtroom.json")
+        String payload = withCourtRoom(getPayload("stub-data/referencedata.query.courtroom.json")
                 .replace("COURT_CENTRE_ID", courtReferenceData.getCourtCentreId().toString())
                 .replace("DEFAULT_START_TIME", courtReferenceData.getDefaultStartTime().toString())
-                .replace("DEFAULT_DURATION_HOURS_MINS", courtReferenceData.getDefaultDurationHoursMins())
-                .replace("COURT_ROOM_ID", courtReferenceData.getCourtRoomId() != null ? courtReferenceData.getCourtRoomId().toString() : getRandomCourtRoomId().toString());
+                .replace("DEFAULT_DURATION_HOURS_MINS", courtReferenceData.getDefaultDurationHoursMins()),
+                courtReferenceData.getCourtRoomId());
 
         stubFor(get(urlPathMatching(urlPath))
                 .willReturn(aResponse().withStatus(SC_OK)
@@ -268,6 +309,35 @@ public class ReferenceDataStub {
                 .replace("COURT_CENTRE_ID", courtCentreId.toString());
 
         stubFor(get(urlPathMatching(urlPath))
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader("Content-Type", REFERENCE_DATA_ORGANISATION_UNIT_MEDIA_TYPE)
+                        .withBody(payload)));
+    }
+
+    /**
+     * Low-priority catch-all for organisation-units/{anyUuid}. The EVENT_PROCESSOR's public
+     * hearing-confirmed V2 factory (PublicHearingFactory.buildCourtCentre via
+     * ReferenceDataService.getOrganizationUnitById) fetches the organisation unit for EVERY
+     * hearing allocation; an unmatched request returns 404 → NULL payload envelope →
+     * IncompatibleJsonPayloadTypeException → ~10x JMS redelivery storm → DLQ, for any test
+     * allocating under a centre without an explicit org-unit stub.
+     *
+     * <p>Safe as a catch-all because consumers only read oucode/oucodeL3Name — the courtCentre
+     * id in the built public event comes from the EVENT, not this response. Tests needing
+     * centre-specific values still win via their explicit stubs (default priority 5 &lt; 10).</p>
+     */
+    public static void stubGetReferenceDataOrganisationUnitCatchAll() {
+        InternalEndpointMockUtils.stubPingFor("referencedata-service");
+
+        final String urlPath = String.format(REFERENCE_DATA_ORGANISATION_UNIT_QUERY_URL, "[0-9a-fA-F-]{36}");
+
+        // Fixed dummy id: the response id is ignored by all consumers (see javadoc)
+        String payload = getPayload("stub-data/referencedata.query.organisation-unit.json")
+                .replace("COURT_CENTRE_ID", "f8254db1-1683-483e-afb4-a4d911484209");
+
+        stubFor(get(urlPathMatching(urlPath))
+                .atPriority(10)
                 .willReturn(aResponse().withStatus(SC_OK)
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_ORGANISATION_UNIT_MEDIA_TYPE)

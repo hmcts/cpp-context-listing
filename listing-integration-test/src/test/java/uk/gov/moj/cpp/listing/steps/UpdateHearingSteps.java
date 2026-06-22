@@ -45,6 +45,7 @@ import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.payloadToObject;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.VLD_LATENCY_RETRIEVE_TIMEOUT;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
@@ -88,6 +89,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import uk.gov.justice.services.messaging.JsonObjects;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -936,7 +938,10 @@ public class UpdateHearingSteps extends AbstractIT {
 
 
     public void verifyHearingRequestedForListingEvent(final int count) {
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingRequestedForListing);
+        // vld: the split update routes through update-hearing-for-listing-enriched, whose read-after-write
+        // redelivery loop can hold the command's commit (and thus this private event's emission) well past
+        // the default 60s window. The event is retained on the private queue; wait the vld-sized budget.
+        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingRequestedForListing, VLD_LATENCY_RETRIEVE_TIMEOUT);
         assertThat(jsonResponse.getMap("listNewHearing").get("nonDefaultDays"), is(notNullValue()));
         assertThat(((ArrayList) jsonResponse.getMap("listNewHearing").get("nonDefaultDays")).size(), is(count));
     }
@@ -1125,8 +1130,8 @@ public class UpdateHearingSteps extends AbstractIT {
     }
 
     public String verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDateCourtCalendarWithPagination(UUID courtCentreId,int pageSize, int pageNumber, int itemCount) {
-        var startDate = LocalDate.now().toString();
-        var endDate = LocalDate.now().plusDays(3).toString();
+        var startDate = ItClock.today().toString();
+        var endDate = ItClock.today().plusDays(3).toString();
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.hearingscourt.calendar.by.allocated.court-centre-id.start-date.end-date-with-pagination"),
                         ALLOCATED,
@@ -1481,17 +1486,23 @@ public class UpdateHearingSteps extends AbstractIT {
     public void verifyHearingPayloadProperty(final String hearingId, final String propertyName, final Matcher<Object> matcher) {
         final String hearingIdFilter = getHearingFilter(hearingId);
 
+        // Poll until the hearing is in the unallocated list AND the property has actually been cleared.
+        // Polling only on list membership and then reading the property outside the loop was racy: on a
+        // slower (pipeline/vld) read model the row shows up unallocated a beat before the property is
+        // nulled, so the stale original value leaked through (HearingIT:576 flake). A cleared property is
+        // omitted from the projection, so the filtered path resolves to an empty list -> hasSize(0).
         final String payload = pollForHearingWithJmsDelay(updatedHearingData.getCourtCentreId().toString(), UNALLOCATED, getLoggedInUser().toString(), new Matcher[]{
-                withJsonPath(hearingIdFilter, hasSize(1))
+                withJsonPath(hearingIdFilter, hasSize(1)),
+                withJsonPath(hearingIdFilter + "." + propertyName, hasSize(0))
         });
 
         final JsonObject payloadAsJsonObject = new StringToJsonObjectConverter().convert(payload);
-        Object courtRoomId = payloadAsJsonObject.getJsonArray("hearings").stream().
+        final Object propertyValue = payloadAsJsonObject.getJsonArray("hearings").stream().
                 map(h -> (JsonObject) h)
                 .filter(h -> h.getString("id").equals(hearingId))
                 .findFirst().get().get(propertyName);
 
-        assertThat(courtRoomId, matcher);
+        assertThat(propertyValue, matcher);
     }
 
     public void verifyJudiciaryChangedForHearingStatusPublicEvent() {
@@ -1509,8 +1520,8 @@ public class UpdateHearingSteps extends AbstractIT {
                         .replaceAll("%DEFENDANT_ID%", hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString())
                         .replaceAll("%PROSECUTION_CASE_ID%", hearingData.getListedCases().get(0).getCaseId().toString())
                         .replaceAll("%CASE_URN%", hearingData.getListedCases().get(0).getCaseReference().toString())
-                        .replaceAll("%SHARED_TIME%", ZonedDateTime.now().format(DateTimeFormatter.ISO_INSTANT))
-                        .replaceAll("%HEARING_DAY%", LocalDate.now().toString())
+                        .replaceAll("%SHARED_TIME%", ItClock.nowUtc().format(DateTimeFormatter.ISO_INSTANT))
+                        .replaceAll("%HEARING_DAY%", ItClock.today().toString())
         );
 
         sendMessage(publicEventMessageProducer, EVENT_SELECTED_PUBLIC_HEARING_RESULTED, eventPayload,

@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.scenario;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import javax.json.JsonObject;
 import java.io.IOException;
@@ -16,6 +17,7 @@ import static java.time.ZoneOffset.UTC;
 import static java.util.Collections.emptyMap;
 import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.*;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetProsecutorPoliceFlag;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 
@@ -46,12 +48,12 @@ class TestSpiScenario extends AbstractIT {
     @Test
     void testHearingDaysWithCourtCentreScenario() throws IOException {
         stubGetAvailableHearingSlots();
-        startDate = LocalDate.now();
-        endDate = LocalDate.now().plusDays(1);
+        startDate = ItClock.today();
+        endDate = ItClock.today().plusDays(1);
         hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
         hearingId = randomUUID();
         caseId = randomUUID();
-        courtCentreId = randomUUID();
+        courtCentreId = getRandomCourtCenterId();
         hearingTypeId = randomUUID();
 
         stubGetReferenceDataCourtCentreById(courtCentreId);
@@ -75,12 +77,12 @@ class TestSpiScenario extends AbstractIT {
 
     @Test
     void shouldListHearingWithUnallocatedData() throws IOException {
-        startDate = LocalDate.now();
-        endDate = LocalDate.now().plusDays(1);
+        startDate = ItClock.today();
+        endDate = ItClock.today().plusDays(1);
         hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
         hearingId = randomUUID();
         caseId = randomUUID();
-        courtCentreId = randomUUID();
+        courtCentreId = getRandomCourtCenterId();
         hearingTypeId = randomUUID();
 
         stubGetReferenceDataCourtCentreById(courtCentreId);
@@ -102,12 +104,12 @@ class TestSpiScenario extends AbstractIT {
     @Test
     void shouldListHearingWithTwoDefendantsUnallocated() throws IOException {
         stubGetAvailableHearingSlots();
-        startDate = LocalDate.now();
-        endDate = LocalDate.now().plusDays(1);
+        startDate = ItClock.today();
+        endDate = ItClock.today().plusDays(1);
         hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
         hearingId = randomUUID();
         caseId = randomUUID();
-        courtCentreId = randomUUID();
+        courtCentreId = getRandomCourtCenterId();
         hearingTypeId = randomUUID();
 
         stubGetReferenceDataCourtCentreById(courtCentreId);

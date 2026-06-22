@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.command.api;
 
 import static java.util.Collections.singletonMap;
 import static org.mockito.BDDMockito.given;
+import static uk.gov.moj.cpp.listing.command.api.accesscontrol.PermissionConstants.createCourtSchedulePermission;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ADMINISTRATORS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ASSOCIATE;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_CLERKS;
@@ -17,6 +18,7 @@ import static uk.gov.moj.cpp.listing.domain.RuleConstants.NPS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.SYSTEM_USERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.YOTS;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider;
 import uk.gov.moj.cpp.accesscontrol.drools.Action;
 import uk.gov.moj.cpp.accesscontrol.test.utils.BaseDroolsAccessControlTest;
@@ -46,6 +48,7 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     private static final String ACTION_MARK_UNALLOCATED_HEARING_AS_DUPLICATE = "listing.mark-unallocated-hearing-as-duplicate";
     private static final String ACTION_DELETE_HEARING = "listing.command.delete-hearing";
     private static final String ACTION_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING = "listing.delete-previous-hearings-and-create-next-hearing";
+    private static final String ACTION_MOVE_HEARING_TO_PAST_DATE = "listing.command.move-hearing-to-past-date";
 
 
 
@@ -302,6 +305,25 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     public void shouldNotAllowNonSystemUserToDeleteHearing() {
         final Action action = createActionFor(ACTION_DELETE_HEARING);
         given(userAndGroupProvider.isSystemUser(action)).willReturn(false);
+
+        final ExecutionResults results = executeRulesWith(action);
+
+        assertFailureOutcome(results);
+    }
+
+    @Test
+    public void shouldAllowUserWithCourtScheduleCreatePermissionToMoveHearingToPastDate() throws JsonProcessingException {
+        final Action action = createActionFor(ACTION_MOVE_HEARING_TO_PAST_DATE);
+        given(userAndGroupProvider.hasPermission(action, createCourtSchedulePermission())).willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldNotAllowUserWithoutCourtScheduleCreatePermissionToMoveHearingToPastDate() {
+        final Action action = createActionFor(ACTION_MOVE_HEARING_TO_PAST_DATE);
 
         final ExecutionResults results = executeRulesWith(action);
 

@@ -108,14 +108,20 @@ public class HearingEnrichmentOrchestrator {
         } else if (JurisdictionType.CROWN.equals(jurisdictionType)) {
             LOGGER.info("Enrich update hearing for CROWN hearingid: {}", hearing.getHearingId());
             if (!isWeekCommencingHearing(hearing) && hasCourtScheduleId(hearing)) {
-                // CROWN with courtScheduleId (hearingDays or nonDefaultDays): CourtSchedule-first flow
-                // mirrors enrichListCourtHearing. Resolves multi-day sessions from courtscheduler
-                // BEFORE day-range expansion, so the authoritative session count (e.g. 3 for duration 1080)
-                // wins over startDate→endDate iteration that would otherwise produce N calendar days.
+                // CROWN with courtScheduleId submitted (hearingDays or nonDefaultDays): CourtSchedule-first
+                // flow, mirroring enrichListCourtHearing. The submitted ids ARE the chosen sessions, so we
+                // resolve them via enrichCrownCourtScheduleFirst — the pre-d62d3446 behaviour — rather than
+                // asking courtscheduler to find/extend slots via extend-multiday-hearing.
                 // WeekCommencing payloads skip this branch — they have their own enrichment rules.
-                final UpdateHearingForListing withCourtSchedules = isCrownMultiDay(hearing)
-                        ? courtScheduleEnrichmentService.handleCrownMultiDayExtension(hearing)
-                        : courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+                UpdateHearingForListing withCourtSchedules = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+                UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(withCourtSchedules, envelope);
+                enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
+            } else if (!isWeekCommencingHearing(hearing) && isCrownRawMultiDayBooking(hearing)) {
+                // No courtScheduleId submitted + multi-day (> MINUTES_IN_DAY): the listing officer has not
+                // picked sessions, so ask courtscheduler to extend/book the multi-day sessions via
+                // extend-multiday-hearing. The authoritative session count wins over startDate→endDate
+                // expansion that would otherwise produce N calendar days.
+                UpdateHearingForListing withCourtSchedules = courtScheduleEnrichmentService.handleCrownMultiDayExtension(hearing);
                 UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(withCourtSchedules, envelope);
                 enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
             } else {
@@ -144,10 +150,14 @@ public class HearingEnrichmentOrchestrator {
         } else if (JurisdictionType.CROWN.equals(jurisdictionType)) {
             LOGGER.info("Enrich update hearing for CROWN hearingid: {}", hearing.getHearingId());
             if (!isWeekCommencingHearing(hearing) && hasCourtScheduleId(hearing)) {
-                // CourtSchedule-first flow — see enrichUpdateHearingForListing(hearing, envelope) for rationale.
-                final UpdateHearingForListing withCourtSchedules = isCrownMultiDay(hearing)
-                        ? courtScheduleEnrichmentService.handleCrownMultiDayExtension(hearing)
-                        : courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+                // courtScheduleId submitted → CourtSchedule-first flow (pre-d62d3446 behaviour).
+                // See enrichUpdateHearingForListing(hearing, envelope) for rationale.
+                UpdateHearingForListing withCourtSchedules = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+                UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(withCourtSchedules, envelope, courtCentreDetails);
+                enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
+            } else if (!isWeekCommencingHearing(hearing) && isCrownRawMultiDayBooking(hearing)) {
+                // No courtScheduleId submitted + multi-day → extend-multiday-hearing.
+                UpdateHearingForListing withCourtSchedules = courtScheduleEnrichmentService.handleCrownMultiDayExtension(hearing);
                 UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(withCourtSchedules, envelope, courtCentreDetails);
                 enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
             } else {
@@ -351,8 +361,23 @@ public class HearingEnrichmentOrchestrator {
                         && !Boolean.TRUE.equals(nd.getVirtual()));
     }
 
-    private static boolean isCrownMultiDay(final UpdateHearingForListing hearing) {
-        return CourtScheduleEnrichmentService.calculateAggregatedDuration(hearing) > HearingDurationEnrichmentService.MINUTES_IN_DAY;
+    /**
+     * A raw multi-day booking is expressed as a SINGLE day entry whose own duration spans more than one
+     * court day (> MINUTES_IN_DAY); courtscheduler must extend/book the block via extend-multiday-hearing.
+     * Per-day updates such as court-room changes submit one entry per day (each ≤ MINUTES_IN_DAY) — their
+     * aggregate may exceed a day, but they are NOT multi-day bookings and must take the plain enrichment
+     * path (which is why this checks the max single-day duration, not calculateAggregatedDuration's sum).
+     */
+    private static boolean isCrownRawMultiDayBooking(final UpdateHearingForListing hearing) {
+        final int minutesInDay = HearingDurationEnrichmentService.MINUTES_IN_DAY;
+        if (!isEmpty(hearing.getHearingDays())
+                && hearing.getHearingDays().stream()
+                .anyMatch(d -> nonNull(d.getDurationMinutes()) && d.getDurationMinutes() > minutesInDay)) {
+            return true;
+        }
+        return !isEmpty(hearing.getNonDefaultDays())
+                && hearing.getNonDefaultDays().stream()
+                .anyMatch(nd -> nonNull(nd.getDuration()) && nd.getDuration() > minutesInDay);
     }
 
     /**

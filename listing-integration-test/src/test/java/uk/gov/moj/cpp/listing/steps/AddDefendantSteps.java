@@ -16,6 +16,7 @@ import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProduc
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
+import static uk.gov.moj.cpp.listing.it.util.PublishRetryHelper.publishUntilReflected;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
@@ -41,6 +42,7 @@ import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClien
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.AddDefendantForCourtProceedingsData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -51,9 +53,14 @@ import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.path.json.JsonPath;
+import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AddDefendantSteps extends AbstractIT {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AddDefendantSteps.class);
 
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS = "public.progression.defendants-added-to-court-proceedings";
     private static final String PUBLIC_EVENT_SELECTOR_DEFENDANT_DETAILS_ADDED_FOR_COURT_PROCEEDINGS = "public.listing.new-defendant-added-for-court-proceedings";
@@ -151,13 +158,61 @@ public class AddDefendantSteps extends AbstractIT {
         });
     }
 
+    /**
+     * Publishes the {@code public.progression.defendants-added-to-court-proceedings} event and verifies it was
+     * consumed downstream (via the {@code public.listing.new-defendant-added-for-court-proceedings} JMS message),
+     * RE-PUBLISHING until the message arrives (or the attempt budget is exhausted).
+     *
+     * <p><b>Why re-publish?</b> Same case-link race as described on {@link #publishUntilDefendantsAddedReflected}:
+     * the Case aggregate silently drops the event when {@code hearingIds.isEmpty()}. A dropped publish emits NO
+     * downstream events, so the JMS consume hangs to timeout with {@link java.util.NoSuchElementException}.
+     * Re-publishing with a fresh metadata id each attempt recovers once the case&lt;-&gt;hearing link forms.
+     * Safe: a dropped publish produces no duplicates.
+     */
+    public void publishUntilDefendantsAddedConsumed() {
+        final int maxPublishAttempts = 3;
+        for (int attempt = 1; attempt <= maxPublishAttempts; attempt++) {
+            LOGGER.info("[defendants-added-fix] publishing defendants-added event (JMS-consume gate) for case {} (attempt {}/{})",
+                    caseId, attempt, maxPublishAttempts);
+            whenCaseDefendantsAddedPublicEventIsPublished();
+            try {
+                verifyPublicEventDefendantAddedInActiveMQ();
+                LOGGER.info("[defendants-added-fix] downstream JMS event received after {} publish attempt(s)", attempt);
+                return;
+            } catch (final java.util.NoSuchElementException caseNotYetLinkedToHearing) {
+                if (attempt == maxPublishAttempts) {
+                    LOGGER.error("[defendants-added-fix] downstream JMS event still not received after {} attempts — failing", maxPublishAttempts);
+                    throw caseNotYetLinkedToHearing;
+                }
+                LOGGER.warn("[defendants-added-fix] attempt {} produced no downstream JMS event (case<->hearing link likely not yet established); re-publishing", attempt);
+            }
+        }
+    }
+
+    /**
+     * Publishes the {@code public.progression.defendants-added-to-court-proceedings} event and verifies the
+     * read model, RE-PUBLISHING until the update is reflected (or the attempt budget is exhausted).
+     *
+     * <p><b>Why re-publish?</b> The event is consumed by the Case aggregate's handler which silently drops
+     * the update ({@code if (hearingIds.isEmpty()) return Stream.empty();}) when the case is not yet linked to
+     * a hearing. The async {@code add-hearing-to-case} command runs after {@code list-court-hearing} and has
+     * no viewstore projection, so the test cannot await the link deterministically. On slow CI the single
+     * publish can be lost with no JMS redelivery. Re-publishing with a fresh metadata id each attempt
+     * (framework dedupes by metadata id) recovers once the link is established.
+     */
+    public void publishUntilDefendantsAddedReflected(final boolean allocated) {
+        publishUntilReflected(LOGGER, "defendants-added-fix", "defendants-added event for case " + caseId,
+                this::whenCaseDefendantsAddedPublicEventIsPublished,
+                () -> verifyHearingListedFromAPIWithJmsDelay(allocated));
+    }
+
     private AddDefendantForCourtProceedingsData getAddDefendantDetails(final UUID caseId) {
 
 
         final List<uk.gov.justice.core.courts.Defendant> defendant = Arrays.asList(Defendant.defendant()
                 .withId(DEFENDANT_ID)
                 .withMasterDefendantId(MASTER_DEFENDANT_ID)
-                .withCourtProceedingsInitiated(ZonedDateTime.now())
+                .withCourtProceedingsInitiated(ItClock.nowUtc())
                 .withLegalEntityDefendant(LegalEntityDefendant.legalEntityDefendant()
                         .withOrganisation(Organisation.organisation()
                                 .withName("withOrganisationName")

@@ -19,8 +19,7 @@
             "startTime": "%%START_TIME%%",
             "courtCentreId": "%%COURT_CENTRE_ID%%",
             "roomId": "%%COURT_ROOM_ID%%",
-            "duration": 1080,
-            "courtScheduleId": "%%STARTING_COURT_SCHEDULE_ID%%"
+            "duration": 1080
         }
     ],
     "judiciary": [],

@@ -40,6 +40,7 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHea
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedulesWithJudiciaries;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrownDraft;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubUpdateAvailableHearingSlotsService;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
@@ -56,6 +57,7 @@ import uk.gov.moj.cpp.listing.steps.data.JudicialRoleData;
 import uk.gov.moj.cpp.listing.steps.data.JudicialRoleTypeData;
 import uk.gov.moj.cpp.listing.steps.data.SequenceHearingData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -287,6 +289,7 @@ class HearingIT extends AbstractIT {
     }
 
     @Test
+    @ExpectedServerErrors("bulk update deliberately references hearings that do not exist -> ERROR 'Failed to update hearingId=... There is no Hearing for this ID' x2; the public event must report those failures")
     void shouldUpdateMultipleHearingsWithAllocationAndRaisesPublicEventWithFailures() throws IOException {
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
@@ -564,6 +567,12 @@ class HearingIT extends AbstractIT {
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataWithNoCourtRoom);
         stubGetAvailableHearingSlotsWithQueryParams(updateHearingSteps.getUpdatedHearingData());
         stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
+        // Removing the court room must resolve to a DRAFT searchAndBook slot so the aggregate unallocates
+        // and clears the previously-allocated room. whenHearingIsUpdatedForListingHmiEnabled() stubs no
+        // searchAndBook, and the courtRoom-gated stub in whenHearingIsUpdatedForListing only fires when a
+        // room is present — so without this the /searchlist/hearingslots call finds no slot, enrichment
+        // no-ops, and the original allocation (court room) survives → assertion sees a UUID, not null.
+        stubSearchBookHearingSlotsForCrownDraft(hearinId.toString(), courtCentreId.toString());
         updateHearingSteps.whenHearingIsUpdatedForListingHmiEnabled();
         updateHearingSteps.verifyHearingUpdatedWithNoCourtRoomAndUnallocatedWhenQueryingFromAPI();
         updateHearingSteps.verifyHearingUnallocatedCourtroomRemoveds(hearinId);
@@ -664,12 +673,12 @@ class HearingIT extends AbstractIT {
     @Test
 
     void shouldUpdateWeekCommencing() {
-        final HearingsData hearingsData = HearingsData.hearingsDataForWeekCommencing(LocalDate.now(), 1);
+        final HearingsData hearingsData = HearingsData.hearingsDataForWeekCommencing(ItClock.today(), 1);
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-        listCourtHearingSteps.verifyHearingListedWithWeekCommencingFromAPI(UNALLOCATED, LocalDate.now(), 1);
+        listCourtHearingSteps.verifyHearingListedWithWeekCommencingFromAPI(UNALLOCATED, ItClock.today(), 1);
     }
 
     @Test

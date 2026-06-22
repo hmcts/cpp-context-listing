@@ -22,6 +22,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataForYoungDefendants());
     }
 
+    public static HearingsData singleHearingDataForYoungDefendants() {
+        return new HearingsData(List.of(HearingsDataFactory.hearingsDataForYoungDefendants().get(0)));
+    }
+
     public static HearingsData hearingsDataWithAdultDefendants() {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAdultDefendants());
     }

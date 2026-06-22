@@ -30,6 +30,8 @@ public class OffenceData {
     private String indictmentParticular;
     private CivilOffenceData civilOffenceData;
 
+    private CommittingCourtTestDetails committingCourtTestDetails;
+
     public OffenceData(final UUID offenceId, final String offenceCode,
                        final LocalDate startDate, final LocalDate endDate, final String statementOfOffenceTitle,
                        final String statementOfOffenceTitleWelsh, final String offenceWording,
@@ -56,6 +58,14 @@ public class OffenceData {
         this.reportingRestriction = reportingRestrictionData;
         this.indictmentParticular = indictmentParticular;
         this.civilOffenceData = civilOffenceData;
+    }
+
+    public CommittingCourtTestDetails getCommittingCourtTestDetails() {
+        return committingCourtTestDetails;
+    }
+
+    public void setCommittingCourtTestDetails(final CommittingCourtTestDetails committingCourtTestDetails) {
+        this.committingCourtTestDetails = committingCourtTestDetails;
     }
 
     public Optional<LaaReferenceData> getLaaApplnReference() {
@@ -180,5 +190,6 @@ public class OffenceData {
         this.statementOfOffenceTitle = offenceData.getStatementOfOffenceTitle();
         this.statementOfOffenceTitleWelsh = offenceData.getStatementOfOffenceTitleWelsh();
         this.civilOffenceData = offenceData.getCivilOffenceData();
+        this.committingCourtTestDetails = offenceData.getCommittingCourtTestDetails();
     }
 }

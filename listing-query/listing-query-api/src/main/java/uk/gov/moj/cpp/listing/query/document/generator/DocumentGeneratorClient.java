@@ -7,24 +7,22 @@ import uk.gov.moj.cpp.system.documentgenerator.client.DocumentGeneratorClientPro
 import java.io.IOException;
 import java.util.UUID;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.json.JsonObject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ApplicationScoped
 public class DocumentGeneratorClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(DocumentGeneratorClient.class);
 
+    @Inject
     private DocumentGeneratorClientProducer documentGeneratorClientProducer;
 
-    private SystemUserProvider systemUserProvider;
-
     @Inject
-    public DocumentGeneratorClient(final DocumentGeneratorClientProducer documentGeneratorClientProducer , final SystemUserProvider systemUserProvider){
-        this.documentGeneratorClientProducer = documentGeneratorClientProducer;
-        this.systemUserProvider = systemUserProvider;
-    }
+    private SystemUserProvider systemUserProvider;
 
     public byte[] generateDocument(final JsonObject documentPayload, final String templateName){
         final UUID systemUserId = systemUserProvider.getContextSystemUserId().orElseThrow(() -> new DocumentGenerationFailedException("Could not find systemId "));

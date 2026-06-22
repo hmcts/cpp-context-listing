@@ -22,6 +22,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomI
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCpCourtRooms;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataXhibitCourtRoomMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 
@@ -29,6 +30,7 @@ import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -73,12 +75,21 @@ public class HearingCsvReportIT extends AbstractIT {
 
         data = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
 
+        // The CSV report resolves judiciary names via referencedata.query.judiciaries; without
+        // this stub the response payload is null -> NPE -> WARN "Failed to resolve judiciary name".
+        data.getHearingData().get(0).getJudiciary()
+                .forEach(j -> stubGetReferenceDataJudiciaries(j.getJudicialId()));
+
         stubOrganisationUnit(courtCentreId);
         stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreId, LocalTime.of(10, 30), "6:30", null, STRING.next()));
         stubGetReferenceDataCpCourtRooms(data.getHearingData().get(0).getCourtRoomId(), courtRoomId);
         stubGetReferenceDataXhibitCourtRoomMappings(data.getHearingData().get(0).getCourtRoomId());
 
         var first  = data.getHearingData().get(0);
+        // The update below replaces the hearing's judiciary with a fresh random judge — that is
+        // the id the CSV report will resolve, so it needs its own judiciaries stub.
+        var updatedJudicialRole = randomJudicialRole("DISTRICT_JUDGE");
+        stubGetReferenceDataJudiciaries(updatedJudicialRole.getJudicialId());
         var updatedHearingDataWithoutNonDefaultDaysShouldPreservePrevRoomChange = new uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData(
                 first.getId(),
                 first.getCourtCentreId(),
@@ -90,7 +101,7 @@ public class HearingCsvReportIT extends AbstractIT {
                 emptyList(),
                 emptyList(),
                 "ENGLISH",
-                asList(randomJudicialRole("DISTRICT_JUDGE")),
+                asList(updatedJudicialRole),
                 first.getJurisdictionType(),
                 null,
                 null,
@@ -117,7 +128,7 @@ public class HearingCsvReportIT extends AbstractIT {
         final UUID courtCentreId =  data.getHearingData().get(0).getCourtCentreId();
         final Integer numberOfWeeks = 2;
 
-        final LocalDate now = LocalDate.now();
+        final LocalDate now = ItClock.today();
         final String expectedCsvFileName = "hearing_report_%s.csv".formatted(now.toString());
         // When
         final String url = getDownloadUrl(courtCentreId, now, numberOfWeeks);
@@ -168,7 +179,7 @@ public class HearingCsvReportIT extends AbstractIT {
         assertThat(csvContent, containsString("RestrictionApplied"));
         assertThat(csvContent, containsString("C - Description"));
         assertThat(csvContent, Matchers.stringContainsInOrder("1 of 4","2 of 4","3 of 4","4 of 4"));
-        final LocalTime utcTime = ZonedDateTime.of(LocalDate.now(), LocalTime.of(10, 30), ZoneId.of("Europe/London"))
+        final LocalTime utcTime = ZonedDateTime.of(ItClock.today(), LocalTime.of(10, 30), ZoneId.of("Europe/London"))
                 .withZoneSameInstant(ZoneOffset.UTC).toLocalTime();
         final String expectedUtcTime = String.format("T%02d:%02d:00Z", utcTime.getHour(), utcTime.getMinute());
         assertThat(csvContent, Matchers.stringContainsInOrder(expectedUtcTime));

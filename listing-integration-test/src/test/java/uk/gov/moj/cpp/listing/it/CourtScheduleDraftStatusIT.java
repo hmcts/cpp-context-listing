@@ -85,6 +85,7 @@ class CourtScheduleDraftStatusIT extends AbstractIT {
     }
 
     @Test
+    @ExpectedServerErrors("courtscheduler stub returns 500 -> ERROR 'Retrieve ...court-schedules-by-id+json failed with status code:500' + WARN 'failing-safe by returning anyDraft=true'")
     void shouldFailClosedToAnyDraftTrueWhenCourtschedulerReturnsServerError() {
         // Listing-side fail-safe direction: if courtscheduler is unreachable we cannot prove
         // the session is non-draft, so we report anyDraft=true. Progression then strips

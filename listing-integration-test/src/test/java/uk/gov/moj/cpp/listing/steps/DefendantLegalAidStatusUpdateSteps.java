@@ -1,8 +1,12 @@
 package uk.gov.moj.cpp.listing.steps;
 
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.util.UUID.randomUUID;
+import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
+import static uk.gov.moj.cpp.listing.it.util.PublishRetryHelper.publishUntilReflected;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
@@ -15,7 +19,13 @@ import java.util.UUID;
 
 import javax.json.JsonObject;
 
+import org.hamcrest.Matcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DefendantLegalAidStatusUpdateSteps extends AbstractIT {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefendantLegalAidStatusUpdateSteps.class);
 
     private static final String PUBLIC_PROGRESSION_DEFENDANT_LEGALAID_STATUS_UPDATED = "public.progression.defendant-legalaid-status-updated";
 
@@ -37,14 +47,44 @@ public class DefendantLegalAidStatusUpdateSteps extends AbstractIT {
     }
 
     public void whenCaseDefendantLegalAidStatusUpdatedPublicEventIsPublished() {
-
+        // Fresh randomUUID() per publish: the framework dedupes events by metadata id, so
+        // re-publishing with the same id would be ignored. A new id guarantees each re-publish
+        // is reprocessed by the aggregate.
         final JsonObject payload = getPayloadForPublicEventFromHearingData();
         sendMessage(
                 publicEventDefendantLegalAidStatusUpdated,
                 PUBLIC_PROGRESSION_DEFENDANT_LEGALAID_STATUS_UPDATED,
                 payload,
                 metadataOf(randomUUID(), PUBLIC_PROGRESSION_DEFENDANT_LEGALAID_STATUS_UPDATED).withUserId(randomUUID().toString()).build());
+    }
 
+    /**
+     * Asserts that the read model reflects legalAidStatus == "Granted" for the hearing.
+     * Uses JMS-aware polling to handle asynchronous message processing.
+     */
+    public void verifyLegalAidStatusGranted() {
+        pollForHearingWithJmsDelay(hearingData.getCourtCentreId().toString(), false, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[0].listedCases[0].defendants[0].legalAidStatus", equalTo("Granted"))
+        });
+    }
+
+    /**
+     * Publishes the {@code public.progression.defendant-legalaid-status-updated} event and verifies
+     * the read model, RE-PUBLISHING until the update is reflected (or the attempt budget is exhausted).
+     *
+     * <p><b>Why re-publish instead of publish-once-then-poll?</b> The event is consumed by
+     * {@code ListingEventProcessor} and routes to the {@code Case} aggregate. That aggregate
+     * <b>silently drops the update</b> ({@code if (hearingIds.isEmpty()) return Stream.empty();})
+     * when the case is not yet linked to a hearing. {@code Case.hearingIds} is populated only after
+     * the asynchronous {@code add-hearing-to-case} command runs — and there is no viewstore
+     * projection to await that link. On slow CI the first publish can arrive before the link exists,
+     * is dropped with no JMS redelivery, and the 90s poll can never succeed. Re-publishing with a
+     * fresh metadata id each attempt guarantees that once the link forms, a subsequent publish lands.
+     */
+    public void publishUntilLegalAidStatusReflected() {
+        publishUntilReflected(LOGGER, "legalaid-fix", "defendant-legalaid-status-updated for case " + caseId,
+                this::whenCaseDefendantLegalAidStatusUpdatedPublicEventIsPublished,
+                this::verifyLegalAidStatusGranted);
     }
 
     private JsonObject getPayloadForPublicEventFromHearingData() {
@@ -53,6 +93,5 @@ public class DefendantLegalAidStatusUpdateSteps extends AbstractIT {
                 .add("defendantId", listedCaseData.getDefendants().get(0).getDefendantId().toString())
                 .add("legalAidStatus", "Granted")
                 .build();
-
     }
 }

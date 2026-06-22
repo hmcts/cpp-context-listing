@@ -38,15 +38,24 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.UUID;
 import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings({"pmd:BeanMembersShouldSerialize", "squid:S1068"})
 public class Case implements Aggregate {
 
-    private static final long serialVersionUID = 203L;
+    private static final long serialVersionUID = 204L;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Case.class);
 
     private final Set<UUID> hearingIds = new HashSet<>();
+
+    private final Map<UUID, uk.gov.justice.listing.events.Defendant> currentDefendants = new HashMap<>();
 
     private final Set<uk.gov.justice.listing.events.Defendant> defendantsToBeUpdated = new HashSet<>();
 
@@ -59,7 +68,7 @@ public class Case implements Aggregate {
         return match(event).with(
                 when(HearingAddedToCase.class).apply(this::onHearingAddedToCase),
                 when(HearingUpdatedToCase.class).apply(this::onHearingUpdatedToCase),
-                when(DefendantsToBeUpdated.class).apply(e -> onDefendantsToBeUpdated()),
+                when(DefendantsToBeUpdated.class).apply(this::onDefendantsToBeUpdated),
                 when(DefendantsToBeUpdatedLater.class).apply(this::onDefendantsToBeUpdatedLater),
                 when(OffencesToBeAdded.class).apply(e -> onOffencesToBeAdded()),
                 when(OffencesToBeDeleted.class).apply(e -> onOffencesToBeDeleted()),
@@ -92,19 +101,36 @@ public class Case implements Aggregate {
     }
 
     public Stream<Object> updateDefendant(UUID caseId, Defendant defendant) {
+        // Build the new defendant event
+        uk.gov.justice.listing.events.Defendant newDefendantEvent = NewDomainToEventConverter.buildDefendant(defendant);
+
+        // Check if we have an existing defendant for this ID
+        uk.gov.justice.listing.events.Defendant existingDefendant = currentDefendants.get(defendant.getId());
+        if (existingDefendant != null) {
+            // Merge: Use updateEventDefendant logic to preserve existing values where new ones are null
+            newDefendantEvent = NewDomainToEventConverter.updateEventDefendant(
+                    NewDomainToEventConverter.buildNewBaseDefendant(defendant),  // Convert domain to NewBaseDefendant for merging
+                    existingDefendant
+            );
+        }
+
         if (hearingIds.isEmpty()) {
+            // For deferred updates, store the merged defendant
+            defendantsToBeUpdated.clear();  // Clear old ones if needed, or handle per defendant
+            defendantsToBeUpdated.add(newDefendantEvent);
             return apply(Stream.of(DefendantsToBeUpdatedLater.defendantsToBeUpdatedLater()
                     .withCaseId(caseId)
-                    .withDefendants(singletonList(NewDomainToEventConverter.buildDefendant(defendant)))
+                    .withDefendants(singletonList(newDefendantEvent))
                     .build()));
         }
 
         return apply(Stream.of(DefendantsToBeUpdated.defendantsToBeUpdated()
                 .withCaseId(caseId)
-                .withDefendants(singletonList(NewDomainToEventConverter.buildDefendant(defendant)))
+                .withDefendants(singletonList(newDefendantEvent))
                 .withHearings(new ArrayList<>(hearingIds))
                 .build()));
     }
+
 
     public Stream<Object> updateDefendantOffences(CaseOffences caseOffences) {
         if (hearingIds.isEmpty()) {
@@ -146,9 +172,14 @@ public class Case implements Aggregate {
 
     public Stream<Object> addedCaseMarkers(UUID caseId, List<CaseMarker> caseMarkers) {
         if (hearingIds.isEmpty()) {
+            // Observability for the cross-aggregate race: this update is silently dropped because the
+            // case is not yet linked to any hearing (hearingIds populated only by the async
+            // add-hearing-to-case command). A re-published progression event lands once the link exists.
+            LOGGER.warn("update-case-markers for case {} DROPPED: case not yet linked to any hearing (hearingIds empty)", caseId);
             return Stream.empty();
         }
 
+        LOGGER.info("update-case-markers for case {} APPLIED to hearings {}", caseId, hearingIds);
         return apply(Stream.of(CaseMarkersToBeUpdated.caseMarkersToBeUpdated()
                 .withProsecutionCaseId(caseId)
                 .withMarkers(NewDomainToEventConverter.convertCaseMarkersListToMarkers(caseMarkers))
@@ -249,13 +280,17 @@ public class Case implements Aggregate {
         this.hearingIds.add(event.getExistingHearingId());
     }
 
+    // Update onDefendantsToBeUpdatedLater to store the defendant
     private void onDefendantsToBeUpdatedLater(final DefendantsToBeUpdatedLater event) {
-        this.defendantsToBeUpdated.add(event.getDefendants().get(0));
+        event.getDefendants().forEach(defendant -> currentDefendants.put(defendant.getId(), defendant));
+        this.defendantsToBeUpdated.addAll(event.getDefendants());
     }
 
-    private void onDefendantsToBeUpdated() {
+    private void onDefendantsToBeUpdated(final DefendantsToBeUpdated event) {
+        event.getDefendants().forEach(defendant -> currentDefendants.put(defendant.getId(), defendant));
         this.defendantsToBeUpdated.clear();
     }
+
 
     private void onOffencesToBeUpdated() {
         // Do nothing

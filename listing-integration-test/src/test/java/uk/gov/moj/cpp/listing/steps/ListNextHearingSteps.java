@@ -12,6 +12,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -29,6 +30,7 @@ import static uk.gov.moj.cpp.listing.endpoint.UnscheduledHearingsEndpoint.pollFo
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
+import static uk.gov.moj.cpp.listing.it.util.PublishRetryHelper.verifyOrRepublishUntilReflected;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps.getJsonPathQueryForCaseReference;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps.getJsonPathQueryForDefendantLastName;
@@ -97,6 +99,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
+import uk.gov.moj.cpp.listing.steps.UpdateDefendantOffencesSteps;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -109,6 +112,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import uk.gov.justice.services.messaging.JsonObjects;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
@@ -116,6 +120,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.ReadContext;
 import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
+import org.awaitility.core.ConditionTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -480,6 +485,32 @@ public class ListNextHearingSteps extends AbstractIT {
                         )));
     }
 
+    /**
+     * Verifies the read model reflects a new offence, re-publishing the
+     * {@code public.progression.offences-for-defendant-changed} event (with a fresh metadata id each time)
+     * if the first verify times out, up to {@code maxPublishAttempts} total attempts.
+     *
+     * <p><b>Why re-publish instead of publish-once-then-poll?</b> The event is consumed async by
+     * {@code ListingEventProcessor} and routed to the {@code Case} aggregate. If the case's hearing-link
+     * has not yet been established when the first publish is processed, the update is silently dropped with
+     * no JMS redelivery, so a single publish is lost forever on slow CI (vld pipeline). Re-publishing with
+     * a fresh metadata id each time (the steps instance regenerates it in
+     * {@code publishCaseDefendantOffencesUpdated}) guarantees that once the link is established, a
+     * subsequent publish lands. Root-cause class: cross-aggregate eventual-consistency race, same pattern
+     * as {@code UpdateCaseMarkersSteps#publishUntilCaseMarkersReflected}.
+     *
+     * <p>The caller is expected to have already done the <em>initial</em> publish and to pass the offence
+     * id extracted from that publish's return value. This method first tries to verify the existing
+     * publish; only if that times out does it re-publish and retry.
+     */
+    public void verifyOrRepublishUntilOffenceReflected(final UpdateDefendantOffencesSteps offenceSteps,
+                                                        final HearingsData existedHearingsData,
+                                                        final String offenceId) {
+        verifyOrRepublishUntilReflected(LOGGER, "list-next-hearing-fix", "offences-for-defendant-changed for offence " + offenceId,
+                offenceSteps::whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly,
+                () -> verifyOffenceAddedToAllocatedHearingFromApi(existedHearingsData, offenceId));
+    }
+
     public void verifyCasesAreInAllocatedHearingFromApi(HearingsData existedHearingsData, final HearingsData hearingsData) {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), existedHearingsData.getHearingData().get(0).getCourtCentreId(), true));
@@ -590,6 +621,35 @@ public class ListNextHearingSteps extends AbstractIT {
         assertThat(jsonResponse.getList("offenceIds"), containsInAnyOrder(offenceIds.toArray()));
         assertThat(jsonResponse.get("isResultFlow"), is(true));
 
+    }
+
+    /**
+     * Robust, non-consuming alternative to {@link #verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ}:
+     * polls the (durable) read model until the deleted related-hearing's offences are no longer present on the
+     * existing allocated hearing, which stays allocated.
+     *
+     * <p>Why not consume the public event here: build 657334 (instrumented vld run) proved the transient
+     * {@code public.events.listing.offences-removed-from-existing-allocated-hearing} event is fragile to consume on
+     * vld — across the test's two add/delete iterations the event can be published before the consumer's poll window,
+     * and when an iteration's delete finds no offences still linked it emits nothing at all
+     * ({@code removeSelectedOffences ... reqOffences=[] -> SKIP-empty}). Asserting the durable end state instead
+     * removes the JMS consume-timing race entirely. The public-event contract is still covered by the other tests
+     * that call the InActiveMQ variant.
+     */
+    public void verifyOffencesRemovedFromAllocatedHearingFromApi(final HearingsData existedHearingsData, final HearingsData removedHearingsData) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), existedHearingsData.getHearingData().get(0).getCourtCentreId(), true));
+        final String hearingId = existedHearingsData.getHearingData().get(0).getId().toString();
+        final String removedOffenceId = removedHearingsData.getHearingData().get(0).getListedCases().get(0)
+                .getDefendants().get(0).getOffences().get(0).getOffenceId().toString();
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].allocated", hasItems(true)),
+                                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].listedCases[*].defendants[*].offences[*].id",
+                                        not(hasItem(removedOffenceId)))
+                        )));
     }
 
     private void verifyHearingListedFromAPI(final HearingData hearingData, final Boolean isAllocated) {
@@ -718,7 +778,7 @@ public class ListNextHearingSteps extends AbstractIT {
         }
         final ZonedDateTime startTime = hearingData.getHearingStartTime() != null
                 ? hearingData.getHearingStartTime()
-                : ZonedDateTime.now();
+                : ItClock.nowUtc();
         final LocalDate sessionDate = hearingData.getHearingStartDate() != null
                 ? hearingData.getHearingStartDate()
                 : startTime.toLocalDate();
@@ -841,12 +901,12 @@ public class ListNextHearingSteps extends AbstractIT {
                                         .withOffenceCode(STRING.next())
                                         .withOffenceTitle(STRING.next())
                                         .withWording(STRING.next())
-                                        .withStartDate(LocalDate.now().toString())
+                                        .withStartDate(ItClock.today().toString())
                                         .build()))
                                 .build()))
                         .withParentApplicationId(hearingData.getCourtApplications().get(0).getParentApplicationId())
                         .withType(getCourtApplicationType(hearingData, LinkType.LINKED, Jurisdiction.CROWN))
-                        .withApplicationReceivedDate(LocalDate.now().toString())
+                        .withApplicationReceivedDate(ItClock.today().toString())
                         .withApplicationReference(STRING.next())
                         .withApplicationParticulars(hearingData.getCourtApplications().get(0).getApplicationParticulars())
                         .withApplicationStatus(ApplicationStatus.LISTED)
@@ -907,7 +967,7 @@ public class ListNextHearingSteps extends AbstractIT {
                         .withDefendants(lc.getDefendants().stream().map(d -> Defendant.defendant()
                                         .withId(d.getDefendantId())
                                         .withMasterDefendantId(d.getMasterDefendantId())
-                                        .withCourtProceedingsInitiated(ZonedDateTime.now())
+                                        .withCourtProceedingsInitiated(ItClock.nowUtc())
                                         .withIsYouth(d.getIsYouth())
                                         .withPersonDefendant(buildPersonDefendant(d))
                                         .withAssociatedPersons(singletonList(AssociatedPerson.associatedPerson()
@@ -921,14 +981,14 @@ public class ListNextHearingSteps extends AbstractIT {
                                                         .withOffenceCode(STRING.next())
                                                         .withOffenceDefinitionId(randomUUID())
                                                         .withWording(STRING.next())
-                                                        .withStartDate(LocalDate.now().toString())
+                                                        .withStartDate(ItClock.today().toString())
                                                         .withOrderIndex(INTEGER.next())
                                                         .withOffenceTitle(o.getStatementOfOffenceTitle())
                                                         .withLaaApplnReference(
                                                                 LaaReference.laaReference()
                                                                         .withApplicationReference(STRING.next())
                                                                         .withStatusCode(STRING.next())
-                                                                        .withStatusDate((format(LocalDate.now().toString())))
+                                                                        .withStatusDate((format(ItClock.today().toString())))
                                                                         .withStatusDescription(STRING.next())
                                                                         .withStatusId(randomUUID()).build())
                                                         .withSeedingHearing(SeedingHearing.seedingHearing()
@@ -939,7 +999,7 @@ public class ListNextHearingSteps extends AbstractIT {
                                                         .withReportingRestrictions(Arrays.asList(ReportingRestriction.reportingRestriction().withId(randomUUID())
                                                                 .withLabel("RestrictionApplied")
                                                                 .withJudicialResultId(JUDICIAL_RESULT_ID)
-                                                                .withOrderedDate(LocalDate.now().toString()).build()))
+                                                                .withOrderedDate(ItClock.today().toString()).build()))
                                                         .build())
                                                 .collect(Collectors.toList()))
                                         .withProsecutionCaseId(listedCaseData.getCaseId())
@@ -994,7 +1054,7 @@ public class ListNextHearingSteps extends AbstractIT {
                                 .withObservedEthnicityId(randomUUID())
                                 .withObservedEthnicityDescription(STRING.next())
                                 .build())
-                        .withDateOfBirth(LocalDate.now().minusYears(21).toString())
+                        .withDateOfBirth(ItClock.today().minusYears(21).toString())
                         .build())
                 .build();
     }

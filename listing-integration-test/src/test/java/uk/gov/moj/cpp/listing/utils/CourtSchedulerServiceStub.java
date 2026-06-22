@@ -44,6 +44,7 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import uk.gov.moj.cpp.listing.steps.data.JudicialRoleData;
 import uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 public class CourtSchedulerServiceStub {
 
@@ -235,7 +236,7 @@ public class CourtSchedulerServiceStub {
                                                               final String courtScheduleId,
                                                               final boolean isDraft,
                                                               final String source) {
-        final String sessionDate = LocalDate.now().plusDays(1).toString();
+        final String sessionDate = ItClock.today().plusDays(1).toString();
         final String startTime = sessionDate + "T09:00:00Z";
         final String endTime = sessionDate + "T17:00:00Z";
         final String body = format(
@@ -382,12 +383,19 @@ public class CourtSchedulerServiceStub {
                 body.append(",");
             }
             final LocalDate sessionDate = firstSessionDate.plusDays(i);
+            // Wire-shape note: the courtscheduler RAML example for this endpoint
+            // (courtscheduler.extend.multiday.hearing.response.json) shows "hearingStartTime", but the
+            // real endpoint serialises the courtscheduler DOMAIN CourtSchedule, which only has
+            // "sessionStartTime" (java.util.Date). Listing's buildHearingDaysFromMultiDaySessions reads
+            // getSessionStartTime() — emitting the RAML's field name leaves HearingDay.startTime null
+            // and NPEs downstream ("HearingDay.getStartTime() is null"). Match the wire, not the schema.
+            // (stubMultiDaySearchAndBook above is DIFFERENT: that endpoint's consumer reads hearingStartTime.)
             body.append("{")
                     .append("\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\",")
                     .append("\"courtHouseId\":\"").append(courtHouseId).append("\",")
                     .append("\"courtRoomId\":\"").append(courtRoomId).append("\",")
                     .append("\"sessionDate\":\"").append(sessionDate).append("\",")
-                    .append("\"hearingStartTime\":\"").append(sessionDate).append("T09:00:00Z\",")
+                    .append("\"sessionStartTime\":\"").append(sessionDate).append("T09:00:00.000Z\",")
                     .append("\"isDraft\":").append(isDraft)
                     .append("}");
         }
@@ -558,7 +566,7 @@ public class CourtSchedulerServiceStub {
                 .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULES_WITH_CUSTOM_PARAMS_JSON)
-                                .replace("%SESSION_DATE%", Optional.of(values.get("SESSION_DATE")).orElse(LocalDate.now().toString()))
+                                .replace("%SESSION_DATE%", Optional.of(values.get("SESSION_DATE")).orElse(ItClock.today().toString()))
                                 .replace("%COURT_ROOM_ID%", Optional.of(values.get("COURT_ROOM_ID")).orElse(UUID.randomUUID().toString()))
                                 .replace("%COURT_SCHEDULE_ID%", Optional.of(values.get("COURT_SCHEDULE_ID")).orElse(UUID.randomUUID().toString()))
                                 .replace("%BOOKING_ID%", Optional.of(values.get("BOOKING_ID")).orElse(UUID.randomUUID().toString()))
@@ -1274,9 +1282,40 @@ public class CourtSchedulerServiceStub {
                 "      \"hearingId\": \"" + hearingId + "\",\n" +
                 "      \"courtScheduleId\": \"" + UUID.randomUUID() + "\",\n" +
                 "      \"courtRoomId\": \"" + courtRoomId + "\",\n" +
-                "      \"hearingDate\": \"" + LocalDate.now().plusDays(5) + "\",\n" +
-                "      \"hearingStartTime\": \"" + ZonedDateTime.now(java.time.ZoneOffset.UTC).plusDays(5).withHour(10).withMinute(0).withSecond(0).withNano(0) + "\",\n" +
+                "      \"hearingDate\": \"" + ItClock.today().plusDays(5) + "\",\n" +
+                "      \"hearingStartTime\": \"" + ItClock.nowUtc().plusDays(5).withHour(10).withMinute(0).withSecond(0).withNano(0) + "\",\n" +
                 "      \"duration\": 30\n" +
+                "  }\n" +
+                "}";
+
+        stubFor(get(WireMock.urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + "/searchlist/hearingslots")))
+                .withQueryParam("hearingId", matching(hearingId))
+                .withQueryParam("courtCentreId", matching(courtCentreId))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(payload)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    /**
+     * searchAndBook stub for the CROWN "update removing the court room → unallocated" scenario.
+     * Mirrors {@link #stubSearchBookHearingSlotsForCrown} (lenient hearingId+courtCentreId matchers so
+     * it matches regardless of the request's date/duration/start-time params) but reports the booked
+     * session as {@code isDraft:true}. The update path ({@code handleCrownUpdateSearchAndBook}) takes
+     * only {@code courtScheduleId}+{@code isDraft} from this response and lets the aggregate unallocate
+     * — clearing the previously-allocated court room. A courtRoomId is still emitted purely to satisfy
+     * the parser ({@code searchAndBookSlots} reads it unconditionally); it is discarded downstream.
+     */
+    public static void stubSearchBookHearingSlotsForCrownDraft(final String hearingId, final String courtCentreId) {
+        final String payload = "{\n" +
+                "  \"hearingSlots\": {\n" +
+                "      \"hearingId\": \"" + hearingId + "\",\n" +
+                "      \"courtScheduleId\": \"" + UUID.randomUUID() + "\",\n" +
+                "      \"courtRoomId\": \"" + courtCentreId + "\",\n" +
+                "      \"hearingDate\": \"" + ItClock.today().plusDays(5) + "\",\n" +
+                "      \"hearingStartTime\": \"" + ItClock.nowUtc().plusDays(5).withHour(10).withMinute(0).withSecond(0).withNano(0) + "\",\n" +
+                "      \"duration\": 30,\n" +
+                "      \"isDraft\": true\n" +
                 "  }\n" +
                 "}";
 
@@ -1337,29 +1376,66 @@ public class CourtSchedulerServiceStub {
                 .willReturn(aResponse().withStatus(NO_CONTENT.getStatusCode())));
     }
 
+    /**
+     * Minimal draft-status stub: each session carries ONLY courtScheduleId + isDraft.
+     * Sufficient for LIST-path consumers (allocation decision reads just the flag).
+     * For UPDATE-path consumers use the overload below — the single-day update's
+     * sanityCheckAndEnrichCrown overwrites hearingDate with the session's sessionDate,
+     * so a session without one would null the date and log a CROWN sanity ERROR.
+     *
+     * <p>HISTORY: until 2026-06-07 this emitted the envelope key "hearingSlots" — the real
+     * courtscheduler wire (and listing's fetchCourtSchedulesByIds) uses "courtSchedules",
+     * so every caller silently parsed an EMPTY list and enrichment degraded with
+     * "CROWN single-day update: failed to fetch court schedules" WARNs.</p>
+     */
     public static void stubGetCourtSchedulesByIdWithDraftStatus(final List<String> courtScheduleIds, final boolean isDraft) {
-        final StringBuilder hearingSlotsJson = new StringBuilder();
-        hearingSlotsJson.append("{\n");
-        hearingSlotsJson.append("  \"hearingSlots\": [\n");
-
+        final StringBuilder schedulesJson = new StringBuilder();
         for (int i = 0; i < courtScheduleIds.size(); i++) {
             if (i > 0) {
-                hearingSlotsJson.append(",\n");
+                schedulesJson.append(",");
             }
-            hearingSlotsJson.append("    {\n");
-            hearingSlotsJson.append("      \"courtScheduleId\": \"").append(courtScheduleIds.get(i)).append("\",\n");
-            hearingSlotsJson.append("      \"isDraft\": ").append(isDraft).append("\n");
-            hearingSlotsJson.append("    }");
+            schedulesJson.append("{\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\",")
+                    .append("\"isDraft\":").append(isDraft).append("}");
         }
+        stubCourtSchedulesByIdResponse("{\"courtSchedules\":[" + schedulesJson + "]}");
+    }
 
-        hearingSlotsJson.append("\n  ]\n");
-        hearingSlotsJson.append("}");
+    /**
+     * Full draft-status stub for UPDATE-path flows: sessions carry sessionDate, courtHouseId,
+     * courtRoomId and hearingStartTime so sanityCheckAndEnrichCrown can re-derive the hearing
+     * day without nulling its date. Values MUST agree with the update payload's nonDefaultDays
+     * (same date/centre/room) or the enrichment will log a CROWN sanity date-mismatch ERROR
+     * and shift the projected hearing day.
+     */
+    public static void stubGetCourtSchedulesByIdWithDraftStatus(final List<String> courtScheduleIds,
+                                                                final boolean isDraft,
+                                                                final LocalDate sessionDate,
+                                                                final UUID courtHouseId,
+                                                                final UUID courtRoomId,
+                                                                final ZonedDateTime hearingStartTime) {
+        final StringBuilder schedulesJson = new StringBuilder();
+        for (int i = 0; i < courtScheduleIds.size(); i++) {
+            if (i > 0) {
+                schedulesJson.append(",");
+            }
+            schedulesJson.append("{\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\"")
+                    .append(",\"courtHouseId\":\"").append(courtHouseId).append("\"");
+            if (courtRoomId != null) {
+                schedulesJson.append(",\"courtRoomId\":\"").append(courtRoomId).append("\"");
+            }
+            schedulesJson.append(",\"sessionDate\":\"").append(sessionDate).append("\"")
+                    .append(",\"hearingStartTime\":\"").append(hearingStartTime).append("\"")
+                    .append(",\"isDraft\":").append(isDraft).append("}");
+        }
+        stubCourtSchedulesByIdResponse("{\"courtSchedules\":[" + schedulesJson + "]}");
+    }
 
+    private static void stubCourtSchedulesByIdResponse(final String body) {
         stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/courtschedule/search.court-schedules-by-id")))
                 .withQueryParam("courtScheduleIds", matching(".*"))
                 .withHeader("Accept", containing("application/vnd.courtscheduler.search.court-schedules-by-id+json"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(hearingSlotsJson.toString())
+                        .withBody(body)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }

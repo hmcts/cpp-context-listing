@@ -18,6 +18,7 @@ import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderF
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
+import static uk.gov.moj.cpp.listing.it.util.PublishRetryHelper.publishUntilReflected;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
@@ -51,6 +52,7 @@ import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationUpdateData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -61,6 +63,7 @@ import javax.ws.rs.core.Response;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Filter;
 import io.restassured.path.json.JsonPath;
+import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.slf4j.Logger;
@@ -135,6 +138,24 @@ public class CourtApplicationSteps extends AbstractIT {
 
         request = courtApplicationUpdateDataObject.toString();
         LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n, \n\tHeader = {}", PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED, request, getLoggedInHeader());
+    }
+
+    /**
+     * Publishes the {@code public.progression.court-application-changed} event and verifies the read model,
+     * RE-PUBLISHING until the update is reflected (or the attempt budget is exhausted).
+     *
+     * <p><b>Why re-publish instead of publish-once-then-poll?</b> The event is routed to a command handler
+     * that silently drops the update ({@code if (hearingIds.isEmpty()) return Stream.empty();}) when the
+     * Application aggregate is not yet linked to a hearing. The link is established asynchronously after
+     * {@code list-court-hearing} completes. On slower CI environments the single publish can be processed
+     * before the link exists; it is then dropped with no JMS redelivery, so the 90 s poll can never succeed.
+     * Re-publishing (with a fresh metadata/event id each time — the framework dedupes by metadata id) guarantees
+     * that once the link is established a subsequent publish lands.
+     */
+    public void publishUntilCourtApplicationReflected() {
+        publishUntilReflected(LOGGER, "court-application-fix", "court-application-changed",
+                this::whenCaseCourtApplicationUpdatedPublicEventIsPublished,
+                this::verifyCourtApplicationUpdatedFromAPI);
     }
 
     public void verifyPublicEventCourtApplicationAdded() {
@@ -318,7 +339,7 @@ public class CourtApplicationSteps extends AbstractIT {
                         .withOffenceActiveOrder(OffenceActiveOrder.COURT_ORDER)
                         .build())
                 .withApplicationStatus(ApplicationStatus.LISTED)
-                .withApplicationReceivedDate(LocalDate.now().toString())
+                .withApplicationReceivedDate(ItClock.today().toString())
                 .withApplicationReference(STRING.next())
                 .withApplicationParticulars(STRING.next())
                 .build();
