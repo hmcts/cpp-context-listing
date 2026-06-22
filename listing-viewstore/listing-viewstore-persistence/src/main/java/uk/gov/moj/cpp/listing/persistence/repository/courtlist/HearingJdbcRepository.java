@@ -33,6 +33,7 @@ import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 public class HearingJdbcRepository {
 
     public static final String NULL_FLAT_HEARING_FIELDS = " null as hearing_day_count, null as hearing_day_position, null as hearing_date ";
+    public static final String NULL_AMP_PUBLIC_DATA_LAST_UPDATED = " null as amp_public_data_last_updated ";
 
     private static final String UNALLOCATED_COMMON_SELECT_FROM = """
             select 
@@ -51,7 +52,7 @@ public class HearingJdbcRepository {
             h.type_of_list_id, 
             h.estimated_minutes,
             count(1) OVER() as totalCount, 
-            h.is_possible_disqualification, """ + NULL_FLAT_HEARING_FIELDS + """
+            h.is_possible_disqualification, """ + NULL_AMP_PUBLIC_DATA_LAST_UPDATED + "," + NULL_FLAT_HEARING_FIELDS + """   
             from hearing h 
             LEFT JOIN listed_cases lc ON lc.hearing_id = h.id 
             LEFT JOIN court_applications ca ON ca.hearing_id = h.id 
@@ -97,7 +98,8 @@ public class HearingJdbcRepository {
                 "h.allocated, " +
                 "h.type_of_list_id, " +
                 "h.estimated_minutes, " +
-                "h.is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
+                "h.is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS + ","+
+                NULL_AMP_PUBLIC_DATA_LAST_UPDATED +
                 "from hearing h " +
                 "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
                 "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
