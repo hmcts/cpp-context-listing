@@ -78,6 +78,7 @@ public class ListingCommandApi {
     private static final String LISTING_COMMAND_DELETE_HEARING = "listing.command.delete-hearing";
     private static final String LISTING_COMMAND_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING = "listing.command.delete-previous-hearings-and-create-next-hearing";
     private static final String LISTING_COMMAND_UPDATE_HEARING_DAY_COURT_SCHEDULE = "listing.command.update-hearing-day-court-schedule";
+    private static final String LISTING_COMMAND_MIGRATE_CROWN_HEARINGS_TO_COURTSCHEDULES = "listing.command.migrate-crown-hearings-to-courtschedules";
     public static final String LISTING_COMMAND_UPDATE_HEARING_ADD_CASE_BDF = "listing.command.update-hearing-add-case-bdf";
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandApi.class);
     private static final String PROSECUTION_CASES = "prosecutionCases";
@@ -421,6 +422,12 @@ public class ListingCommandApi {
     @Handles("listing.update-hearing-day-court-schedule")
     public void handleUpdateHearingDayCourtSchedule(JsonEnvelope envelope) {
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_UPDATE_HEARING_DAY_COURT_SCHEDULE),
+                envelope.payload()));
+    }
+
+    @Handles("listing.migrate-crown-hearings-to-courtschedules")
+    public void handleMigrateCrownHearingsToCourtSchedules(JsonEnvelope envelope) {
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_MIGRATE_CROWN_HEARINGS_TO_COURTSCHEDULES),
                 envelope.payload()));
     }
 
