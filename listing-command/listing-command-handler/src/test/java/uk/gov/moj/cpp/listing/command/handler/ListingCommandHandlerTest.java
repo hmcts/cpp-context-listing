@@ -4025,6 +4025,34 @@ class ListingCommandHandlerTest {
         verify(hearing).raiseHearingDayCourtSchedulesUpdated(any(), any());
     }
 
+    @Test
+    public void shouldMigrateCrownHearingsToCourtSchedulesForEachHearing() throws EventStreamException, IOException {
+        final UUID hearingId1 = randomUUID();
+        final UUID hearingId2 = randomUUID();
+        final String daysJson1 = "[{\"hearingDate\":\"2026-06-22\",\"courtScheduleId\":\"df44e775-d809-4836-a14d-5a9f7c2078c1\"}]";
+        final String daysJson2 = "[{\"hearingDate\":\"2026-07-14\",\"courtScheduleId\":\"1b9a4f02-77c1-4e0a-8d3b-2c5e9f10a644\"},{\"hearingDate\":\"2026-07-15\",\"courtScheduleId\":\"2c0b5103-88d2-4f1b-9e4c-3d6fa021b755\"}]";
+
+        final JsonArray hearings = createArrayBuilder()
+                .add(createObjectBuilder()
+                        .add("hearingId", hearingId1.toString())
+                        .add("hearingDayCourtSchedules", objectMapper.readValue(daysJson1, JsonArray.class)))
+                .add(createObjectBuilder()
+                        .add("hearingId", hearingId2.toString())
+                        .add("hearingDayCourtSchedules", objectMapper.readValue(daysJson2, JsonArray.class)))
+                .build();
+        final JsonObject payload = createObjectBuilder().add("hearings", hearings).build();
+
+        final JsonEnvelope commandEnvelope = envelopeFrom(metadataWithRandomUUID("listing.command.migrate-crown-hearings-to-courtschedules"), payload);
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+
+        listingCommandHandler.migrateCrownHearingsToCourtSchedules(commandEnvelope);
+
+        verify(eventSource).getStreamById(hearingId1);
+        verify(eventSource).getStreamById(hearingId2);
+        verify(hearing, times(2)).raiseCrownHearingMigratedToCourtSchedule(any(), any());
+        verify(eventStream, times(2)).append(any());
+    }
+
     private void shouldRequestPublicationOfACourtListForAllCrownCourtsAsExpected(final LocalDate dayOfRequest, final LocalDate expectedListingDate) {
 
         fixClock(dayOfRequest.atStartOfDay().toInstant(ZoneOffset.UTC));

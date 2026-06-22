@@ -912,6 +912,22 @@ public class ListingCommandApiTest {
     }
 
     @Test
+    public void shouldForwardMigrateCrownHearingsToCourtSchedulesToCommandHandler() {
+        final JsonEnvelope command = mock(JsonEnvelope.class);
+        final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.migrate-crown-hearings-to-courtschedules");
+        when(command.metadata()).thenReturn(metadataBuilder.build());
+        final JsonObject payload = mock(JsonObject.class);
+        when(command.payload()).thenReturn(payload);
+
+        final ArgumentCaptor<Envelope> senderEnvelopeCaptor = forClass(Envelope.class);
+        listingCommandApi.handleMigrateCrownHearingsToCourtSchedules(command);
+
+        verify(sender).send(senderEnvelopeCaptor.capture());
+        assertThat(senderEnvelopeCaptor.getValue().metadata().name(), is("listing.command.migrate-crown-hearings-to-courtschedules"));
+        assertThat(senderEnvelopeCaptor.getValue().payload(), is(payload));
+    }
+
+    @Test
     public void shouldEditNote() {
         final JsonEnvelope command = mock(JsonEnvelope.class);
         final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.command.handler.edit-listing-note");
