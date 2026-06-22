@@ -3,11 +3,6 @@ package uk.gov.moj.cpp.listing.domain.referencedata;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-@JsonIgnoreProperties(ignoreUnknown = true)
 @SuppressWarnings("pmd:BeanMembersShouldSerialize")
 public class CourtMapping {
 
@@ -35,19 +30,18 @@ public class CourtMapping {
 
     private String courtType;
 
-    @JsonCreator
-    public CourtMapping(@JsonProperty("id") final UUID id,
-                        @JsonProperty("oucode") final String oucode,
-                        @JsonProperty("crestCourtId") final String crestCourtId,
-                        @JsonProperty("crestCourtSiteId") final String crestCourtSiteId,
-                        @JsonProperty("crestCourtSiteName") final String crestCourtSiteName,
-                        @JsonProperty("validFrom") final LocalDate validFrom,
-                        @JsonProperty("validTo") final LocalDate validTo,
-                        @JsonProperty("crestCourtName") final String crestCourtName,
-                        @JsonProperty("crestCourtShortName") final String crestCourtShortName,
-                        @JsonProperty("crestCourtFullName") final String crestCourtFullName,
-                        @JsonProperty("crestCourtSiteCode") final String crestCourtSiteCode,
-                        @JsonProperty("courtType") final String courtType) {
+    public CourtMapping(final UUID id,
+                        final String oucode,
+                        final String crestCourtId,
+                        final String crestCourtSiteId,
+                        final String crestCourtSiteName,
+                        final LocalDate validFrom,
+                        final LocalDate validTo,
+                        final String crestCourtName,
+                        final String crestCourtShortName,
+                        final String crestCourtFullName,
+                        final String crestCourtSiteCode,
+                        final String courtType) {
         this.id = id;
         this.oucode = oucode;
         this.crestCourtId = crestCourtId;

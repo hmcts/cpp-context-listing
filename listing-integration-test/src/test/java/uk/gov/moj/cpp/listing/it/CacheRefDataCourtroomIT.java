@@ -103,12 +103,9 @@ public class CacheRefDataCourtroomIT extends AbstractIT {
                         .withName(PUBLIC_REFERENCE_COURTROOM_CLOSED)
                         .withUserId(randomUUID().toString())
                         .build());
-        // The courtroom-closed event is processed asynchronously by the cache listener. Poll until the
-        // cache reflects the removal (count drops back to 3) instead of reading the count once and racing
-        // the listener — under suite load the close can land a few hundred ms after this point.
-        await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL)
-                .until(() -> countCacheItemsInDb() == 3);
-        assertThat(checkCourtRoomIdExists(roomId), is(false));
+        final boolean isRoomIdExists = checkCourtRoomIdExists(roomId);
+        assertThat(isRoomIdExists, is(false));
+        assertThat(countCacheItemsInDb(), is(3));
     }
 
     @Test

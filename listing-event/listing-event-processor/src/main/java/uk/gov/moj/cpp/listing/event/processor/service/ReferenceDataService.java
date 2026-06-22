@@ -44,7 +44,11 @@ public class ReferenceDataService {
     private Requester requester;
 
     public OrganisationUnit getOrganizationUnitById(final UUID courtCentreId, final JsonEnvelope event) {
-        return getOrganizationUnitByIdWithAdmin(courtCentreId, event);
+        final JsonObject payload = createObjectBuilder().add("id", courtCentreId.toString()).build();
+        final JsonEnvelope request = enveloper.withMetadataFrom(event, REFERENCEDATA_QUERY_ORGANISATION_UNIT).apply(payload);
+        JsonEnvelope response = requester.request(request);
+        LOGGER.debug("'referencedata.query.organisation-unit' response with payload {}", response.payloadAsJsonObject());
+        return jsonObjectConverter.convert(response.payloadAsJsonObject(), OrganisationUnit.class);
     }
 
     public OrganisationUnit getOrganizationUnitByIdWithAdmin(final UUID courtCentreId, final JsonEnvelope event) {

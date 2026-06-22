@@ -68,9 +68,14 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
             builder.withNonDefaultDays(emptyList());
             builder.withNonSittingDays(emptyList());
         } else if (JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
-            // builder.withNonSittingDays(enrichNonSittingDaysForCrown(hearing)); no nonsittingdays on this journey
-            // builder.withNonDefaultDays(enrichNonDefaultDaysForCrown(hearing)); no nondefaultdays on this journey
-            if (isNull(hearing.getWeekCommencingDate())) {
+            // CROWN flow:
+            //   * If enrichCrownCourtScheduleFirst has populated hearingDays (single-day with one session,
+            //     multi-day with N sessions each carrying its own courtScheduleId + hearingDate) we leave
+            //     them untouched — overwriting would collapse multi-day expansion back to one day.
+            //   * If hearingDays is still empty (allocation candidate, no courtScheduleId anywhere) we fall
+            //     back to the pre-existing enrichment that builds hearingDays from bookedSlots / nonDefaultDays
+            //     / candidate so the downstream allocation-candidate path can search-and-book.
+            if (isNull(hearing.getWeekCommencingDate()) && isEmpty(hearing.getHearingDays())) {
                 builder.withHearingDays(enrichHearingDaysForCrown(hearing));
             }
         }
@@ -231,17 +236,7 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
                         .findFirst();
 
                 if (matchingNonDefaultDay.isPresent()) {
-                    // Use the non-default day attributes
-                    NonDefaultDay nonDefaultDay = matchingNonDefaultDay.get();
-                    HearingDay.Builder hdbuilder = HearingDay.hearingDay()
-                            .withHearingDate(nonDefaultDay.getStartTime().toLocalDate())
-                            .withCourtCentreId(fromString(nonDefaultDay.getCourtCentreId()))
-                            .withStartTime(nonDefaultDay.getStartTime())
-                            .withDurationMinutes(nonDefaultDay.getDuration());
-                    if (nonNull(nonDefaultDay.getRoomId())) {
-                        hdbuilder.withCourtRoomId(fromString(nonDefaultDay.getRoomId()));
-                    }
-                    hearingDays.add(hdbuilder.build());
+                    hearingDays.add(createHearingDayFromNonDefaultDay(matchingNonDefaultDay.get()));
                 } else {
                     // Use default court hours for this date
                     HearingDay hearingDay = createDefaultHearingDay(currentDate, courtCentreIdForDefaultDays, courtRoomIdForDefaultDays, defaultStartTime);
@@ -274,6 +269,22 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
                     .withEndTime(ZonedDateTime.of(currentDate, LocalTime.of(17, 0), ZoneOffset.UTC))
                     .build();
         }
+    }
+
+    private static HearingDay createHearingDayFromNonDefaultDay(final NonDefaultDay nonDefaultDay) {
+        HearingDay.Builder hdbuilder = HearingDay.hearingDay()
+                .withHearingDate(nonDefaultDay.getStartTime().toLocalDate())
+                .withCourtCentreId(fromString(nonDefaultDay.getCourtCentreId()))
+                .withStartTime(nonDefaultDay.getStartTime())
+                .withDurationMinutes(nonDefaultDay.getDuration())
+                .withEndTime(nonDefaultDay.getStartTime().plusMinutes(nonDefaultDay.getDuration()));
+        if (nonNull(nonDefaultDay.getRoomId())) {
+            hdbuilder.withCourtRoomId(fromString(nonDefaultDay.getRoomId()));
+        }
+        if (nonNull(nonDefaultDay.getCourtScheduleId())) {
+            hdbuilder.withCourtScheduleId(fromString(nonDefaultDay.getCourtScheduleId()));
+        }
+        return hdbuilder.build();
     }
 
     private static LocalTime getDefaultStartTime(CourtCentreDetails courtCentreDetails) {
@@ -373,7 +384,8 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
             hdbuilder.withHearingDate(nonDefaultDay.getStartTime().toLocalDate())
                     .withCourtCentreId(fromString(nonDefaultDay.getCourtCentreId()))
                     .withDurationMinutes(nonDefaultDay.getDuration())
-                    .withStartTime(nonDefaultDay.getStartTime());
+                    .withStartTime(nonDefaultDay.getStartTime())
+                    .withEndTime(nonDefaultDay.getStartTime().plusMinutes(nonDefaultDay.getDuration()));
             if (nonNull(nonDefaultDay.getRoomId())) {
                 hdbuilder.withCourtRoomId(fromString(nonDefaultDay.getRoomId()));
             }
@@ -403,6 +415,10 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
     private void enrichCandidate(HearingListingNeeds hearing, HearingListingNeeds.Builder builder) {
         if (noHearingDaysPopulatedonPriorSteps(builder)) {
             final ZonedDateTime startTime = nonNull(hearing.getListedStartDateTime()) ? hearing.getListedStartDateTime() : hearing.getEarliestStartDateTime();
+            if (isNull(startTime)) {
+                LOGGER.warn("Cannot enrich hearing days for hearing {}: both listedStartDateTime and earliestStartDateTime are null", hearing.getId());
+                return;
+            }
             LOGGER.info("enriching HearingDays by By AllocationCandidate hearingid: {}", hearing.getId());
             builder.withHearingDays(List.of(HearingDay.hearingDay()
                     .withHearingDate(startTime.toLocalDate())
@@ -410,16 +426,13 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
                     .withCourtCentreId(hearing.getCourtCentre().getId())
                     .withCourtRoomId(hearing.getCourtCentre().getRoomId())
                     .withDurationMinutes(hearing.getEstimatedMinutes())
+                    .withEndTime(nonNull(hearing.getEstimatedMinutes()) ? startTime.plusMinutes(hearing.getEstimatedMinutes()) : null)
                     .build()));
         }
     }
 
     static boolean noHearingDaysPopulatedonPriorSteps(final HearingListingNeeds.Builder builder) {
         return isEmpty(builder.build().getHearingDays());
-    }
-
-    private List<uk.gov.justice.core.courts.NonDefaultDay> enrichNonDefaultDaysForCrown(HearingListingNeeds hearingListingNeeds) {
-        return null;
     }
 
     private List<NonDefaultDay> enrichNonDefaultDaysForCrown(UpdateHearingForListing updateHearingForListing, List<LocalDate> nonSittingDays) {
@@ -456,16 +469,13 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
         return nonNull(updateHearingForListing.getSelectedCourtCentre()) ? updateHearingForListing.getSelectedCourtCentre().getCourtRoomId() : updateHearingForListing.getCourtRoomId();
     }
 
-    private List<String> enrichNonSittingDaysForCrown(HearingListingNeeds hearingListingNeeds) {
-        return null;
-    }
-
     private List<LocalDate> enrichNonSittingDaysForCrown(UpdateHearingForListing updateHearingForListing) {
         return isNotEmpty(updateHearingForListing.getNonSittingDays()) ? updateHearingForListing.getNonSittingDays() : emptyList();
     }
 
     private List<HearingDay> enrichHearingDaysForCrown(HearingListingNeeds hearingListingNeeds) {
         HearingListingNeeds.Builder builder = HearingListingNeeds.hearingListingNeeds().withValuesFrom(hearingListingNeeds);
+        enrichByBookedSlotsIfPresent(hearingListingNeeds, builder);
         enrichByNonDefaultDaysIfPresent(hearingListingNeeds, builder);
         enrichCandidate(hearingListingNeeds, builder);
         return builder.build().getHearingDays();

@@ -1086,9 +1086,9 @@ class ListingCommandHandlerTest {
                 .map(JsonObject.class::cast)
                 .forEach(judiciaryJsonObject ->
                         judicialRoles.add(JudicialRole.judicialRole()
-                                .withIsBenchChairman(of(judiciaryJsonObject.getBoolean("benchChairman")))
-                                .withIsDeputy(of(judiciaryJsonObject.getBoolean("deputy")))
-                                .withJudicialId(fromString(judiciaryJsonObject.getString("judiciaryId")))
+                                .withIsBenchChairman(of(judiciaryJsonObject.getBoolean("isBenchChairman")))
+                                .withIsDeputy(of(judiciaryJsonObject.getBoolean("isDeputy")))
+                                .withJudicialId(fromString(judiciaryJsonObject.getString("id")))
                                 .withJudicialRoleType(
                                         JudicialRoleType.judicialRoleType()
                                                 .withJudiciaryType(judiciaryJsonObject.getString("judiciaryType"))
@@ -1174,9 +1174,9 @@ class ListingCommandHandlerTest {
                 .map(JsonObject.class::cast)
                 .forEach(judiciaryJsonObject ->
                         judicialRoles.add(JudicialRole.judicialRole()
-                                .withIsBenchChairman(of(judiciaryJsonObject.getBoolean("benchChairman")))
-                                .withIsDeputy(of(judiciaryJsonObject.getBoolean("deputy")))
-                                .withJudicialId(fromString(judiciaryJsonObject.getString("judiciaryId")))
+                                .withIsBenchChairman(of(judiciaryJsonObject.getBoolean("isBenchChairman")))
+                                .withIsDeputy(of(judiciaryJsonObject.getBoolean("isDeputy")))
+                                .withJudicialId(fromString(judiciaryJsonObject.getString("id")))
                                 .withJudicialRoleType(
                                         JudicialRoleType.judicialRoleType()
                                                 .withJudiciaryType(judiciaryJsonObject.getString("judiciaryType"))

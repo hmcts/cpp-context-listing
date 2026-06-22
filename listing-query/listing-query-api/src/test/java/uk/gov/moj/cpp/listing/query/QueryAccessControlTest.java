@@ -117,6 +117,12 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     }
 
     @Test
+    void shouldBeAsExpectedForSearchAvailableJudiciaries() {
+        assertAccessAsExpected("listing.search.available.judiciaries",
+                LISTING_OFFICERS, CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, COURT_CLERKS, LEGAL_ADVISERS, COURT_ASSOCIATE);
+    }
+
+    @Test
     public void shouldAllowAuthorisedUserToGetAllocatedAndUnallocatedHearings() {
         final Action action = createActionFor(ACTION_ALLOCATED_AND_UNALLOCATED_HEARINGS);
         given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS, COURT_CLERKS, LEGAL_ADVISERS, COURT_ADMINISTRATORS, CROWN_COURT_ADMIN, YOTS, CPS, NPS, COURT_ASSOCIATE, GROUP_POLICE_ADMIN, GROUP_VICTIMS_WITNESS_CARE_ADMIN, JUDGE, DJMC, DEPUTIES, RECORDERS, SYSTEM_USERS)).willReturn(true);

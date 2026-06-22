@@ -32,6 +32,7 @@ import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory;
 import uk.gov.moj.cpp.listing.query.view.dto.RangeSearchQueryParams;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
+import uk.gov.moj.cpp.listing.query.view.service.SessionJudiciaryEnrichmentService;
 
 import java.time.DayOfWeek;
 import java.time.Instant;
@@ -90,6 +91,9 @@ public class RangeSearchQuery {
 
     @Inject
     private PaginationParameterFactory paginationParameterFactory;
+
+    @Inject
+    private SessionJudiciaryEnrichmentService sessionJudiciaryEnrichmentService;
 
     public JsonEnvelope rangeSearchHearingsForJudgeList(final JsonEnvelope query) {
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
@@ -168,6 +172,7 @@ public class RangeSearchQuery {
                                                final Long totalCount,
                                                final HearingIdsResponse hearingIdsResponse,
                                                final PaginationParameter paginationParameter) {
+        sessionJudiciaryEnrichmentService.enrichWithSessionJudiciary(hearings);
         final List<Notes> notes = notesService.findNotes(allocated, courtRoomId, startDate, hearings);
 
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),

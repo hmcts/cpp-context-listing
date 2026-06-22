@@ -37,8 +37,6 @@ import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
-import uk.gov.moj.cpp.listing.it.util.ItClock;
-
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -74,7 +72,7 @@ public class PublishCourtListIT extends AbstractIT {
         final UUID hearingTypeId = fromString("52edf232-3c09-4c74-a6ad-737985c2e662");
         final UUID courtListId = randomUUID();
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
-        final LocalDate startDate = ItClock.today();
+        final LocalDate startDate = LocalDate.now();
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
                 courtCentreId,
                 publishCourtListType,
@@ -100,7 +98,7 @@ public class PublishCourtListIT extends AbstractIT {
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
-        final LocalDate startDate = ItClock.today();
+        final LocalDate startDate = LocalDate.now();
 
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
                 courtCentreId,
@@ -132,7 +130,7 @@ public class PublishCourtListIT extends AbstractIT {
         final UUID courtCentreIdOne = getRandomCourtCenterId();
         final UUID courtCentreIdTwo = getRandomCourtCenterId(asList(courtCentreIdOne)); //fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
-        final LocalDate startDate = ItClock.today();
+        final LocalDate startDate = LocalDate.now();
         stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreIdOne, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
         stubGetAllCrownCourtCentres(courtCentreIdOne, courtCentreIdTwo);
         stubOrganisationUnit(courtCentreIdOne);
@@ -151,7 +149,7 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.verifyHearingListedFromAPI(true);
         publishCourtListSteps.acceptCourtListXmlFiles();
 
-        final LocalDate expectedPublishDate = getNextWorkingDay(ItClock.today());
+        final LocalDate expectedPublishDate = getNextWorkingDay(LocalDate.now());
 
         sendPublishFinalCourtListsForAllCrownCourtsCommand(commandAsJson);
 
@@ -167,7 +165,7 @@ public class PublishCourtListIT extends AbstractIT {
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
-        final LocalDate startDate = ItClock.today();
+        final LocalDate startDate = LocalDate.now();
 
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
                 courtCentreId,
@@ -207,7 +205,7 @@ public class PublishCourtListIT extends AbstractIT {
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
-        final LocalDate startDate = ItClock.today();
+        final LocalDate startDate = LocalDate.now();
 
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
                 courtCentreId,
@@ -246,7 +244,7 @@ public class PublishCourtListIT extends AbstractIT {
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
         final PublishCourtListType publishCourtListType = PublishCourtListType.DRAFT;
-        final LocalDate startDate = ItClock.today();
+        final LocalDate startDate = LocalDate.now();
 
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
                 courtCentreId,
@@ -287,7 +285,7 @@ public class PublishCourtListIT extends AbstractIT {
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
         final PublishCourtListType publishCourtListType = PublishCourtListType.FINAL;
-        final LocalDate startDate = ItClock.today();
+        final LocalDate startDate = LocalDate.now();
 
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
                 courtCentreId,
@@ -327,7 +325,7 @@ public class PublishCourtListIT extends AbstractIT {
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
-        final LocalDate startDate = ItClock.today();
+        final LocalDate startDate = LocalDate.now();
 
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
                 courtCentreId,
@@ -367,7 +365,7 @@ public class PublishCourtListIT extends AbstractIT {
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
-        final LocalDate startDate = ItClock.today();
+        final LocalDate startDate = LocalDate.now();
 
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
                 courtCentreId,

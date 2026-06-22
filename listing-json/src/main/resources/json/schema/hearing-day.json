@@ -33,6 +33,10 @@
     },
     "courtRoomId": {
       "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "isDraft": {
+      "description": "Whether the court schedule session is in draft state",
+      "type": "boolean"
     }
   },
   "required": [

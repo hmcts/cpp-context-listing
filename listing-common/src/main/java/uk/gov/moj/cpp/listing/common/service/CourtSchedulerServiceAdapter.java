@@ -97,9 +97,9 @@ public class CourtSchedulerServiceAdapter {
                                             .withJudicialRoleType(JudicialRoleType.judicialRoleType()
                                                     .withJudiciaryType("MAGISTRATE")
                                                     .build())
-                                            .withJudicialId(UUID.fromString(rotaSlJudiciaryJsonObject.getString("judiciaryId")))
-                                            .withIsDeputy(Optional.of(rotaSlJudiciaryJsonObject.getBoolean("deputy")))
-                                            .withIsBenchChairman(Optional.of(rotaSlJudiciaryJsonObject.getBoolean("benchChairman")))
+                                            .withJudicialId(UUID.fromString(rotaSlJudiciaryJsonObject.getString("id")))
+                                            .withIsDeputy(Optional.of(rotaSlJudiciaryJsonObject.getBoolean("isDeputy")))
+                                            .withIsBenchChairman(Optional.of(rotaSlJudiciaryJsonObject.getBoolean("isBenchChairman")))
                                             .build())
                             );
                 });
@@ -165,6 +165,21 @@ public class CourtSchedulerServiceAdapter {
         }
         LOGGER.error("hearingSlotsSearch from rota returned an error : {} with status {}", responsePayload, hearingSlotResponse.getStatus());
         return hearingSlotResponse;
+    }
+
+    public Response validateSessionAvailability(final JsonObject requestPayload) {
+        final Response response = hearingSlotsService.validateSessionAvailability(requestPayload);
+
+        if (HttpStatus.SC_OK == response.getStatus()) {
+            return response;
+        }
+
+        String responsePayload = "";
+        if (response.hasEntity()) {
+            responsePayload = response.getEntity().toString();
+        }
+        LOGGER.error("validateSessionAvailability from courtscheduler returned an error : {} with status {}", responsePayload, response.getStatus());
+        return response;
     }
 
     public HearingIdsResponse getCourtSchedulerHearings(final String ouCode,

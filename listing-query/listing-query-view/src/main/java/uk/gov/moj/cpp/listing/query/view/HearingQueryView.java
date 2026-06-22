@@ -64,6 +64,7 @@ import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterE
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
 import uk.gov.moj.cpp.listing.query.view.service.JsonNodeReader;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
+import uk.gov.moj.cpp.listing.query.view.service.SessionJudiciaryEnrichmentService;
 import uk.gov.moj.cpp.listing.query.view.service.csv.HearingCsvReportService;
 
 import java.io.IOException;
@@ -192,6 +193,9 @@ public class HearingQueryView {
     @Inject
     private HearingCsvReportService hearingCsvReportService;
 
+    @Inject
+    private SessionJudiciaryEnrichmentService sessionJudiciaryEnrichmentService;
+
     public static final String TYPE = "type";
 
     public static final String LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS = "listing.allocated.and.unallocated.hearings";
@@ -238,6 +242,8 @@ public class HearingQueryView {
 
 
         LOGGER.info("number of records from query -  {}", filteredHearings.size());
+
+        sessionJudiciaryEnrichmentService.enrichWithSessionJudiciary(filteredHearings);
 
         final List<Notes> notes = notesService.findNotes(allocated, courtRoomId, searchDate, filteredHearings);
 

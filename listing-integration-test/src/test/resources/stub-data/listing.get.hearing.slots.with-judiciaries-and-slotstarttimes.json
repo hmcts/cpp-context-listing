@@ -23,28 +23,28 @@
       "availableDuration": 0,
       "judiciaries": [
         {
-          "judiciaryId": "0fd0233e-a8f9-3dc8-8bef-4f6b1d4799f3",
+          "id": "0fd0233e-a8f9-3dc8-8bef-4f6b1d4799f3",
           "courtScheduleId": "0d9c4454-46db-305d-bb48-dcf423a6d2a5",
           "courtListingProfileId": "CS2339681",
           "judiciaryType": "MAGISTRATE",
-          "deputy": true,
-          "benchChairman": false
+          "isDeputy": true,
+          "isBenchChairman": false
         },
         {
-          "judiciaryId": "d424f73e-4a19-396d-a00c-f4c38d1c864e",
+          "id": "d424f73e-4a19-396d-a00c-f4c38d1c864e",
           "courtScheduleId": "0d9c4454-46db-305d-bb48-dcf423a6d2a5",
           "courtListingProfileId": "CS2339681",
           "judiciaryType": "MAGISTRATE",
-          "deputy": false,
-          "benchChairman": true
+          "isDeputy": false,
+          "isBenchChairman": true
         },
         {
-          "judiciaryId": "f0cd595c-be23-3539-9aed-7f1aab1d1e19",
+          "id": "f0cd595c-be23-3539-9aed-7f1aab1d1e19",
           "courtScheduleId": "0d9c4454-46db-305d-bb48-dcf423a6d2a5",
           "courtListingProfileId": "CS2339681",
           "judiciaryType": "MAGISTRATE",
-          "deputy": true,
-          "benchChairman": false
+          "isDeputy": true,
+          "isBenchChairman": false
         }
       ],
       "slotStartTimes": [

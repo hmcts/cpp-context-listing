@@ -25,7 +25,6 @@ import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.utils.PropertyUtil;
-import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.text.MessageFormat;
 import java.time.*;
@@ -195,7 +194,7 @@ public class PayloadBasedListCourtHearingSteps extends AbstractIT {
                         .withNano(0);
             }
             if (isNull(values.hearingDate)) {
-                values.hearingDate = ItClock.today().plusDays(30).toString();
+                values.hearingDate = LocalDate.now().plusDays(30).toString();
             }
 
             stubListHearingInCourtSessions(values.hearingId, values.courtScheduleId,values.hearingStartTime);

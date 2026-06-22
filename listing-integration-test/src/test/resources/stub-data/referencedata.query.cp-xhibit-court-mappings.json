@@ -71,30 +71,6 @@
       "crestCourtFullName": "LIVERPOOL HILTON HOTEL",
       "crestCourtSiteCode": "C",
       "courtType": "CROWN_COURT"
-    },
-    {
-      "id": "7b1f4c2e-9d3a-3f88-9c41-2e85a0b6d914",
-      "oucode": "C06MC00",
-      "crestCourtId": "435",
-      "crestCourtSiteId": "435",
-      "crestCourtSiteName": "MANCHESTER",
-      "crestCourtName": "MANCHESTER",
-      "crestCourtShortName": "MANCH",
-      "crestCourtFullName": "MANCHESTER",
-      "crestCourtSiteCode": "C",
-      "courtType": "CROWN_COURT"
-    },
-    {
-      "id": "4e9d72a1-6c5b-3a17-8f02-9b34c8e1f527",
-      "oucode": "C10NE00",
-      "crestCourtId": "439",
-      "crestCourtSiteId": "439",
-      "crestCourtSiteName": "NEWCASTLE UPON TYNE",
-      "crestCourtName": "NEWCASTLE",
-      "crestCourtShortName": "NEWCA",
-      "crestCourtFullName": "NEWCASTLE UPON TYNE",
-      "crestCourtSiteCode": "C",
-      "courtType": "CROWN_COURT"
     }
   ]
 }

@@ -49,8 +49,7 @@ public class RemoveOffencesFromHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicListingOffencesRemovedFromAllocatedHearing() {
-        final JsonPath jsonResponse = retrieveMessage(publicSelectedOffenceRemovedFromHearing,
-                org.hamcrest.CoreMatchers.containsString(hearingId));
+        final JsonPath jsonResponse = retrieveMessage(publicSelectedOffenceRemovedFromHearing);
         assertThat(jsonResponse.get("hearingId"), is(hearingId));
         assertThat(jsonResponse.get("isResultFlow"), is(false));
     }

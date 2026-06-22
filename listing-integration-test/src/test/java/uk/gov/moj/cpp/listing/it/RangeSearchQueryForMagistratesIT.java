@@ -30,7 +30,6 @@ import uk.gov.justice.services.test.utils.core.http.RequestParams;
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
-import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -127,7 +126,7 @@ public class RangeSearchQueryForMagistratesIT extends AbstractIT {
         JsonArray hearingDaysJsonArr = hearingsJsonArr.getJsonObject(0).getJsonArray("hearingDays");
         assertThat(hearingDaysJsonArr.getJsonObject(0).getString("courtScheduleId"), is(bookedSlotsJsonArr.getJsonObject(0).getString("courtScheduleId")));
 
-        final Instant instant = ItClock.nowInstant();
+        final Instant instant = Instant.now();
         stubGetHearingIds(instant);
         params.put(EXACT_HEARING_START_DATETIME, instant.toString());
         final String queryString2 = getQueryString(params);
@@ -162,7 +161,7 @@ public class RangeSearchQueryForMagistratesIT extends AbstractIT {
                 caseUrnForLinkedCases, caseUrnForLinkedCases);
 
         ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData1));
-        listCourtHearingSteps1.createListingNotes(ItClock.today().plusDays(1), "note 1");
+        listCourtHearingSteps1.createListingNotes(LocalDate.now().plusDays(1), "note 1");
         final ZonedDateTime hearingStartTime = listCourtHearingSteps1.getHearingsData().getHearingData().get(0).getHearingStartTime();
         final LocalDate hearingDate = hearingStartTime.toLocalDate();
         final UUID courtroomId = listCourtHearingSteps1.getHearingsData().getHearingData().get(0).getCourtRoomId();

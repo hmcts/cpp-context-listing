@@ -295,28 +295,6 @@ public class PublicCourtListAssemblerTest {
     }
 
     @Test
-    public void shouldUseSubjectAsDefendantWhenCourtApplicationHasSubject() {
-        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
-                .thenReturn(generateCourtCentreDetails(NOT_WELSH));
-        when(referenceDataService.getJudiciariesByIdList(eq(singletonList(JUDICIARY_ID)), any(JsonEnvelope.class)))
-                .thenReturn(generateJudiciaryEnvelope());
-
-        final String jsonString = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getOnlyApplicationHearingPublicCourtListDataWithSubject.json")
-                .replace("JUDICIARY_ID", JUDICIARY_ID.toString());
-        final JsonObject publicListData = publicListService.assemble(buildJsonEnvelope(convertToJsonObject(jsonString)),
-                COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.PUBLIC, FALSE, FALSE).get();
-
-        final JsonObject hearingDateJo = publicListData.getJsonArray("hearingDates").getJsonObject(0);
-        final JsonObject timeslot = hearingDateJo.getJsonArray("courtRooms").getJsonObject(0).getJsonArray("timeslots").getJsonObject(0);
-        final JsonObject hearing = timeslot.getJsonArray("hearings").getJsonObject(0);
-
-        assertThat(hearing.getJsonArray("defendants").size(), is(1));
-        final JsonObject defendant = hearing.getJsonArray("defendants").getJsonObject(0);
-        assertThat(defendant.getString("firstName"), is(FIRST_NAME3));
-        assertThat(defendant.getString("surname"), is(LAST_NAME3));
-    }
-
-    @Test
     public void shouldBuildDataForPublicCourtListBST() {
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails(NOT_WELSH));

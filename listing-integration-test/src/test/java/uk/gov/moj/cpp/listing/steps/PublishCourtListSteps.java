@@ -11,10 +11,8 @@ import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -48,7 +46,6 @@ import java.util.UUID;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import uk.gov.justice.services.messaging.JsonObjects;
-import uk.gov.moj.cpp.listing.it.util.ItClock;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.ws.rs.core.Response;
@@ -107,7 +104,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     public void verifyCourtListPublishStatus(final String expectedPublishStatus, final String weekCommencing) {
         final String courtCentreId = commandJsonObject.getString("courtCentreId");
         final String courtListType = commandJsonObject.getString("publishCourtListType");
-        final String publishDate = ItClock.today().toString();
+        final String publishDate = LocalDate.now().toString();
         final String queryPart = format(readConfig().getProperty("listing.court.list.publish.status"),
                 courtCentreId,
                 courtListType,
@@ -461,9 +458,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     }
 
     public void verifyPublicEventForCourtListPublished(final String courtCentreId, final String publishCourtListType, final Boolean weekCommencing, final Boolean sendNotificationToParties, final int courtListItems) {
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerPublishCourtList,
-                containsString(courtCentreId));
-        assertNotNull(jsonResponse, "No public publish-court-list event found for courtCentreId=" + courtCentreId);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerPublishCourtList);
         LOGGER.info("jsonResponse from publicMessageConsumerHearingUpdated: {}", jsonResponse.prettify());
         LOGGER.info("jsonResponse from publicMessageConsumerHearingUpdated ");
         assertThat(jsonResponse.get("courtCentreId"), is(courtCentreId));

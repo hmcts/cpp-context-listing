@@ -82,6 +82,7 @@ import uk.gov.moj.cpp.listing.query.view.dto.csv.HearingCsvData;
 import uk.gov.moj.cpp.listing.query.view.hearing.ApplicationTypeFilter;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
+import uk.gov.moj.cpp.listing.query.view.service.SessionJudiciaryEnrichmentService;
 import uk.gov.moj.cpp.listing.query.view.service.csv.HearingCsvReportService;
 
 import java.io.IOException;
@@ -195,6 +196,9 @@ public class HearingQueryViewTest {
     private ApplicationTypeFilter applicationTypeFilter;
     @Mock
     private HearingCsvReportService hearingCsvReportService;
+
+    @Mock
+    private SessionJudiciaryEnrichmentService sessionJudiciaryEnrichmentService;
 
     @Spy
     private JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();;
@@ -339,6 +343,7 @@ public class HearingQueryViewTest {
                 eq(fromString(AUTHORITY_ID).toString()), eq(HEARING_TYPE_ID.toString()), eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE),
                 eq(SEARCH_DATE.atTime(LocalTime.MIN).atZone(UTC)), eq(SEARCH_DATE.atTime(END_TIME).atZone(UTC)));
         verify(hearingJsonListConverterFilterEjectCases).convertForSearchHearing(eq(hearingsJson), anyMap());
+        verify(sessionJudiciaryEnrichmentService).enrichWithSessionJudiciary(eq(hearingsJson));
     }
 
     @Test
@@ -384,6 +389,7 @@ public class HearingQueryViewTest {
         final JsonEnvelope results = hearingsQueryView.searchHearings(query);
         assertThat(hearingsJson.size(), is(2));
         assertThat(results.payloadAsJsonObject().getJsonArray("hearings").size(), is(1));
+        verify(sessionJudiciaryEnrichmentService).enrichWithSessionJudiciary(eq(hearingsFilteredJson));
     }
 
     @Test
@@ -439,6 +445,7 @@ public class HearingQueryViewTest {
                 eq(SEARCH_DATE.atTime(START_TIME).atZone(UTC)), eq(SEARCH_DATE.atTime(END_TIME).atZone(UTC)));
         verify(hearingJsonListConverterFilterEjectCases).convertForSearchHearing(eq(hearingsJson), anyMap());
         verify(notesService, times(1)).findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), any(List.class));
+        verify(sessionJudiciaryEnrichmentService).enrichWithSessionJudiciary(eq(hearingsJson));
     }
 
     @Test

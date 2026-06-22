@@ -41,6 +41,7 @@ import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
+import uk.gov.moj.cpp.listing.query.view.service.SessionJudiciaryEnrichmentService;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -144,6 +145,9 @@ public class RangeSearchQueryTest {
 
     @Mock
     private NotesService notesService;
+
+    @Mock
+    private SessionJudiciaryEnrichmentService sessionJudiciaryEnrichmentService;
 
     @InjectMocks
     private RangeSearchQuery rangeSearchQuery;
