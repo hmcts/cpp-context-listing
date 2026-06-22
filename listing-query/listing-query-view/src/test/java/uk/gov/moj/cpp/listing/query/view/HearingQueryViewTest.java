@@ -34,6 +34,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static java.time.ZoneOffset.UTC;
 import static uk.gov.justice.listing.event.PublishCourtListType.FINAL;
 import static uk.gov.justice.listing.event.PublishStatus.EXPORT_SUCCESSFUL;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -89,6 +90,8 @@ import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -1349,13 +1352,19 @@ public class HearingQueryViewTest {
         final String testJsonString1 = "{ \"allocated\":\"" + true + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
         final String testJsonString2 = "{ \"allocated\":\"" + true + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] , \"type\" : {\"id\":\"bd4dab38-ea91-434b-8e73-e0d50ef0cbdf\", \"description\":\"Review\"}}";
 
+        final ZonedDateTime ampPublicDataLastUpdated = now();
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        final String formattedDate = ampPublicDataLastUpdated.withZoneSameInstant(UTC).format(formatter);
+
         final Hearing hearing1 = Hearing.builder().withId(randomUUID())
                 .withProperties(JacksonUtil.toJsonNode(testJsonString1))
                 .withListedCases(asSet(new ListedCases(randomUUID(), randomUUID(), null, null, null, null, null, false)))
+                .withAmpPublicDataLastUpdated(ampPublicDataLastUpdated)
                 .build();
         final Hearing hearing2 = Hearing.builder().withId(randomUUID())
                 .withProperties(JacksonUtil.toJsonNode(testJsonString2))
                 .withListedCases(asSet(new ListedCases(randomUUID(), randomUUID(), null, null, null, null, null, false)))
+                .withAmpPublicDataLastUpdated(ampPublicDataLastUpdated)
                 .build();
 
 
@@ -1377,6 +1386,9 @@ public class HearingQueryViewTest {
         verify(hearingRepository).findAllocatedAndUnallocatedHearingsByCaseId(eq("caseId"));
         verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
         assertEquals(2, ((JsonObject) results.payload()).getJsonArray("hearings").size());
+        assertEquals(formattedDate, results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("ampPublicDataLastUpdated"));
+        assertEquals(formattedDate, results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(1).getString("ampPublicDataLastUpdated"));
+
     }
 
     @Test

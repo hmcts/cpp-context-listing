@@ -186,6 +186,10 @@
       "numberOfGroupCases": {
         "description": "The number of group cases",
         "type": "integer"
+      },
+      "ampPublicDataLastUpdated": {
+        "type": "string",
+        "format": "date-time"
       }
     }
   },

@@ -55,7 +55,6 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.it.util.ItClock;
 
-import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -436,7 +435,10 @@ public class ListUnAllocatedCourtHearingSteps extends ListCourtHearingSteps {
                 withJsonPath("$.hearings[0].courtApplications[0].respondents[0].lastName",
                         equalTo(hearingData.getCourtApplications().get(0).getRespondent().getLastName())),
                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].isYouth",
-                        equalTo(true))
+                        equalTo(true)),
+                withJsonPath("$.hearings[0].ampPublicDataLastUpdated",
+                        value -> ZonedDateTime.parse(value.toString()).toLocalDate().equals(ItClock.today()))
+
         );
         pollForUnallocatedHearings(getLoggedInUser(), hearingData, unallocateddHearingVerifiedMatcher);
     }

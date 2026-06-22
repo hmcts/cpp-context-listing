@@ -4,6 +4,7 @@ import static java.util.Objects.isNull;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -114,6 +115,9 @@ public class Hearing implements JsonEntity {
     @Column(name = "hearing_date",updatable = false, insertable = false)
     private LocalDate hearingDate;
 
+    @Column(name = "amp_public_data_last_updated")
+    private ZonedDateTime ampPublicDataLastUpdated;
+
     public Hearing() {
         // for JPA
 
@@ -146,7 +150,8 @@ public class Hearing implements JsonEntity {
                    final Boolean isPossibleDisqualification,
                    final Long hearingDayCount,
                    final Long hearingDayPosition,
-                   final LocalDate hearingDate) {
+                   final LocalDate hearingDate,
+                   final ZonedDateTime ampPublicDataLastUpdated) {
         this.id = id;
         this.courtCentreId = courtCentreId;
         this.courtRoomId = courtRoomId;
@@ -169,6 +174,7 @@ public class Hearing implements JsonEntity {
         this.hearingDayCount = hearingDayCount;
         this.hearingDayPosition = hearingDayPosition;
         this.hearingDate = hearingDate;
+        this.ampPublicDataLastUpdated = ampPublicDataLastUpdated;
     }
 
     public static HearingBuilder builder() {
@@ -307,6 +313,14 @@ public class Hearing implements JsonEntity {
         this.hearingDate = hearingDate;
     }
 
+    public ZonedDateTime getAmpPublicDataLastUpdated() {
+        return ampPublicDataLastUpdated;
+    }
+
+    public void setAmpPublicDataLastUpdated(final ZonedDateTime ampPublicDataLastUpdated) {
+        this.ampPublicDataLastUpdated = ampPublicDataLastUpdated;
+    }
+
     public void setHearingDays(final Set<HearingDays> hearingDays) {
         if(isNull(hearingDays)){
             return;
@@ -427,6 +441,7 @@ public class Hearing implements JsonEntity {
         private Long hearingDayCount;
         private Long hearingDayPosition;
         private LocalDate hearingDate;
+        private ZonedDateTime ampPublicDataLastUpdated;
 
         private HearingBuilder() {
         }
@@ -557,10 +572,17 @@ public class Hearing implements JsonEntity {
             return this;
         }
 
+        public HearingBuilder withAmpPublicDataLastUpdated(ZonedDateTime ampPublicDataLastUpdated) {
+            this.ampPublicDataLastUpdated = ampPublicDataLastUpdated;
+            return this;
+        }
+
         public Hearing build() {
             return new Hearing(id, courtCentreId, courtRoomId, isVacatedTrial, unscheduled, typeId, jurisdictionType,
                     weekCommencingStartDate, weekCommencingEndDate, startDate, endDate, hearingDays, listedCases, allocated,
-                    courtApplications, typeOfListId, properties, estimatedMinutes, isPossibleDisqualification, hearingDayCount, hearingDayPosition, hearingDate);
+                    courtApplications, typeOfListId, properties, estimatedMinutes, isPossibleDisqualification, hearingDayCount, hearingDayPosition, hearingDate, ampPublicDataLastUpdated);
         }
     }
 }
+
+

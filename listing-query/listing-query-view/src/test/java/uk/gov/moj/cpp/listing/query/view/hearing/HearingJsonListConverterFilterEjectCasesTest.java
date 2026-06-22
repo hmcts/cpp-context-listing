@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.query.view.hearing;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -13,6 +14,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 import static org.skyscreamer.jsonassert.JSONCompareMode.STRICT;
 import static uk.gov.moj.cpp.listing.query.view.utils.FileUtil.givenPayload;
@@ -26,6 +28,7 @@ import java.io.StringWriter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -566,6 +569,36 @@ public class HearingJsonListConverterFilterEjectCasesTest {
                 withJsonPath("$[0].hearingsByCourtCentreId[1].hearingsByHearingDate[0].hearing.listedCases[0].id", equalTo("a35c2049-5aaa-4c16-aff4-40a22a260157"))
                 )));
 
+    }
+
+    @Test
+    public void shouldConvertHearingByPopulatingAmpPubicDataLastUpdatedField() throws IOException {
+        //Given
+        final List<Hearing> hearings = Arrays.asList(createHearing(SAMPLE_HEARING_WITH_2_HEARING_DAYS_IN_DIFFERENT_HEARING_DATE));
+        hearings.get(0).setAmpPublicDataLastUpdated(ZonedDateTime.now());
+        //When
+        final JsonArray hearingJsonArray = converter.convert(hearings);
+        //Then
+        assertThat(hearingJsonArray.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(1)),
+                withJsonPath("$.[0].ampPublicDataLastUpdated",
+                        value -> ZonedDateTime.parse(value.toString()).toLocalDate().equals(LocalDate.now()))
+        )));
+    }
+
+    @Test
+    public void shouldConvertHearingWithoutPopulatingAmpPubicDataLastUpdatedField() throws IOException {
+        //Given
+        final List<Hearing> hearings = Arrays.asList(createHearing(SAMPLE_HEARING_WITH_2_HEARING_DAYS_IN_DIFFERENT_HEARING_DATE));
+
+        //When
+        final JsonArray hearingJsonArray = converter.convert(hearings);
+
+        //Then
+        assertThat(hearingJsonArray.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(1)),
+                not(hasJsonPath("$[0].ampPublicDataLastUpdated"))
+        )));
     }
 
     private Hearing createHearing(final String filePath) throws IOException {

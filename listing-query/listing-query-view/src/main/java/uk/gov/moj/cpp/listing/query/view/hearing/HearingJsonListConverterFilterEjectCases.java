@@ -10,6 +10,7 @@ import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static uk.gov.moj.cpp.listing.common.service.HearingIdsResponse.EMPTY_HEARING_ID_RESPONSE;
 import static uk.gov.moj.cpp.listing.query.view.hearing.JsonArrayCollector.toArrayNode;
+import static java.time.ZoneOffset.UTC;
 
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.listing.common.service.HearingIdsResponse;
@@ -20,6 +21,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -100,6 +102,12 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
         final LocalDate hearingDate = h.getHearingDate();
         Long hearingDayCount = h.getHearingDayCount();
         Long position = h.getHearingDayPosition();
+
+        if (nonNull(h.getAmpPublicDataLastUpdated())){
+            final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+            final String formattedDate = h.getAmpPublicDataLastUpdated().withZoneSameInstant(UTC).format(formatter);
+            ((ObjectNode) h.getProperties()).put("ampPublicDataLastUpdated", formattedDate);
+        }
 
         if (hearingDate == null || hearingDayCount == null || hearingDayCount <= 0) {
             // no flattening needed
