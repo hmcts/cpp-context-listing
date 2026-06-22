@@ -1,7 +1,5 @@
 package uk.gov.moj.cpp.listing.steps;
 
-import uk.gov.moj.cpp.listing.it.util.ItClock;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -53,19 +51,19 @@ public class PayloadGenerator {
         try {
             String resourcePath = String.format("/test-data/%s/%s/%s.json", courtType, scenario, testCase);
             InputStream inputStream = PayloadGenerator.class.getResourceAsStream(resourcePath);
-
+            
             if (inputStream == null) {
                 throw new RuntimeException("Test data file not found: " + resourcePath);
             }
-
+            
             JsonNode originalNode = objectMapper.readTree(inputStream);
             Map<String, String> placeholderValues = generateDynamicValues(null);
-
+            
             JsonNode processedNode = replacePlaceholders(originalNode, placeholderValues);
-
+            
             LOGGER.info("Loaded and processed test data from: {}", resourcePath);
             return processedNode;
-
+            
         } catch (IOException e) {
             throw new RuntimeException("Failed to load test data file", e);
         }
@@ -93,7 +91,7 @@ public class PayloadGenerator {
         values.put("%%JURISDICTION_TYPE%%", "MAGISTRATES"); // Can be parameterized later
         
         // Generate dates and times
-        LocalDateTime now = ItClock.nowLocalDateTime();
+        LocalDateTime now = LocalDateTime.now();
         LocalDateTime futureDateTime = now.plusDays(30);
         LocalDate futureDate = futureDateTime.toLocalDate();
         ZonedDateTime zonedDateTime = now
@@ -136,22 +134,22 @@ public class PayloadGenerator {
         try {
             String resourcePath = String.format("/test-data/%s/%s/%s.json", courtType, scenario, testCase);
             InputStream inputStream = PayloadGenerator.class.getResourceAsStream(resourcePath);
-
+            
             if (inputStream == null) {
                 throw new RuntimeException("Test data file not found: " + resourcePath);
             }
-
+            
             JsonNode originalNode = objectMapper.readTree(inputStream);
-
+            
             // Start with default values and override with custom ones
             Map<String, String> placeholderValues = generateDynamicValues(customValues);
             placeholderValues.putAll(customValues);
-
+            
             JsonNode processedNode = replacePlaceholders(originalNode, placeholderValues);
-
+            
             LOGGER.info("Loaded and processed test data from: {} with custom values", resourcePath);
             return processedNode;
-
+            
         } catch (IOException e) {
             throw new RuntimeException("Failed to load test data file", e);
         }

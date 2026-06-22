@@ -1,7 +1,5 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
-import uk.gov.moj.cpp.listing.it.util.ItClock;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -47,7 +45,7 @@ public class SequenceHearingData {
 
     private List<LocalDate> getLocalDateRange(final String endDate) {
 
-        final LocalDate start = LocalDate.parse(ItClock.today().toString(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        final LocalDate start = LocalDate.parse(LocalDate.now().toString(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         final LocalDate end = LocalDate.parse(endDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
         final int days = (int) start.until(end, ChronoUnit.DAYS);

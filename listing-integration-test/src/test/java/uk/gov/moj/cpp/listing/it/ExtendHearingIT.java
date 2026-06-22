@@ -48,10 +48,6 @@ public class ExtendHearingIT extends AbstractIT {
         LOGGER.info("UnAllocated HearingID : {}  -  Allocated HearingId : {} ", UNALLOCATED_HEARING_ID, ALLOCATED_HEARING_ID);
 
         listCourtHearingSteps2.verifyHearingIsCreated(ALLOCATED_HEARING_ID, 1);
-        // The extend handler fetches BOTH hearings from the query view (ListingCommandHandler.extendHearingForHearing);
-        // without this await the extend races the unallocated hearing's projection and rollback-redelivers with
-        // "There is no Hearing for this ID" until hearing-listed lands.
-        listCourtHearingSteps2.verifyHearingIsCreated(UNALLOCATED_HEARING_ID, 2);
         listCourtHearingSteps2.extendHearing(UNALLOCATED_HEARING_ID, ALLOCATED_HEARING_ID);
         listCourtHearingSteps2.verifyPublicEventHearingConfirmedAndExtendHearingFromProgression(ALLOCATED_HEARING_ID, UNALLOCATED_HEARING_ID);
         listCourtHearingSteps2.verifyHearingUpdatedToCaseInActiveMQ(ALLOCATED_HEARING_ID, UNALLOCATED_HEARING_ID, 2);
@@ -79,8 +75,6 @@ public class ExtendHearingIT extends AbstractIT {
         LOGGER.info("UnAllocated HearingID : {}  -  Allocated HearingId : {} ", unallocatedHearingId, ALLOCATED_HEARING_ID);
 
         listCourtHearingSteps2.verifyHearingIsCreated(ALLOCATED_HEARING_ID, 1);
-        // Await the unallocated hearing too — see shouldExtendHearingForCase for why.
-        listCourtHearingSteps2.verifyHearingIsCreated(unallocatedHearingId, 2);
         listCourtHearingSteps2.extendHearingPartially(unallocatedHearingId, ALLOCATED_HEARING_ID, listedCaseData);
         listCourtHearingSteps2.verifyPublicEventHearingConfirmedEventAndExtendPartialHearingFromProgression(ALLOCATED_HEARING_ID, unallocatedHearingId);
         listCourtHearingSteps2.verifyHearingUpdatedToCaseInActiveMQ(ALLOCATED_HEARING_ID, unallocatedHearingId, 1);
@@ -114,8 +108,6 @@ public class ExtendHearingIT extends AbstractIT {
         LOGGER.info("UnAllocated HearingID : {}  -  Allocated HearingId : {} ", unallocatedHearingId, ALLOCATED_HEARING_ID);
 
         listCourtHearingSteps2.verifyHearingIsCreated(ALLOCATED_HEARING_ID, 1);
-        // Await the unallocated hearing too — see shouldExtendHearingForCase for why.
-        listCourtHearingSteps2.verifyHearingIsCreated(unallocatedHearingId, 2);
         listCourtHearingSteps2.extendWholeHearing(unallocatedHearingId, ALLOCATED_HEARING_ID, listedCaseDataList);
         listCourtHearingSteps2.verifyPublicEventHearingConfirmedAndExtendHearingFromProgression(ALLOCATED_HEARING_ID, unallocatedHearingId);
         listCourtHearingSteps2.verifyHearingUpdatedToCaseInActiveMQ(ALLOCATED_HEARING_ID, unallocatedHearingId, 2);

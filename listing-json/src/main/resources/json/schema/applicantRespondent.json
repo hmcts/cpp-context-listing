@@ -32,13 +32,6 @@
     },
     "address": {
       "$ref": "http://justice.gov.uk/core/courts/address.json"
-    },
-    "masterDefendantId": {
-      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
-    },
-    "dateOfBirth": {
-      "description": "The date of birth of the party",
-      "type": "string"
     }
   },
   "required": [

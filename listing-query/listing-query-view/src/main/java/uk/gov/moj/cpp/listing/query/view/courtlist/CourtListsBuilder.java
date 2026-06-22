@@ -54,7 +54,7 @@ public class CourtListsBuilder {
     public CourtListsBuilder assignHearingsToCourtSitesUsingCourtRoom(final UUID courtCentreId, final List<FlatHearing> flatHearings) {
         for (final FlatHearing flatHearing : flatHearings) {
             if(LOGGER.isInfoEnabled()) {
-                LOGGER.info("courtCentreId={}, courtRoomId={}, flatHearingId={}", courtCentreId, !flatHearing.getCourtRoomId().isEmpty()?flatHearing.getCourtRoomId().get():"No Value", nonNull(flatHearing.getCaseHearings()) && flatHearing.getCaseHearings().containsKey("id")?flatHearing.getCaseHearings().getString("id"):"No Value");
+                LOGGER.info("courtCentreId={}, courtRoomId={}, flatHearingId={}", courtCentreId, flatHearing.getCourtRoomId().map(UUID::toString).orElse("No Value"), nonNull(flatHearing.getCaseHearings()) && flatHearing.getCaseHearings().containsKey("id")?flatHearing.getCaseHearings().getString("id"):"No Value");
             }
             final String crestCourtSiteCode = getCrestCourtSiteCodeForCourtRoom(courtCentreId, flatHearing.getCourtRoomId());
             crestCourtSiteCodeHearingsMap.get(crestCourtSiteCode).add(flatHearing);

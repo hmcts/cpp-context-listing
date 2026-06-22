@@ -4,8 +4,6 @@ import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 
-import org.hamcrest.Matcher;
-
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -15,19 +13,22 @@ import java.time.LocalTime;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.UUID.fromString;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
+import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.*;
+import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
+import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.getJsonObject;
 import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.getUUID;
-import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
@@ -37,6 +38,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 public class ListCourtHearingStepsSpi extends AbstractIT {
     private static final String LISTING_COMMAND_LIST_COURT_HEARING = "listing.command.list-court-hearing";
     private static final String MEDIA_TYPE_LIST_COURT_HEARING = "application/vnd.listing.command.list-court-hearing+json";
+    private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
 
@@ -98,12 +100,10 @@ public class ListCourtHearingStepsSpi extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.hearings.by.allocated"), true));
 
-        // Poll on content (not just HTTP 200): the by.allocated read model lags the async
-        // list-court-hearing command, so wait until the hearing actually appears.
-        final String response = pollForHearing(searchHearingUrl, getLoggedInUser().toString(),
-                new Matcher[]{withJsonPath("$.hearings[0].id", equalTo(payload.get("hearingId")))});
-        final JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
-        final JsonObject hearingJsonObject = jsonObject.getJsonArray("hearings").getJsonObject(0);
+        final String response =  pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()).build())
+                .until(status().is(OK)).getPayload();
+        JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
+        final JsonObject hearingJsonObject = (JsonObject)jsonObject.getJsonArray("hearings").get(0);
 
         assertThat(hearingJsonObject.getString("id"), is(payload.get("hearingId")));
         assertThat(hearingJsonObject.getString("courtCentreId"), is(payload.get("courtCentreId")));
@@ -121,10 +121,9 @@ public class ListCourtHearingStepsSpi extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.hearings.by.allocated"), false));
 
-        final String response = pollForHearing(searchHearingUrl, getLoggedInUser().toString(),
-                new Matcher[]{withJsonPath("$.hearings[0].id", equalTo(payload.get("hearingId")))});
-        final JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
-        final JsonObject hearingJsonObject = jsonObject.getJsonArray("hearings").getJsonObject(0);
+        final String response =  pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
+        JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
+        final JsonObject hearingJsonObject = (JsonObject)jsonObject.getJsonArray("hearings").get(0);
 
         assertThat(hearingJsonObject.getString("id"), is(payload.get("hearingId")));
         assertThat(hearingJsonObject.getString("courtCentreId"), is(payload.get("courtCentreId")));
@@ -141,17 +140,17 @@ public class ListCourtHearingStepsSpi extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.hearings.by.allocated"), false));
 
-        final String response = pollForHearing(searchHearingUrl, getLoggedInUser().toString(),
-                new Matcher[]{withJsonPath("$.hearings[0].id", equalTo(payload.get("hearingId")))});
-        final JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
-        final JsonObject hearingJsonObject = jsonObject.getJsonArray("hearings").getJsonObject(0);
-        final JsonArray listedCases = hearingJsonObject.getJsonArray("listedCases");
+        final String response =  pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).until(status().is(OK)).getPayload();
+        JsonObject jsonObject = stringToJsonObjectConverter.convert(response);
+        final JsonObject hearingJsonObject = (JsonObject)jsonObject.getJsonArray("hearings").get(0);
+        JsonArray listedCases = hearingJsonObject.getJsonArray("listedCases");
         assertEquals(1, listedCases.size());
 
-        final JsonObject firstCase = listedCases.getJsonObject(0);
-        final JsonArray defendants = firstCase.getJsonArray("defendants");
+        JsonObject firstCase = listedCases.getJsonObject(0);
+        JsonArray defendants = firstCase.getJsonArray("defendants");
         assertEquals(2, defendants.size());
         assertThat(hearingJsonObject.getString("id"), is(payload.get("hearingId")));
+        assertThat(hearingJsonObject.getString("courtCentreId"), is(payload.get("courtCentreId")));
         assertThat(hearingJsonObject.getString("courtCentreId"), is(payload.get("courtCentreId")));
         assertThat(hearingJsonObject.getString("jurisdictionType"), is( payload.get("jurisdictionType")));
         assertThat(hearingJsonObject.getJsonObject("type").getString("id"), is(payload.get("hearingTypeId")));

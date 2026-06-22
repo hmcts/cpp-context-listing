@@ -20,7 +20,7 @@ import java.util.Optional;
 
 public class QueueUtil {
 
-    private static final long RETRIEVE_TIMEOUT = 5000;//1sec makes HearingIT.updateHearingResultsWhenCourtRoomNotSelected:375
+    private static final long RETRIEVE_TIMEOUT = 5000;
     private static final long MESSAGE_RETRIEVE_TRIAL_TIMEOUT = 60000;
 
     public static final QueueUtil publicEvents = new QueueUtil();
@@ -91,10 +91,7 @@ public class QueueUtil {
                 }
             }
         } while (MESSAGE_RETRIEVE_TRIAL_TIMEOUT > (System.currentTimeMillis() - startTime));
-        // B6: fail loudly instead of returning null (which produced opaque NPEs at every call site).
-        // Mirrors the 1-arg overload — a missing/filtered-out event is a clear, actionable failure.
-        throw new java.util.NoSuchElementException(
-                "No JMS message matching [" + matchers + "] received within " + MESSAGE_RETRIEVE_TRIAL_TIMEOUT + "ms");
+        return null;
     }
 
     public static void clearAllMessages(JmsMessageConsumerClient consumer) {

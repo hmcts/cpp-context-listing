@@ -429,6 +429,17 @@ protocols: [ HTTP, HTTPS ]
             description: Available duration of the hearing in minutes
             type: integer
             required: false
+        status:
+            description: Publish status filter (DRAFT/FINAL/ALL). Default is ALL
+            type: string
+            required: false
+            default: ALL
+            enum: [DRAFT, FINAL, ALL]
+        jurisdiction:
+            description: Jurisdiction type
+            type: string
+            required: true
+            enum: [CROWN, MAGISTRATES]
     responses:
         200:
             description: OK
@@ -436,6 +447,75 @@ protocols: [ HTTP, HTTPS ]
                 application/vnd.listing.search.hearing.slots+json:
                   example:  !include json/listing.search.hearing.slots.json
                   schema:  !include  json/schema/listing.search.hearing.slots.json
+
+/judiciaries/search-available:
+  get:
+    description: |
+      Pass-through proxy to courtscheduler search for reference-data judiciaries with optional availability filtering.
+      ...
+      (mapping):
+          responseType: application/vnd.listing.search.available.judiciaries+json
+          name: listing.search.available.judiciaries
+      ...
+    queryParameters:
+      search:
+        description: Typeahead text (minimum 2 characters)
+        type: string
+        required: true
+      judiciaryGroup:
+        description: Optional judiciary group / type filter
+        type: string
+        required: false
+      limit:
+        description: Maximum judiciaries to return from reference data (default 50)
+        type: string
+        required: false
+      dates:
+        description: Comma-separated ISO dates (yyyy-MM-dd) when filtering by calendar dates without session types
+        type: string
+        required: false
+      courtHouseId:
+        description: Required with dates when availability is applied (same courthouse as sessions)
+        type: string
+        required: false
+      courtScheduleIds:
+        description: Comma-separated court schedule ids; implies session-type-aware availability and one courthouse
+        type: string
+        required: false
+      ignoreAvailability:
+        description: When true, skips internal availability filtering
+        type: boolean
+        required: false
+        default: false
+    responses:
+      200:
+        description: OK
+        body:
+          application/vnd.listing.search.available.judiciaries+json:
+            schema: !include json/schema/listing.search.available.judiciaries.json
+            example: !include json/listing.search.available.judiciaries.json
+
+/sessionAvailabilityValidation:
+  post:
+    description: |
+      ...
+      (mapping):
+          requestType: application/vnd.listing.validate.session.availability+json
+          name: listing.validate.session.availability
+      ...
+    body:
+        application/vnd.listing.validate.session.availability+json:
+          example:  !include json/listing.validate.session.availability.json
+          schema:  !include  json/schema/listing.validate.session.availability.json
+    responses:
+        200:
+            description: OK
+        400:
+            description: Validation failed
+            body:
+                application/vnd.listing.validate.session.availability.response+json:
+                  example:  !include json/listing.validate.session.availability.response.json
+                  schema:  !include  json/schema/listing.validate.session.availability.response.json
 
 /hearings/unscheduled:
    get:

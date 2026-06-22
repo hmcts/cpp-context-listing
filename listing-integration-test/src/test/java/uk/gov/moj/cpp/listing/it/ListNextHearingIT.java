@@ -10,7 +10,6 @@ import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAll
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.notHmiEnabledHearingsData;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
-import static uk.gov.moj.cpp.listing.utils.HmiAllocationStubHelper.stubForAllocatedListing;
 
 import com.google.common.collect.ImmutableMap;
 import uk.gov.justice.core.courts.JurisdictionType;
@@ -25,7 +24,6 @@ import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceData;
-import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -178,6 +176,7 @@ public class ListNextHearingIT extends AbstractIT {
 
     }
 
+
     @Test
     void shouldDeleteOldAllocatedRelatedHearingsAndUpdateRelatedHearings() {
 
@@ -187,10 +186,10 @@ public class ListNextHearingIT extends AbstractIT {
         final HearingsData existedHearings = hearingsDataWithAllocationDataAndJudiciary();
 
         final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(firstHearings);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps1.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps1.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps1.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowUtc()
+                ZonedDateTime.now(ZoneOffset.UTC)
                         .withHour(9)
                         .withMinute(0)
                         .withSecond(0)
@@ -200,10 +199,10 @@ public class ListNextHearingIT extends AbstractIT {
         listCourtHearingSteps1.verifyHearingListedFromAPI(ALLOCATED);
 
         final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(existedHearings);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps2.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps2.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps2.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowUtc()
+                ZonedDateTime.now(ZoneOffset.UTC)
                         .withHour(9)
                         .withMinute(0)
                         .withSecond(0)
@@ -243,10 +242,10 @@ public class ListNextHearingIT extends AbstractIT {
         // First hearing created
         final HearingsData firstHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowUtc()
+                ZonedDateTime.now(ZoneOffset.UTC)
                         .withHour(9)
                         .withMinute(0)
                         .withSecond(0)
@@ -269,9 +268,6 @@ public class ListNextHearingIT extends AbstractIT {
         listNextHearingSteps1.verifyCasesAddedToAllocatedHearingFromApi(nextHearings, secondHearings);
 
         // Amend Reshare First Hearing
-        // Drain the offences-removed events produced by the earlier update-related-hearing step so the
-        // verify below reads the DELETE's event, not the UPDATE's (same hearingId, so id-filter alone can't disambiguate).
-        listNextHearingSteps1.clearStaleAllocatedHearingMessages();
         listNextHearingSteps1.whenDeleteNextHearingSubmittedForListing();
         listNextHearingSteps1.verifyCasesAreInAllocatedHearingFromApi(nextHearings, secondHearings);
         listNextHearingSteps1.verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(nextHearings.getHearingData().get(0).getId(), nextHearings);
@@ -282,24 +278,23 @@ public class ListNextHearingIT extends AbstractIT {
 
         HearingsData secondHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(secondHearings);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowUtc()
+                ZonedDateTime.now(ZoneOffset.UTC)
                         .withHour(9)
                         .withMinute(0)
                         .withSecond(0)
                         .withNano(0)
                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(ALLOCATED);
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         // First hearing created
         final HearingsData firstHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
-        stubForAllocatedListing(listCourtHearingSteps.getHearingsData().getHearingData().get(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(ALLOCATED);
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         // Second hearing share and extend to first hearing
         final UUID nextHearingId = firstHearings.getHearingData().get(0).getId();
@@ -320,9 +315,7 @@ public class ListNextHearingIT extends AbstractIT {
         final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, null, false);
         final OffencesForDefendantUpdated newOffences = steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly();
         final String newOffenceId = newOffences.getAddedOffences().stream().flatMap(a -> a.getOffences().stream()).map(Offence::getId).map(UUID::toString).toList().get(0);
-        // Re-publish if the first publish was silently dropped due to the cross-aggregate
-        // case<->hearing link not yet being established (same race as CaseMarkerUpdateIT on vld).
-        listNextHearingSteps.verifyOrRepublishUntilOffenceReflected(steps, firstHearings, newOffenceId);
+        listNextHearingSteps.verifyOffenceAddedToAllocatedHearingFromApi(firstHearings, newOffenceId);
 
         // Amend Reshare second Hearing
         listNextHearingSteps.clearStaleAllocatedHearingMessages();
@@ -343,10 +336,10 @@ public class ListNextHearingIT extends AbstractIT {
 
         final HearingsData firstHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData);
         final ListCourtHearingSteps firstHearingsSteps = new ListCourtHearingSteps(firstHearings);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", firstHearingsSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", firstHearingsSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(firstHearingsSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowUtc()
+                ZonedDateTime.now(ZoneOffset.UTC)
                         .withHour(9)
                         .withMinute(0)
                         .withSecond(0)

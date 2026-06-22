@@ -18,21 +18,15 @@ public class CourtApplicationParty {
 
   private final Address address;
 
-  private final UUID masterDefendantId;
-
-  private final String dateOfBirth;
-
   public CourtApplicationParty(final UUID id, final String firstName, final Boolean isRespondent,
                                final String lastName, final CourtApplicationPartyType courtApplicationPartyType,
-                               final Address address, final UUID masterDefendantId, final String dateOfBirth) {
+                               final Address address) {
     this.id = id;
     this.firstName = firstName;
     this.isRespondent = isRespondent;
     this.lastName = lastName;
     this.courtApplicationPartyType = courtApplicationPartyType;
     this.address = address;
-    this.masterDefendantId = masterDefendantId;
-    this.dateOfBirth = dateOfBirth;
   }
 
   public Optional<String> getFirstName() {
@@ -53,14 +47,6 @@ public class CourtApplicationParty {
 
   public Address getAddress() {
     return address;
-  }
-
-  public Optional<UUID> getMasterDefendantId() {
-    return Optional.ofNullable(masterDefendantId);
-  }
-
-  public Optional<String> getDateOfBirth() {
-    return Optional.ofNullable(dateOfBirth);
   }
 
   public static Builder courtApplicationParty() {
@@ -85,14 +71,12 @@ public class CourtApplicationParty {
     java.util.Objects.equals(this.firstName, that.firstName) &&
     java.util.Objects.equals(this.isRespondent, that.isRespondent) &&
     java.util.Objects.equals(this.lastName, that.lastName) &&
-    java.util.Objects.equals(this.courtApplicationPartyType, that.courtApplicationPartyType) &&
-    java.util.Objects.equals(this.masterDefendantId, that.masterDefendantId) &&
-    java.util.Objects.equals(this.dateOfBirth, that.dateOfBirth) ;
+    java.util.Objects.equals(this.courtApplicationPartyType, that.courtApplicationPartyType) ;
   }
 
   @Override
   public int hashCode() {
-    return java.util.Objects.hash(id, firstName, isRespondent, lastName, courtApplicationPartyType, masterDefendantId, dateOfBirth);
+    return java.util.Objects.hash(id, firstName, isRespondent, lastName, courtApplicationPartyType);
   }
 
   @Override
@@ -102,10 +86,8 @@ public class CourtApplicationParty {
     	"firstName='" + firstName + "'," +
     	"isRespondent='" + isRespondent + "'," +
     	"lastName='" + lastName + "'," +
-        "courtApplicationPartyType='" + courtApplicationPartyType + "'," +
-        "address=" + address + "," +
-        "masterDefendantId='" + masterDefendantId + "'," +
-        "dateOfBirth='" + dateOfBirth + "'" +
+        "courtApplicationPartyType='" + courtApplicationPartyType + "'" +
+        "address=" + address +
     "}";
   }
 
@@ -122,10 +104,6 @@ public class CourtApplicationParty {
     private CourtApplicationPartyType courtApplicationPartyType;
 
     private Address address;
-
-    private UUID masterDefendantId;
-
-    private String dateOfBirth;
 
     public Builder withId(final UUID id) {
       this.id = id;
@@ -157,18 +135,8 @@ public class CourtApplicationParty {
       return this;
     }
 
-    public Builder withMasterDefendantId(final UUID masterDefendantId) {
-      this.masterDefendantId = masterDefendantId;
-      return this;
-    }
-
-    public Builder withDateOfBirth(final String dateOfBirth) {
-      this.dateOfBirth = dateOfBirth;
-      return this;
-    }
-
     public CourtApplicationParty build() {
-      return new CourtApplicationParty(id, firstName, isRespondent, lastName, courtApplicationPartyType, address, masterDefendantId, dateOfBirth);
+      return new CourtApplicationParty(id, firstName, isRespondent, lastName, courtApplicationPartyType, address);
     }
   }
 }

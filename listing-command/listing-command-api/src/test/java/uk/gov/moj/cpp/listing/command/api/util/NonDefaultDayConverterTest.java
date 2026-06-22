@@ -99,6 +99,8 @@ class NonDefaultDayConverterTest {
         assertThat(result.get(0).getCourtScheduleId(), is(UUID.fromString(courtScheduleId)));
         assertThat(result.get(0).getDurationMinutes(), is(30));
         assertThat(result.get(0).getHearingDate(), is(startTime.toLocalDate()));
+        assertThat(result.get(0).getEndTime(), is(startTime.plusMinutes(30)));
+
     }
 
     @Test
@@ -142,6 +144,7 @@ class NonDefaultDayConverterTest {
         assertThat(result.get(0).getDurationMinutes(), is(30));
         assertThat(result.get(0).getHearingDate(), is(startTime.toLocalDate()));
         assertThat(result.get(0).getStartTime(), is(startTime));
+        assertThat(result.get(0).getEndTime(), is(startTime.plusMinutes(30)));
     }
 
     @Test
@@ -154,5 +157,30 @@ class NonDefaultDayConverterTest {
 
         // Then
         assertThat(result, is(empty()));
+    }
+
+    @Test
+    public void shouldConvertBookedSlotsToHearingDays_whenRoomIdIsNull() {
+        // Given — adhoc Crown payload without roomId in bookedSlots
+        String courtCentreId = UUID.randomUUID().toString();
+        String courtScheduleId = UUID.randomUUID().toString();
+        ZonedDateTime startTime = ZonedDateTime.of(LocalDateTime.of(2026, 4, 13, 9, 0), UTC);
+
+        RotaSlot slot = RotaSlot.rotaSlot()
+                .withCourtCentreId(courtCentreId)
+                .withCourtScheduleId(courtScheduleId)
+                .withStartTime(startTime)
+                .withDuration(20)
+                .build();
+
+        // When
+        List<HearingDay> result = NonDefaultDayConverter.convertBookedSlotsToHearingDays(List.of(slot));
+
+        // Then
+        assertThat(result, hasSize(1));
+        assertThat(result.get(0).getCourtCentreId(), is(UUID.fromString(courtCentreId)));
+        assertThat(result.get(0).getCourtScheduleId(), is(UUID.fromString(courtScheduleId)));
+        assertThat(result.get(0).getCourtRoomId(), is((UUID) null));
+        assertThat(result.get(0).getDurationMinutes(), is(20));
     }
 } 

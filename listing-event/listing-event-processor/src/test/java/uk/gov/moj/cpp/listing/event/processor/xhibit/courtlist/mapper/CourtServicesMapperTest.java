@@ -6,7 +6,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersBuilder.withDefaults;
 import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
@@ -95,7 +94,7 @@ public class CourtServicesMapperTest {
                 "MAGISTRATES_COURT");
 
         when(commonXhibitReferenceDataService.getCrownCourtDetails(any())).thenReturn(crownCourtLocation);
-        when(commonXhibitReferenceDataService.getCriminalCourtDetails(any(UUID.class), nullable(String.class))).thenReturn(magsCourtLocation);
+        when(commonXhibitReferenceDataService.getMagsCourtDetails(any())).thenReturn(magsCourtLocation);
 
         final JsonObject judiciary = givenPayload("/xhibit/mock-data/referencedata.query.judiciaries.json");
         when(commonXhibitReferenceDataService.getJudiciary(any())).thenReturn(judiciary);

@@ -16,8 +16,6 @@ public class RestrictCourtList {
 
   private final List<UUID> courtApplicationRespondentIds;
 
-  private final List<UUID> courtApplicationSubjectIds;
-
   private final List<UUID> defendantIds;
 
   private final UUID hearingId;
@@ -28,12 +26,11 @@ public class RestrictCourtList {
 
   private final Boolean restrictFromCourtList;
 
-  public RestrictCourtList(final List<UUID> caseIds, final List<UUID> courtApplicationApplicantIds, final List<UUID> courtApplicationIds, final List<UUID> courtApplicationRespondentIds, final List<UUID> courtApplicationSubjectIds, final List<UUID> defendantIds, final UUID hearingId, final List<UUID> offenceIds, final String courtApplicationType, final Boolean restrictFromCourtList) {
+  public RestrictCourtList(final List<UUID> caseIds, final List<UUID> courtApplicationApplicantIds, final List<UUID> courtApplicationIds, final List<UUID> courtApplicationRespondentIds, final List<UUID> defendantIds, final UUID hearingId, final List<UUID> offenceIds, final String courtApplicationType, final Boolean restrictFromCourtList) {
     this.caseIds = caseIds;
     this.courtApplicationApplicantIds = courtApplicationApplicantIds;
     this.courtApplicationIds = courtApplicationIds;
     this.courtApplicationRespondentIds = courtApplicationRespondentIds;
-    this.courtApplicationSubjectIds = courtApplicationSubjectIds;
     this.defendantIds = defendantIds;
     this.hearingId = hearingId;
     this.offenceIds = offenceIds;
@@ -77,10 +74,6 @@ public class RestrictCourtList {
     return courtApplicationRespondentIds;
   }
 
-  public List<UUID> getCourtApplicationSubjectIds() {
-    return courtApplicationSubjectIds;
-  }
-
   public static Builder restrictCourtList() {
     return new RestrictCourtList.Builder();
   }
@@ -100,7 +93,6 @@ public class RestrictCourtList {
             .append(courtApplicationApplicantIds, that.courtApplicationApplicantIds)
             .append(courtApplicationIds, that.courtApplicationIds)
             .append(courtApplicationRespondentIds, that.courtApplicationRespondentIds)
-            .append(courtApplicationSubjectIds, that.courtApplicationSubjectIds)
             .append(defendantIds, that.defendantIds)
             .append(hearingId, that.hearingId)
             .append(offenceIds, that.offenceIds)
@@ -111,7 +103,7 @@ public class RestrictCourtList {
 
   @Override
   public int hashCode() {
-    return java.util.Objects.hash(caseIds, courtApplicationApplicantIds, courtApplicationIds, courtApplicationRespondentIds, courtApplicationSubjectIds, defendantIds, hearingId, offenceIds, courtApplicationType,restrictFromCourtList);
+    return java.util.Objects.hash(caseIds, courtApplicationApplicantIds, courtApplicationIds, courtApplicationRespondentIds, defendantIds, hearingId, offenceIds, courtApplicationType,restrictFromCourtList);
 }
 
   @Override
@@ -121,7 +113,6 @@ public class RestrictCourtList {
             "courtApplicationApplicantIds='" + courtApplicationApplicantIds + "'," +
             "courtApplicationIds='" + courtApplicationIds + "'," +
             "courtApplicationRespondentIds='" + courtApplicationRespondentIds + "'," +
-            "courtApplicationSubjectIds='" + courtApplicationSubjectIds + "'," +
             "defendantIds='" + defendantIds + "'," +
             "hearingId='" + hearingId + "'," +
             "offenceIds='" + offenceIds + "'," +
@@ -137,8 +128,6 @@ public class RestrictCourtList {
     private List<UUID> courtApplicatonIds;
 
     private List<UUID> courtApplicatonRespondentIds;
-
-    private List<UUID> courtApplicationSubjectIds;
 
     private List<UUID> defendantsId;
 
@@ -170,11 +159,6 @@ public class RestrictCourtList {
       return this;
     }
 
-    public Builder withCourtApplicationSubjectIds(final List<UUID> courtApplicationSubjectIds) {
-      this.courtApplicationSubjectIds = courtApplicationSubjectIds;
-      return this;
-    }
-
     public Builder withDefendantIds(final List<UUID> defendantsId) {
       this.defendantsId = defendantsId;
       return this;
@@ -201,7 +185,7 @@ public class RestrictCourtList {
     }
 
     public RestrictCourtList build() {
-      return new RestrictCourtList(caseIds, courtApplicationApplicantIds, courtApplicatonIds, courtApplicatonRespondentIds, courtApplicationSubjectIds, defendantsId, hearingId, offencesId, courtApplicationType, restrictFromCourtList);
+      return new RestrictCourtList(caseIds, courtApplicationApplicantIds, courtApplicatonIds, courtApplicatonRespondentIds, defendantsId, hearingId, offencesId, courtApplicationType, restrictFromCourtList);
     }
   }
 

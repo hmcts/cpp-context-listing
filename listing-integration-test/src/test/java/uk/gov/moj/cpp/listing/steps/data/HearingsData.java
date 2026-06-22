@@ -18,26 +18,6 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsData());
     }
 
-    public static HearingsData hearingsDataForYoungDefendants() {
-        return new HearingsData(HearingsDataFactory.hearingsDataForYoungDefendants());
-    }
-
-    public static HearingsData singleHearingDataForYoungDefendants() {
-        return new HearingsData(List.of(HearingsDataFactory.hearingsDataForYoungDefendants().get(0)));
-    }
-
-    public static HearingsData hearingsDataWithAdultDefendants() {
-        return new HearingsData(HearingsDataFactory.hearingsDataWithAdultDefendants());
-    }
-
-    public static HearingsData hearingsDataForYoungCourtApplicationRespondent() {
-        return new HearingsData(HearingsDataFactory.hearingsDataForYoungCourtApplicationRespondent());
-    }
-
-    public static HearingsData hearingsDataForYoungCourtApplicationSubject() {
-        return new HearingsData(HearingsDataFactory.hearingsDataForYoungCourtApplicationSubject());
-    }
-
     public static HearingsData hearingsDataWithExParteOffence() {
         return new HearingsData(HearingsDataFactory.hearingsDataForCasesWithExParte());
     }
@@ -79,10 +59,6 @@ public class HearingsData {
 
     public static HearingsData hearingsDataForWeekCommencing(final LocalDate startDate, final Integer duration) {
         return new HearingsData(HearingsDataFactory.hearingsDataForWeekCommencing(startDate, duration));
-    }
-
-    public static HearingsData hearingsDataForWeekCommencingWithYoungDefendants(final LocalDate startDate, final Integer duration) {
-        return new HearingsData(HearingsDataFactory.hearingsDataForWeekCommencingWithYoungDefendants(startDate, duration));
     }
 
     public static HearingsData hearingsDataForWeekCommencing(final LocalDate startDate, final Integer duration, UUID courtCenterId, UUID courtRoomId, String roles) {

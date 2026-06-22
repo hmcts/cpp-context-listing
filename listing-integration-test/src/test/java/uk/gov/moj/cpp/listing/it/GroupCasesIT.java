@@ -26,7 +26,6 @@ import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
-import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -62,7 +61,7 @@ public class GroupCasesIT extends AbstractIT {
     private final UUID groupId = randomUUID();
     private final UUID hearingTypeId = randomUUID();
     private final UUID courtCentreId = getRandomCourtCenterId();
-    private final LocalDate startDate = ItClock.today();
+    private final LocalDate startDate = LocalDate.now();
     private LocalTime defaultStartTime = LocalTime.parse("10:00");
     private final ZonedDateTime hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
     private long defaultDuration = 20;

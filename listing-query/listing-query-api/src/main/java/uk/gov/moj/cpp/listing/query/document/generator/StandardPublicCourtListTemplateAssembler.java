@@ -493,11 +493,6 @@ public class StandardPublicCourtListTemplateAssembler {
     }
 
     private List<Defendant> createDefendantsEquivalentFromCourtApplication(final JsonObject courtApplication, final boolean restrictedListRequired) {
-        if (courtApplication.containsKey(SUBJECT)) {
-            final JsonObject subject = courtApplication.getJsonObject(SUBJECT);
-            final boolean subjectRestricted = subject.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE) && restrictedListRequired;
-            return ImmutableList.of(createDefendantEquivalentFromCourtApplication(courtApplication, subject, subjectRestricted, EMPTY, restrictedListRequired));
-        }
         if (courtApplication.containsKey(RESPONDENTS) && !courtApplication.getJsonArray(RESPONDENTS).isEmpty() &&
                 courtApplication.getJsonArray(RESPONDENTS).getValuesAs(JsonObject.class).stream()
                         .anyMatch(respondent -> CourtApplicationPartyType.valueOf(respondent.getString(COURT_APPLICATION_PARTY_TYPE)) == PERSON)) {

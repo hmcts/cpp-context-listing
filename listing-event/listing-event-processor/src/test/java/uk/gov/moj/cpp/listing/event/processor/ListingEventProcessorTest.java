@@ -2917,9 +2917,9 @@ class ListingEventProcessorTest {
                 .map(JsonObject.class::cast)
                 .forEach(judiciaryJsonObject ->
                         judicialRoles.add(uk.gov.moj.cpp.listing.domain.JudicialRole.judicialRole()
-                                .withIsBenchChairman(of(judiciaryJsonObject.getBoolean("benchChairman")))
-                                .withIsDeputy(of(judiciaryJsonObject.getBoolean("deputy")))
-                                .withJudicialId(UUID.fromString(judiciaryJsonObject.getString("judiciaryId")))
+                                .withIsBenchChairman(of(judiciaryJsonObject.getBoolean("isBenchChairman")))
+                                .withIsDeputy(of(judiciaryJsonObject.getBoolean("isDeputy")))
+                                .withJudicialId(UUID.fromString(judiciaryJsonObject.getString("id")))
                                 .withJudicialRoleType(
                                         uk.gov.moj.cpp.listing.domain.JudicialRoleType.judicialRoleType()
                                                 .withJudiciaryType(judiciaryJsonObject.getString("judiciaryType"))

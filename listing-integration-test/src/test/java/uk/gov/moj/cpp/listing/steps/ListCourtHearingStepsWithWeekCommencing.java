@@ -1,21 +1,18 @@
 package uk.gov.moj.cpp.listing.steps;
 
+import static java.time.LocalDate.now;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataForWeekCommencing;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingData;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithWeekCommencingDate;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetCourtSchedulesByIdWithDraftStatus;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
-import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,10 +20,10 @@ import org.hamcrest.Matcher;
 
 public class ListCourtHearingStepsWithWeekCommencing {
 
-    private final static LocalDate DEFAULT_START_DATE = ItClock.today();
-    private final static LocalDate DEFAULT_END_DATE = ItClock.today().plusDays(1L);
+    private final static LocalDate DEFAULT_START_DATE = now();
+    private final static LocalDate DEFAULT_END_DATE = now().plusDays(1L);
 
-    private final static String WEEK_COMMENCING_START_DATE = ItClock.today().toString();
+    private final static String WEEK_COMMENCING_START_DATE = now().toString();
 
     public static List<HearingsData> loadFixedHearingData() {
         final UUID firstFixedHearingId = randomUUID();
@@ -41,21 +38,21 @@ public class ListCourtHearingStepsWithWeekCommencing {
         final UUID secondCourtRoomId = getRandomCourtRoomId(asList(firstCourtRoomId));
         final UUID thirdCourtRoomId = getRandomCourtRoomId(asList(firstCourtRoomId, secondCourtRoomId));
 
-        final LocalDate firstFixedHearingStartDate = ItClock.today().plusDays(1);
-        final LocalDate secondFixedHearingStartDate = ItClock.today();
-        final LocalDate thirdFixedHearingStartDate = ItClock.today();
-        final LocalDate fourthFixedHearingStartDate = ItClock.today().plusDays(4L);
+        final LocalDate firstFixedHearingStartDate = now().plusDays(1);
+        final LocalDate secondFixedHearingStartDate = now();
+        final LocalDate thirdFixedHearingStartDate = now();
+        final LocalDate fourthFixedHearingStartDate = now().plusDays(4L);
 
-        final LocalDate firstFixedHearingEndDate = ItClock.today().plusDays(2);
-        final LocalDate secondFixedHearingEndDate = ItClock.today().plusDays(1);
-        final LocalDate thirdFixedHearingEndDate = ItClock.today().plusDays(4L);
-        final LocalDate fourthFixedHearingEndDate = ItClock.today().plusDays(5L);
+        final LocalDate firstFixedHearingEndDate = now().plusDays(2);
+        final LocalDate secondFixedHearingEndDate = now().plusDays(1);
+        final LocalDate thirdFixedHearingEndDate = now().plusDays(4L);
+        final LocalDate fourthFixedHearingEndDate = now().plusDays(5L);
 
         final HearingsData hearingsData1 = hearingsDataForWeekCommencing(firstFixedHearingId, firstFixedHearingEndDate, firstCourtRoomId, null, null, firstFixedHearingStartDate);
         final HearingsData hearingsData2 = hearingsDataForWeekCommencing(secondFixedHearingId, secondFixedHearingEndDate, secondCourtRoomId, null, null, secondFixedHearingStartDate);
         final HearingsData hearingsData3 = hearingsDataForWeekCommencing(thirdFixedHearingId, thirdFixedHearingEndDate, thirdCourtRoomId, null, null, thirdFixedHearingStartDate);
         final HearingsData hearingsData4 = hearingsDataForWeekCommencing(fourthFixedHearingId, fourthFixedHearingEndDate, firstCourtRoomId, null, null, fourthFixedHearingStartDate);
-        final HearingsData hearingsData5 = hearingsDataForWeekCommencing(seventhFixedHearingId, ItClock.today(), null, null, null, ItClock.today());
+        final HearingsData hearingsData5 = hearingsDataForWeekCommencing(seventhFixedHearingId, now(), null, null, null, now());
         final HearingsData hearingsData6 = hearingsDataForWeekCommencing(fifthFixedHearingId, DEFAULT_END_DATE, secondCourtRoomId, null, null, DEFAULT_START_DATE);
         final HearingsData hearingsData7 = hearingsDataForWeekCommencing(sixthFixedHearingId, DEFAULT_END_DATE, thirdCourtRoomId, null, null, DEFAULT_START_DATE);
 
@@ -81,25 +78,6 @@ public class ListCourtHearingStepsWithWeekCommencing {
 
     public static UpdatedHearingData updatedHearingListedData(final HearingsData hearingsData) {
         UpdatedHearingData updatedHearingData = updatedHearingData(hearingsData.getHearingData().get(0));
-        // CROWN updates carry a courtScheduleId on their nonDefaultDay; the single-day update
-        // enrichment re-fetches it via search.court-schedules-by-id. Without these stubs the
-        // catch-all answers with an alien shape -> parses empty -> WARN "CROWN single-day
-        // update: failed to fetch court schedules ... Returning unchanged".
-        updatedHearingData.getNonDefaultDays().get(0).getCourtScheduleId().ifPresent(courtScheduleId -> {
-            final LocalDate updatedStartDate = LocalDate.parse(updatedHearingData.getStartDate());
-            // Both stubs MUST carry the UPDATED start date/time: the enrichment rebuilds the
-            // hearing day from these session responses, so stale (seed-time) values would
-            // silently revert the very date this update is asserting on.
-            final java.time.ZonedDateTime updatedStartTime = updatedStartDate.atTime(10, 0).atZone(ZoneOffset.UTC);
-            stubGetCourtSchedulesByIdWithDraftStatus(singletonList(courtScheduleId), false,
-                    updatedStartDate,
-                    updatedHearingData.getCourtCentreId(),
-                    updatedHearingData.getCourtRoomId(),
-                    updatedStartTime);
-            stubListHearingInCourtSessions(hearingsData.getHearingData().get(0).getId().toString(),
-                    courtScheduleId,
-                    updatedStartTime);
-        });
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingData);
         updateHearingSteps.whenHearingIsUpdatedForListing();
         updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();

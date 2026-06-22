@@ -21,6 +21,7 @@ public class HearingDaysCoreToDomainConverter implements Converter<List<HearingD
                         .withSequence(hearingDay.getListingSequence())
                         .withDurationMinutes(hearingDay.getListedDurationMinutes())
                         .withIsCancelled(hearingDay.getIsCancelled())
+                        .withEndTime(hearingDay.getSittingDay().plusMinutes(hearingDay.getListedDurationMinutes()))
                         .build())
                 .collect(toList());
     }

@@ -34,6 +34,8 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -50,6 +52,9 @@ class DefaultQueryApiHearingSlotsResourceTest {
 
     @Mock
     private NotesService notesService;
+
+    @Captor
+    private ArgumentCaptor<Map<String, String>> paramsCaptor;
 
     private Response response;
 
@@ -91,7 +96,9 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 null,
                 "20",
                 "1",
-                20);
+                20,
+                null,
+                "MAGISTRATES");
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
         verify(notesService).findNotes(any(List.class));
@@ -123,7 +130,9 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 null,
                 "20",
                 "1",
-                20);
+                20,
+                null,
+                "MAGISTRATES");
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
         verify(notesService).findNotes(any(List.class));
@@ -154,7 +163,9 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 null,
                 "20",
                 "1",
-                20);
+                20,
+                null,
+                "MAGISTRATES");
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
         verify(notesService).findNotes(any(List.class));
@@ -174,6 +185,63 @@ class DefaultQueryApiHearingSlotsResourceTest {
         assertNotNull(((JsonObject)payload.getJsonArray("notes").get(9)).get("note"));
 
 
+    }
+
+    @Test
+    void searchHearingSlots_passesStatusAndJurisdictionToAdapter() {
+        when(courtSchedulerServiceAdapter.hearingSlotsSearch(any(Map.class))).thenReturn(response);
+        when(notesService.findNotes(any(List.class))).thenReturn(new ArrayList());
+
+        queryApiHearingSlotsResource.getHearingSlots("ADULT",
+                "2017-10-11",
+                "2020-10-11",
+                null,
+                "BAOOUS",
+                "BAOOUS",
+                "001c067d-eaca-4ce5-ad90-a366ef3e4bb6",
+                "1234",
+                "BYS",
+                "AM",
+                null,
+                null,
+                "20",
+                "1",
+                20,
+                "FINAL",
+                "MAGISTRATES");
+
+        verify(courtSchedulerServiceAdapter).hearingSlotsSearch(paramsCaptor.capture());
+        final Map<String, String> params = paramsCaptor.getValue();
+        assertEquals("FINAL", params.get("status"));
+        assertEquals("MAGISTRATES", params.get("jurisdiction"));
+    }
+
+    @Test
+    void searchHearingSlots_defaultsStatusToAllWhenNull() {
+        when(courtSchedulerServiceAdapter.hearingSlotsSearch(any(Map.class))).thenReturn(response);
+        when(notesService.findNotes(any(List.class))).thenReturn(new ArrayList());
+
+        queryApiHearingSlotsResource.getHearingSlots("ADULT",
+                "2017-10-11",
+                "2020-10-11",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "20",
+                "1",
+                null,
+                null,
+                null);
+
+        verify(courtSchedulerServiceAdapter).hearingSlotsSearch(paramsCaptor.capture());
+        final Map<String, String> params = paramsCaptor.getValue();
+        assertEquals("ALL", params.get("status"));
     }
 
     private JsonObject createJsonObject() {

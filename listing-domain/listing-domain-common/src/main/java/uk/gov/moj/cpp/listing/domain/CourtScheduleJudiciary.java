@@ -1,8 +1,10 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import java.util.List;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 @SuppressWarnings("squid:S1067")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CourtScheduleJudiciary {
@@ -31,6 +33,14 @@ public class CourtScheduleJudiciary {
 
     private Boolean isDeputy;
 
+    private Integer seqId;
+    private String titleJudicialPrefix;
+    private String titleJudicialPrefixWelsh;
+    private String personId;
+    private List<String> specialisms;
+    private String requestedName;
+
+    @JsonProperty("id")
     public String getJudiciaryId() {
         return judiciaryId;
     }
@@ -47,6 +57,7 @@ public class CourtScheduleJudiciary {
         this.rotaJudiciaryId = rotaJudiciaryId;
     }
 
+    @JsonProperty("titlePrefix")
     public String getTitle() {
         return title;
     }
@@ -111,6 +122,7 @@ public class CourtScheduleJudiciary {
         this.position = position;
     }
 
+    @JsonProperty("isBenchChairman")
     public Boolean getBenchChairman() {
         return isBenchChairman;
     }
@@ -119,12 +131,61 @@ public class CourtScheduleJudiciary {
         isBenchChairman = benchChairman;
     }
 
+    @JsonProperty("isDeputy")
     public Boolean getDeputy() {
         return isDeputy;
     }
 
     public void setDeputy(final Boolean deputy) {
         isDeputy = deputy;
+    }
+
+    public Integer getSeqId() {
+        return seqId;
+    }
+
+    public void setSeqId(final Integer seqId) {
+        this.seqId = seqId;
+    }
+
+    public String getTitleJudicialPrefix() {
+        return titleJudicialPrefix;
+    }
+
+    public void setTitleJudicialPrefix(final String titleJudicialPrefix) {
+        this.titleJudicialPrefix = titleJudicialPrefix;
+    }
+
+    public String getTitleJudicialPrefixWelsh() {
+        return titleJudicialPrefixWelsh;
+    }
+
+    public void setTitleJudicialPrefixWelsh(final String titleJudicialPrefixWelsh) {
+        this.titleJudicialPrefixWelsh = titleJudicialPrefixWelsh;
+    }
+
+    public String getPersonId() {
+        return personId;
+    }
+
+    public void setPersonId(final String personId) {
+        this.personId = personId;
+    }
+
+    public List<String> getSpecialisms() {
+        return specialisms;
+    }
+
+    public void setSpecialisms(final List<String> specialisms) {
+        this.specialisms = specialisms;
+    }
+
+    public String getRequestedName() {
+        return requestedName;
+    }
+
+    public void setRequestedName(final String requestedName) {
+        this.requestedName = requestedName;
     }
 
     @Override

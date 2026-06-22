@@ -15,6 +15,7 @@ class CourtApplicationUpdateIT extends AbstractIT {
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
         final CourtApplicationSteps courtApplicationSteps = new CourtApplicationSteps(hearingsData);
-        courtApplicationSteps.publishUntilCourtApplicationReflected();
+        courtApplicationSteps.whenCaseCourtApplicationUpdatedPublicEventIsPublished();
+        courtApplicationSteps.verifyCourtApplicationUpdatedFromAPI();
     }
 }

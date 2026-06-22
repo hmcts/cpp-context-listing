@@ -59,6 +59,7 @@ import java.io.File;
 import java.io.StringReader;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -138,9 +139,14 @@ public class HearingQueryApiTest {
 
     @BeforeEach
     public void setup() {
-        apiMethodsToHandlerNames = stream(HearingQueryApi.class.getMethods())
+        apiMethodsToHandlerNames = new HashMap<>(stream(HearingQueryApi.class.getMethods())
                 .filter(method -> method.getAnnotation(Handles.class) != null)
-                .collect(toMap(Method::getName, method -> method.getAnnotation(Handles.class).value()));
+                .collect(toMap(Method::getName, method -> method.getAnnotation(Handles.class).value())));
+        stream(SearchAvailableJudiciariesQueryHandler.class.getMethods())
+                .filter(method -> method.getAnnotation(Handles.class) != null)
+                .forEach(method -> apiMethodsToHandlerNames.put(
+                        method.getName(),
+                        method.getAnnotation(Handles.class).value()));
     }
 
     @Test

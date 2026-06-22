@@ -1,9 +1,9 @@
 package uk.gov.moj.cpp.listing.steps.data.factory;
 
+import static java.time.ZonedDateTime.now;
 import static uk.gov.moj.cpp.listing.steps.data.HearingDay.hearingDay;
 
 import uk.gov.justice.services.test.utils.common.helper.StoppedClock;
-import uk.gov.moj.cpp.listing.it.util.ItClock;
 import uk.gov.moj.cpp.listing.steps.data.HearingDay;
 
 import java.util.List;
@@ -14,7 +14,7 @@ public class HearingDayFactory {
     public static List<HearingDay> buildHearingDaysWithCancelledFlag(final Boolean firstDayFlag,
                                                                      final Boolean secondDayFlag,
                                                                      final Boolean thirdDayFlag) {
-        final StoppedClock clock = new StoppedClock(ItClock.nowUtc());
+        final StoppedClock clock = new StoppedClock(now());
         final HearingDay day1 = hearingDay()
                 .withListedDurationMinutes(30)
                 .withListingSequence(0)

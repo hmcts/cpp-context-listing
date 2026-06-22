@@ -2,18 +2,14 @@ package uk.gov.moj.cpp.listing.it;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.reset;
 import static com.google.common.io.Resources.getResource;
-import static javax.ws.rs.core.Response.Status.OK;
-import static uk.gov.moj.cpp.listing.utils.WebDavStub.acceptCourtListXmlFile;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.joining;
-import static javax.ws.rs.core.Response.Status.OK;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCourtSchedulerCatchAll;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubDeleteAvailableHearingSlotsServiceForAnyHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
-import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataOrganisationUnitCatchAll;
-import static uk.gov.moj.cpp.listing.utils.WebDavStub.acceptCourtListXmlFile;
+import uk.gov.moj.cpp.listing.it.util.ArtemisQueuePurger;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProgressionNotesStubs;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProsecutionCaseByCaseUrn;
@@ -59,16 +55,12 @@ public class AbstractIT {
 
     @BeforeEach
     void setUp() {
+        ArtemisQueuePurger.purgeAllListingQueues();
         reset();
-        // ASYNC-VULNERABLE stubs are re-armed FIRST after reset(): in-flight EVENT_PROCESSOR
-        // work from the previous test (court-list export PUTs, org-unit lookups for allocations)
-        // can land in the reset()->arm gap and fail with 404/NULL-payload errors misattributed
-        // to this test (court-list export then marks publish status failed and the payload
-        // query 500s). Mirrors the team/ccsph2n hardening.
-        acceptCourtListXmlFile(OK);
-        stubGetReferenceDataOrganisationUnitCatchAll();
+        stubCourtSchedulerCatchAll();
         setupAsAuthorisedUser(USER_ID_VALUE);
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased();
+        stubDeleteAvailableHearingSlotsServiceForAnyHearing();
         setupProsecutionCaseByCaseUrn();
         setupProgressionNotesStubs();
         setupUsersGroupPermissionsForApplicationTypeStub();
@@ -122,6 +114,7 @@ public class AbstractIT {
         params.put("sessionEndDate", "2020-10-11");
         params.put("pageSize", "20");
         params.put("pageNumber", "1");
+        params.put("jurisdiction", "MAGISTRATES");
 
         return params;
     }

@@ -88,7 +88,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import uk.gov.justice.services.messaging.JsonObjects;
-import uk.gov.moj.cpp.listing.it.util.ItClock;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -811,32 +810,20 @@ public class UpdateHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicEventHearingConfirmed() {
-        final String expectedHearingId = updatedHearingData.getHearingId().toString();
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingConfirmed,
-                org.hamcrest.CoreMatchers.containsString(expectedHearingId));
-        assertNotNull("No public hearing-confirmed event found for hearingId=" + expectedHearingId, jsonResponse);
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingConfirmed);
         verifyHearingPublicDetails(jsonResponse, "confirmedHearing");
     }
 
     public void verifyPublicEventHearingDaysChangedForHearing() {
-        final String expectedHearingId = updatedHearingData.getHearingId().toString();
-        // Match by hearingId so a stale event from another test on the shared public topic is skipped.
-        final JsonPath jsonResponse = retrieveMessage(publicEventHearingDaysChangedForHearing,
-                org.hamcrest.CoreMatchers.containsString(expectedHearingId));
-        assertNotNull("No public hearing-days-changed event found for hearingId=" + expectedHearingId, jsonResponse);
+        final JsonPath jsonResponse = retrieveMessage(publicEventHearingDaysChangedForHearing);
 
-        assertThat(jsonResponse.get("hearingId"), is(expectedHearingId));
+        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
         assertThat(jsonResponse.get("hearingDays[0].courtCentreId"), is(updatedHearingData.getCourtCentreId().toString()));
     }
 
     public void verifyPublicEventHearingConfirmed_hasNoJudiciary() {
-        final String expectedHearingId = updatedHearingData.getHearingId().toString();
-        // Match by hearingId so a stale hearing-confirmed event from another test on the shared public
-        // topic is skipped rather than consumed (drains until this hearing's event arrives).
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingConfirmed,
-                org.hamcrest.CoreMatchers.containsString(expectedHearingId));
-        assertNotNull("No public hearing-confirmed event found for hearingId=" + expectedHearingId, jsonResponse);
-        assertThat(jsonResponse.get("confirmedHearing.id"), is(expectedHearingId));
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingConfirmed);
+        assertThat(jsonResponse.get("confirmedHearing.id"), is(updatedHearingData.getHearingId().toString()));
         assertNull(jsonResponse.get("confirmedHearing.judiciary"));
     }
 
@@ -950,8 +937,7 @@ public class UpdateHearingSteps extends AbstractIT {
     }
 
     public void verifyHearingUnallocatedCourtroomRemoveds(final UUID hearingId) {
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingUnallocatedCourtroomRemoved,
-                org.hamcrest.CoreMatchers.containsString(hearingId.toString()));
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingUnallocatedCourtroomRemoved);
         LOGGER.info("jsonResponse from publicMessageConsumerHearingUnallocatedCourtroomRemoved: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.getUUID("hearingId"), is(hearingId));
@@ -1126,8 +1112,8 @@ public class UpdateHearingSteps extends AbstractIT {
     }
 
     public String verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDateCourtCalendarWithPagination(UUID courtCentreId,int pageSize, int pageNumber, int itemCount) {
-        var startDate = ItClock.today().toString();
-        var endDate = ItClock.today().plusDays(3).toString();
+        var startDate = LocalDate.now().toString();
+        var endDate = LocalDate.now().plusDays(3).toString();
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.hearingscourt.calendar.by.allocated.court-centre-id.start-date.end-date-with-pagination"),
                         ALLOCATED,
@@ -1482,23 +1468,17 @@ public class UpdateHearingSteps extends AbstractIT {
     public void verifyHearingPayloadProperty(final String hearingId, final String propertyName, final Matcher<Object> matcher) {
         final String hearingIdFilter = getHearingFilter(hearingId);
 
-        // Poll until the hearing is in the unallocated list AND the property has actually been cleared.
-        // Polling only on list membership and then reading the property outside the loop was racy: on a
-        // slower (pipeline/vld) read model the row shows up unallocated a beat before the property is
-        // nulled, so the stale original value leaked through (HearingIT:576 flake). A cleared property is
-        // omitted from the projection, so the filtered path resolves to an empty list -> hasSize(0).
         final String payload = pollForHearingWithJmsDelay(updatedHearingData.getCourtCentreId().toString(), UNALLOCATED, getLoggedInUser().toString(), new Matcher[]{
-                withJsonPath(hearingIdFilter, hasSize(1)),
-                withJsonPath(hearingIdFilter + "." + propertyName, hasSize(0))
+                withJsonPath(hearingIdFilter, hasSize(1))
         });
 
         final JsonObject payloadAsJsonObject = new StringToJsonObjectConverter().convert(payload);
-        final Object propertyValue = payloadAsJsonObject.getJsonArray("hearings").stream().
+        Object courtRoomId = payloadAsJsonObject.getJsonArray("hearings").stream().
                 map(h -> (JsonObject) h)
                 .filter(h -> h.getString("id").equals(hearingId))
                 .findFirst().get().get(propertyName);
 
-        assertThat(propertyValue, matcher);
+        assertThat(courtRoomId, matcher);
     }
 
     public void verifyJudiciaryChangedForHearingStatusPublicEvent() {
@@ -1516,8 +1496,8 @@ public class UpdateHearingSteps extends AbstractIT {
                         .replaceAll("%DEFENDANT_ID%", hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString())
                         .replaceAll("%PROSECUTION_CASE_ID%", hearingData.getListedCases().get(0).getCaseId().toString())
                         .replaceAll("%CASE_URN%", hearingData.getListedCases().get(0).getCaseReference().toString())
-                        .replaceAll("%SHARED_TIME%", ItClock.nowUtc().format(DateTimeFormatter.ISO_INSTANT))
-                        .replaceAll("%HEARING_DAY%", ItClock.today().toString())
+                        .replaceAll("%SHARED_TIME%", ZonedDateTime.now().format(DateTimeFormatter.ISO_INSTANT))
+                        .replaceAll("%HEARING_DAY%", LocalDate.now().toString())
         );
 
         sendMessage(publicEventMessageProducer, EVENT_SELECTED_PUBLIC_HEARING_RESULTED, eventPayload,

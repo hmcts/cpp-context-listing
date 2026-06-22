@@ -88,10 +88,6 @@ public class RestrictCourtListEventListener {
                 courtApplicationRespondentIdToBeRestricted -> jsonNodeUpdater.putSubList(COURT_APPLICATIONS_FIELD, typeRefCourtApplication,
                         getCourtApplicationRespondentsFunction(courtApplicationRespondentIdToBeRestricted, restrictDetailsFromCourt)).save()
         );
-        ofNullable(restrictCourtList.getCourtApplicationSubjectIds()).orElse(newArrayList()).forEach(
-                courtApplicationSubjectIdToBeRestricted -> jsonNodeUpdater.putSubList(COURT_APPLICATIONS_FIELD, typeRefCourtApplication,
-                        getCourtApplicationSubjectFunction(courtApplicationSubjectIdToBeRestricted, restrictDetailsFromCourt)).save()
-        );
     }
 
     private Function<List<ListedCase>, List<ListedCase>> getCasesFunction(UUID casesId, Boolean restrictDetailsFromCourt) {
@@ -193,7 +189,6 @@ public class RestrictCourtListEventListener {
         final CourtApplication newCourtApplication = courtApplication()
                 .withApplicant(courtApplication.getApplicant())
                 .withRespondents(courtApplication.getRespondents())
-                .withSubject(courtApplication.getSubject())
                 .withApplicationType(courtApplication.getApplicationType())
                 .withId(courtApplication.getId())
                 .withParentApplicationId(courtApplication.getParentApplicationId())
@@ -222,13 +217,10 @@ public class RestrictCourtListEventListener {
                 .withRestrictFromCourtList(restrictDetailsFromCourt)
                 .withCourtApplicationPartyType(applicantRespondent.getCourtApplicationPartyType())
                 .withAddress(applicantRespondent.getAddress())
-                .withDateOfBirth(applicantRespondent.getDateOfBirth())
-                .withMasterDefendantId(applicantRespondent.getMasterDefendantId())
                 .build();
         final CourtApplication newCourtApplication = courtApplication()
                 .withApplicant(newApplicantRespondent)
                 .withRespondents(courtApplication.getRespondents())
-                .withSubject(courtApplication.getSubject())
                 .withApplicationType(courtApplication.getApplicationType())
                 .withId(courtApplication.getId())
                 .withParentApplicationId(courtApplication.getParentApplicationId())
@@ -242,15 +234,15 @@ public class RestrictCourtListEventListener {
         return courtApplications;
     }
 
-    private Function<List<CourtApplication>, List<CourtApplication>> getCourtApplicationRespondentsFunction(UUID courtApplicationRespondentId, Boolean restrictDetailsFromCourt) {
-        return courtApplications -> getAndRestrictCourtApplicationRespondents(courtApplicationRespondentId, courtApplications, restrictDetailsFromCourt);
+    private Function<List<CourtApplication>, List<CourtApplication>> getCourtApplicationRespondentsFunction(UUID courtApplicationApplicantRespondentId, Boolean restrictDetailsFromCourt) {
+        return courtApplications -> getAndRestrictCourtApplicationRespondents(courtApplicationApplicantRespondentId, courtApplications, restrictDetailsFromCourt);
     }
 
-    private List<CourtApplication> getAndRestrictCourtApplicationRespondents(UUID courtApplicationRespondentId, List<CourtApplication> courtApplications, Boolean restrictDetailsFromCourt) {
+    private List<CourtApplication> getAndRestrictCourtApplicationRespondents(UUID courtApplicationApplicantRespondentId, List<CourtApplication> courtApplications, Boolean restrictDetailsFromCourt) {
         final CourtApplication courtApplication = Iterables.find(courtApplications, ca -> ca.getRespondents().stream()
-                .anyMatch(res -> courtApplicationRespondentId.equals(res.getId())));
+                .anyMatch(res -> res.getId().equals(courtApplicationApplicantRespondentId)));
         final List<ApplicantRespondent> respondents = courtApplication.getRespondents();
-        final ApplicantRespondent applicantRespondent = Iterables.find(respondents, res -> courtApplicationRespondentId.equals(res.getId()));
+        final ApplicantRespondent applicantRespondent = Iterables.find(respondents, res -> res.getId().equals(courtApplicationApplicantRespondentId));
         final ApplicantRespondent newApplicantRespondent = applicantRespondent()
                 .withId(applicantRespondent.getId())
                 .withFirstName(applicantRespondent.getFirstName())
@@ -259,45 +251,8 @@ public class RestrictCourtListEventListener {
                 .withRestrictFromCourtList(restrictDetailsFromCourt)
                 .withCourtApplicationPartyType(applicantRespondent.getCourtApplicationPartyType())
                 .withAddress(applicantRespondent.getAddress())
-                .withDateOfBirth(applicantRespondent.getDateOfBirth())
-                .withMasterDefendantId(applicantRespondent.getMasterDefendantId())
                 .build();
-        respondents.replaceAll(res -> courtApplicationRespondentId.equals(res.getId()) ? newApplicantRespondent : res);
-        return courtApplications;
-    }
-
-    private Function<List<CourtApplication>, List<CourtApplication>> getCourtApplicationSubjectFunction(UUID courtApplicationSubjectId, Boolean restrictDetailsFromCourt) {
-        return courtApplications -> getAndRestrictCourtApplicationSubject(courtApplicationSubjectId, courtApplications, restrictDetailsFromCourt);
-    }
-
-    private List<CourtApplication> getAndRestrictCourtApplicationSubject(UUID courtApplicationSubjectId, List<CourtApplication> courtApplications, Boolean restrictDetailsFromCourt) {
-        final CourtApplication courtApplication = Iterables.find(courtApplications, ca -> nonNull(ca.getSubject()) && courtApplicationSubjectId.equals(ca.getSubject().getId()));
-        final ApplicantRespondent subject = courtApplication.getSubject();
-        final ApplicantRespondent newSubject = applicantRespondent()
-                .withId(subject.getId())
-                .withFirstName(subject.getFirstName())
-                .withLastName(subject.getLastName())
-                .withIsRespondent(subject.getIsRespondent())
-                .withRestrictFromCourtList(restrictDetailsFromCourt)
-                .withCourtApplicationPartyType(subject.getCourtApplicationPartyType())
-                .withAddress(subject.getAddress())
-                .withDateOfBirth(subject.getDateOfBirth())
-                .withMasterDefendantId(subject.getMasterDefendantId())
-                .build();
-        final CourtApplication newCourtApplication = courtApplication()
-                .withApplicant(courtApplication.getApplicant())
-                .withRespondents(courtApplication.getRespondents())
-                .withSubject(newSubject)
-                .withApplicationType(courtApplication.getApplicationType())
-                .withId(courtApplication.getId())
-                .withParentApplicationId(courtApplication.getParentApplicationId())
-                .withLinkedCaseIds(courtApplication.getLinkedCaseIds())
-                .withRestrictFromCourtList(courtApplication.getRestrictFromCourtList())
-                .withRestrictCourtApplicationType(courtApplication.getRestrictCourtApplicationType())
-                .withApplicationReference(courtApplication.getApplicationReference())
-                .withApplicationParticulars(courtApplication.getApplicationParticulars())
-                .build();
-        courtApplications.replaceAll(ca -> nonNull(ca.getSubject()) && courtApplicationSubjectId.equals(ca.getSubject().getId()) ? newCourtApplication : ca);
+        respondents.replaceAll(res -> res.getId().equals(courtApplicationApplicantRespondentId) ? newApplicantRespondent : res);
         return courtApplications;
     }
 
@@ -313,7 +268,6 @@ public class RestrictCourtListEventListener {
         final CourtApplication newCourtApplication = courtApplication()
                 .withApplicant(courtApplication.getApplicant())
                 .withRespondents(courtApplication.getRespondents())
-                .withSubject(courtApplication.getSubject())
                 .withApplicationType(courtApplication.getApplicationType())
                 .withId(courtApplication.getId())
                 .withParentApplicationId(courtApplication.getParentApplicationId())

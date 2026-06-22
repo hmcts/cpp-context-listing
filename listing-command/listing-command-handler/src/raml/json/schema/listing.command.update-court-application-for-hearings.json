@@ -66,13 +66,6 @@
             },
             "address": {
               "$ref": "http://justice.gov.uk/core/courts/address.json"
-            },
-            "masterDefendantId": {
-              "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
-            },
-            "dateOfBirth": {
-              "description": "The date of birth of the party",
-              "type": "string"
             }
           },
           "required": [
@@ -124,13 +117,6 @@
               },
               "address": {
                 "$ref": "http://justice.gov.uk/core/courts/address.json"
-              },
-              "masterDefendantId": {
-                "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
-              },
-              "dateOfBirth": {
-                "description": "The date of birth of the party",
-                "type": "string"
               }
             },
             "required": [
@@ -171,13 +157,6 @@
             },
             "address": {
               "$ref": "http://justice.gov.uk/core/courts/address.json"
-            },
-            "masterDefendantId": {
-              "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
-            },
-            "dateOfBirth": {
-              "description": "The date of birth of the party",
-              "type": "string"
             }
           },
           "required": [

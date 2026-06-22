@@ -168,61 +168,24 @@ public class NewDomainToEventConverter {
                 .build();
     }
 
-    public static Defendant updateEventDefendant(final NewBaseDefendant newDefendant, final Defendant defendant) {
-        final Defendant.Builder builder = Defendant.defendant().withValuesFrom(defendant);
-        applyDefendantUpdatesFromNewBase(newDefendant, builder);
-        applyIsYouthUpdate(defendant, newDefendant, builder);
-        return builder.build();
-    }
+    public static Defendant updateEventDefendant(NewBaseDefendant newDefendant, Defendant defendant){
+        return uk.gov.justice.listing.events.Defendant.defendant()
+                .withValuesFrom(defendant)
+                .withFirstName(newDefendant.getFirstName())
+                .withLastName(newDefendant.getLastName())
+                .withOrganisationName(newDefendant.getOrganisationName())
+                .withBailStatus(newDefendant.getBailStatus())
+                .withCustodyTimeLimit(newDefendant.getCustodyTimeLimit())
+                .withId(newDefendant.getId())
+                .withDateOfBirth(newDefendant.getDateOfBirth())
+                .withDefenceOrganisation(newDefendant.getDefenceOrganisation())
+                .withSpecificRequirements(newDefendant.getSpecificRequirements())
+                .withIsYouth(newDefendant.getIsYouth())
+                .withAddress(newDefendant.getAddress())
+                .withNationalityDescription(newDefendant.getNationalityDescription())
+                .withMasterDefendantId(newDefendant.getMasterDefendantId())
+                .build();
 
-    private static void applyDefendantUpdatesFromNewBase(final NewBaseDefendant newDefendant, final Defendant.Builder builder) {
-        if (nonNull(newDefendant.getFirstName())) {
-            builder.withFirstName(newDefendant.getFirstName());
-        }
-        if (nonNull(newDefendant.getLastName())) {
-            builder.withLastName(newDefendant.getLastName());
-        }
-        if (nonNull(newDefendant.getOrganisationName())) {
-            builder.withOrganisationName(newDefendant.getOrganisationName());
-        }
-        if (nonNull(newDefendant.getBailStatus())) {
-            builder.withBailStatus(newDefendant.getBailStatus());
-        }
-        if (nonNull(newDefendant.getCustodyTimeLimit())) {
-            builder.withCustodyTimeLimit(newDefendant.getCustodyTimeLimit());
-        }
-        if (nonNull(newDefendant.getId())) {
-            builder.withId(newDefendant.getId());
-        }
-        if (nonNull(newDefendant.getDateOfBirth())) {
-            builder.withDateOfBirth(newDefendant.getDateOfBirth());
-        }
-        if (nonNull(newDefendant.getDefenceOrganisation())) {
-            builder.withDefenceOrganisation(newDefendant.getDefenceOrganisation());
-        }
-        if (nonNull(newDefendant.getSpecificRequirements())) {
-            builder.withSpecificRequirements(newDefendant.getSpecificRequirements());
-        }
-        if (nonNull(newDefendant.getAddress())) {
-            builder.withAddress(newDefendant.getAddress());
-        }
-        if (nonNull(newDefendant.getNationalityDescription())) {
-            builder.withNationalityDescription(newDefendant.getNationalityDescription());
-        }
-        if (nonNull(newDefendant.getMasterDefendantId())) {
-            builder.withMasterDefendantId(newDefendant.getMasterDefendantId());
-        }
-    }
-
-    /**
-     * Retain {@code isYouth} as true if it was ever true on the existing or incoming defendant.
-     */
-    private static void applyIsYouthUpdate(final Defendant defendant, final NewBaseDefendant newDefendant, final Defendant.Builder builder) {
-        if (Boolean.TRUE.equals(defendant.getIsYouth()) || Boolean.TRUE.equals(newDefendant.getIsYouth())) {
-            builder.withIsYouth(true);
-        } else if (nonNull(newDefendant.getIsYouth())) {
-            builder.withIsYouth(newDefendant.getIsYouth());
-        }
     }
 
     public static List<SimpleOffence> buildSimpleOffences(final List<uk.gov.moj.cpp.listing.domain.SimpleOffence> offences) {
@@ -381,8 +344,6 @@ public class NewDomainToEventConverter {
                     .withRestrictFromCourtList(false)
                     .withCourtApplicationPartyType(buildCourtApplicationPartyTypeEvent(applicant.getCourtApplicationPartyType()))
                     .withAddress(NewDomainToEventConverter.buildAddress(applicant.getAddress()))
-                    .withMasterDefendantId(applicant.getMasterDefendantId().orElse(null))
-                    .withDateOfBirth(applicant.getDateOfBirth().orElse(null))
                     .build();
         }
         return null;
@@ -456,6 +417,7 @@ public class NewDomainToEventConverter {
                         .withCourtScheduleId(hearingDay.getCourtScheduleId().orElse(null))
                         .withCourtRoomId(hearingDay.getCourtRoomId().orElse(null))
                         .withCourtCentreId(hearingDay.getCourtCentreId().orElse(null))
+                        .withIsDraft(hearingDay.getIsDraft().orElse(null))
                         .build())
                 .toList();
 

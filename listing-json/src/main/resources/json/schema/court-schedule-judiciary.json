@@ -3,13 +3,19 @@
   "id": "http://justice.gov.uk/listing/events/court-schedule-judiciary.json",
   "type": "object",
   "properties": {
-    "judiciaryId": {
+    "id": {
       "type": "string"
     },
     "rotaJudiciaryId": {
       "type": "string"
     },
-    "title": {
+    "titlePrefix": {
+      "type": "string"
+    },
+    "titleJudicialPrefix": {
+      "type": "string"
+    },
+    "titleJudicialPrefixWelsh": {
       "type": "string"
     },
     "forenames": {
@@ -38,6 +44,21 @@
     },
     "isDeputy": {
       "$ref": "boolean"
+    },
+    "seqId": {
+      "type": "integer"
+    },
+    "personId": {
+      "type": "string"
+    },
+    "requestedName": {
+      "type": "string"
+    },
+    "specialisms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   },
   "required": [

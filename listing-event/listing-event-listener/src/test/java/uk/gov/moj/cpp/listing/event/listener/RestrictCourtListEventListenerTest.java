@@ -65,10 +65,6 @@ public class RestrictCourtListEventListenerTest {
     private static final UUID APPLICANT_ID = randomUUID();
     private static final UUID RESPONDENT_ID_1 = randomUUID();
     private static final UUID RESPONDENT_ID_2 = randomUUID();
-    private static final UUID RESPONDENT_MASTER_DEFENDANT_ID_1 = randomUUID();
-    private static final UUID RESPONDENT_MASTER_DEFENDANT_ID_2 = randomUUID();
-    private static final UUID SUBJECT_ID = randomUUID();
-    private static final UUID SUBJECT_MASTER_DEFENDANT_ID = randomUUID();
     private static final String EVENT_NAME = "listing.events.court-list-restricted";
 
     private static final Address APPLICANT_ADDRESS = Address
@@ -194,35 +190,6 @@ public class RestrictCourtListEventListenerTest {
         verify(hearingRepository, times(4)).save(hearing);
     }
 
-    @Test
-    public void shouldRestrictSubjectByIdForStandAloneApplications() throws IOException {
-        final List<CourtApplication> courtApplications = createCourtApplicationsWithSubject();
-        final String courtApplicationsAsString = MAPPER.writeValueAsString(courtApplications);
-        final JsonNode courtApplicationsProperties = MAPPER.readTree(courtApplicationsAsString);
-
-        final CourtListRestricted payload = courtListRestricted()
-                .withHearingId(HEARING_ID)
-                .withRestrictCourtList(TRUE)
-                .withCourtApplicationSubjectIds(singletonList(SUBJECT_ID))
-                .build();
-        final Envelope<CourtListRestricted> restrictCourtListEnvelope = envelopeFrom(metadataWithRandomUUID(EVENT_NAME), payload);
-
-        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
-        given(hearing.getProperties()).willReturn(properties);
-        given(properties.get(COURT_APPLICATIONS_FIELD)).willReturn(courtApplicationsProperties);
-
-        target.hearingRestrictionForCourt(restrictCourtListEnvelope);
-
-        verify(properties).replace(any(), objectNodeCaptor.capture());
-        final ArrayNode applicationArrayNode = objectNodeCaptor.getValue();
-        assertThat(applicationArrayNode.toString(), isJson(allOf(
-                withJsonPath("$[0].subject.id", equalTo(SUBJECT_ID.toString())),
-                withJsonPath("$[0].subject.masterDefendantId", equalTo(SUBJECT_MASTER_DEFENDANT_ID.toString())),
-                withJsonPath("$[0].subject.restrictFromCourtList", equalTo(true))
-        )));
-        verify(hearingRepository).save(hearing);
-    }
-
     private Collection<? extends Matcher<? super ReadContext>> getCourtApplicationMatchers(final CourtApplication courtApplication) {
         return newArrayList(
                 withJsonPath("$[0].id", equalTo(courtApplication.getId().toString())),
@@ -344,40 +311,6 @@ public class RestrictCourtListEventListenerTest {
                 .build());
     }
 
-    private List<uk.gov.justice.listing.events.CourtApplication> createCourtApplicationsWithSubject() {
-        return singletonList(courtApplication()
-                .withId(COURT_APPLICATIONS_ID)
-                .withApplicationType(COURT_APPLICATION_TYPE)
-                .withApplicationParticulars(APPLICATION_PARTICULARS)
-                .withApplicant(applicantRespondent()
-                        .withFirstName(STRING.next())
-                        .withLastName(STRING.next())
-                        .withIsRespondent(false)
-                        .withId(APPLICANT_ID)
-                        .withAddress(APPLICANT_ADDRESS)
-                        .withRestrictFromCourtList(FALSE)
-                        .build())
-                .withSubject(applicantRespondent()
-                        .withFirstName(STRING.next())
-                        .withLastName(STRING.next())
-                        .withIsRespondent(false)
-                        .withId(SUBJECT_ID)
-                        .withMasterDefendantId(SUBJECT_MASTER_DEFENDANT_ID)
-                        .withAddress(RESPONDENT_ADDRESS)
-                        .withRestrictFromCourtList(FALSE)
-                        .build())
-                .withRespondents(singletonList(applicantRespondent()
-                        .withFirstName(STRING.next())
-                        .withLastName(STRING.next())
-                        .withIsRespondent(true)
-                        .withId(RESPONDENT_ID_1)
-                        .withMasterDefendantId(RESPONDENT_MASTER_DEFENDANT_ID_1)
-                        .withAddress(RESPONDENT_ADDRESS)
-                        .withRestrictFromCourtList(FALSE)
-                        .build()))
-                .build());
-    }
-
     private List<uk.gov.justice.listing.events.CourtApplication> createCourtApplicationsWithMultipleRespondents() {
         return singletonList(courtApplication()
                 .withId(COURT_APPLICATIONS_ID)
@@ -397,7 +330,6 @@ public class RestrictCourtListEventListenerTest {
                                 .withLastName(STRING.next())
                                 .withIsRespondent(true)
                                 .withId(RESPONDENT_ID_1)
-                                .withMasterDefendantId(RESPONDENT_MASTER_DEFENDANT_ID_1)
                                 .withAddress(RESPONDENT_ADDRESS)
                                 .withRestrictFromCourtList(FALSE)
                                 .build(),
@@ -406,7 +338,6 @@ public class RestrictCourtListEventListenerTest {
                                 .withLastName(STRING.next())
                                 .withIsRespondent(true)
                                 .withId(RESPONDENT_ID_2)
-                                .withMasterDefendantId(RESPONDENT_MASTER_DEFENDANT_ID_2)
                                 .withAddress(RESPONDENT_ADDRESS)
                                 .withRestrictFromCourtList(FALSE)
                                 .build()

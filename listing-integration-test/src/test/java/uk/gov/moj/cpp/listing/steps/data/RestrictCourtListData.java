@@ -21,16 +21,13 @@ public class RestrictCourtListData {
 
     private final List<UUID> courtApplicationRespondentIds;
 
-    private final List<UUID> courtApplicationSubjectIds;
-
     private final Optional<String> courtApplicationType;
 
-    public RestrictCourtListData(final List<UUID> caseIds, final List<UUID> courtApplicationApplicantIds, final List<UUID> courtApplicationIds, final List<UUID> courtApplicationRespondentIds, final List<UUID> courtApplicationSubjectIds, final List<UUID> defendantIds, final UUID hearingId, final List<UUID> offenceIds, final Boolean restrictCourtList, final Optional<String> courtApplicationType) {
+    public RestrictCourtListData(final List<UUID> caseIds, final List<UUID> courtApplicationApplicantIds, final List<UUID> courtApplicationIds, final List<UUID> courtApplicationRespondentIds, final List<UUID> defendantIds, final UUID hearingId, final List<UUID> offenceIds, final Boolean restrictCourtList, final Optional<String> courtApplicationType) {
         this.caseIds = caseIds;
         this.courtApplicationApplicantIds = courtApplicationApplicantIds;
         this.courtApplicationIds = courtApplicationIds;
         this.courtApplicationRespondentIds = courtApplicationRespondentIds;
-        this.courtApplicationSubjectIds = courtApplicationSubjectIds;
         this.defendantIds = defendantIds;
         this.hearingId = hearingId;
         this.offenceIds = offenceIds;
@@ -66,10 +63,6 @@ public class RestrictCourtListData {
         return courtApplicationRespondentIds;
     }
 
-    public List<UUID> getCourtApplicationSubjectIds() {
-        return courtApplicationSubjectIds;
-    }
-
     public UUID getHearingId() {
         return hearingId;
     }
@@ -99,8 +92,6 @@ public class RestrictCourtListData {
 
         private List<UUID> courtApplicatonRespondentIds;
 
-        private List<UUID> courtApplicationSubjectIds;
-
         private Optional<String> courtApplicationType;
 
         public Builder withCaseIds(final List<UUID> casesId) {
@@ -121,12 +112,6 @@ public class RestrictCourtListData {
             this.courtApplicatonRespondentIds = courtApplicatonRespondentIds;
             return this;
         }
-
-        public Builder withCourtApplicationSubjectIds(final List<UUID> courtApplicationSubjectIds) {
-            this.courtApplicationSubjectIds = courtApplicationSubjectIds;
-            return this;
-        }
-
         public Builder withDefendantIds(final List<UUID> defendantsId) {
             this.defendantIds = defendantsId;
             return this;
@@ -153,7 +138,7 @@ public class RestrictCourtListData {
         }
 
         public RestrictCourtListData build() {
-            return new RestrictCourtListData(caseIds, courtApplicationApplicantIds, courtApplicatonIds, courtApplicatonRespondentIds, courtApplicationSubjectIds, defendantIds, hearingId, offenceIds, restrictCourtList, courtApplicationType);
+            return new RestrictCourtListData(caseIds, courtApplicationApplicantIds, courtApplicatonIds, courtApplicatonRespondentIds, defendantIds, hearingId, offenceIds, restrictCourtList, courtApplicationType);
         }
     }
 }

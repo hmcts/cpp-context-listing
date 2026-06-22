@@ -27,7 +27,6 @@ import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.JudicialRoleData;
-import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -58,10 +57,10 @@ public class ListCourtHearingIT extends AbstractIT {
     @Test
     public void shouldListHearingWithAdjournedDateSingleCountBasedSlot() {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1));
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
     }
@@ -69,10 +68,10 @@ public class ListCourtHearingIT extends AbstractIT {
     @Test
     public void shouldListHearingWithAdjournedDateSingleCountBasedSlot_CivilCase() {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate_CivilCase(1));
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         stubProgressionServiceCivilCase();
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
@@ -86,10 +85,10 @@ public class ListCourtHearingIT extends AbstractIT {
     @Test
     public void shouldListHearingWithAdjournedDateSingleCountBasedSlot_CivilSummons() {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate_CivilCase(1));
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         stubProgressionServiceCivilCaseSummons();
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
@@ -103,10 +102,10 @@ public class ListCourtHearingIT extends AbstractIT {
     @Test
     public void shouldListHearingWithAdjournedDateSingleCountBasedSlotHmiEnabled() {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1));
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
     }
@@ -124,10 +123,10 @@ public class ListCourtHearingIT extends AbstractIT {
         stubGetProvisionalBookedSlotsMultipleCourtSchedulesCountBased();
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1));
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
     }
@@ -138,10 +137,10 @@ public class ListCourtHearingIT extends AbstractIT {
         stubGetProvisionalBookedSlotsMultipleCourtSchedulesCountBased();
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1));
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
     }
@@ -150,10 +149,10 @@ public class ListCourtHearingIT extends AbstractIT {
     public void shouldListHearingWithAdjournedDateSingleDurationBasedSlot() {
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1));
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
     }
@@ -162,10 +161,10 @@ public class ListCourtHearingIT extends AbstractIT {
     public void shouldListHearingWithAdjournedDateSingleDurationBasedSlotHmiEnabled() {
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1));
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
     }
@@ -235,10 +234,10 @@ public class ListCourtHearingIT extends AbstractIT {
     @Test
     public void shouldListHearingWithAllocatedData() {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciary());
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
     }
@@ -259,10 +258,10 @@ public class ListCourtHearingIT extends AbstractIT {
     public void shouldListHearingWithAllocatedDataHmiEnabled() {
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         verifyJudiciaryAssignedToAllocatedHearingFromAPI(hearingsData);
     }
@@ -305,10 +304,10 @@ public class ListCourtHearingIT extends AbstractIT {
     @Test
     public void shouldListHearingWithShadowListedFlag() {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithShadowListedOffences());
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
 
         verifyShadowListingFlagAndReportingRestrictions(listCourtHearingSteps);
@@ -317,10 +316,10 @@ public class ListCourtHearingIT extends AbstractIT {
     @Test
     public void shouldListHearingWithShadowListedFlagHmiEnabled() {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithShadowListedOffences());
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         verifyShadowListingFlagAndReportingRestrictions(listCourtHearingSteps);
     }
@@ -328,10 +327,10 @@ public class ListCourtHearingIT extends AbstractIT {
     @Test
     public void shouldExtendHearingWithShadowListedFlag() {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithShadowListedOffences());
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
         listCourtHearingSteps.whenProgressionHearingExtended();
@@ -341,10 +340,10 @@ public class ListCourtHearingIT extends AbstractIT {
     @Test
     public void shouldExtendHearingWithShadowListedFlagHmiEnabled() {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithShadowListedOffences());
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
         listCourtHearingSteps.whenProgressionHearingExtended();
@@ -354,10 +353,10 @@ public class ListCourtHearingIT extends AbstractIT {
     @Test
     public void shouldRetrieveCasesByDefendantAndHearingDateForAllocatedHearing() {
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsDataWithAllocationDataAndJudiciary());
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowLondon().withHour(10).withMinute(0).withSecond(0).withNano(0));
+                ZonedDateTime.now(ZoneId.of("Europe/London")).withHour(10).withMinute(0).withSecond(0).withNano(0));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
         listCourtHearingSteps.verifyQueryAPIFindCaseByPersonDefendantAndHearingDate();

@@ -10,8 +10,10 @@ import uk.gov.moj.cpp.listing.steps.AddDefendantSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
-import uk.gov.moj.cpp.listing.it.util.ItClock;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
@@ -29,17 +31,18 @@ public class DefendantsAddedIT extends AbstractIT {
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
         HearingData hearingData = hearingsData.getHearingData().get(0);
         final AddDefendantSteps addDefendantSteps = new AddDefendantSteps(caseId, hearingData);
-        addDefendantSteps.publishUntilDefendantsAddedReflected(false);
+        addDefendantSteps.whenCaseDefendantsAddedPublicEventIsPublished();
+        addDefendantSteps.verifyHearingListedFromAPIWithJmsDelay(false);
     }
 
     @Test
     void shouldAddDefendantsFollowingPublicDefendantsAddedEventFromProgressionAndHearingIsUnallocatedEnabled() {
         HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowUtc()
+                ZonedDateTime.now(ZoneOffset.UTC)
                         .withHour(9)
                         .withMinute(0)
                         .withSecond(0)
@@ -51,7 +54,8 @@ public class DefendantsAddedIT extends AbstractIT {
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
         HearingData hearingData = hearingsData.getHearingData().get(0);
         final AddDefendantSteps addDefendantSteps = new AddDefendantSteps(caseId, hearingData);
-        addDefendantSteps.publishUntilDefendantsAddedReflected(true);
+        addDefendantSteps.whenCaseDefendantsAddedPublicEventIsPublished();
+        addDefendantSteps.verifyHearingListedFromAPIWithJmsDelay(true);
     }
 
 
@@ -59,10 +63,10 @@ public class DefendantsAddedIT extends AbstractIT {
     void shouldAddDefendantsFollowingPublicDefendantsAddedEventFromProgressionAndHearingIsAllocated() {
         HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowUtc()
+                ZonedDateTime.now(ZoneOffset.UTC)
                         .withHour(9)
                         .withMinute(0)
                         .withSecond(0)
@@ -74,17 +78,18 @@ public class DefendantsAddedIT extends AbstractIT {
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
         HearingData hearingData = hearingsData.getHearingData().get(0);
         final AddDefendantSteps addDefendantSteps = new AddDefendantSteps(caseId, hearingData);
-        addDefendantSteps.publishUntilDefendantsAddedConsumed();
+        addDefendantSteps.whenCaseDefendantsAddedPublicEventIsPublished();
+        addDefendantSteps.verifyPublicEventDefendantAddedInActiveMQ();
     }
 
     @Test
     void shouldAddDefendantsFollowingPublicDefendantsAddedEventFromProgressionAndHearingIsAllocatedHmiEnabled() {
         HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(ItClock.today(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId().toString()));
         stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowUtc()
+                ZonedDateTime.now(ZoneOffset.UTC)
                         .withHour(9)
                         .withMinute(0)
                         .withSecond(0)
@@ -96,6 +101,7 @@ public class DefendantsAddedIT extends AbstractIT {
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
         HearingData hearingData = hearingsData.getHearingData().get(0);
         final AddDefendantSteps addDefendantSteps = new AddDefendantSteps(caseId, hearingData);
-        addDefendantSteps.publishUntilDefendantsAddedConsumed();
+        addDefendantSteps.whenCaseDefendantsAddedPublicEventIsPublished();
+        addDefendantSteps.verifyPublicEventDefendantAddedInActiveMQ();
     }
 }

@@ -11,7 +11,6 @@ import uk.gov.moj.cpp.listing.steps.PayloadBasedListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.PayloadBasedListNextHearingSteps;
 import uk.gov.moj.cpp.listing.steps.PayloadBasedUpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.PayloadGenerator;
-import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -113,7 +112,7 @@ class PayloadBasedListNextHearingIT extends AbstractIT {
 
         stubListHearingInCourtSessions(firstHearingValues.hearingId,
                 "8e837de0-743a-4a2c-9db3-b2e678c48729",
-                ItClock.nowUtc()
+                ZonedDateTime.now(ZoneOffset.UTC)
                         .withHour(9)
                         .withMinute(0)
                         .withSecond(0)
