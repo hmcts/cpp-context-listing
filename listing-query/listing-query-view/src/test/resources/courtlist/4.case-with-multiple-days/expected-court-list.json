@@ -17,14 +17,14 @@
           ],
           "hearings":[
             {
-              "startTime":"2019-12-17T00:00",
+              "startTime":"2019-12-17T00:00:00",
               "hearingType":{
                 "id":"06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
                 "description":"Plea and Trial Preparation"
               },
               "restrictFromCourtList":false,
               "weekCommencing":false,
-              "endTime":"2019-12-17T00:20",
+              "endTime":"2019-12-17T00:20:00",
               "caseIdentifier":{
                 "authorityId":"31af405e-7b60-4dd8-a244-c24c2d3fa595",
                 "authorityCode":"TFL",
@@ -67,14 +67,14 @@
           ],
           "hearings":[
             {
-              "startTime":"2019-12-27T10:00",
+              "startTime":"2019-12-27T10:00:00",
               "hearingType":{
                 "id":"06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
                 "description":"Plea and Trial Preparation"
               },
               "restrictFromCourtList":false,
               "weekCommencing":false,
-              "endTime":"2019-12-27T10:20",
+              "endTime":"2019-12-27T10:20:00",
               "caseIdentifier":{
                 "authorityId":"31af405e-7b60-4dd8-a244-c24c2d3fa595",
                 "authorityCode":"TFL",

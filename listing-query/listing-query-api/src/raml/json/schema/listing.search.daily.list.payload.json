@@ -3,14 +3,16 @@
   "id": "http://justice.gov.uk/listing/query/listing.search.daily.list.payload.json",
   "type": "object",
   "properties": {
-    "courtCentreId":   { "type": "string" },
-    "sittingDate":     { "type": "string", "format": "date" },
-    "publishedAt":     { "type": "string", "format": "date" },
-    "documentType":    { "type": "string" },
-    "documentCounter": { "type": "integer" },
-    "isWelsh":             { "type": "boolean" },
-    "courtCentreName":{ "type": "string" },
-    "welshCourtCentreName":{ "type": "string" },
+    "courtCentreId":            { "type": "string" },
+    "sittingDate":              { "type": "string", "format": "date" },
+    "weekCommencingStartDate":  { "type": "string", "format": "date" },
+    "weekCommencingEndDate":    { "type": "string", "format": "date" },
+    "publishedAt":              { "type": "string", "format": "date" },
+    "documentType":             { "type": "string" },
+    "documentCounter":          { "type": "integer" },
+    "isWelsh":                  { "type": "boolean" },
+    "courtCentreName":          { "type": "string" },
+    "welshCourtCentreName":     { "type": "string" },
     "courtLists": {
       "type": "array",
       "items": {
@@ -35,8 +37,10 @@
               "welshCrestCourtFullName": { "type": "string" },
               "crestCourtSiteCode":      { "type": "string" },
               "courtType":               { "type": "string" },
-              "courtCentreAddress1":     { "type": "string" },
-              "courtCentreAddress2":     { "type": "string" }
+              "courtCentreAddress1":      { "type": "string" },
+              "courtCentreAddress2":      { "type": "string" },
+              "welshCourtCentreAddress1": { "type": "string" },
+              "welshCourtCentreAddress2": { "type": "string" }
             },
             "required": ["crestCourtSiteId", "crestCourtSiteName", "courtType"]
           },
@@ -120,7 +124,8 @@
                                   "statementOfOffence": {
                                     "type": "object",
                                     "properties": {
-                                      "title": { "type": "string" }
+                                      "title":      { "type": "string" },
+                                      "welshTitle": { "type": "string" }
                                     }
                                   },
                                   "restrictFromCourtList": { "type": "boolean" },

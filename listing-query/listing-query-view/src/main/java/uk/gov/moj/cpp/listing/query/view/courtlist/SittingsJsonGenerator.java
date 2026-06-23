@@ -8,6 +8,7 @@ import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.CourtApplicationDetails;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.Hearing;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.Sitting;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import uk.gov.justice.services.messaging.JsonObjects;
@@ -17,6 +18,8 @@ import javax.json.JsonObjectBuilder;
 
 
 public class SittingsJsonGenerator {
+
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     private SittingsJsonGenerator() {
         throw new IllegalStateException("Utility class");
@@ -65,7 +68,7 @@ public class SittingsJsonGenerator {
     private static JsonObject buildHearingJson(final Hearing hearing) {
 
         final JsonObjectBuilder hearingJsonBuilder = JsonObjects.createObjectBuilder()
-                .add("startTime", hearing.getStartTime().toString())
+                .add("startTime", hearing.getStartTime().format(DATE_TIME_FORMATTER))
                 .add("hearingType", hearing.getHearingType())
                 .add("restrictFromCourtList", hearing.isRestrictFromCourtList())
                 .add("weekCommencing", hearing.isWeekCommencing());
@@ -79,7 +82,7 @@ public class SittingsJsonGenerator {
         }
 
         if (hearing.getEndTime().isPresent()) {
-            hearingJsonBuilder.add("endTime", hearing.getEndTime().orElseThrow(IllegalStateException::new).toString());
+            hearingJsonBuilder.add("endTime", hearing.getEndTime().orElseThrow(IllegalStateException::new).format(DATE_TIME_FORMATTER));
         }
 
         if (hearing.getCommittingCourtCentreId().isPresent()) {

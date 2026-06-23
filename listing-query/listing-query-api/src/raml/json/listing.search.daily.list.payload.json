@@ -1,47 +1,51 @@
 {
-  "courtCentreId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "sittingDate": "2026-05-07",
-  "publishedAt": "2026-05-06",
-  "documentType": "DAILY_LIST",
-  "documentCounter": 1,
-  "isWelsh": false,
-  "courtCentreName": "Kingston Crown Court",
-  "welshCourtCentreName": "Llys y Goron Kingston",
+  "courtCentreId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "sittingDate": "2026-06-09",
+  "weekCommencingStartDate": "2026-06-09",
+  "weekCommencingEndDate": "2026-06-13",
+  "publishedAt": "2026-06-08",
+  "documentType": "FINAL",
+  "documentCounter": 2,
+  "isWelsh": true,
+  "courtCentreName": "Cardiff Crown Court",
+  "welshCourtCentreName": "Llys y Goron Caerdydd",
   "courtLists": [
     {
       "crestCourtSite": {
-        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-        "oucode": "KGN",
-        "crestCourtId": "415",
-        "crestCourtSiteId": "415",
-        "crestCourtSiteName": "Kingston Crown Court",
-        "welshCrestCourtSiteName": "Llys y Goron Kingston",
+        "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+        "oucode": "CDF",
+        "crestCourtId": "100",
+        "crestCourtSiteId": "100",
+        "crestCourtSiteName": "Cardiff Crown Court",
+        "welshCrestCourtSiteName": "Llys y Goron Caerdydd",
         "validFrom": "2000-01-01",
         "validTo": "9999-12-31",
-        "crestCourtName": "Kingston-upon-Thames",
-        "welshCrestCourtName": "Kingston-upon-Thames",
-        "crestCourtShortName": "Kingston",
-        "welshCrestCourtShortName": "Kingston",
-        "crestCourtFullName": "Kingston Crown Court",
-        "welshCrestCourtFullName": "Llys y Goron Kingston",
-        "crestCourtSiteCode": "KGN01",
+        "crestCourtName": "Cardiff",
+        "welshCrestCourtName": "Caerdydd",
+        "crestCourtShortName": "Cardiff",
+        "welshCrestCourtShortName": "Caerdydd",
+        "crestCourtFullName": "Cardiff Crown Court",
+        "welshCrestCourtFullName": "Llys y Goron Caerdydd",
+        "crestCourtSiteCode": "CDF01",
         "courtType": "CROWN",
-        "courtCentreAddress1": "The Queen Elizabeth II Law Courts",
-        "courtCentreAddress2": "Derby Square, Liverpool L2 1XA"
+        "courtCentreAddress1": "Cardiff Crown Court",
+        "courtCentreAddress2": "2 Park Street, Cardiff CF10 1ET",
+        "welshCourtCentreAddress1": "Llys y Goron Caerdydd",
+        "welshCourtCentreAddress2": "2 Stryd y Parc, Caerdydd CF10 1ET"
       },
       "sittings": [
         {
-          "sittingDate": "2026-05-07",
-          "courtRoomId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "sittingDate": "2026-06-09",
+          "courtRoomId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
           "courtRoomName": "Court Room 1",
           "welshCourtRoomName": "Ystafell Llys 1",
-          "weekCommencing": false,
+          "weekCommencing": true,
           "judiciary": [
             {
               "isBenchChairman": false,
               "isDeputy": false,
-              "judicialId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-              "judiciaryName": "His Honour Judge Smith",
+              "judicialId": "d4e5f6a7-b8c9-0123-defa-234567890123",
+              "judiciaryName": "His Honour Judge Williams",
               "judicialRoleType": {
                 "judiciaryType": "CIRCUIT_JUDGE"
               }
@@ -49,37 +53,38 @@
           ],
           "hearings": [
             {
-              "startTime": "2026-05-07T10:00:00",
-              "endTime": "2026-05-07T11:00:00",
+              "startTime": "2026-06-09T10:00:00",
+              "endTime": "2026-06-09T11:00:00",
               "hearingType": {
-                "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
+                "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
                 "description": "Trial",
                 "welshDescription": "Treial"
               },
               "restrictFromCourtList": false,
-              "weekCommencing": false,
+              "weekCommencing": true,
               "hasVideoLink": false,
-              "publicListNote": "Reporting restrictions apply under s.4(2) of the Contempt of Court Act 1981",
+              "publicListNote": "Mae cyfyngiadau adrodd yn gymwys",
               "committingCourtCentreId": "f6a7b8c9-d0e1-2345-fabc-456789012345",
               "caseIdentifier": {
-                "caseReference": "T20260001",
-                "authorityCode": "CPS001"
+                "caseReference": "T20260002",
+                "authorityCode": "CPS002"
               },
               "prosecutor": {
                 "organisationName": "Crown Prosecution Service"
               },
               "defendants": [
                 {
-                  "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
-                  "firstName": "Robert",
-                  "lastName": "Brown",
+                  "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
+                  "firstName": "Dafydd",
+                  "lastName": "Jones",
                   "restrictFromCourtList": false,
-                  "defenceOrganisation": "Smith & Co Solicitors",
+                  "defenceOrganisation": "Morgan & Co Solicitors",
                   "offences": [
                     {
                       "offenceCode": "TH68001",
                       "statementOfOffence": {
-                        "title": "Theft contrary to section 1(1) and 7 of the Theft Act 1968"
+                        "title": "Theft contrary to section 1(1) and 7 of the Theft Act 1968",
+                        "welshTitle": "Lladrad yn groes i adran 1(1) a 7 o Ddeddf Lladrad 1968"
                       },
                       "restrictFromCourtList": false,
                       "reportingRestrictions": [
@@ -90,7 +95,7 @@
                       ],
                       "committingCourt": {
                         "courtCentreId": "f6a7b8c9-d0e1-2345-fabc-456789012345",
-                        "courtHouseName": "Croydon Magistrates Court"
+                        "courtHouseName": "Cardiff Magistrates Court"
                       }
                     }
                   ]
@@ -98,21 +103,21 @@
               ]
             },
             {
-              "startTime": "2026-05-07T14:00:00",
-              "endTime": "2026-05-07T14:30:00",
+              "startTime": "2026-06-09T14:00:00",
+              "endTime": "2026-06-09T14:30:00",
               "hearingType": {
                 "id": "d0e1f2a3-b4c5-6789-defa-890123456789",
                 "description": "Application",
                 "welshDescription": "Cais"
               },
               "restrictFromCourtList": false,
-              "weekCommencing": false,
+              "weekCommencing": true,
               "hasVideoLink": false,
-              "publicListNote": "Bail application",
-              "applicationReference": "APP20260001",
+              "publicListNote": "Cais am fechnïaeth",
+              "applicationReference": "APP20260002",
               "applicant": {
-                "firstName": "Linda",
-                "lastName": "Martin",
+                "firstName": "Siân",
+                "lastName": "Morgan",
                 "restrictFromCourtList": false
               },
               "respondents": [

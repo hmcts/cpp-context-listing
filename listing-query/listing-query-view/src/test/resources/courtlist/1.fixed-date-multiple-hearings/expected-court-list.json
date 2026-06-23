@@ -33,14 +33,14 @@
           ],
           "hearings": [
             {
-              "startTime": "2019-12-16T14:58",
+              "startTime": "2019-12-16T14:58:00",
               "hearingType": {
                 "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
                 "description": "Sentence"
               },
               "restrictFromCourtList": false,
               "weekCommencing": false,
-              "endTime": "2019-12-16T15:43",
+              "endTime": "2019-12-16T15:43:00",
               "caseIdentifier": {
                 "authorityId": "e8ef7f69-89ef-472c-a877-4329175bd6ca",
                 "authorityCode": "CPS",
@@ -100,14 +100,14 @@
               "hasVideoLink": false
             },
             {
-              "startTime": "2019-12-16T14:59",
+              "startTime": "2019-12-16T14:59:00",
               "hearingType": {
                 "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
                 "description": "Sentence"
               },
               "restrictFromCourtList": false,
               "weekCommencing": false,
-              "endTime": "2019-12-16T15:44",
+              "endTime": "2019-12-16T15:44:00",
               "applicationReference": "65OF146907",
               "applicant": {
                 "id": "9aee20ca-b0b2-4133-b512-7bec3d835134",

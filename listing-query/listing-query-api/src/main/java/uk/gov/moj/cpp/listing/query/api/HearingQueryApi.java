@@ -225,12 +225,14 @@ public class HearingQueryApi {
         final String welshCourtCentreName = courtCentreJson.getString("oucodeL3WelshName", null);
         final String address1 = courtCentreJson.getString("address1", null);
         final String address2 = courtCentreJson.getString("address2", null);
+        final String welshAddress1 = courtCentreJson.getString("welshAddress1", null);
+        final String welshAddress2 = courtCentreJson.getString("welshAddress2", null);
 
         final JsonObject responsePayload = response.payloadAsJsonObject();
         final JsonObjectBuilder enrichedBuilder = JsonObjects.createObjectBuilder();
         responsePayload.forEach((key, value) -> {
             if (COURT_LISTS.equals(key)) {
-                enrichedBuilder.add(COURT_LISTS, enrichCourtListsWithAddress(responsePayload.getJsonArray(COURT_LISTS), address1, address2));
+                enrichedBuilder.add(COURT_LISTS, enrichCourtListsWithAddress(responsePayload.getJsonArray(COURT_LISTS), address1, address2, welshAddress1, welshAddress2));
             } else {
                 enrichedBuilder.add(key, value);
             }
@@ -256,7 +258,7 @@ public class HearingQueryApi {
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.daily.list.payload"), enrichedBuilder.build());
     }
 
-    private JsonArray enrichCourtListsWithAddress(final JsonArray courtLists, final String address1, final String address2) {
+    private JsonArray enrichCourtListsWithAddress(final JsonArray courtLists, final String address1, final String address2, final String welshAddress1, final String welshAddress2) {
         final JsonArrayBuilder enrichedCourtListsBuilder = createArrayBuilder();
         courtLists.getValuesAs(JsonObject.class).forEach(courtList -> {
             final JsonObject crestCourtSite = courtList.getJsonObject(CREST_COURT_SITE);
@@ -267,6 +269,12 @@ public class HearingQueryApi {
             }
             if (address2 != null) {
                 enrichedSiteBuilder.add("courtCentreAddress2", address2);
+            }
+            if (welshAddress1 != null) {
+                enrichedSiteBuilder.add("welshCourtCentreAddress1", welshAddress1);
+            }
+            if (welshAddress2 != null) {
+                enrichedSiteBuilder.add("welshCourtCentreAddress2", welshAddress2);
             }
             final JsonObjectBuilder enrichedCourtListBuilder = JsonObjects.createObjectBuilder();
             courtList.forEach((key, value) -> {

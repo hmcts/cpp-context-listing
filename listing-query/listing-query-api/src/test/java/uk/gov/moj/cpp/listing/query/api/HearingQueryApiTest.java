@@ -1099,6 +1099,249 @@ public class HearingQueryApiTest {
         assertThat(enrichedSite.getString("courtCentreAddress2"), is(address2));
     }
 
+    @Test
+    void shouldGetDailyListWithWelshAddresses() {
+        final String courtCentreId = randomUUID().toString();
+        final String welshAddress1 = "Llys y Goron Caerdydd";
+        final String welshAddress2 = "2 Stryd y Parc, Caerdydd CF10 1ET";
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("listing.search.daily.list.payload"),
+                createObjectBuilder()
+                        .add("courtCentreId", courtCentreId)
+                        .add("startDate", "2026-06-09")
+                        .add("publishCourtListType", "FINAL")
+                        .build());
+
+        final JsonObject courtListPayload = createObjectBuilder()
+                .add("courtCentreId", courtCentreId)
+                .add("courtLists", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("crestCourtSite", createObjectBuilder()
+                                        .add("crestCourtSiteId", "100")
+                                        .add("crestCourtSiteName", "Cardiff Crown Court")
+                                        .add("courtType", "CROWN")
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        final JsonEnvelope courtCentreEnvelope = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("referencedata.query.courtroom"),
+                createObjectBuilder()
+                        .add("oucodeL3Name", "Cardiff Crown Court")
+                        .add("address1", "Cardiff Crown Court")
+                        .add("welshAddress1", welshAddress1)
+                        .add("welshAddress2", welshAddress2)
+                        .add("isWelsh", true)
+                        .build());
+
+        when(hearingQueryView.retrieveCourtList(any(JsonEnvelope.class))).thenReturn(
+                envelopeFrom(metadataBuilder().withId(randomUUID()).withName("listing.courtlist"), courtListPayload));
+        when(referenceDataService.isHearingLanguageWelsh(any(), eq(courtCentreId))).thenReturn(Optional.of(true));
+        when(referenceDataService.getCourtCentreById(any(UUID.class), any(JsonEnvelope.class))).thenReturn(courtCentreEnvelope);
+
+        final JsonEnvelope result = hearingQueryApi.getDailyList(query);
+        final JsonObject enrichedSite = result.payloadAsJsonObject()
+                .getJsonArray("courtLists").getJsonObject(0).getJsonObject("crestCourtSite");
+
+        assertThat(enrichedSite.getString("welshCourtCentreAddress1"), is(welshAddress1));
+        assertThat(enrichedSite.getString("welshCourtCentreAddress2"), is(welshAddress2));
+        assertThat(result.payloadAsJsonObject().getBoolean("isWelsh"), is(true));
+    }
+
+    @Test
+    void shouldGetDailyListWhenCourtCentreNameIsAbsent() {
+        final String courtCentreId = randomUUID().toString();
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("listing.search.daily.list.payload"),
+                createObjectBuilder()
+                        .add("courtCentreId", courtCentreId)
+                        .add("startDate", "2026-06-09")
+                        .add("publishCourtListType", "DRAFT")
+                        .build());
+
+        final JsonObject courtListPayload = createObjectBuilder()
+                .add("courtCentreId", courtCentreId)
+                .add("courtLists", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("crestCourtSite", createObjectBuilder()
+                                        .add("crestCourtSiteId", "100")
+                                        .add("crestCourtSiteName", "Test Crown Court")
+                                        .add("courtType", "CROWN")
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        final JsonEnvelope courtCentreEnvelope = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("referencedata.query.courtroom"),
+                createObjectBuilder().add("isWelsh", false).build());
+
+        when(hearingQueryView.retrieveCourtList(any(JsonEnvelope.class))).thenReturn(
+                envelopeFrom(metadataBuilder().withId(randomUUID()).withName("listing.courtlist"), courtListPayload));
+        when(referenceDataService.isHearingLanguageWelsh(any(), eq(courtCentreId))).thenReturn(Optional.of(false));
+        when(referenceDataService.getCourtCentreById(any(UUID.class), any(JsonEnvelope.class))).thenReturn(courtCentreEnvelope);
+
+        final JsonObject resultPayload = hearingQueryApi.getDailyList(query).payloadAsJsonObject();
+
+        assertThat(resultPayload.containsKey("courtCentreName"), is(false));
+        assertThat(resultPayload.containsKey("welshCourtCentreName"), is(false));
+    }
+
+    @Test
+    void shouldGetDailyListWhenAllAddressFieldsAbsent() {
+        final String courtCentreId = randomUUID().toString();
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("listing.search.daily.list.payload"),
+                createObjectBuilder()
+                        .add("courtCentreId", courtCentreId)
+                        .add("startDate", "2026-06-09")
+                        .add("publishCourtListType", "DRAFT")
+                        .build());
+
+        final JsonObject courtListPayload = createObjectBuilder()
+                .add("courtCentreId", courtCentreId)
+                .add("courtLists", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("crestCourtSite", createObjectBuilder()
+                                        .add("crestCourtSiteId", "100")
+                                        .add("crestCourtSiteName", "Test Crown Court")
+                                        .add("courtType", "CROWN")
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        final JsonEnvelope courtCentreEnvelope = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("referencedata.query.courtroom"),
+                createObjectBuilder().add("oucodeL3Name", "Test Crown Court").add("isWelsh", false).build());
+
+        when(hearingQueryView.retrieveCourtList(any(JsonEnvelope.class))).thenReturn(
+                envelopeFrom(metadataBuilder().withId(randomUUID()).withName("listing.courtlist"), courtListPayload));
+        when(referenceDataService.isHearingLanguageWelsh(any(), eq(courtCentreId))).thenReturn(Optional.of(false));
+        when(referenceDataService.getCourtCentreById(any(UUID.class), any(JsonEnvelope.class))).thenReturn(courtCentreEnvelope);
+
+        final JsonObject enrichedSite = hearingQueryApi.getDailyList(query).payloadAsJsonObject()
+                .getJsonArray("courtLists").getJsonObject(0).getJsonObject("crestCourtSite");
+
+        assertThat(enrichedSite.containsKey("courtCentreAddress1"), is(false));
+        assertThat(enrichedSite.containsKey("courtCentreAddress2"), is(false));
+        assertThat(enrichedSite.containsKey("welshCourtCentreAddress1"), is(false));
+        assertThat(enrichedSite.containsKey("welshCourtCentreAddress2"), is(false));
+    }
+
+    @Test
+    void shouldReturnEmptyResponseWhenAssemblerReturnsEmpty() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
+                        .withName("listing.search.court.list.payload"),
+                createObjectBuilder()
+                        .add(COURT_CENTRE_ID, randomUUID().toString())
+                        .add(COURT_ROOM_ID, randomUUID().toString())
+                        .add(LIST_ID, PUBLIC.toString())
+                        .build());
+
+        when(hearingQueryView.getCourtListContent(query)).thenReturn(mock(JsonEnvelope.class));
+        when(standardPublicCourtListAssembler.assemble(any(JsonEnvelope.class), any(String.class), any(String.class),
+                any(CourtListType.class), any(boolean.class), any(boolean.class))).thenReturn(Optional.empty());
+
+        final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
+
+        assertThat(returnedEnvelope.payloadAsJsonObject().size(), is(0));
+    }
+
+    @Test
+    void shouldReturnWelshTemplateForOnlinePublicCourtListWhenWelsh() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
+                        .withName("listing.search.court.list.payload"),
+                createObjectBuilder()
+                        .add(COURT_CENTRE_ID, randomUUID().toString())
+                        .add(COURT_ROOM_ID, randomUUID().toString())
+                        .add(LIST_ID, ONLINE_PUBLIC.toString())
+                        .build());
+
+        when(standardPublicCourtListAssembler.assemble(any(), any(String.class), any(String.class),
+                any(CourtListType.class), any(boolean.class), any(boolean.class)))
+                .thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
+        when(referenceDataService.isHearingLanguageWelsh(any(), any(String.class))).thenReturn(Optional.of(true));
+
+        final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
+
+        assertThat(returnedEnvelope.payloadAsJsonObject().getString("templateName"), is("OnlinePublicCourtListEnglishWelsh"));
+    }
+
+    @Test
+    void shouldNotEnrichApplicationWhenDetailsNotFound() {
+        final String applicationId = "7ab2ed6a-bf9a-4539-848b-48012032c97c";
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("listing.search.hearings"),
+                createObjectBuilder().build());
+
+        final JsonEnvelope viewResponse = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("listing.search.hearings"),
+                createObjectBuilder()
+                        .add("hearings", createArrayBuilder()
+                                .add(createObjectBuilder()
+                                        .add("id", randomUUID().toString())
+                                        .add("courtApplications", createArrayBuilder()
+                                                .add(createObjectBuilder().add("id", applicationId).build())
+                                                .build())
+                                        .build())
+                                .build())
+                        .build());
+
+        when(hearingQueryView.searchHearings(query)).thenReturn(viewResponse);
+        when(progressionService.getApplicationDetails(any(JsonEnvelope.class), eq(fromString(applicationId))))
+                .thenReturn(Optional.empty());
+
+        final JsonEnvelope result = hearingQueryApi.searchHearings(query);
+
+        final JsonObject resultApplication = result.payloadAsJsonObject()
+                .getJsonArray("hearings").getJsonObject(0)
+                .getJsonArray("courtApplications").getJsonObject(0);
+        assertThat(resultApplication.containsKey("applicationTypeCode"), is(false));
+    }
+
+    @Test
+    void shouldNotEnrichApplicationWhenFetchThrowsException() {
+        final String applicationId = "170fec9f-b8a3-4e64-92ce-ed051cfd405e";
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("listing.search.hearings"),
+                createObjectBuilder().build());
+
+        final JsonEnvelope viewResponse = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("listing.search.hearings"),
+                createObjectBuilder()
+                        .add("hearings", createArrayBuilder()
+                                .add(createObjectBuilder()
+                                        .add("id", randomUUID().toString())
+                                        .add("courtApplications", createArrayBuilder()
+                                                .add(createObjectBuilder().add("id", applicationId).build())
+                                                .build())
+                                        .build())
+                                .build())
+                        .build());
+
+        when(hearingQueryView.searchHearings(query)).thenReturn(viewResponse);
+        when(progressionService.getApplicationDetails(any(JsonEnvelope.class), eq(fromString(applicationId))))
+                .thenThrow(new RuntimeException("Service unavailable"));
+
+        final JsonEnvelope result = hearingQueryApi.searchHearings(query);
+
+        final JsonObject resultApplication = result.payloadAsJsonObject()
+                .getJsonArray("hearings").getJsonObject(0)
+                .getJsonArray("courtApplications").getJsonObject(0);
+        assertThat(resultApplication.containsKey("applicationTypeCode"), is(false));
+    }
+
     private JsonObject returnAsJsonObject(final String expectedJsonPath) {
         final String payload = FileUtil.getPayload(expectedJsonPath);
         try (JsonReader jsonReader = createReader(new StringReader(payload))) {
