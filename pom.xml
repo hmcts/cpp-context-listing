@@ -99,6 +99,22 @@
 
     <dependencyManagement>
         <dependencies>
+            <!--
+              Pin json-smart to 2.4.8. The 17.104 framework line pulls json-path 2.9.0 -> json-smart
+              2.4.9 transitively (compile scope in listing-event-processor, test scope elsewhere via
+              RestPoller). json-smart 2.4.9 added an over-aggressive "Malicious payload, having non
+              natural depths" guard that wrongly rejects large-but-legitimate JSON (~64KB+), throwing
+              InvalidJsonException. This breaks any JsonPath evaluation over a >64KB document — e.g.
+              RangeSearchQueryForCourtCalendarIT, whose court-centre verify response exceeds 64KB once
+              it holds 5 hearings — and is a latent production risk in the event processor. 2.4.8 has
+              no such guard and is compatible with json-path 2.9.0 (verified). Revisit when a fixed
+              json-smart (2.5.2+) is available.
+            -->
+            <dependency>
+                <groupId>net.minidev</groupId>
+                <artifactId>json-smart</artifactId>
+                <version>2.4.8</version>
+            </dependency>
             <dependency>
                 <groupId>uk.gov.justice.services</groupId>
                 <artifactId>domain-test-dsl</artifactId>
