@@ -39,6 +39,8 @@ import uk.gov.justice.listing.events.CaseIdentifierUpdated;
 import uk.gov.justice.listing.events.CasesAddedToHearing;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
 import uk.gov.justice.listing.events.CourtListRestricted;
+import uk.gov.justice.listing.events.CrownHearingMigratedToCourtschedule;
+import uk.gov.justice.listing.events.HearingDayCourtSchedule;
 import uk.gov.justice.listing.events.CourtRoomRemovedFromHearing;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdatedV2;
@@ -151,6 +153,24 @@ class HearingAggregateTest {
 
     private static final Logger LOGGER = Logger.getLogger(HearingAggregateTest.class.getName());
 
+    @Test
+    public void shouldRaiseCrownHearingMigratedToCourtScheduleEvent() {
+        final UUID courtScheduleId = randomUUID();
+        final LocalDate hearingDate = now();
+        final List<HearingDayCourtSchedule> schedules =
+                singletonList(new HearingDayCourtSchedule(courtScheduleId, hearingDate));
+
+        final List<Object> events = hearing.raiseCrownHearingMigratedToCourtSchedule(hearingId, schedules)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(CrownHearingMigratedToCourtschedule.class));
+        final CrownHearingMigratedToCourtschedule event = (CrownHearingMigratedToCourtschedule) events.get(0);
+        assertThat(event.getHearingId(), is(hearingId));
+        assertThat(event.getHearingDayCourtSchedules(), hasSize(1));
+        assertThat(event.getHearingDayCourtSchedules().get(0).getCourtScheduleId(), is(courtScheduleId));
+        assertThat(event.getHearingDayCourtSchedules().get(0).getHearingDate(), is(hearingDate));
+    }
 
 
 

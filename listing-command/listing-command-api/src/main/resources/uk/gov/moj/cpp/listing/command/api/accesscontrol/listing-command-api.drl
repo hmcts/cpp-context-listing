@@ -203,6 +203,15 @@ rule "Command - API - Action - listing.update-hearing-day-court-schedule"
     $outcome.setSuccess(true);
 end
 
+rule "Command - API - Action - listing.migrate-crown-hearings-to-courtschedules"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.migrate-crown-hearings-to-courtschedules");
+    eval(userAndGroupProvider.isSystemUser($action))
+  then
+    $outcome.setSuccess(true);
+end
+
 rule "Command - API - Action - listing.mark-unallocated-hearing-as-duplicate"
   when
     $outcome: Outcome();

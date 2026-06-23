@@ -46,6 +46,7 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     private static final String ACTION_CREATE_LISTING_NOTE = "listing.command.create-listing-note";
     private static final String ACTION_DELETE_LISTING_NOTE = "listing.command.delete-listing-note";
     private static final String ACTION_MARK_UNALLOCATED_HEARING_AS_DUPLICATE = "listing.mark-unallocated-hearing-as-duplicate";
+    private static final String ACTION_MIGRATE_CROWN_HEARINGS_TO_COURTSCHEDULES = "listing.migrate-crown-hearings-to-courtschedules";
     private static final String ACTION_DELETE_HEARING = "listing.command.delete-hearing";
     private static final String ACTION_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING = "listing.delete-previous-hearings-and-create-next-hearing";
     private static final String ACTION_MOVE_HEARING_TO_PAST_DATE = "listing.command.move-hearing-to-past-date";
@@ -262,6 +263,26 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldNotAllowNonSystemUserToMarkUnallocatedHearingAsDuplicate() {
         final Action action = createActionFor(ACTION_MARK_UNALLOCATED_HEARING_AS_DUPLICATE);
+        given(userAndGroupProvider.isSystemUser(action)).willReturn(false);
+
+        final ExecutionResults results = executeRulesWith(action);
+
+        assertFailureOutcome(results);
+    }
+
+    @Test
+    public void shouldAllowSystemUserToMigrateCrownHearingsToCourtSchedules() {
+        final Action action = createActionFor(ACTION_MIGRATE_CROWN_HEARINGS_TO_COURTSCHEDULES);
+        given(userAndGroupProvider.isSystemUser(action)).willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldNotAllowNonSystemUserToMigrateCrownHearingsToCourtSchedules() {
+        final Action action = createActionFor(ACTION_MIGRATE_CROWN_HEARINGS_TO_COURTSCHEDULES);
         given(userAndGroupProvider.isSystemUser(action)).willReturn(false);
 
         final ExecutionResults results = executeRulesWith(action);
