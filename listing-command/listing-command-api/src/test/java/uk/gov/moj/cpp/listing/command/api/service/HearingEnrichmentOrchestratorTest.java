@@ -12,6 +12,7 @@ import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -92,7 +93,7 @@ public class HearingEnrichmentOrchestratorTest {
     @Test
     public void shouldEnrichListMagsHearing() {
         // Given
-        List<HearingListingNeeds> hearings = Arrays.asList(magistratesHearing);
+        List<HearingListingNeeds> hearings = Collections.singletonList(magistratesHearing);
 
         HearingListingNeeds withDurations = mock(HearingListingNeeds.class);
         HearingListingNeeds withHearingDays = mock(HearingListingNeeds.class);
@@ -119,10 +120,9 @@ public class HearingEnrichmentOrchestratorTest {
     @Test
     public void shouldEnrichListCrownHearing() {
         // Given
-        List<HearingListingNeeds> hearings = Arrays.asList(crownHearing);
+        List<HearingListingNeeds> hearings = Collections.singletonList(crownHearing);
 
         HearingListingNeeds withHearingDays = mock(HearingListingNeeds.class);
-        HearingListingNeeds withDurations = mock(HearingListingNeeds.class);
 
         when(hearingDaysEnrichmentService.enrichHearings(crownHearing, envelope))
                 .thenReturn(withHearingDays);
