@@ -107,7 +107,15 @@ public class HearingEnrichmentOrchestrator {
             enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration,envelope);
         } else if (JurisdictionType.CROWN.equals(jurisdictionType)) {
             LOGGER.info("Enrich update hearing for CROWN hearingid: {}", hearing.getHearingId());
-            if (!isWeekCommencingHearing(hearing) && hasCourtScheduleId(hearing)) {
+            if (isUnallocationRequest(hearing)) {
+                // CROWN unallocation: one or more hearing days have a courtScheduleId but no courtRoomId,
+                // meaning the user has removed the room assignment. Release all existing court-scheduler
+                // slots and replace all hearing days with isDraft=true sessions at the same court centre.
+                LOGGER.info("Detected CROWN unallocation for hearingId: {}", hearing.getHearingId());
+                UpdateHearingForListing withDraftSlots = courtScheduleEnrichmentService.enrichUnallocationWithDraftSlots(hearing, envelope);
+                UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(withDraftSlots, envelope);
+                enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
+            } else if (!isWeekCommencingHearing(hearing) && hasCourtScheduleId(hearing)) {
                 // CROWN with courtScheduleId submitted (hearingDays or nonDefaultDays): CourtSchedule-first
                 // flow, mirroring enrichListCourtHearing. The submitted ids ARE the chosen sessions, so we
                 // resolve them via enrichCrownCourtScheduleFirst — the pre-d62d3446 behaviour — rather than
@@ -149,7 +157,13 @@ public class HearingEnrichmentOrchestrator {
             enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration,envelope);
         } else if (JurisdictionType.CROWN.equals(jurisdictionType)) {
             LOGGER.info("Enrich update hearing for CROWN hearingid: {}", hearing.getHearingId());
-            if (!isWeekCommencingHearing(hearing) && hasCourtScheduleId(hearing)) {
+            if (isUnallocationRequest(hearing)) {
+                // CROWN unallocation — see enrichUpdateHearingForListing(hearing, envelope) for rationale.
+                LOGGER.info("Detected CROWN unallocation for hearingId: {}", hearing.getHearingId());
+                UpdateHearingForListing withDraftSlots = courtScheduleEnrichmentService.enrichUnallocationWithDraftSlots(hearing, envelope);
+                UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(withDraftSlots, envelope, courtCentreDetails);
+                enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
+            } else if (!isWeekCommencingHearing(hearing) && hasCourtScheduleId(hearing)) {
                 // courtScheduleId submitted → CourtSchedule-first flow (pre-d62d3446 behaviour).
                 // See enrichUpdateHearingForListing(hearing, envelope) for rationale.
                 UpdateHearingForListing withCourtSchedules = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
@@ -424,5 +438,26 @@ public class HearingEnrichmentOrchestrator {
 
     private static boolean anyDayIsDraft(final List<HearingDay> days) {
         return days.stream().anyMatch(d -> Boolean.TRUE.equals(d.getIsDraft()));
+    }
+
+    /**
+     * Returns {@code true} when the CROWN update payload signals an unallocation: at least one
+     * hearing day carries a {@code courtScheduleId} (it was previously booked into a session)
+     * but has no {@code courtRoomId} (the room assignment has been removed) and is not already
+     * marked as a draft session.  When this is detected, ALL hearing days should be released
+     * from the court scheduler and replaced with {@code isDraft=true} sessions.
+     */
+    private static boolean isUnallocationRequest(final UpdateHearingForListing hearing) {
+        if (!JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
+            return false;
+        }
+        final List<HearingDay> days = hearing.getHearingDays();
+        if (isEmpty(days)) {
+            return false;
+        }
+        return days.stream().anyMatch(d ->
+                nonNull(d.getCourtScheduleId())
+                        && isNull(d.getCourtRoomId())
+                        && !Boolean.TRUE.equals(d.getIsDraft()));
     }
 }

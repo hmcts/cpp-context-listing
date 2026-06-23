@@ -1023,6 +1023,151 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         }).toList();
     }
 
+    /**
+     * CROWN unallocation path: when any hearing day carries a {@code courtScheduleId} but no
+     * {@code courtRoomId} the user has removed the room assignment. We release ALL existing
+     * court-scheduler slots for this hearing and replace every hearing day with a draft
+     * ({@code isDraft=true}) session at the same court centre.
+     *
+     * <p>Steps:
+     * <ol>
+     *   <li>DELETE /hearingslots/{hearingId} — release existing booked capacity.</li>
+     *   <li>GET /hearingslots?status=DRAFT to find an anchor draft session with enough
+     *       consecutive availability (multiday path triggered when duration &gt; 360 and
+     *       jurisdiction=CROWN).</li>
+     *   <li>GET /multidaysearchandbook to atomically book N consecutive draft sessions.</li>
+     *   <li>Return the hearing with rebuilt hearing days pointing at the draft sessions.</li>
+     * </ol>
+     *
+     * <p>On any failure the original hearing is returned unchanged so the aggregate can still
+     * process the unallocation (the null-startTime guard in {@code assignHearingDaysV2} covers
+     * the draft-day case).
+     */
+    public UpdateHearingForListing enrichUnallocationWithDraftSlots(final UpdateHearingForListing hearing,
+                                                                     final JsonEnvelope envelope) {
+        final UUID hearingId = hearing.getHearingId();
+        LOGGER.info("[UNALLOC] CROWN unallocation for hearingId={}, hearingDays={}",
+                hearingId, hearing.getHearingDays().size());
+
+        // Step 1: Release existing slots (best-effort — don't fail the whole flow)
+        try {
+            hearingSlotsService.delete(hearingId);
+            LOGGER.info("[UNALLOC] Released court-scheduler slots for hearingId={}", hearingId);
+        } catch (final Exception e) {
+            LOGGER.warn("[UNALLOC] Could not release slots for hearingId={} — continuing", hearingId, e);
+        }
+
+        // Step 2: Total duration = one full court day (360 min) per hearing day
+        final int dayCount = hearing.getHearingDays().size();
+        if (dayCount == 0) {
+            LOGGER.warn("[UNALLOC] No hearing days for hearingId={}, returning unchanged", hearingId);
+            return hearing;
+        }
+        final int totalDurationMinutes = dayCount * HearingDurationEnrichmentService.MINUTES_IN_DAY;
+
+        // Step 3: Resolve ouCode for the draft-session search
+        final String ouCode;
+        try {
+            ouCode = getOrRetrieveOucode(hearing, envelope);
+        } catch (final Exception e) {
+            LOGGER.warn("[UNALLOC] Could not resolve ouCode for courtCentreId={} hearingId={} — returning unchanged",
+                    hearing.getCourtCentreId(), hearingId, e);
+            return hearing;
+        }
+        if (isBlank(ouCode)) {
+            LOGGER.warn("[UNALLOC] Empty ouCode for hearingId={}, returning unchanged", hearingId);
+            return hearing;
+        }
+
+        // Step 4: Find a draft anchor session with consecutive availability
+        final LocalDate startDate = extractFirstHearingDate(hearing);
+        if (startDate == null) {
+            LOGGER.warn("[UNALLOC] Cannot derive startDate for hearingId={}, returning unchanged", hearingId);
+            return hearing;
+        }
+        final String anchorCourtScheduleId = findDraftAnchorSession(ouCode, startDate, totalDurationMinutes);
+        if (isBlank(anchorCourtScheduleId)) {
+            LOGGER.warn("[UNALLOC] No draft anchor found for hearingId={} (ouCode={}, start={}, duration={}) — returning unchanged",
+                    hearingId, ouCode, startDate, totalDurationMinutes);
+            return hearing;
+        }
+
+        // Step 5: Atomically book N consecutive draft sessions via multiday search-and-book
+        final List<CourtSchedule> draftSessions = multiDaySearchAndBook(
+                anchorCourtScheduleId, totalDurationMinutes, hearingId.toString());
+        if (isEmpty(draftSessions)) {
+            LOGGER.warn("[UNALLOC] multiDaySearchAndBook returned no sessions for hearingId={} — returning unchanged", hearingId);
+            return hearing;
+        }
+
+        // Step 6: Build one hearing day per draft session
+        final int durationPerDay = totalDurationMinutes / draftSessions.size();
+        final List<HearingDay> draftHearingDays = draftSessions.stream().map(session ->
+                HearingDay.hearingDay()
+                        .withCourtScheduleId(fromString(session.getCourtScheduleId()))
+                        .withCourtCentreId(nonNull(session.getCourtHouseId())
+                                ? fromString(session.getCourtHouseId())
+                                : hearing.getCourtCentreId())
+                        .withHearingDate(session.getSessionDate())
+                        .withDurationMinutes(durationPerDay)
+                        .withIsDraft(true)
+                        // courtRoomId is intentionally null — draft sessions have no confirmed room
+                        .build()
+        ).toList();
+
+        LOGGER.info("[UNALLOC] Assigned {} draft session(s) for hearingId={}", draftSessions.size(), hearingId);
+
+        return UpdateHearingForListing.updateHearingForListing()
+                .withValuesFrom(hearing)
+                .withHearingDays(draftHearingDays)
+                .build();
+    }
+
+    /**
+     * Calls GET /hearingslots?status=DRAFT to find an anchor court-schedule session that has
+     * {@code totalDurationMinutes / MINUTES_IN_DAY} consecutive draft sessions available.
+     * The multiday search path on the court-scheduler side activates when
+     * {@code jurisdiction=CROWN} and {@code duration > MINUTES_IN_DAY}.
+     *
+     * @return the {@code courtScheduleId} of the anchor session, or {@code null} if none found.
+     */
+    private String findDraftAnchorSession(final String ouCode,
+                                           final LocalDate startDate,
+                                           final int totalDurationMinutes) {
+        final Map<String, String> params = new HashMap<>();
+        params.put("ouCode", ouCode);
+        params.put("sessionStartDate", startDate.toString());
+        params.put("sessionEndDate", startDate.plusMonths(6).toString());
+        params.put("status", "DRAFT");
+        params.put("jurisdiction", "CROWN");
+        params.put("courtSession", "AD");
+        params.put("panel", "ADULT");
+        params.put(DURATION_MINUTES, String.valueOf(totalDurationMinutes));
+        params.put("pageSize", "1");
+        params.put("pageNumber", "1");
+
+        final Response response = hearingSlotsService.search(params);
+        if (!isSuccess(response)) {
+            LOGGER.error("[UNALLOC] Draft slot search failed with HTTP {} for ouCode={}", response.getStatus(), ouCode);
+            return null;
+        }
+
+        final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
+        if (responseJson == null || responseJson.isEmpty()) {
+            return null;
+        }
+
+        final JsonArray slots = responseJson.getJsonArray(HEARING_SLOTS);
+        if (slots == null || slots.isEmpty()) {
+            LOGGER.info("[UNALLOC] No draft anchor sessions for ouCode={}, start={}, duration={}", ouCode, startDate, totalDurationMinutes);
+            return null;
+        }
+
+        final String courtScheduleId = slots.getJsonObject(0).getString(COURT_SCHEDULE_ID, null);
+        LOGGER.info("[UNALLOC] Draft anchor courtScheduleId={} for ouCode={}", courtScheduleId, ouCode);
+        return courtScheduleId;
+    }
+
     public UpdateHearingForListing handleCrownMultiDayExtension(final UpdateHearingForListing hearing) {
         final int totalDuration = calculateAggregatedDuration(hearing);
 
