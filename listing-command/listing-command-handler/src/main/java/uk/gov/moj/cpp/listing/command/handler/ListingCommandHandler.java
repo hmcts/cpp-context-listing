@@ -554,8 +554,18 @@ public class ListingCommandHandler {
             final Stream<Object> courtRoomEvents = courtRoomId != null ?
                     hearing.assignCourtRoom(courtRoomId, hearingId, panelFromCommand) : hearing.removeCourtRoom(hearingId);
 
-            final List<LocalDate> daysOfNonDefaultDays =  updateHearingForListing.getNonDefaultDays() == null ? emptyList(): updateHearingForListing.getNonDefaultDays().stream().filter(ndd -> ndd.getStartTime() != null).map(ndd -> ndd.getStartTime().toLocalDate()).toList();
-            final Stream<Object> hearingDayEvents = hearing.assignHearingDaysV2(hearingId, convertHearingDaysCommandToDomain(updateHearingForListing.getHearingDays()), oldCourtRoomId, courtRoomId, uk.gov.justice.core.courts.JurisdictionType.valueOf(jurisdictionType.name()), daysOfNonDefaultDays);
+            final List<LocalDate> daysOfNonDefaultDays = updateHearingForListing.getNonDefaultDays() == null ? emptyList()
+                    : updateHearingForListing.getNonDefaultDays().stream()
+                            .filter(ndd -> ndd.getStartTime() != null)
+                            .map(ndd -> ndd.getStartTime().toLocalDate()).toList();
+            // Changed court-schedule sessions are detected inside assignHearingDaysV2 by comparing
+            // the incoming courtScheduleId with the stored one, so only the explicit nonDefaultDays
+            // need to be passed here.
+            final Stream<Object> hearingDayEvents = hearing.assignHearingDaysV2(hearingId,
+                    convertHearingDaysCommandToDomain(updateHearingForListing.getHearingDays()),
+                    oldCourtRoomId, courtRoomId,
+                    uk.gov.justice.core.courts.JurisdictionType.valueOf(jurisdictionType.name()),
+                    daysOfNonDefaultDays);
 
             final Stream<Object> weekCommencingDateEvents = weekCommencingStartDate != null && weekCommencingEndDate != null ?
                     hearing.changeWeekCommencingDate(weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingId) : hearing.removeWeekCommencingDates(hearingId);

@@ -113,10 +113,13 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
             builder.withNonSittingDays(nonSittingDays);
             builder.withNonDefaultDays(nonDefaultDays);
             if (isCourtScheduleFirstResolved(updateHearingForListing)) {
-                // enrichCrownCourtScheduleFirst already produced the authoritative hearingDays
-                // (single-day: one session; multi-day: N sessions each with its own courtScheduleId + date).
-                // Overwriting here would collapse the multi-day expansion back to a startDate→endDate iteration.
+                // enrichCrownCourtScheduleFirst already produced the authoritative hearingDays for
+                // the specific day(s) being changed. We must NOT call calculateStartAndEndDates here
+                // because the builder only contains the changed day(s) — doing so would narrow
+                // startDate/endDate to just that day, causing the handler to fire StartDateChanged /
+                // EndDateChanged events that truncate the full multi-day hearing range.
                 builder.withHearingDays(updateHearingForListing.getHearingDays());
+                return builder.build();
             } else {
                 builder.withHearingDays(enrichHearingDaysForCrown(updateHearingForListing, nonSittingDays, nonDefaultDays, courtCentreDetails));
             }

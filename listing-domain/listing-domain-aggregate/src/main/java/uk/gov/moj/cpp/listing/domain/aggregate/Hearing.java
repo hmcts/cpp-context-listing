@@ -1133,10 +1133,44 @@ public class Hearing implements Aggregate {
 
             /** We are trying to preserve old room info only if there is no change in parent courtRoom */
             if (CROWN.equals(newJurisdictionType) && newParentCourtRoom != null && newParentCourtRoom.equals(oldParentCourtRoom)) {
+                // Build the set of dates that are genuinely being changed this update.
+                // Start with any explicit nonDefaultDay entries, then add days where the incoming
+                // court-schedule session (courtScheduleId) differs from the currently stored one.
+                // Days not in this set are "unchanged" and their stored courtRoom must be preserved.
+                final java.util.Set<LocalDate> allChangedDates = new java.util.HashSet<>(daysOfNonDefaultDays);
+                // Only fall back to courtScheduleId-based change detection when daysOfNonDefaultDays
+                // gives us no information. When nonDefaultDays is already populated it is the
+                // authoritative source of which days changed; skipping the comparison here prevents
+                // false positives that arise when the UI sends fresh courtScheduleIds for ALL days
+                // (including unchanged ones), which would otherwise mark every day as "changed" and
+                // collapse the Crown preservation map to empty.
+                if (daysOfNonDefaultDays.isEmpty()) {
+                    final boolean incomingHasCourtScheduleIds = hearingDaysChangedForHearing.stream()
+                            .anyMatch(hd -> hd.getCourtScheduleId() != null);
+                    if (incomingHasCourtScheduleIds) {
+                        final Map<LocalDate, UUID> existingScheduleIdsByDate = this.hearingDays.stream()
+                                .filter(hd -> hd.getHearingDate() != null)
+                                .collect(toMap(HearingDay::getHearingDate, HearingDay::getCourtScheduleId, (a, b) -> a));
+                        hearingDaysChangedForHearing.stream()
+                                .filter(hd -> hd.getCourtScheduleId() != null)
+                                .forEach(hd -> {
+                                    final LocalDate d = toLocalDate(hd);
+                                    if (d == null) return;
+                                    final UUID existingSchedId = existingScheduleIdsByDate.get(d);
+                                    // Only treat as changed when the stored day also has a scheduleId;
+                                    // if existing is null we cannot tell whether the session changed,
+                                    // so we leave the decision to daysOfNonDefaultDays.
+                                    if (existingSchedId != null
+                                            && !hd.getCourtScheduleId().equals(existingSchedId)) {
+                                        allChangedDates.add(d);
+                                    }
+                                });
+                    }
+                }
                 final Map<LocalDate, HearingDay> existingHearingDaysWithChangedRooms = this.hearingDays.stream()
                         .filter(hd -> hd.getCourtRoomId() != null) // we do not want to preserve any null courtroom
-                        .filter(hd -> !newParentCourtRoom.equals(hd.getCourtRoomId())) // The courtRoom on the parent is not the same as the one on this day
-                        .filter(hd -> !daysOfNonDefaultDays.contains(hd.getHearingDate())) // if we are right now changing this room
+                        .filter(hd -> hd.getHearingDate() != null)  // need a non-null key for the map
+                        .filter(hd -> !allChangedDates.contains(hd.getHearingDate())) // exclude days being changed right now
                         .collect(toMap(HearingDay::getHearingDate, hearingDay -> hearingDay, (hd1, hd2) -> hd2));
 
                newHearingDaysWithExistingInfo = mergePreviouslyChangedCourtRooms(newHearingDaysWithExistingInfo, existingHearingDaysWithChangedRooms);
@@ -2604,11 +2638,15 @@ public class Hearing implements Aggregate {
 
     /** When incoming days are fewer than existing, appends the missing existing days
      *  (those whose date is not already covered by the incoming update and falls within
-     *  the effective date range). When incoming &gt;= existing this is a full replacement
-     *  and {@code currentMergedDays} is returned unchanged.
+     *  the effective date range). When the merged result already covers all stored dates
+     *  this is treated as a full replacement and {@code currentMergedDays} is returned unchanged.
      *
      *  <p>When {@code newStartDate}/{@code newEndDate} are null the effective range falls back
-     *  to the min/max of the stored hearing days so all unchanged days are preserved. */
+     *  to the min/max of the stored hearing days so all unchanged days are preserved.
+     *
+     *  <p>Uses {@code this.hearingDays} directly rather than the startTime-keyed
+     *  {@code existingHearingDays} map; when startTimes are null the map collapses multiple
+     *  days to a single null-key entry, producing incorrect counts and losing existing days. */
     private List<uk.gov.justice.listing.events.HearingDay> preserveUnchangedHearingDays(
             final List<uk.gov.justice.listing.events.HearingDay> hearingDaysChangedForHearing,
             final Map<ZonedDateTime, HearingDay> existingHearingDays,
@@ -2618,18 +2656,16 @@ public class Hearing implements Aggregate {
             final List<LocalDate> daysOfNonDefaultDays,
             final UUID hearingId) {
 
-        // Incoming has same or more days than existing → full replacement, use as-is.
-        if (hearingDaysChangedForHearing.size() >= existingHearingDays.size()) {
-            return currentMergedDays;
-        }
+        // Use this.hearingDays directly to avoid null-startTime map-key collisions.
+        final List<HearingDay> allStoredDays = this.hearingDays;
 
         // Fall back to the full stored date range when no explicit range is supplied.
         final LocalDate effectiveStartDate = newStartDate != null ? newStartDate
-                : existingHearingDays.values().stream()
+                : allStoredDays.stream()
                         .map(this::toLocalDate).filter(java.util.Objects::nonNull)
                         .min(java.util.Comparator.naturalOrder()).orElse(null);
         final LocalDate effectiveEndDate = newEndDate != null ? newEndDate
-                : existingHearingDays.values().stream()
+                : allStoredDays.stream()
                         .map(this::toLocalDate).filter(java.util.Objects::nonNull)
                         .max(java.util.Comparator.naturalOrder()).orElse(null);
 
@@ -2637,12 +2673,33 @@ public class Hearing implements Aggregate {
             return currentMergedDays;
         }
 
+        // Strip any days outside the effective range (e.g. future sessions the UI sent
+        // alongside the changed day but that are not part of the stored hearing).
+        // Days with null date are kept rather than silently dropped.
+        final List<uk.gov.justice.listing.events.HearingDay> filteredCurrentDays = currentMergedDays.stream()
+                .filter(hd -> {
+                    final LocalDate d = toLocalDate(hd);
+                    return d == null || (!d.isBefore(effectiveStartDate) && !d.isAfter(effectiveEndDate));
+                })
+                .collect(java.util.stream.Collectors.toList());
+
+        // Count distinct stored dates (not the map size, which is unreliable when startTimes are null).
+        final long existingDayCount = allStoredDays.stream()
+                .map(this::toLocalDate).filter(java.util.Objects::nonNull)
+                .distinct().count();
+
+        // Merged result already covers every stored date → full replacement, nothing to append.
+        if (filteredCurrentDays.size() >= existingDayCount) {
+            return filteredCurrentDays;
+        }
+
+        // Dates already present in the incoming update.
         final java.util.Set<LocalDate> updatedDates = hearingDaysChangedForHearing.stream()
-                .map(this::toLocalDate)
-                .filter(java.util.Objects::nonNull)
+                .map(this::toLocalDate).filter(java.util.Objects::nonNull)
                 .collect(java.util.stream.Collectors.toSet());
 
-        final List<uk.gov.justice.listing.events.HearingDay> missingExistingDays = existingHearingDays.values().stream()
+        // Stored days not covered by the incoming update and within the effective range.
+        final List<uk.gov.justice.listing.events.HearingDay> missingExistingDays = allStoredDays.stream()
                 .filter(hd -> {
                     final LocalDate existingDate = toLocalDate(hd);
                     return existingDate != null
@@ -2654,10 +2711,10 @@ public class Hearing implements Aggregate {
                 .toList();
 
         if (missingExistingDays.isEmpty()) {
-            return currentMergedDays;
+            return filteredCurrentDays;
         }
 
-        final List<uk.gov.justice.listing.events.HearingDay> merged = new java.util.ArrayList<>(currentMergedDays);
+        final List<uk.gov.justice.listing.events.HearingDay> merged = new java.util.ArrayList<>(filteredCurrentDays);
         merged.addAll(missingExistingDays);
         merged.sort(java.util.Comparator.comparing(
                 uk.gov.justice.listing.events.HearingDay::getStartTime,

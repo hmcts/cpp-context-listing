@@ -8397,4 +8397,186 @@ class HearingAggregateTest {
 
         assertThat(hearing.getCurrentHearingEventState().getEstimatedMinutes(), is(expected));
     }
+
+    // ── courtScheduleId-based courtroom preservation ────────────────────────────
+
+    /**
+     * UI sends all 4 hearing days with courtScheduleIds, but only Tue has a NEW
+     * courtScheduleId.  Mon/Wed/Thu carry the SAME courtScheduleId as stored.
+     * Expected: only Tue gets the new room; Mon/Wed/Thu keep their existing rooms.
+     */
+    @Test
+    void shouldPreserveRoomsForUnchangedDaysWhenOnlyOneDayCourtScheduleChanges() {
+        final UUID crownHearingId = randomUUID();
+        final UUID parentRoomId   = randomUUID();
+        final UUID newRoomId      = randomUUID();
+
+        final UUID schedMon = randomUUID();
+        final UUID schedTue = randomUUID();    // Tue's ORIGINAL schedule id
+        final UUID schedWed = randomUUID();
+        final UUID schedThu = randomUUID();
+
+        final LocalDate mon = LocalDate.now().plusDays(1);
+        final LocalDate tue = LocalDate.now().plusDays(2);
+        final LocalDate wed = LocalDate.now().plusDays(3);
+        final LocalDate thu = LocalDate.now().plusDays(4);
+
+        // Establish the hearing with 4 days, all using parentRoomId
+        hearing.apply(HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingId(crownHearingId)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay().withHearingDate(mon).withSequence(1).withCourtScheduleId(schedMon).withCourtRoomId(parentRoomId).build(),
+                        HearingDay.hearingDay().withHearingDate(tue).withSequence(2).withCourtScheduleId(schedTue).withCourtRoomId(parentRoomId).build(),
+                        HearingDay.hearingDay().withHearingDate(wed).withSequence(3).withCourtScheduleId(schedWed).withCourtRoomId(parentRoomId).build(),
+                        HearingDay.hearingDay().withHearingDate(thu).withSequence(4).withCourtScheduleId(schedThu).withCourtRoomId(parentRoomId).build()))
+                .build());
+
+        // UI sends all 4 days; Tue has a NEW scheduleId (room changed) while others are unchanged
+        final UUID newSchedTue = randomUUID();
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> updatedDays = Arrays.asList(
+                uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay().withHearingDate(mon).withCourtScheduleId(of(schedMon)).withCourtRoomId(of(newRoomId)).build(),
+                uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay().withHearingDate(tue).withCourtScheduleId(of(newSchedTue)).withCourtRoomId(of(newRoomId)).build(),
+                uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay().withHearingDate(wed).withCourtScheduleId(of(schedWed)).withCourtRoomId(of(newRoomId)).build(),
+                uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay().withHearingDate(thu).withCourtScheduleId(of(schedThu)).withCourtRoomId(of(newRoomId)).build()
+        );
+
+        final List<Object> events = hearing.assignHearingDaysV2(
+                crownHearingId, updatedDays, parentRoomId, parentRoomId, CROWN, emptyList())
+                .collect(Collectors.toList());
+
+        final HearingDaysChangedForHearing result = events.stream()
+                .filter(e -> e instanceof HearingDaysChangedForHearing)
+                .map(HearingDaysChangedForHearing.class::cast)
+                .findFirst().orElseThrow();
+
+        final Map<LocalDate, UUID> roomByDate = result.getHearingDays().stream()
+                .collect(Collectors.toMap(HearingDay::getHearingDate, HearingDay::getCourtRoomId));
+
+        assertThat("Mon should keep existing room", roomByDate.get(mon), is(parentRoomId));
+        assertThat("Tue should get new room",       roomByDate.get(tue), is(newRoomId));
+        assertThat("Wed should keep existing room", roomByDate.get(wed), is(parentRoomId));
+        assertThat("Thu should keep existing room", roomByDate.get(thu), is(parentRoomId));
+        assertThat("All 4 days preserved",          result.getHearingDays(), hasSize(4));
+    }
+
+    /**
+     * Partial update: only 1 of 4 hearing days is sent in the update.
+     * All 4 existing days must appear in the result; the changed day uses
+     * the new room; the other 3 keep their existing rooms.
+     */
+    @Test
+    void shouldPreserveAllExistingHearingDaysWhenOnlyOneIsUpdated() {
+        final UUID crownHearingId = randomUUID();
+        final UUID parentRoomId   = randomUUID();
+        final UUID newRoomId      = randomUUID();
+
+        final UUID schedMon = randomUUID();
+        final UUID schedTue = randomUUID();
+        final UUID schedWed = randomUUID();
+        final UUID schedThu = randomUUID();
+
+        final LocalDate mon = LocalDate.now().plusDays(1);
+        final LocalDate tue = LocalDate.now().plusDays(2);
+        final LocalDate wed = LocalDate.now().plusDays(3);
+        final LocalDate thu = LocalDate.now().plusDays(4);
+
+        hearing.apply(HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingId(crownHearingId)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay().withHearingDate(mon).withSequence(1).withCourtScheduleId(schedMon).withCourtRoomId(parentRoomId).build(),
+                        HearingDay.hearingDay().withHearingDate(tue).withSequence(2).withCourtScheduleId(schedTue).withCourtRoomId(parentRoomId).build(),
+                        HearingDay.hearingDay().withHearingDate(wed).withSequence(3).withCourtScheduleId(schedWed).withCourtRoomId(parentRoomId).build(),
+                        HearingDay.hearingDay().withHearingDate(thu).withSequence(4).withCourtScheduleId(schedThu).withCourtRoomId(parentRoomId).build()))
+                .build());
+
+        // Only Tue sent in the update (new scheduleId → new room)
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> updatedDays = singletonList(
+                uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay()
+                        .withHearingDate(tue)
+                        .withCourtScheduleId(of(randomUUID()))
+                        .withCourtRoomId(of(newRoomId))
+                        .build()
+        );
+
+        final List<Object> events = hearing.assignHearingDaysV2(
+                crownHearingId, updatedDays, parentRoomId, parentRoomId, CROWN, emptyList())
+                .collect(Collectors.toList());
+
+        final HearingDaysChangedForHearing result = events.stream()
+                .filter(e -> e instanceof HearingDaysChangedForHearing)
+                .map(HearingDaysChangedForHearing.class::cast)
+                .findFirst().orElseThrow();
+
+        assertThat("All 4 days preserved", result.getHearingDays(), hasSize(4));
+
+        final Map<LocalDate, UUID> roomByDate = result.getHearingDays().stream()
+                .collect(Collectors.toMap(HearingDay::getHearingDate, HearingDay::getCourtRoomId));
+
+        assertThat("Mon keeps existing room", roomByDate.get(mon), is(parentRoomId));
+        assertThat("Tue gets new room",       roomByDate.get(tue), is(newRoomId));
+        assertThat("Wed keeps existing room", roomByDate.get(wed), is(parentRoomId));
+        assertThat("Thu keeps existing room", roomByDate.get(thu), is(parentRoomId));
+    }
+
+    /**
+     * UI sends 6 sessions (4 original + 2 future) with courtScheduleIds.
+     * The 2 future sessions are outside the existing hearing's date range and
+     * must NOT be added. The 4 original days should be preserved.
+     */
+    @Test
+    void shouldNotAddFutureSessionsOutsideExistingHearingDateRange() {
+        final UUID crownHearingId = randomUUID();
+        final UUID parentRoomId   = randomUUID();
+        final UUID newRoomId      = randomUUID();
+
+        final LocalDate mon = LocalDate.now().plusDays(1);
+        final LocalDate tue = LocalDate.now().plusDays(2);
+        final LocalDate wed = LocalDate.now().plusDays(3);
+        final LocalDate thu = LocalDate.now().plusDays(4);
+        final LocalDate fri = LocalDate.now().plusDays(8);   // outside range
+        final LocalDate sat = LocalDate.now().plusDays(9);   // outside range
+
+        final UUID schedMon = randomUUID();
+        final UUID newSchedTue = randomUUID();  // changed
+        final UUID schedWed = randomUUID();
+        final UUID schedThu = randomUUID();
+
+        hearing.apply(HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingId(crownHearingId)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay().withHearingDate(mon).withSequence(1).withCourtScheduleId(schedMon).withCourtRoomId(parentRoomId).build(),
+                        HearingDay.hearingDay().withHearingDate(tue).withSequence(2).withCourtScheduleId(randomUUID()).withCourtRoomId(parentRoomId).build(),
+                        HearingDay.hearingDay().withHearingDate(wed).withSequence(3).withCourtScheduleId(schedWed).withCourtRoomId(parentRoomId).build(),
+                        HearingDay.hearingDay().withHearingDate(thu).withSequence(4).withCourtScheduleId(schedThu).withCourtRoomId(parentRoomId).build()))
+                .build());
+
+        // UI sends 6 days including 2 future sessions outside the stored range
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> updatedDays = Arrays.asList(
+                uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay().withHearingDate(mon).withCourtScheduleId(of(schedMon)).withCourtRoomId(of(newRoomId)).build(),
+                uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay().withHearingDate(tue).withCourtScheduleId(of(newSchedTue)).withCourtRoomId(of(newRoomId)).build(),
+                uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay().withHearingDate(wed).withCourtScheduleId(of(schedWed)).withCourtRoomId(of(newRoomId)).build(),
+                uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay().withHearingDate(thu).withCourtScheduleId(of(schedThu)).withCourtRoomId(of(newRoomId)).build(),
+                uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay().withHearingDate(fri).withCourtScheduleId(of(randomUUID())).withCourtRoomId(of(newRoomId)).build(),
+                uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay().withHearingDate(sat).withCourtScheduleId(of(randomUUID())).withCourtRoomId(of(newRoomId)).build()
+        );
+
+        final List<Object> events = hearing.assignHearingDaysV2(
+                crownHearingId, updatedDays, parentRoomId, parentRoomId, CROWN, emptyList())
+                .collect(Collectors.toList());
+
+        final HearingDaysChangedForHearing result = events.stream()
+                .filter(e -> e instanceof HearingDaysChangedForHearing)
+                .map(HearingDaysChangedForHearing.class::cast)
+                .findFirst().orElseThrow();
+
+        assertThat("Only original 4 days, no extra future sessions", result.getHearingDays(), hasSize(4));
+
+        final Map<LocalDate, UUID> roomByDate = result.getHearingDays().stream()
+                .collect(Collectors.toMap(HearingDay::getHearingDate, HearingDay::getCourtRoomId));
+
+        assertThat("Mon keeps existing room", roomByDate.get(mon), is(parentRoomId));
+        assertThat("Tue gets new room",       roomByDate.get(tue), is(newRoomId));
+        assertThat("Wed keeps existing room", roomByDate.get(wed), is(parentRoomId));
+        assertThat("Thu keeps existing room", roomByDate.get(thu), is(parentRoomId));
+    }
 }
