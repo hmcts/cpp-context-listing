@@ -89,6 +89,7 @@ import uk.gov.justice.listing.events.EndDateRemovedFromHearing;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
 import uk.gov.justice.listing.events.HearingChangesSaved;
+import uk.gov.justice.listing.events.CrownHearingMigratedToCourtschedule;
 import uk.gov.justice.listing.events.HearingDayCourtSchedule;
 import uk.gov.justice.listing.events.HearingDayCourtScheduleUpdated;
 import uk.gov.justice.listing.events.HearingDaysCancelled;
@@ -260,6 +261,7 @@ public class Hearing implements Aggregate {
                 when(NonDefaultDaysAssignedToHearing.class).apply(this::onNonDefaultDaysAssignedToHearing),
                 when(HearingDaysChangedForHearing.class).apply(this::onHearingDaysChangedForHearing),
                 when(HearingDayCourtScheduleUpdated.class).apply(this::onHearingDayCourtScheduleUpdated),
+                when(CrownHearingMigratedToCourtschedule.class).apply(this::onCrownHearingMigratedToCourtSchedule),
                 when(HearingDaysCancelled.class).apply(this::onHearingDaysCancelledForHearing),
                 when(JurisdictionChangedForHearing.class).apply(this::onJurisdictionChangedForHearing),
                 when(JudiciaryAssignedToHearing.class).apply(this::onJudiciaryAssignedToHearing),
@@ -3349,8 +3351,14 @@ public class Hearing implements Aggregate {
     }
 
     private void onHearingDayCourtScheduleUpdated(final HearingDayCourtScheduleUpdated hearingDayCourtScheduleUpdated) {
-        final List<HearingDayCourtSchedule> hearingDayCourtSchedules = hearingDayCourtScheduleUpdated.getHearingDayCourtSchedules();
+        mergeCourtScheduleIdsByHearingDate(hearingDayCourtScheduleUpdated.getHearingDayCourtSchedules());
+    }
 
+    private void onCrownHearingMigratedToCourtSchedule(final CrownHearingMigratedToCourtschedule crownHearingMigratedToCourtschedule) {
+        mergeCourtScheduleIdsByHearingDate(crownHearingMigratedToCourtschedule.getHearingDayCourtSchedules());
+    }
+
+    private void mergeCourtScheduleIdsByHearingDate(final List<HearingDayCourtSchedule> hearingDayCourtSchedules) {
         if (isEmpty(hearingDayCourtSchedules) || isEmpty(hearingDays)) {
             return;
         }
@@ -3580,6 +3588,14 @@ public class Hearing implements Aggregate {
     public Stream<Object> raiseHearingDayCourtSchedulesUpdated(UUID hearingId,
                                                                List<HearingDayCourtSchedule> hearingDayCourtSchedules) {
         return apply(Stream.of(HearingDayCourtScheduleUpdated.hearingDayCourtScheduleUpdated()
+                .withHearingId(hearingId)
+                .withHearingDayCourtSchedules(hearingDayCourtSchedules)
+                .build()));
+    }
+
+    public Stream<Object> raiseCrownHearingMigratedToCourtSchedule(UUID hearingId,
+                                                                   List<HearingDayCourtSchedule> hearingDayCourtSchedules) {
+        return apply(Stream.of(CrownHearingMigratedToCourtschedule.crownHearingMigratedToCourtschedule()
                 .withHearingId(hearingId)
                 .withHearingDayCourtSchedules(hearingDayCourtSchedules)
                 .build()));

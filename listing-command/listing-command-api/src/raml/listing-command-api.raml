@@ -315,6 +315,25 @@ protocols: [ HTTP, HTTPS ]
         202:
           description: Request accepted
 
+/migrate-crown-hearings-to-courtschedules:
+   post:
+      description: |
+        Bulk-assign courtScheduleId to CROWN hearing days during court-schedule migration.
+        For each hearing, sets only the courtScheduleId on the matching hearing day; all other attributes are unchanged.
+        ...
+        (mapping):
+          requestType: application/vnd.listing.migrate-crown-hearings-to-courtschedules+json
+          name: listing.migrate-crown-hearings-to-courtschedules
+        ...
+      body:
+        application/vnd.listing.migrate-crown-hearings-to-courtschedules+json:
+            schema: !include json/schema/listing.migrate-crown-hearings-to-courtschedules.json
+            example: !include json/listing.migrate-crown-hearings-to-courtschedules.json
+
+      responses:
+        202:
+          description: Request accepted
+
 /delete-hearing/{hearingId}:
     post:
       description: |
