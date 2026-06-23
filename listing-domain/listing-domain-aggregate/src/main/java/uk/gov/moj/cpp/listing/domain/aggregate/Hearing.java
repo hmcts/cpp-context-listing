@@ -1132,48 +1132,9 @@ public class Hearing implements Aggregate {
                     mergeHearingDaySequences(hearingDaysChangedForHearing, existingHearingDays);
 
             /** We are trying to preserve old room info only if there is no change in parent courtRoom */
-            if (CROWN.equals(newJurisdictionType) && newParentCourtRoom != null && newParentCourtRoom.equals(oldParentCourtRoom)) {
-                // Build the set of dates that are genuinely being changed this update.
-                // Start with any explicit nonDefaultDay entries, then add days where the incoming
-                // court-schedule session (courtScheduleId) differs from the currently stored one.
-                // Days not in this set are "unchanged" and their stored courtRoom must be preserved.
-                final java.util.Set<LocalDate> allChangedDates = new java.util.HashSet<>(daysOfNonDefaultDays);
-                // Only fall back to courtScheduleId-based change detection when daysOfNonDefaultDays
-                // gives us no information. When nonDefaultDays is already populated it is the
-                // authoritative source of which days changed; skipping the comparison here prevents
-                // false positives that arise when the UI sends fresh courtScheduleIds for ALL days
-                // (including unchanged ones), which would otherwise mark every day as "changed" and
-                // collapse the Crown preservation map to empty.
-                if (daysOfNonDefaultDays.isEmpty()) {
-                    final boolean incomingHasCourtScheduleIds = hearingDaysChangedForHearing.stream()
-                            .anyMatch(hd -> hd.getCourtScheduleId() != null);
-                    if (incomingHasCourtScheduleIds) {
-                        final Map<LocalDate, UUID> existingScheduleIdsByDate = this.hearingDays.stream()
-                                .filter(hd -> hd.getHearingDate() != null)
-                                .collect(toMap(HearingDay::getHearingDate, HearingDay::getCourtScheduleId, (a, b) -> a));
-                        hearingDaysChangedForHearing.stream()
-                                .filter(hd -> hd.getCourtScheduleId() != null)
-                                .forEach(hd -> {
-                                    final LocalDate d = toLocalDate(hd);
-                                    if (d == null) return;
-                                    final UUID existingSchedId = existingScheduleIdsByDate.get(d);
-                                    // Only treat as changed when the stored day also has a scheduleId;
-                                    // if existing is null we cannot tell whether the session changed,
-                                    // so we leave the decision to daysOfNonDefaultDays.
-                                    if (existingSchedId != null
-                                            && !hd.getCourtScheduleId().equals(existingSchedId)) {
-                                        allChangedDates.add(d);
-                                    }
-                                });
-                    }
-                }
-                final Map<LocalDate, HearingDay> existingHearingDaysWithChangedRooms = this.hearingDays.stream()
-                        .filter(hd -> hd.getCourtRoomId() != null) // we do not want to preserve any null courtroom
-                        .filter(hd -> hd.getHearingDate() != null)  // need a non-null key for the map
-                        .filter(hd -> !allChangedDates.contains(hd.getHearingDate())) // exclude days being changed right now
-                        .collect(toMap(HearingDay::getHearingDate, hearingDay -> hearingDay, (hd1, hd2) -> hd2));
-
-               newHearingDaysWithExistingInfo = mergePreviouslyChangedCourtRooms(newHearingDaysWithExistingInfo, existingHearingDaysWithChangedRooms);
+            if (isCrownWithUnchangedParentRoom(newJurisdictionType, newParentCourtRoom, oldParentCourtRoom)) {
+                newHearingDaysWithExistingInfo = applyCrownCourtRoomPreservation(
+                        newHearingDaysWithExistingInfo, hearingDaysChangedForHearing, daysOfNonDefaultDays);
             }
 
             newHearingDaysWithExistingInfo = preserveUnchangedHearingDays(
@@ -2614,6 +2575,61 @@ public class Hearing implements Aggregate {
                         .withIsDraft(cd.getIsDraft())
                         .build())
                 .collect(toList());
+    }
+
+    private boolean isCrownWithUnchangedParentRoom(
+            final uk.gov.justice.core.courts.JurisdictionType newJurisdictionType,
+            final UUID newParentCourtRoom, final UUID oldParentCourtRoom) {
+        return CROWN.equals(newJurisdictionType)
+                && newParentCourtRoom != null
+                && newParentCourtRoom.equals(oldParentCourtRoom);
+    }
+
+    /**
+     * Restores per-day courtRoom assignments from the stored hearing days for all days that are
+     * not being changed in this update.
+     *
+     * <p>Changed dates are determined from {@code daysOfNonDefaultDays} when available.
+     * When that list is empty a fallback compares the incoming {@code courtScheduleId} against
+     * the stored one; a difference signals a session (and therefore room) change for that date.
+     */
+    private List<uk.gov.justice.listing.events.HearingDay> applyCrownCourtRoomPreservation(
+            final List<uk.gov.justice.listing.events.HearingDay> hearingDays,
+            final List<uk.gov.justice.listing.events.HearingDay> hearingDaysChangedForHearing,
+            final List<LocalDate> daysOfNonDefaultDays) {
+
+        final java.util.Set<LocalDate> allChangedDates = new java.util.HashSet<>(daysOfNonDefaultDays);
+        // Only fall back to courtScheduleId-based change detection when daysOfNonDefaultDays gives
+        // us no information. If nonDefaultDays is populated it is the authoritative source; skipping
+        // the comparison here prevents false positives when the UI sends fresh courtScheduleIds for
+        // ALL days (including unchanged ones), which would otherwise collapse the preservation map.
+        if (daysOfNonDefaultDays.isEmpty()) {
+            final boolean incomingHasCourtScheduleIds = hearingDaysChangedForHearing.stream()
+                    .anyMatch(hd -> hd.getCourtScheduleId() != null);
+            if (incomingHasCourtScheduleIds) {
+                final Map<LocalDate, UUID> existingScheduleIdsByDate = this.hearingDays.stream()
+                        .filter(hd -> hd.getHearingDate() != null)
+                        .collect(toMap(HearingDay::getHearingDate, HearingDay::getCourtScheduleId, (a, b) -> a));
+                hearingDaysChangedForHearing.stream()
+                        .filter(hd -> hd.getCourtScheduleId() != null)
+                        .forEach(hd -> {
+                            final LocalDate d = toLocalDate(hd);
+                            if (d == null) return;
+                            final UUID existingSchedId = existingScheduleIdsByDate.get(d);
+                            // Only treat as changed when the stored day also has a scheduleId;
+                            // if existing is null we cannot tell whether the session changed.
+                            if (existingSchedId != null && !hd.getCourtScheduleId().equals(existingSchedId)) {
+                                allChangedDates.add(d);
+                            }
+                        });
+            }
+        }
+        final Map<LocalDate, HearingDay> existingHearingDaysWithChangedRooms = this.hearingDays.stream()
+                .filter(hd -> hd.getCourtRoomId() != null)   // do not preserve null courtroom
+                .filter(hd -> hd.getHearingDate() != null)   // need non-null map key
+                .filter(hd -> !allChangedDates.contains(hd.getHearingDate())) // exclude days being changed
+                .collect(toMap(HearingDay::getHearingDate, hearingDay -> hearingDay, (hd1, hd2) -> hd2));
+        return mergePreviouslyChangedCourtRooms(hearingDays, existingHearingDaysWithChangedRooms);
     }
 
     private List<uk.gov.justice.listing.events.HearingDay> mergePreviouslyChangedCourtRooms(final List<uk.gov.justice.listing.events.HearingDay> hearingDaysChangedForHearing, final Map<LocalDate, HearingDay> existingHearingDays) {
