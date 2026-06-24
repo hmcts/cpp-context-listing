@@ -60,7 +60,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("java:S3776")
 public class CourtScheduleEnrichmentService implements EnrichmentService {
     private static final String HEARING_SLOTS = "hearingSlots";
-    private static final String COURT_SCHEDULE_IDS = "courtScheduleIds";
+    private static final String COURT_SCHEDULE_IDS = "ids";
     private static final String JUDICIARIES = "judiciaries";
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
     private static final String IS_DRAFT = "isDraft";
@@ -971,7 +971,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return new ArrayList<>();
         }
 
-        final JsonArray schedulesArray = responseJson.getJsonArray(COURT_SCHEDULES);
+        final JsonArray schedulesArray = responseJson.getJsonArray("sessions");
         if (schedulesArray == null || schedulesArray.isEmpty()) {
             return new ArrayList<>();
         }
@@ -1220,22 +1220,36 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         final Response searchAndBookResponse = hearingSlotsService.searchBookSlots(queryParams);
 
         if (HttpStatus.SC_OK == searchAndBookResponse.getStatus()) {
-            final JsonObject responseJson = objectToJsonObjectConverter.convert(searchAndBookResponse.getEntity()).getJsonObject(HEARING_SLOTS);
+            final JsonObject responseJson = objectToJsonObjectConverter.convert(searchAndBookResponse.getEntity());
             if (responseJson == null || responseJson.isEmpty()) {
                 LOGGER.error("searchAndBookResponse from listingCourtScheduler returned an empty response for params : {} ", queryParams);
                 return null;
             }
-            final String bookedHearingId = responseJson.getString(HEARING_ID);
-            final String bookedCourtScheduleId = responseJson.getString(COURT_SCHEDULE_ID);
-            final String bookedCourtRoomId = responseJson.getString(COURT_ROOM_ID);
-            final String bookedSessionStartTime = responseJson.getString(HEARING_START_TIME);
-            final Integer duration = responseJson.getInt("duration");
-            final Boolean isDraft = responseJson.containsKey(IS_DRAFT) && responseJson.getBoolean(IS_DRAFT);
+            final String bookedHearingId = responseJson.containsKey(HEARING_ID) && !responseJson.isNull(HEARING_ID)
+                    ? responseJson.getString(HEARING_ID) : null;
+            final JsonArray sessionsArray = responseJson.getJsonArray("sessions");
+            if (sessionsArray == null || sessionsArray.isEmpty()) {
+                LOGGER.error("searchAndBookResponse from listingCourtScheduler returned no sessions for params : {} ", queryParams);
+                return null;
+            }
+            final JsonObject sessionJson = sessionsArray.getJsonObject(0);
+            final String bookedCourtScheduleId = sessionJson.containsKey(COURT_SCHEDULE_ID) && !sessionJson.isNull(COURT_SCHEDULE_ID)
+                    ? sessionJson.getString(COURT_SCHEDULE_ID) : null;
+            final String bookedCourtRoomId = sessionJson.containsKey(COURT_ROOM_ID) && !sessionJson.isNull(COURT_ROOM_ID)
+                    ? sessionJson.getString(COURT_ROOM_ID) : null;
+            // Wire emits "sessionStartTime" (CourtSchedule.sessionStartTime) for the booked session
+            final String bookedSessionStartTime = sessionJson.containsKey("sessionStartTime") && !sessionJson.isNull("sessionStartTime")
+                    ? sessionJson.getString("sessionStartTime") : null;
+            // Duration is not in the CourtSchedule element; use durationInMinutes from the request
+            final Integer duration = durationInMinutes;
+            // Wire emits "draft" (Jackson strips is- from isDraft getter)
+            final Boolean isDraft = sessionJson.containsKey("draft") ? sessionJson.getBoolean("draft")
+                    : (sessionJson.containsKey(IS_DRAFT) ? sessionJson.getBoolean(IS_DRAFT) : Boolean.FALSE);
 
             // Extract judiciaries if present
             List<JudicialRole> judiciaries = new ArrayList<>();
-            if (responseJson.containsKey(JUDICIARIES)) {
-                final JsonArray judiciariesArray = responseJson.getJsonArray(JUDICIARIES);
+            if (sessionJson.containsKey(JUDICIARIES)) {
+                final JsonArray judiciariesArray = sessionJson.getJsonArray(JUDICIARIES);
                 if (judiciariesArray != null && !judiciariesArray.isEmpty()) {
                     for (int i = 0; i < judiciariesArray.size(); i++) {
                         JsonObject judicialRoleJson = judiciariesArray.getJsonObject(i);

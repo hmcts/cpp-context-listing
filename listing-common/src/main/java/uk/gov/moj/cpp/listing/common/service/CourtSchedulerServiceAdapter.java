@@ -337,7 +337,7 @@ public class CourtSchedulerServiceAdapter {
         }
 
         final Map<String, String> params = new HashMap<>();
-        params.put("courtScheduleIds", String.join(",", courtScheduleIds));
+        params.put("ids", String.join(",", courtScheduleIds));
 
         final Response response;
         try {
