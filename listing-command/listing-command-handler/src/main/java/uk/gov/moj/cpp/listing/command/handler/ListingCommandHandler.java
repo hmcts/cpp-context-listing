@@ -189,6 +189,7 @@ public class ListingCommandHandler {
 
     public static final String HEARING_ID = "hearingId";
     private static final String HEARING_DAY_COURT_SCHEDULES = "hearingDayCourtSchedules";
+    private static final String HEARINGS = "hearings";
     private static final String PROSECUTION_CASE = "prosecutionCase";
     public static final String OUCODE = "oucode";
 
@@ -1433,15 +1434,32 @@ public class ListingCommandHandler {
     public void updateHearingDayCourtSchedule(final JsonEnvelope commandEnvelope) throws EventStreamException {
         final JsonObject payload = commandEnvelope.payloadAsJsonObject();
         final UUID hearingId = fromString(payload.getString(HEARING_ID));
-        final List<HearingDayCourtSchedule> hearingDayCourtSchedules = new ArrayList<>();
-        payload.getJsonArray(HEARING_DAY_COURT_SCHEDULES)
-                .getValuesAs(JsonObject.class)
-                .stream()
-                .forEach(hearingDayCourtSchedule -> hearingDayCourtSchedules.add(
-                        jsonObjectConverter.convert(hearingDayCourtSchedule, HearingDayCourtSchedule.class)));
+        final List<HearingDayCourtSchedule> hearingDayCourtSchedules = toHearingDayCourtSchedules(payload);
         updateHearingEventStream(commandEnvelope,
                 hearingId,
                 hearing -> hearing.raiseHearingDayCourtSchedulesUpdated(hearingId, hearingDayCourtSchedules));
+    }
+
+    @Handles("listing.command.migrate-crown-hearings-to-courtschedules")
+    public void migrateCrownHearingsToCourtSchedules(final JsonEnvelope commandEnvelope) throws EventStreamException {
+        final JsonObject payload = commandEnvelope.payloadAsJsonObject();
+        for (final JsonObject hearing : payload.getJsonArray(HEARINGS).getValuesAs(JsonObject.class)) {
+            final UUID hearingId = fromString(hearing.getString(HEARING_ID));
+            final List<HearingDayCourtSchedule> hearingDayCourtSchedules = toHearingDayCourtSchedules(hearing);
+            final EventStream eventStream = eventSource.getStreamById(hearingId);
+            final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
+            appendEventsToStream(commandEnvelope, eventStream,
+                    hearingAggregate.raiseCrownHearingMigratedToCourtSchedule(hearingId, hearingDayCourtSchedules));
+        }
+    }
+
+    private List<HearingDayCourtSchedule> toHearingDayCourtSchedules(final JsonObject source) {
+        final List<HearingDayCourtSchedule> hearingDayCourtSchedules = new ArrayList<>();
+        source.getJsonArray(HEARING_DAY_COURT_SCHEDULES)
+                .getValuesAs(JsonObject.class)
+                .forEach(hearingDayCourtSchedule -> hearingDayCourtSchedules.add(
+                        jsonObjectConverter.convert(hearingDayCourtSchedule, HearingDayCourtSchedule.class)));
+        return hearingDayCourtSchedules;
     }
 
     @Handles("listing.command.update-cps-prosecutor-with-associated-hearings")
