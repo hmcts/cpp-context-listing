@@ -107,7 +107,15 @@ public class HearingEnrichmentOrchestrator {
             enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration,envelope);
         } else if (JurisdictionType.CROWN.equals(jurisdictionType)) {
             LOGGER.info("Enrich update hearing for CROWN hearingid: {}", hearing.getHearingId());
-            if (!isWeekCommencingHearing(hearing) && hasCourtScheduleId(hearing)) {
+            if (isUnallocationRequest(hearing)) {
+                // CROWN unallocation: one or more hearing days have a courtScheduleId but no courtRoomId,
+                // meaning the user has removed the room assignment. Release all existing court-scheduler
+                // slots and replace all hearing days with isDraft=true sessions at the same court centre.
+                LOGGER.info("Detected CROWN unallocation for hearingId: {}", hearing.getHearingId());
+                UpdateHearingForListing withDraftSlots = courtScheduleEnrichmentService.enrichUnallocationWithDraftSlots(hearing, envelope);
+                UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(withDraftSlots, envelope);
+                enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
+            } else if (!isWeekCommencingHearing(hearing) && hasCourtScheduleId(hearing)) {
                 // CROWN with courtScheduleId submitted (hearingDays or nonDefaultDays): CourtSchedule-first
                 // flow, mirroring enrichListCourtHearing. The submitted ids ARE the chosen sessions, so we
                 // resolve them via enrichCrownCourtScheduleFirst — the pre-d62d3446 behaviour — rather than
@@ -149,7 +157,13 @@ public class HearingEnrichmentOrchestrator {
             enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration,envelope);
         } else if (JurisdictionType.CROWN.equals(jurisdictionType)) {
             LOGGER.info("Enrich update hearing for CROWN hearingid: {}", hearing.getHearingId());
-            if (!isWeekCommencingHearing(hearing) && hasCourtScheduleId(hearing)) {
+            if (isUnallocationRequest(hearing)) {
+                // CROWN unallocation — see enrichUpdateHearingForListing(hearing, envelope) for rationale.
+                LOGGER.info("Detected CROWN unallocation for hearingId: {}", hearing.getHearingId());
+                UpdateHearingForListing withDraftSlots = courtScheduleEnrichmentService.enrichUnallocationWithDraftSlots(hearing, envelope);
+                UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(withDraftSlots, envelope, courtCentreDetails);
+                enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
+            } else if (!isWeekCommencingHearing(hearing) && hasCourtScheduleId(hearing)) {
                 // courtScheduleId submitted → CourtSchedule-first flow (pre-d62d3446 behaviour).
                 // See enrichUpdateHearingForListing(hearing, envelope) for rationale.
                 UpdateHearingForListing withCourtSchedules = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
@@ -424,5 +438,40 @@ public class HearingEnrichmentOrchestrator {
 
     private static boolean anyDayIsDraft(final List<HearingDay> days) {
         return days.stream().anyMatch(d -> Boolean.TRUE.equals(d.getIsDraft()));
+    }
+
+    /**
+     * Returns {@code true} when the CROWN update payload signals an unallocation of a multi-day
+     * hearing:
+     * <ul>
+     *   <li>There are at least two hearing days (a multi-day hearing).</li>
+     *   <li>EVERY hearing day has a {@code courtScheduleId} — the hearing was previously fully
+     *       allocated with a confirmed session on every day.</li>
+     *   <li>At least one of those days has no {@code courtRoomId} and is not already a draft
+     *       session — the room assignment is being cleared (unallocated).</li>
+     * </ul>
+     *
+     * <p>A new-allocation payload only has {@code courtScheduleId} on the days the user
+     * explicitly selected, so partial coverage (not all days) naturally falls into the
+     * CourtSchedule-first path instead. Single-day CROWN hearings follow the same path without
+     * an additional NPE risk because {@code assignHearingDaysV2} already filters null
+     * {@code startTime} keys.
+     */
+    private static boolean isUnallocationRequest(final UpdateHearingForListing hearing) {
+        if (!JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
+            return false;
+        }
+        final List<HearingDay> days = hearing.getHearingDays();
+        if (isEmpty(days) || days.size() < 2) {
+            return false;
+        }
+        // ALL days must have a courtScheduleId (hearing was fully allocated)
+        final boolean allDaysBooked = days.stream().allMatch(d -> nonNull(d.getCourtScheduleId()));
+        if (!allDaysBooked) {
+            return false;
+        }
+        // At least one day has no room (unallocation signal) and isn't already draft
+        return days.stream().anyMatch(d ->
+                isNull(d.getCourtRoomId()) && !Boolean.TRUE.equals(d.getIsDraft()));
     }
 }
