@@ -441,23 +441,37 @@ public class HearingEnrichmentOrchestrator {
     }
 
     /**
-     * Returns {@code true} when the CROWN update payload signals an unallocation: at least one
-     * hearing day carries a {@code courtScheduleId} (it was previously booked into a session)
-     * but has no {@code courtRoomId} (the room assignment has been removed) and is not already
-     * marked as a draft session.  When this is detected, ALL hearing days should be released
-     * from the court scheduler and replaced with {@code isDraft=true} sessions.
+     * Returns {@code true} when the CROWN update payload signals an unallocation of a multi-day
+     * hearing:
+     * <ul>
+     *   <li>There are at least two hearing days (a multi-day hearing).</li>
+     *   <li>EVERY hearing day has a {@code courtScheduleId} — the hearing was previously fully
+     *       allocated with a confirmed session on every day.</li>
+     *   <li>At least one of those days has no {@code courtRoomId} and is not already a draft
+     *       session — the room assignment is being cleared (unallocated).</li>
+     * </ul>
+     *
+     * <p>A new-allocation payload only has {@code courtScheduleId} on the days the user
+     * explicitly selected, so partial coverage (not all days) naturally falls into the
+     * CourtSchedule-first path instead. Single-day CROWN hearings follow the same path without
+     * an additional NPE risk because {@code assignHearingDaysV2} already filters null
+     * {@code startTime} keys.
      */
     private static boolean isUnallocationRequest(final UpdateHearingForListing hearing) {
         if (!JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
             return false;
         }
         final List<HearingDay> days = hearing.getHearingDays();
-        if (isEmpty(days)) {
+        if (isEmpty(days) || days.size() < 2) {
             return false;
         }
+        // ALL days must have a courtScheduleId (hearing was fully allocated)
+        final boolean allDaysBooked = days.stream().allMatch(d -> nonNull(d.getCourtScheduleId()));
+        if (!allDaysBooked) {
+            return false;
+        }
+        // At least one day has no room (unallocation signal) and isn't already draft
         return days.stream().anyMatch(d ->
-                nonNull(d.getCourtScheduleId())
-                        && isNull(d.getCourtRoomId())
-                        && !Boolean.TRUE.equals(d.getIsDraft()));
+                isNull(d.getCourtRoomId()) && !Boolean.TRUE.equals(d.getIsDraft()));
     }
 }
