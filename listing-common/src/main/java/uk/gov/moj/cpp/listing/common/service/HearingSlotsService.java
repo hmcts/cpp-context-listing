@@ -80,6 +80,9 @@ public class HearingSlotsService {
     }
 
     public Response extendMultiDayHearing(final JsonObject payload) {
+        if (payload == null || payload.isEmpty()) {
+            throw new DataValidationException("Payload for %s is null or empty ....".formatted(COURTSCHEDULER_EXTEND_MULTIDAY));
+        }
         final String hearingId = payload.getString("hearingId");
         return patch(HEARINGS_RESOURCE + "/" + hearingId, COURTSCHEDULER_EXTEND_MULTIDAY, payload);
     }

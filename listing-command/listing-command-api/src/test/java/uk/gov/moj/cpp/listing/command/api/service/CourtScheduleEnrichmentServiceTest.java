@@ -668,7 +668,7 @@ class CourtScheduleEnrichmentServiceTest {
         final CourtSchedule cs3 = buildCourtSchedule(courtScheduleId3, courtRoomId, courtHouseId, day1.plusDays(2), false);
 
         final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
-                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
                         .add(buildCsJson(cs1))
                         .add(buildCsJson(cs2))
                         .add(buildCsJson(cs3)))
@@ -767,7 +767,7 @@ class CourtScheduleEnrichmentServiceTest {
         cs3.setSessionStartTime(Date.from(day1.plusDays(2).atTime(10, 0).toInstant(ZoneOffset.UTC)));
 
         final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
-                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
                         .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId1.toString()).build())
                         .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId2.toString()).build())
                         .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId3.toString()).build()))
@@ -844,7 +844,7 @@ class CourtScheduleEnrichmentServiceTest {
 
         // Mock multiDaySearchAndBook returning empty
         final JsonObject emptyResponseJson = JsonObjects.createObjectBuilder()
-                .add("courtSchedules", JsonObjects.createArrayBuilder())
+                .add("sessions", JsonObjects.createArrayBuilder())
                 .build();
 
         final Response multiDayResponse = mock(Response.class);
@@ -894,7 +894,7 @@ class CourtScheduleEnrichmentServiceTest {
         final CourtSchedule cs3 = buildCourtSchedule(courtScheduleId3, courtRoomId, courtHouseId, day1.plusDays(2), false);
 
         final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
-                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
                         .add(buildCsJson(cs1))
                         .add(buildCsJson(cs2))
                         .add(buildCsJson(cs3)))
@@ -1307,7 +1307,7 @@ class CourtScheduleEnrichmentServiceTest {
         final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, day1.plusDays(1), false);
 
         final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
-                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
                         .add(buildCsJson(cs1))
                         .add(buildCsJson(cs2)))
                 .build();
@@ -1393,7 +1393,7 @@ class CourtScheduleEnrichmentServiceTest {
         cs2.setSessionStartTime(Date.from(day1.plusDays(1).atTime(10, 0).toInstant(ZoneOffset.UTC)));
 
         final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
-                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
                         .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId1.toString()).build())
                         .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId2.toString()).build()))
                 .build();
@@ -1457,7 +1457,7 @@ class CourtScheduleEnrichmentServiceTest {
 
         // Mock multiDaySearchAndBook returning empty
         final JsonObject emptyResponseJson = JsonObjects.createObjectBuilder()
-                .add("courtSchedules", JsonObjects.createArrayBuilder())
+                .add("sessions", JsonObjects.createArrayBuilder())
                 .build();
 
         final Response multiDayResponse = mock(Response.class);
@@ -1496,7 +1496,7 @@ class CourtScheduleEnrichmentServiceTest {
         final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, day1.plusDays(1), true);
 
         final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
-                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
                         .add(buildCsJson(cs1))
                         .add(buildCsJson(cs2)))
                 .build();
@@ -3133,7 +3133,7 @@ class CourtScheduleEnrichmentServiceTest {
         final CourtSchedule cs3 = buildCourtSchedule(courtScheduleId3, courtRoomId, courtHouseId, day1.plusDays(2), false);
 
         final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
-                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
                         .add(buildCsJson(cs1))
                         .add(buildCsJson(cs2))
                         .add(buildCsJson(cs3)))
@@ -3296,7 +3296,7 @@ class CourtScheduleEnrichmentServiceTest {
         final CourtSchedule cs3 = buildCourtSchedule(courtScheduleId3, courtRoomId, courtHouseId, day1.plusDays(2), false);
 
         final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
-                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
                         .add(buildCsJson(cs1))
                         .add(buildCsJson(cs2))
                         .add(buildCsJson(cs3)))
@@ -3499,7 +3499,7 @@ class CourtScheduleEnrichmentServiceTest {
         final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, day1.plusDays(1), false);
 
         final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
-                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
                         .add(buildCsJson(cs1))
                         .add(buildCsJson(cs2)))
                 .build();
@@ -3585,7 +3585,7 @@ class CourtScheduleEnrichmentServiceTest {
         final CourtSchedule cs3 = buildCourtSchedule(UUID.randomUUID(), courtRoomId, courtHouseId, day1.plusDays(2), false);
 
         final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
-                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
                         .add(buildCsJson(cs1))
                         .add(buildCsJson(cs2))
                         .add(buildCsJson(cs3)))
