@@ -859,7 +859,7 @@ public class CourtSchedulerServiceStub {
 
         stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
                 .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
-                .withRequestBody(containing("hearings"))
+                .withRequestBody(containing("hearingSlots"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -908,7 +908,7 @@ public class CourtSchedulerServiceStub {
 
         stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
                 .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
-                .withRequestBody(containing("hearings"))
+                .withRequestBody(containing("hearingSlots"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -969,7 +969,7 @@ public class CourtSchedulerServiceStub {
 
         stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
                 .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
-                .withRequestBody(containing("hearings"))
+                .withRequestBody(containing("hearingSlots"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload.toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -996,7 +996,7 @@ public class CourtSchedulerServiceStub {
 
         stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
                 .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
-                .withRequestBody(containing("hearings"))
+                .withRequestBody(containing("hearingSlots"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1077,7 +1077,7 @@ public class CourtSchedulerServiceStub {
 
         stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
                 .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
-                .withRequestBody(containing("hearings"))
+                .withRequestBody(containing("hearingSlots"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(hearingsJson.toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1157,7 +1157,7 @@ public class CourtSchedulerServiceStub {
 
         stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
                 .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
-                .withRequestBody(containing("hearings"))
+                .withRequestBody(containing("hearingSlots"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(hearingsJson.toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1196,7 +1196,7 @@ public class CourtSchedulerServiceStub {
 
         stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
                 .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
-                .withRequestBody(containing("hearings"))
+                .withRequestBody(containing("hearingSlots"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
