@@ -60,7 +60,10 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("java:S3776")
 public class CourtScheduleEnrichmentService implements EnrichmentService {
     private static final String HEARING_SLOTS = "hearingSlots";
-    private static final String COURT_SCHEDULE_IDS = "ids";
+    // Body key for the list.hearings-in-sessions request (hearingSlots[].courtScheduleIds).
+    private static final String COURT_SCHEDULE_IDS = "courtScheduleIds";
+    // Query-param name for the GET /sessions search-by-id call (distinct from the body key above).
+    private static final String IDS_PARAM = "ids";
     private static final String JUDICIARIES = "judiciaries";
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
     private static final String IS_DRAFT = "isDraft";
@@ -275,7 +278,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             final List<CourtSchedule> sessions = multiDaySearchAndBook(
                     firstDay.getCourtScheduleId().toString(),
                     totalDuration,
-                    hearing.getHearingId().toString());
+                    hearing.getHearingId().toString(),
+                    hearing.getCourtCentreId() != null ? hearing.getCourtCentreId().toString() : firstDay.getCourtScheduleId().toString(),
+                    firstDay.getHearingDate() != null ? firstDay.getHearingDate().toString() : LocalDate.now().toString());
 
             if (isEmpty(sessions)) {
                 LOGGER.warn("CROWN multi-day update: no sessions found for hearingId {}.", hearing.getHearingId());
@@ -834,10 +839,21 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
         // Use aggregatedDuration (bookedSlots / hearingDays / nonDefaultDays sum) not estimatedMinutes —
         // UI has been observed to submit a stale estimatedMinutes that would pick the wrong slot count.
+        final RotaSlot anchorSlot = hearing.getBookedSlots().get(0);
+        final String anchorCourtCentreId = anchorSlot.getCourtCentreId() != null
+                ? anchorSlot.getCourtCentreId()
+                : (hearing.getCourtCentre() != null && hearing.getCourtCentre().getId() != null
+                        ? hearing.getCourtCentre().getId().toString() : "");
+        final String anchorHearingDate = anchorSlot.getStartTime() != null
+                ? anchorSlot.getStartTime().toLocalDate().toString()
+                : (isNotEmpty(hearing.getHearingDays()) && hearing.getHearingDays().get(0).getHearingDate() != null
+                        ? hearing.getHearingDays().get(0).getHearingDate().toString() : LocalDate.now().toString());
         final List<CourtSchedule> sessions = multiDaySearchAndBook(
                 anchorCourtScheduleId,
                 aggregatedDuration,
-                hearing.getId().toString());
+                hearing.getId().toString(),
+                anchorCourtCentreId,
+                anchorHearingDate);
 
         if (isEmpty(sessions)) {
             LOGGER.warn("CROWN multi-day: no consecutive sessions found for hearingId {}. Unallocated.", hearing.getId());
@@ -929,7 +945,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
     private List<CourtSchedule> fetchCourtSchedulesByIds(final List<String> courtScheduleIds) {
         final Map<String, String> params = new HashMap<>();
-        params.put(COURT_SCHEDULE_IDS, String.join(",", courtScheduleIds));
+        params.put(IDS_PARAM, String.join(",", courtScheduleIds));
         final Response response = hearingSlotsService.getCourtSchedulesById(params);
 
         if (!isSuccess(response)) {
@@ -955,11 +971,13 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         return schedules;
     }
 
-    private List<CourtSchedule> multiDaySearchAndBook(final String courtScheduleId, final Integer durationInMinutes, final String hearingId) {
+    private List<CourtSchedule> multiDaySearchAndBook(final String courtScheduleId, final Integer durationInMinutes, final String hearingId, final String courtCentreId, final String hearingDate) {
         final Map<String, String> params = new HashMap<>();
         params.put(COURT_SCHEDULE_ID, courtScheduleId);
         params.put(DURATION_MINUTES, String.valueOf(durationInMinutes));
         params.put(HEARING_ID, hearingId);
+        params.put(COURT_CENTRE_ID, courtCentreId);
+        params.put(HEARING_DATE, hearingDate);
         final Response response = hearingSlotsService.multiDaySearchAndBook(params);
 
         if (!isSuccess(response)) {
