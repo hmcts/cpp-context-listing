@@ -251,25 +251,7 @@ public class HearingSlotsService {
             }
             httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
             httpPost.setEntity(new StringEntity(payload.toString()));
-
-            final HttpResponse httpResponse = execute(httpPost);
-            final String responseBody = httpResponse.getEntity() == null ? "" : EntityUtils.toString(httpResponse.getEntity());
-            final Object entity = responseBody == null || responseBody.isBlank()
-                    ? Json.createObjectBuilder().build()
-                    : stringToJsonObjectConverter.convert(responseBody);
-
-            final int statusCode = httpResponse.getStatusLine().getStatusCode();
-            if (isOk(httpResponse)) {
-                if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info("Retrieve {} successfully", contentTypeHeader);
-                }
-            } else {
-                LOGGER.error("Retrieve {} failed with status code:{}", contentTypeHeader, statusCode);
-            }
-            return Response
-                    .status(statusCode)
-                    .entity(entity)
-                    .build();
+            return executeAndBuildResponse(httpPost, contentTypeHeader, "POST");
         } catch (URISyntaxException | IOException ex) {
             LOGGER.error("Exception thrown on trying to Retrieving %s".formatted(contentTypeHeader), ex);
             return Response
@@ -291,25 +273,7 @@ public class HearingSlotsService {
             httpPatch.addHeader(CONTENT_TYPE, contentTypeHeader);
             httpPatch.addHeader(CJS_CPP_UID, getUserId().toString());
             httpPatch.setEntity(new StringEntity(payload.toString()));
-
-            final HttpResponse httpResponse = execute(httpPatch);
-            final String responseBody = httpResponse.getEntity() == null ? "" : EntityUtils.toString(httpResponse.getEntity());
-            final Object entity = responseBody == null || responseBody.isBlank()
-                    ? Json.createObjectBuilder().build()
-                    : stringToJsonObjectConverter.convert(responseBody);
-
-            final int statusCode = httpResponse.getStatusLine().getStatusCode();
-            if (isOk(httpResponse)) {
-                if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info("PATCH {} successfully", contentTypeHeader);
-                }
-            } else {
-                LOGGER.error("PATCH {} failed with status code:{}", contentTypeHeader, statusCode);
-            }
-            return Response
-                    .status(statusCode)
-                    .entity(entity)
-                    .build();
+            return executeAndBuildResponse(httpPatch, contentTypeHeader, "PATCH");
         } catch (URISyntaxException | IOException ex) {
             LOGGER.error("Exception thrown on trying to PATCH %s".formatted(contentTypeHeader), ex);
             return Response
@@ -333,7 +297,33 @@ public class HearingSlotsService {
             throw new DataValidationException("hearingId missing from params for %s".formatted(contentTypeHeader));
         }
 
-        // Build typed JSON body from params (hearingId always included)
+        final JsonObject payload = buildTypedJsonBody(params);
+
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("{} POST /hearings/{} in CourtScheduler S & L with payload '{}'", contentTypeHeader, hearingId, payload);
+        }
+
+        try {
+            final HttpPost httpPost = new HttpPost(new URIBuilder(baseUri + HEARINGS_RESOURCE + "/" + hearingId).build());
+            httpPost.addHeader(CONTENT_TYPE, contentTypeHeader);
+            httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
+            httpPost.setEntity(new StringEntity(payload.toString()));
+            return executeAndBuildResponse(httpPost, contentTypeHeader, "POST");
+        } catch (URISyntaxException | IOException ex) {
+            LOGGER.error("Exception thrown on trying to POST %s".formatted(contentTypeHeader), ex);
+            return Response
+                    .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+                    .entity(ex.getMessage())
+                    .build();
+        }
+    }
+
+    /**
+     * Builds a typed JSON body from a params map. Converts "durationInMinutes" values to JSON numbers
+     * and "isPolice" values to JSON booleans; all other entries are added as strings.
+     * Null values are silently omitted.
+     */
+    static JsonObject buildTypedJsonBody(final Map<String, String> params) {
         final javax.json.JsonObjectBuilder bodyBuilder = Json.createObjectBuilder();
         params.forEach((key, value) -> {
             if (value == null) {
@@ -351,42 +341,34 @@ public class HearingSlotsService {
                 bodyBuilder.add(key, value);
             }
         });
-        final JsonObject payload = bodyBuilder.build();
+        return bodyBuilder.build();
+    }
 
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("{} POST /hearings/{} in CourtScheduler S & L with payload '{}'", contentTypeHeader, hearingId, payload);
-        }
+    /**
+     * Executes an already-configured HTTP request and builds a JAX-RS Response from the outcome.
+     * Logs success or failure at INFO/ERROR respectively. On IOException or URISyntaxException
+     * the caller's catch block handles the 500 — this method only handles the execute + response
+     * building path (no try/catch here).
+     */
+    private Response executeAndBuildResponse(final HttpRequestBase request, final String contentTypeHeader, final String method)
+            throws IOException {
+        final HttpResponse httpResponse = execute(request);
+        final String responseBody = httpResponse.getEntity() == null ? "" : EntityUtils.toString(httpResponse.getEntity());
+        final Object entity = responseBody == null || responseBody.isBlank()
+                ? Json.createObjectBuilder().build()
+                : stringToJsonObjectConverter.convert(responseBody);
 
-        try {
-            final HttpPost httpPost = new HttpPost(new URIBuilder(baseUri + HEARINGS_RESOURCE + "/" + hearingId).build());
-            httpPost.addHeader(CONTENT_TYPE, contentTypeHeader);
-            httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
-            httpPost.setEntity(new StringEntity(payload.toString()));
-
-            final HttpResponse httpResponse = execute(httpPost);
-            final String responseBody = httpResponse.getEntity() == null ? "" : EntityUtils.toString(httpResponse.getEntity());
-            final Object entity = responseBody == null || responseBody.isBlank()
-                    ? Json.createObjectBuilder().build()
-                    : stringToJsonObjectConverter.convert(responseBody);
-
-            final int statusCode = httpResponse.getStatusLine().getStatusCode();
-            if (isOk(httpResponse)) {
-                if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info("POST {} successfully", contentTypeHeader);
-                }
-            } else {
-                LOGGER.error("POST {} failed with status code:{}", contentTypeHeader, statusCode);
+        final int statusCode = httpResponse.getStatusLine().getStatusCode();
+        if (isOk(httpResponse)) {
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("{} {} successfully", method, contentTypeHeader);
             }
-            return Response
-                    .status(statusCode)
-                    .entity(entity)
-                    .build();
-        } catch (URISyntaxException | IOException ex) {
-            LOGGER.error("Exception thrown on trying to POST %s".formatted(contentTypeHeader), ex);
-            return Response
-                    .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-                    .entity(ex.getMessage())
-                    .build();
+        } else {
+            LOGGER.error("{} {} failed with status code:{}", method, contentTypeHeader, statusCode);
         }
+        return Response
+                .status(statusCode)
+                .entity(entity)
+                .build();
     }
 }

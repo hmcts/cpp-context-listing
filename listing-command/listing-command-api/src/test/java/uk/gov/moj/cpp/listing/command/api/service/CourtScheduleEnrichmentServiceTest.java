@@ -5235,4 +5235,191 @@ class CourtScheduleEnrichmentServiceTest {
         // Court centre should NOT have been updated — the enriched day has no courtRoomId
         assertThat(result.getCourtCentre().getRoomId(), is(existingRoomId));
     }
+
+    // ─── searchAndBookSlots coverage tests ──────────────────────────────
+
+    @Test
+    void searchAndBookShouldReturnNullWhenSessionsArrayIsEmpty() {
+        final String hearingId = "5416c10a-0cf1-49d5-a7c9-5761ff3bdf2c";
+        final String ouCode = "OU12345";
+        final String hearingSessionDate = LocalDate.now().toString();
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String hearingSessionDateSearchCutOff = LocalDate.now().plusDays(7).toString();
+        final String sessionStartTime = LocalDate.now().toString();
+        final Integer durationInMinutes = 20;
+
+        // sessions[] is empty — should return null
+        final javax.json.JsonObject emptySessionsResponse = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId)
+                .add("sessions", javax.json.Json.createArrayBuilder())
+                .build();
+
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(emptySessionsResponse);
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(emptySessionsResponse);
+
+        final uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse result = courtScheduleEnrichmentService
+                .searchAndBookSlots(hearingId, ouCode, hearingSessionDate, courtRoomId, hearingSessionDateSearchCutOff, sessionStartTime, durationInMinutes, true);
+
+        assertNull(result);
+    }
+
+    @Test
+    void searchAndBookShouldReturnNullWhenResponseIsNotOk() {
+        final String hearingId = "5416c10a-0cf1-49d5-a7c9-5761ff3bdf2c";
+        final String ouCode = "OU12345";
+        final String hearingSessionDate = LocalDate.now().toString();
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String hearingSessionDateSearchCutOff = LocalDate.now().plusDays(7).toString();
+        final String sessionStartTime = LocalDate.now().toString();
+        final Integer durationInMinutes = 20;
+
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_NOT_FOUND);
+
+        final uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse result = courtScheduleEnrichmentService
+                .searchAndBookSlots(hearingId, ouCode, hearingSessionDate, courtRoomId, hearingSessionDateSearchCutOff, sessionStartTime, durationInMinutes, true);
+
+        assertNull(result);
+    }
+
+    @Test
+    void searchAndBookShouldReadDraftFieldFromSessionsArray() {
+        final String hearingId = "5416c10a-0cf1-49d5-a7c9-5761ff3bdf2c";
+        final String ouCode = "OU12345";
+        final String hearingSessionDate = LocalDate.now().toString();
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String hearingSessionDateSearchCutOff = LocalDate.now().plusDays(7).toString();
+        final String sessionStartTime = "2020-05-26T09:00:00Z";
+        final Integer durationInMinutes = 20;
+
+        // "draft" field (Jackson strips "is" prefix) should be used when present
+        final javax.json.JsonObject responseWithDraftField = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId)
+                .add("sessions", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("courtScheduleId", "23681024-8eac-4890-8c44-4651ad48cb24")
+                                .add("courtRoomId", courtRoomId)
+                                .add("sessionStartTime", sessionStartTime)
+                                .add("draft", true)))
+                .build();
+
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(responseWithDraftField);
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(responseWithDraftField);
+
+        final uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse result = courtScheduleEnrichmentService
+                .searchAndBookSlots(hearingId, ouCode, hearingSessionDate, courtRoomId, hearingSessionDateSearchCutOff, sessionStartTime, durationInMinutes, true);
+
+        assertThat(result, not(nullValue()));
+        assertTrue(result.isDraft());
+    }
+
+    @Test
+    void searchAndBookShouldReadIsDraftFieldWhenDraftFieldAbsent() {
+        final String hearingId = "5416c10a-0cf1-49d5-a7c9-5761ff3bdf2c";
+        final String ouCode = "OU12345";
+        final String hearingSessionDate = LocalDate.now().toString();
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String hearingSessionDateSearchCutOff = LocalDate.now().plusDays(7).toString();
+        final String sessionStartTime = "2020-05-26T09:00:00Z";
+        final Integer durationInMinutes = 20;
+
+        // "isDraft" field used as fallback when "draft" is absent
+        final javax.json.JsonObject responseWithIsDraftField = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId)
+                .add("sessions", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("courtScheduleId", "23681024-8eac-4890-8c44-4651ad48cb24")
+                                .add("courtRoomId", courtRoomId)
+                                .add("sessionStartTime", sessionStartTime)
+                                .add("isDraft", false)))
+                .build();
+
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(responseWithIsDraftField);
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(responseWithIsDraftField);
+
+        final uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse result = courtScheduleEnrichmentService
+                .searchAndBookSlots(hearingId, ouCode, hearingSessionDate, courtRoomId, hearingSessionDateSearchCutOff, sessionStartTime, durationInMinutes, false);
+
+        assertThat(result, not(nullValue()));
+        assertThat(result.isDraft(), is(false));
+    }
+
+    @Test
+    void searchAndBookShouldExtractJudiciariesFromSession() {
+        final String hearingId = "5416c10a-0cf1-49d5-a7c9-5761ff3bdf2c";
+        final String ouCode = "OU12345";
+        final String hearingSessionDate = LocalDate.now().toString();
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String hearingSessionDateSearchCutOff = LocalDate.now().plusDays(7).toString();
+        final String sessionStartTime = "2020-05-26T09:00:00Z";
+        final Integer durationInMinutes = 20;
+
+        final String judicialId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+        final javax.json.JsonObject responseWithJudiciary = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId)
+                .add("sessions", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("courtScheduleId", "23681024-8eac-4890-8c44-4651ad48cb24")
+                                .add("courtRoomId", courtRoomId)
+                                .add("sessionStartTime", sessionStartTime)
+                                .add("draft", false)
+                                .add("judiciaries", javax.json.Json.createArrayBuilder()
+                                        .add(javax.json.Json.createObjectBuilder()
+                                                .add("judiciaryId", judicialId)
+                                                .add("judiciaryType", "DISTRICT_JUDGE")
+                                                .add("deputy", false)
+                                                .add("benchChairman", true)))))
+                .build();
+
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(responseWithJudiciary);
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(responseWithJudiciary);
+
+        final uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse result = courtScheduleEnrichmentService
+                .searchAndBookSlots(hearingId, ouCode, hearingSessionDate, courtRoomId, hearingSessionDateSearchCutOff, sessionStartTime, durationInMinutes, true);
+
+        assertThat(result, not(nullValue()));
+        assertThat(result.judiciaries().size(), is(1));
+        assertThat(result.judiciaries().get(0).getJudicialId().toString(), is(judicialId));
+    }
+
+    @Test
+    void searchAndBookShouldReturnEmptyJudiciariesWhenAbsent() {
+        final String hearingId = "5416c10a-0cf1-49d5-a7c9-5761ff3bdf2c";
+        final String ouCode = "OU12345";
+        final String hearingSessionDate = LocalDate.now().toString();
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String hearingSessionDateSearchCutOff = LocalDate.now().plusDays(7).toString();
+        final String sessionStartTime = "2020-05-26T09:00:00Z";
+        final Integer durationInMinutes = 20;
+
+        // No judiciaries key in session
+        final javax.json.JsonObject responseNoJudiciaries = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId)
+                .add("sessions", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("courtScheduleId", "23681024-8eac-4890-8c44-4651ad48cb24")
+                                .add("courtRoomId", courtRoomId)
+                                .add("sessionStartTime", sessionStartTime)
+                                .add("draft", false)))
+                .build();
+
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(responseNoJudiciaries);
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(responseNoJudiciaries);
+
+        final uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse result = courtScheduleEnrichmentService
+                .searchAndBookSlots(hearingId, ouCode, hearingSessionDate, courtRoomId, hearingSessionDateSearchCutOff, sessionStartTime, durationInMinutes, false);
+
+        assertThat(result, not(nullValue()));
+        assertThat(result.judiciaries().size(), is(0));
+    }
 }

@@ -65,6 +65,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
     private static final String IS_DRAFT = "isDraft";
     private static final String COURT_SCHEDULES = "courtSchedules";
+    private static final String SESSION_START_TIME = "sessionStartTime";
     @Inject
     private CourtSchedulerService courtSchedulerService;
     @Inject
@@ -1237,9 +1238,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     ? sessionJson.getString(COURT_SCHEDULE_ID) : null;
             final String bookedCourtRoomId = sessionJson.containsKey(COURT_ROOM_ID) && !sessionJson.isNull(COURT_ROOM_ID)
                     ? sessionJson.getString(COURT_ROOM_ID) : null;
-            // Wire emits "sessionStartTime" (CourtSchedule.sessionStartTime) for the booked session
-            final String bookedSessionStartTime = sessionJson.containsKey("sessionStartTime") && !sessionJson.isNull("sessionStartTime")
-                    ? sessionJson.getString("sessionStartTime") : null;
+            // Wire emits SESSION_START_TIME (CourtSchedule.sessionStartTime) for the booked session
+            final String bookedSessionStartTime = sessionJson.containsKey(SESSION_START_TIME) && !sessionJson.isNull(SESSION_START_TIME)
+                    ? sessionJson.getString(SESSION_START_TIME) : null;
             // Duration is not in the CourtSchedule element; use durationInMinutes from the request
             final Integer duration = durationInMinutes;
             // Wire emits "draft" (Jackson strips is- from isDraft getter)
@@ -1309,7 +1310,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             final JsonObject firstSlot = slotsArray.getJsonObject(0);
             final String courtScheduleId = firstSlot.getString(COURT_SCHEDULE_ID);
             final String courtRoomId = firstSlot.getString(COURT_ROOM_ID);
-            final String sessionStartTime = firstSlot.getString("sessionStartTime");
+            final String sessionStartTime = firstSlot.getString(SESSION_START_TIME);
 
             // Extract judiciaries if present
             List<JudicialRole> judiciaries = new ArrayList<>();
