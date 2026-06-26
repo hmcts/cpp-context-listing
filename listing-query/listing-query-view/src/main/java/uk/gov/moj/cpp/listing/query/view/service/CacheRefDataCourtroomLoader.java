@@ -6,7 +6,6 @@ import static uk.gov.justice.services.core.annotation.Component.QUERY_API;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
 
-import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
@@ -16,6 +15,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.CacheRefDataCourtroomReposi
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -41,9 +41,6 @@ public class CacheRefDataCourtroomLoader {
     private Requester requester;
 
     @Inject
-    private JsonObjectToObjectConverter jsonObjectConverter;
-
-    @Inject
     private CacheRefDataCourtroomRepository cacheRefdataCourtroomRepository;
 
     @Transactional
@@ -53,62 +50,50 @@ public class CacheRefDataCourtroomLoader {
             return 0;
         }
 
+        final Set<CacheRefDataCourtroom> cachedInListing =
+                new HashSet<>(cacheRefdataCourtroomRepository.findAll());
+        if (cachedInListing.equals(allFromRefData)) {
+            return cachedInListing.size();
+        }
+
         cacheRefdataCourtroomRepository.deleteAll();
+        cacheRefdataCourtroomRepository.flush();
+        cacheRefdataCourtroomRepository.clear();
         saveAll(allFromRefData);
         return allFromRefData.size();
     }
 
-    @Transactional
-    public void addCourtRoom(JsonEnvelope envelope) {
-        final CacheRefDataCourtroom event = jsonObjectConverter.convert(
-                envelope.payloadAsJsonObject(),
-                CacheRefDataCourtroom.class);
-
-        final CacheRefDataCourtroom entity = new CacheRefDataCourtroom();
-        entity.setId(event.getId());
-        entity.setCourtroomName(event.getCourtroomName());
-
-        cacheRefdataCourtroomRepository.save(entity);
-    }
-
     private Set<CacheRefDataCourtroom> loadDataRoomRefDataService() {
-        final JsonObject queryParameters = createObjectBuilder().build();
-        final JsonEnvelope requestEnvelope = envelopeFrom(
-                metadataBuilder()
-                        .withName(REFERENCE_DATA_QUERY_COURTROOMS)
-                        .withId(randomUUID())
-                        .build(),
-                queryParameters);
+        try {
+            final JsonObject queryParameters = createObjectBuilder().build();
+            final JsonEnvelope requestEnvelope = envelopeFrom(
+                    metadataBuilder()
+                            .withName(REFERENCE_DATA_QUERY_COURTROOMS)
+                            .withId(randomUUID())
+                            .build(),
+                    queryParameters);
 
-        final Envelope<JsonObject> response = requester.requestAsAdmin(requestEnvelope, JsonObject.class);
+            final Envelope<JsonObject> response = requester.requestAsAdmin(requestEnvelope, JsonObject.class);
 
-        if (Objects.isNull(response) || Objects.isNull(response.payload()) ||
-                !response.payload().containsKey(ORGANISATION_UNITS)) {
+            if (Objects.isNull(response) || Objects.isNull(response.payload()) ||
+                    !response.payload().containsKey(ORGANISATION_UNITS)) {
+                return Collections.emptySet();
+            }
+
+            final JsonArray organizations = response.payload().getJsonArray(ORGANISATION_UNITS);
+
+            return organizations.stream().
+                    filter(orgs -> orgs.asJsonObject().containsKey(COURTROOMS)).
+                    map(orgs -> orgs.asJsonObject().getJsonArray(COURTROOMS)).
+                    flatMap(Collection::stream).
+                    map(room -> new CacheRefDataCourtroom(UUID.fromString(room.asJsonObject().getString("id")), room.asJsonObject().getString("courtroomName"))).
+                    collect(Collectors.toSet());
+        } catch (final Exception e) {
             return Collections.emptySet();
         }
-
-        final JsonArray organizations = response.payload().getJsonArray(ORGANISATION_UNITS);
-
-        final Set<CacheRefDataCourtroom> result = organizations.stream().
-                filter(orgs -> orgs.asJsonObject().containsKey(COURTROOMS)).
-                map(orgs -> orgs.asJsonObject().getJsonArray(COURTROOMS)).
-                flatMap(Collection::stream).
-                map(room -> new CacheRefDataCourtroom(UUID.fromString(room.asJsonObject().getString("id")), room.asJsonObject().getString("courtroomName"))).
-                collect(Collectors.toSet());
-
-        return result;
     }
 
     void saveAll(Collection<CacheRefDataCourtroom> items) {
         items.forEach(b -> cacheRefdataCourtroomRepository.save(b));
-    }
-
-    @Transactional
-    public void closeCourtRoom(JsonEnvelope envelope) {
-        final CacheRefDataCourtroom event = jsonObjectConverter.convert(
-                envelope.payloadAsJsonObject(),
-                CacheRefDataCourtroom.class);
-        CacheRefDataCourtroom entity = cacheRefdataCourtroomRepository.findBy(event.getId());
-        cacheRefdataCourtroomRepository.remove(entity);
     }
 }

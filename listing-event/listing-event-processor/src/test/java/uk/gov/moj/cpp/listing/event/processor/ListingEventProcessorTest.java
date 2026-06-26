@@ -2409,32 +2409,6 @@ class ListingEventProcessorTest {
     }
 
     @Test
-    public void ShouldPublicEventWhenRaisedHearingDaysWithoutCourtCentreCorrected() {
-        final UUID hearingId = randomUUID();
-        final JsonObject payload = createObjectBuilder().add(ID, hearingId.toString())
-                .add("hearingDays", createArrayBuilder()
-                        .add(createObjectBuilder().add("courtCentreId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
-                                .add("courtRoomId", "f1ead1d2-4b26-3230-b781-508d6aaafd26")
-                                .add("durationMinutes", 0)
-                                .add("endTime", "2020-08-25T09:00:00.000Z")
-                                .add("hearingDate", "2020-08-25")
-                                .add("sequence", 3)
-                                .add("startTime", "2020-08-25T09:00:00.000Z").build())).build();
-        final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.hearing-days-without-court-centre-corrected"), payload);
-        listingEventProcessor.hearingDaysWithoutCourtCentreCorrected(event);
-        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
-        final JsonEnvelope onlyPublicEvent = this.senderJsonEnvelopeCaptor.getAllValues().get(0);
-        assertThat(onlyPublicEvent.metadata().name(), is("public.events.listing.hearing-days-without-court-centre-corrected"));
-        assertThat(onlyPublicEvent.payloadAsJsonObject().getString(ID), is(hearingId.toString()));
-        assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getString("courtCentreId"), is("f8254db1-1683-483e-afb3-b87fde5a0a26"));
-        assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getString("courtRoomId"), is("f1ead1d2-4b26-3230-b781-508d6aaafd26"));
-        assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getInt("listedDurationMinutes"), is(0));
-        assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getInt("listingSequence"), is(3));
-        assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getString("sittingDay"), is("2020-08-25T09:00:00.000Z"));
-
-    }
-
-    @Test
     public void shouldHandleMarkHearingAsHearingDeleted() {
 
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());

@@ -25,7 +25,7 @@
           ],
           "hearings":[
             {
-              "startTime":"2019-12-16T10:07",
+              "startTime":"2019-12-16T10:07:00",
               "hearingType":{
                 "id":"d4a58132-97f1-4421-8e5a-c22e1a85c3fb",
                 "description":"Sentence"
@@ -33,7 +33,7 @@
               "restrictFromCourtList":false,
               "weekCommencing":false,
               "hasVideoLink":false,
-              "endTime":"2019-12-16T12:07",
+              "endTime":"2019-12-16T12:07:00",
               "caseIdentifier":{
                 "authorityId":"82a6d357-4ad4-46af-af27-15742fad5c5c",
                 "authorityCode":"lngVNFFKLn",
@@ -139,7 +139,7 @@
               ]
             },
             {
-              "startTime":"2019-12-16T10:07",
+              "startTime":"2019-12-16T10:07:00",
               "hearingType":{
                 "id":"d4a58132-97f1-4421-8e5a-c22e1a85c3fb",
                 "description":"Sentence"
@@ -147,7 +147,7 @@
               "restrictFromCourtList":false,
               "weekCommencing":false,
               "hasVideoLink":false,
-              "endTime":"2019-12-16T12:07",
+              "endTime":"2019-12-16T12:07:00",
               "caseIdentifier":{
                 "authorityId":"93b414c5-210d-4aa5-9678-1b732a4683f5",
                 "authorityCode":"qVHU9h7qdO",
@@ -270,7 +270,7 @@
           ],
           "hearings":[
             {
-              "startTime":"2020-02-20T10:30",
+              "startTime":"2020-02-20T10:30:00",
               "hearingType":{
                 "id":"d4a58132-97f1-4421-8e5a-c22e1a85c3fb",
                 "description":"Sentence"
@@ -278,7 +278,7 @@
               "restrictFromCourtList":false,
               "weekCommencing":false,
               "hasVideoLink":false,
-              "endTime":"2020-02-20T17:00",
+              "endTime":"2020-02-20T17:00:00",
               "caseIdentifier":{
                 "authorityId":"82a6d357-4ad4-46af-af27-15742fad5c5c",
                 "authorityCode":"lngVNFFKLn",
@@ -384,7 +384,7 @@
               ]
             },
             {
-              "startTime":"2020-02-20T10:30",
+              "startTime":"2020-02-20T10:30:00",
               "hearingType":{
                 "id":"d4a58132-97f1-4421-8e5a-c22e1a85c3fb",
                 "description":"Sentence"
@@ -392,7 +392,7 @@
               "restrictFromCourtList":false,
               "weekCommencing":false,
               "hasVideoLink":false,
-              "endTime":"2020-02-20T17:00",
+              "endTime":"2020-02-20T17:00:00",
               "caseIdentifier":{
                 "authorityId":"93b414c5-210d-4aa5-9678-1b732a4683f5",
                 "authorityCode":"qVHU9h7qdO",

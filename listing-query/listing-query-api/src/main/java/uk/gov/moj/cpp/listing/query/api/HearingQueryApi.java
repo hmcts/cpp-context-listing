@@ -9,8 +9,6 @@ import static uk.gov.justice.services.core.annotation.Component.QUERY_API;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilderWithFilter;
-import static uk.gov.moj.cpp.listing.domain.CourtListType.ALPHABETICAL;
-import static uk.gov.moj.cpp.listing.domain.CourtListType.JUDGE;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.ONLINE_PUBLIC;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
 
@@ -27,14 +25,13 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.xhibit.ReferenceDataLoader;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
-import uk.gov.moj.cpp.listing.query.api.service.AlphabeticalCourtListService;
 import uk.gov.moj.cpp.listing.query.api.service.ReferenceDataService;
-import uk.gov.moj.cpp.listing.query.document.generator.JudgeListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -67,7 +64,6 @@ public class HearingQueryApi {
     public static final String RESTRICTED = "restricted";
     public static final String INCLUDE_APPLICATIONS = "includeApplications";
     private static final String LIST_ID = "listId";
-    private static final String START_DATE = "startDate";
     private static final String OU_L2_CODE = "oucodeL2Code";
     private static final String FIRST_NAME = "firstName";
     private static final String LAST_NAME = "lastName";
@@ -78,6 +74,10 @@ public class HearingQueryApi {
     private static final String IS_GROUP_MEMBER = "isGroupMember";
     public static final String HEARINGS = "hearings";
     public static final String COURT_APPLICATIONS = "courtApplications";
+    public static final String COURT_LISTS = "courtLists";
+    public static final String CREST_COURT_SITE = "crestCourtSite";
+    private static final String WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
+    private static final String WEEK_COMMENCING_END_DATE = "weekCommencingEndDate";
 
     @Inject
     private HearingQueryView hearingQueryView;
@@ -90,12 +90,6 @@ public class HearingQueryApi {
 
     @Inject
     private StandardPublicCourtListTemplateAssembler standardPublicCourtListAssembler;
-
-    @Inject
-    private AlphabeticalCourtListService alphabeticalCourtListService;
-
-    @Inject
-    private JudgeListTemplateAssembler judgeListTemplateAssembler;
 
     @Inject
     private ReferenceDataService referenceDataService;
@@ -176,23 +170,18 @@ public class HearingQueryApi {
 
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
         final String courtRoomId = query.payloadAsJsonObject().getString(COURT_ROOM_ID, null);
-        final String startDate = query.payloadAsJsonObject().getString(START_DATE, null);
         final String listId = query.payloadAsJsonObject().getString(LIST_ID);
         final boolean restricted = Optional.ofNullable(query.payloadAsJsonObject().get(RESTRICTED)).map(restrictedJson -> Boolean.valueOf(restrictedJson.toString())).orElse(false);
         final boolean includeApplications = Optional.ofNullable(query.payloadAsJsonObject().get(INCLUDE_APPLICATIONS)).map(includeApplicationsJson -> Boolean.valueOf(includeApplicationsJson.toString())).orElse(false);
         final Optional<CourtListType> courtListType = CourtListType.valueFor(listId);
 
         if(courtListType.isPresent()) {
-            final CourtListType listType = courtListType.get();
-            // JUDGE uses a different query (range search by judge); all other types use the standard court list content.
-            final JsonEnvelope queryResponse = JUDGE.equals(listType)
-                    ? hearingQueryView.rangeSearchHearingsForJudge(query)
-                    : hearingQueryView.getCourtListContent(query);
-            final Optional<JsonObject> courtListData = buildCourtListData(queryResponse, courtCentreId, courtRoomId, listType, restricted, includeApplications, startDate);
+            final JsonEnvelope queryResponse = hearingQueryView.getCourtListContent(query);
+            final Optional<JsonObject> courtListData = standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType.get(), restricted, includeApplications);
             if (courtListData.isPresent()) {
                 final JsonObject courtListPayload = courtListData.get();
                 final boolean isWelsh = referenceDataService.isHearingLanguageWelsh(queryResponse, courtCentreId).orElse(false);
-                final String templateName = getTemplateName(listType, isWelsh);
+                final String templateName = getTemplateName(courtListType.get(), isWelsh);
                 final JsonObjectBuilder builder = JsonObjects.createObjectBuilder();
                 courtListPayload.forEach(builder::add);
                 builder.add("templateName", templateName);
@@ -204,6 +193,100 @@ public class HearingQueryApi {
         final JsonObject emptyResponse = createObjectBuilder().build();
 
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.court.list.payload"), emptyResponse);
+    }
+
+    @Handles("listing.search.daily.list.payload")
+    public JsonEnvelope getDailyList(final JsonEnvelope query) {
+        final JsonObject payload = query.payloadAsJsonObject();
+        final String courtCentreId = payload.getString(COURT_CENTRE_ID);
+        final String documentType = payload.getString("publishCourtListType");
+
+        final String weekCommencingStartDate = payload.getString(WEEK_COMMENCING_START_DATE, null);
+        final boolean isWeekCommencing = weekCommencingStartDate != null;
+        final String startDate = isWeekCommencing ? weekCommencingStartDate : payload.getString("startDate");
+        final String weekCommencingEndDate = isWeekCommencing ? payload.getString(WEEK_COMMENCING_END_DATE, null) : null;
+        final String endDate = isWeekCommencing ? weekCommencingEndDate : payload.getString("endDate", null);
+
+        final JsonObjectBuilder requestPayloadBuilder = JsonObjects.createObjectBuilder()
+                .add(COURT_CENTRE_ID, courtCentreId)
+                .add("startDate", startDate)
+                .add("publishCourtListType", documentType);
+        if (endDate != null) {
+            requestPayloadBuilder.add("endDate", endDate);
+        }
+        final JsonEnvelope courtListEnvelope = envelopeFrom(
+                metadataFrom(query.metadata()).withName("listing.courtlist"),
+                requestPayloadBuilder.build());
+        final JsonEnvelope response = hearingQueryView.retrieveCourtList(courtListEnvelope);
+
+        final boolean isWelsh = referenceDataService.isHearingLanguageWelsh(query, courtCentreId).orElse(false);
+        final JsonObject courtCentreJson = referenceDataService.getCourtCentreById(UUID.fromString(courtCentreId), query).payloadAsJsonObject();
+        final String courtCentreName = courtCentreJson.getString("oucodeL3Name", null);
+        final String welshCourtCentreName = courtCentreJson.getString("oucodeL3WelshName", null);
+        final String address1 = courtCentreJson.getString("address1", null);
+        final String address2 = courtCentreJson.getString("address2", null);
+        final String welshAddress1 = courtCentreJson.getString("welshAddress1", null);
+        final String welshAddress2 = courtCentreJson.getString("welshAddress2", null);
+
+        final JsonObject responsePayload = response.payloadAsJsonObject();
+        final JsonObjectBuilder enrichedBuilder = JsonObjects.createObjectBuilder();
+        responsePayload.forEach((key, value) -> {
+            if (COURT_LISTS.equals(key)) {
+                enrichedBuilder.add(COURT_LISTS, enrichCourtListsWithAddress(responsePayload.getJsonArray(COURT_LISTS), address1, address2, welshAddress1, welshAddress2));
+            } else {
+                enrichedBuilder.add(key, value);
+            }
+        });
+        if (isWeekCommencing) {
+            enrichedBuilder.add(WEEK_COMMENCING_START_DATE, weekCommencingStartDate);
+            if (weekCommencingEndDate != null) {
+                enrichedBuilder.add(WEEK_COMMENCING_END_DATE, weekCommencingEndDate);
+            }
+        } else {
+            enrichedBuilder.add("sittingDate", startDate);
+        }
+        enrichedBuilder.add("publishedAt", LocalDate.now().toString());
+        enrichedBuilder.add("documentType", documentType);
+        enrichedBuilder.add("isWelsh", isWelsh);
+        if (courtCentreName != null) {
+            enrichedBuilder.add("courtCentreName", courtCentreName);
+        }
+        if (welshCourtCentreName != null) {
+            enrichedBuilder.add("welshCourtCentreName", welshCourtCentreName);
+        }
+
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.daily.list.payload"), enrichedBuilder.build());
+    }
+
+    private JsonArray enrichCourtListsWithAddress(final JsonArray courtLists, final String address1, final String address2, final String welshAddress1, final String welshAddress2) {
+        final JsonArrayBuilder enrichedCourtListsBuilder = createArrayBuilder();
+        courtLists.getValuesAs(JsonObject.class).forEach(courtList -> {
+            final JsonObject crestCourtSite = courtList.getJsonObject(CREST_COURT_SITE);
+            final JsonObjectBuilder enrichedSiteBuilder = JsonObjects.createObjectBuilder();
+            crestCourtSite.forEach(enrichedSiteBuilder::add);
+            if (address1 != null) {
+                enrichedSiteBuilder.add("courtCentreAddress1", address1);
+            }
+            if (address2 != null) {
+                enrichedSiteBuilder.add("courtCentreAddress2", address2);
+            }
+            if (welshAddress1 != null) {
+                enrichedSiteBuilder.add("welshCourtCentreAddress1", welshAddress1);
+            }
+            if (welshAddress2 != null) {
+                enrichedSiteBuilder.add("welshCourtCentreAddress2", welshAddress2);
+            }
+            final JsonObjectBuilder enrichedCourtListBuilder = JsonObjects.createObjectBuilder();
+            courtList.forEach((key, value) -> {
+                if (CREST_COURT_SITE.equals(key)) {
+                    enrichedCourtListBuilder.add(CREST_COURT_SITE, enrichedSiteBuilder.build());
+                } else {
+                    enrichedCourtListBuilder.add(key, value);
+                }
+            });
+            enrichedCourtListsBuilder.add(enrichedCourtListBuilder.build());
+        });
+        return enrichedCourtListsBuilder.build();
     }
 
     @Handles("listing.search.hearing")
@@ -306,25 +389,8 @@ public class HearingQueryApi {
         return this.hearingQueryView.getCasesByDefendantAndHearingDate(caseIds, defendants, hearingDate, query);
     }
 
-    /**
-     * Builds the court list payload for the given type, routing ALPHABETICAL and JUDGE to their dedicated
-     * assemblers (mirroring the binary /courtlist endpoint). Without this, those types fall through to the
-     * standard assembler and yield an empty payload.
-     */
-    private Optional<JsonObject> buildCourtListData(final JsonEnvelope queryResponse, final String courtCentreId, final String courtRoomId,
-                                                    final CourtListType courtListType, final boolean restricted,
-                                                    final boolean includeApplications, final String startDate) {
-        if (ALPHABETICAL.equals(courtListType)) {
-            return alphabeticalCourtListService.buildAlphabeticalCourtListData(queryResponse, courtCentreId);
-        }
-        if (JUDGE.equals(courtListType)) {
-            return judgeListTemplateAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType, startDate);
-        }
-        return standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType, restricted, includeApplications);
-    }
-
     private String getTemplateName(final CourtListType courtListType, boolean welsh) {
-        if ((ALPHABETICAL.equals(courtListType) || PUBLIC.equals(courtListType) || ONLINE_PUBLIC.equals(courtListType)) && welsh) {
+        if ((PUBLIC.equals(courtListType) || ONLINE_PUBLIC.equals(courtListType)) && welsh) {
             return courtListType.getWelshTemplateName();
         }
         return courtListType.getTemplateName();

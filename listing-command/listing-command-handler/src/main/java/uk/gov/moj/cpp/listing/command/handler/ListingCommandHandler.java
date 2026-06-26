@@ -1406,19 +1406,6 @@ public class ListingCommandHandler {
         appendEventsToStream(envelope, eventStream, events);
     }
 
-    @Handles("listing.command.correct-hearing-days-without-court-centre")
-    public void correctHearingDaysWithoutCourtCentre(final JsonEnvelope commandEnvelope) throws EventStreamException {
-        final JsonObject payload = commandEnvelope.payloadAsJsonObject();
-        final UUID hearingId = fromString(payload.getString("id"));
-
-        final List<uk.gov.justice.listing.events.HearingDay> hearingDays = new ArrayList<>();
-
-        payload.getJsonArray("hearingDays").getValuesAs(JsonObject.class).stream()
-                .forEach(hearingDay -> hearingDays.add(jsonObjectConverter.convert(hearingDay, uk.gov.justice.listing.events.HearingDay.class)));
-
-        updateHearingEventStream(commandEnvelope, hearingId, (Hearing hearing) ->  hearing.raiseHearingDaysWithoutCourtCentreCorrected(hearingId, hearingDays));
-    }
-
     @Handles("listing.command.update-hearing-day-court-schedule")
     public void updateHearingDayCourtSchedule(final JsonEnvelope commandEnvelope) throws EventStreamException {
         final JsonObject payload = commandEnvelope.payloadAsJsonObject();

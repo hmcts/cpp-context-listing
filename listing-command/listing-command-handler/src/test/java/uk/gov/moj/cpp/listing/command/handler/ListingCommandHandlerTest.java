@@ -3991,24 +3991,6 @@ class ListingCommandHandlerTest {
     }
 
     @Test
-    public void shouldHandleCorrectHearingDaysWithoutCourtCentreCommand() throws EventStreamException, IOException {
-        final String hearingId = randomUUID().toString();
-        final String hearingDaysUpdatedJson = "[{\"durationMinutes\":15,\"endTime\":\"2020-09-24T13:15:00.000Z\",\"hearingDate\":\"2020-09-24\",\"sequence\":0,\"startTime\":\"2020-09-24T13:00:00.000Z\",\"courtRoomId\":\"b4562684-9209-3ec4-a544-7f80dabd94d8\",\"courtCentreId\":\"f8254db1-1683-483e-afb3-b87fde5a0a26\"}]";
-
-        final JsonObject payloadToBeCorrected = createObjectBuilder()
-                .add("id", hearingId)
-                .add("hearingDays", objectMapper.readValue(hearingDaysUpdatedJson, JsonArray.class)).build();
-
-        final JsonEnvelope commandEnvelope = envelopeFrom(metadataWithRandomUUID("listing.command.correct-hearing-days-without-court-centre"), payloadToBeCorrected);
-        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
-
-        listingCommandHandler.correctHearingDaysWithoutCourtCentre(commandEnvelope);
-
-        verify(hearing).raiseHearingDaysWithoutCourtCentreCorrected(any(), any());
-
-    }
-
-    @Test
     public void shouldHandleUpdateHearingDaysWithoutCourtSchedule() throws EventStreamException, IOException {
         final String hearingId = randomUUID().toString();
         final String hearingDaysUpdatedJson = "[{\"durationMinutes\":15,\"endTime\":\"2020-09-24T13:15:00.000Z\",\"hearingDate\":\"2020-09-24\",\"sequence\":0,\"startTime\":\"2020-09-24T13:00:00.000Z\",\"courtRoomId\":\"b4562684-9209-3ec4-a544-7f80dabd94d8\",\"courtCentreId\":\"f8254db1-1683-483e-afb3-b87fde5a0a26\"}]";

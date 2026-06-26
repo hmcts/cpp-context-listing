@@ -898,17 +898,6 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldHandleCorrectHearingDaysWithoutCourtCentre() {
-        final Metadata mockMetadata = MetadataBuilderFactory.metadataWithRandomUUIDAndName().build();
-        when(envelope.metadata()).thenReturn(mockMetadata);
-
-        listingCommandApi.handleCorrectHearingDaysWithoutCourtCentre(envelope);
-
-        verify(sender).send(envelopeArgumentCaptor.capture());
-        assertThat(envelopeArgumentCaptor.getValue().metadata().name(), is("listing.command.correct-hearing-days-without-court-centre"));
-    }
-
-    @Test
     public void shouldHandleMarkUnallocatedHearingAsDuplicate() {
         final Metadata mockMetadata = MetadataBuilderFactory.metadataWithRandomUUIDAndName().build();
         when(envelope.metadata()).thenReturn(mockMetadata);

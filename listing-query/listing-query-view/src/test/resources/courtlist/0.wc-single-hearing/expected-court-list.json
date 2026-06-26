@@ -25,8 +25,8 @@
           ],
           "hearings": [
             {
-              "startTime": "2019-12-16T00:00",
-              "endTime": "2019-12-23T00:00",
+              "startTime": "2019-12-16T00:00:00",
+              "endTime": "2019-12-23T00:00:00",
               "hearingType": {
                 "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
                 "description": "Plea and Trial Preparation"
