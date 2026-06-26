@@ -1,0 +1,193 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/query/listing.search.daily.list.payload.json",
+  "type": "object",
+  "properties": {
+    "courtCentreId":            { "type": "string" },
+    "sittingDate":              { "type": "string", "format": "date" },
+    "weekCommencingStartDate":  { "type": "string", "format": "date" },
+    "weekCommencingEndDate":    { "type": "string", "format": "date" },
+    "publishedAt":              { "type": "string", "format": "date" },
+    "documentType":             { "type": "string" },
+    "documentCounter":          { "type": "integer" },
+    "isWelsh":                  { "type": "boolean" },
+    "courtCentreName":          { "type": "string" },
+    "welshCourtCentreName":     { "type": "string" },
+    "courtLists": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "crestCourtSite": {
+            "type": "object",
+            "properties": {
+              "id":                 { "type": "string" },
+              "oucode":             { "type": "string" },
+              "crestCourtId":       { "type": "string" },
+              "crestCourtSiteId":   { "type": "string" },
+              "crestCourtSiteName":      { "type": "string" },
+              "welshCrestCourtSiteName": { "type": "string" },
+              "validFrom":               { "type": "string", "format": "date" },
+              "validTo":                 { "type": "string", "format": "date" },
+              "crestCourtName":          { "type": "string" },
+              "welshCrestCourtName":     { "type": "string" },
+              "crestCourtShortName":     { "type": "string" },
+              "welshCrestCourtShortName":{ "type": "string" },
+              "crestCourtFullName":      { "type": "string" },
+              "welshCrestCourtFullName": { "type": "string" },
+              "crestCourtSiteCode":      { "type": "string" },
+              "courtType":               { "type": "string" },
+              "courtCentreAddress1":      { "type": "string" },
+              "courtCentreAddress2":      { "type": "string" },
+              "welshCourtCentreAddress1": { "type": "string" },
+              "welshCourtCentreAddress2": { "type": "string" }
+            },
+            "required": ["crestCourtSiteId", "crestCourtSiteName", "courtType"]
+          },
+          "sittings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sittingDate":    { "type": "string", "format": "date" },
+                "courtRoomId":        { "type": "string" },
+                "courtRoomName":      { "type": "string" },
+                "welshCourtRoomName": { "type": "string" },
+                "weekCommencing":     { "type": "boolean" },
+                "judiciary": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "isBenchChairman":  { "type": "boolean" },
+                      "isDeputy":         { "type": "boolean" },
+                      "judicialId":       { "type": "string" },
+                      "judiciaryName":    { "type": "string" },
+                      "judicialRoleType": {
+                        "type": "object",
+                        "properties": {
+                          "judiciaryType": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                },
+                "hearings": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "startTime":              { "type": "string" },
+                      "endTime":                { "type": "string" },
+                      "hearingType": {
+                        "type": "object",
+                        "properties": {
+                          "id":               { "type": "string" },
+                          "description":      { "type": "string" },
+                          "welshDescription": { "type": "string" }
+                        }
+                      },
+                      "restrictFromCourtList":  { "type": "boolean" },
+                      "weekCommencing":         { "type": "boolean" },
+                      "hasVideoLink":           { "type": "boolean" },
+                      "publicListNote":         { "type": "string" },
+                      "committingCourtCentreId":{ "type": "string" },
+                      "caseIdentifier": {
+                        "type": "object",
+                        "properties": {
+                          "caseReference": { "type": "string" },
+                          "authorityCode": { "type": "string" }
+                        }
+                      },
+                      "prosecutor": {
+                        "type": "object",
+                        "properties": {
+                          "organisationName": { "type": "string" }
+                        }
+                      },
+                      "defendants": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id":                  { "type": "string" },
+                            "firstName":           { "type": "string" },
+                            "lastName":            { "type": "string" },
+                            "restrictFromCourtList": { "type": "boolean" },
+                            "defenceOrganisation": { "type": "string" },
+                            "offences": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "offenceCode": { "type": "string" },
+                                  "statementOfOffence": {
+                                    "type": "object",
+                                    "properties": {
+                                      "title":      { "type": "string" },
+                                      "welshTitle": { "type": "string" }
+                                    }
+                                  },
+                                  "restrictFromCourtList": { "type": "boolean" },
+                                  "reportingRestrictions": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "label": { "type": "string" },
+                                        "welshLabel": { "type": "string" }
+                                      }
+                                    }
+                                  },
+                                  "committingCourt": {
+                                    "type": "object",
+                                    "properties": {
+                                      "courtCentreId":  { "type": "string" },
+                                      "courtHouseName": { "type": "string" }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "applicationReference": { "type": "string" },
+                      "applicant": {
+                        "type": "object",
+                        "properties": {
+                          "firstName":           { "type": "string" },
+                          "lastName":            { "type": "string" },
+                          "restrictFromCourtList": { "type": "boolean" }
+                        }
+                      },
+                      "respondents": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "firstName":           { "type": "string" },
+                            "lastName":            { "type": "string" },
+                            "restrictFromCourtList": { "type": "boolean" }
+                          }
+                        }
+                      },
+                      "subject": {
+                        "type": "object",
+                        "properties": {
+                          "firstName":           { "type": "string" },
+                          "lastName":            { "type": "string" },
+                          "restrictFromCourtList": { "type": "boolean" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

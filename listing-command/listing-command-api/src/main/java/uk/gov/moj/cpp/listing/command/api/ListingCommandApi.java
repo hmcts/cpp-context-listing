@@ -71,7 +71,6 @@ public class ListingCommandApi {
     private static final String LISTING_COMMAND_LIST_UNSCHEDULED_NEXT_HEARINGS_ENRICHED = "listing.command.list-unscheduled-next-hearings-enriched";
     private static final String LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING_ENRICHED = "listing.command.extend-hearing-for-hearing-enriched";
     private static final String LISTING_COMMAND_VACATE_TRIAL = "listing.command.vacate-trial-enriched";
-    private static final String LISTING_COMMAND_CORRECT_HEARING_DAYS_WO_CC = "listing.command.correct-hearing-days-without-court-centre";
     private static final String LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING = "listing.command.mark-unallocated-hearing-as-duplicate";
     private static final String LISTING_COMMAND_UPDATE_EXISTING_HEARING = "listing.command.update-existing-hearing";
     private static final String LISTING_COMMAND_DELETE_NEXT_HEARINGS = "listing.command.delete-next-hearings";
@@ -408,12 +407,6 @@ public class ListingCommandApi {
         sender.send(JsonEnvelope.envelopeFrom(
                 JsonEnvelope.metadataFrom(jsonEnvelope.metadata()).withName("listing.command.handler.delete-listing-note"),
                 jsonEnvelope.payloadAsJsonObject()));
-    }
-
-    @Handles("listing.correct-hearing-days-without-court-centre")
-    public void handleCorrectHearingDaysWithoutCourtCentre(final JsonEnvelope envelope) {
-        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_CORRECT_HEARING_DAYS_WO_CC),
-                envelope.payload()));
     }
 
     @Handles("listing.update-hearing-day-court-schedule")

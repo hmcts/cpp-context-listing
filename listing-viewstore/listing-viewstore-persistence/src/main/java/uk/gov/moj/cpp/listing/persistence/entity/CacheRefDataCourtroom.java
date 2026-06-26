@@ -53,7 +53,7 @@ public class CacheRefDataCourtroom implements Serializable {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof CacheRefDataCourtroom)) {
             return false;
         }
         final CacheRefDataCourtroom that = (CacheRefDataCourtroom) o;

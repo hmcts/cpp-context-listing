@@ -80,11 +80,25 @@ public class CourtListsBuilder {
         for (final Map.Entry<String, List<Sitting>> entry : crestCourtSiteCodeSittingsMap.entrySet()) {
             final String crestCourtSiteCode = entry.getKey();
             final List<Sitting> sittings = entry.getValue();
+            enrichSittingsWithCourtRoomNames(courtCentreId, sittings);
             final JsonObject crestCourtSiteJson = getCrestCourtSiteJson(courtCentreId, crestCourtSiteCode);
             courtListArray.add(courtSiteCourtList(crestCourtSiteJson, sittings));
         }
 
         return courtListArray.build();
+    }
+
+    private void enrichSittingsWithCourtRoomNames(final UUID courtCentreId, final List<Sitting> sittings) {
+        for (final Sitting sitting : sittings) {
+            sitting.getSittingKey().getCourtRoomId().ifPresent(courtRoomId -> {
+                threadLocalCommonXhibitReferenceDataService.get()
+                        .getCourtRoomDisplayName(courtCentreId, courtRoomId)
+                        .ifPresent(sitting::setCourtRoomName);
+                threadLocalCommonXhibitReferenceDataService.get()
+                        .getWelshCourtRoomDisplayName(courtCentreId, courtRoomId)
+                        .ifPresent(sitting::setWelshCourtRoomName);
+            });
+        }
     }
 
     @PreDestroy
