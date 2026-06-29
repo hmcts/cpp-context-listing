@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet author="listing" id="028-disable-autovacuum-pre-publish-queue" logicalFilePath="028-disable-autovacuum-pre-publish-queue.xml">
+        <preConditions onFail="MARK_RAN" onError="HALT">
+            <tableExists tableName="pre_publish_queue"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE pre_publish_queue SET (autovacuum_enabled = false, toast.autovacuum_enabled = false);
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE pre_publish_queue SET (autovacuum_enabled = true, toast.autovacuum_enabled = true);
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
