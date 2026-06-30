@@ -4556,7 +4556,7 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
-    public void promoteCrownBookingReferenceToBookedSlot_resolvesSessionAndBuildsAllocatedBookedSlot() {
+    void promoteCrownBookingReferenceToBookedSlot_resolvesSessionAndBuildsAllocatedBookedSlot() {
         final UUID bookingReference = UUID.randomUUID();
         final UUID courtHouseId = UUID.randomUUID();
         final UUID courtRoomId = UUID.randomUUID();
@@ -4599,7 +4599,7 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
-    public void promoteCrownBookingReferenceToBookedSlot_draftSessionOmitsRoom() {
+    void promoteCrownBookingReferenceToBookedSlot_draftSessionOmitsRoom() {
         final UUID bookingReference = UUID.randomUUID();
         final UUID courtHouseId = UUID.randomUUID();
         final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
@@ -4635,7 +4635,7 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
-    public void promoteCrownBookingReferenceToBookedSlot_skipsWhenNoStartTimeResolvable() {
+    void promoteCrownBookingReferenceToBookedSlot_skipsWhenNoStartTimeResolvable() {
         final UUID bookingReference = UUID.randomUUID();
         final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
                 .withId(UUID.randomUUID())
@@ -4667,7 +4667,7 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
-    public void promoteCrownBookingReferenceToBookedSlot_throwsWhenBookingReferenceDoesNotResolve() {
+    void promoteCrownBookingReferenceToBookedSlot_throwsWhenBookingReferenceDoesNotResolve() {
         final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
                 .withId(UUID.randomUUID())
                 .withJurisdictionType(JurisdictionType.CROWN)
@@ -4689,7 +4689,7 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
-    public void promoteCrownBookingReferenceToBookedSlot_noOpWhenNoBookingReference() {
+    void promoteCrownBookingReferenceToBookedSlot_noOpWhenNoBookingReference() {
         final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
                 .withId(UUID.randomUUID())
                 .withJurisdictionType(JurisdictionType.CROWN)
@@ -4703,7 +4703,7 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
-    public void promoteCrownBookingReferenceToBookedSlot_noOpWhenBookedSlotAlreadyHasCourtScheduleId() {
+    void promoteCrownBookingReferenceToBookedSlot_noOpWhenBookedSlotAlreadyHasCourtScheduleId() {
         final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
                 .withId(UUID.randomUUID())
                 .withJurisdictionType(JurisdictionType.CROWN)

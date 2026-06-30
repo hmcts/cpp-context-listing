@@ -698,9 +698,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
         hearing.getHearingDays().forEach(hearingDay -> {
             if (isNull(hearingDay.getCourtScheduleId())) {
-                boolean isPolice = JurisdictionType.CROWN.equals(hearing.getJurisdictionType())
-                        ? false
-                        : isPolice(hearing, envelope);
+                boolean isPolice = !JurisdictionType.CROWN.equals(hearing.getJurisdictionType())
+                        && isPolice(hearing, envelope);
                 HearingSlotSearchResponse hearingSlotSearchResponse = searchAndBookSlots(
                         hearing.getId().toString(),
                         hearing.getCourtCentre().getId().toString(),
@@ -803,14 +802,17 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         final int fallbackDuration = aggregatedDuration > 0 ? aggregatedDuration : estimatedFallback;
         final List<RotaSlot> bookedSlots = hearing.getBookedSlots();
         return sessions.stream().limit(1).map(session -> {
+            final ZonedDateTime sessionStartFallback = nonNull(session.getHearingStartTime())
+                    ? ZonedDateTime.parse(session.getHearingStartTime())
+                    : null;
             final ZonedDateTime startTime = isNotEmpty(bookedSlots)
                     ? bookedSlots.stream()
                             .filter(slot -> session.getCourtScheduleId().equals(slot.getCourtScheduleId()))
                             .map(RotaSlot::getStartTime)
                             .filter(t -> nonNull(t))
                             .findFirst()
-                            .orElseGet(() -> nonNull(session.getHearingStartTime()) ? ZonedDateTime.parse(session.getHearingStartTime()) : null)
-                    : nonNull(session.getHearingStartTime()) ? ZonedDateTime.parse(session.getHearingStartTime()) : null;
+                            .orElse(sessionStartFallback)
+                    : sessionStartFallback;
             return HearingDay.hearingDay()
                     .withCourtCentreId(fromString(session.getCourtHouseId()))
                     .withCourtScheduleId(fromString(session.getCourtScheduleId()))
@@ -841,14 +843,18 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         // Use aggregatedDuration (bookedSlots / hearingDays / nonDefaultDays sum) not estimatedMinutes —
         // UI has been observed to submit a stale estimatedMinutes that would pick the wrong slot count.
         final RotaSlot anchorSlot = hearing.getBookedSlots().get(0);
+        final String fallbackCourtCentreId = hearing.getCourtCentre() != null && hearing.getCourtCentre().getId() != null
+                ? hearing.getCourtCentre().getId().toString()
+                : "";
         final String anchorCourtCentreId = anchorSlot.getCourtCentreId() != null
                 ? anchorSlot.getCourtCentreId()
-                : (hearing.getCourtCentre() != null && hearing.getCourtCentre().getId() != null
-                        ? hearing.getCourtCentre().getId().toString() : "");
+                : fallbackCourtCentreId;
+        final String fallbackHearingDate = isNotEmpty(hearing.getHearingDays()) && hearing.getHearingDays().get(0).getHearingDate() != null
+                ? hearing.getHearingDays().get(0).getHearingDate().toString()
+                : LocalDate.now().toString();
         final String anchorHearingDate = anchorSlot.getStartTime() != null
                 ? anchorSlot.getStartTime().toLocalDate().toString()
-                : (isNotEmpty(hearing.getHearingDays()) && hearing.getHearingDays().get(0).getHearingDate() != null
-                        ? hearing.getHearingDays().get(0).getHearingDate().toString() : LocalDate.now().toString());
+                : fallbackHearingDate;
         final List<CourtSchedule> sessions = multiDaySearchAndBook(
                 anchorCourtScheduleId,
                 aggregatedDuration,
@@ -1059,15 +1065,15 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         final Response response = courtSchedulerServiceAdapter.extendMultiDayHearing(requestPayload);
 
         if (HttpStatus.SC_OK != response.getStatus()) {
-            final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject)
-                    ? (JsonObject) response.getEntity()
+            final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject jsonBody)
+                    ? jsonBody
                     : createObjectBuilder().build();
             throw new CrownMultiDayExtensionException(response.getStatus(), body,
                     "extendMultiDayHearing returned " + response.getStatus() + " for hearingId " + hearing.getHearingId());
         }
 
-        final JsonObject responseJson = (response.getEntity() instanceof JsonObject)
-                ? (JsonObject) response.getEntity()
+        final JsonObject responseJson = (response.getEntity() instanceof JsonObject entityJson)
+                ? entityJson
                 : objectToJsonObjectConverter.convert(response.getEntity());
         if (responseJson == null || responseJson.isEmpty()) {
             LOGGER.warn("CROWN extend-multiday empty 200 body for hearingId {}. Returning hearing unchanged.", hearing.getHearingId());
@@ -1263,8 +1269,14 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             // Duration is not in the CourtSchedule element; use durationInMinutes from the request
             final Integer duration = durationInMinutes;
             // Wire emits "draft" (Jackson strips is- from isDraft getter)
-            final Boolean isDraft = sessionJson.containsKey("draft") ? sessionJson.getBoolean("draft")
-                    : (sessionJson.containsKey(IS_DRAFT) ? sessionJson.getBoolean(IS_DRAFT) : Boolean.FALSE);
+            final Boolean isDraft;
+            if (sessionJson.containsKey("draft")) {
+                isDraft = sessionJson.getBoolean("draft");
+            } else if (sessionJson.containsKey(IS_DRAFT)) {
+                isDraft = sessionJson.getBoolean(IS_DRAFT);
+            } else {
+                isDraft = Boolean.FALSE;
+            }
 
             // Extract judiciaries if present
             List<JudicialRole> judiciaries = new ArrayList<>();

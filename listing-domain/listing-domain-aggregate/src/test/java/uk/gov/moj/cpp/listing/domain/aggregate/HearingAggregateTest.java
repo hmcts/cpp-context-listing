@@ -57,7 +57,6 @@ import uk.gov.justice.listing.events.HearingListedCaseUpdated;
 import uk.gov.justice.listing.events.HearingMarkedAsDeleted;
 import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
 import uk.gov.justice.listing.events.HearingRequestedForListing;
-import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingResultStatusUpdated;
 import uk.gov.justice.listing.events.HearingUnallocatedCourtroomRemoved;
 import uk.gov.justice.listing.events.JudiciaryChangedForHearingsStatus;
@@ -155,14 +154,14 @@ class HearingAggregateTest {
     private static final Logger LOGGER = Logger.getLogger(HearingAggregateTest.class.getName());
 
     @Test
-    public void shouldRaiseCrownHearingMigratedToCourtScheduleEvent() {
+    void shouldRaiseCrownHearingMigratedToCourtScheduleEvent() {
         final UUID courtScheduleId = randomUUID();
         final LocalDate hearingDate = now();
         final List<HearingDayCourtSchedule> schedules =
                 singletonList(new HearingDayCourtSchedule(courtScheduleId, hearingDate));
 
         final List<Object> events = hearing.raiseCrownHearingMigratedToCourtSchedule(hearingId, schedules)
-                .collect(Collectors.toList());
+                .toList();
 
         assertThat(events, hasSize(1));
         assertThat(events.get(0), CoreMatchers.instanceOf(CrownHearingMigratedToCourtschedule.class));
@@ -1648,12 +1647,12 @@ class HearingAggregateTest {
     void shouldBeAbleToEjectCaseAndAvailableSlotsForHearingFreedForCrown() {
 
         final UUID caseId = randomUUID();
-        final UUID hearingId = randomUUID();
+        final UUID localHearingId = randomUUID();
         final String removalReason = "removal reason";
 
         hearing.apply(HearingListed.hearingListed()
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
-                        .withId(hearingId)
+                        .withId(localHearingId)
                         .withType(uk.gov.justice.listing.events.Type.type().build())
                         .withHearingLanguage(HearingLanguage.ENGLISH)
                         .withJurisdictionType(CROWN)
@@ -1675,15 +1674,15 @@ class HearingAggregateTest {
                 .build()
         );
 
-        var listedHearing = hearing.ejectCase(hearingId, caseId, removalReason).toList();
+        var listedHearing = hearing.ejectCase(localHearingId, caseId, removalReason).toList();
 
         assertThat(listedHearing, hasSize(2));
 
         var availableSlotsForHearingFreed = (AvailableSlotsForHearingFreed) listedHearing.get(0);
         var caseEjected = (CaseEjected) listedHearing.get(1);
 
-        assertThat(availableSlotsForHearingFreed.getHearingId(), is(hearingId));
-        assertThat(caseEjected.getHearingId(), is(hearingId));
+        assertThat(availableSlotsForHearingFreed.getHearingId(), is(localHearingId));
+        assertThat(caseEjected.getHearingId(), is(localHearingId));
     }
 
     @Test
@@ -8452,7 +8451,7 @@ class HearingAggregateTest {
     }
 
     private void assertListForSplitEstimatedMinutes(final Integer hearingTypeDuration, final int expected) {
-        final List<uk.gov.justice.listing.events.ListedCase> listedCases = singletonList(uk.gov.justice.listing.events.ListedCase
+        final List<uk.gov.justice.listing.events.ListedCase> splitListedCases = singletonList(uk.gov.justice.listing.events.ListedCase
                 .listedCase()
                 .withId(randomUUID())
                 .withDefendants(singletonList(Defendant.defendant()
@@ -8463,7 +8462,7 @@ class HearingAggregateTest {
                         .build()))
                 .build());
 
-        final Stream<Object> listedHearing = hearing.listForSplit(type, listedCases, courtCentreId,
+        final Stream<Object> listedHearing = hearing.listForSplit(type, splitListedCases, courtCentreId,
                 "court name", courtRoomId, jurisdictionType, ZonedDateTime.now(),
                 null, null, emptyList(), emptyList(), hearingTypeDuration);
 
