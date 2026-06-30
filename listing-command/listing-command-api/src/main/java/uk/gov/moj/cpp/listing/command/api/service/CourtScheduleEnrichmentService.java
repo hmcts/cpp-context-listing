@@ -403,20 +403,18 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
     /**
      * Promote any courtScheduleId supplied on nonDefaultDays onto the matching hearingDay (by date),
-     * but only where hearingDay.courtScheduleId is absent. Preserves existing hearingDay values.
+     * always overwriting the existing hearingDay.courtScheduleId when nonDefaultDays provides a
+     * different (authoritative) value. This handles the CROWN reschedule case where the aggregate's
+     * hearingDays already carry the OLD (draft) courtScheduleId from the pre-reschedule session, but
+     * nonDefaultDays carries the NEW (non-draft) courtScheduleId returned by courtscheduler after the
+     * reschedule. Without overwriting, the stale draft id is fetched downstream, isDraft=true is
+     * propagated, and {@code Hearing.canAllocateForCrown()} is incorrectly closed.
      *
-     * <p>Without this, a CROWN update-hearing-for-listing command that carries the FINAL courtScheduleId
-     * on nonDefaultDays (the established pattern) is projected with an empty hearingDays[].courtScheduleId
-     * while allocated=true, violating {@code Hearing.canAllocateForCrown()}.
+     * <p>When nonDefaultDays supplies no courtScheduleId for a given date, the existing hearingDay
+     * value is preserved unchanged (no regression for non-reschedule flows).
      */
     private UpdateHearingForListing mergeCourtScheduleIdsFromNonDefaultDays(final UpdateHearingForListing hearing) {
         if (isEmpty(hearing.getNonDefaultDays()) || isEmpty(hearing.getHearingDays())) {
-            return hearing;
-        }
-
-        final boolean anyHearingDayMissingCourtScheduleId = hearing.getHearingDays().stream()
-                .anyMatch(d -> isNull(d.getCourtScheduleId()));
-        if (!anyHearingDayMissingCourtScheduleId) {
             return hearing;
         }
 
@@ -434,15 +432,18 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
         final List<HearingDay> merged = hearing.getHearingDays().stream()
                 .map(day -> {
-                    if (nonNull(day.getCourtScheduleId()) || isNull(day.getHearingDate())) {
+                    if (isNull(day.getHearingDate())) {
                         return day;
                     }
                     final UUID fromNonDefault = courtScheduleIdByDate.get(day.getHearingDate());
                     if (fromNonDefault == null) {
                         return day;
                     }
-                    LOGGER.info("CROWN update: merging courtScheduleId {} from nonDefaultDays onto hearingDay for date {} (hearingId {})",
-                            fromNonDefault, day.getHearingDate(), hearing.getHearingId());
+                    if (fromNonDefault.equals(day.getCourtScheduleId())) {
+                        return day;
+                    }
+                    LOGGER.info("CROWN update: promoting courtScheduleId {} from nonDefaultDays onto hearingDay for date {} (was: {}, hearingId {})",
+                            fromNonDefault, day.getHearingDate(), day.getCourtScheduleId(), hearing.getHearingId());
                     return HearingDay.hearingDay().withValuesFrom(day).withCourtScheduleId(fromNonDefault).build();
                 })
                 .toList();

@@ -4123,10 +4123,13 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
-    void enrichCrownUpdateHearing_shouldPreserveExistingCourtScheduleIdOnHearingDay_evenWhenNonDefaultDaysHasOne() {
+    void enrichCrownUpdateHearing_shouldPromoteNonDefaultDayCourtScheduleIdOntoHearingDay_evenWhenHearingDayAlreadyHasOne() {
+        // Reschedule case: hearingDays carries the OLD (stale) courtScheduleId from the pre-reschedule
+        // session; nonDefaultDays carries the NEW (authoritative) courtScheduleId returned by
+        // courtscheduler after the reschedule. The merge must overwrite the stale id with the new one.
         final UUID hearingId = UUID.randomUUID();
         final UUID existingDraftCourtScheduleId = UUID.randomUUID();
-        final UUID finalCourtScheduleIdOnNonDefault = UUID.randomUUID();
+        final UUID newNonDraftCourtScheduleId = UUID.randomUUID();
         final LocalDate hearingDate = LocalDate.now().plusDays(5);
         final ZonedDateTime startTime = hearingDate.atStartOfDay(ZoneOffset.UTC);
 
@@ -4143,13 +4146,14 @@ class CourtScheduleEnrichmentServiceTest {
                                 .build()))
                 .withNonDefaultDays(Collections.singletonList(
                         NonDefaultDay.nonDefaultDay()
-                                .withCourtScheduleId(finalCourtScheduleIdOnNonDefault.toString())
+                                .withCourtScheduleId(newNonDraftCourtScheduleId.toString())
                                 .withStartTime(startTime)
                                 .withDuration(240)
                                 .build()))
                 .build();
 
-        // Mock downstream fetch to return empty so we can inspect the merged hearing
+        // Mock downstream fetch to return empty (simulates courtscheduler returning nothing for the
+        // session lookup — sufficient to verify the new id reached the fetch call).
         final JsonObject emptyResponse = JsonObjects.createObjectBuilder()
                 .add("courtSchedules", JsonObjects.createArrayBuilder())
                 .build();
@@ -4160,8 +4164,98 @@ class CourtScheduleEnrichmentServiceTest {
 
         final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
 
+        // The NEW id from nonDefaultDays must have been promoted onto the hearingDay.
         assertThat(result.getHearingDays().size(), is(1));
-        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(existingDraftCourtScheduleId));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(newNonDraftCourtScheduleId));
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_reschedule_shouldProduceIsDraftFalse_whenOldHearingDayHasDraftIdButNonDefaultDaysHasNonDraftId() {
+        // Full reschedule bug regression test: hearing was in a DRAFT session (old id); after
+        // reschedule courtscheduler assigns a non-draft session (new id on nonDefaultDays).
+        // The enriched hearingDay must carry the NEW id and isDraft=false so that
+        // Hearing.canAllocateForCrown() passes and hearing-allocated-for-listing-v2 is emitted.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID oldDraftCourtScheduleId = UUID.randomUUID();
+        final UUID newNonDraftCourtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+        final ZonedDateTime startTime = hearingDate.atStartOfDay(ZoneOffset.UTC);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(oldDraftCourtScheduleId)  // stale OLD draft id
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withCourtScheduleId(newNonDraftCourtScheduleId.toString())  // NEW non-draft id
+                                .withStartTime(startTime)
+                                .withDuration(240)
+                                .build()))
+                .build();
+
+        // Courtscheduler returns the NEW non-draft session when fetched by the new id
+        final CourtSchedule nonDraftSession = new CourtSchedule();
+        nonDraftSession.setCourtScheduleId(newNonDraftCourtScheduleId.toString());
+        nonDraftSession.setSessionDate(hearingDate);
+        nonDraftSession.setCourtRoomId(courtRoomId.toString());
+        nonDraftSession.setCourtHouseId(courtHouseId.toString());
+        nonDraftSession.setDraft(false);  // non-draft — the reschedule landed on a final session
+        nonDraftSession.setHearingStartTime(startTime.toString());
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", newNonDraftCourtScheduleId.toString())))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(javax.json.JsonObject.class), eq(CourtSchedule.class))).thenReturn(nonDraftSession);
+
+        // listHearingInCourtSessions is called to deduct the slot; return a minimal success response
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", newNonDraftCourtScheduleId.toString())
+                                .add("hearingStartTime", startTime.toString())
+                                .add("isDraft", false)
+                                .add("duration", 240)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(javax.json.JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+        when(jsonObjectConverter.convert(any(javax.json.JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    final javax.json.JsonObject jo = inv.getArgument(0);
+                    final ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(newNonDraftCourtScheduleId.toString()).build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().size(), is(1));
+        // The NEW non-draft id must be on the enriched hearingDay
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(newNonDraftCourtScheduleId));
+        // isDraft must be false so canAllocateForCrown() passes in the aggregate
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(false));
     }
 
     @Test

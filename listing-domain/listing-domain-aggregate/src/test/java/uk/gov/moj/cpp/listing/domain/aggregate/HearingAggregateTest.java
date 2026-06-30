@@ -57,6 +57,7 @@ import uk.gov.justice.listing.events.HearingListedCaseUpdated;
 import uk.gov.justice.listing.events.HearingMarkedAsDeleted;
 import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
 import uk.gov.justice.listing.events.HearingRequestedForListing;
+import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingResultStatusUpdated;
 import uk.gov.justice.listing.events.HearingUnallocatedCourtroomRemoved;
 import uk.gov.justice.listing.events.JudiciaryChangedForHearingsStatus;
@@ -8114,6 +8115,97 @@ class HearingAggregateTest {
 
         // Crown hearings with empty hearingDays must NOT allocate — no courtScheduleIds
         assertThat(allocationEvents.size(), is(0));
+    }
+
+    @Test
+    void shouldEmitHearingAllocatedAndRescheduledWithAllocatedTrueWhenCrownHearingMovesFromDraftToNonDraftSession() {
+        // Regression test for the CROWN reschedule allocation bug:
+        // A hearing originally in a draft session (unallocated) is rescheduled onto a non-draft session.
+        // After enrichment fixes the hearingDay to isDraft=false, the aggregate must:
+        //   1. emit hearing-allocated-for-listing-v2 (allocation gate opens)
+        //   2. emit HearingRescheduled with allocated=true (not the previous allocated=false)
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+        final UUID oldDraftCourtScheduleId = randomUUID();
+        final UUID newNonDraftCourtScheduleId = randomUUID();
+        final LocalDate originalDate = LocalDate.now().plusDays(5);
+        final LocalDate rescheduledDate = LocalDate.now().plusDays(10);
+
+        // Step 1: set up the hearing in its original DRAFT / unallocated state
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withCourtScheduleId(oldDraftCourtScheduleId)
+                                        .withHearingDate(originalDate)
+                                        .withDurationMinutes(240)
+                                        .withIsDraft(true)  // old session is draft → gate closed
+                                        .build()))
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withStartDate(originalDate)
+                        .withEndDate(originalDate)
+                        .withEstimatedMinutes(240)
+                        .withEstimatedDuration("240 minutes")
+                        .withAllocated(false)
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(randomUUID())
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withOffences(Arrays.asList(Offence.offence()
+                                                .withId(randomUUID())
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        // Confirm gate is closed in draft state (guard: existing behaviour preserved)
+        final List<Object> preMigrationEvents = Stream.of(
+                hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null))
+                .flatMap(i -> i).toList();
+        assertThat("isDraft=true must prevent allocation", preMigrationEvents.size(), is(0));
+
+        // Step 2: simulate the enrichment layer having promoted the new non-draft id + isDraft=false
+        hearing.apply(HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingId(crownHearingId)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(newNonDraftCourtScheduleId)
+                                .withHearingDate(rescheduledDate)
+                                .withDurationMinutes(240)
+                                .withIsDraft(false)  // new session is non-draft → gate opens
+                                .build()))
+                .build());
+
+        // Step 3: applyAllocationRules must now emit hearing-allocated-for-listing-v2
+        final List<Object> allocationEvents = Stream.of(
+                hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null))
+                .flatMap(i -> i).toList();
+        assertThat("non-draft session must trigger allocation", allocationEvents.size(), is(1));
+        assertTrue(allocationEvents.get(0) instanceof HearingAllocatedForListingV2,
+                "expected HearingAllocatedForListingV2, got: " + allocationEvents.get(0).getClass().getSimpleName());
+
+        // Step 4: apply the allocation event so aggregate knows it is now allocated
+        hearing.apply((HearingAllocatedForListingV2) allocationEvents.get(0));
+
+        // Step 5: applyRescheduledCheck with a StartDateChangedForHearing must emit HearingRescheduled
+        // with allocated=true (not the buggy allocated=false)
+        final StartDateChangedForHearing startDateChanged = StartDateChangedForHearing.startDateChangedForHearing()
+                .withHearingId(crownHearingId)
+                .withStartDate(rescheduledDate.toString())
+                .build();
+        final List<Object> rescheduledEvents = hearing.applyRescheduledCheck(Arrays.asList(startDateChanged)).toList();
+        assertThat("applyRescheduledCheck must emit HearingRescheduled", rescheduledEvents.size(), is(1));
+        assertTrue(rescheduledEvents.get(0) instanceof uk.gov.justice.listing.events.HearingRescheduled,
+                "expected HearingRescheduled");
+        final uk.gov.justice.listing.events.HearingRescheduled rescheduled =
+                (uk.gov.justice.listing.events.HearingRescheduled) rescheduledEvents.get(0);
+        assertThat("HearingRescheduled.allocated must be true after moving to non-draft session",
+                rescheduled.getAllocated(), is(true));
     }
 
     // ─── CROWN vacate-trial slot payback tests ───────────────────────────
