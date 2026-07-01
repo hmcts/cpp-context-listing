@@ -828,9 +828,9 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "and (h.end_date is null OR h.end_date >= :currentDate) " +
             "and (:hearingId is null or h.id != cast(cast(:hearingId as varchar) as uuid)) " +
             "AND " +
-            "(h.id in (select distinct h.id from hearing h  " +
-            " inner join listed_cases lc on lc.hearing_id = h.id where UPPER(lc.case_reference) in (:caseUrnSet)  " +
-            " and (:hearingId is null or h.id != cast(cast(:hearingId as varchar) as uuid))) " +
+            "(h.id in (select lc.hearing_id from listed_cases lc " +
+            " where UPPER(lc.case_reference) in (:caseUrnSet) " +
+            " and (:hearingId is null or lc.hearing_id != cast(cast(:hearingId as varchar) as uuid))) " +
             "OR " +
             "(h.id in (SELECT distinct(hrng.id) FROM hearing hrng inner join listed_cases lc3 on lc3.hearing_id = hrng.id " +
             "   WHERE lc3.case_reference IN (select lnkCase.case_urn as linkedCaseUrn from hearing h2  " +
