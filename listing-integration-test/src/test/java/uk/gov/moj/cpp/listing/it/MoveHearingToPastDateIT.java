@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
  */
 class MoveHearingToPastDateIT extends AbstractIT {
 
-    private static final String COURT_ROOM_ID = "731816";
+    private static final String COURT_ROOM_ID = "731816c1-27ea-4711-8d92-0a1c2f3ab7de";
 
     /**
      * Lists a real hearing through the full flow (command → events → viewstore projection) and only
