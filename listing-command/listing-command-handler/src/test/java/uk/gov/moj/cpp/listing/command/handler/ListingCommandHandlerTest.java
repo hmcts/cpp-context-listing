@@ -99,6 +99,7 @@ import uk.gov.justice.listing.events.ApplicationEjected;
 import uk.gov.justice.listing.events.CaseEjected;
 import uk.gov.justice.listing.events.CaseIdentifierUpdated;
 import uk.gov.justice.listing.events.CasesAddedToHearing;
+import uk.gov.justice.listing.events.HearingDayCourtSchedule;
 import uk.gov.justice.listing.events.CourtApplicationAddedToHearing;
 import uk.gov.justice.listing.events.CourtApplicationToBeUpdated;
 import uk.gov.justice.listing.events.CourtListRestricted;
@@ -2550,6 +2551,40 @@ class ListingCommandHandlerTest {
     }
 
     @Test
+    public void listingCommandHandlerShouldMoveMagistratesHearingToPastDate() throws Exception {
+        final UUID courtScheduleId = randomUUID();
+        final JsonEnvelope commandEnvelope = getEnvelopeForMoveHearingToPastDate(courtScheduleId, "2026-05-01");
+
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.raiseHearingDayCourtSchedulesUpdated(eq(HEARING_ID_1), any())).thenReturn(mock(Stream.class));
+
+        listingCommandHandler.moveHearingToPastDate(commandEnvelope);
+
+        final ArgumentCaptor<List<HearingDayCourtSchedule>> captor = ArgumentCaptor.forClass(List.class);
+        verify(hearing, times(1)).raiseHearingDayCourtSchedulesUpdated(eq(HEARING_ID_1), captor.capture());
+        verify(hearing, never()).changeStartDate(any(), any());
+        final HearingDayCourtSchedule applied = captor.getValue().get(0);
+        assertThat(applied.getCourtScheduleId(), is(courtScheduleId));
+        assertThat(applied.getHearingDate(), is(LocalDate.parse("2026-05-01")));
+    }
+
+    @Test
+    public void listingCommandHandlerShouldMoveCrownHearingToPastDateListingSideOnly() throws Exception {
+        final String startDate = "2026-05-01";
+        final JsonEnvelope commandEnvelope = getEnvelopeForMoveCrownHearingToPastDate(startDate);
+
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.changeStartDate(LocalDate.parse(startDate), HEARING_ID_1)).thenReturn(mock(Stream.class));
+
+        listingCommandHandler.moveHearingToPastDate(commandEnvelope);
+
+        verify(hearing, times(1)).changeStartDate(LocalDate.parse(startDate), HEARING_ID_1);
+        verify(hearing, never()).raiseHearingDayCourtSchedulesUpdated(any(), any());
+    }
+
+    @Test
     public void listingCommandHandlerShouldHearingVacateTrial() throws Exception {
         final JsonEnvelope commandEnvelope = getEnvelopeForHearingVacateTrial(REASON);
 
@@ -2737,6 +2772,19 @@ class ListingCommandHandlerTest {
         final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"vacatedTrialReasonId\":\"" + reason + "\"}";
         final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
         return createEnvelope("listing.command.vacate-trial-enriched", jsonReader.readObject());
+    }
+
+    private JsonEnvelope getEnvelopeForMoveHearingToPastDate(final UUID courtScheduleId, final String sessionDate) {
+        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"jurisdiction\":\"MAGISTRATES\",\"startDate\":\""
+                + sessionDate + "\",\"courtScheduleId\":\"" + courtScheduleId + "\",\"sessionDate\":\"" + sessionDate + "\"}";
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
+        return createEnvelope("listing.command.move-hearing-to-past-date-enriched", jsonReader.readObject());
+    }
+
+    private JsonEnvelope getEnvelopeForMoveCrownHearingToPastDate(final String startDate) {
+        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"jurisdiction\":\"CROWN\",\"startDate\":\"" + startDate + "\"}";
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
+        return createEnvelope("listing.command.move-hearing-to-past-date-enriched", jsonReader.readObject());
     }
 
     private JsonEnvelope getEnvelopeForHearingVacateTrial(final UUID reason) {
