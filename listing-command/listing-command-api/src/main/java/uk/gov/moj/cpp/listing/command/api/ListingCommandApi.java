@@ -88,6 +88,9 @@ public class ListingCommandApi {
     private static final String SESSION_START_TIME = "sessionStartTime";
     private static final String SESSION_END_TIME = "sessionEndTime";
     private static final String DURATION_IN_MINUTES = "durationInMinutes";
+    private static final String HEARING_DAYS = "hearingDays";
+    private static final String DAY_START_TIME = "startTime";
+    private static final String DAY_DURATION_MINUTES = "durationMinutes";
     private static final String ERROR_CODE = "errorCode";
     private static final String MESSAGE = "message";
     public static final String HEARING_ID_NOT_FOUND = "HEARING_ID_NOT_FOUND";
@@ -383,12 +386,36 @@ public class ListingCommandApi {
         if (CROWN_JURISDICTION.equals(jurisdictionType)) {
             // Baris decision D1: CROWN moves are listing-side only, courtscheduler is never called.
             rejectCrownMoveToFutureDate(startDate);
+            enrichWithExistingDayDetails(enrichedBuilder, hearing, startDate);
         } else {
             enrichWithBookedPastDateSlot(enrichedBuilder, hearingId, courtCentreId, startDate, hearing);
         }
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_MOVE_HEARING_TO_PAST_DATE_ENRICHED),
                 enrichedBuilder.build()));
+    }
+
+    /**
+     * CROWN moves never call courtscheduler, so the re-dated hearing day is rebuilt from the
+     * hearing's own current first sitting day — same room and time-of-day, on the new past date.
+     */
+    private static void enrichWithExistingDayDetails(final JsonObjectBuilder enrichedBuilder, final JsonObject hearing, final LocalDate startDate) {
+        final JsonArray hearingDays = hearing.containsKey(HEARING_DAYS) ? hearing.getJsonArray(HEARING_DAYS) : null;
+        if (hearingDays == null || hearingDays.isEmpty()) {
+            return;
+        }
+        final JsonObject day = hearingDays.getJsonObject(0);
+        enrichedBuilder.add(SESSION_DATE, startDate.toString());
+        if (day.containsKey(COURT_ROOM_ID) && !day.isNull(COURT_ROOM_ID)) {
+            enrichedBuilder.add(COURT_ROOM_ID, day.getString(COURT_ROOM_ID));
+        }
+        if (day.containsKey(DAY_START_TIME) && !day.isNull(DAY_START_TIME)) {
+            enrichedBuilder.add(SESSION_START_TIME,
+                    java.time.ZonedDateTime.parse(day.getString(DAY_START_TIME)).with(startDate).toString());
+        }
+        if (day.containsKey(DAY_DURATION_MINUTES) && !day.isNull(DAY_DURATION_MINUTES)) {
+            enrichedBuilder.add(DURATION_IN_MINUTES, day.getInt(DAY_DURATION_MINUTES));
+        }
     }
 
     private static void rejectCrownMoveToFutureDate(final LocalDate startDate) {
