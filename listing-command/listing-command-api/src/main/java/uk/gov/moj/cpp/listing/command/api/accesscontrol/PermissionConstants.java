@@ -9,21 +9,21 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-@JsonPropertyOrder({"object","action","key","keyWithOutSource"})
+@JsonPropertyOrder({"object", "action", "key", "keyWithOutSource"})
 public final class PermissionConstants {
 
     private static final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
 
-    private static final String COURT_SCHEDULE_OBJECT = "CourtSchedule";
-    private static final String CREATE_ACTION = "Create";
+    private static final String CHANGE_HEARING_TO_PAST_DATE_OBJECT = "Change hearing to past date";
+    private static final String LINK_ACTION = "Link";
 
     private PermissionConstants() {
     }
 
-    public static String createCourtSchedulePermission() throws JsonProcessingException {
+    public static String createChangeHearingToPastDatePermission() throws JsonProcessingException {
         final ExpectedPermission expectedPermission = builder()
-                .withObject(COURT_SCHEDULE_OBJECT)
-                .withAction(CREATE_ACTION)
+                .withObject(CHANGE_HEARING_TO_PAST_DATE_OBJECT)
+                .withAction(LINK_ACTION)
                 .build();
 
         return objectMapper.writeValueAsString(expectedPermission);

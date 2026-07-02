@@ -37,6 +37,8 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.json.JsonObject;
+
 @SuppressWarnings({"squid:S1312", "squid:S2629", "squid:S6813"})
 @ApplicationScoped
 public class HearingSlotsService {
@@ -59,6 +61,9 @@ public class HearingSlotsService {
     private static final String COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE = "application/vnd.courtscheduler.validate.session.availability+json";
 
     private static final String COURTSCHEDULER_EXTEND_MULTIDAY = "application/vnd.courtscheduler.extend.multiday.hearing+json";
+
+    private static final String HEARINGS_RESOURCE = "/hearings/";
+    private static final String COURTSCHEDULER_MOVE_TO_PAST_DATE = "application/vnd.courtscheduler.move-hearing-to-past-date+json";
 
     private static final String CJS_CPP_UID = "CJSCPPUID";
     @Inject
@@ -142,6 +147,40 @@ public class HearingSlotsService {
 
     public Response crownFallbackSearchAndBook(final Map<String, String> params) {
         return postSearchBook(COURTSCHEDULER_CROWN_SEARCH_BOOK, params);
+    }
+
+    public Response moveHearingToPastDate(final UUID hearingId, final JsonObject payload) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("move-hearing-to-past-date for hearing id '{}'", hearingId);
+        }
+
+        try {
+            final HttpPost httpPost = new HttpPost(new URL(baseUri + HEARINGS_RESOURCE + hearingId).toString());
+            httpPost.addHeader(CONTENT_TYPE, COURTSCHEDULER_MOVE_TO_PAST_DATE);
+            httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
+
+            final StringEntity requestEntity = new StringEntity(payload.toString());
+            httpPost.setEntity(requestEntity);
+
+            final HttpResponse httpResponse = execute(httpPost);
+            final int statusCode = httpResponse.getStatusLine().getStatusCode();
+            final String entityBodyAsString = httpResponse.getEntity() == null ? "" : EntityUtils.toString(httpResponse.getEntity());
+
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("move-hearing-to-past-date returned status {}", statusCode);
+            }
+
+            return Response
+                    .status(statusCode)
+                    .entity(entityBodyAsString.isBlank() ? null : stringToJsonObjectConverter.convert(entityBodyAsString))
+                    .build();
+        } catch (IOException ex) {
+            LOGGER.error("Exception thrown on trying to move hearing to past date", ex);
+            return Response
+                    .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+                    .entity(ex.getMessage())
+                    .build();
+        }
     }
 
     public void delete(final UUID hearingId) {

@@ -253,7 +253,7 @@ rule "Command - API - Action - listing.command.move-hearing-to-past-date"
   when
     $outcome: Outcome();
     $action: Action(name == "listing.command.move-hearing-to-past-date");
-    eval(userAndGroupProvider.hasPermission($action, PermissionConstants.createCourtSchedulePermission()));
+    eval(userAndGroupProvider.hasPermission($action, PermissionConstants.createChangeHearingToPastDatePermission()));
   then
     $outcome.setSuccess(true);
 end

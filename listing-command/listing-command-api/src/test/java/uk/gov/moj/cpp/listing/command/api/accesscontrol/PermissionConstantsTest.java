@@ -2,7 +2,7 @@ package uk.gov.moj.cpp.listing.command.api.accesscontrol;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static uk.gov.moj.cpp.listing.command.api.accesscontrol.PermissionConstants.createCourtSchedulePermission;
+import static uk.gov.moj.cpp.listing.command.api.accesscontrol.PermissionConstants.createChangeHearingToPastDatePermission;
 import static uk.gov.moj.cpp.listing.command.api.util.FileUtil.getPayload;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -15,9 +15,9 @@ class PermissionConstantsTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Test
-    void shouldCreateSchedulePermission() throws JsonProcessingException {
-        JsonNode actual = mapper.readTree(createCourtSchedulePermission());
-        JsonNode expected = mapper.readTree(getPayload("create-court-schedule-permission.json"));
+    void shouldCreateChangeHearingToPastDatePermission() throws JsonProcessingException {
+        JsonNode actual = mapper.readTree(createChangeHearingToPastDatePermission());
+        JsonNode expected = mapper.readTree(getPayload("create-change-hearing-to-past-date-permission.json"));
         assertThat(actual, is(expected));
     }
 }

@@ -2,7 +2,7 @@ package uk.gov.moj.cpp.listing.command.api;
 
 import static java.util.Collections.singletonMap;
 import static org.mockito.BDDMockito.given;
-import static uk.gov.moj.cpp.listing.command.api.accesscontrol.PermissionConstants.createCourtSchedulePermission;
+import static uk.gov.moj.cpp.listing.command.api.accesscontrol.PermissionConstants.createChangeHearingToPastDatePermission;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ADMINISTRATORS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ASSOCIATE;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_CLERKS;
@@ -333,9 +333,9 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     }
 
     @Test
-    public void shouldAllowUserWithCourtScheduleCreatePermissionToMoveHearingToPastDate() throws JsonProcessingException {
+    public void shouldAllowUserWithChangeHearingToPastDatePermissionToMoveHearingToPastDate() throws JsonProcessingException {
         final Action action = createActionFor(ACTION_MOVE_HEARING_TO_PAST_DATE);
-        given(userAndGroupProvider.hasPermission(action, createCourtSchedulePermission())).willReturn(true);
+        given(userAndGroupProvider.hasPermission(action, createChangeHearingToPastDatePermission())).willReturn(true);
 
         final ExecutionResults results = executeRulesWith(action);
 
@@ -343,11 +343,12 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     }
 
     @Test
-    public void shouldNotAllowUserWithoutCourtScheduleCreatePermissionToMoveHearingToPastDate() {
+    public void shouldNotAllowUserWithoutChangeHearingToPastDatePermissionToMoveHearingToPastDate() {
         final Action action = createActionFor(ACTION_MOVE_HEARING_TO_PAST_DATE);
 
         final ExecutionResults results = executeRulesWith(action);
 
         assertFailureOutcome(results);
     }
+
 }

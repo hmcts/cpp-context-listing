@@ -950,4 +950,78 @@ class HearingSlotsServiceTest {
 
         assertThat(result.getString("durationInMinutes"), is("notANumber"));
     }
+
+    @Test
+    public void shouldPostMoveHearingToPastDateSuccessfully() throws Exception {
+        // Given
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
+        final javax.json.JsonObject payload = javax.json.Json.createObjectBuilder()
+                .add("hearingId", TEST_HEARING_ID.toString())
+                .build();
+
+        try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
+            mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.build()).thenReturn(httpClient);
+            when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
+            when(httpResponse.getStatusLine()).thenReturn(statusLine);
+            when(statusLine.getStatusCode()).thenReturn(Response.Status.OK.getStatusCode());
+            when(httpResponse.getEntity()).thenReturn(null);
+
+            // When
+            final Response response = hearingSlotsService.moveHearingToPastDate(TEST_HEARING_ID, payload);
+
+            // Then
+            assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+            verify(httpClient).execute(httpPostCaptor.capture());
+            final HttpPost capturedPost = httpPostCaptor.getValue();
+            assertThat(capturedPost.getURI().toString(), is(BASE_URI + "/hearings/" + TEST_HEARING_ID));
+            assertThat(capturedPost.getFirstHeader("Content-Type").getValue(),
+                    is("application/vnd.courtscheduler.move-hearing-to-past-date+json"));
+        }
+    }
+
+    @Test
+    public void shouldHandleMoveHearingToPastDateErrorResponse() throws Exception {
+        // Given
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
+        final javax.json.JsonObject payload = javax.json.Json.createObjectBuilder()
+                .add("hearingId", TEST_HEARING_ID.toString())
+                .build();
+
+        try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
+            mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.build()).thenReturn(httpClient);
+            when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
+            when(httpResponse.getStatusLine()).thenReturn(statusLine);
+            when(statusLine.getStatusCode()).thenReturn(422);
+            when(httpResponse.getEntity()).thenReturn(null);
+
+            // When
+            final Response response = hearingSlotsService.moveHearingToPastDate(TEST_HEARING_ID, payload);
+
+            // Then
+            assertThat(response.getStatus(), is(422));
+        }
+    }
+
+    @Test
+    public void shouldHandleMoveHearingToPastDateIOException() throws Exception {
+        // Given
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
+        final javax.json.JsonObject payload = javax.json.Json.createObjectBuilder()
+                .add("hearingId", TEST_HEARING_ID.toString())
+                .build();
+
+        try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
+            mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.build()).thenReturn(httpClient);
+            when(httpClient.execute(any(HttpPost.class))).thenThrow(new IOException("Test exception"));
+
+            // When
+            final Response response = hearingSlotsService.moveHearingToPastDate(TEST_HEARING_ID, payload);
+
+            // Then
+            assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+        }
+    }
 }

@@ -9,6 +9,8 @@ import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestEx
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource;
+import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
+import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 
@@ -26,8 +28,10 @@ import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -67,6 +71,9 @@ public class CourtSchedulerServiceAdapter {
     private static final String DRAFT = "draft";
     private static final String OVERBOOKED = "overbooked";
     private static final String ANY_DRAFT = "anyDraft";
+    // move-hearing-to-past-date (MAGS) wire-field constants; JURISDICTION reuses the field declared above
+    private static final String START_DATE = "startDate";
+    private static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
     @Inject
     private HearingSlotsService hearingSlotsService;
     @Inject
@@ -471,5 +478,50 @@ public class CourtSchedulerServiceAdapter {
         final int pageCount = responseJson.getInt("pageCount");
 
         return new HearingIdsResponse(uuids, results, pageCount);
+    }
+
+    /**
+     * MAGISTRATES-only. Calls courtscheduler's {@code move-hearing-to-past-date} action
+     * synchronously. CROWN moves are handled entirely listing-side and never reach this method
+     * (Baris decision D1). On any non-200 response the upstream errorCode/status is surfaced via
+     * {@link MoveHearingToPastDateException} so the caller sends no event.
+     */
+    public MoveHearingToPastDateResult moveHearingToPastDate(final UUID hearingId,
+                                                              final UUID courtCentreId,
+                                                              final LocalDate startDate,
+                                                              final Integer durationInMinutes) {
+        final JsonObjectBuilder requestBuilder = Json.createObjectBuilder()
+                .add(HEARING_ID, hearingId.toString())
+                .add(COURT_CENTRE_ID, courtCentreId.toString())
+                .add(JURISDICTION, MAGISTRATES_JURISDICTION)
+                .add(START_DATE, startDate.toString());
+        if (durationInMinutes != null) {
+            requestBuilder.add(DURATION_IN_MINUTES, durationInMinutes);
+        }
+
+        final Response response = hearingSlotsService.moveHearingToPastDate(hearingId, requestBuilder.build());
+        final int status = response.getStatus();
+        final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject)
+                ? (JsonObject) response.getEntity()
+                : Json.createObjectBuilder().build();
+
+        if (HttpStatus.SC_OK == status) {
+            return parseMoveHearingToPastDateResult(body);
+        }
+
+        LOGGER.error("moveHearingToPastDate from courtscheduler returned status {} for hearingId {}: {}",
+                status, hearingId, body);
+        throw new MoveHearingToPastDateException(status, body,
+                "moveHearingToPastDate returned " + status + " for hearingId " + hearingId);
+    }
+
+    private static MoveHearingToPastDateResult parseMoveHearingToPastDateResult(final JsonObject body) {
+        return new MoveHearingToPastDateResult(
+                body.containsKey("courtScheduleId") ? UUID.fromString(body.getString("courtScheduleId")) : null,
+                body.getString("courtRoomId", null),
+                body.containsKey("sessionDate") ? LocalDate.parse(body.getString("sessionDate")) : null,
+                body.getString("sessionStartTime", null),
+                body.getString("sessionEndTime", null),
+                body.containsKey("durationInMinutes") ? body.getInt("durationInMinutes") : null);
     }
 }

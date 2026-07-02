@@ -1,0 +1,5 @@
+{
+  "hearingId": "%%HEARING_ID%%",
+  "courtCentreId": "%%COURT_CENTRE_ID%%",
+  "startDate": "%%START_DATE%%"
+}
