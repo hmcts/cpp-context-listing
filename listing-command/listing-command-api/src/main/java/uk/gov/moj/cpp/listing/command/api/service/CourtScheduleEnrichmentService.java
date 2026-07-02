@@ -16,6 +16,7 @@ import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
+import uk.gov.justice.listing.courts.SelectedCourtCentre;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -43,6 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -347,6 +349,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             hearingBuilder.withJudiciary(convertJudicialRoleDomainToCore(enrichedJudiciaries));
         }
 
+        deriveCommandLevelCourtRoomFromFinalSessions(hearing, enrichedHearingDays, hearingBuilder);
+
         return hearingBuilder.build();
     }
 
@@ -452,6 +456,61 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 .withValuesFrom(hearing)
                 .withHearingDays(merged)
                 .build();
+    }
+
+    /**
+     * Inverse of {@code HearingEnrichmentOrchestrator.stripRoomInfoIfAnyDraft} (ADR-005): a
+     * schedule-only update carries a courtScheduleId but no courtroom anywhere on the command.
+     * When every enriched hearingDay resolved to a FINAL (isDraft=false) session and those
+     * sessions all sit in the SAME room, that room is promoted to the command level (and onto a
+     * roomless selectedCourtCentre, which the handler prefers over the top-level field for
+     * CROWN). Without this the handler resolves a null courtroom, calls removeCourtRoom, and
+     * {@code Hearing.canAllocateForCrown()} never opens — the hearing silently stays unallocated
+     * even though courtscheduler firmly booked the session.
+     *
+     * <p>Draft sessions can never satisfy the derivation: courtscheduler strips the room from
+     * draft sessions on every query path, so a draft day is roomless here by construction — and
+     * any explicitly-draft day fails the {@code allFinal} check anyway. Payload-supplied rooms
+     * are never overridden.
+     */
+    private void deriveCommandLevelCourtRoomFromFinalSessions(final UpdateHearingForListing hearing,
+                                                              final List<HearingDay> enrichedHearingDays,
+                                                              final UpdateHearingForListing.Builder hearingBuilder) {
+        if (commandCarriesCourtRoom(hearing) || isEmpty(enrichedHearingDays)) {
+            return;
+        }
+        final boolean allFinalWithRoom = enrichedHearingDays.stream()
+                .allMatch(d -> Boolean.FALSE.equals(d.getIsDraft()) && nonNull(d.getCourtRoomId()));
+        if (!allFinalWithRoom) {
+            return;
+        }
+        final Set<UUID> distinctRooms = enrichedHearingDays.stream()
+                .map(HearingDay::getCourtRoomId)
+                .collect(Collectors.toSet());
+        if (distinctRooms.size() != 1) {
+            LOGGER.info("CROWN update: not deriving command-level courtRoomId for hearingId {} — {} distinct rooms across final sessions",
+                    hearing.getHearingId(), distinctRooms.size());
+            return;
+        }
+        final UUID derivedCourtRoomId = distinctRooms.iterator().next();
+        LOGGER.info("CROWN update: derived command-level courtRoomId {} from resolved final session(s) for hearingId {}",
+                derivedCourtRoomId, hearing.getHearingId());
+        hearingBuilder.withCourtRoomId(derivedCourtRoomId);
+
+        final SelectedCourtCentre selectedCourtCentre = hearing.getSelectedCourtCentre();
+        if (nonNull(selectedCourtCentre) && isNull(selectedCourtCentre.getCourtRoomId())) {
+            hearingBuilder.withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre()
+                    .withValuesFrom(selectedCourtCentre)
+                    .withCourtRoomId(derivedCourtRoomId)
+                    .build());
+        }
+    }
+
+    private static boolean commandCarriesCourtRoom(final UpdateHearingForListing hearing) {
+        if (nonNull(hearing.getCourtRoomId())) {
+            return true;
+        }
+        return nonNull(hearing.getSelectedCourtCentre()) && nonNull(hearing.getSelectedCourtCentre().getCourtRoomId());
     }
 
     private UpdateHearingForListing handleCrownUpdateSearchAndBook(final UpdateHearingForListing hearing) {
