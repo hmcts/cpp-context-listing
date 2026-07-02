@@ -193,6 +193,11 @@ public class ListingCommandHandler {
     private static final String START_DATE = "startDate";
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
     private static final String SESSION_DATE = "sessionDate";
+    private static final String MOVE_COURT_CENTRE_ID = "courtCentreId";
+    private static final String MOVE_COURT_ROOM_ID = "courtRoomId";
+    private static final String SESSION_START_TIME = "sessionStartTime";
+    private static final String SESSION_END_TIME = "sessionEndTime";
+    private static final String DURATION_IN_MINUTES = "durationInMinutes";
     private static final String CROWN_JURISDICTION = "CROWN";
 
     @Inject
@@ -426,13 +431,38 @@ public class ListingCommandHandler {
             final LocalDate startDate = parse(payload.getString(START_DATE));
             updateHearingEventStream(command, hearingId, (Hearing hearing) -> hearing.changeStartDate(startDate, hearingId));
         } else {
-            final HearingDayCourtSchedule hearingDayCourtSchedule = HearingDayCourtSchedule.hearingDayCourtSchedule()
-                    .withCourtScheduleId(fromString(payload.getString(COURT_SCHEDULE_ID)))
-                    .withHearingDate(parse(payload.getString(SESSION_DATE)))
+            final LocalDate startDate = parse(payload.getString(START_DATE));
+            final LocalDate sessionDate = parse(payload.getString(SESSION_DATE));
+            final UUID courtScheduleId = fromString(payload.getString(COURT_SCHEDULE_ID));
+            final Optional<UUID> courtCentreId = payload.containsKey(MOVE_COURT_CENTRE_ID)
+                    ? Optional.of(fromString(payload.getString(MOVE_COURT_CENTRE_ID))) : Optional.empty();
+            final Optional<UUID> courtRoomId = payload.containsKey(MOVE_COURT_ROOM_ID)
+                    ? Optional.of(fromString(payload.getString(MOVE_COURT_ROOM_ID))) : Optional.empty();
+            final ZonedDateTime dayStartTime = payload.containsKey(SESSION_START_TIME)
+                    ? ZonedDateTime.parse(payload.getString(SESSION_START_TIME))
+                    : sessionDate.atStartOfDay(java.time.ZoneOffset.UTC);
+            final ZonedDateTime dayEndTime = payload.containsKey(SESSION_END_TIME)
+                    ? ZonedDateTime.parse(payload.getString(SESSION_END_TIME)) : null;
+            final Integer durationInMinutes = payload.containsKey(DURATION_IN_MINUTES)
+                    ? payload.getInt(DURATION_IN_MINUTES) : null;
+
+            // hearing-day-court-schedule-updated matches days BY DATE in the projection, so it cannot
+            // move a day to a new date. Re-issue the single day on the past date carrying the booked slot.
+            final uk.gov.moj.cpp.listing.domain.HearingDay movedDay = uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay()
+                    .withHearingDate(sessionDate)
+                    .withStartTime(dayStartTime)
+                    .withEndTime(dayEndTime)
+                    .withDurationMinutes(durationInMinutes)
+                    .withSequence(1)
+                    .withCourtScheduleId(Optional.of(courtScheduleId))
+                    .withCourtCentreId(courtCentreId)
+                    .withCourtRoomId(courtRoomId)
                     .build();
 
-            updateHearingEventStream(command, hearingId,
-                    hearing -> hearing.raiseHearingDayCourtSchedulesUpdated(hearingId, List.of(hearingDayCourtSchedule)));
+            updateHearingEventStream(command, hearingId, (Hearing hearing) -> Stream.concat(
+                    hearing.changeStartDate(startDate, hearingId),
+                    hearing.assignHearingDaysV2(hearingId, List.of(movedDay), null, null,
+                            uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES, emptyList())));
         }
     }
 
