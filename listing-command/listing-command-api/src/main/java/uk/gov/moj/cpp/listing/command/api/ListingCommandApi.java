@@ -382,40 +382,49 @@ public class ListingCommandApi {
 
         if (CROWN_JURISDICTION.equals(jurisdictionType)) {
             // Baris decision D1: CROWN moves are listing-side only, courtscheduler is never called.
-            if (startDate.isAfter(LocalDate.now())) {
-                throw new MoveHearingToPastDateException(422,
-                        buildMoveHearingToPastDateErrorBody(FUTURE_DATE_NOT_ALLOWED, "Hearings can only be moved to today or an earlier date"),
-                        "Hearings can only be moved to today or an earlier date");
-            }
+            rejectCrownMoveToFutureDate(startDate);
         } else {
-            final Integer durationInMinutes = (hearing.containsKey(ESTIMATED_MINUTES) && !hearing.isNull(ESTIMATED_MINUTES))
-                    ? hearing.getInt(ESTIMATED_MINUTES) : null;
-
-            final MoveHearingToPastDateResult slot =
-                    courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, startDate, durationInMinutes);
-
-            if (slot.courtScheduleId() != null) {
-                enrichedBuilder.add(COURT_SCHEDULE_ID, slot.courtScheduleId().toString());
-            }
-            if (slot.courtRoomId() != null) {
-                enrichedBuilder.add(COURT_ROOM_ID, slot.courtRoomId());
-            }
-            if (slot.sessionDate() != null) {
-                enrichedBuilder.add(SESSION_DATE, slot.sessionDate().toString());
-            }
-            if (slot.sessionStartTime() != null) {
-                enrichedBuilder.add(SESSION_START_TIME, slot.sessionStartTime());
-            }
-            if (slot.sessionEndTime() != null) {
-                enrichedBuilder.add(SESSION_END_TIME, slot.sessionEndTime());
-            }
-            if (slot.durationInMinutes() != null) {
-                enrichedBuilder.add(DURATION_IN_MINUTES, slot.durationInMinutes());
-            }
+            enrichWithBookedPastDateSlot(enrichedBuilder, hearingId, courtCentreId, startDate, hearing);
         }
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_MOVE_HEARING_TO_PAST_DATE_ENRICHED),
                 enrichedBuilder.build()));
+    }
+
+    private static void rejectCrownMoveToFutureDate(final LocalDate startDate) {
+        if (startDate.isAfter(LocalDate.now())) {
+            throw new MoveHearingToPastDateException(422,
+                    buildMoveHearingToPastDateErrorBody(FUTURE_DATE_NOT_ALLOWED, "Hearings can only be moved to today or an earlier date"),
+                    "Hearings can only be moved to today or an earlier date");
+        }
+    }
+
+    private void enrichWithBookedPastDateSlot(final JsonObjectBuilder enrichedBuilder, final UUID hearingId,
+                                              final UUID courtCentreId, final LocalDate startDate, final JsonObject hearing) {
+        final Integer durationInMinutes = (hearing.containsKey(ESTIMATED_MINUTES) && !hearing.isNull(ESTIMATED_MINUTES))
+                ? hearing.getInt(ESTIMATED_MINUTES) : null;
+
+        final MoveHearingToPastDateResult slot =
+                courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, startDate, durationInMinutes);
+
+        if (slot.courtScheduleId() != null) {
+            enrichedBuilder.add(COURT_SCHEDULE_ID, slot.courtScheduleId().toString());
+        }
+        if (slot.courtRoomId() != null) {
+            enrichedBuilder.add(COURT_ROOM_ID, slot.courtRoomId());
+        }
+        if (slot.sessionDate() != null) {
+            enrichedBuilder.add(SESSION_DATE, slot.sessionDate().toString());
+        }
+        if (slot.sessionStartTime() != null) {
+            enrichedBuilder.add(SESSION_START_TIME, slot.sessionStartTime());
+        }
+        if (slot.sessionEndTime() != null) {
+            enrichedBuilder.add(SESSION_END_TIME, slot.sessionEndTime());
+        }
+        if (slot.durationInMinutes() != null) {
+            enrichedBuilder.add(DURATION_IN_MINUTES, slot.durationInMinutes());
+        }
     }
 
     private static JsonObject buildMoveHearingToPastDateErrorBody(final String errorCode, final String message) {
