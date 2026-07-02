@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/listing.command.move-hearing-to-past-date-enriched.json",
+  "type": "object",
+  "properties": {
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "jurisdiction": {
+      "type": "string",
+      "enum": ["CROWN", "MAGISTRATES"]
+    },
+    "startDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "courtScheduleId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "courtRoomId": {
+      "type": "string"
+    },
+    "sessionDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "sessionStartTime": {
+      "type": "string"
+    },
+    "sessionEndTime": {
+      "type": "string"
+    },
+    "durationInMinutes": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "hearingId",
+    "jurisdiction",
+    "startDate"
+  ],
+  "additionalProperties": false
+}

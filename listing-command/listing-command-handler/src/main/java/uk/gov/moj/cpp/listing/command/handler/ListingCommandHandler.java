@@ -189,6 +189,11 @@ public class ListingCommandHandler {
     private static final String HEARING_DAY_COURT_SCHEDULES = "hearingDayCourtSchedules";
     private static final String PROSECUTION_CASE = "prosecutionCase";
     public static final String OUCODE = "oucode";
+    private static final String JURISDICTION = "jurisdiction";
+    private static final String START_DATE = "startDate";
+    private static final String COURT_SCHEDULE_ID = "courtScheduleId";
+    private static final String SESSION_DATE = "sessionDate";
+    private static final String CROWN_JURISDICTION = "CROWN";
 
     @Inject
     private EventSource eventSource;
@@ -404,6 +409,31 @@ public class ListingCommandHandler {
         final VacateTrialEnriched vacateTrialEnriched = jsonObjectConverter.convert(command.payloadAsJsonObject(), VacateTrialEnriched.class);
 
         updateHearingEventStream(command, vacateTrialEnriched.getHearingId(), (Hearing hearing) -> hearing.vacateTrial(vacateTrialEnriched.getHearingId(), vacateTrialEnriched.getVacatedTrialReasonId()));
+    }
+
+    @Handles("listing.command.move-hearing-to-past-date-enriched")
+    public void moveHearingToPastDate(final JsonEnvelope command) throws EventStreamException {
+
+        LOGGER.info("'listing.command.move-hearing-to-past-date-enriched' received with payload {}", command.toObfuscatedDebugString());
+
+        final JsonObject payload = command.payloadAsJsonObject();
+        final UUID hearingId = fromString(payload.getString(HEARING_ID));
+        final String jurisdiction = payload.getString(JURISDICTION);
+
+        if (CROWN_JURISDICTION.equals(jurisdiction)) {
+            // Listing-side-only re-date (Baris decision D1) - courtscheduler was never called for CROWN,
+            // so re-use the existing changeStartDate aggregate method rather than the courtschedule-slot event.
+            final LocalDate startDate = parse(payload.getString(START_DATE));
+            updateHearingEventStream(command, hearingId, (Hearing hearing) -> hearing.changeStartDate(startDate, hearingId));
+        } else {
+            final HearingDayCourtSchedule hearingDayCourtSchedule = HearingDayCourtSchedule.hearingDayCourtSchedule()
+                    .withCourtScheduleId(fromString(payload.getString(COURT_SCHEDULE_ID)))
+                    .withHearingDate(parse(payload.getString(SESSION_DATE)))
+                    .build();
+
+            updateHearingEventStream(command, hearingId,
+                    hearing -> hearing.raiseHearingDayCourtSchedulesUpdated(hearingId, List.of(hearingDayCourtSchedule)));
+        }
     }
 
     @Handles("listing.command.hearing-vacate-trial")
