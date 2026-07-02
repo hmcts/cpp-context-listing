@@ -57,6 +57,7 @@ public class CourtSchedulerServiceStub {
     private static final String SEARCH_COURT_SCHEDULES_BY_ID = "/courtschedule/search.court-schedules-by-id";
     private static final String CROWN_FALLBACK_SEARCH_BOOK = "/crownfallbacksearchandbook/hearingslots";
     private static final String CROWN_FALLBACK_SEARCH_BOOK_TYPE = "application/vnd.courtscheduler.crown.fallback.search.book.hearing.slots+json";
+    private static final String MOVE_HEARING_TO_PAST_DATE_TYPE = "application/vnd.courtscheduler.move-hearing-to-past-date+json";
     private static final String COURTSCHEDULER_GET_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.get.hearing.slots+json";
     private static final String COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE = "application/vnd.courtscheduler.validate.session.availability+json";
     public static final String COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE = "application/vnd.courtscheduler.get.provisional.booking+json";
@@ -1435,5 +1436,68 @@ public class CourtSchedulerServiceStub {
                         .withBody(body)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
+    }
+
+    // --- move-hearing-to-past-date stubs (MAGISTRATES-only: CROWN never reaches courtscheduler, Baris decision D1) ---
+
+    /** Stub a successful POST /hearings/{hearingId} move-hearing-to-past-date response. */
+    public static void stubMoveHearingToPastDate(final String hearingId,
+                                                  final String courtScheduleId,
+                                                  final String courtRoomId,
+                                                  final LocalDate sessionDate,
+                                                  final int durationInMinutes) {
+        final String startTime = sessionDate + "T09:00:00Z";
+        final String endTime = sessionDate + "T17:00:00Z";
+        final String body = format(
+                "{\"hearingId\":\"%s\",\"courtScheduleId\":\"%s\",\"courtRoomId\":\"%s\"," +
+                        "\"sessionDate\":\"%s\",\"sessionStartTime\":\"%s\",\"sessionEndTime\":\"%s\"," +
+                        "\"durationInMinutes\":%s}",
+                hearingId, courtScheduleId, courtRoomId, sessionDate, startTime, endTime, durationInMinutes);
+
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId)))
+                .withHeader(CONTENT_TYPE, containing(MOVE_HEARING_TO_PAST_DATE_TYPE))
+                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(body)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    /** Stub a courtscheduler rejection (422 FUTURE_DATE_NOT_ALLOWED or 404 no-session) for move-hearing-to-past-date. */
+    public static void stubMoveHearingToPastDateFailure(final String hearingId,
+                                                         final int statusCode,
+                                                         final String errorCode,
+                                                         final String message) {
+        final StringBuilder body = new StringBuilder("{");
+        if (errorCode != null) {
+            body.append("\"errorCode\":\"").append(errorCode).append("\",");
+        }
+        body.append("\"message\":\"").append(message).append("\"}");
+
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId)))
+                .withHeader(CONTENT_TYPE, containing(MOVE_HEARING_TO_PAST_DATE_TYPE))
+                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
+                .willReturn(aResponse().withStatus(statusCode)
+                        .withBody(body.toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    /** Verify courtscheduler's move-hearing-to-past-date endpoint was called for the given hearing. */
+    public static void verifyMoveHearingToPastDateCalled(final String hearingId) {
+        Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
+            try {
+                WireMock.verify(WireMock.postRequestedFor(urlPathMatching(
+                                COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId))
+                        .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\"")));
+                return true;
+            } catch (VerificationException e) {
+                return false;
+            }
+        });
+    }
+
+    /** Regression guard for the CROWN listing-side-only path: courtscheduler must never be called. */
+    public static void verifyMoveHearingToPastDateNeverCalled(final String hearingId) {
+        WireMock.verify(0, WireMock.postRequestedFor(urlPathMatching(
+                COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId)));
     }
 }
