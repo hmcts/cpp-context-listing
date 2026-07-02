@@ -90,6 +90,7 @@ public class ListingCommandApi {
     private static final String DURATION_IN_MINUTES = "durationInMinutes";
     private static final String HEARING_DAYS = "hearingDays";
     private static final String DAY_START_TIME = "startTime";
+    private static final String DAY_END_TIME = "endTime";
     private static final String DAY_DURATION_MINUTES = "durationMinutes";
     private static final String ERROR_CODE = "errorCode";
     private static final String MESSAGE = "message";
@@ -412,6 +413,10 @@ public class ListingCommandApi {
         if (day.containsKey(DAY_START_TIME) && !day.isNull(DAY_START_TIME)) {
             enrichedBuilder.add(SESSION_START_TIME,
                     java.time.ZonedDateTime.parse(day.getString(DAY_START_TIME)).with(startDate).toString());
+        }
+        if (day.containsKey(DAY_END_TIME) && !day.isNull(DAY_END_TIME)) {
+            enrichedBuilder.add(SESSION_END_TIME,
+                    java.time.ZonedDateTime.parse(day.getString(DAY_END_TIME)).with(startDate).toString());
         }
         if (day.containsKey(DAY_DURATION_MINUTES) && !day.isNull(DAY_DURATION_MINUTES)) {
             enrichedBuilder.add(DURATION_IN_MINUTES, day.getInt(DAY_DURATION_MINUTES));
