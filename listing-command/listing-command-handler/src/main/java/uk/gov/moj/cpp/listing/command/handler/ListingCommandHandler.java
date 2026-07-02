@@ -458,10 +458,18 @@ public class ListingCommandHandler {
         final ZonedDateTime dayStartTime = payload.containsKey(SESSION_START_TIME)
                 ? ZonedDateTime.parse(payload.getString(SESSION_START_TIME))
                 : dayDate.atStartOfDay(java.time.ZoneOffset.UTC);
-        final ZonedDateTime dayEndTime = payload.containsKey(SESSION_END_TIME)
-                ? ZonedDateTime.parse(payload.getString(SESSION_END_TIME)) : null;
         final Integer durationInMinutes = payload.containsKey(DURATION_IN_MINUTES)
                 ? payload.getInt(DURATION_IN_MINUTES) : null;
+        // hearing-days-changed-for-hearing requires endTime on every day; the normal listing flows
+        // always compute it as startTime + duration, so mirror that when the payload has no end time.
+        final ZonedDateTime dayEndTime;
+        if (payload.containsKey(SESSION_END_TIME)) {
+            dayEndTime = ZonedDateTime.parse(payload.getString(SESSION_END_TIME));
+        } else if (durationInMinutes != null) {
+            dayEndTime = dayStartTime.plusMinutes(durationInMinutes);
+        } else {
+            dayEndTime = dayStartTime;
+        }
 
         return uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay()
                 .withHearingDate(dayDate)
