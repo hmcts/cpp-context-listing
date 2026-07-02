@@ -743,6 +743,45 @@ public class ListingCommandApiTest {
     }
 
     @Test
+    public void shouldEnrichCrownMoveWithExistingDayDetailsReDatedToStartDate() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID crownRoomId = randomUUID();
+        final LocalDate startDate = LocalDate.now().minusDays(1);
+
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(payload.getString("hearingId")).willReturn(hearingId.toString());
+        given(payload.getString("courtCentreId")).willReturn(courtCentreId.toString());
+        given(payload.getString("startDate")).willReturn(startDate.toString());
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+
+        final JsonObject hearing = Json.createObjectBuilder()
+                .add("id", hearingId.toString())
+                .add("jurisdictionType", "CROWN")
+                .add("hearingDays", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder()
+                                .add("hearingDate", LocalDate.now().plusDays(3).toString())
+                                .add("startTime", LocalDate.now().plusDays(3) + "T10:30:00Z")
+                                .add("durationMinutes", 45)
+                                .add("courtRoomId", crownRoomId.toString())))
+                .build();
+        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
+
+        final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
+
+        listingCommandApi.handleMoveHearingToPastDate(envelope);
+
+        verify(courtSchedulerServiceAdapter, never()).moveHearingToPastDate(any(), any(), any(), any());
+        verify(sender, times(1)).send(captor.capture());
+        final JsonObject sent = (JsonObject) captor.getValue().payload();
+        assertThat(sent.getString("sessionDate"), is(startDate.toString()));
+        assertThat(sent.getString("courtRoomId"), is(crownRoomId.toString()));
+        assertThat(sent.getString("sessionStartTime"), is(startDate + "T10:30Z"));
+        assertThat(sent.getInt("durationInMinutes"), is(45));
+        assertThat(sent.containsKey("courtScheduleId"), is(false));
+    }
+
+    @Test
     public void shouldRejectCrownMoveToFutureDate() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
