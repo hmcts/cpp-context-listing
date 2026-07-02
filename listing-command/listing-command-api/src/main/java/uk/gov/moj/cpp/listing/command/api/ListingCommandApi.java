@@ -377,7 +377,8 @@ public class ListingCommandApi {
         final JsonObjectBuilder enrichedBuilder = createObjectBuilder()
                 .add(HEARING_ID, hearingId.toString())
                 .add(JURISDICTION, jurisdictionType == null ? "" : jurisdictionType)
-                .add(START_DATE, startDate.toString());
+                .add(START_DATE, startDate.toString())
+                .add(COURT_CENTRE_ID, courtCentreId.toString());
 
         if (CROWN_JURISDICTION.equals(jurisdictionType)) {
             // Baris decision D1: CROWN moves are listing-side only, courtscheduler is never called.
