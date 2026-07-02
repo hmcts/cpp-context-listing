@@ -15,6 +15,7 @@ import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
+import uk.gov.justice.listing.commands.NonDefaultDay;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.listing.courts.SelectedCourtCentre;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
@@ -261,9 +262,14 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return hearing;
         }
 
-        final int totalDuration = hearing.getHearingDays().stream()
-                .mapToInt(d -> d.getDurationMinutes() != null ? d.getDurationMinutes() : 0)
-                .sum();
+        // The single virtual=true nonDefaultDay (validated upstream by CrownNonDefaultDaysValidator)
+        // carries the block TOTAL duration; genuine nonDefaultDays describe dates already inside that
+        // window, so summing every day would double-count and over-book the block.
+        final Optional<NonDefaultDay> virtualAnchor = virtualAnchorNonDefaultDay(hearing);
+        final int totalDuration = virtualAnchor.map(NonDefaultDay::getDuration)
+                .orElseGet(() -> hearing.getHearingDays().stream()
+                        .mapToInt(d -> d.getDurationMinutes() != null ? d.getDurationMinutes() : 0)
+                        .sum());
         final boolean isMultiDay = totalDuration > HearingDurationEnrichmentService.MINUTES_IN_DAY;
 
         EnrichmentResult enrichmentResult;
@@ -272,17 +278,27 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     .filter(d -> nonNull(d.getCourtScheduleId()))
                     .findFirst().orElse(null);
 
-            if (firstDay == null) {
-                LOGGER.error("CROWN multi-day update: no courtScheduleId on hearingDays for hearingId {}", hearing.getHearingId());
+            // The anchor sent to courtscheduler is the virtual nonDefaultDay's courtScheduleId/date
+            // (its date == startDate, validated upstream); only payloads without a virtual day fall
+            // back to the first courtScheduleId-carrying hearingDay.
+            final String anchorCourtScheduleId = virtualAnchor
+                    .map(NonDefaultDay::getCourtScheduleId)
+                    .filter(id -> !isBlank(id))
+                    .orElseGet(() -> firstDay != null ? firstDay.getCourtScheduleId().toString() : null);
+            if (anchorCourtScheduleId == null) {
+                LOGGER.error("CROWN multi-day update: no anchor courtScheduleId on nonDefaultDays or hearingDays for hearingId {}", hearing.getHearingId());
                 return hearing;
             }
+            final LocalDate anchorDate = virtualAnchor
+                    .map(nd -> nonNull(nd.getStartTime()) ? nd.getStartTime().toLocalDate() : null)
+                    .orElseGet(() -> firstDay != null ? firstDay.getHearingDate() : null);
 
             final List<CourtSchedule> sessions = multiDaySearchAndBook(
-                    firstDay.getCourtScheduleId().toString(),
+                    anchorCourtScheduleId,
                     totalDuration,
                     hearing.getHearingId().toString(),
-                    hearing.getCourtCentreId() != null ? hearing.getCourtCentreId().toString() : firstDay.getCourtScheduleId().toString(),
-                    firstDay.getHearingDate() != null ? firstDay.getHearingDate().toString() : LocalDate.now().toString());
+                    hearing.getCourtCentreId() != null ? hearing.getCourtCentreId().toString() : anchorCourtScheduleId,
+                    anchorDate != null ? anchorDate.toString() : LocalDate.now().toString());
 
             if (isEmpty(sessions)) {
                 LOGGER.warn("CROWN multi-day update: no sessions found for hearingId {} — marking days draft so allocation stays closed.", hearing.getHearingId());
@@ -349,7 +365,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             enrichmentResult = listHearingSessionsAndExtractData(hearing.getHearingId(), sanityCheckedDays);
         }
 
-        final List<HearingDay> enrichedHearingDays = enrichmentResult.getHearingDays();
+        final List<HearingDay> enrichedHearingDays = applyGenuineNonDefaultDayStartTimes(
+                enrichmentResult.getHearingDays(), hearing.getNonDefaultDays(), hearing.getHearingId());
         final List<JudicialRole> enrichedJudiciaries = enrichmentResult.getJudiciaries();
 
         UpdateHearingForListing.Builder hearingBuilder = UpdateHearingForListing.updateHearingForListing()
@@ -469,6 +486,56 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 .withValuesFrom(hearing)
                 .withHearingDays(merged)
                 .build();
+    }
+
+    /**
+     * The single block-descriptor virtual nonDefaultDay (virtual=true AND duration &gt; one court
+     * day) is the frontend's block descriptor for a CROWN update: it carries the anchor
+     * courtScheduleId and the TOTAL block duration. Uniqueness and its date == startDate are
+     * enforced upstream by {@code CrownNonDefaultDaysValidator}. Per-day virtual proxies
+     * (duration ≤ MINUTES_IN_DAY, e.g. the court-room-change flow) deliberately do NOT qualify —
+     * their durations must keep summing like any other day.
+     */
+    private static Optional<NonDefaultDay> virtualAnchorNonDefaultDay(final UpdateHearingForListing hearing) {
+        if (isEmpty(hearing.getNonDefaultDays())) {
+            return Optional.empty();
+        }
+        return hearing.getNonDefaultDays().stream()
+                .filter(CrownNonDefaultDaysValidator::isBlockDescriptor)
+                .findFirst();
+    }
+
+    /**
+     * A genuine (non-virtual) nonDefaultDay says "this date starts at a different time". The booked
+     * sessions' own start times are applied by {@code combineSearchAndBookResponseAndListResponse},
+     * so the override must run AFTER extraction: any enriched hearingDay whose date matches a genuine
+     * nonDefaultDay takes that day's startTime (endTime follows from the day's duration).
+     */
+    private static List<HearingDay> applyGenuineNonDefaultDayStartTimes(final List<HearingDay> days,
+                                                                        final List<NonDefaultDay> nonDefaultDays,
+                                                                        final UUID hearingId) {
+        if (isEmpty(days) || isEmpty(nonDefaultDays)) {
+            return days;
+        }
+        final Map<LocalDate, ZonedDateTime> startTimeByDate = nonDefaultDays.stream()
+                .filter(nd -> !Boolean.TRUE.equals(nd.getVirtual()))
+                .filter(nd -> nonNull(nd.getStartTime()))
+                .collect(Collectors.toMap(nd -> nd.getStartTime().toLocalDate(), NonDefaultDay::getStartTime, (first, second) -> first));
+        if (startTimeByDate.isEmpty()) {
+            return days;
+        }
+        return days.stream().map(day -> {
+            final ZonedDateTime override = nonNull(day.getHearingDate()) ? startTimeByDate.get(day.getHearingDate()) : null;
+            if (override == null || override.equals(day.getStartTime())) {
+                return day;
+            }
+            LOGGER.info("CROWN update: applying non-default start time {} to hearingDay {} for hearingId {}",
+                    override, day.getHearingDate(), hearingId);
+            return HearingDay.hearingDay().withValuesFrom(day)
+                    .withStartTime(override)
+                    .withEndTime(nonNull(day.getDurationMinutes()) ? override.plusMinutes(day.getDurationMinutes()) : day.getEndTime())
+                    .build();
+        }).toList();
     }
 
     /**

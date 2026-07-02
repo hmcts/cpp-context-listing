@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,6 +46,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.json.JsonObject;
@@ -53,6 +55,7 @@ import javax.ws.rs.core.Response;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -1563,6 +1566,108 @@ class CourtScheduleEnrichmentServiceTest {
         assertThat(result.getHearingDays().size(), is(2));
         assertThat(result.getHearingDays().get(0).getIsDraft(), is(false));
         assertThat(result.getHearingDays().get(1).getIsDraft(), is(false));
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_multiDay_virtualNonDefaultDayCarriesTotalAndAnchor_genuineDayGetsItsStartTime() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID anchorCsId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(10);
+        final LocalDate genuineDay = day1.plusDays(2);
+
+        // Frontend multi-day shape (real steccm22 payload): NO hearingDays; one virtual=true proxy
+        // carrying the block TOTAL (1440 = 4 days) + the anchor csId, plus one genuine nonDefaultDay
+        // inside the window asking for a 09:00 start on its date. Summing both (1800) would over-book
+        // a 5th day past the requested endDate.
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .withStartDate(day1)
+                .withEndDate(day1.plusDays(3))
+                .withNonDefaultDays(Arrays.asList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withStartTime(ZonedDateTime.parse(day1 + "T09:00:00Z"))
+                                .withDuration(1440)
+                                .withCourtScheduleId(anchorCsId.toString())
+                                .withCourtCentreId(courtCentreId.toString())
+                                .withVirtual(Boolean.TRUE)
+                                .build(),
+                        NonDefaultDay.nonDefaultDay()
+                                .withStartTime(ZonedDateTime.parse(genuineDay + "T09:00:00Z"))
+                                .withDuration(360)
+                                .withCourtCentreId(courtCentreId.toString())
+                                .build()))
+                .build();
+
+        final UUID cs2Id = UUID.randomUUID();
+        final UUID cs3Id = UUID.randomUUID();
+        final UUID cs4Id = UUID.randomUUID();
+        final CourtSchedule cs1 = buildCourtSchedule(anchorCsId, sessionCourtRoomId, courtHouseId, day1, false);
+        final CourtSchedule cs2 = buildCourtSchedule(cs2Id, sessionCourtRoomId, courtHouseId, day1.plusDays(1), false);
+        final CourtSchedule cs3 = buildCourtSchedule(cs3Id, sessionCourtRoomId, courtHouseId, genuineDay, false);
+        final CourtSchedule cs4 = buildCourtSchedule(cs4Id, sessionCourtRoomId, courtHouseId, day1.plusDays(3), false);
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1)).add(buildCsJson(cs2)).add(buildCsJson(cs3)).add(buildCsJson(cs4)))
+                .build();
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs1, cs2, cs3, cs4);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(anchorCsId, day1 + "T10:00:00Z", 360))
+                        .add(buildListHearingJson(cs2Id, day1.plusDays(1) + "T10:00:00Z", 360))
+                        .add(buildListHearingJson(cs3Id, genuineDay + "T10:00:00Z", 360))
+                        .add(buildListHearingJson(cs4Id, day1.plusDays(3) + "T10:00:00Z", 360)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    final JsonObject jo = inv.getArgument(0);
+                    final ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(anchorCsId.toString()).add(cs2Id.toString()).add(cs3Id.toString()).add(cs4Id.toString())
+                        .build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        // The virtual day's duration IS the block total (1440, not 1440+360) and its csId/date anchor the call.
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, String>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService, atLeastOnce()).multiDaySearchAndBook(paramsCaptor.capture());
+        final Map<String, String> params = paramsCaptor.getValue();
+        assertThat(params.get(CourtScheduleEnrichmentService.DURATION_MINUTES), is("1440"));
+        assertThat(params.get("courtScheduleId"), is(anchorCsId.toString()));
+        assertThat(params.get(CourtScheduleEnrichmentService.HEARING_DATE), is(day1.toString()));
+
+        // 4 booked days; the genuine nonDefaultDay's date keeps ITS start time (09:00, endTime follows),
+        // every other day keeps the session start time (10:00).
+        assertThat(result.getHearingDays().size(), is(4));
+        final HearingDay genuine = result.getHearingDays().stream()
+                .filter(d -> genuineDay.equals(d.getHearingDate())).findFirst().orElseThrow();
+        assertThat(genuine.getStartTime(), is(ZonedDateTime.parse(genuineDay + "T09:00:00Z")));
+        assertThat(genuine.getEndTime(), is(ZonedDateTime.parse(genuineDay + "T15:00:00Z")));
+        final HearingDay anchorDay = result.getHearingDays().stream()
+                .filter(d -> day1.equals(d.getHearingDate())).findFirst().orElseThrow();
+        assertThat(anchorDay.getStartTime(), is(ZonedDateTime.parse(day1 + "T10:00:00Z")));
     }
 
     @Test

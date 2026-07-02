@@ -107,6 +107,7 @@ public class HearingEnrichmentOrchestrator {
             enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration,envelope);
         } else if (JurisdictionType.CROWN.equals(jurisdictionType)) {
             LOGGER.info("Enrich update hearing for CROWN hearingid: {}", hearing.getHearingId());
+            CrownNonDefaultDaysValidator.validateForCrownUpdate(hearing);
             if (!isWeekCommencingHearing(hearing) && hasCourtScheduleId(hearing)) {
                 // CROWN with courtScheduleId submitted (hearingDays or nonDefaultDays): CourtSchedule-first
                 // flow, mirroring enrichListCourtHearing. The submitted ids ARE the chosen sessions, so we
@@ -149,6 +150,7 @@ public class HearingEnrichmentOrchestrator {
             enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration,envelope);
         } else if (JurisdictionType.CROWN.equals(jurisdictionType)) {
             LOGGER.info("Enrich update hearing for CROWN hearingid: {}", hearing.getHearingId());
+            CrownNonDefaultDaysValidator.validateForCrownUpdate(hearing);
             if (!isWeekCommencingHearing(hearing) && hasCourtScheduleId(hearing)) {
                 // courtScheduleId submitted → CourtSchedule-first flow (pre-d62d3446 behaviour).
                 // See enrichUpdateHearingForListing(hearing, envelope) for rationale.
