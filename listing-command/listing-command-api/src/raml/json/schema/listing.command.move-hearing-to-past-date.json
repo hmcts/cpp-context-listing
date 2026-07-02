@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/listing.command.move-hearing-to-past-date.json",
+  "type": "object",
+  "properties": {
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "courtCentreId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "startDate": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "hearingId",
+    "courtCentreId",
+    "startDate"
+  ],
+  "additionalProperties": false
+}

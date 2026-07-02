@@ -39,9 +39,14 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
+import uk.gov.moj.cpp.listing.command.api.service.HearingLookupService;
+import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
+import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
+import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.VacateTrialEnriched;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -71,6 +76,27 @@ public class ListingCommandApi {
     private static final String LISTING_COMMAND_LIST_UNSCHEDULED_NEXT_HEARINGS_ENRICHED = "listing.command.list-unscheduled-next-hearings-enriched";
     private static final String LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING_ENRICHED = "listing.command.extend-hearing-for-hearing-enriched";
     private static final String LISTING_COMMAND_VACATE_TRIAL = "listing.command.vacate-trial-enriched";
+    private static final String LISTING_COMMAND_MOVE_HEARING_TO_PAST_DATE_ENRICHED = "listing.command.move-hearing-to-past-date-enriched";
+    private static final String COURT_CENTRE_ID = "courtCentreId";
+    private static final String START_DATE = "startDate";
+    private static final String JURISDICTION = "jurisdiction";
+    private static final String JURISDICTION_TYPE = "jurisdictionType";
+    private static final String ESTIMATED_MINUTES = "estimatedMinutes";
+    private static final String COURT_SCHEDULE_ID = "courtScheduleId";
+    private static final String COURT_ROOM_ID = "courtRoomId";
+    private static final String SESSION_DATE = "sessionDate";
+    private static final String SESSION_START_TIME = "sessionStartTime";
+    private static final String SESSION_END_TIME = "sessionEndTime";
+    private static final String DURATION_IN_MINUTES = "durationInMinutes";
+    private static final String HEARING_DAYS = "hearingDays";
+    private static final String DAY_START_TIME = "startTime";
+    private static final String DAY_END_TIME = "endTime";
+    private static final String DAY_DURATION_MINUTES = "durationMinutes";
+    private static final String ERROR_CODE = "errorCode";
+    private static final String MESSAGE = "message";
+    public static final String HEARING_ID_NOT_FOUND = "HEARING_ID_NOT_FOUND";
+    public static final String FUTURE_DATE_NOT_ALLOWED = "FUTURE_DATE_NOT_ALLOWED";
+    private static final String CROWN_JURISDICTION = "CROWN";
     private static final String LISTING_COMMAND_CORRECT_HEARING_DAYS_WO_CC = "listing.command.correct-hearing-days-without-court-centre";
     private static final String LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING = "listing.command.mark-unallocated-hearing-as-duplicate";
     private static final String LISTING_COMMAND_UPDATE_EXISTING_HEARING = "listing.command.update-existing-hearing";
@@ -101,6 +127,10 @@ public class ListingCommandApi {
     private HearingSlotsService hearingSlotsService;
     @Inject
     private HearingEnrichmentOrchestrator hearingEnrichmentOrchestrator;
+    @Inject
+    private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
+    @Inject
+    private HearingLookupService hearingLookupService;
 
     @Handles("listing.command.list-court-hearing")
     public void handleListCourtHearing(final JsonEnvelope envelope) {
@@ -327,6 +357,113 @@ public class ListingCommandApi {
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_VACATE_TRIAL),
                 envelope.payload()));
+    }
+
+    @Handles("listing.command.move-hearing-to-past-date")
+    public void handleMoveHearingToPastDate(final JsonEnvelope envelope) {
+        final JsonObject payload = envelope.payloadAsJsonObject();
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.move-hearing-to-past-date' received with payload {}", envelope.toObfuscatedDebugString());
+        }
+
+        final UUID hearingId = fromString(payload.getString(HEARING_ID));
+        final UUID courtCentreId = fromString(payload.getString(COURT_CENTRE_ID));
+        final LocalDate startDate = LocalDate.parse(payload.getString(START_DATE));
+
+        final JsonObject hearing = hearingLookupService.findHearing(hearingId, envelope)
+                .orElseThrow(() -> new MoveHearingToPastDateException(422,
+                        buildMoveHearingToPastDateErrorBody(HEARING_ID_NOT_FOUND, "No hearing found for hearingId " + hearingId),
+                        "No hearing found for hearingId " + hearingId));
+
+        final String jurisdictionType = hearing.getString(JURISDICTION_TYPE, null);
+
+        final JsonObjectBuilder enrichedBuilder = createObjectBuilder()
+                .add(HEARING_ID, hearingId.toString())
+                .add(JURISDICTION, jurisdictionType == null ? "" : jurisdictionType)
+                .add(START_DATE, startDate.toString())
+                .add(COURT_CENTRE_ID, courtCentreId.toString());
+
+        if (CROWN_JURISDICTION.equals(jurisdictionType)) {
+            // Baris decision D1: CROWN moves are listing-side only, courtscheduler is never called.
+            rejectCrownMoveToFutureDate(startDate);
+            enrichWithExistingDayDetails(enrichedBuilder, hearing, startDate);
+        } else {
+            enrichWithBookedPastDateSlot(enrichedBuilder, hearingId, courtCentreId, startDate, hearing);
+        }
+
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_MOVE_HEARING_TO_PAST_DATE_ENRICHED),
+                enrichedBuilder.build()));
+    }
+
+    /**
+     * CROWN moves never call courtscheduler, so the re-dated hearing day is rebuilt from the
+     * hearing's own current first sitting day — same room and time-of-day, on the new past date.
+     */
+    private static void enrichWithExistingDayDetails(final JsonObjectBuilder enrichedBuilder, final JsonObject hearing, final LocalDate startDate) {
+        final JsonArray hearingDays = hearing.containsKey(HEARING_DAYS) ? hearing.getJsonArray(HEARING_DAYS) : null;
+        if (hearingDays == null || hearingDays.isEmpty()) {
+            return;
+        }
+        final JsonObject day = hearingDays.getJsonObject(0);
+        enrichedBuilder.add(SESSION_DATE, startDate.toString());
+        if (day.containsKey(COURT_ROOM_ID) && !day.isNull(COURT_ROOM_ID)) {
+            enrichedBuilder.add(COURT_ROOM_ID, day.getString(COURT_ROOM_ID));
+        }
+        if (day.containsKey(DAY_START_TIME) && !day.isNull(DAY_START_TIME)) {
+            enrichedBuilder.add(SESSION_START_TIME,
+                    java.time.ZonedDateTime.parse(day.getString(DAY_START_TIME)).with(startDate).toString());
+        }
+        if (day.containsKey(DAY_END_TIME) && !day.isNull(DAY_END_TIME)) {
+            enrichedBuilder.add(SESSION_END_TIME,
+                    java.time.ZonedDateTime.parse(day.getString(DAY_END_TIME)).with(startDate).toString());
+        }
+        if (day.containsKey(DAY_DURATION_MINUTES) && !day.isNull(DAY_DURATION_MINUTES)) {
+            enrichedBuilder.add(DURATION_IN_MINUTES, day.getInt(DAY_DURATION_MINUTES));
+        }
+    }
+
+    private static void rejectCrownMoveToFutureDate(final LocalDate startDate) {
+        if (startDate.isAfter(LocalDate.now())) {
+            throw new MoveHearingToPastDateException(422,
+                    buildMoveHearingToPastDateErrorBody(FUTURE_DATE_NOT_ALLOWED, "Hearings can only be moved to today or an earlier date"),
+                    "Hearings can only be moved to today or an earlier date");
+        }
+    }
+
+    private void enrichWithBookedPastDateSlot(final JsonObjectBuilder enrichedBuilder, final UUID hearingId,
+                                              final UUID courtCentreId, final LocalDate startDate, final JsonObject hearing) {
+        final Integer durationInMinutes = (hearing.containsKey(ESTIMATED_MINUTES) && !hearing.isNull(ESTIMATED_MINUTES))
+                ? hearing.getInt(ESTIMATED_MINUTES) : null;
+
+        final MoveHearingToPastDateResult slot =
+                courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, startDate, durationInMinutes);
+
+        if (slot.courtScheduleId() != null) {
+            enrichedBuilder.add(COURT_SCHEDULE_ID, slot.courtScheduleId().toString());
+        }
+        if (slot.courtRoomId() != null) {
+            enrichedBuilder.add(COURT_ROOM_ID, slot.courtRoomId());
+        }
+        if (slot.sessionDate() != null) {
+            enrichedBuilder.add(SESSION_DATE, slot.sessionDate().toString());
+        }
+        if (slot.sessionStartTime() != null) {
+            enrichedBuilder.add(SESSION_START_TIME, slot.sessionStartTime());
+        }
+        if (slot.sessionEndTime() != null) {
+            enrichedBuilder.add(SESSION_END_TIME, slot.sessionEndTime());
+        }
+        if (slot.durationInMinutes() != null) {
+            enrichedBuilder.add(DURATION_IN_MINUTES, slot.durationInMinutes());
+        }
+    }
+
+    private static JsonObject buildMoveHearingToPastDateErrorBody(final String errorCode, final String message) {
+        return createObjectBuilder()
+                .add(ERROR_CODE, errorCode)
+                .add(MESSAGE, message)
+                .build();
     }
 
     @Handles("listing.command.extend-hearing-for-hearing")

@@ -104,6 +104,9 @@ protocols: [ HTTP, HTTPS ]
         requestType: application/vnd.listing.command.vacate-trial+json
         name: listing.command.vacate-trial
       (mapping):
+        requestType: application/vnd.listing.command.move-hearing-to-past-date+json
+        name: listing.command.move-hearing-to-past-date
+      (mapping):
         requestType: application/vnd.listing.duplicate-unallocated-hearing+json
         name: listing.mark-unallocated-hearing-as-duplicate
       (mapping):
@@ -144,6 +147,9 @@ protocols: [ HTTP, HTTPS ]
       application/vnd.listing.command.vacate-trial+json:
         example: !include json/listing.command.vacate-trial.json
         schema: !include json/schema/listing.command.vacate-trial.json
+      application/vnd.listing.command.move-hearing-to-past-date+json:
+        example: !include json/listing.command.move-hearing-to-past-date.json
+        schema: !include json/schema/listing.command.move-hearing-to-past-date.json
       application/vnd.listing.duplicate-unallocated-hearing+json: !!null
       application/vnd.listing.next-hearings-v2+json:
         example: !include json/listing.list-next-hearings-v2.json

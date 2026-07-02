@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.atLeast;
@@ -99,6 +100,7 @@ import uk.gov.justice.listing.events.ApplicationEjected;
 import uk.gov.justice.listing.events.CaseEjected;
 import uk.gov.justice.listing.events.CaseIdentifierUpdated;
 import uk.gov.justice.listing.events.CasesAddedToHearing;
+import uk.gov.justice.listing.events.HearingDayCourtSchedule;
 import uk.gov.justice.listing.events.CourtApplicationAddedToHearing;
 import uk.gov.justice.listing.events.CourtApplicationToBeUpdated;
 import uk.gov.justice.listing.events.CourtListRestricted;
@@ -2550,6 +2552,54 @@ class ListingCommandHandlerTest {
     }
 
     @Test
+    public void listingCommandHandlerShouldMoveMagistratesHearingToPastDate() throws Exception {
+        final UUID courtScheduleId = randomUUID();
+        final JsonEnvelope commandEnvelope = getEnvelopeForMoveHearingToPastDate(courtScheduleId, "2026-05-01");
+
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.changeStartDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
+                eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()))).thenReturn(Stream.empty());
+
+        listingCommandHandler.moveHearingToPastDate(commandEnvelope);
+
+        final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.HearingDay>> captor = ArgumentCaptor.forClass(List.class);
+        verify(hearing, times(1)).changeStartDate(LocalDate.parse("2026-05-01"), HEARING_ID_1);
+        verify(hearing, times(1)).assignHearingDaysV2(eq(HEARING_ID_1), captor.capture(), isNull(), isNull(),
+                eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()));
+        verify(hearing, never()).raiseHearingDayCourtSchedulesUpdated(any(), any());
+        final uk.gov.moj.cpp.listing.domain.HearingDay movedDay = captor.getValue().get(0);
+        assertThat(movedDay.getCourtScheduleId().orElse(null), is(courtScheduleId));
+        assertThat(movedDay.getHearingDate(), is(LocalDate.parse("2026-05-01")));
+    }
+
+    @Test
+    public void listingCommandHandlerShouldMoveCrownHearingToPastDateListingSideOnly() throws Exception {
+        final String startDate = "2026-05-01";
+        final UUID crownRoomId = randomUUID();
+        final JsonEnvelope commandEnvelope = getEnvelopeForMoveCrownHearingToPastDate(startDate, crownRoomId);
+
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.changeStartDate(eq(LocalDate.parse(startDate)), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
+                eq(uk.gov.justice.core.courts.JurisdictionType.CROWN), eq(emptyList()))).thenReturn(Stream.empty());
+
+        listingCommandHandler.moveHearingToPastDate(commandEnvelope);
+
+        final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.HearingDay>> captor = ArgumentCaptor.forClass(List.class);
+        verify(hearing, times(1)).changeStartDate(LocalDate.parse(startDate), HEARING_ID_1);
+        verify(hearing, times(1)).assignHearingDaysV2(eq(HEARING_ID_1), captor.capture(), isNull(), isNull(),
+                eq(uk.gov.justice.core.courts.JurisdictionType.CROWN), eq(emptyList()));
+        verify(hearing, never()).raiseHearingDayCourtSchedulesUpdated(any(), any());
+        final uk.gov.moj.cpp.listing.domain.HearingDay movedDay = captor.getValue().get(0);
+        assertThat(movedDay.getHearingDate(), is(LocalDate.parse(startDate)));
+        assertThat(movedDay.getCourtScheduleId().isPresent(), is(false));
+        assertThat(movedDay.getCourtRoomId().orElse(null), is(crownRoomId));
+    }
+
+    @Test
     public void listingCommandHandlerShouldHearingVacateTrial() throws Exception {
         final JsonEnvelope commandEnvelope = getEnvelopeForHearingVacateTrial(REASON);
 
@@ -2737,6 +2787,22 @@ class ListingCommandHandlerTest {
         final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"vacatedTrialReasonId\":\"" + reason + "\"}";
         final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
         return createEnvelope("listing.command.vacate-trial-enriched", jsonReader.readObject());
+    }
+
+    private JsonEnvelope getEnvelopeForMoveHearingToPastDate(final UUID courtScheduleId, final String sessionDate) {
+        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"jurisdiction\":\"MAGISTRATES\",\"startDate\":\""
+                + sessionDate + "\",\"courtCentreId\":\"" + randomUUID() + "\",\"courtScheduleId\":\"" + courtScheduleId
+                + "\",\"sessionDate\":\"" + sessionDate + "\"}";
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
+        return createEnvelope("listing.command.move-hearing-to-past-date-enriched", jsonReader.readObject());
+    }
+
+    private JsonEnvelope getEnvelopeForMoveCrownHearingToPastDate(final String startDate, final UUID courtRoomId) {
+        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"jurisdiction\":\"CROWN\",\"startDate\":\"" + startDate
+                + "\",\"courtCentreId\":\"" + randomUUID() + "\",\"courtRoomId\":\"" + courtRoomId
+                + "\",\"sessionDate\":\"" + startDate + "\",\"sessionStartTime\":\"" + startDate + "T10:00:00Z\",\"durationInMinutes\":25}";
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
+        return createEnvelope("listing.command.move-hearing-to-past-date-enriched", jsonReader.readObject());
     }
 
     private JsonEnvelope getEnvelopeForHearingVacateTrial(final UUID reason) {
