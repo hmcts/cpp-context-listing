@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.atLeast;
@@ -2557,16 +2558,20 @@ class ListingCommandHandlerTest {
 
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
-        when(hearing.raiseHearingDayCourtSchedulesUpdated(eq(HEARING_ID_1), any())).thenReturn(mock(Stream.class));
+        when(hearing.changeStartDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
+                eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()))).thenReturn(Stream.empty());
 
         listingCommandHandler.moveHearingToPastDate(commandEnvelope);
 
-        final ArgumentCaptor<List<HearingDayCourtSchedule>> captor = ArgumentCaptor.forClass(List.class);
-        verify(hearing, times(1)).raiseHearingDayCourtSchedulesUpdated(eq(HEARING_ID_1), captor.capture());
-        verify(hearing, never()).changeStartDate(any(), any());
-        final HearingDayCourtSchedule applied = captor.getValue().get(0);
-        assertThat(applied.getCourtScheduleId(), is(courtScheduleId));
-        assertThat(applied.getHearingDate(), is(LocalDate.parse("2026-05-01")));
+        final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.HearingDay>> captor = ArgumentCaptor.forClass(List.class);
+        verify(hearing, times(1)).changeStartDate(LocalDate.parse("2026-05-01"), HEARING_ID_1);
+        verify(hearing, times(1)).assignHearingDaysV2(eq(HEARING_ID_1), captor.capture(), isNull(), isNull(),
+                eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()));
+        verify(hearing, never()).raiseHearingDayCourtSchedulesUpdated(any(), any());
+        final uk.gov.moj.cpp.listing.domain.HearingDay movedDay = captor.getValue().get(0);
+        assertThat(movedDay.getCourtScheduleId().orElse(null), is(courtScheduleId));
+        assertThat(movedDay.getHearingDate(), is(LocalDate.parse("2026-05-01")));
     }
 
     @Test
@@ -2776,7 +2781,8 @@ class ListingCommandHandlerTest {
 
     private JsonEnvelope getEnvelopeForMoveHearingToPastDate(final UUID courtScheduleId, final String sessionDate) {
         final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"jurisdiction\":\"MAGISTRATES\",\"startDate\":\""
-                + sessionDate + "\",\"courtScheduleId\":\"" + courtScheduleId + "\",\"sessionDate\":\"" + sessionDate + "\"}";
+                + sessionDate + "\",\"courtCentreId\":\"" + randomUUID() + "\",\"courtScheduleId\":\"" + courtScheduleId
+                + "\",\"sessionDate\":\"" + sessionDate + "\"}";
         final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
         return createEnvelope("listing.command.move-hearing-to-past-date-enriched", jsonReader.readObject());
     }
