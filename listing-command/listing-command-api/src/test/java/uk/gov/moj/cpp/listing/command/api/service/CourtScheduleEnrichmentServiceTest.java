@@ -1479,6 +1479,93 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
+    void shouldMarkDaysDraftAndSuppressAllocation_whenCrownUpdateMultiDayBookedBlockStartsOnDifferentDate() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate requestedStart = LocalDate.now().plusDays(8);
+        final LocalDate bookedStart = LocalDate.now().plusDays(5);
+
+        // Date-move: the command asks for a window starting on requestedStart.
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(requestedStart)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(requestedStart)
+                                .withDurationMinutes(720)
+                                .build()))
+                .build();
+
+        // courtscheduler answers with a block starting on a DIFFERENT day (live J07 failure: its
+        // idempotency guard returned the hearing's OLD block instead of moving the window).
+        final CourtSchedule cs1 = buildCourtSchedule(UUID.randomUUID(), sessionCourtRoomId, courtHouseId, bookedStart, false);
+        final CourtSchedule cs2 = buildCourtSchedule(UUID.randomUUID(), sessionCourtRoomId, courtHouseId, bookedStart.plusDays(1), false);
+        final JsonObject responseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2)))
+                .build();
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(responseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs1, cs2);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        // A booked window that ignores the requested start date must NOT be silently adopted:
+        // the command's days stay, marked draft, so allocation stays closed and the divergence is
+        // an explicit deferred state instead of a corrupted hearing window.
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+        assertThat(result.getStartDate(), is(requestedStart));
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_multiDay_shouldEnrichNormally_whenBookedBlockStartsOnRequestedDate() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(day1)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId2)
+                                .withHearingDate(day1.plusDays(1))
+                                .withDurationMinutes(360)
+                                .build()))
+                .build();
+
+        // Booked block starts exactly on the requested start date — enrichment proceeds normally.
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, sessionCourtRoomId, courtHouseId, day1, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, sessionCourtRoomId, courtHouseId, day1.plusDays(1), false);
+        mockMultiDaySearchAndBook(courtScheduleId1, courtScheduleId2, cs1, cs2);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().size(), is(2));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(false));
+        assertThat(result.getHearingDays().get(1).getIsDraft(), is(false));
+    }
+
+    @Test
     void shouldMarkDaysDraftAndSuppressAllocation_whenCrownUpdateSingleDayFetchReturnsEmpty() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtScheduleId = UUID.randomUUID();

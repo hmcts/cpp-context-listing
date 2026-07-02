@@ -289,6 +289,19 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 return markDaysDraftWhenSessionsUnresolved(hearing);
             }
 
+            final LocalDate requestedStartDate = hearing.getStartDate();
+            final LocalDate bookedBlockStartDate = sessions.stream()
+                    .map(CourtSchedule::getSessionDate)
+                    .filter(d -> nonNull(d))
+                    .min(LocalDate::compareTo)
+                    .orElse(null);
+            if (nonNull(requestedStartDate) && nonNull(bookedBlockStartDate)
+                    && !requestedStartDate.equals(bookedBlockStartDate)) {
+                LOGGER.warn("CROWN multi-day update: booked block starts {} but the command requested {} for hearingId {} — courtscheduler did not honour the requested window; marking days draft so allocation stays closed.",
+                        bookedBlockStartDate, requestedStartDate, hearing.getHearingId());
+                return markDaysDraftWhenSessionsUnresolved(hearing);
+            }
+
             final int daysNeeded = sessions.size();
             final int durationPerDay = totalDuration / daysNeeded;
             final List<HearingDay> expandedDays = sessions.stream().map(session -> {
