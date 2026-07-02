@@ -39,7 +39,7 @@ public class DailyListPayloadIT extends AbstractIT {
         updateHearingSteps.whenHearingIsUpdatedForListing();
         updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPIWithJmsDelay();
 
-        dailyListPayloadSteps = new DailyListPayloadSteps(updatedHearingData);
+        dailyListPayloadSteps = new DailyListPayloadSteps(hearingsData, updatedHearingData);
     }
 
     @Test

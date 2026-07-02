@@ -43,7 +43,7 @@ public class WeekCommencingListPayloadIT extends AbstractIT {
         updateHearingSteps.whenHearingIsUpdatedForListing();
         updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPIWithJmsDelay();
 
-        weekCommencingListPayloadSteps = new DailyListPayloadSteps(updatedHearingData);
+        weekCommencingListPayloadSteps = new DailyListPayloadSteps(hearingsData, updatedHearingData);
     }
 
     @Test
