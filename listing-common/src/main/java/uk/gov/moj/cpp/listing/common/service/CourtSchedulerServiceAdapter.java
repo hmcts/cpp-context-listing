@@ -268,10 +268,10 @@ public class CourtSchedulerServiceAdapter {
     private static MoveHearingToPastDateResult parseMoveHearingToPastDateResult(final JsonObject body) {
         return new MoveHearingToPastDateResult(
                 body.containsKey("courtScheduleId") ? UUID.fromString(body.getString("courtScheduleId")) : null,
-                body.getString("courtRoomId", null),
+                body.getString(COURT_ROOM_ID, null),
                 body.containsKey("sessionDate") ? LocalDate.parse(body.getString("sessionDate")) : null,
                 body.getString("sessionStartTime", null),
                 body.getString("sessionEndTime", null),
-                body.containsKey("durationInMinutes") ? body.getInt("durationInMinutes") : null);
+                body.containsKey(DURATION_IN_MINUTES) ? body.getInt(DURATION_IN_MINUTES) : null);
     }
 }
