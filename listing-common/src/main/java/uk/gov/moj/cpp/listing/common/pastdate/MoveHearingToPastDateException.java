@@ -13,8 +13,10 @@ import javax.json.JsonObject;
  */
 public class MoveHearingToPastDateException extends RuntimeException {
 
+    private static final long serialVersionUID = 1L;
+
     private final int httpStatus;
-    private final JsonObject responseBody;
+    private final transient JsonObject responseBody;
     private final String errorCode;
 
     public MoveHearingToPastDateException(final int httpStatus, final JsonObject responseBody, final String message) {
