@@ -1440,13 +1440,14 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
-    void shouldReturnUnchangedWhenCrownUpdateMultiDaySearchReturnsEmpty() {
+    void shouldMarkDaysDraftAndSuppressAllocation_whenCrownUpdateMultiDaySearchReturnsEmpty() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtScheduleId = UUID.randomUUID();
 
         final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
                 .withHearingId(hearingId)
                 .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtRoomId(UUID.randomUUID())
                 .withHearingDays(Collections.singletonList(
                         HearingDay.hearingDay()
                                 .withCourtScheduleId(courtScheduleId)
@@ -1469,6 +1470,47 @@ class CourtScheduleEnrichmentServiceTest {
 
         verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
         assertThat(result.getHearingId(), is(hearingId));
+        // The requested sessions could not be booked/verified: every day must be marked draft so
+        // Hearing.canAllocateForCrown() stays closed and the hearing cannot silently allocate onto
+        // unverified sessions (the courtScheduleId is preserved for traceability).
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+    }
+
+    @Test
+    void shouldMarkDaysDraftAndSuppressAllocation_whenCrownUpdateSingleDayFetchReturnsEmpty() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Mock fetchCourtSchedulesByIds returning no sessions (courtscheduler could not resolve the id)
+        final JsonObject emptyResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder())
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(emptyResponseJson);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        // Unresolved session ⇒ day marked draft ⇒ allocation suppressed downstream.
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
     }
 
     @Test
@@ -3748,7 +3790,7 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
-    void enrichCrownUpdateHearing_shouldReturnUnchanged_whenSingleDayAndFetchReturnsEmpty() {
+    void enrichCrownUpdateHearing_shouldMarkDaysDraft_whenSingleDayAndFetchReturnsEmpty() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtScheduleId = UUID.randomUUID();
 
@@ -3778,7 +3820,11 @@ class CourtScheduleEnrichmentServiceTest {
 
         final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
 
-        assertThat(result, is(hearing));
+        // Unresolved session ⇒ days marked draft so the aggregate cannot allocate on them;
+        // everything else (id, courtScheduleId) is preserved.
+        assertThat(result.getHearingId(), is(hearingId));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
         verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
     }
 

@@ -285,8 +285,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     firstDay.getHearingDate() != null ? firstDay.getHearingDate().toString() : LocalDate.now().toString());
 
             if (isEmpty(sessions)) {
-                LOGGER.warn("CROWN multi-day update: no sessions found for hearingId {}.", hearing.getHearingId());
-                return hearing;
+                LOGGER.warn("CROWN multi-day update: no sessions found for hearingId {} — marking days draft so allocation stays closed.", hearing.getHearingId());
+                return markDaysDraftWhenSessionsUnresolved(hearing);
             }
 
             final int daysNeeded = sessions.size();
@@ -322,8 +322,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             final List<CourtSchedule> sessions = fetchCourtSchedulesByIds(courtScheduleIds);
 
             if (isEmpty(sessions)) {
-                LOGGER.warn("CROWN single-day update: failed to fetch court schedules for hearingId {}. Returning unchanged.", hearing.getHearingId());
-                return hearing;
+                LOGGER.warn("CROWN single-day update: failed to fetch court schedules for hearingId {} — marking days draft so allocation stays closed.", hearing.getHearingId());
+                return markDaysDraftWhenSessionsUnresolved(hearing);
             }
 
             final boolean allNonDraft = sessions.stream().noneMatch(CourtSchedule::isDraft);
@@ -504,6 +504,28 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     .withCourtRoomId(derivedCourtRoomId)
                     .build());
         }
+    }
+
+    /**
+     * Fail-safe for the CROWN update path when courtscheduler could not resolve or book the
+     * requested sessions (empty search/fetch result): every hearingDay is marked draft so
+     * {@code Hearing.canAllocateForCrown()} stays closed and the hearing cannot silently
+     * allocate onto unverified sessions — previously the seeded days (carrying an unresolved
+     * courtScheduleId and a payload room) sailed through and the read models diverged from
+     * courtscheduler's bookings. courtScheduleIds are preserved for traceability;
+     * {@code stripRoomInfoIfAnyDraft} (ADR-005) strips the day-level rooms downstream.
+     */
+    private UpdateHearingForListing markDaysDraftWhenSessionsUnresolved(final UpdateHearingForListing hearing) {
+        if (isEmpty(hearing.getHearingDays())) {
+            return hearing;
+        }
+        final List<HearingDay> guardedDays = hearing.getHearingDays().stream()
+                .map(day -> HearingDay.hearingDay().withValuesFrom(day).withIsDraft(Boolean.TRUE).build())
+                .toList();
+        return UpdateHearingForListing.updateHearingForListing()
+                .withValuesFrom(hearing)
+                .withHearingDays(guardedDays)
+                .build();
     }
 
     private static boolean commandCarriesCourtRoom(final UpdateHearingForListing hearing) {
