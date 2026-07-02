@@ -63,22 +63,21 @@ public class WireMockStubUtils {
     }
 
     /**
-     * Overrides the empty-permissions catch-all ({@link #setupUsersGroupPermissionsForApplicationTypeStub()},
-     * registered in {@code AbstractIT.setUp()} at priority 1) so the "Change hearing to past date"/"Link"
-     * permission checked by the move-hearing-to-past-date DRL rule resolves to true. Same priority + same
-     * Accept-header specificity as the catch-all — WireMock resolves same-priority ties in favour of the
-     * most-recently-registered stub, and this is registered later (from the test's Steps constructor).
+     * Serves {@code UserAndGroupProvider.getUserPermissionsByUserId} (the {@code hasPermission} DRL path,
+     * Accept {@code application/vnd.usersgroups.get-logged-in-user-permissions+json}) so the
+     * "Change hearing to past date"/"Link" permission checked by the move-hearing-to-past-date rule
+     * resolves to true. Matches on URL alone — the empty-permissions catch-all
+     * ({@link #setupUsersGroupPermissionsForApplicationTypeStub()}) only matches the
+     * is-logged-in-user-has-permission-for-action Accept header, so without this stub the permissions
+     * query gets no match and the provider receives a NULL payload.
      */
     public static void setupLoggedInUserPermissionsWithChangeHearingToPastDate() {
         stubFor(get(urlMatching("/usersgroups-service/query/api/rest/usersgroups/users/logged-in-user/permissions.*"))
                 .atPriority(1)
-                .withHeader("Accept", containing("application/vnd.usersgroups.is-logged-in-user-has-permission-for-action+json"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", "application/json")
                         .withBody(String.valueOf(createObjectBuilder()
-                                .add("groups", createArrayBuilder())
-                                .add("switchableRoles", createArrayBuilder())
                                 .add("permissions", createArrayBuilder()
                                         .add(createObjectBuilder().add("object", "Change hearing to past date").add("action", "Link")))
                                 .build()))));
