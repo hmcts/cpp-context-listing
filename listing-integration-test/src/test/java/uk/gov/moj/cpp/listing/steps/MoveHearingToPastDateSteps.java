@@ -105,7 +105,8 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
                         status().is(OK),
                         payload().isJson(org.hamcrest.CoreMatchers.allOf(
                                 withJsonPath("$.id", is(hearingId)),
-                                withJsonPath("$.startDate", is(expectedStartDate.toString()))
+                                withJsonPath("$.startDate", is(expectedStartDate.toString())),
+                                withJsonPath("$.hearingDays[0].hearingDate", is(expectedStartDate.toString()))
                         )));
     }
 }
