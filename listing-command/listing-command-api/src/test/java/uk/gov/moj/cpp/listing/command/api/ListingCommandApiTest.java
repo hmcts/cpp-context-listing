@@ -942,7 +942,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldHandleCorrectHearingDaysWithoutCourtCentre() {
+    void shouldHandleCorrectHearingDaysWithoutCourtCentre() {
         final Metadata mockMetadata = MetadataBuilderFactory.metadataWithRandomUUIDAndName().build();
         when(envelope.metadata()).thenReturn(mockMetadata);
 

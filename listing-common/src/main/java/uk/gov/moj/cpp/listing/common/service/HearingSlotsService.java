@@ -27,8 +27,8 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
@@ -45,25 +45,19 @@ public class HearingSlotsService {
     public static final String HEARING_DATE = "hearingDate";
 
     private static final String HEARING_RESOURCE = "/hearingslots";
+    private static final String SESSIONS_RESOURCE = "/sessions";
+    private static final String HEARINGS_RESOURCE = "/hearings";
     private static final String VALIDATE_SESSION_AVAILABILITY_RESOURCE = "/validate-session-availability";
-    private static final String COURTSCHEDULER_LIST_HEARING_IN_COURT_SESSIONS_RESOURCE = "/list/hearingslots";
-    private static final String HEARING_SEARCH_BOOK_RESOURCE = "/searchlist/hearingslots";
-    private static final String COURTSCHEDULES_RESOURCE = "/courtschedule/search.court-schedules-by-id";
-    private static final String COURTSCHEDULER_LIST_HEARING_IN_COURT_SESSIONS = "application/vnd.courtscheduler.list.hearings-in-court-sessions+json";
+    private static final String COURTSCHEDULER_LIST_HEARING_IN_COURT_SESSIONS_RESOURCE = HEARINGS_RESOURCE;
+    private static final String COURTSCHEDULER_LIST_HEARING_IN_COURT_SESSIONS = "application/vnd.courtscheduler.list.hearings-in-sessions+json";
     private static final String COURTSCHEDULER_GET_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.get.hearing.slots+json";
     private static final String COURTSCHEDULER_SEARCH_COURTSCHEDULES_BY_ID = "application/vnd.courtscheduler.search.court-schedules-by-id+json";
-    private static final String COURTSCHEDULER_DELETE_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.remove.hearing.slots+json";
+    private static final String COURTSCHEDULER_DELETE_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.release.sessions+json";
     private static final String COUTRT_SCHEDULER_HEARING_IDS = "application/vnd.courtscheduler.get.hearing.ids+json";
-    private static final String COURTSCHEDULER_SEARCH_BOOK_COURTSCHEDULES = "application/vnd.courtscheduler.search.book.hearing.slots+json";
+    private static final String COURTSCHEDULER_MAGS_SEARCH_BOOK = "application/vnd.courtscheduler.mags.search.and.book+json";
+    private static final String COURTSCHEDULER_CROWN_SEARCH_BOOK = "application/vnd.courtscheduler.crown.search.and.book+json";
     private static final String COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE = "application/vnd.courtscheduler.validate.session.availability+json";
 
-    private static final String MULTIDAY_SEARCH_BOOK_RESOURCE = "/multidaysearchandbook/hearingslots";
-    private static final String COURTSCHEDULER_MULTIDAY_SEARCH_BOOK = "application/vnd.courtscheduler.multiday.searchandbook.hearing.slots+json";
-
-    private static final String CROWN_FALLBACK_SEARCH_BOOK_RESOURCE = "/crownfallbacksearchandbook/hearingslots";
-    private static final String COURTSCHEDULER_CROWN_FALLBACK_SEARCH_BOOK = "application/vnd.courtscheduler.crown.fallback.search.book.hearing.slots+json";
-
-    private static final String EXTEND_MULTIDAY_RESOURCE = "/extendmultidayhearing/hearingslots";
     private static final String COURTSCHEDULER_EXTEND_MULTIDAY = "application/vnd.courtscheduler.extend.multiday.hearing+json";
 
     private static final String CJS_CPP_UID = "CJSCPPUID";
@@ -86,11 +80,15 @@ public class HearingSlotsService {
     }
 
     public Response extendMultiDayHearing(final JsonObject payload) {
-        return post(EXTEND_MULTIDAY_RESOURCE, COURTSCHEDULER_EXTEND_MULTIDAY, payload, false);
+        if (payload == null || payload.isEmpty()) {
+            throw new DataValidationException("Payload for %s is null or empty ....".formatted(COURTSCHEDULER_EXTEND_MULTIDAY));
+        }
+        final String hearingId = payload.getString("hearingId");
+        return patch(HEARINGS_RESOURCE + "/" + hearingId, COURTSCHEDULER_EXTEND_MULTIDAY, payload);
     }
 
     public Response searchBookSlots(final Map<String, String> params) {
-        return query(HEARING_SEARCH_BOOK_RESOURCE, COURTSCHEDULER_SEARCH_BOOK_COURTSCHEDULES, params);
+        return postSearchBook(COURTSCHEDULER_MAGS_SEARCH_BOOK, params);
     }
 
     public Response listHearingInCourtSessions(final Object payload) {
@@ -99,14 +97,14 @@ public class HearingSlotsService {
         }
 
         try {
-            final HttpPut httpPut = new HttpPut(new URIBuilder(baseUri + COURTSCHEDULER_LIST_HEARING_IN_COURT_SESSIONS_RESOURCE).build());
-            httpPut.addHeader(CONTENT_TYPE, COURTSCHEDULER_LIST_HEARING_IN_COURT_SESSIONS);
-            httpPut.addHeader(CJS_CPP_UID, getUserId().toString());
+            final HttpPost httpPost = new HttpPost(new URIBuilder(baseUri + COURTSCHEDULER_LIST_HEARING_IN_COURT_SESSIONS_RESOURCE).build());
+            httpPost.addHeader(CONTENT_TYPE, COURTSCHEDULER_LIST_HEARING_IN_COURT_SESSIONS);
+            httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
 
             final StringEntity requestEntity = new StringEntity(this.objectMapper.writeValueAsString(payload));
-            httpPut.setEntity(requestEntity);
+            httpPost.setEntity(requestEntity);
 
-            final HttpResponse httpResponse = execute(httpPut);
+            final HttpResponse httpResponse = execute(httpPost);
 
             if (isOk(httpResponse)) {
                 if (LOGGER.isInfoEnabled()) {
@@ -135,15 +133,15 @@ public class HearingSlotsService {
     }
 
     public Response getCourtSchedulesById(final Map<String, String> params) {
-        return query(COURTSCHEDULES_RESOURCE, COURTSCHEDULER_SEARCH_COURTSCHEDULES_BY_ID, params);
+        return query(SESSIONS_RESOURCE, COURTSCHEDULER_SEARCH_COURTSCHEDULES_BY_ID, params);
     }
 
     public Response multiDaySearchAndBook(final Map<String, String> params) {
-        return query(MULTIDAY_SEARCH_BOOK_RESOURCE, COURTSCHEDULER_MULTIDAY_SEARCH_BOOK, params);
+        return postSearchBook(COURTSCHEDULER_CROWN_SEARCH_BOOK, params);
     }
 
     public Response crownFallbackSearchAndBook(final Map<String, String> params) {
-        return query(CROWN_FALLBACK_SEARCH_BOOK_RESOURCE, COURTSCHEDULER_CROWN_FALLBACK_SEARCH_BOOK, params);
+        return postSearchBook(COURTSCHEDULER_CROWN_SEARCH_BOOK, params);
     }
 
     public void delete(final UUID hearingId) {
@@ -152,7 +150,7 @@ public class HearingSlotsService {
         }
 
         try {
-            final HttpDelete httpDelete = new HttpDelete(new URIBuilder(baseUri + HEARING_RESOURCE + "/" + hearingId).build());
+            final HttpDelete httpDelete = new HttpDelete(new URIBuilder(baseUri + SESSIONS_RESOURCE + "/" + hearingId).build());
             httpDelete.addHeader(CONTENT_TYPE, COURTSCHEDULER_DELETE_HEARING_SLOTS_TYPE);
             httpDelete.addHeader(CJS_CPP_UID, getUserId().toString());
 
@@ -253,25 +251,7 @@ public class HearingSlotsService {
             }
             httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
             httpPost.setEntity(new StringEntity(payload.toString()));
-
-            final HttpResponse httpResponse = execute(httpPost);
-            final String responseBody = httpResponse.getEntity() == null ? "" : EntityUtils.toString(httpResponse.getEntity());
-            final Object entity = responseBody == null || responseBody.isBlank()
-                    ? Json.createObjectBuilder().build()
-                    : stringToJsonObjectConverter.convert(responseBody);
-
-            final int statusCode = httpResponse.getStatusLine().getStatusCode();
-            if (isOk(httpResponse)) {
-                if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info("Retrieve {} successfully", contentTypeHeader);
-                }
-            } else {
-                LOGGER.error("Retrieve {} failed with status code:{}", contentTypeHeader, statusCode);
-            }
-            return Response
-                    .status(statusCode)
-                    .entity(entity)
-                    .build();
+            return executeAndBuildResponse(httpPost, contentTypeHeader, "POST");
         } catch (URISyntaxException | IOException ex) {
             LOGGER.error("Exception thrown on trying to Retrieving %s".formatted(contentTypeHeader), ex);
             return Response
@@ -279,5 +259,116 @@ public class HearingSlotsService {
                     .entity(ex.getMessage())
                     .build();
         }
+    }
+
+    private Response patch(final String urlPath, final String contentTypeHeader, final JsonObject payload) {
+        if (LOGGER.isInfoEnabled() && Objects.nonNull(payload)) {
+            LOGGER.info("{} PATCH in CourtScheduler S & L with payload '{}'", contentTypeHeader, payload);
+        }
+        if (payload == null || payload.isEmpty()) {
+            throw new DataValidationException("Payload for PATCH %s is null or empty ....".formatted(contentTypeHeader));
+        }
+        try {
+            final HttpPatch httpPatch = new HttpPatch(new URIBuilder(baseUri + urlPath).build());
+            httpPatch.addHeader(CONTENT_TYPE, contentTypeHeader);
+            httpPatch.addHeader(CJS_CPP_UID, getUserId().toString());
+            httpPatch.setEntity(new StringEntity(payload.toString()));
+            return executeAndBuildResponse(httpPatch, contentTypeHeader, "PATCH");
+        } catch (URISyntaxException | IOException ex) {
+            LOGGER.error("Exception thrown on trying to PATCH %s".formatted(contentTypeHeader), ex);
+            return Response
+                    .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+                    .entity(ex.getMessage())
+                    .build();
+        }
+    }
+
+    /**
+     * Posts a search-and-book request to /hearings/{hearingId} with a typed JSON body.
+     * Extracts "hearingId" from params map for the path; builds remaining params as a JSON body,
+     * converting numeric fields (durationInMinutes) to numbers and boolean fields (isPolice) to booleans.
+     */
+    private Response postSearchBook(final String contentTypeHeader, final Map<String, String> params) {
+        if (params == null) {
+            throw new DataValidationException("Params for %s is null ....".formatted(contentTypeHeader));
+        }
+        final String hearingId = params.get("hearingId");
+        if (hearingId == null || hearingId.isBlank()) {
+            throw new DataValidationException("hearingId missing from params for %s".formatted(contentTypeHeader));
+        }
+
+        final JsonObject payload = buildTypedJsonBody(params);
+
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("{} POST /hearings/{} in CourtScheduler S & L with payload '{}'", contentTypeHeader, hearingId, payload);
+        }
+
+        try {
+            final HttpPost httpPost = new HttpPost(new URIBuilder(baseUri + HEARINGS_RESOURCE + "/" + hearingId).build());
+            httpPost.addHeader(CONTENT_TYPE, contentTypeHeader);
+            httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
+            httpPost.setEntity(new StringEntity(payload.toString()));
+            return executeAndBuildResponse(httpPost, contentTypeHeader, "POST");
+        } catch (URISyntaxException | IOException ex) {
+            LOGGER.error("Exception thrown on trying to POST %s".formatted(contentTypeHeader), ex);
+            return Response
+                    .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+                    .entity(ex.getMessage())
+                    .build();
+        }
+    }
+
+    /**
+     * Builds a typed JSON body from a params map. Converts "durationInMinutes" values to JSON numbers
+     * and "isPolice" values to JSON booleans; all other entries are added as strings.
+     * Null values are silently omitted.
+     */
+    static JsonObject buildTypedJsonBody(final Map<String, String> params) {
+        final javax.json.JsonObjectBuilder bodyBuilder = Json.createObjectBuilder();
+        params.forEach((key, value) -> {
+            if (value == null) {
+                return;
+            }
+            if ("durationInMinutes".equals(key)) {
+                try {
+                    bodyBuilder.add(key, Integer.parseInt(value));
+                } catch (NumberFormatException e) {
+                    bodyBuilder.add(key, value);
+                }
+            } else if ("isPolice".equals(key)) {
+                bodyBuilder.add(key, Boolean.parseBoolean(value));
+            } else {
+                bodyBuilder.add(key, value);
+            }
+        });
+        return bodyBuilder.build();
+    }
+
+    /**
+     * Executes an already-configured HTTP request and builds a JAX-RS Response from the outcome.
+     * Logs success or failure at INFO/ERROR respectively. On IOException or URISyntaxException
+     * the caller's catch block handles the 500 — this method only handles the execute + response
+     * building path (no try/catch here).
+     */
+    private Response executeAndBuildResponse(final HttpRequestBase request, final String contentTypeHeader, final String method)
+            throws IOException {
+        final HttpResponse httpResponse = execute(request);
+        final String responseBody = httpResponse.getEntity() == null ? "" : EntityUtils.toString(httpResponse.getEntity());
+        final Object entity = responseBody == null || responseBody.isBlank()
+                ? Json.createObjectBuilder().build()
+                : stringToJsonObjectConverter.convert(responseBody);
+
+        final int statusCode = httpResponse.getStatusLine().getStatusCode();
+        if (isOk(httpResponse)) {
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("{} {} successfully", method, contentTypeHeader);
+            }
+        } else {
+            LOGGER.error("{} {} failed with status code:{}", method, contentTypeHeader, statusCode);
+        }
+        return Response
+                .status(statusCode)
+                .entity(entity)
+                .build();
     }
 }

@@ -570,7 +570,7 @@ class HearingIT extends AbstractIT {
         // Removing the court room must resolve to a DRAFT searchAndBook slot so the aggregate unallocates
         // and clears the previously-allocated room. whenHearingIsUpdatedForListingHmiEnabled() stubs no
         // searchAndBook, and the courtRoom-gated stub in whenHearingIsUpdatedForListing only fires when a
-        // room is present — so without this the /searchlist/hearingslots call finds no slot, enrichment
+        // room is present — so without this the POST /hearings/{id} (mags.search.and.book) call finds no slot, enrichment
         // no-ops, and the original allocation (court room) survives → assertion sees a UUID, not null.
         stubSearchBookHearingSlotsForCrownDraft(hearinId.toString(), courtCentreId.toString());
         updateHearingSteps.whenHearingIsUpdatedForListingHmiEnabled();

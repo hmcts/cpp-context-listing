@@ -2,12 +2,15 @@ package uk.gov.moj.cpp.listing.utils;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.patch;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -54,9 +57,15 @@ public class CourtSchedulerServiceStub {
     private static final String PROVISIONAL_BOOKING = "/provisionalBooking";
     private static final String HEARING_SLOTS = "/hearingslots";
     private static final String VALIDATE_SESSION_AVAILABILITY = "/validate-session-availability";
-    private static final String SEARCH_COURT_SCHEDULES_BY_ID = "/courtschedule/search.court-schedules-by-id";
-    private static final String CROWN_FALLBACK_SEARCH_BOOK = "/crownfallbacksearchandbook/hearingslots";
-    private static final String CROWN_FALLBACK_SEARCH_BOOK_TYPE = "application/vnd.courtscheduler.crown.fallback.search.book.hearing.slots+json";
+    private static final String SEARCH_COURT_SCHEDULES_BY_ID = "/sessions";
+    private static final String SESSIONS_PATH = "/sessions";
+    private static final String HEARINGS_PATH = "/hearings";
+    /** Content-type used by the new POST /hearings/{id} crown search-and-book endpoint. */
+    private static final String CROWN_SEARCH_AND_BOOK_TYPE = "application/vnd.courtscheduler.crown.search.and.book+json";
+    /** Content-type used by the new POST /hearings/{id} mags search-and-book endpoint. */
+    private static final String MAGS_SEARCH_AND_BOOK_TYPE = "application/vnd.courtscheduler.mags.search.and.book+json";
+    /** Kept for backward-compat constant name; body of crown-fallback stub now uses CROWN_SEARCH_AND_BOOK_TYPE. */
+    private static final String CROWN_FALLBACK_SEARCH_BOOK_TYPE = CROWN_SEARCH_AND_BOOK_TYPE;
     private static final String COURTSCHEDULER_GET_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.get.hearing.slots+json";
     private static final String COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE = "application/vnd.courtscheduler.validate.session.availability+json";
     public static final String COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE = "application/vnd.courtscheduler.get.provisional.booking+json";
@@ -82,13 +91,17 @@ public class CourtSchedulerServiceStub {
                 .willReturn(aResponse().withStatus(NO_CONTENT.getStatusCode())));
     }
 
+    /** Stub DELETE /sessions/{hearingId} — release a booked session (was DELETE /hearingslots/{id}). */
     public static void stubDeleteAvailableHearingSlotsService(final String hearingId) {
-        stubFor(WireMock.delete(urlPathMatching(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS + "/" + hearingId))
+        stubFor(delete(urlPathMatching(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + SESSIONS_PATH + "/" + hearingId))
+                .withHeader(CONTENT_TYPE, containing("application/vnd.courtscheduler.release.sessions+json"))
                 .willReturn(aResponse().withStatus(ACCEPTED.getStatusCode())));
     }
 
+    /** Stub DELETE /sessions/.* for any hearingId — release a booked session (was DELETE /hearingslots/.*). */
     public static void stubDeleteAvailableHearingSlotsServiceForAnyHearing() {
-        stubFor(WireMock.delete(urlPathMatching(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS + "/.*"))
+        stubFor(delete(urlPathMatching(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + SESSIONS_PATH + "/[0-9a-fA-F-]+"))
+                .withHeader(CONTENT_TYPE, containing("application/vnd.courtscheduler.release.sessions+json"))
                 .willReturn(aResponse().withStatus(ACCEPTED.getStatusCode())));
     }
 
@@ -102,7 +115,7 @@ public class CourtSchedulerServiceStub {
 
     private static void verifyDeleteAvailableHearingSlotsStubCommandInvokedNTimes(final String hearingId, final int invocationCount) {
         Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
-            final RequestPatternBuilder requestPatternBuilder = WireMock.deleteRequestedFor(urlPathMatching(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.HEARING_SLOTS + "/" + hearingId));
+            final RequestPatternBuilder requestPatternBuilder = WireMock.deleteRequestedFor(urlPathMatching(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + SESSIONS_PATH + "/" + hearingId));
             try {
                 WireMock.verify(WireMock.exactly(invocationCount), requestPatternBuilder);
             } catch (VerificationException e) {
@@ -137,12 +150,10 @@ public class CourtSchedulerServiceStub {
     }
 
     /**
-     * Stub a successful response from /courtschedule/search.court-schedules-by-id for the given
-     * courtScheduleId. Returned wire shape mirrors what the real courtscheduler emits via
+     * Stub a successful response from GET /sessions (was /courtschedule/search.court-schedules-by-id)
+     * for the given courtScheduleId. Returned wire shape mirrors what the real courtscheduler emits via
      * {@code CourtSchedulerApi.searchCourtSchedulesById} - FLAT: each courtSchedules[] element
-     * is a single CourtSchedule with isDraft at the top level. The schema example in
-     * courtscheduler-api shows a misleading nested "sessions" structure copied from a different
-     * endpoint; never match the schema shape, match the wire shape.
+     * is a single CourtSchedule with isDraft at the top level.
      *
      * @param courtScheduleId the id under query
      * @param isDraft         draft state to report - drives whether
@@ -150,7 +161,7 @@ public class CourtSchedulerServiceStub {
      *                        {@code anyDraft=true} (strip) or {@code anyDraft=false} (preserve)
      */
     /**
-     * Stub courtscheduler's search-court-schedules-by-id response with an explicit choice of
+     * Stub courtscheduler's GET /sessions (search-by-id) response with an explicit choice of
      * draft-field name. Real-world Jackson serialisation of CourtSchedule emits one of:
      *   - {@code "isDraft": <bool>} (from the setter convention)
      *   - {@code "draft": <bool>}   (from the boolean-getter "is" prefix stripping)
@@ -165,7 +176,7 @@ public class CourtSchedulerServiceStub {
                                                             final boolean draft) {
         final String body = "{\"courtSchedules\":[{\"courtScheduleId\":\"" + courtScheduleId
                 + "\",\"" + draftKey + "\":" + draft + "}]}";
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + SEARCH_COURT_SCHEDULES_BY_ID)))
+        stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + SESSIONS_PATH)))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(body)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -173,11 +184,11 @@ public class CourtSchedulerServiceStub {
     }
 
     /**
-     * Stub /courtschedule/search.court-schedules-by-id to return a 500. Exercises the listing
+     * Stub GET /sessions (was /courtschedule/search.court-schedules-by-id) to return a 500. Exercises the listing
      * adapter's fail-closed path (anyDraft=true on courtscheduler error).
      */
     public static void stubSearchCourtSchedulesByIdServerError() {
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + SEARCH_COURT_SCHEDULES_BY_ID)))
+        stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + SESSIONS_PATH)))
                 .willReturn(aResponse().withStatus(500)
                         .withBody("internal server error")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -185,10 +196,11 @@ public class CourtSchedulerServiceStub {
     }
 
     /**
-     * Stub {@code search.court-schedules-by-id} so a CROWN bookingReference (which IS the courtScheduleId)
-     * resolves to a single session echoing the supplied courtHouse / room / date. The listing command resolves
-     * the bookingReference here (see {@code CourtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot}).
-     * Scoped by the {@code courtScheduleIds} query param so it answers only for this hearing's bookingReference
+     * Stub GET /sessions (was /courtschedule/search.court-schedules-by-id) so a CROWN bookingReference
+     * (which IS the courtScheduleId) resolves to a single session echoing the supplied courtHouse / room / date.
+     * The listing command resolves the bookingReference here
+     * (see {@code CourtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot}).
+     * Scoped by the {@code ids} query param so it answers only for this hearing's bookingReference
      * and never pollutes other tests (WireMock stubs persist across IT classes in a suite).
      */
     public static void stubSearchCourtSchedulesByIdSession(final String courtScheduleId,
@@ -214,18 +226,23 @@ public class CourtSchedulerServiceStub {
         session.append(",\"isDraft\":").append(isDraft).append("}");
         final String body = "{\"courtSchedules\":[" + session + "]}";
 
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + SEARCH_COURT_SCHEDULES_BY_ID)))
+        stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + SESSIONS_PATH)))
                 .atPriority(2)
-                .withQueryParam("courtScheduleIds", containing(courtScheduleId))
+                .withQueryParam("ids", containing(courtScheduleId))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(body)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
     }
 
-    // --- Crown fallback search-and-book stubs (Option C: courtCentreId-only wire) ---
+    // --- Crown fallback search-and-book stubs (POST /hearings/{hearingId}, crown.search.and.book, durationInMinutes <= 360) ---
 
     /**
-     * Stub a successful 200 response from /crownfallbacksearchandbook/hearingslots.
+     * Stub a successful 200 response from POST /hearings/{hearingId} with content-type
+     * {@code crown.search.and.book} for the single-day (fallback) path.
+     * Discriminated from the multi-day stub by {@code durationInMinutes <= 360} body matcher.
+     * Response carries flat top-level fields (hearingId, courtScheduleId, source,
+     * courtRoomId, sessionDate, sessionStartTime, sessionEndTime, durationInMinutes, isDraft,
+     * businessType, overbooked) plus {@code "sessions":[]} (empty, single-day shape).
      *
      * @param hearingId       hearingId echoed back in the response
      * @param courtScheduleId the booked session id to return (as if courtscheduler picked it)
@@ -243,40 +260,50 @@ public class CourtSchedulerServiceStub {
                 "{\"hearingId\":\"%s\",\"courtScheduleId\":\"%s\",\"courtRoomId\":731816," +
                         "\"sessionDate\":\"%s\",\"sessionStartTime\":\"%s\",\"sessionEndTime\":\"%s\"," +
                         "\"durationInMinutes\":10,\"isDraft\":%s,\"businessType\":\"CR\"," +
-                        "\"source\":\"%s\",\"overbooked\":false}",
+                        "\"source\":\"%s\",\"overbooked\":false,\"sessions\":[]}",
                 hearingId, courtScheduleId, sessionDate, startTime, endTime, isDraft, source);
 
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + CROWN_FALLBACK_SEARCH_BOOK)))
-                .withQueryParam("source", matching(source))
+        // durationInMinutes <= 360 distinguishes single-day (crown fallback) from multi-day
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
+                .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                .withRequestBody(containing("\"source\":\"" + source + "\""))
+                .withRequestBody(matchingJsonPath("$.durationInMinutes", matching("[0-9]|[1-9][0-9]|[12][0-9]{2}|3[0-5][0-9]|360")))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(body)
-                        .withHeader(CONTENT_TYPE, CROWN_FALLBACK_SEARCH_BOOK_TYPE)));
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
     }
 
-    /** Stub 404 "no session found" — listing-side translates to CrownFallbackNoSessionException. */
+    /** Stub 404 "no session found" on POST /hearings/{id} (crown.search.and.book, single-day)
+     * — listing-side translates to CrownFallbackNoSessionException. */
     public static void stubCrownFallbackSearchAndBookNotFound() {
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + CROWN_FALLBACK_SEARCH_BOOK)))
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
+                .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                .withRequestBody(matchingJsonPath("$.durationInMinutes", matching("[0-9]|[1-9][0-9]|[12][0-9]{2}|3[0-5][0-9]|360")))
                 .willReturn(aResponse()
                         .withStatus(404)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
     }
 
-    /** Stub 400 "invalid request" — used for defensive coverage; the listing-side multi-day guard fires first. */
+    /** Stub 400 "invalid request" on POST /hearings/{id} (crown.search.and.book, single-day)
+     * — used for defensive coverage; the listing-side multi-day guard fires first. */
     public static void stubCrownFallbackSearchAndBookBadRequest() {
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + CROWN_FALLBACK_SEARCH_BOOK)))
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
+                .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                .withRequestBody(matchingJsonPath("$.durationInMinutes", matching("[0-9]|[1-9][0-9]|[12][0-9]{2}|3[0-5][0-9]|360")))
                 .willReturn(aResponse()
                         .withStatus(BAD_REQUEST.getStatusCode())
                         .withBody("{\"error\":\"durationInMinutes exceeds single-day cap\"}")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
     }
 
-    /** Verify the Crown fallback endpoint was called with the expected source label. */
+    /** Verify POST /hearings/{id} (crown.search.and.book) was called with the expected source label in the body. */
     public static void verifyCrownFallbackSearchAndBookCalledWithSource(final String source) {
         Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
             try {
-                WireMock.verify(WireMock.getRequestedFor(urlPathMatching(
-                        COURT_SCHEDULER_ENDPOINT + CROWN_FALLBACK_SEARCH_BOOK))
-                        .withQueryParam("source", matching(source)));
+                WireMock.verify(WireMock.postRequestedFor(urlPathMatching(
+                        COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+"))
+                        .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                        .withRequestBody(containing("\"source\":\"" + source + "\"")));
                 return true;
             } catch (VerificationException e) {
                 return false;
@@ -284,19 +311,23 @@ public class CourtSchedulerServiceStub {
         });
     }
 
-    /** Verify the Crown fallback endpoint was NEVER called (regression guard for MAGS / already-allocated CROWN). */
+    /** Verify POST /hearings/{id} (crown.search.and.book) was NEVER called
+     * (regression guard for MAGS / already-allocated CROWN). */
     public static void verifyCrownFallbackSearchAndBookNeverCalled() {
-        WireMock.verify(0, WireMock.getRequestedFor(urlPathMatching(
-                COURT_SCHEDULER_ENDPOINT + CROWN_FALLBACK_SEARCH_BOOK)));
+        WireMock.verify(0, WireMock.postRequestedFor(urlPathMatching(
+                COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+"))
+                .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE)));
     }
 
-    // --- Multi-day search-and-book stubs (CROWN update multi-day path) ---
+    // --- Multi-day search-and-book stubs (POST /hearings/{hearingId}, crown.search.and.book, durationInMinutes > 360) ---
 
     /**
-     * Stub a successful response from GET /multidaysearchandbook/hearingslots returning the supplied
-     * court schedule sessions. Used to drive the CROWN multi-day update path — the listing service
-     * passes the starting courtScheduleId + total duration, courtscheduler returns N consecutive
-     * sessions that together cover the duration.
+     * Stub a successful response from POST /hearings/{hearingId} (crown.search.and.book) returning the
+     * supplied court schedule sessions under the key {@code "sessions"} (was {@code "courtSchedules"}
+     * on the old GET /multidaysearchandbook/hearingslots endpoint). Used to drive the CROWN multi-day
+     * update path — the listing service passes the starting courtScheduleId + total duration, courtscheduler
+     * returns N consecutive sessions that together cover the duration.
+     * Discriminated from the crown-fallback single-day stub by {@code durationInMinutes > 360}.
      */
     public static void stubMultiDaySearchAndBook(final List<String> courtScheduleIds,
                                                   final UUID courtHouseId,
@@ -304,7 +335,7 @@ public class CourtSchedulerServiceStub {
                                                   final LocalDate firstSessionDate,
                                                   final boolean isDraft) {
         final StringBuilder body = new StringBuilder();
-        body.append("{\"courtSchedules\":[");
+        body.append("{\"sessions\":[");
         for (int i = 0; i < courtScheduleIds.size(); i++) {
             if (i > 0) {
                 body.append(",");
@@ -321,7 +352,12 @@ public class CourtSchedulerServiceStub {
         }
         body.append("]}");
 
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/multidaysearchandbook/hearingslots")))
+        // durationInMinutes > 360 distinguishes multi-day from single-day (crown fallback)
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
+                .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                .withRequestBody(matchingJsonPath("$.durationInMinutes", matching("3[6-9][1-9]|[4-9][0-9]{2}|[1-9][0-9]{3,}")))
+                .withRequestBody(matchingJsonPath("$.courtCentreId"))
+                .withRequestBody(matchingJsonPath("$.hearingDate"))
                 .atPriority(1)
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(body.toString())
@@ -329,17 +365,18 @@ public class CourtSchedulerServiceStub {
     }
 
     /**
-     * Verify that GET /multidaysearchandbook/hearingslots was called with the expected courtScheduleId
-     * + total duration. Proves the CROWN update path correctly routed multi-day through the CourtSchedule-first
-     * flow and didn't regress to the startDate→endDate expansion.
+     * Verify that POST /hearings/{id} (crown.search.and.book) was called with the expected courtScheduleId
+     * + total duration in the request body. Proves the CROWN update path correctly routed multi-day through
+     * the CourtSchedule-first flow and didn't regress to the startDate→endDate expansion.
      */
     public static void verifyMultiDaySearchAndBookCalled(final String courtScheduleId, final int durationInMinutes) {
         Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
             try {
-                WireMock.verify(WireMock.getRequestedFor(urlPathMatching(
-                        COURT_SCHEDULER_ENDPOINT + "/multidaysearchandbook/hearingslots"))
-                        .withQueryParam("courtScheduleId", WireMock.equalTo(courtScheduleId))
-                        .withQueryParam("durationInMinutes", WireMock.equalTo(String.valueOf(durationInMinutes))));
+                WireMock.verify(WireMock.postRequestedFor(urlPathMatching(
+                        COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+"))
+                        .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                        .withRequestBody(containing("\"courtScheduleId\":\"" + courtScheduleId + "\""))
+                        .withRequestBody(containing("\"durationInMinutes\":" + durationInMinutes)));
                 return true;
             } catch (VerificationException e) {
                 return false;
@@ -347,28 +384,31 @@ public class CourtSchedulerServiceStub {
         });
     }
 
-    /** Regression guard: CROWN update without a courtScheduleId must NOT trigger multi-day search-and-book. */
+    /** Regression guard: CROWN update without a courtScheduleId must NOT trigger multi-day search-and-book
+     * via POST /hearings/{id} (crown.search.and.book). */
     public static void verifyMultiDaySearchAndBookNeverCalled() {
-        WireMock.verify(0, WireMock.getRequestedFor(urlPathMatching(
-                COURT_SCHEDULER_ENDPOINT + "/multidaysearchandbook/hearingslots")));
+        WireMock.verify(0, WireMock.postRequestedFor(urlPathMatching(
+                COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+"))
+                .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                .withRequestBody(matchingJsonPath("$.durationInMinutes", matching("3[6-9][1-9]|[4-9][0-9]{2}|[1-9][0-9]{3,}"))));
     }
 
     // --- Extend multi-day hearing stubs (SPRDT-901: CROWN update-hearing-for-listing multi-day path) ---
+    // Endpoint reshaped: was POST /extendmultidayhearing/hearingslots, now PATCH /hearings/{hearingId}.
 
-    private static final String EXTEND_MULTIDAY = "/extendmultidayhearing/hearingslots";
     private static final String COURTSCHEDULER_EXTEND_MULTIDAY_TYPE =
             "application/vnd.courtscheduler.extend.multiday.hearing+json";
 
     /**
-     * Stub a successful POST to /extendmultidayhearing/hearingslots returning the supplied court schedule
-     * sessions, scoped to the supplied hearingId. SPRDT-901 routes CROWN multi-day updates here instead of
-     * the GET-based /multidaysearchandbook — courtscheduler receives the full duration and returns N
-     * sessions to use as the rebuilt hearingDays.
+     * Stub a successful PATCH to /hearings/{hearingId} (extend.multiday.hearing) returning the supplied
+     * court schedule sessions under key {@code "courtSchedules"}, scoped to the supplied hearingId.
+     * SPRDT-901 routes CROWN multi-day updates here instead of the old GET-based endpoint.
+     * Courtscheduler receives the full duration and returns N sessions to use as the rebuilt hearingDays.
      *
      * <p><b>Scoping:</b> WireMock stubs persist across IT classes in the same suite. Without a body
      * matcher, this stub would intercept every other IT that extends a CROWN hearing into multi-day
      * (e.g. HearingCsvReportIT) and return these synthetic courtSchedules — corrupting their hearingDays.
-     * The hearingId body match makes the stub apply only to the test's own hearing.
+     * The hearingId in the path makes the stub apply only to the test's own hearing.
      */
     public static void stubExtendMultiDayHearing(final String hearingId,
                                                   final List<String> courtScheduleIds,
@@ -383,13 +423,10 @@ public class CourtSchedulerServiceStub {
                 body.append(",");
             }
             final LocalDate sessionDate = firstSessionDate.plusDays(i);
-            // Wire-shape note: the courtscheduler RAML example for this endpoint
-            // (courtscheduler.extend.multiday.hearing.response.json) shows "hearingStartTime", but the
-            // real endpoint serialises the courtscheduler DOMAIN CourtSchedule, which only has
-            // "sessionStartTime" (java.util.Date). Listing's buildHearingDaysFromMultiDaySessions reads
-            // getSessionStartTime() — emitting the RAML's field name leaves HearingDay.startTime null
-            // and NPEs downstream ("HearingDay.getStartTime() is null"). Match the wire, not the schema.
-            // (stubMultiDaySearchAndBook above is DIFFERENT: that endpoint's consumer reads hearingStartTime.)
+            // Wire-shape note: the courtscheduler endpoint serialises the domain CourtSchedule, which
+            // only has "sessionStartTime". Listing's buildHearingDaysFromMultiDaySessions reads
+            // getSessionStartTime() — emitting "hearingStartTime" leaves HearingDay.startTime null.
+            // Match the wire, not the old RAML example. Response key stays "courtSchedules" (unchanged).
             body.append("{")
                     .append("\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\",")
                     .append("\"courtHouseId\":\"").append(courtHouseId).append("\",")
@@ -401,7 +438,7 @@ public class CourtSchedulerServiceStub {
         }
         body.append("]}");
 
-        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + EXTEND_MULTIDAY)))
+        stubFor(patch(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
                 .withHeader(CONTENT_TYPE, containing(COURTSCHEDULER_EXTEND_MULTIDAY_TYPE))
                 .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
@@ -410,15 +447,15 @@ public class CourtSchedulerServiceStub {
     }
 
     /**
-     * Verify that POST /extendmultidayhearing/hearingslots was called with a body containing the
+     * Verify that PATCH /hearings/{id} (extend.multiday.hearing) was called with a body containing the
      * supplied hearingId and durationInMinutes. Proves SPRDT-901 routing: the CROWN multi-day update
-     * was sent to courtscheduler's new extension endpoint with the full requested duration.
+     * was sent to courtscheduler's reshape endpoint with the full requested duration.
      */
     public static void verifyExtendMultiDayHearingCalled(final String hearingId, final int durationInMinutes) {
         Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
             try {
-                WireMock.verify(WireMock.postRequestedFor(urlPathMatching(
-                        COURT_SCHEDULER_ENDPOINT + EXTEND_MULTIDAY))
+                WireMock.verify(WireMock.patchRequestedFor(urlPathMatching(
+                        COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+"))
                         .withHeader(CONTENT_TYPE, containing(COURTSCHEDULER_EXTEND_MULTIDAY_TYPE))
                         .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
                         .withRequestBody(containing("\"durationInMinutes\":" + durationInMinutes)));
@@ -429,14 +466,15 @@ public class CourtSchedulerServiceStub {
         });
     }
 
-    /** Regression guard: single-day CROWN updates / non-CROWN updates must NOT call /extendmultidayhearing. */
+    /** Regression guard: single-day CROWN updates / non-CROWN updates must NOT call PATCH /hearings/{id}
+     * (extend.multiday.hearing). */
     public static void verifyExtendMultiDayHearingNeverCalled() {
-        WireMock.verify(0, WireMock.postRequestedFor(urlPathMatching(
-                COURT_SCHEDULER_ENDPOINT + EXTEND_MULTIDAY)));
+        WireMock.verify(0, WireMock.patchRequestedFor(urlPathMatching(
+                COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")));
     }
 
     /**
-     * SPRDT-902: stub a 422 typed-failure response from /extendmultidayhearing/hearingslots,
+     * SPRDT-902: stub a 422 typed-failure response from PATCH /hearings/{hearingId} (extend.multiday.hearing),
      * scoped to a specific hearingId. Body shape mirrors the courtscheduler RAML error contract.
      */
     public static void stubExtendMultiDayHearingFailure(final String hearingId,
@@ -456,7 +494,7 @@ public class CourtSchedulerServiceStub {
         }
         body.append("}");
 
-        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + EXTEND_MULTIDAY)))
+        stubFor(patch(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
                 .withHeader(CONTENT_TYPE, containing(COURTSCHEDULER_EXTEND_MULTIDAY_TYPE))
                 .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
                 .willReturn(aResponse().withStatus(statusCode)
@@ -821,9 +859,10 @@ public class CourtSchedulerServiceStub {
                 "  ]\n" +
                 "}";
 
-        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
-                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
+        stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
                 .withRequestBody(containing("hearingSlots"))
+                .withRequestBody(containing("courtScheduleId"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -848,9 +887,9 @@ public class CourtSchedulerServiceStub {
                 "  ]\n" +
                 "}";
 
-        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
+        stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
                 .atPriority(2)
-                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
                 .withRequestBody(containing(courtScheduleId))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
@@ -870,9 +909,10 @@ public class CourtSchedulerServiceStub {
                 "  ]\n" +
                 "}";
 
-        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
-                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
+        stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
                 .withRequestBody(containing("hearingSlots"))
+                .withRequestBody(containing("courtScheduleId"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -931,9 +971,10 @@ public class CourtSchedulerServiceStub {
         payload.append("  ]\n");
         payload.append("}");
 
-        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
-                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
+        stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
                 .withRequestBody(containing("hearingSlots"))
+                .withRequestBody(containing("courtScheduleId"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload.toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -958,9 +999,10 @@ public class CourtSchedulerServiceStub {
                 "  ]\n" +
                 "}";
 
-        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
-                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
+        stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
                 .withRequestBody(containing("hearingSlots"))
+                .withRequestBody(containing("courtScheduleId"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1039,9 +1081,10 @@ public class CourtSchedulerServiceStub {
         hearingsJson.append("\n  ]\n");
         hearingsJson.append("}");
 
-        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
-                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
+        stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
                 .withRequestBody(containing("hearingSlots"))
+                .withRequestBody(containing("courtScheduleId"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(hearingsJson.toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1119,9 +1162,10 @@ public class CourtSchedulerServiceStub {
         hearingsJson.append("\n  ]\n");
         hearingsJson.append("}");
 
-        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
-                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
+        stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
                 .withRequestBody(containing("hearingSlots"))
+                .withRequestBody(containing("courtScheduleId"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(hearingsJson.toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1158,139 +1202,10 @@ public class CourtSchedulerServiceStub {
                 "}";
 
 
-        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
-                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
+        stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
                 .withRequestBody(containing("hearingSlots"))
-                .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(payload)
-                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
-                ));
-    }
-
-    public static void stubSearchBookHearingSlots(final String hearingId, final String courtCentreId, final String hearingDate,final ZonedDateTime hearingStartTime) {
-        final String payload = "{\n" +
-                "  \"hearingSlots\": {\n" +
-                "      \"hearingId\": \"" + hearingId + "\",\n" +
-                "      \"courtScheduleId\": \"" + UUID.randomUUID() + "\",\n" +
-                "      \"courtRoomId\": \"" + courtCentreId + "\",\n" +
-                "      \"hearingDate\": \"" + hearingDate + "\",\n" +
-                "      \"hearingSessionDateSearchCutOff\": \"" + hearingDate + "\",\n" +
-                "      \"hearingStartTime\": \"" + hearingStartTime.toString() + "\",\n" +
-                "      \"duration\": 20\n" +
-                "  }\n" +
-                "}";
-
-        stubFor(get(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/searchlist/hearingslots")))
-                .withHeader("Accept", containing("application/vnd.courtscheduler.search.book.hearing.slots+json"))
-//                .withQueryParam("hearingId", WireMock.matching(".*"))
-                .withQueryParam("hearingId", matching(hearingId))
-//                .withQueryParam("courtCentreId", WireMock.matching(".*"))
-                .withQueryParam("courtCentreId", matching(courtCentreId))
-//                .withQueryParam("hearingDate", WireMock.matching(".*"))
-                .withQueryParam("hearingDate", matching(hearingDate))
-                .withQueryParam("hearingSessionDateSearchCutOff", matching(hearingDate))
-//                .withQueryParam("hearingStartTime", WireMock.matching(hearingStartTime.toString()))
-                .withQueryParam("durationInMinutes", matching("20"))
-                .withQueryParam("isPolice", matching("true|false"))
-                .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(payload)
-                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
-                ));
-    }
-
-    public static void stubSearchBookHearingSlotsWithBusinessType(final String hearingId, final String courtCentreId,
-                                                                  final String hearingDate, final ZonedDateTime hearingStartTime,
-                                                                  final String businessType, final String courtRoomId,
-                                                                  final Integer durationInMinutes) {
-        final String payload = "{\n" +
-                "  \"hearingSlots\": {\n" +
-                "      \"hearingId\": \"" + hearingId + "\",\n" +
-                "      \"courtScheduleId\": \"" + UUID.randomUUID() + "\",\n" +
-                "      \"courtRoomId\": \"" + (courtRoomId != null ? courtRoomId : courtCentreId) + "\",\n" +
-                "      \"hearingDate\": \"" + hearingDate + "\",\n" +
-                "      \"hearingSessionDateSearchCutOff\": \"" + hearingDate + "\",\n" +
-                "      \"hearingStartTime\": \"" + hearingStartTime.toString() + "\",\n" +
-                "      \"duration\": " + (durationInMinutes != null ? durationInMinutes : 20) + "\n" +
-                "  }\n" +
-                "}";
-
-        com.github.tomakehurst.wiremock.client.MappingBuilder mappingBuilder = get(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/searchlist/hearingslots")))
-                .withHeader("Accept", containing("application/vnd.courtscheduler.search.book.hearing.slots+json"))
-                .withQueryParam("hearingId", matching(hearingId))
-                .withQueryParam("courtCentreId", matching(courtCentreId))
-                .withQueryParam("hearingDate", matching(hearingDate))
-                .withQueryParam("businessType", matching(businessType))
-                .withQueryParam("durationInMinutes", matching(String.valueOf(durationInMinutes != null ? durationInMinutes : 20)))
-                .withQueryParam("isPolice", matching("true|false"));
-
-        if (courtRoomId != null) {
-            mappingBuilder = mappingBuilder.withQueryParam("courtRoomId", matching(courtRoomId));
-        }
-        if (hearingStartTime != null) {
-            mappingBuilder = mappingBuilder.withQueryParam("hearingStartTime", matching(hearingStartTime.toString()));
-        }
-
-        stubFor(mappingBuilder
-                .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(payload)
-                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
-                ));
-    }
-
-    public static void stubSearchBookHearingSlotsForDraftSessions(final String hearingId, final String courtCentreId,
-                                                                  final String hearingDate, final ZonedDateTime hearingStartTime,
-                                                                  final String courtRoomId, final Integer durationInMinutes) {
-        final String payload = "{\n" +
-                "  \"hearingSlots\": {\n" +
-                "      \"hearingId\": \"" + hearingId + "\",\n" +
-                "      \"courtScheduleId\": \"" + UUID.randomUUID() + "\",\n" +
-                "      \"courtRoomId\": \"" + (courtRoomId != null ? courtRoomId : courtCentreId) + "\",\n" +
-                "      \"hearingDate\": \"" + hearingDate + "\",\n" +
-                "      \"hearingSessionDateSearchCutOff\": \"" + hearingDate + "\",\n" +
-                "      \"hearingStartTime\": \"" + (hearingStartTime != null ? hearingStartTime.toString() : "") + "\",\n" +
-                "      \"duration\": " + (durationInMinutes != null ? durationInMinutes : 20) + ",\n" +
-                "      \"isDraft\": true\n" +
-                "  }\n" +
-                "}";
-
-        com.github.tomakehurst.wiremock.client.MappingBuilder mappingBuilder = get(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/searchlist/hearingslots")))
-                .withHeader("Accept", containing("application/vnd.courtscheduler.search.book.hearing.slots+json"))
-                .withQueryParam("hearingId", matching(hearingId))
-                .withQueryParam("courtCentreId", matching(courtCentreId))
-                .withQueryParam("hearingDate", matching(hearingDate))
-                .withQueryParam("durationInMinutes", matching(String.valueOf(durationInMinutes != null ? durationInMinutes : 20)))
-                .withQueryParam("isPolice", matching("true|false"));
-
-        if (courtRoomId != null) {
-            mappingBuilder = mappingBuilder.withQueryParam("courtRoomId", matching(courtRoomId));
-        }
-        if (hearingStartTime != null) {
-            mappingBuilder = mappingBuilder.withQueryParam("hearingStartTime", matching(hearingStartTime.toString()));
-        }
-
-        stubFor(mappingBuilder
-                .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(payload)
-                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
-                ));
-    }
-
-    public static void stubSearchBookHearingSlotsForCrown(final String hearingId, final String courtCentreId,
-                                                            final String courtRoomId) {
-        final String payload = "{\n" +
-                "  \"hearingSlots\": {\n" +
-                "      \"hearingId\": \"" + hearingId + "\",\n" +
-                "      \"courtScheduleId\": \"" + UUID.randomUUID() + "\",\n" +
-                "      \"courtRoomId\": \"" + courtRoomId + "\",\n" +
-                "      \"hearingDate\": \"" + ItClock.today().plusDays(5) + "\",\n" +
-                "      \"hearingStartTime\": \"" + ItClock.nowUtc().plusDays(5).withHour(10).withMinute(0).withSecond(0).withNano(0) + "\",\n" +
-                "      \"duration\": 30\n" +
-                "  }\n" +
-                "}";
-
-        stubFor(get(WireMock.urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + "/searchlist/hearingslots")))
-                .withQueryParam("hearingId", matching(hearingId))
-                .withQueryParam("courtCentreId", matching(courtCentreId))
+                .withRequestBody(containing("courtScheduleId"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1298,30 +1213,165 @@ public class CourtSchedulerServiceStub {
     }
 
     /**
-     * searchAndBook stub for the CROWN "update removing the court room → unallocated" scenario.
-     * Mirrors {@link #stubSearchBookHearingSlotsForCrown} (lenient hearingId+courtCentreId matchers so
-     * it matches regardless of the request's date/duration/start-time params) but reports the booked
-     * session as {@code isDraft:true}. The update path ({@code handleCrownUpdateSearchAndBook}) takes
-     * only {@code courtScheduleId}+{@code isDraft} from this response and lets the aggregate unallocate
-     * — clearing the previously-allocated court room. A courtRoomId is still emitted purely to satisfy
-     * the parser ({@code searchAndBookSlots} reads it unconditionally); it is discarded downstream.
+     * Stub POST /hearings/{hearingId} (mags.search.and.book) — was GET /searchlist/hearingslots.
+     * Response reshaped: old {@code hearingSlots{}} object replaced by
+     * {@code {hearingId, sessions:[{courtScheduleId, courtRoomId, sessionStartTime, draft, businessType, judiciaries:[]}]}}.
+     * Fields from the old hearingSlots object are moved into sessions[0].
      */
-    public static void stubSearchBookHearingSlotsForCrownDraft(final String hearingId, final String courtCentreId) {
+    public static void stubSearchBookHearingSlots(final String hearingId, final String courtCentreId, final String hearingDate, final ZonedDateTime hearingStartTime) {
+        final String courtScheduleId = UUID.randomUUID().toString();
+        final String sessionStartTime = hearingStartTime.toString();
         final String payload = "{\n" +
-                "  \"hearingSlots\": {\n" +
-                "      \"hearingId\": \"" + hearingId + "\",\n" +
-                "      \"courtScheduleId\": \"" + UUID.randomUUID() + "\",\n" +
+                "  \"hearingId\": \"" + hearingId + "\",\n" +
+                "  \"sessions\": [\n" +
+                "    {\n" +
+                "      \"courtScheduleId\": \"" + courtScheduleId + "\",\n" +
                 "      \"courtRoomId\": \"" + courtCentreId + "\",\n" +
-                "      \"hearingDate\": \"" + ItClock.today().plusDays(5) + "\",\n" +
-                "      \"hearingStartTime\": \"" + ItClock.nowUtc().plusDays(5).withHour(10).withMinute(0).withSecond(0).withNano(0) + "\",\n" +
-                "      \"duration\": 30,\n" +
-                "      \"isDraft\": true\n" +
-                "  }\n" +
+                "      \"sessionStartTime\": \"" + sessionStartTime + "\",\n" +
+                "      \"draft\": false,\n" +
+                "      \"businessType\": \"MC\",\n" +
+                "      \"judiciaries\": []\n" +
+                "    }\n" +
+                "  ]\n" +
                 "}";
 
-        stubFor(get(WireMock.urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + "/searchlist/hearingslots")))
-                .withQueryParam("hearingId", matching(hearingId))
-                .withQueryParam("courtCentreId", matching(courtCentreId))
+        // Request body now carries the params (hearingId, courtCentreId, hearingDate, etc.)
+        // Match on hearingId in request body + content-type; stub scoped to this hearing
+        stubFor(post(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
+                .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE))
+                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(payload)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    /**
+     * Stub POST /hearings/{hearingId} (mags.search.and.book) with businessType variant.
+     * Response reshaped to sessions[] shape; courtRoomId and sessionStartTime carried in sessions[0].
+     */
+    public static void stubSearchBookHearingSlotsWithBusinessType(final String hearingId, final String courtCentreId,
+                                                                  final String hearingDate, final ZonedDateTime hearingStartTime,
+                                                                  final String businessType, final String courtRoomId,
+                                                                  final Integer durationInMinutes) {
+        final String resolvedRoomId = courtRoomId != null ? courtRoomId : courtCentreId;
+        final String sessionStartTime = hearingStartTime != null ? hearingStartTime.toString() : "";
+        final String courtScheduleId = UUID.randomUUID().toString();
+        final String payload = "{\n" +
+                "  \"hearingId\": \"" + hearingId + "\",\n" +
+                "  \"sessions\": [\n" +
+                "    {\n" +
+                "      \"courtScheduleId\": \"" + courtScheduleId + "\",\n" +
+                "      \"courtRoomId\": \"" + resolvedRoomId + "\",\n" +
+                "      \"sessionStartTime\": \"" + sessionStartTime + "\",\n" +
+                "      \"draft\": false,\n" +
+                "      \"businessType\": \"" + businessType + "\",\n" +
+                "      \"judiciaries\": []\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}";
+
+        stubFor(post(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
+                .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE))
+                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
+                .withRequestBody(containing("\"businessType\":\"" + businessType + "\""))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(payload)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    /**
+     * Stub POST /hearings/{hearingId} (mags.search.and.book) for draft sessions.
+     * Response uses sessions[] shape with {@code "draft":true} in sessions[0].
+     */
+    public static void stubSearchBookHearingSlotsForDraftSessions(final String hearingId, final String courtCentreId,
+                                                                  final String hearingDate, final ZonedDateTime hearingStartTime,
+                                                                  final String courtRoomId, final Integer durationInMinutes) {
+        final String resolvedRoomId = courtRoomId != null ? courtRoomId : courtCentreId;
+        final String sessionStartTime = hearingStartTime != null ? hearingStartTime.toString() : "";
+        final String courtScheduleId = UUID.randomUUID().toString();
+        final String payload = "{\n" +
+                "  \"hearingId\": \"" + hearingId + "\",\n" +
+                "  \"sessions\": [\n" +
+                "    {\n" +
+                "      \"courtScheduleId\": \"" + courtScheduleId + "\",\n" +
+                "      \"courtRoomId\": \"" + resolvedRoomId + "\",\n" +
+                "      \"sessionStartTime\": \"" + sessionStartTime + "\",\n" +
+                "      \"draft\": true,\n" +
+                "      \"businessType\": \"MC\",\n" +
+                "      \"judiciaries\": []\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}";
+
+        stubFor(post(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
+                .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE))
+                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(payload)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    /**
+     * Stub POST /hearings/{hearingId} (mags.search.and.book) for CROWN path
+     * (was GET /searchlist/hearingslots without Accept header restriction).
+     * Response uses sessions[] shape.
+     */
+    public static void stubSearchBookHearingSlotsForCrown(final String hearingId, final String courtCentreId,
+                                                            final String courtRoomId) {
+        final String courtScheduleId = UUID.randomUUID().toString();
+        final String sessionStartTime = ItClock.nowUtc().plusDays(5).withHour(10).withMinute(0).withSecond(0).withNano(0).toString();
+        final String payload = "{\n" +
+                "  \"hearingId\": \"" + hearingId + "\",\n" +
+                "  \"sessions\": [\n" +
+                "    {\n" +
+                "      \"courtScheduleId\": \"" + courtScheduleId + "\",\n" +
+                "      \"courtRoomId\": \"" + courtRoomId + "\",\n" +
+                "      \"sessionStartTime\": \"" + sessionStartTime + "\",\n" +
+                "      \"draft\": false,\n" +
+                "      \"businessType\": \"CR\",\n" +
+                "      \"judiciaries\": []\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}";
+
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
+                .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE))
+                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(payload)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    /**
+     * Stub POST /hearings/{hearingId} (mags.search.and.book) for CROWN draft scenario
+     * (was GET /searchlist/hearingslots). Reports booked session as {@code "draft":true} in sessions[0].
+     * The update path ({@code handleCrownUpdateSearchAndBook}) takes only courtScheduleId+draft from
+     * this response and lets the aggregate unallocate — clearing the previously-allocated court room.
+     */
+    public static void stubSearchBookHearingSlotsForCrownDraft(final String hearingId, final String courtCentreId) {
+        final String courtScheduleId = UUID.randomUUID().toString();
+        final String sessionStartTime = ItClock.nowUtc().plusDays(5).withHour(10).withMinute(0).withSecond(0).withNano(0).toString();
+        final String payload = "{\n" +
+                "  \"hearingId\": \"" + hearingId + "\",\n" +
+                "  \"sessions\": [\n" +
+                "    {\n" +
+                "      \"courtScheduleId\": \"" + courtScheduleId + "\",\n" +
+                "      \"courtRoomId\": \"" + courtCentreId + "\",\n" +
+                "      \"sessionStartTime\": \"" + sessionStartTime + "\",\n" +
+                "      \"draft\": true,\n" +
+                "      \"businessType\": \"CR\",\n" +
+                "      \"judiciaries\": []\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}";
+
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
+                .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE))
+                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1335,42 +1385,44 @@ public class CourtSchedulerServiceStub {
      * take precedence over these (priority 10).
      */
     public static void stubCourtSchedulerCatchAll() {
-        // GET /searchlist/hearingslots — searchBookSlots
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/searchlist/hearingslots")))
+        // POST /hearings/{id} — mags.search.and.book (was GET /searchlist/hearingslots)
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
+                .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE))
                 .atPriority(10)
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody("{\"hearingSlots\":{}}")
+                        .withBody("{\"hearingId\":\"\",\"sessions\":[]}")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
 
-        // GET /hearingslots — search (available hearing slots)
+        // GET /hearingslots — search (available hearing slots) — NO CHANGE
         stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
                 .atPriority(10)
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody("{\"hearingSlots\":[]}")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
 
-        // GET /courtschedule/search.court-schedules-by-id
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/courtschedule/search.court-schedules-by-id")))
+        // GET /sessions — search-court-schedules-by-id (was /courtschedule/search.court-schedules-by-id)
+        stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + SESSIONS_PATH)))
                 .atPriority(10)
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody("{\"hearingSlots\":[]}")
+                        .withBody("{\"courtSchedules\":[]}")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
 
-        // GET /multidaysearchandbook/hearingslots
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/multidaysearchandbook/hearingslots")))
+        // POST /hearings/{id} — crown.search.and.book (was GET /multidaysearchandbook/hearingslots and GET /crownfallbacksearchandbook/hearingslots)
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
+                .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
                 .atPriority(10)
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody("{\"hearingSlots\":{}}")
+                        .withBody("{\"sessions\":[]}")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
 
-        // PUT /list/hearingslots — listHearingInCourtSessions
-        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
+        // POST /hearings — listHearingInCourtSessions (was PUT /list/hearingslots)
+        stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
                 .atPriority(10)
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody("{\"hearings\":[]}")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
 
-        // POST /hearingslots — updateAvailableHearingSlots
+        // POST /hearingslots — updateAvailableHearingSlots — NO CHANGE
         stubFor(WireMock.post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
                 .atPriority(10)
                 .willReturn(aResponse().withStatus(NO_CONTENT.getStatusCode())));
@@ -1431,8 +1483,10 @@ public class CourtSchedulerServiceStub {
     }
 
     private static void stubCourtSchedulesByIdResponse(final String body) {
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/courtschedule/search.court-schedules-by-id")))
-                .withQueryParam("courtScheduleIds", matching(".*"))
+        // Endpoint reshaped: was GET /courtschedule/search.court-schedules-by-id?courtScheduleIds=...
+        // Now GET /sessions?ids=...  (query param key changed from courtScheduleIds to ids)
+        stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + SESSIONS_PATH)))
+                .withQueryParam("ids", matching(".*"))
                 .withHeader("Accept", containing("application/vnd.courtscheduler.search.court-schedules-by-id+json"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(body)

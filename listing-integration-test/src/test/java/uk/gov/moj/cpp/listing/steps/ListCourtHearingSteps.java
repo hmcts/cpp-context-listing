@@ -439,9 +439,10 @@ public class ListCourtHearingSteps extends AbstractIT {
 
     /**
      * For a CROWN hearing the {@code bookingReference} IS the courtScheduleId. The listing command resolves
-     * it against courtscheduler ({@code search.court-schedules-by-id}) and then lists it
-     * ({@code list.hearings-in-court-sessions}). Stub both so the bookingReference resolves to a session
-     * echoing this hearing's own centre/room — keeping the enriched hearing consistent with the listed values.
+     * it against courtscheduler (GET {@code /sessions?ids=} — was {@code /courtschedule/search.court-schedules-by-id})
+     * and then lists it (POST {@code /hearings} — was {@code list.hearings-in-court-sessions}).
+     * Stub both so the bookingReference resolves to a session echoing this hearing's own centre/room —
+     * keeping the enriched hearing consistent with the listed values.
      * No-op for MAGISTRATES, unallocated hearings (no booking reference) or hearings without a court centre.
      */
     private static void stubCrownBookingReferenceResolution(final HearingData hearingData, final UUID bookingReference) {
@@ -465,11 +466,12 @@ public class ListCourtHearingSteps extends AbstractIT {
     /**
      * Booked-slot analogue of {@link #stubCrownBookingReferenceResolution}: a CROWN hearing listed with
      * pre-booked slots carries the chosen courtScheduleId on {@code bookedSlots[]}, which the listing command
-     * resolves against courtscheduler ({@code search.court-schedules-by-id}) and then lists
-     * ({@code list.hearings-in-court-sessions}). Stub both so each bookedSlot's courtScheduleId resolves to a
-     * non-draft session echoing this hearing's own centre/room — keeping the enriched hearing consistent with
-     * the listed values. Without these the enrichment degrades to the legacy bookedSlots fallback and logs a
-     * failed courtscheduler retrieve. No-op for MAGISTRATES or hearings without booked slots.
+     * resolves against courtscheduler (GET {@code /sessions?ids=} — was {@code /courtschedule/search.court-schedules-by-id})
+     * and then lists (POST {@code /hearings} — was {@code list.hearings-in-court-sessions}).
+     * Stub both so each bookedSlot's courtScheduleId resolves to a non-draft session echoing this hearing's
+     * own centre/room — keeping the enriched hearing consistent with the listed values. Without these
+     * the enrichment degrades to the legacy bookedSlots fallback and logs a failed courtscheduler retrieve.
+     * No-op for MAGISTRATES or hearings without booked slots.
      */
     private static void stubCrownBookedSlotResolution(final HearingData hearingData) {
         if (!"CROWN".equals(hearingData.getJurisdictionType()) || !isNotEmpty(hearingData.getBookedSlots())) {
@@ -1639,8 +1641,9 @@ public class ListCourtHearingSteps extends AbstractIT {
         // Determine if hearing is allocated (has court room) or unallocated
         final boolean isAllocated = hearingData.getCourtRoomId() != null;
         // CROWN treats the bookingReference as the courtScheduleId; the command resolves it via
-        // search.court-schedules-by-id. Stub that resolution (and the follow-up list call) to echo
-        // this hearing's own centre/room so the resolved session matches the listed values.
+        // GET /sessions?ids= (was search.court-schedules-by-id). Stub that resolution (and the
+        // follow-up list call to POST /hearings) to echo this hearing's own centre/room so the
+        // resolved session matches the listed values.
         final UUID bookingReference = isAllocated ? randomUUID() : null;
         stubCrownBookingReferenceResolution(hearingData, bookingReference);
 
@@ -2061,8 +2064,8 @@ public class ListCourtHearingSteps extends AbstractIT {
                 .map(offence -> offence.getOffenceId())
                 .collect(Collectors.toList());
 
-        // CROWN: resolve the bookingReference (= courtScheduleId) via search.court-schedules-by-id; stub it to
-        // echo this hearing's own centre/room so the resolved session matches the listed values.
+        // CROWN: resolve the bookingReference (= courtScheduleId) via GET /sessions?ids= (was search.court-schedules-by-id);
+        // stub it to echo this hearing's own centre/room so the resolved session matches the listed values.
         final UUID bookingReference = randomUUID();
         stubCrownBookingReferenceResolution(hearingData, bookingReference);
 
