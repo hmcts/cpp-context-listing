@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
@@ -21,6 +22,7 @@ import javax.ws.rs.core.Response;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -103,7 +105,25 @@ class CourtSchedulerServiceAdapterMoveHearingToPastDateTest {
     }
 
     @Test
-    void shouldThrowWith404WhenNoSession() {
+    void shouldThrowWith422NoSessionFoundWhenCourtschedulerReturns422() {
+        final JsonObject body = createObjectBuilder()
+                .add("errorCode", "NO_SESSION_FOUND")
+                .add("message", "No session available")
+                .build();
+        when(response.getStatus()).thenReturn(422);
+        when(response.hasEntity()).thenReturn(true);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.moveHearingToPastDate(any(), any())).thenReturn(response);
+
+        final MoveHearingToPastDateException ex = assertThrows(MoveHearingToPastDateException.class,
+                () -> adapter.moveHearingToPastDate(UUID.randomUUID(), UUID.randomUUID(), LocalDate.parse("2026-05-01"), 30));
+
+        assertThat(ex.getHttpStatus(), is(422));
+        assertThat(ex.getErrorCode(), is("NO_SESSION_FOUND"));
+    }
+
+    @Test
+    void shouldNormaliseLegacy404ToA422NoSessionFound() {
         final JsonObject body = createObjectBuilder().build();
         when(response.getStatus()).thenReturn(HttpStatus.SC_NOT_FOUND);
         when(response.hasEntity()).thenReturn(true);
@@ -113,6 +133,30 @@ class CourtSchedulerServiceAdapterMoveHearingToPastDateTest {
         final MoveHearingToPastDateException ex = assertThrows(MoveHearingToPastDateException.class,
                 () -> adapter.moveHearingToPastDate(UUID.randomUUID(), UUID.randomUUID(), LocalDate.parse("2026-05-01"), 30));
 
-        assertThat(ex.getHttpStatus(), is(HttpStatus.SC_NOT_FOUND));
+        assertThat(ex.getHttpStatus(), is(HttpStatus.SC_UNPROCESSABLE_ENTITY));
+        assertThat(ex.getErrorCode(), is("NO_SESSION_FOUND"));
+    }
+
+    @Test
+    void shouldNotSendHearingIdInRequestBody() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final JsonObject body = createObjectBuilder().add("courtScheduleId", UUID.randomUUID().toString())
+                .add("sessionDate", "2026-05-01").build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.hasEntity()).thenReturn(true);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.moveHearingToPastDate(eq(hearingId), any())).thenReturn(response);
+
+        adapter.moveHearingToPastDate(hearingId, courtCentreId, LocalDate.parse("2026-05-01"), 30);
+
+        final ArgumentCaptor<JsonObject> requestCaptor = ArgumentCaptor.forClass(JsonObject.class);
+        verify(hearingSlotsService).moveHearingToPastDate(eq(hearingId), requestCaptor.capture());
+        final JsonObject request = requestCaptor.getValue();
+        assertThat(request.containsKey("hearingId"), is(false));
+        assertThat(request.getString("courtCentreId"), is(courtCentreId.toString()));
+        assertThat(request.getString("jurisdiction"), is("MAGISTRATES"));
+        assertThat(request.getString("startDate"), is("2026-05-01"));
+        assertThat(request.getInt("durationInMinutes"), is(30));
     }
 }

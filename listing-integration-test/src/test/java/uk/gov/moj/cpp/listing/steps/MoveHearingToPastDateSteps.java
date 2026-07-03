@@ -53,7 +53,6 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
 
     public Response whenHearingIsMovedToPastDate(final String jurisdictionDir, final LocalDate date) {
         final String payload = getPayload("test-data/" + jurisdictionDir + "/move-to-past-date/move-hearing-to-past-date.json")
-                .replace("%%HEARING_ID%%", hearingId)
                 .replace("%%COURT_CENTRE_ID%%", courtCentreId.toString())
                 .replace("%%START_DATE%%", date.toString());
 
@@ -61,15 +60,15 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
     }
 
     public Response whenHearingIsMovedWithMissingCourtCentre(final LocalDate date) {
-        final String payload = "{\"hearingId\":\"" + hearingId + "\",\"startDate\":\"" + date + "\"}";
+        final String payload = "{\"startDate\":\"" + date + "\"}";
         return postMove(hearingId, payload);
     }
 
     /** Submits the move against an arbitrary hearingId (e.g. one that was never listed), reusing this
-     * steps' own courtCentreId so only the hearingId lookup is exercised. */
+     * steps' own courtCentreId so only the hearingId lookup is exercised. The target hearing is
+     * identified purely by the URL path - hearingId is not part of the body. */
     public Response whenHearingIsMovedToPastDateForHearing(final UUID otherHearingId, final LocalDate date) {
-        final String payload = "{\"hearingId\":\"" + otherHearingId + "\",\"courtCentreId\":\"" + courtCentreId
-                + "\",\"startDate\":\"" + date + "\"}";
+        final String payload = "{\"courtCentreId\":\"" + courtCentreId + "\",\"startDate\":\"" + date + "\"}";
         return postMove(otherHearingId.toString(), payload);
     }
 
