@@ -71,6 +71,7 @@ public class HearingQueryApi {
     public static final String INCLUDE_APPLICATIONS = "includeApplications";
     private static final String LIST_ID = "listId";
     private static final String START_DATE = "startDate";
+    private static final String END_DATE = "endDate";
     private static final String OU_L2_CODE = "oucodeL2Code";
     private static final String FIRST_NAME = "firstName";
     private static final String LAST_NAME = "lastName";
@@ -235,14 +236,14 @@ public class HearingQueryApi {
         final boolean isWeekCommencing = weekCommencingStartDate != null;
         final String startDate = isWeekCommencing ? weekCommencingStartDate : payload.getString(START_DATE);
         final String weekCommencingEndDate = isWeekCommencing ? payload.getString(WEEK_COMMENCING_END_DATE, null) : null;
-        final String endDate = isWeekCommencing ? weekCommencingEndDate : payload.getString("endDate", null);
+        final String endDate = isWeekCommencing ? weekCommencingEndDate : payload.getString(END_DATE, null);
 
         final JsonObjectBuilder requestPayloadBuilder = JsonObjects.createObjectBuilder()
                 .add(COURT_CENTRE_ID, courtCentreId)
-                .add("startDate", startDate)
+                .add(START_DATE, startDate)
                 .add("publishCourtListType", documentType);
         if (endDate != null) {
-            requestPayloadBuilder.add("endDate", endDate);
+            requestPayloadBuilder.add(END_DATE, endDate);
         }
         final JsonEnvelope courtListEnvelope = envelopeFrom(
                 metadataFrom(query.metadata()).withName("listing.courtlist"),
