@@ -9,6 +9,7 @@ import static uk.gov.justice.services.core.annotation.Component.QUERY_API;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilderWithFilter;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.ALPHABETICAL;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.ONLINE_PUBLIC;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
 
@@ -25,6 +26,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.xhibit.ReferenceDataLoader;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
+import uk.gov.moj.cpp.listing.query.api.service.AlphabeticalCourtListService;
 import uk.gov.moj.cpp.listing.query.api.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.query.document.generator.JudiciaryNameMapper;
 import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
@@ -102,6 +104,9 @@ public class HearingQueryApi {
 
     @Inject
     private StandardPublicCourtListTemplateAssembler standardPublicCourtListAssembler;
+
+    @Inject
+    private AlphabeticalCourtListService alphabeticalCourtListService;
 
     @Inject
     private ReferenceDataService referenceDataService;
@@ -192,7 +197,9 @@ public class HearingQueryApi {
 
         if(courtListType.isPresent()) {
             final JsonEnvelope queryResponse = hearingQueryView.getCourtListContent(query);
-            final Optional<JsonObject> courtListData = standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType.get(), restricted, includeApplications);
+            final Optional<JsonObject> courtListData = ALPHABETICAL.equals(courtListType.get())
+                    ? alphabeticalCourtListService.buildAlphabeticalCourtListData(queryResponse, courtCentreId)
+                    : standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType.get(), restricted, includeApplications);
             if (courtListData.isPresent()) {
                 final JsonObject courtListPayload = courtListData.get();
                 final boolean isWelsh = referenceDataService.isHearingLanguageWelsh(queryResponse, courtCentreId).orElse(false);
@@ -519,7 +526,7 @@ public class HearingQueryApi {
     }
 
     private String getTemplateName(final CourtListType courtListType, boolean welsh) {
-        if ((PUBLIC.equals(courtListType) || ONLINE_PUBLIC.equals(courtListType)) && welsh) {
+        if ((ALPHABETICAL.equals(courtListType) || PUBLIC.equals(courtListType) || ONLINE_PUBLIC.equals(courtListType)) && welsh) {
             return courtListType.getWelshTemplateName();
         }
         return courtListType.getTemplateName();

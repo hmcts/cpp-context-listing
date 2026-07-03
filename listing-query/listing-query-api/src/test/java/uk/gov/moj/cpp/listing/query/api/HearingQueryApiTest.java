@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -31,6 +32,7 @@ import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadata
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.metadata;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.ALPHABETICAL;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.ONLINE_PUBLIC;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.PRISON;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
@@ -49,6 +51,7 @@ import uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory;
 import uk.gov.moj.cpp.listing.common.xhibit.ReferenceDataLoader;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
+import uk.gov.moj.cpp.listing.query.api.service.AlphabeticalCourtListService;
 import uk.gov.moj.cpp.listing.query.api.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.query.api.util.FileUtil;
 import uk.gov.moj.cpp.listing.query.document.generator.JudiciaryNameMapper;
@@ -117,6 +120,9 @@ public class HearingQueryApiTest {
 
     @Mock
     private StandardPublicCourtListTemplateAssembler standardPublicCourtListAssembler;
+
+    @Mock
+    private AlphabeticalCourtListService alphabeticalCourtListService;
 
     @Mock
     private ReferenceDataService referenceDataService;
@@ -1433,6 +1439,74 @@ public class HearingQueryApiTest {
         final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
 
         assertThat(returnedEnvelope.payloadAsJsonObject().getString("templateName"), is("OnlinePublicCourtListEnglishWelsh"));
+    }
+
+    @Test
+    void shouldReturnAlphabeticalCourtListPayloadUsingAlphabeticalCourtListService() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
+                        .withName("listing.search.court.list.payload"),
+                createObjectBuilder()
+                        .add(COURT_CENTRE_ID, randomUUID().toString())
+                        .add(COURT_ROOM_ID, randomUUID().toString())
+                        .add(LIST_ID, ALPHABETICAL.toString())
+                        .build());
+
+        final JsonEnvelope courtListContent = mock(JsonEnvelope.class);
+        when(hearingQueryView.getCourtListContent(query)).thenReturn(courtListContent);
+        when(alphabeticalCourtListService.buildAlphabeticalCourtListData(eq(courtListContent), any(String.class)))
+                .thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
+        when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.of(false));
+
+        final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
+
+        assertThat(returnedEnvelope.payloadAsJsonObject().getString("id"), is("id1"));
+        assertThat(returnedEnvelope.payloadAsJsonObject().getString("templateName"), is("CourtList"));
+        verify(standardPublicCourtListAssembler, never()).assemble(any(), any(), any(), any(), any(boolean.class), any(boolean.class));
+    }
+
+    @Test
+    void shouldReturnWelshTemplateForAlphabeticalCourtListWhenWelsh() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
+                        .withName("listing.search.court.list.payload"),
+                createObjectBuilder()
+                        .add(COURT_CENTRE_ID, randomUUID().toString())
+                        .add(COURT_ROOM_ID, randomUUID().toString())
+                        .add(LIST_ID, ALPHABETICAL.toString())
+                        .build());
+
+        when(hearingQueryView.getCourtListContent(query)).thenReturn(mock(JsonEnvelope.class));
+        when(alphabeticalCourtListService.buildAlphabeticalCourtListData(any(JsonEnvelope.class), any(String.class)))
+                .thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
+        when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.of(true));
+
+        final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
+
+        assertThat(returnedEnvelope.payloadAsJsonObject().getString("templateName"), is("CourtListEnglishWelsh"));
+    }
+
+    @Test
+    void shouldReturnEmptyResponseWhenAlphabeticalCourtListServiceReturnsEmpty() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
+                        .withName("listing.search.court.list.payload"),
+                createObjectBuilder()
+                        .add(COURT_CENTRE_ID, randomUUID().toString())
+                        .add(COURT_ROOM_ID, randomUUID().toString())
+                        .add(LIST_ID, ALPHABETICAL.toString())
+                        .build());
+
+        when(hearingQueryView.getCourtListContent(query)).thenReturn(mock(JsonEnvelope.class));
+        when(alphabeticalCourtListService.buildAlphabeticalCourtListData(any(JsonEnvelope.class), any(String.class)))
+                .thenReturn(Optional.empty());
+
+        final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
+
+        assertThat(returnedEnvelope.payloadAsJsonObject().size(), is(0));
     }
 
     @Test
