@@ -534,11 +534,11 @@ public class CourtSchedulerServiceAdapter {
 
     private static MoveHearingToPastDateResult parseMoveHearingToPastDateResult(final JsonObject body) {
         return new MoveHearingToPastDateResult(
-                body.containsKey("courtScheduleId") ? UUID.fromString(body.getString("courtScheduleId")) : null,
+                body.containsKey(COURT_SCHEDULE_ID) ? UUID.fromString(body.getString(COURT_SCHEDULE_ID)) : null,
                 body.getString(COURT_ROOM_ID, null),
-                body.containsKey("sessionDate") ? LocalDate.parse(body.getString("sessionDate")) : null,
-                body.getString("sessionStartTime", null),
-                body.getString("sessionEndTime", null),
+                body.containsKey(SESSION_DATE) ? LocalDate.parse(body.getString(SESSION_DATE)) : null,
+                body.getString(SESSION_START_TIME, null),
+                body.getString(SESSION_END_TIME, null),
                 body.containsKey(DURATION_IN_MINUTES) ? body.getInt(DURATION_IN_MINUTES) : null);
     }
 }

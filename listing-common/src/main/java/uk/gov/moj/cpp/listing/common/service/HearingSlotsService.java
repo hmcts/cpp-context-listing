@@ -11,6 +11,7 @@ import uk.gov.moj.cpp.listing.domain.exception.DataValidationException;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -62,7 +63,6 @@ public class HearingSlotsService {
 
     private static final String COURTSCHEDULER_EXTEND_MULTIDAY = "application/vnd.courtscheduler.extend.multiday.hearing+json";
 
-    private static final String HEARINGS_RESOURCE = "/hearings/";
     private static final String COURTSCHEDULER_MOVE_TO_PAST_DATE = "application/vnd.courtscheduler.move-hearing-to-past-date+json";
 
     private static final String CJS_CPP_UID = "CJSCPPUID";
@@ -155,7 +155,7 @@ public class HearingSlotsService {
         }
 
         try {
-            final HttpPost httpPost = new HttpPost(new URL(baseUri + HEARINGS_RESOURCE + hearingId).toString());
+            final HttpPost httpPost = new HttpPost(new URL(baseUri + HEARINGS_RESOURCE + "/" + hearingId).toString());
             httpPost.addHeader(CONTENT_TYPE, COURTSCHEDULER_MOVE_TO_PAST_DATE);
             httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
 
