@@ -13,7 +13,6 @@ import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
-import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupLoggedInUserPermissionsWithChangeHearingToPastDate;
 
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -44,7 +43,6 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
         this.hearingId = hearingData.getId().toString();
         this.courtCentreId = hearingData.getCourtCentreId();
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
-        setupLoggedInUserPermissionsWithChangeHearingToPastDate();
     }
 
     public String getHearingId() {
