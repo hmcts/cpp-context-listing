@@ -126,7 +126,22 @@ class MoveHearingToPastDateIT extends AbstractIT {
     }
 
     @Test
-    void shouldRejectMagistratesMoveWith404WhenNoCourtScheduleSessionExists() {
+    void shouldRejectMagistratesMoveWith422WhenNoCourtScheduleSessionExists() {
+        final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
+
+        stubMoveHearingToPastDateFailure(moveSteps.getHearingId(), 422, "NO_SESSION_FOUND",
+                "No court-schedule session found for the given date and court centre");
+
+        final Response response = moveSteps.whenHearingIsMovedToPastDate("MAGS", ItClock.today().minusDays(1));
+
+        assertThat(response.getStatus(), is(422));
+        assertThat(response.readEntity(String.class), containsString("NO_SESSION_FOUND"));
+    }
+
+    /** Older courtscheduler releases signalled no-session as a bare 404 - the listing adapter
+     * normalises that to the 422 NO_SESSION_FOUND contract. */
+    @Test
+    void shouldNormaliseLegacyCourtscheduler404ToA422NoSessionFound() {
         final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
 
         stubMoveHearingToPastDateFailure(moveSteps.getHearingId(), 404, null,
@@ -134,7 +149,8 @@ class MoveHearingToPastDateIT extends AbstractIT {
 
         final Response response = moveSteps.whenHearingIsMovedToPastDate("MAGS", ItClock.today().minusDays(1));
 
-        assertThat(response.getStatus(), is(404));
+        assertThat(response.getStatus(), is(422));
+        assertThat(response.readEntity(String.class), containsString("NO_SESSION_FOUND"));
     }
 
     @Test
