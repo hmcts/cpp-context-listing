@@ -5,6 +5,7 @@ import static javax.ws.rs.core.Response.Status.ACCEPTED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROWN_JURISDICTION;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
@@ -70,6 +71,12 @@ class MoveHearingToPastDateIT extends AbstractIT {
 
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        // verifyHearingListedFromAPI's indefinite json-path filters have no result matcher, so
+        // they match vacuously against an empty hearings list - it can return before THIS hearing
+        // is projected. Poll on the hearing id (hasSize(1)) so the move command's viewstore
+        // pre-check cannot race the hearing-listed projection and 422 with HEARING_ID_NOT_FOUND.
+        pollUntilHearingIsPresent(hearingsData.getHearingData().get(0).getCourtCentreId().toString(),
+                ALLOCATED, getLoggedInUser().toString(), hearingsData.getHearingData().get(0).getId().toString());
 
         return new MoveHearingToPastDateSteps(hearingsData);
     }
