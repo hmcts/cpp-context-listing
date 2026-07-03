@@ -233,7 +233,7 @@ public class HearingQueryApi {
 
         final String weekCommencingStartDate = payload.getString(WEEK_COMMENCING_START_DATE, null);
         final boolean isWeekCommencing = weekCommencingStartDate != null;
-        final String startDate = isWeekCommencing ? weekCommencingStartDate : payload.getString("startDate");
+        final String startDate = isWeekCommencing ? weekCommencingStartDate : payload.getString(START_DATE);
         final String weekCommencingEndDate = isWeekCommencing ? payload.getString(WEEK_COMMENCING_END_DATE, null) : null;
         final String endDate = isWeekCommencing ? weekCommencingEndDate : payload.getString("endDate", null);
 
