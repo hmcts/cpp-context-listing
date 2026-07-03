@@ -1513,13 +1513,13 @@ public class CourtSchedulerServiceStub {
 
         stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId)))
                 .withHeader(CONTENT_TYPE, containing(MOVE_HEARING_TO_PAST_DATE_TYPE))
-                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(body)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
     }
 
-    /** Stub a courtscheduler rejection (422 FUTURE_DATE_NOT_ALLOWED or 404 no-session) for move-hearing-to-past-date. */
+    /** Stub a courtscheduler rejection (e.g. 422 FUTURE_DATE_NOT_ALLOWED / NO_SESSION_FOUND, or a
+     * legacy 404 no-session) for move-hearing-to-past-date. */
     public static void stubMoveHearingToPastDateFailure(final String hearingId,
                                                          final int statusCode,
                                                          final String errorCode,
@@ -1532,19 +1532,18 @@ public class CourtSchedulerServiceStub {
 
         stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId)))
                 .withHeader(CONTENT_TYPE, containing(MOVE_HEARING_TO_PAST_DATE_TYPE))
-                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
                 .willReturn(aResponse().withStatus(statusCode)
                         .withBody(body.toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
     }
 
-    /** Verify courtscheduler's move-hearing-to-past-date endpoint was called for the given hearing. */
+    /** Verify courtscheduler's move-hearing-to-past-date endpoint was called for the given hearing
+     * (matched on the URL path - hearingId no longer travels in the request body). */
     public static void verifyMoveHearingToPastDateCalled(final String hearingId) {
         Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
             try {
                 WireMock.verify(WireMock.postRequestedFor(urlPathMatching(
-                                COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId))
-                        .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\"")));
+                        COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId)));
                 return true;
             } catch (VerificationException e) {
                 return false;

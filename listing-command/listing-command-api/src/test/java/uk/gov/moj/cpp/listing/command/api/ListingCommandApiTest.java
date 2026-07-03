@@ -686,7 +686,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldNotSendWhenCourtschedulerReturnsNotFoundForMagistratesMove() {
+    public void shouldNotSendWhenCourtschedulerFindsNoSessionForMagistratesMove() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final LocalDate startDate = LocalDate.parse("2026-05-01");
@@ -702,12 +702,17 @@ public class ListingCommandApiTest {
                 .build();
         given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
 
+        final JsonObject noSessionBody = Json.createObjectBuilder()
+                .add("errorCode", "NO_SESSION_FOUND")
+                .add("message", "No court-schedule session found")
+                .build();
         given(courtSchedulerServiceAdapter.moveHearingToPastDate(any(), any(), any(), any()))
-                .willThrow(new MoveHearingToPastDateException(404, Json.createObjectBuilder().build(), "not found"));
+                .willThrow(new MoveHearingToPastDateException(422, noSessionBody, "no session"));
 
         final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
                 () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
-        assertThat(thrown.getHttpStatus(), is(404));
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getErrorCode(), is("NO_SESSION_FOUND"));
         verify(sender, never()).send(any());
     }
 

@@ -74,6 +74,10 @@ public class CourtSchedulerServiceAdapter {
     // move-hearing-to-past-date (MAGS) wire-field constants; JURISDICTION reuses the field declared above
     private static final String START_DATE = "startDate";
     private static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
+    // no-session normalisation (422 NO_SESSION_FOUND) constants
+    public static final String NO_SESSION_FOUND = "NO_SESSION_FOUND";
+    private static final String ERROR_CODE = "errorCode";
+    private static final String MESSAGE = "message";
     @Inject
     private HearingSlotsService hearingSlotsService;
     @Inject
@@ -490,8 +494,8 @@ public class CourtSchedulerServiceAdapter {
                                                               final UUID courtCentreId,
                                                               final LocalDate startDate,
                                                               final Integer durationInMinutes) {
+        // hearingId travels only in the URL path; courtscheduler's REST adapter injects it
         final JsonObjectBuilder requestBuilder = Json.createObjectBuilder()
-                .add(HEARING_ID, hearingId.toString())
                 .add(COURT_CENTRE_ID, courtCentreId.toString())
                 .add(JURISDICTION, MAGISTRATES_JURISDICTION)
                 .add(START_DATE, startDate.toString());
@@ -511,6 +515,19 @@ public class CourtSchedulerServiceAdapter {
 
         LOGGER.error("moveHearingToPastDate from courtscheduler returned status {} for hearingId {}: {}",
                 status, hearingId, body);
+
+        if (HttpStatus.SC_NOT_FOUND == status) {
+            // older courtscheduler releases signal no-session as a bare 404 - normalise to the
+            // 422 NO_SESSION_FOUND contract so callers see a single failure shape
+            final JsonObject noSessionBody = Json.createObjectBuilder()
+                    .add(ERROR_CODE, NO_SESSION_FOUND)
+                    .add(MESSAGE, body.getString(MESSAGE,
+                            "No court-schedule session found for hearingId " + hearingId + " on " + startDate))
+                    .build();
+            throw new MoveHearingToPastDateException(HttpStatus.SC_UNPROCESSABLE_ENTITY, noSessionBody,
+                    "moveHearingToPastDate found no session for hearingId " + hearingId);
+        }
+
         throw new MoveHearingToPastDateException(status, body,
                 "moveHearingToPastDate returned " + status + " for hearingId " + hearingId);
     }
