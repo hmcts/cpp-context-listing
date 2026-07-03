@@ -73,7 +73,7 @@ public class AbstractIT {
         setupProgressionNotesStubs();
         setupUsersGroupPermissionsForApplicationTypeStub();
         databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
-        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "stream_status",
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "stream_status","processed_event",
                 "stream_buffer", "hearing", "hearing_days", "listing_notes", "cache_refdata_courtroom", "court_list_publish_status", "published_court_list");
     }
 

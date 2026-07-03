@@ -43,7 +43,6 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings({"squid:S1607"})
 public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
 
-    private static final String CONTEXT_NAME = "listing";
     private static final Map<UUID, String> COURT_ROOMS = new LinkedHashMap<>() {{
         put(fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19"), "Courtroom 01");
         put(fromString("18982e9c-2475-36a4-a852-09ab720acfc9"), "Courtroom 03");
