@@ -12,6 +12,7 @@ import uk.gov.moj.cpp.listing.domain.exception.DataValidationException;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -46,6 +47,7 @@ public class HearingSlotsService {
     private static final Logger LOGGER = LoggerFactory.getLogger(HearingSlotsService.class);
 
     public static final String HEARING_DATE = "hearingDate";
+    private static final String HEARING_ID = "hearingId";
 
     private static final String HEARING_RESOURCE = "/hearingslots";
     private static final String SESSIONS_RESOURCE = "/sessions";
@@ -88,7 +90,7 @@ public class HearingSlotsService {
         if (payload == null || payload.isEmpty()) {
             throw new DataValidationException("Payload for %s is null or empty ....".formatted(COURTSCHEDULER_EXTEND_MULTIDAY));
         }
-        final String hearingId = payload.getString("hearingId");
+        final String hearingId = payload.getString(HEARING_ID);
         return patch(HEARINGS_RESOURCE + "/" + hearingId, COURTSCHEDULER_EXTEND_MULTIDAY, payload);
     }
 
@@ -324,19 +326,27 @@ public class HearingSlotsService {
 
     /**
      * Posts a search-and-book request to /hearings/{hearingId} with a typed JSON body.
-     * Extracts "hearingId" from params map for the path; builds remaining params as a JSON body,
+     * Extracts "hearingId" from params map for the path; builds the remaining params as a JSON body,
      * converting numeric fields (durationInMinutes) to numbers and boolean fields (isPolice) to booleans.
+     *
+     * <p>hearingId travels ONLY in the {@code /hearings/{hearingId}} path — the courtscheduler
+     * crown/mags search-and-book request schemas are {@code additionalProperties:false} and no longer
+     * carry hearingId, so it MUST be excluded from the body (courtscheduler's REST adapter injects it
+     * from the path). Leaving it in the body triggers a 400 schema-validation rejection. This mirrors
+     * {@link #moveHearingToPastDate} and {@link CourtSchedulerServiceAdapter#moveHearingToPastDate}.</p>
      */
     private Response postSearchBook(final String contentTypeHeader, final Map<String, String> params) {
         if (params == null) {
             throw new DataValidationException("Params for %s is null ....".formatted(contentTypeHeader));
         }
-        final String hearingId = params.get("hearingId");
+        final String hearingId = params.get(HEARING_ID);
         if (hearingId == null || hearingId.isBlank()) {
             throw new DataValidationException("hearingId missing from params for %s".formatted(contentTypeHeader));
         }
 
-        final JsonObject payload = buildTypedJsonBody(params);
+        final Map<String, String> bodyParams = new HashMap<>(params);
+        bodyParams.remove(HEARING_ID);
+        final JsonObject payload = buildTypedJsonBody(bodyParams);
 
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("{} POST /hearings/{} in CourtScheduler S & L with payload '{}'", contentTypeHeader, hearingId, payload);

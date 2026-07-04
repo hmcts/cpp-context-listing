@@ -908,6 +908,40 @@ class HearingSlotsServiceTest {
     }
 
     @Test
+    void postSearchBookShouldNotSendHearingIdInBody() throws Exception {
+        // Regression guard: the courtscheduler crown/mags search-and-book schemas are
+        // additionalProperties:false and no longer carry hearingId — it travels in the
+        // /hearings/{hearingId} path only. Sending it in the body triggers a 400 schema
+        // rejection that broke CrownScheduledListingIT (SPRDT-1011 vs SPRDT-1089 contract skew).
+        Map<String, String> params = new HashMap<>();
+        params.put("hearingId", TEST_HEARING_ID.toString());
+        params.put("courtCentreId", "b21a7d44-3e0c-4f6a-8b2d-1c9e5f7a3d20");
+        params.put("hearingDate", "2026-07-06");
+        params.put("durationInMinutes", "720");
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
+
+        try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
+            mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.build()).thenReturn(httpClient);
+            when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
+            when(httpResponse.getStatusLine()).thenReturn(statusLine);
+            when(statusLine.getStatusCode()).thenReturn(Response.Status.OK.getStatusCode());
+            when(httpResponse.getEntity()).thenReturn(null);
+
+            hearingSlotsService.multiDaySearchAndBook(params);
+
+            verify(httpClient).execute(httpPostCaptor.capture());
+            HttpPost capturedPost = httpPostCaptor.getValue();
+            // hearingId identifies the hearing via the path...
+            assertThat(capturedPost.getURI().toString(), is(BASE_URI + "/hearings/" + TEST_HEARING_ID));
+            // ...and must NOT appear in the request body.
+            final String body = org.apache.http.util.EntityUtils.toString(capturedPost.getEntity());
+            assertThat("body must not carry hearingId", body.contains("hearingId"), is(false));
+            assertThat("body still carries the booking fields", body.contains("courtCentreId"), is(true));
+        }
+    }
+
+    @Test
     void buildTypedJsonBodyShouldConvertDurationToNumber() {
         Map<String, String> params = new HashMap<>();
         params.put("durationInMinutes", "90");
