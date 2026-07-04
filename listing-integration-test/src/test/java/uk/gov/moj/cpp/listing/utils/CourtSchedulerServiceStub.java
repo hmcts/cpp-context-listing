@@ -1238,9 +1238,8 @@ public class CourtSchedulerServiceStub {
 
         // Request body now carries the params (hearingId, courtCentreId, hearingDate, etc.)
         // Match on hearingId in request body + content-type; stub scoped to this hearing
-        stubFor(post(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
+        stubFor(post(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId)))
                 .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE))
-                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1272,9 +1271,8 @@ public class CourtSchedulerServiceStub {
                 "  ]\n" +
                 "}";
 
-        stubFor(post(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
+        stubFor(post(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId)))
                 .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE))
-                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
                 .withRequestBody(containing("\"businessType\":\"" + businessType + "\""))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
@@ -1306,9 +1304,8 @@ public class CourtSchedulerServiceStub {
                 "  ]\n" +
                 "}";
 
-        stubFor(post(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
+        stubFor(post(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId)))
                 .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE))
-                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1338,9 +1335,8 @@ public class CourtSchedulerServiceStub {
                 "  ]\n" +
                 "}";
 
-        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId)))
                 .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE))
-                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1370,9 +1366,8 @@ public class CourtSchedulerServiceStub {
                 "  ]\n" +
                 "}";
 
-        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId)))
                 .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE))
-                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
