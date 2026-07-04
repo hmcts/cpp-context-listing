@@ -9,6 +9,8 @@ import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestEx
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource;
+import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
+import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 
@@ -26,8 +28,10 @@ import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -67,6 +71,13 @@ public class CourtSchedulerServiceAdapter {
     private static final String DRAFT = "draft";
     private static final String OVERBOOKED = "overbooked";
     private static final String ANY_DRAFT = "anyDraft";
+    // move-hearing-to-past-date (MAGS) wire-field constants; JURISDICTION reuses the field declared above
+    private static final String START_DATE = "startDate";
+    private static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
+    // no-session normalisation (422 NO_SESSION_FOUND) constants
+    public static final String NO_SESSION_FOUND = "NO_SESSION_FOUND";
+    private static final String ERROR_CODE = "errorCode";
+    private static final String MESSAGE = "message";
     @Inject
     private HearingSlotsService hearingSlotsService;
     @Inject
@@ -337,7 +348,7 @@ public class CourtSchedulerServiceAdapter {
         }
 
         final Map<String, String> params = new HashMap<>();
-        params.put("courtScheduleIds", String.join(",", courtScheduleIds));
+        params.put("ids", String.join(",", courtScheduleIds));
 
         final Response response;
         try {
@@ -471,5 +482,63 @@ public class CourtSchedulerServiceAdapter {
         final int pageCount = responseJson.getInt("pageCount");
 
         return new HearingIdsResponse(uuids, results, pageCount);
+    }
+
+    /**
+     * MAGISTRATES-only. Calls courtscheduler's {@code move-hearing-to-past-date} action
+     * synchronously. CROWN moves are handled entirely listing-side and never reach this method
+     * (Baris decision D1). On any non-200 response the upstream errorCode/status is surfaced via
+     * {@link MoveHearingToPastDateException} so the caller sends no event.
+     */
+    public MoveHearingToPastDateResult moveHearingToPastDate(final UUID hearingId,
+                                                              final UUID courtCentreId,
+                                                              final LocalDate startDate,
+                                                              final Integer durationInMinutes) {
+        // hearingId travels only in the URL path; courtscheduler's REST adapter injects it
+        final JsonObjectBuilder requestBuilder = Json.createObjectBuilder()
+                .add(COURT_CENTRE_ID, courtCentreId.toString())
+                .add(JURISDICTION, MAGISTRATES_JURISDICTION)
+                .add(START_DATE, startDate.toString());
+        if (durationInMinutes != null) {
+            requestBuilder.add(DURATION_IN_MINUTES, durationInMinutes);
+        }
+
+        final Response response = hearingSlotsService.moveHearingToPastDate(hearingId, requestBuilder.build());
+        final int status = response.getStatus();
+        final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject)
+                ? (JsonObject) response.getEntity()
+                : Json.createObjectBuilder().build();
+
+        if (HttpStatus.SC_OK == status) {
+            return parseMoveHearingToPastDateResult(body);
+        }
+
+        LOGGER.error("moveHearingToPastDate from courtscheduler returned status {} for hearingId {}: {}",
+                status, hearingId, body);
+
+        if (HttpStatus.SC_NOT_FOUND == status) {
+            // older courtscheduler releases signal no-session as a bare 404 - normalise to the
+            // 422 NO_SESSION_FOUND contract so callers see a single failure shape
+            final JsonObject noSessionBody = Json.createObjectBuilder()
+                    .add(ERROR_CODE, NO_SESSION_FOUND)
+                    .add(MESSAGE, body.getString(MESSAGE,
+                            "No court-schedule session found for hearingId " + hearingId + " on " + startDate))
+                    .build();
+            throw new MoveHearingToPastDateException(HttpStatus.SC_UNPROCESSABLE_ENTITY, noSessionBody,
+                    "moveHearingToPastDate found no session for hearingId " + hearingId);
+        }
+
+        throw new MoveHearingToPastDateException(status, body,
+                "moveHearingToPastDate returned " + status + " for hearingId " + hearingId);
+    }
+
+    private static MoveHearingToPastDateResult parseMoveHearingToPastDateResult(final JsonObject body) {
+        return new MoveHearingToPastDateResult(
+                body.containsKey(COURT_SCHEDULE_ID) ? UUID.fromString(body.getString(COURT_SCHEDULE_ID)) : null,
+                body.getString(COURT_ROOM_ID, null),
+                body.containsKey(SESSION_DATE) ? LocalDate.parse(body.getString(SESSION_DATE)) : null,
+                body.getString(SESSION_START_TIME, null),
+                body.getString(SESSION_END_TIME, null),
+                body.containsKey(DURATION_IN_MINUTES) ? body.getInt(DURATION_IN_MINUTES) : null);
     }
 }
