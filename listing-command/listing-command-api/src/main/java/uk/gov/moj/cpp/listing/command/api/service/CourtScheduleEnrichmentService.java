@@ -293,11 +293,20 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     .map(nd -> nonNull(nd.getStartTime()) ? nd.getStartTime().toLocalDate() : null)
                     .orElseGet(() -> firstDay != null ? firstDay.getHearingDate() : null);
 
+            // courtCentreId falls back to the hearing's own selected court centre, never to a
+            // court-schedule id (mirrors the fallback in handleCrownMultiDayEnrichment).
+            final String fallbackCourtCentreId = hearing.getSelectedCourtCentre() != null && hearing.getSelectedCourtCentre().getId() != null
+                    ? hearing.getSelectedCourtCentre().getId().toString()
+                    : "";
+            final String courtCentreId = hearing.getCourtCentreId() != null
+                    ? hearing.getCourtCentreId().toString()
+                    : fallbackCourtCentreId;
+
             final List<CourtSchedule> sessions = multiDaySearchAndBook(
                     anchorCourtScheduleId,
                     totalDuration,
                     hearing.getHearingId().toString(),
-                    hearing.getCourtCentreId() != null ? hearing.getCourtCentreId().toString() : anchorCourtScheduleId,
+                    courtCentreId,
                     anchorDate != null ? anchorDate.toString() : LocalDate.now().toString());
 
             if (isEmpty(sessions)) {
