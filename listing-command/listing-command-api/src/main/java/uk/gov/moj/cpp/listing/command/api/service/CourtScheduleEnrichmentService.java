@@ -270,7 +270,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 .orElseGet(() -> hearing.getHearingDays().stream()
                         .mapToInt(d -> d.getDurationMinutes() != null ? d.getDurationMinutes() : 0)
                         .sum());
-        final boolean isMultiDay = totalDuration > HearingDurationEnrichmentService.MINUTES_IN_DAY;
+        final boolean isMultiDay = !isPerDaySessionSelection(hearing)
+                && totalDuration > HearingDurationEnrichmentService.MINUTES_IN_DAY;
 
         EnrichmentResult enrichmentResult;
         if (isMultiDay) {
@@ -512,6 +513,28 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         return hearing.getNonDefaultDays().stream()
                 .filter(CrownNonDefaultDaysValidator::isBlockDescriptor)
                 .findFirst();
+    }
+
+    /**
+     * True for the per-day session-selection shape: no block descriptor, and EVERY virtual
+     * nonDefaultDay is a per-day proxy (≤ MINUTES_IN_DAY) carrying a courtScheduleId. The days ARE
+     * the user's chosen sessions (CrownNonDefaultDaysValidator has already rejected gaps and mixed
+     * ids), so they must be listed directly via list-hearing-in-court-sessions — their duration
+     * SUM must never divert them into multiDaySearchAndBook, which books a fresh block and
+     * duplicates the hearing.
+     */
+    private static boolean isPerDaySessionSelection(final UpdateHearingForListing hearing) {
+        if (isEmpty(hearing.getNonDefaultDays())) {
+            return false;
+        }
+        final List<NonDefaultDay> virtualDays = hearing.getNonDefaultDays().stream()
+                .filter(nd -> Boolean.TRUE.equals(nd.getVirtual()))
+                .toList();
+        if (virtualDays.isEmpty()) {
+            return false;
+        }
+        return virtualDays.stream().noneMatch(CrownNonDefaultDaysValidator::isBlockDescriptor)
+                && virtualDays.stream().allMatch(nd -> nonNull(nd.getCourtScheduleId()) && !isBlank(nd.getCourtScheduleId()));
     }
 
     /**
