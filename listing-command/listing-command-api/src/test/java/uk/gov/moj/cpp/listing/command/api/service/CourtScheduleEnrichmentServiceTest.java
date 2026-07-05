@@ -3985,6 +3985,102 @@ class CourtScheduleEnrichmentServiceTest {
                 .add("duration", 360);
     }
 
+    private static NonDefaultDay perDayProxyNoId(final LocalDate date, final UUID roomId, final UUID courtCentreId) {
+        return NonDefaultDay.nonDefaultDay()
+                .withStartTime(ZonedDateTime.parse(date + "T09:00:00Z"))
+                .withDuration(360)
+                .withCourtCentreId(courtCentreId.toString())
+                .withRoomId(roomId.toString())
+                .withVirtual(Boolean.TRUE)
+                .build();
+    }
+
+    @Test
+    void shouldStillMultiDaySearchAndBookWhenPerDayProxiesHaveMixedIds() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
+        final String cs1 = UUID.randomUUID().toString();
+        final String cs3 = UUID.randomUUID().toString();
+
+        // Mixed ids: day1 and day3 carry a courtScheduleId, day2 does not — the guard must
+        // return false (allMatch on courtScheduleId fails), so even though the 3 per-day proxies
+        // sum to 1080 (> 360), the payload must still be routed to multiDaySearchAndBook.
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtHouseId)
+                .withCourtRoomId(courtRoomId)
+                .withStartDate(day1)
+                .withEndDate(day1.plusDays(2))
+                .withNonDefaultDays(java.util.List.of(
+                        perDayProxy(day1, courtRoomId, courtHouseId, cs1),
+                        perDayProxyNoId(day1.plusDays(1), courtRoomId, courtHouseId),
+                        perDayProxy(day1.plusDays(2), courtRoomId, courtHouseId, cs3)))
+                .build();
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder().build();
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+
+        courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(update);
+
+        verify(hearingSlotsService).multiDaySearchAndBook(anyMap());
+    }
+
+    @Test
+    void shouldStillMultiDaySearchAndBookWhenVirtualProxiesCarryNoIds() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
+
+        // None of the virtual proxies carry a courtScheduleId — the guard must return false
+        // (isEmpty short-circuit does not apply; allMatch fails on every element). The id-bearing
+        // path is instead entered via a courtScheduleId supplied directly on a hearingDay, whose
+        // durations (360 * 3 = 1080) still exceed the single-day threshold.
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtHouseId)
+                .withCourtRoomId(courtRoomId)
+                .withStartDate(day1)
+                .withEndDate(day1.plusDays(2))
+                .withHearingDays(java.util.List.of(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withHearingDate(day1.plusDays(1))
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withHearingDate(day1.plusDays(2))
+                                .withDurationMinutes(360)
+                                .build()))
+                .withNonDefaultDays(java.util.List.of(
+                        perDayProxyNoId(day1, courtRoomId, courtHouseId),
+                        perDayProxyNoId(day1.plusDays(1), courtRoomId, courtHouseId),
+                        perDayProxyNoId(day1.plusDays(2), courtRoomId, courtHouseId)))
+                .build();
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder().build();
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+
+        courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(update);
+
+        verify(hearingSlotsService).multiDaySearchAndBook(anyMap());
+    }
+
     @Test
     void enrichCrownCourtScheduleFirst_update_shouldSkipListHearing_whenSingleDaySessionIsDraft() {
         final UUID hearingId = UUID.randomUUID();
