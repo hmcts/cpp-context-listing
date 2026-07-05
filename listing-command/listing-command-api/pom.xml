@@ -4,7 +4,7 @@
     <parent>
         <artifactId>listing-command</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <version>17.103.200-CCSPH2N-SNAPSHOT</version>
+        <version>17.103.201-CCSPH2N-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -138,6 +138,11 @@
         <dependency>
             <groupId>uk.gov.moj.cpp.listing</groupId>
             <artifactId>listing-domain-aggregate</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.listing</groupId>
+            <artifactId>listing-query-view</artifactId>
             <version>${project.version}</version>
         </dependency>
         <!-- End of Listing Dependencies -->

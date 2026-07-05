@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.command.api;
 
 import static java.util.Collections.singletonMap;
 import static org.mockito.BDDMockito.given;
-import static uk.gov.moj.cpp.listing.command.api.accesscontrol.PermissionConstants.createCourtSchedulePermission;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ADMINISTRATORS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ASSOCIATE;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_CLERKS;
@@ -18,7 +17,6 @@ import static uk.gov.moj.cpp.listing.domain.RuleConstants.NPS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.SYSTEM_USERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.YOTS;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider;
 import uk.gov.moj.cpp.accesscontrol.drools.Action;
 import uk.gov.moj.cpp.accesscontrol.test.utils.BaseDroolsAccessControlTest;
@@ -333,9 +331,11 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     }
 
     @Test
-    public void shouldAllowUserWithCourtScheduleCreatePermissionToMoveHearingToPastDate() throws JsonProcessingException {
+    public void shouldAllowAuthorisedUserToMoveHearingToPastDate() {
         final Action action = createActionFor(ACTION_MOVE_HEARING_TO_PAST_DATE);
-        given(userAndGroupProvider.hasPermission(action, createCourtSchedulePermission())).willReturn(true);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
+                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, COURT_CLERKS, LEGAL_ADVISERS, COURT_ASSOCIATE))
+                .willReturn(true);
 
         final ExecutionResults results = executeRulesWith(action);
 
@@ -343,11 +343,12 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     }
 
     @Test
-    public void shouldNotAllowUserWithoutCourtScheduleCreatePermissionToMoveHearingToPastDate() {
+    public void shouldNotAllowUnauthorisedUserToMoveHearingToPastDate() {
         final Action action = createActionFor(ACTION_MOVE_HEARING_TO_PAST_DATE);
 
         final ExecutionResults results = executeRulesWith(action);
 
         assertFailureOutcome(results);
     }
+
 }
