@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.api.service;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static uk.gov.moj.cpp.listing.command.api.service.HearingDurationEnrichmentService.MINUTES_IN_DAY;
@@ -8,9 +9,13 @@ import uk.gov.justice.listing.commands.NonDefaultDay;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * Payload-shape rules for CROWN update-hearing-for-listing nonDefaultDays.
@@ -34,6 +39,18 @@ import java.util.List;
  *       when a descriptor is present — legacy callers without one send stale out-of-window
  *       genuine days and rely on the long-standing silent filter in
  *       {@code HearingDaysEnrichmentService.getValidNonDefaultDays}.</li>
+ * </ul>
+ *
+ * Per-day session-selection rules for the per-day proxy shape (only when NO block descriptor
+ * exists), 400ing with the {@code INCOMPLETE_SESSION_SELECTION} code:
+ * <ul>
+ *   <li>if any per-day proxy carries a courtScheduleId, ALL of them must (mixed presence is
+ *       ambiguous — ids absent on every proxy is the legacy court-room-override shape and is
+ *       left unconstrained);</li>
+ *   <li>proxy dates must be distinct (no duplicates);</li>
+ *   <li>proxy dates must fall within startDate..endDate;</li>
+ *   <li>when ids are present, one proxy must cover every sitting day of startDate..endDate
+ *       (weekends and nonSittingDays are exempt — Crown does not sit weekends).</li>
  * </ul>
  */
 public final class CrownNonDefaultDaysValidator {
@@ -59,6 +76,7 @@ public final class CrownNonDefaultDaysValidator {
         }
 
         if (blockDescriptors.isEmpty()) {
+            validatePerDaySessionSelection(hearing, nonDefaultDays);
             return;
         }
 
@@ -98,5 +116,76 @@ public final class CrownNonDefaultDaysValidator {
         return Boolean.TRUE.equals(nonDefaultDay.getVirtual())
                 && nonNull(nonDefaultDay.getDuration())
                 && nonDefaultDay.getDuration() > MINUTES_IN_DAY;
+    }
+
+    /**
+     * Per-day session-selection rules (only when NO block descriptor exists): when every virtual
+     * proxy carries a courtScheduleId the payload claims "these ARE the chosen sessions", so it
+     * must name one session for every sitting day of startDate..endDate (weekends and
+     * nonSittingDays exempt — Crown does not sit weekends). Ids on only SOME proxies is ambiguous.
+     * Violations are caller errors -> 400 with the INCOMPLETE_SESSION_SELECTION code so the UI can
+     * key the failure, mirroring the NO_SESSION_FOUND pattern.
+     */
+    private static void validatePerDaySessionSelection(final UpdateHearingForListing hearing,
+                                                       final List<NonDefaultDay> nonDefaultDays) {
+        final List<NonDefaultDay> perDayProxies = nonDefaultDays.stream()
+                .filter(nd -> Boolean.TRUE.equals(nd.getVirtual()))
+                .toList();
+        if (perDayProxies.isEmpty()) {
+            return;
+        }
+        final long withIds = perDayProxies.stream().filter(CrownNonDefaultDaysValidator::carriesCourtScheduleId).count();
+        if (withIds == 0) {
+            return; // legacy court-room-override shape: no session selection claimed
+        }
+        if (withIds < perDayProxies.size()) {
+            throw new BadRequestException(
+                    "INCOMPLETE_SESSION_SELECTION: all virtual nonDefaultDays must carry a courtScheduleId when any does; "
+                            + withIds + " of " + perDayProxies.size() + " have one for hearingId " + hearing.getHearingId());
+        }
+
+        final LocalDate startDate = hearing.getStartDate();
+        final LocalDate endDate = hearing.getEndDate();
+        if (isNull(startDate) || isNull(endDate)) {
+            return; // weekCommencing payloads carry no window
+        }
+
+        final List<LocalDate> proxyDates = perDayProxies.stream()
+                .map(NonDefaultDay::getStartTime)
+                .filter(Objects::nonNull)
+                .map(ZonedDateTime::toLocalDate)
+                .toList();
+        final Set<LocalDate> distinctDates = new HashSet<>(proxyDates);
+        if (distinctDates.size() < proxyDates.size()) {
+            throw new BadRequestException(
+                    "INCOMPLETE_SESSION_SELECTION: duplicate virtual nonDefaultDay dates " + proxyDates
+                            + " for hearingId " + hearing.getHearingId());
+        }
+        final List<LocalDate> outsideWindow = proxyDates.stream()
+                .filter(d -> d.isBefore(startDate) || d.isAfter(endDate))
+                .toList();
+        if (!outsideWindow.isEmpty()) {
+            throw new BadRequestException(
+                    "INCOMPLETE_SESSION_SELECTION: virtual nonDefaultDays outside window " + startDate + ".."
+                            + endDate + ": " + outsideWindow + " for hearingId " + hearing.getHearingId());
+        }
+
+        final List<LocalDate> nonSittingDays = isEmpty(hearing.getNonSittingDays())
+                ? List.of() : hearing.getNonSittingDays();
+        final List<LocalDate> uncovered = startDate.datesUntil(endDate.plusDays(1))
+                .filter(d -> d.getDayOfWeek() != DayOfWeek.SATURDAY && d.getDayOfWeek() != DayOfWeek.SUNDAY)
+                .filter(d -> !nonSittingDays.contains(d))
+                .filter(d -> !distinctDates.contains(d))
+                .toList();
+        if (!uncovered.isEmpty()) {
+            throw new BadRequestException(
+                    "INCOMPLETE_SESSION_SELECTION: virtual nonDefaultDays with courtScheduleIds must cover every sitting day in "
+                            + startDate + ".." + endDate + "; uncovered: " + uncovered
+                            + " for hearingId " + hearing.getHearingId());
+        }
+    }
+
+    private static boolean carriesCourtScheduleId(final NonDefaultDay nonDefaultDay) {
+        return nonNull(nonDefaultDay.getCourtScheduleId()) && !nonDefaultDay.getCourtScheduleId().isBlank();
     }
 }

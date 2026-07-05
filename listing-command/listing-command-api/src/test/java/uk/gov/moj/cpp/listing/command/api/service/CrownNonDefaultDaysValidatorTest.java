@@ -10,8 +10,10 @@ import uk.gov.justice.listing.commands.NonDefaultDay;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -23,6 +25,9 @@ class CrownNonDefaultDaysValidatorTest {
 
     private static final LocalDate START_DATE = LocalDate.now().plusDays(10);
     private static final LocalDate END_DATE = START_DATE.plusDays(3);
+
+    // Anchored Monday so weekend-exemption in coverage checks is deterministic.
+    private static final LocalDate MONDAY = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
 
     @Test
     void shouldRejectMoreThanOneBlockDescriptorVirtualDay() {
@@ -36,12 +41,107 @@ class CrownNonDefaultDaysValidatorTest {
     }
 
     @Test
-    void shouldAcceptMultiplePerDayVirtualProxies() {
-        // Court-room-change shape (HearingDayCourtRoomChangeForCrownIT): N virtual days each ≤ one
-        // court day, dates inside the window but NOT on startDate — must stay accepted.
+    void shouldAcceptIdLessPerDayVirtualProxies() {
+        // Legacy court-room-change shape (HearingDayCourtRoomChangeForCrownIT): N virtual days
+        // each ≤ one court day WITHOUT courtScheduleIds — partial coverage stays accepted.
         final UpdateHearingForListing hearing = crownUpdate(Arrays.asList(
-                virtualDay(START_DATE.plusDays(2), 360),
-                virtualDay(START_DATE.plusDays(3), 360)));
+                virtualDayNoId(START_DATE.plusDays(2), 360),
+                virtualDayNoId(START_DATE.plusDays(3), 360)));
+
+        assertDoesNotThrow(() -> CrownNonDefaultDaysValidator.validateForCrownUpdate(hearing));
+    }
+
+    @Test
+    void shouldAcceptCompletePerDaySessionSelection() {
+        final UpdateHearingForListing hearing = crownUpdateWindow(MONDAY, MONDAY.plusDays(2), Arrays.asList(
+                virtualDay(MONDAY, 360),
+                virtualDay(MONDAY.plusDays(1), 360),
+                virtualDay(MONDAY.plusDays(2), 360)));
+
+        assertDoesNotThrow(() -> CrownNonDefaultDaysValidator.validateForCrownUpdate(hearing));
+    }
+
+    @Test
+    void shouldRejectPerDaySessionSelectionWithGap() {
+        // The real bug shape: window Mon..Wed but proxies only for Tue+Wed (the changed days).
+        final UpdateHearingForListing hearing = crownUpdateWindow(MONDAY, MONDAY.plusDays(2), Arrays.asList(
+                virtualDay(MONDAY.plusDays(1), 360),
+                virtualDay(MONDAY.plusDays(2), 360)));
+
+        final BadRequestException e = assertThrows(BadRequestException.class,
+                () -> CrownNonDefaultDaysValidator.validateForCrownUpdate(hearing));
+        assertThat(e.getMessage(), containsString("INCOMPLETE_SESSION_SELECTION"));
+        assertThat(e.getMessage(), containsString(MONDAY.toString()));
+    }
+
+    @Test
+    void shouldRejectMixedIdPresenceOnPerDayProxies() {
+        final UpdateHearingForListing hearing = crownUpdateWindow(MONDAY, MONDAY.plusDays(1), Arrays.asList(
+                virtualDay(MONDAY, 360),
+                virtualDayNoId(MONDAY.plusDays(1), 360)));
+
+        final BadRequestException e = assertThrows(BadRequestException.class,
+                () -> CrownNonDefaultDaysValidator.validateForCrownUpdate(hearing));
+        assertThat(e.getMessage(), containsString("INCOMPLETE_SESSION_SELECTION"));
+    }
+
+    @Test
+    void shouldRejectDuplicatePerDayProxyDates() {
+        final UpdateHearingForListing hearing = crownUpdateWindow(MONDAY, MONDAY.plusDays(1), Arrays.asList(
+                virtualDay(MONDAY, 360),
+                virtualDay(MONDAY, 360),
+                virtualDay(MONDAY.plusDays(1), 360)));
+
+        final BadRequestException e = assertThrows(BadRequestException.class,
+                () -> CrownNonDefaultDaysValidator.validateForCrownUpdate(hearing));
+        assertThat(e.getMessage(), containsString("INCOMPLETE_SESSION_SELECTION"));
+    }
+
+    @Test
+    void shouldRejectPerDayProxyOutsideWindow() {
+        final UpdateHearingForListing hearing = crownUpdateWindow(MONDAY, MONDAY.plusDays(1), Arrays.asList(
+                virtualDay(MONDAY, 360),
+                virtualDay(MONDAY.plusDays(1), 360),
+                virtualDay(MONDAY.plusDays(3), 360)));
+
+        final BadRequestException e = assertThrows(BadRequestException.class,
+                () -> CrownNonDefaultDaysValidator.validateForCrownUpdate(hearing));
+        assertThat(e.getMessage(), containsString("INCOMPLETE_SESSION_SELECTION"));
+    }
+
+    @Test
+    void shouldExemptWeekendsFromCoverage() {
+        // Fri..Mon window: Sat+Sun are not sitting days, so Fri+Mon proxies are complete.
+        final LocalDate friday = MONDAY.plusDays(4);
+        final UpdateHearingForListing hearing = crownUpdateWindow(friday, friday.plusDays(3), Arrays.asList(
+                virtualDay(friday, 360),
+                virtualDay(friday.plusDays(3), 360)));
+
+        assertDoesNotThrow(() -> CrownNonDefaultDaysValidator.validateForCrownUpdate(hearing));
+    }
+
+    @Test
+    void shouldExemptNonSittingDaysFromCoverage() {
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(MONDAY)
+                .withEndDate(MONDAY.plusDays(2))
+                .withNonSittingDays(Collections.singletonList(MONDAY.plusDays(1)))
+                .withNonDefaultDays(Arrays.asList(
+                        virtualDay(MONDAY, 360),
+                        virtualDay(MONDAY.plusDays(2), 360)))
+                .build();
+
+        assertDoesNotThrow(() -> CrownNonDefaultDaysValidator.validateForCrownUpdate(hearing));
+    }
+
+    @Test
+    void shouldNotRunCoverageForBlockDescriptorWithGaps() {
+        // Single virtual day > 360 = block descriptor with anchor courtScheduleId: window gaps
+        // are expected (courtscheduler finds the sessions) — coverage must NOT fire.
+        final UpdateHearingForListing hearing = crownUpdateWindow(MONDAY, MONDAY.plusDays(2),
+                Collections.singletonList(virtualDay(MONDAY, 1080)));
 
         assertDoesNotThrow(() -> CrownNonDefaultDaysValidator.validateForCrownUpdate(hearing));
     }
@@ -136,11 +236,30 @@ class CrownNonDefaultDaysValidatorTest {
                 .build();
     }
 
+    private static UpdateHearingForListing crownUpdateWindow(final LocalDate start, final LocalDate end,
+                                                             final List<NonDefaultDay> nonDefaultDays) {
+        return UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(start)
+                .withEndDate(end)
+                .withNonDefaultDays(nonDefaultDays)
+                .build();
+    }
+
     private static NonDefaultDay virtualDay(final LocalDate date, final int duration) {
         return NonDefaultDay.nonDefaultDay()
                 .withStartTime(ZonedDateTime.parse(date + "T09:00:00Z"))
                 .withDuration(duration)
                 .withCourtScheduleId(UUID.randomUUID().toString())
+                .withVirtual(Boolean.TRUE)
+                .build();
+    }
+
+    private static NonDefaultDay virtualDayNoId(final LocalDate date, final int duration) {
+        return NonDefaultDay.nonDefaultDay()
+                .withStartTime(ZonedDateTime.parse(date + "T09:00:00Z"))
+                .withDuration(duration)
                 .withVirtual(Boolean.TRUE)
                 .build();
     }
