@@ -40,10 +40,12 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 import uk.gov.justice.services.messaging.JsonObjects;
@@ -95,6 +97,8 @@ public class HearingQueryApi {
     private static final String PROSECUTOR = "prosecutor";
     private static final String PROSECUTOR_ID = "prosecutorId";
     private static final String FULL_NAME = "fullName";
+    private static final String CASE_IDENTIFIER = "caseIdentifier";
+    private static final String AUTHORITY_ID = "authorityId";
 
     @Inject
     private HearingQueryView hearingQueryView;
@@ -353,29 +357,57 @@ public class HearingQueryApi {
             return Map.of();
         }
 
-        final List<String> prosecutorIds = responsePayload.getJsonArray(COURT_LISTS).getValuesAs(JsonObject.class).stream()
+        final List<JsonObject> hearings = responsePayload.getJsonArray(COURT_LISTS).getValuesAs(JsonObject.class).stream()
                 .filter(courtList -> courtList.containsKey(SITTINGS))
                 .flatMap(courtList -> courtList.getJsonArray(SITTINGS).getValuesAs(JsonObject.class).stream())
                 .filter(sitting -> sitting.containsKey(HEARINGS))
                 .flatMap(sitting -> sitting.getJsonArray(HEARINGS).getValuesAs(JsonObject.class).stream())
+                .collect(Collectors.toList());
+
+        final Stream<String> prosecutorIds = hearings.stream()
                 .filter(hearing -> hearing.containsKey(PROSECUTOR))
                 .map(hearing -> hearing.getJsonObject(PROSECUTOR))
                 .filter(prosecutor -> prosecutor.containsKey(PROSECUTOR_ID))
-                .map(prosecutor -> prosecutor.getString(PROSECUTOR_ID))
+                .map(prosecutor -> prosecutor.getString(PROSECUTOR_ID));
+
+        final Stream<String> authorityIds = hearings.stream()
+                .map(HearingQueryApi::getAuthorityId)
+                .filter(Objects::nonNull);
+
+        final List<String> prosecutorReferenceIds = Stream.concat(prosecutorIds, authorityIds)
                 .distinct()
                 .collect(Collectors.toList());
 
         final Map<String, String> organisationNamesById = new HashMap<>();
-        prosecutorIds.forEach(prosecutorId -> {
-            final JsonEnvelope prosecutorEnvelope = referenceDataService.getProsecutorById(prosecutorId, query);
-            if (!prosecutorEnvelope.payloadIsNull()) {
-                final JsonObject prosecutorPayload = prosecutorEnvelope.payloadAsJsonObject();
-                if (prosecutorPayload.containsKey(FULL_NAME)) {
-                    organisationNamesById.put(prosecutorId, prosecutorPayload.getString(FULL_NAME));
+        prosecutorReferenceIds.forEach(prosecutorId -> {
+            try {
+                final JsonEnvelope prosecutorEnvelope = referenceDataService.getProsecutorById(prosecutorId, query);
+                if (!prosecutorEnvelope.payloadIsNull()) {
+                    final JsonObject prosecutorPayload = prosecutorEnvelope.payloadAsJsonObject();
+                    if (prosecutorPayload.containsKey(FULL_NAME)) {
+                        organisationNamesById.put(prosecutorId, prosecutorPayload.getString(FULL_NAME));
+                    }
                 }
+            } catch (final Exception e) {
+                LOGGER.warn("No prosecutor reference data found for id: " + prosecutorId, e);
             }
         });
         return organisationNamesById;
+    }
+
+    private static String getAuthorityId(final JsonObject hearing) {
+        if (!hearing.containsKey(CASE_IDENTIFIER) || hearing.isNull(CASE_IDENTIFIER)) {
+            return null;
+        }
+        final JsonObject caseIdentifier = hearing.getJsonObject(CASE_IDENTIFIER);
+        return caseIdentifier.containsKey(AUTHORITY_ID) ? caseIdentifier.getString(AUTHORITY_ID) : null;
+    }
+
+    private static String resolveOrganisationName(final Map<String, String> prosecutorOrganisationNamesById, final String prosecutorId, final String authorityId) {
+        if (prosecutorId != null && prosecutorOrganisationNamesById.containsKey(prosecutorId)) {
+            return prosecutorOrganisationNamesById.get(prosecutorId);
+        }
+        return authorityId != null ? prosecutorOrganisationNamesById.get(authorityId) : null;
     }
 
     private JsonArray enrichSittings(final JsonArray sittings, final Map<String, String> judiciaryNamesById, final Map<String, String> prosecutorOrganisationNamesById) {
@@ -398,26 +430,33 @@ public class HearingQueryApi {
 
     private JsonArray enrichHearingsWithProsecutorOrganisationNames(final JsonArray hearings, final Map<String, String> prosecutorOrganisationNamesById) {
         final JsonArrayBuilder enrichedHearingsBuilder = createArrayBuilder();
-        hearings.getValuesAs(JsonObject.class).forEach(hearing -> {
-            final JsonObjectBuilder enrichedHearingBuilder = JsonObjects.createObjectBuilder();
-            hearing.forEach((key, value) -> {
-                if (PROSECUTOR.equals(key)) {
-                    final JsonObject prosecutor = hearing.getJsonObject(PROSECUTOR);
-                    final String organisationName = prosecutor.containsKey(PROSECUTOR_ID)
-                            ? prosecutorOrganisationNamesById.get(prosecutor.getString(PROSECUTOR_ID))
-                            : null;
-                    if (organisationName != null) {
-                        enrichedHearingBuilder.add(PROSECUTOR, JsonObjects.createObjectBuilder().add(ORGANISATION_NAME, organisationName).build());
-                    } else {
-                        enrichedHearingBuilder.add(key, value);
-                    }
-                } else {
-                    enrichedHearingBuilder.add(key, value);
-                }
-            });
-            enrichedHearingsBuilder.add(enrichedHearingBuilder.build());
-        });
+        hearings.getValuesAs(JsonObject.class)
+                .forEach(hearing -> enrichedHearingsBuilder.add(enrichHearingWithProsecutorOrganisationName(hearing, prosecutorOrganisationNamesById)));
         return enrichedHearingsBuilder.build();
+    }
+
+    private JsonObject enrichHearingWithProsecutorOrganisationName(final JsonObject hearing, final Map<String, String> prosecutorOrganisationNamesById) {
+        final boolean hasProsecutor = hearing.containsKey(PROSECUTOR);
+        final String authorityId = getAuthorityId(hearing);
+        final String prosecutorId = hasProsecutor ? getProsecutorId(hearing.getJsonObject(PROSECUTOR)) : null;
+        final String organisationName = resolveOrganisationName(prosecutorOrganisationNamesById, prosecutorId, authorityId);
+
+        final JsonObjectBuilder enrichedHearingBuilder = JsonObjects.createObjectBuilder();
+        hearing.forEach((key, value) -> {
+            if (!PROSECUTOR.equals(key)) {
+                enrichedHearingBuilder.add(key, value);
+            }
+        });
+        if (organisationName != null) {
+            enrichedHearingBuilder.add(PROSECUTOR, JsonObjects.createObjectBuilder().add(ORGANISATION_NAME, organisationName).build());
+        } else if (hasProsecutor) {
+            enrichedHearingBuilder.add(PROSECUTOR, hearing.getJsonObject(PROSECUTOR));
+        }
+        return enrichedHearingBuilder.build();
+    }
+
+    private static String getProsecutorId(final JsonObject prosecutor) {
+        return prosecutor.containsKey(PROSECUTOR_ID) ? prosecutor.getString(PROSECUTOR_ID) : null;
     }
 
     private JsonArray enrichJudiciaryWithNames(final JsonArray judiciaryArray, final Map<String, String> judiciaryNamesById) {
