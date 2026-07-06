@@ -153,7 +153,7 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
                                 withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtScheduleId",
                                         hasItem(hearing.scheduleD1.toString())),
                                 withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtCentreId",
-                                        hasItem(hearing.courtCentreId.toString())),
+                                        hasItem(hearing.day1CourtCentreId)),
                                 withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].startTime",
                                         hasItem(hearing.day1StartTime)),
                                 withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].endTime",
@@ -397,9 +397,14 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
                 "$.hearingDays[?(@.hearingDate=='" + day1 + "')].startTime");
         final List<String> day1EndTimes = com.jayway.jsonpath.JsonPath.read(allocatedResponse.getPayload(),
                 "$.hearingDays[?(@.hearingDate=='" + day1 + "')].endTime");
+        // day-level courtCentreId is enriched during creation and can differ from the update
+        // payload's courtCentreId — capture the actual pre-change value rather than assuming it.
+        final List<String> day1CourtCentreIds = com.jayway.jsonpath.JsonPath.read(allocatedResponse.getPayload(),
+                "$.hearingDays[?(@.hearingDate=='" + day1 + "')].courtCentreId");
 
         return new ThreeDayCrownHearing(hearingId, courtCentreId, courtRoomId, day1, day2, day3,
-                scheduleD1, scheduleD2, scheduleD3, day1StartTimes.get(0), day1EndTimes.get(0));
+                scheduleD1, scheduleD2, scheduleD3, day1StartTimes.get(0), day1EndTimes.get(0),
+                day1CourtCentreIds.get(0));
     }
 
     private static void givenReferenceDataStubsForUpdateHearing(final UUID courtCentreId, final UUID courtRoomId) {
@@ -491,7 +496,8 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
     private record ThreeDayCrownHearing(UUID hearingId, UUID courtCentreId, UUID courtRoomId,
                                          LocalDate day1, LocalDate day2, LocalDate day3,
                                          UUID scheduleD1, UUID scheduleD2, UUID scheduleD3,
-                                         String day1StartTime, String day1EndTime) {
+                                         String day1StartTime, String day1EndTime,
+                                         String day1CourtCentreId) {
     }
 
     private record DayChange(LocalDate date, UUID courtRoomId, UUID targetCourtScheduleId) {
