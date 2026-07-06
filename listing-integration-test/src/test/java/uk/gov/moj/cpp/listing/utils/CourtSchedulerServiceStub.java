@@ -1478,6 +1478,32 @@ public class CourtSchedulerServiceStub {
         stubCourtSchedulesByIdResponse("{\"courtSchedules\":[" + schedulesJson + "]}");
     }
 
+    /**
+     * Per-session variant of stubGetCourtSchedulesByIdWithDraftStatus: each session carries its
+     * OWN date and room, so multi-room selections (change-courtroom-for-selected-days) can be
+     * stubbed. Values must agree with the update payload's nonDefaultDays or
+     * sanityCheckAndEnrichCrown logs a date-mismatch ERROR and shifts the projected day.
+     */
+    public record CourtScheduleStubSession(String courtScheduleId, LocalDate sessionDate, UUID courtHouseId,
+                                           UUID courtRoomId, ZonedDateTime hearingStartTime, boolean isDraft) {}
+
+    public static void stubGetCourtSchedulesById(final List<CourtScheduleStubSession> sessions) {
+        final StringBuilder schedulesJson = new StringBuilder();
+        for (int i = 0; i < sessions.size(); i++) {
+            final CourtScheduleStubSession s = sessions.get(i);
+            if (i > 0) {
+                schedulesJson.append(",");
+            }
+            schedulesJson.append("{\"courtScheduleId\":\"").append(s.courtScheduleId()).append("\"")
+                    .append(",\"courtHouseId\":\"").append(s.courtHouseId()).append("\"")
+                    .append(",\"courtRoomId\":\"").append(s.courtRoomId()).append("\"")
+                    .append(",\"sessionDate\":\"").append(s.sessionDate()).append("\"")
+                    .append(",\"hearingStartTime\":\"").append(s.hearingStartTime()).append("\"")
+                    .append(",\"isDraft\":").append(s.isDraft()).append("}");
+        }
+        stubCourtSchedulesByIdResponse("{\"courtSchedules\":[" + schedulesJson + "]}");
+    }
+
     private static void stubCourtSchedulesByIdResponse(final String body) {
         // Endpoint reshaped: was GET /courtschedule/search.court-schedules-by-id?courtScheduleIds=...
         // Now GET /sessions?ids=...  (query param key changed from courtScheduleIds to ids)

@@ -14,6 +14,7 @@ import static javax.ws.rs.core.Response.Status.ACCEPTED;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
+import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
@@ -662,6 +663,19 @@ public class UpdateHearingSteps extends AbstractIT {
         final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING, request, getLoggedInHeader());
 
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    /** Posts update-hearing-for-listing and asserts the synchronous 400 from CrownNonDefaultDaysValidator. */
+    public void whenHearingIsUpdatedForListingExpectingBadRequest() {
+        stubOrganisationUnit(updatedHearingData.getCourtCentreId());
+        stubGetReferenceDataCourtCentre(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court"));
+        stubGetReferenceDataCourtCentreById(updatedHearingData.getCourtCentreId());
+        stubGetReferenceDataHearingTypes(updatedHearingData.getHearingTypData().getTypeId());
+        final String updateHearingUrl = String.format("%s/%s", getBaseUri(), format(
+                readConfig().getProperty(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING), updatedHearingData.getHearingId()));
+        request = prepareJsonForUpdatedHearingData(updatedHearingData).build().toString();
+        final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING, request, getLoggedInHeader());
+        assertThat(response.getStatus(), equalTo(SC_BAD_REQUEST));
     }
 
     public void whenMultiHearingsUpdatedForListing(final UpdatedHearingData updatedHearingDataForUnallocation1) {

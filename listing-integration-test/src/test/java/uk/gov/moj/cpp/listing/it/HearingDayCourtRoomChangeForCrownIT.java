@@ -12,6 +12,7 @@ import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetCourtSchedulesById;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetCourtSchedulesByIdWithDraftStatus;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
@@ -22,6 +23,9 @@ import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData;
+import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
+import uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -54,11 +58,14 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
     private final LocalDate END_DATE = LocalDate.of(2025, 8, 19);
     private final ZonedDateTime HEARING_START_TIME = ZonedDateTime.of(2025, 8, 15, 10, 30, 0, 0, java.time.ZoneOffset.UTC);
 
-    @Test
-    public void shouldChangeCourtRoomForAllocatedMultiDayCrownCourtHearing() {
+    private HearingsData hearingsData;
 
-        // Clear database before test
-
+    /**
+     * Shared Given-block: lists a Crown Court hearing spanning 2025-08-15 (Fri) .. 2025-08-19
+     * (Tue) and verifies it is created, allocated and listed. Sets the {@code hearingsData}
+     * field and returns the hearing data for the sole hearing created.
+     */
+    private HearingData createAllocatedMultiDayCrownHearing() {
         // Given: A Crown Court hearing is listed in Crown Court
         final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(
                 HEARING_ID,
@@ -72,7 +79,7 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
                 null
         );
 
-        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary(
+        hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary(
                 caseAndDefendantData,
                 COURT_CENTRE_ID,
                 COURT_ROOM_ID,
@@ -90,7 +97,13 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
         listCourtHearingSteps.verifyHearingListedFromAPI(true);
 
         LOGGER.info("Crown Court hearing created with ID: {} in Crown Court", HEARING_ID);
-        var hearingData = hearingsData.getHearingData().get(0);
+        return hearingsData.getHearingData().get(0);
+    }
+
+    @Test
+    public void shouldChangeCourtRoomForAllocatedMultiDayCrownCourtHearing() {
+
+        var hearingData = createAllocatedMultiDayCrownHearing();
 
         changeTwoDaysToCourtRoom(hearingData, hearingsData, COURT_ROOM_ID2);
         changeTwoDaysToCourtRoom(hearingData, hearingsData, COURT_ROOM_ID);
@@ -288,6 +301,85 @@ public class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
         verifyCourtCalendarSearch(COURT_CENTRE_ID, COURT_ROOM_ID3, "2025-08-15", "2025-08-22", null, 8);
 
         LOGGER.info("Successfully verified Crown Court hearing remains allocated after duration change");
+    }
+
+    /**
+     * Real UI shape for "change courtroom for selected days": one virtual proxy per SITTING day,
+     * each <= 360 min and each WITH its courtScheduleId (the sessions picked from session search).
+     * 15th keeps the current room+session; 18th/19th move to COURT_ROOM_ID3's sessions. The
+     * backend must direct-list exactly these sessions - never multiDaySearchAndBook (which is NOT
+     * stubbed here: if the old routing fires, enrichment fails and the room assertions fail).
+     */
+    @Test
+    public void shouldChangeCourtRoomForSelectedDaysWithSessionSelection() {
+        final var hearingData = createAllocatedMultiDayCrownHearing();
+
+        final String cs15 = randomUUID().toString();
+        final String cs18 = randomUUID().toString();
+        final String cs19 = randomUUID().toString();
+        final ZonedDateTime t15 = ZonedDateTime.of(2025, 8, 15, 10, 30, 0, 0, java.time.ZoneOffset.UTC);
+        final ZonedDateTime t18 = ZonedDateTime.of(2025, 8, 18, 10, 30, 0, 0, java.time.ZoneOffset.UTC);
+        final ZonedDateTime t19 = ZonedDateTime.of(2025, 8, 19, 10, 30, 0, 0, java.time.ZoneOffset.UTC);
+
+        stubGetCourtSchedulesById(List.of(
+                new CourtSchedulerServiceStub.CourtScheduleStubSession(cs15, LocalDate.of(2025, 8, 15), COURT_CENTRE_ID, COURT_ROOM_ID, t15, false),
+                new CourtSchedulerServiceStub.CourtScheduleStubSession(cs18, LocalDate.of(2025, 8, 18), COURT_CENTRE_ID, COURT_ROOM_ID3, t18, false),
+                new CourtSchedulerServiceStub.CourtScheduleStubSession(cs19, LocalDate.of(2025, 8, 19), COURT_CENTRE_ID, COURT_ROOM_ID3, t19, false)));
+
+        final var proxies = List.of(
+                perDaySessionProxy(t15, COURT_ROOM_ID, cs15),
+                perDaySessionProxy(t18, COURT_ROOM_ID3, cs18),
+                perDaySessionProxy(t19, COURT_ROOM_ID3, cs19));
+
+        final var updatedData = new UpdatedHearingData(
+                HEARING_ID, COURT_CENTRE_ID, hearingData.getName(), COURT_ROOM_ID,
+                hearingData.getHearingTypeData(), START_DATE.toString(), END_DATE.toString(),
+                proxies, emptyList(), "ENGLISH", hearingData.getJudiciary(), JURISDICTION_TYPE,
+                null, null, null, hearingData.getHasVideoLink(), hearingData.getPublicListNote(),
+                "High", null, null, false, null);
+
+        CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules(updatedData);
+
+        final UpdateHearingSteps steps = new UpdateHearingSteps(hearingsData, updatedData);
+        steps.whenHearingIsUpdatedForListing();
+        steps.verifyHearingUpdatedWhenQueryingFromAPICourtCalendar();
+        steps.verifyHearingAllocatedWhenQueryingFromAPICourtCalendar();
+
+        // 15th untouched, 18th+19th moved, startDate preserved - and only 3 sitting days remain.
+        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(steps, HEARING_ID, 0, COURT_ROOM_ID, asList("2025-08-15"));
+        verifyHearingDaysWithSpecificCourtRoomAndEmptyNonDefaultDays(steps, HEARING_ID, 0, COURT_ROOM_ID3, asList("2025-08-18", "2025-08-19"));
+    }
+
+    /** Gap in coverage (18th+19th sent, 15th missing) must 400 INCOMPLETE_SESSION_SELECTION. */
+    @Test
+    public void shouldRejectSelectedDaysSessionSelectionWithGap() {
+        final var hearingData = createAllocatedMultiDayCrownHearing();
+
+        final var proxies = List.of(
+                perDaySessionProxy(ZonedDateTime.of(2025, 8, 18, 10, 30, 0, 0, java.time.ZoneOffset.UTC), COURT_ROOM_ID3, randomUUID().toString()),
+                perDaySessionProxy(ZonedDateTime.of(2025, 8, 19, 10, 30, 0, 0, java.time.ZoneOffset.UTC), COURT_ROOM_ID3, randomUUID().toString()));
+        final var updatedData = new UpdatedHearingData(
+                HEARING_ID, COURT_CENTRE_ID, hearingData.getName(), COURT_ROOM_ID,
+                hearingData.getHearingTypeData(), START_DATE.toString(), END_DATE.toString(),
+                proxies, emptyList(), "ENGLISH", hearingData.getJudiciary(), JURISDICTION_TYPE,
+                null, null, null, hearingData.getHasVideoLink(), hearingData.getPublicListNote(),
+                "High", null, null, false, null);
+
+        new UpdateHearingSteps(hearingsData, updatedData).whenHearingIsUpdatedForListingExpectingBadRequest();
+    }
+
+    /** Proxy with a courtScheduleId - the 9-arg NonDefaultDayData ctor (the 6-arg one DROPS the id). */
+    private NonDefaultDayData perDaySessionProxy(final ZonedDateTime startTime, final UUID roomId, final String courtScheduleId) {
+        return new NonDefaultDayData(
+                startTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")),
+                Optional.of(360),
+                Optional.of(courtScheduleId),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.of(COURT_CENTRE_ID.toString()),
+                Optional.of(roomId.toString()),
+                Optional.of(Boolean.TRUE));
     }
 
     private void changeTwoDaysToCourtRoom(final HearingData hearingData, final HearingsData hearingsData, final UUID newCourtRoomId) {
