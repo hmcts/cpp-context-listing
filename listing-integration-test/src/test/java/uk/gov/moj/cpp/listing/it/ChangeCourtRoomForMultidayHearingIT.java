@@ -21,6 +21,8 @@ import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubChangeCourtRoomForMultidayHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubChangeCourtRoomForMultidayHearingFailure;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubExtendMultiDayHearing;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyChangeCourtRoomForMultidayHearingCalled;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyChangeCourtRoomForMultidayHearingNeverCalled;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyExtendMultiDayHearingCalled;
@@ -37,11 +39,14 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import uk.gov.moj.cpp.listing.it.util.ItClock;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory;
 import uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.ChangeCourtRoomStubSession;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +61,7 @@ import javax.ws.rs.core.Response;
 import io.restassured.path.json.JsonPath;
 import org.junit.jupiter.api.Test;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
+import uk.gov.justice.services.test.utils.core.http.ResponseData;
 
 /**
  * Covers {@code listing.command.change-court-room-for-multiday-hearing}: a CROWN-only wrapper on
@@ -121,9 +127,12 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
         assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
         verifyChangeCourtRoomForMultidayHearingCalled(hearing.hearingId.toString());
 
-        // d2 and d3 moved to room2 with the new courtScheduleIds; d1 is untouched (original room
-        // and courtScheduleId preserved) - id-filtered (hearingId in URL + hearingDate JSON path)
-        // paired with a concrete result matcher throughout, never a bare withJsonPath.
+        // d2 and d3 moved to room2 with the new courtScheduleIds; d1 is untouched - proved not just
+        // for courtRoomId/courtScheduleId but for every hearingDay field the viewstore exposes
+        // (courtCentreId, startTime, endTime; hearingDate is the filter predicate itself), each
+        // compared against the value captured before the change in givenAllocatedThreeDayCrownHearing.
+        // id-filtered (hearingId in URL + hearingDate JSON path) paired with a concrete result
+        // matcher throughout, never a bare withJsonPath.
         pollWithDefaults(requestParams(searchHearingUrl(hearing.hearingId), MEDIA_TYPE_SEARCH_HEARING)
                 .withHeader(USER_ID, getLoggedInUser()).build())
                 .until(
@@ -142,7 +151,13 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
                                 withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtRoomId",
                                         hasItem(hearing.courtRoomId.toString())),
                                 withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtScheduleId",
-                                        hasItem(hearing.scheduleD1.toString()))
+                                        hasItem(hearing.scheduleD1.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtCentreId",
+                                        hasItem(hearing.courtCentreId.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].startTime",
+                                        hasItem(hearing.day1StartTime)),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].endTime",
+                                        hasItem(hearing.day1EndTime))
                         )));
 
         // Match by hearingId so a stale event from another test on the shared public topic is
@@ -155,6 +170,11 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
         final JsonPath hearingUpdated = retrieveMessage(hearingUpdatedConsumer,
                 containsString(hearing.hearingId.toString()));
         assertThat(hearingUpdated, is(org.hamcrest.CoreMatchers.notNullValue()));
+        // Same accessor pattern as UpdateHearingSteps.verifyPublicEventHearingUpdated: the payload is
+        // wrapped in "updatedHearing" (public.listing.hearing-updated.json refs confirmedHearing.json,
+        // whose id field is "id"), so this proves the event is about OUR hearing, not a coincidental
+        // hearingId-substring match on the shared public topic.
+        assertThat(hearingUpdated.get("updatedHearing.id"), is(hearing.hearingId.toString()));
     }
 
     // ---------------------------------------------------------------------------------------
@@ -266,13 +286,13 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
     void shouldReturn422WhenHearingIsNotCrown() {
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary(
-                uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION);
+                HearingsDataFactory.MAGISTRATES_JURISDICTION);
         final ListCourtHearingSteps seedSteps = new ListCourtHearingSteps(hearingsData);
 
         // MAGS listing calls courtscheduler during list-court-hearing; CROWN doesn't (mirrors
         // MoveHearingToPastDateIT.givenAListedHearing).
-        final uk.gov.moj.cpp.listing.steps.data.HearingData seedHearingData = hearingsData.getHearingData().get(0);
-        final java.time.ZonedDateTime hearingStartTime = seedHearingData.getHearingStartTime();
+        final HearingData seedHearingData = hearingsData.getHearingData().get(0);
+        final ZonedDateTime hearingStartTime = seedHearingData.getHearingStartTime();
         final String listedCourtScheduleId = UUID.randomUUID().toString();
         final Map<String, String> stubParams = new HashMap<>();
         stubParams.put("SESSION_DATE", hearingStartTime.toLocalDate().toString());
@@ -281,9 +301,8 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
         stubParams.put("COURT_ROOM_ID", seedHearingData.getCourtRoomId().toString());
         stubParams.put("BOOKING_ID", UUID.randomUUID().toString());
         stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
-        uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams(stubParams);
-        uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions(
-                seedHearingData.getId().toString(), listedCourtScheduleId, hearingStartTime);
+        stubProvisionalBookingWithCustomParams(stubParams);
+        stubListHearingInCourtSessions(seedHearingData.getId().toString(), listedCourtScheduleId, hearingStartTime);
 
         seedSteps.whenCaseIsSubmittedForListing();
         final UUID hearingId = seedHearingData.getId();
@@ -358,7 +377,7 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
 
         verifyExtendMultiDayHearingCalled(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
 
-        pollWithDefaults(requestParams(searchHearingUrl(hearingId), MEDIA_TYPE_SEARCH_HEARING)
+        final ResponseData allocatedResponse = pollWithDefaults(requestParams(searchHearingUrl(hearingId), MEDIA_TYPE_SEARCH_HEARING)
                 .withHeader(USER_ID, getLoggedInUser()).build())
                 .until(
                         status().is(OK),
@@ -370,7 +389,17 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
                                 withJsonPath("$.hearingDays[?(@.hearingDate=='" + day3 + "')].courtScheduleId", hasItem(scheduleD3.toString()))
                         )));
 
-        return new ThreeDayCrownHearing(hearingId, courtCentreId, courtRoomId, day1, day2, day3, scheduleD1, scheduleD2, scheduleD3);
+        // Capture day 1's pre-change startTime/endTime (as actually serialised by the viewstore, per
+        // uk.gov.moj.cpp.listing.query.view.hearing.HearingDay) so the happy-path test can prove
+        // byte-identity of the untouched day after the courtroom change, without hardcoding the
+        // stub-generated time format.
+        final List<String> day1StartTimes = com.jayway.jsonpath.JsonPath.read(allocatedResponse.getPayload(),
+                "$.hearingDays[?(@.hearingDate=='" + day1 + "')].startTime");
+        final List<String> day1EndTimes = com.jayway.jsonpath.JsonPath.read(allocatedResponse.getPayload(),
+                "$.hearingDays[?(@.hearingDate=='" + day1 + "')].endTime");
+
+        return new ThreeDayCrownHearing(hearingId, courtCentreId, courtRoomId, day1, day2, day3,
+                scheduleD1, scheduleD2, scheduleD3, day1StartTimes.get(0), day1EndTimes.get(0));
     }
 
     private static void givenReferenceDataStubsForUpdateHearing(final UUID courtCentreId, final UUID courtRoomId) {
@@ -461,7 +490,8 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
 
     private record ThreeDayCrownHearing(UUID hearingId, UUID courtCentreId, UUID courtRoomId,
                                          LocalDate day1, LocalDate day2, LocalDate day3,
-                                         UUID scheduleD1, UUID scheduleD2, UUID scheduleD3) {
+                                         UUID scheduleD1, UUID scheduleD2, UUID scheduleD3,
+                                         String day1StartTime, String day1EndTime) {
     }
 
     private record DayChange(LocalDate date, UUID courtRoomId, UUID targetCourtScheduleId) {
