@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/listing.command.change-court-room-for-multiday-hearing.json",
+  "description": "Change the courtroom of SELECTED days of a multiday CROWN hearing. Contains only the changed days; unsubmitted days are never touched. Schema violations are 400; all business failures are 422.",
+  "type": "object",
+  "properties": {
+    "sendNotificationToParties": { "type": "boolean" },
+    "nonDefaultDays": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "startTime": { "type": "string", "format": "date-time" },
+          "duration": { "type": "integer", "maximum": 360 },
+          "courtCentreId": { "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid" },
+          "courtRoomId": { "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid" },
+          "courtScheduleId": { "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid" },
+          "virtual": { "type": "boolean", "enum": [true] }
+        },
+        "required": ["startTime", "duration", "courtCentreId", "courtRoomId", "courtScheduleId", "virtual"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["nonDefaultDays"],
+  "additionalProperties": false
+}

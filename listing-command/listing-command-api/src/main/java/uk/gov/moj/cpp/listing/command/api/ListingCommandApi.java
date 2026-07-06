@@ -40,6 +40,9 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
 import uk.gov.moj.cpp.listing.command.api.service.HearingLookupService;
+import uk.gov.moj.cpp.listing.common.courtroomchange.ChangeCourtRoomForMultidayException;
+import uk.gov.moj.cpp.listing.common.courtroomchange.ChangedDaySession;
+import uk.gov.moj.cpp.listing.common.courtroomchange.RequestedChangeDay;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
@@ -47,8 +50,10 @@ import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.VacateTrialEnriched;
 
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,6 +65,7 @@ import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonValue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +83,15 @@ public class ListingCommandApi {
     private static final String LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING_ENRICHED = "listing.command.extend-hearing-for-hearing-enriched";
     private static final String LISTING_COMMAND_VACATE_TRIAL = "listing.command.vacate-trial-enriched";
     private static final String LISTING_COMMAND_MOVE_HEARING_TO_PAST_DATE_ENRICHED = "listing.command.move-hearing-to-past-date-enriched";
+    private static final String LISTING_COMMAND_CHANGE_COURT_ROOM_FOR_MULTIDAY_HEARING_ENRICHED = "listing.command.change-court-room-for-multiday-hearing-enriched";
+    private static final String NON_DEFAULT_DAYS = "nonDefaultDays";
+    private static final String NON_DEFAULT_DAY_DURATION = "duration";
+    private static final String SEND_NOTIFICATION_TO_PARTIES = "sendNotificationToParties";
+    private static final String CHANGED_DAYS = "changedDays";
+    private static final String HEARING_DATE = "hearingDate";
+    public static final String NOT_CROWN_HEARING = "NOT_CROWN_HEARING";
+    public static final String NOT_MULTIDAY_HEARING = "NOT_MULTIDAY_HEARING";
+    public static final String DUPLICATE_DAY_DATES = "DUPLICATE_DAY_DATES";
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String START_DATE = "startDate";
     private static final String JURISDICTION = "jurisdiction";
@@ -463,6 +478,89 @@ public class ListingCommandApi {
     }
 
     private static JsonObject buildMoveHearingToPastDateErrorBody(final String errorCode, final String message) {
+        return createObjectBuilder()
+                .add(ERROR_CODE, errorCode)
+                .add(MESSAGE, message)
+                .build();
+    }
+
+    /**
+     * CROWN-only. Changes the courtroom of one or more SELECTED days of a multi-day CROWN
+     * hearing. Days not present in {@code nonDefaultDays} are never touched. Schema violations
+     * (missing/malformed fields) are rejected as 400 by the framework via the request schema;
+     * business failures (unknown hearing, non-CROWN, non-multiday, duplicate day dates, or a
+     * courtscheduler rejection) are all surfaced as 422 via {@link ChangeCourtRoomForMultidayException}
+     * so no command is ever sent.
+     */
+    @Handles("listing.command.change-court-room-for-multiday-hearing")
+    public void handleChangeCourtRoomForMultidayHearing(final JsonEnvelope envelope) {
+        final JsonObject payload = envelope.payloadAsJsonObject();
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.change-court-room-for-multiday-hearing' received with payload {}", envelope.toObfuscatedDebugString());
+        }
+
+        final UUID hearingId = fromString(payload.getString(HEARING_ID));
+        final JsonArray nonDefaultDays = payload.getJsonArray(NON_DEFAULT_DAYS);
+
+        final JsonObject hearing = hearingLookupService.findHearing(hearingId, envelope)
+                .orElseThrow(() -> new ChangeCourtRoomForMultidayException(422,
+                        buildChangeCourtRoomForMultidayErrorBody(HEARING_ID_NOT_FOUND, "No hearing found for hearingId " + hearingId),
+                        "No hearing found for hearingId " + hearingId));
+
+        if (!CROWN_JURISDICTION.equals(hearing.getString(JURISDICTION_TYPE, null))) {
+            throw new ChangeCourtRoomForMultidayException(422,
+                    buildChangeCourtRoomForMultidayErrorBody(NOT_CROWN_HEARING, "change-court-room-for-multiday-hearing is CROWN-only"),
+                    "change-court-room-for-multiday-hearing is CROWN-only");
+        }
+
+        final JsonArray hearingDays = hearing.containsKey(HEARING_DAYS) ? hearing.getJsonArray(HEARING_DAYS) : null;
+        if (hearingDays == null || hearingDays.size() < 2) {
+            throw new ChangeCourtRoomForMultidayException(422,
+                    buildChangeCourtRoomForMultidayErrorBody(NOT_MULTIDAY_HEARING, "Hearing " + hearingId + " is not a multiday hearing"),
+                    "Hearing " + hearingId + " is not a multiday hearing");
+        }
+
+        // requested days keyed by date, so the adapter response (booked sessions) can be joined
+        // back to the originating request BY DATE - the adapter is free to return its sessions in
+        // any order, so a positional join would silently mismatch rooms/times across days.
+        final Map<LocalDate, JsonObject> requestedByDate = new LinkedHashMap<>();
+        final List<RequestedChangeDay> days = new ArrayList<>();
+        for (final JsonValue value : nonDefaultDays) {
+            final JsonObject nonDefaultDay = (JsonObject) value;
+            final LocalDate date = ZonedDateTime.parse(nonDefaultDay.getString(DAY_START_TIME)).toLocalDate();
+            if (requestedByDate.put(date, nonDefaultDay) != null) {
+                throw new ChangeCourtRoomForMultidayException(422,
+                        buildChangeCourtRoomForMultidayErrorBody(DUPLICATE_DAY_DATES, "Duplicate day " + date + " in nonDefaultDays"),
+                        "Duplicate day " + date + " in nonDefaultDays");
+            }
+            days.add(new RequestedChangeDay(date, fromString(nonDefaultDay.getString(COURT_SCHEDULE_ID)),
+                    nonDefaultDay.getInt(NON_DEFAULT_DAY_DURATION)));
+        }
+
+        final List<ChangedDaySession> booked = courtSchedulerServiceAdapter.changeCourtRoomForMultidayHearing(hearingId, days);
+
+        final JsonArrayBuilder changedDays = createArrayBuilder();
+        for (final ChangedDaySession session : booked) {
+            final JsonObject requested = requestedByDate.get(session.sessionDate());
+            changedDays.add(createObjectBuilder()
+                    .add(HEARING_DATE, session.sessionDate().toString())
+                    .add(DAY_START_TIME, session.sessionStartTime() != null ? session.sessionStartTime() : requested.getString(DAY_START_TIME))
+                    .add(DAY_DURATION_MINUTES, requested.getInt(NON_DEFAULT_DAY_DURATION))
+                    .add(COURT_CENTRE_ID, requested.getString(COURT_CENTRE_ID))
+                    .add(COURT_ROOM_ID, session.courtRoomId() != null ? session.courtRoomId() : requested.getString(COURT_ROOM_ID))
+                    .add(COURT_SCHEDULE_ID, session.courtScheduleId().toString()));
+        }
+
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_CHANGE_COURT_ROOM_FOR_MULTIDAY_HEARING_ENRICHED),
+                createObjectBuilder()
+                        .add(HEARING_ID, hearingId.toString())
+                        .add(SEND_NOTIFICATION_TO_PARTIES, payload.getBoolean(SEND_NOTIFICATION_TO_PARTIES, true))
+                        .add(CHANGED_DAYS, changedDays.build())
+                        .build()));
+    }
+
+    private static JsonObject buildChangeCourtRoomForMultidayErrorBody(final String errorCode, final String message) {
         return createObjectBuilder()
                 .add(ERROR_CODE, errorCode)
                 .add(MESSAGE, message)
