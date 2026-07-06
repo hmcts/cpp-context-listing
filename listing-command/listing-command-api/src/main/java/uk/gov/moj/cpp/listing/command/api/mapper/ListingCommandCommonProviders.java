@@ -29,6 +29,7 @@ public class ListingCommandCommonProviders extends DefaultCommonProviders {
         final Set<Class<?>> providers = super.providers();
         providers.add(CrownMultiDayExtensionExceptionMapper.class);
         providers.add(MoveHearingToPastDateExceptionMapper.class);
+        providers.add(ChangeCourtRoomForMultidayExceptionMapper.class);
         return providers;
     }
 }
