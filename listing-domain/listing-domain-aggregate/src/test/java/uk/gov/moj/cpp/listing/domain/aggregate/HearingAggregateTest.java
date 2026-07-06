@@ -8646,6 +8646,107 @@ class HearingAggregateTest {
         assertThat(events, hasSize(0));
     }
 
+    @Test
+    void changeCourtRoom_returnsEmptyWhenDeleted() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final LocalDate d3Date = now().plusDays(9);
+        applyThreeDayCrownAllocatedHearing(room1, courtCentre1, d1Date, d2Date, d3Date);
+        hearing.apply(HearingDeleted.hearingDeleted().withHearingIdToBeDeleted(hearingId).build());
+
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = List.of(
+                changedDomainDay(d2Date, room2, courtCentre1, ZonedDateTime.of(d2Date, LocalTime.parse("11:00"), UTC)));
+        final List<HearingDayCourtSchedule> schedules = List.of(new HearingDayCourtSchedule(randomUUID(), d2Date));
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+    }
+
+    @Test
+    void changeCourtRoom_duplicateDateInAggregateState_replacesOnlyTheNonCancelledDay() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final List<HearingDay> original = applyThreeDayCrownAllocatedHearing(room1, courtCentre1, d1Date, d2Date, d2Date.plusDays(1));
+        final HearingDay originalD1 = original.get(0);
+
+        // Simulate aggregate state holding TWO days on d2Date: the active day (originalD2, startTime 09:30)
+        // plus a cancelled sibling at a different startTime (e.g. a cancelled day + its re-listed replacement --
+        // the aggregate keys by startTime, not date, precisely to tolerate this).
+        final HearingDay activeD2 = HearingDay.hearingDay()
+                .withHearingDate(d2Date)
+                .withStartTime(ZonedDateTime.of(d2Date, LocalTime.parse("09:30"), UTC))
+                .withEndTime(ZonedDateTime.of(d2Date, LocalTime.parse("15:30"), UTC))
+                .withDurationMinutes(CHANGE_ROOM_DAY_DURATION)
+                .withSequence(2)
+                .withCourtScheduleId(randomUUID())
+                .withCourtCentreId(courtCentre1)
+                .withCourtRoomId(room1)
+                .withIsCancelled(false)
+                .withIsDraft(false)
+                .build();
+        final HearingDay cancelledD2Sibling = HearingDay.hearingDay()
+                .withHearingDate(d2Date)
+                .withStartTime(ZonedDateTime.of(d2Date, LocalTime.parse("13:00"), UTC))
+                .withEndTime(ZonedDateTime.of(d2Date, LocalTime.parse("19:00"), UTC))
+                .withDurationMinutes(CHANGE_ROOM_DAY_DURATION)
+                .withSequence(99)
+                .withCourtScheduleId(randomUUID())
+                .withCourtCentreId(courtCentre1)
+                .withCourtRoomId(room1)
+                .withIsCancelled(true)
+                .withIsDraft(false)
+                .build();
+        hearing.apply(HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingId(hearingId)
+                .withHearingDays(List.of(original.get(0), activeD2, cancelledD2Sibling))
+                .build());
+
+        final ZonedDateTime newStart2 = ZonedDateTime.of(d2Date, LocalTime.parse("11:00"), UTC);
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = List.of(
+                changedDomainDay(d2Date, room2, courtCentre1, newStart2));
+        final List<HearingDayCourtSchedule> schedules = List.of(new HearingDayCourtSchedule(randomUUID(), d2Date));
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+                .collect(Collectors.toList());
+
+        final HearingDaysChangedForHearing daysChanged = events.stream()
+                .filter(HearingDaysChangedForHearing.class::isInstance)
+                .map(HearingDaysChangedForHearing.class::cast)
+                .findFirst().orElseThrow();
+        // Exactly 3 rows: d1 verbatim, the ACTIVE d2 replaced by the changed day, the CANCELLED d2 sibling
+        // passed through verbatim. No duplication of the changed row, no dropped sibling.
+        assertThat(daysChanged.getHearingDays(), hasSize(3));
+
+        final HearingDay emittedD1 = dayFor(daysChanged, d1Date);
+        assertThat(emittedD1, is(originalD1));
+
+        final long changedRoomRows = daysChanged.getHearingDays().stream()
+                .filter(day -> d2Date.equals(day.getHearingDate()) && room2.equals(day.getCourtRoomId()))
+                .count();
+        assertThat(changedRoomRows, is(1L));
+
+        final HearingDay emittedCancelledSibling = daysChanged.getHearingDays().stream()
+                .filter(day -> d2Date.equals(day.getHearingDate()) && !room2.equals(day.getCourtRoomId()))
+                .findFirst().orElseThrow();
+        assertThat(emittedCancelledSibling.getStartTime(), is(cancelledD2Sibling.getStartTime()));
+        assertThat(emittedCancelledSibling.getEndTime(), is(cancelledD2Sibling.getEndTime()));
+        assertThat(emittedCancelledSibling.getCourtRoomId(), is(cancelledD2Sibling.getCourtRoomId()));
+        assertThat(emittedCancelledSibling.getCourtCentreId(), is(cancelledD2Sibling.getCourtCentreId()));
+        assertThat(emittedCancelledSibling.getCourtScheduleId(), is(cancelledD2Sibling.getCourtScheduleId()));
+        assertThat(emittedCancelledSibling.getDurationMinutes(), is(cancelledD2Sibling.getDurationMinutes()));
+        assertThat(emittedCancelledSibling.getSequence(), is(cancelledD2Sibling.getSequence()));
+        assertThat(emittedCancelledSibling.getIsCancelled(), is(cancelledD2Sibling.getIsCancelled()));
+        assertThat(emittedCancelledSibling.getIsDraft(), is(cancelledD2Sibling.getIsDraft()));
+    }
+
     private UUID changeRoomCaseId;
 
     private List<HearingDay> applyThreeDayCrownAllocatedHearing(final UUID room1, final UUID courtCentre1,
