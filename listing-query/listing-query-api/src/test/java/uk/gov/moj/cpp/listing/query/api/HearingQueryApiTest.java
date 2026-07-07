@@ -945,6 +945,7 @@ public class HearingQueryApiTest {
         final String publishCourtListType = "FINAL";
         final String judicialId = randomUUID().toString();
         final String judiciaryName = "His Honour Judge Williams";
+        final String welshJudiciaryName = "Ei Anrhydedd Barnwr Williams";
 
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder()
@@ -1003,6 +1004,7 @@ public class HearingQueryApiTest {
         when(referenceDataService.getCourtCentreById(any(UUID.class), any(JsonEnvelope.class))).thenReturn(courtCentreEnvelope);
         when(referenceDataService.getJudiciariesByIdList(eq(List.of(fromString(judicialId))), any(JsonEnvelope.class))).thenReturn(judiciaryReferenceDataEnvelope);
         when(judiciaryNameMapper.getName(any(JsonObject.class))).thenReturn(judiciaryName);
+        when(judiciaryNameMapper.getWelshName(any(JsonObject.class))).thenReturn(welshJudiciaryName);
 
         final JsonObject resultPayload = hearingQueryApi.getDailyList(query).payloadAsJsonObject();
 
@@ -1012,6 +1014,7 @@ public class HearingQueryApiTest {
 
         assertThat(enrichedJudiciary.getString("judicialId"), is(judicialId));
         assertThat(enrichedJudiciary.getString("judiciaryName"), is(judiciaryName));
+        assertThat(enrichedJudiciary.getString("welshJudiciaryName"), is(welshJudiciaryName));
     }
 
     @Test
