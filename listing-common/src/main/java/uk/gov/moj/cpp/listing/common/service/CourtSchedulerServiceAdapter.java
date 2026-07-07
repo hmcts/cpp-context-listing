@@ -68,6 +68,7 @@ public class CourtSchedulerServiceAdapter {
     private static final String SOURCE = "source";
     private static final String EARLIEST_HEARING_TIME = "earliestHearingTime";
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
+    private static final String ALLOCATED_SCHEDULES = "allocatedSchedules";
     private static final String SESSION_DATE = "sessionDate";
     private static final String SESSION_START_TIME = "sessionStartTime";
     private static final String SESSION_END_TIME = "sessionEndTime";
@@ -592,10 +593,10 @@ public class CourtSchedulerServiceAdapter {
     }
 
     private static List<ChangedDaySession> parseChangedDaySessions(final JsonObject body) {
-        if (!body.containsKey("allocatedSchedules") || body.isNull("allocatedSchedules")) {
+        if (!body.containsKey(ALLOCATED_SCHEDULES) || body.isNull(ALLOCATED_SCHEDULES)) {
             return Collections.emptyList();
         }
-        final JsonArray allocatedSchedules = body.getJsonArray("allocatedSchedules");
+        final JsonArray allocatedSchedules = body.getJsonArray(ALLOCATED_SCHEDULES);
         final List<ChangedDaySession> sessions = new ArrayList<>();
         for (int i = 0; i < allocatedSchedules.size(); i++) {
             sessions.add(parseChangedDaySession(allocatedSchedules.getJsonObject(i)));

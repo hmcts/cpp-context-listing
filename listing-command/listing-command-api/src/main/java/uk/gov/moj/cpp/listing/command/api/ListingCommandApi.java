@@ -85,6 +85,7 @@ public class ListingCommandApi {
     private static final String LISTING_COMMAND_MOVE_HEARING_TO_PAST_DATE_ENRICHED = "listing.command.move-hearing-to-past-date-enriched";
     private static final String LISTING_COMMAND_CHANGE_COURT_ROOM_FOR_MULTIDAY_HEARING_ENRICHED = "listing.command.change-court-room-for-multiday-hearing-enriched";
     private static final String NON_DEFAULT_DAYS = "nonDefaultDays";
+    private static final String NO_HEARING_FOUND_FOR_HEARING_ID = "No hearing found for hearingId ";
     private static final String NON_DEFAULT_DAY_DURATION = "duration";
     private static final String SEND_NOTIFICATION_TO_PARTIES = "sendNotificationToParties";
     private static final String CHANGED_DAYS = "changedDays";
@@ -391,8 +392,8 @@ public class ListingCommandApi {
 
         final JsonObject hearing = hearingLookupService.findHearing(hearingId, envelope)
                 .orElseThrow(() -> new MoveHearingToPastDateException(422,
-                        buildMoveHearingToPastDateErrorBody(HEARING_ID_NOT_FOUND, "No hearing found for hearingId " + hearingId),
-                        "No hearing found for hearingId " + hearingId));
+                        buildMoveHearingToPastDateErrorBody(HEARING_ID_NOT_FOUND, NO_HEARING_FOUND_FOR_HEARING_ID + hearingId),
+                        NO_HEARING_FOUND_FOR_HEARING_ID + hearingId));
 
         final String jurisdictionType = hearing.getString(JURISDICTION_TYPE, null);
 
@@ -505,8 +506,8 @@ public class ListingCommandApi {
 
         final JsonObject hearing = hearingLookupService.findHearing(hearingId, envelope)
                 .orElseThrow(() -> new ChangeCourtRoomForMultidayException(422,
-                        buildChangeCourtRoomForMultidayErrorBody(HEARING_ID_NOT_FOUND, "No hearing found for hearingId " + hearingId),
-                        "No hearing found for hearingId " + hearingId));
+                        buildChangeCourtRoomForMultidayErrorBody(HEARING_ID_NOT_FOUND, NO_HEARING_FOUND_FOR_HEARING_ID + hearingId),
+                        NO_HEARING_FOUND_FOR_HEARING_ID + hearingId));
 
         if (!CROWN_JURISDICTION.equals(hearing.getString(JURISDICTION_TYPE, null))) {
             throw new ChangeCourtRoomForMultidayException(422,

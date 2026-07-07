@@ -511,12 +511,12 @@ public class ListingCommandHandler {
                     .withStartTime(start)
                     .withEndTime(start.plusMinutes(durationMinutes))
                     .withDurationMinutes(durationMinutes)
-                    .withCourtCentreId(of(fromString(day.getString("courtCentreId"))))
-                    .withCourtRoomId(of(fromString(day.getString("courtRoomId"))))
+                    .withCourtCentreId(of(fromString(day.getString(MOVE_COURT_CENTRE_ID))))
+                    .withCourtRoomId(of(fromString(day.getString(MOVE_COURT_ROOM_ID))))
                     .build());
             changedSchedules.add(HearingDayCourtSchedule.hearingDayCourtSchedule()
                     .withHearingDate(LocalDate.parse(day.getString("hearingDate")))
-                    .withCourtScheduleId(fromString(day.getString("courtScheduleId")))
+                    .withCourtScheduleId(fromString(day.getString(COURT_SCHEDULE_ID)))
                     .build());
         }
 
