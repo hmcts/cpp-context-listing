@@ -489,6 +489,41 @@ public class ListingCommandHandler {
                 .build();
     }
 
+    @Handles("listing.command.change-court-room-for-multiday-hearing-enriched")
+    public void changeCourtRoomForMultidayHearing(final JsonEnvelope command) throws EventStreamException {
+        LOGGER.info("'listing.command.change-court-room-for-multiday-hearing-enriched' received with payload {}",
+                command.toObfuscatedDebugString());
+
+        final JsonObject payload = command.payloadAsJsonObject();
+        final UUID hearingId = fromString(payload.getString(HEARING_ID));
+        final Boolean sendNotificationToParties = payload.getBoolean("sendNotificationToParties", true);
+
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = new ArrayList<>();
+        final List<HearingDayCourtSchedule> changedSchedules = new ArrayList<>();
+        for (final JsonValue value : payload.getJsonArray("changedDays")) {
+            final JsonObject day = (JsonObject) value;
+            final ZonedDateTime start = ZonedDateTime.parse(day.getString("startTime"));
+            final int durationMinutes = day.getInt("durationMinutes");
+            // courtScheduleId is carried on the schedule, not the day; the day never carries a sequence
+            // (assignHearingDaysV2 re-derives it by startTime).
+            changedDays.add(hearingDay()
+                    .withHearingDate(LocalDate.parse(day.getString("hearingDate")))
+                    .withStartTime(start)
+                    .withEndTime(start.plusMinutes(durationMinutes))
+                    .withDurationMinutes(durationMinutes)
+                    .withCourtCentreId(of(fromString(day.getString(MOVE_COURT_CENTRE_ID))))
+                    .withCourtRoomId(of(fromString(day.getString(MOVE_COURT_ROOM_ID))))
+                    .build());
+            changedSchedules.add(HearingDayCourtSchedule.hearingDayCourtSchedule()
+                    .withHearingDate(LocalDate.parse(day.getString("hearingDate")))
+                    .withCourtScheduleId(fromString(day.getString(COURT_SCHEDULE_ID)))
+                    .build());
+        }
+
+        updateHearingEventStream(command, hearingId, (Hearing hearing) ->
+                hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, changedSchedules, sendNotificationToParties));
+    }
+
     @Handles("listing.command.hearing-vacate-trial")
     public void hearingVacateTrial(final JsonEnvelope command) throws EventStreamException {
         LOGGER.info("'listing.command.hearing-vacate-trial' received with payload {}", command.toObfuscatedDebugString());
