@@ -63,6 +63,7 @@
                       "isDeputy":         { "type": "boolean" },
                       "judicialId":       { "type": "string" },
                       "judiciaryName":    { "type": "string" },
+                      "welshJudiciaryName": { "type": "string" },
                       "judicialRoleType": {
                         "type": "object",
                         "properties": {

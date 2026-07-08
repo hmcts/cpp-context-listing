@@ -486,6 +486,8 @@ public class ReferenceDataCacheTest {
             final String courtName         = "BLACKFRIARS CROWN";
             final String courtShortName    = "BLF";
             final String courtSiteName     = "BLACKFRIARS SITE";
+            final String welshCourtSiteName = "SAFLE BLACKFRIARS";
+            final String welshCourtFullName = "LLYS Y GORON BLACKFRIARS";
             final String courtSiteCode     = "B";
 
             final CourtMapping sourceMapping = new CourtMapping.Builder()
@@ -496,6 +498,8 @@ public class ReferenceDataCacheTest {
                     .withCrestCourtName(courtName)
                     .withCrestCourtShortName(courtShortName)
                     .withCrestCourtSiteName(courtSiteName)
+                    .withWelshCrestCourtSiteName(welshCourtSiteName)
+                    .withWelshCrestCourtFullName(welshCourtFullName)
                     .withCrestCourtSiteCode(courtSiteCode)
                     .withCourtType("CROWN_COURT")   // original type – must be overridden
                     .build();
@@ -522,6 +526,8 @@ public class ReferenceDataCacheTest {
             assertThat(rebuilt.getCrestCourtName(),     is(courtName));
             assertThat(rebuilt.getCrestCourtShortName(), is(courtShortName));
             assertThat(rebuilt.getCrestCourtSiteName(), is(courtSiteName));
+            assertThat(rebuilt.getWelshCrestCourtSiteName(), is(welshCourtSiteName));
+            assertThat(rebuilt.getWelshCrestCourtFullName(), is(welshCourtFullName));
             assertThat(rebuilt.getCrestCourtSiteCode(), is(courtSiteCode));
             // *** The key assertion: courtType must ALWAYS be MAGISTRATES_COURT ***
             assertThat(rebuilt.getCourtType(), is("MAGISTRATES_COURT"));

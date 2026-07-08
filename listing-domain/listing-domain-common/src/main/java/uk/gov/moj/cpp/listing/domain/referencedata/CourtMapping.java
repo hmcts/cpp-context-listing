@@ -21,6 +21,8 @@ public class CourtMapping {
 
     private String crestCourtSiteName;
 
+    private String welshCrestCourtSiteName;
+
     private LocalDate validFrom;
 
     private LocalDate validTo;
@@ -29,7 +31,11 @@ public class CourtMapping {
 
     private String crestCourtShortName;
 
+    private String welshCrestCourtShortName;
+
     private String crestCourtFullName;
+
+    private String welshCrestCourtFullName;
 
     private String crestCourtSiteCode;
 
@@ -41,11 +47,14 @@ public class CourtMapping {
                         @JsonProperty("crestCourtId") final String crestCourtId,
                         @JsonProperty("crestCourtSiteId") final String crestCourtSiteId,
                         @JsonProperty("crestCourtSiteName") final String crestCourtSiteName,
+                        @JsonProperty("welshCrestCourtSiteName") final String welshCrestCourtSiteName,
                         @JsonProperty("validFrom") final LocalDate validFrom,
                         @JsonProperty("validTo") final LocalDate validTo,
                         @JsonProperty("crestCourtName") final String crestCourtName,
                         @JsonProperty("crestCourtShortName") final String crestCourtShortName,
+                        @JsonProperty("welshCrestCourtShortName") final String welshCrestCourtShortName,
                         @JsonProperty("crestCourtFullName") final String crestCourtFullName,
+                        @JsonProperty("welshCrestCourtFullName") final String welshCrestCourtFullName,
                         @JsonProperty("crestCourtSiteCode") final String crestCourtSiteCode,
                         @JsonProperty("courtType") final String courtType) {
         this.id = id;
@@ -53,11 +62,14 @@ public class CourtMapping {
         this.crestCourtId = crestCourtId;
         this.crestCourtSiteId = crestCourtSiteId;
         this.crestCourtSiteName = crestCourtSiteName;
+        this.welshCrestCourtSiteName = welshCrestCourtSiteName;
         this.validFrom = validFrom;
         this.validTo = validTo;
         this.crestCourtName = crestCourtName;
         this.crestCourtShortName = crestCourtShortName;
+        this.welshCrestCourtShortName = welshCrestCourtShortName;
         this.crestCourtFullName = crestCourtFullName;
+        this.welshCrestCourtFullName = welshCrestCourtFullName;
         this.crestCourtSiteCode = crestCourtSiteCode;
         this.courtType = courtType;
     }
@@ -82,6 +94,10 @@ public class CourtMapping {
         return crestCourtSiteName;
     }
 
+    public String getWelshCrestCourtSiteName() {
+        return welshCrestCourtSiteName;
+    }
+
     public LocalDate getValidFrom() {
         return validFrom;
     }
@@ -98,8 +114,16 @@ public class CourtMapping {
         return crestCourtShortName;
     }
 
+    public String getWelshCrestCourtShortName() {
+        return welshCrestCourtShortName;
+    }
+
     public String getCrestCourtFullName() {
         return crestCourtFullName;
+    }
+
+    public String getWelshCrestCourtFullName() {
+        return welshCrestCourtFullName;
     }
 
     public String getCrestCourtSiteCode() {
@@ -116,11 +140,14 @@ public class CourtMapping {
         private String crestCourtId;
         private String crestCourtSiteId;
         private String crestCourtSiteName;
+        private String welshCrestCourtSiteName;
         private LocalDate validFrom;
         private LocalDate validTo;
         private String crestCourtName;
         private String crestCourtShortName;
+        private String welshCrestCourtShortName;
         private String crestCourtFullName;
+        private String welshCrestCourtFullName;
         private String crestCourtSiteCode;
         private String courtType;
 
@@ -154,8 +181,23 @@ public class CourtMapping {
             return this;
         }
 
+        public CourtMapping.Builder withWelshCrestCourtSiteName(final String welshCrestCourtSiteName) {
+            this.welshCrestCourtSiteName = welshCrestCourtSiteName;
+            return this;
+        }
+
         public CourtMapping.Builder withCrestCourtShortName(final String crestCourtShortName) {
             this.crestCourtShortName = crestCourtShortName;
+            return this;
+        }
+
+        public CourtMapping.Builder withWelshCrestCourtShortName(final String welshCrestCourtShortName) {
+            this.welshCrestCourtShortName = welshCrestCourtShortName;
+            return this;
+        }
+
+        public CourtMapping.Builder withWelshCrestCourtFullName(final String welshCrestCourtFullName) {
+            this.welshCrestCourtFullName = welshCrestCourtFullName;
             return this;
         }
 
@@ -180,7 +222,7 @@ public class CourtMapping {
         }
 
         public CourtMapping build() {
-            return new CourtMapping(id, oucode, crestCourtId, crestCourtSiteId, crestCourtSiteName, validFrom, validTo, crestCourtName, crestCourtShortName, crestCourtFullName, crestCourtSiteCode, courtType);
+            return new CourtMapping(id, oucode, crestCourtId, crestCourtSiteId, crestCourtSiteName, welshCrestCourtSiteName, validFrom, validTo, crestCourtName, crestCourtShortName, welshCrestCourtShortName, crestCourtFullName, welshCrestCourtFullName, crestCourtSiteCode, courtType);
         }
     }
 }
