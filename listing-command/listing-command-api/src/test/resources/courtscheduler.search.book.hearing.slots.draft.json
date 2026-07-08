@@ -1,10 +1,13 @@
 {
-  "hearingSlots": {
-    "hearingId": "5416c10a-0cf1-49d5-a7c9-5761ff3bdf2c",
-    "courtScheduleId": "23681024-8eac-4890-8c44-4651ad48cb24",
-    "courtRoomId": "573bd1e6-92fa-49c2-8fa9-a355c1a4cded",
-    "hearingStartTime": "2020-05-26T09:00:000Z",
-    "duration": 20,
-    "isDraft": true
-  }
+  "hearingId": "5416c10a-0cf1-49d5-a7c9-5761ff3bdf2c",
+  "sessions": [
+    {
+      "courtScheduleId": "23681024-8eac-4890-8c44-4651ad48cb24",
+      "courtRoomId": "573bd1e6-92fa-49c2-8fa9-a355c1a4cded",
+      "sessionStartTime": "2020-05-26T09:00:000Z",
+      "draft": true,
+      "businessType": "TRIAL",
+      "judiciaries": []
+    }
+  ]
 }

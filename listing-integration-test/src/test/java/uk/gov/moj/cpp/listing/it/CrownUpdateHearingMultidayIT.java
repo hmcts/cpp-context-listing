@@ -37,10 +37,11 @@ import org.junit.jupiter.api.Test;
  *
  * <p>A raw multi-day Crown update with NO courtScheduleId submitted (hearingDays empty, single
  * nonDefaultDay with duration > MINUTES_IN_DAY and no courtScheduleId) must hit courtscheduler's
- * {@code /extendmultidayhearing/hearingslots} POST endpoint with the full requested duration —
- * the listing officer has not yet picked sessions, so courtscheduler is asked to extend/book them.
- * When a courtScheduleId IS submitted the update reverts to {@code enrichCrownCourtScheduleFirst}
- * (multiDaySearchAndBook) — the pre-d62d3446 behaviour — and extend-multiday is NOT called; that
+ * {@code PATCH /hearings/{hearingId}} (extend.multiday.hearing) endpoint with the full requested
+ * duration — the listing officer has not yet picked sessions, so courtscheduler is asked to
+ * extend/book them. When a courtScheduleId IS submitted the update reverts to
+ * {@code enrichCrownCourtScheduleFirst} (multiDaySearchAndBook via POST /hearings/{id},
+ * crown.search.and.book) — the pre-d62d3446 behaviour — and extend-multiday is NOT called; that
  * courtScheduleId-wins routing is locked by HearingEnrichmentOrchestratorTest. The single-day CROWN
  * path (duration ≤ MINUTES_IN_DAY) and fresh allocations via list-court-hearing are likewise unchanged.
  *
@@ -95,7 +96,7 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
                 getLoggedInHeader());
 
         // Core assertion: the CROWN update was routed through handleCrownMultiDayExtension and hit
-        // POST /extendmultidayhearing/hearingslots with hearingId + full 1080-minute duration.
+        // PATCH /hearings/{hearingId} (extend.multiday.hearing) with hearingId + full 1080-minute duration.
         verifyExtendMultiDayHearingCalled(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
         // Drain our own async aftermath before the test ends: viewstore projection (event listener)
         // AND the public hearing-changes-saved (event processor) — otherwise the next test's cleanup
