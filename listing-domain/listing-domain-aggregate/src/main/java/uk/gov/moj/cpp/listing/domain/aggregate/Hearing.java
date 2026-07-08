@@ -178,6 +178,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -1148,6 +1149,68 @@ public class Hearing implements Aggregate {
                 .withHearingId(hearingId)
                 .build()));
 
+    }
+
+    /**
+     * Change the courtroom of SELECTED days of a multiday CROWN hearing. {@code changedDays} carries only the
+     * days being changed; every other day is preserved verbatim from aggregate state. Emits the same event set
+     * as today's update flow so downstream public events fire identically:
+     * hearing-days-changed-for-hearing (full merged day set), allocation events, hearing-day-court-schedule-updated.
+     */
+    public Stream<Object> changeCourtRoomForMultidayHearing(final UUID hearingId,
+            final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays,
+            final List<HearingDayCourtSchedule> changedSchedules,
+            final Boolean sendNotificationToParties) {
+        if (this.duplicate || this.deleted) {
+            return Stream.empty();
+        }
+
+        final Map<LocalDate, uk.gov.moj.cpp.listing.domain.HearingDay> changedByDate = changedDays.stream()
+                .collect(toMap(uk.gov.moj.cpp.listing.domain.HearingDay::getHearingDate, day -> day));
+
+        // Pick, per changed date, the ONE existing aggregate day the change replaces. Aggregate state can
+        // legitimately hold two days on the same calendar date (e.g. a cancelled day + its re-listed
+        // replacement -- the aggregate elsewhere keys by startTime precisely to tolerate this), so a plain
+        // date-keyed getOrDefault would map BOTH rows onto the single changed day, emitting it twice and
+        // silently dropping the other. Prefer the non-cancelled day as the target; if none is non-cancelled,
+        // fall back to the first day encountered for that date.
+        final Map<LocalDate, HearingDay> replacementTargetByDate = new LinkedHashMap<>();
+        for (final HearingDay existing : this.hearingDays) {
+            final LocalDate date = existing.getHearingDate();
+            if (!changedByDate.containsKey(date)) {
+                continue;
+            }
+            final HearingDay currentTarget = replacementTargetByDate.get(date);
+            if (currentTarget == null
+                    || (Boolean.TRUE.equals(currentTarget.isCancelled()) && !Boolean.TRUE.equals(existing.isCancelled()))) {
+                replacementTargetByDate.put(date, existing);
+            }
+        }
+
+        // Full merged set: the chosen target day per changed date is replaced by the changed day EXACTLY
+        // ONCE; every other day -- including a same-date sibling -- is converted VERBATIM from aggregate state.
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> mergedDays = this.hearingDays.stream()
+                .map(existing -> existing == replacementTargetByDate.get(existing.getHearingDate())
+                        ? changedByDate.get(existing.getHearingDate())
+                        : toDomainHearingDay(existing))
+                .collect(toList());
+
+        final UUID parentCourtRoom = getCurrentHearingEventState() == null
+                ? null : getCurrentHearingEventState().getCourtRoomId();
+        final List<LocalDate> changedDates = new ArrayList<>(changedByDate.keySet());
+
+        // Passing oldParent == newParent deliberately triggers assignHearingDaysV2's preserve-previously-changed-rooms
+        // branch; changedDates as daysOfNonDefaultDays exempts exactly the days being changed here. Sequence is
+        // re-derived by startTime inside mergeHearingDaySequences, so it is not carried on the changed days.
+        final Stream<Object> dayEvents = assignHearingDaysV2(hearingId, mergedDays, parentCourtRoom, parentCourtRoom,
+                uk.gov.justice.core.courts.JurisdictionType.CROWN, changedDates);
+        final Stream<Object> scheduleEvents = raiseHearingDayCourtSchedulesUpdated(hearingId, changedSchedules);
+        // A courtroom change is by definition notification-relevant -> isNotificationRelatedAllocatedFieldsUpdated = TRUE.
+        // Use the aggregate's own held cases explicitly; never an empty list.
+        final Stream<Object> allocationEvents = getAllocationEvents(this.prosecutionCaseDefendantOffenceIds,
+                empty(), sendNotificationToParties, TRUE, null);
+
+        return Stream.of(dayEvents, scheduleEvents, allocationEvents).flatMap(events -> events);
     }
 
     public Stream<Object> applyAllocationRules(final Optional<UUID> bookingReference, final Boolean sendNotificationToParties, final Boolean isNotificationRelatedAllocatedFieldsUpdated,
@@ -3038,6 +3101,28 @@ public class Hearing implements Aggregate {
                         .withIsDraft(cd.getIsDraft())
                         .build())
                 .collect(toList());
+    }
+
+    /**
+     * Convert an aggregate-held {@link HearingDay} to the domain {@link uk.gov.moj.cpp.listing.domain.HearingDay}
+     * consumed by assignHearingDaysV2, copying EVERY field verbatim so an unchanged day survives the merge
+     * byte-for-byte. Mirrors the field set of convertHearingDaysToDomain / convertDomainToHearingDayEvent
+     * (durationMinutes, endTime, hearingDate, sequence, startTime, courtScheduleId, isCancelled, courtCentreId,
+     * courtRoomId, isDraft). A silently dropped field here would corrupt an unchanged day.
+     */
+    private static uk.gov.moj.cpp.listing.domain.HearingDay toDomainHearingDay(final HearingDay existing) {
+        return uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay()
+                .withDurationMinutes(existing.getDurationMinutes())
+                .withEndTime(existing.getEndTime())
+                .withHearingDate(existing.getHearingDate())
+                .withSequence(existing.getSequence())
+                .withStartTime(existing.getStartTime())
+                .withCourtScheduleId(Optional.ofNullable(existing.getCourtScheduleId()))
+                .withIsCancelled(Optional.ofNullable(existing.isCancelled()))
+                .withCourtCentreId(Optional.ofNullable(existing.getCourtCentreId()))
+                .withCourtRoomId(Optional.ofNullable(existing.getCourtRoomId()))
+                .withIsDraft(Optional.ofNullable(existing.isDraft()))
+                .build();
     }
 
     private List<uk.gov.justice.listing.events.HearingDay> convertDomainToHearingDays(final List<HearingDay> hearingDays) {

@@ -1551,4 +1551,87 @@ public class CourtSchedulerServiceStub {
         WireMock.verify(0, WireMock.postRequestedFor(urlPathMatching(
                 COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId)));
     }
+
+    // --- change-court-room-for-multiday-hearing stubs (CROWN-only: POST /hearings/{hearingId}) ---
+
+    private static final String CHANGE_COURT_ROOM_MULTIDAY_TYPE =
+            "application/vnd.courtscheduler.change-court-room-for-multiday-hearing+json";
+
+    /** One allocated day returned in the {@code allocatedSchedules} array of a successful
+     * change-court-room-for-multiday-hearing response. */
+    public record ChangeCourtRoomStubSession(String courtScheduleId,
+                                              String courtRoomId,
+                                              String sessionDate,
+                                              String sessionStartTime,
+                                              int durationInMinutes) {
+    }
+
+    /** Stub a successful POST /hearings/{hearingId} (change-court-room-for-multiday-hearing) response,
+     * scoped to the given hearingId, returning the supplied allocated sessions. */
+    public static void stubChangeCourtRoomForMultidayHearing(final String hearingId,
+                                                              final List<ChangeCourtRoomStubSession> allocatedSchedules) {
+        final StringBuilder body = new StringBuilder();
+        body.append("{\"hearingId\":\"").append(hearingId).append("\",\"source\":\"courtscheduler\",\"allocatedSchedules\":[");
+        for (int i = 0; i < allocatedSchedules.size(); i++) {
+            if (i > 0) {
+                body.append(",");
+            }
+            final ChangeCourtRoomStubSession session = allocatedSchedules.get(i);
+            body.append("{")
+                    .append("\"courtScheduleId\":\"").append(session.courtScheduleId()).append("\",")
+                    .append("\"courtRoomId\":\"").append(session.courtRoomId()).append("\",")
+                    .append("\"sessionDate\":\"").append(session.sessionDate()).append("\",")
+                    .append("\"sessionStartTime\":\"").append(session.sessionStartTime()).append("\",")
+                    .append("\"durationInMinutes\":").append(session.durationInMinutes())
+                    .append("}");
+        }
+        body.append("]}");
+
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId)))
+                .withHeader(CONTENT_TYPE, containing(CHANGE_COURT_ROOM_MULTIDAY_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(body.toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    /** Stub a courtscheduler rejection (e.g. 422 NO_SESSION_FOUND) for
+     * change-court-room-for-multiday-hearing, scoped to the given hearingId. */
+    public static void stubChangeCourtRoomForMultidayHearingFailure(final String hearingId,
+                                                                     final int statusCode,
+                                                                     final String errorCode,
+                                                                     final String message) {
+        final StringBuilder body = new StringBuilder("{");
+        if (errorCode != null) {
+            body.append("\"errorCode\":\"").append(errorCode).append("\",");
+        }
+        body.append("\"message\":\"").append(message).append("\"}");
+
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId)))
+                .withHeader(CONTENT_TYPE, containing(CHANGE_COURT_ROOM_MULTIDAY_TYPE))
+                .willReturn(aResponse().withStatus(statusCode)
+                        .withBody(body.toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    /** Verify courtscheduler's change-court-room-for-multiday-hearing endpoint was called for the
+     * given hearing. */
+    public static void verifyChangeCourtRoomForMultidayHearingCalled(final String hearingId) {
+        Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
+            try {
+                WireMock.verify(WireMock.postRequestedFor(urlPathMatching(
+                                COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId))
+                        .withHeader(CONTENT_TYPE, containing(CHANGE_COURT_ROOM_MULTIDAY_TYPE)));
+                return true;
+            } catch (VerificationException e) {
+                return false;
+            }
+        });
+    }
+
+    /** Regression guard: schema/business rejections in COMMAND_API must never reach courtscheduler. */
+    public static void verifyChangeCourtRoomForMultidayHearingNeverCalled(final String hearingId) {
+        WireMock.verify(0, WireMock.postRequestedFor(urlPathMatching(
+                        COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId))
+                .withHeader(CONTENT_TYPE, containing(CHANGE_COURT_ROOM_MULTIDAY_TYPE)));
+    }
 }
