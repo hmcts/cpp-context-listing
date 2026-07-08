@@ -1289,8 +1289,17 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         }
 
         // Step 5: Atomically book N consecutive draft sessions via multiday search-and-book
+        // courtCentreId falls back to the hearing's own selected court centre, never to a
+        // court-schedule id (mirrors the fallback in handleCrownMultiDayEnrichment).
+        final String fallbackCourtCentreId = hearing.getSelectedCourtCentre() != null && hearing.getSelectedCourtCentre().getId() != null
+                ? hearing.getSelectedCourtCentre().getId().toString()
+                : "";
+        final String courtCentreId = hearing.getCourtCentreId() != null
+                ? hearing.getCourtCentreId().toString()
+                : fallbackCourtCentreId;
+
         final List<CourtSchedule> draftSessions = multiDaySearchAndBook(
-                anchorCourtScheduleId, totalDurationMinutes, hearingId.toString());
+                anchorCourtScheduleId, totalDurationMinutes, hearingId.toString(), courtCentreId, startDate.toString());
         if (isEmpty(draftSessions)) {
             LOGGER.warn("[UNALLOC] multiDaySearchAndBook returned no sessions for hearingId={} — returning unchanged", hearingId);
             return hearing;
