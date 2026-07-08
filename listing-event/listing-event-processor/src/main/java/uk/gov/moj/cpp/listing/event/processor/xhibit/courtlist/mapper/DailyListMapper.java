@@ -5,8 +5,8 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.DailyListStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.SittingStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 
-import javax.json.JsonObject;
-import javax.xml.bind.JAXBElement;
+import jakarta.json.JsonObject;
+import jakarta.xml.bind.JAXBElement;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;

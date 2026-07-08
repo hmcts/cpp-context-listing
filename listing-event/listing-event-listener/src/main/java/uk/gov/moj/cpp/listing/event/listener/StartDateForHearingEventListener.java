@@ -18,7 +18,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import uk.gov.moj.cpp.listing.persistence.repository.JsonNodeUpdater;
 
 @ServiceComponent(Component.EVENT_LISTENER)

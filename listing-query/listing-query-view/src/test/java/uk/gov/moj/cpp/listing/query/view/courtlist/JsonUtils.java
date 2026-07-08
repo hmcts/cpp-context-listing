@@ -9,8 +9,8 @@ import java.io.IOException;
 import java.io.StringReader;
 
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 
 import com.google.common.io.Resources;
 import org.json.JSONException;

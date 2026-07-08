@@ -4,7 +4,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.UUID.randomUUID;
-import static org.apache.deltaspike.core.util.ArraysUtils.asSet;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -28,6 +27,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @SuppressWarnings("squid:S2187")
 @ExtendWith(MockitoExtension.class)
 public class ApplicationTypeFilterTest {
+
+    @SafeVarargs
+    private static <T> java.util.Set<T> asSet(final T... values) {
+        return new java.util.HashSet<>(java.util.Arrays.asList(values));
+    }
 
     public static final String PERMITTED_TYPE_CODE1 = "PL84506";
     public static final String PERMITTED_TYPE_CODE2 = "PL84505";

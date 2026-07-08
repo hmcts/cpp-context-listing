@@ -3,9 +3,9 @@ package uk.gov.moj.cpp.listing.query.view.dto;
 
 import uk.gov.justice.services.common.configuration.Value;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.json.JsonObject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.json.JsonObject;
 
 
 @ApplicationScoped

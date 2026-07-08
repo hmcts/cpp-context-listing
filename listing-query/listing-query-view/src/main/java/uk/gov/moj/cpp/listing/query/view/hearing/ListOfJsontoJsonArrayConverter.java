@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.query.view.hearing;
 import uk.gov.justice.services.common.converter.Converter;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 
-import javax.json.JsonArray;
+import jakarta.json.JsonArray;
 import java.util.List;
 import java.util.Map;
 

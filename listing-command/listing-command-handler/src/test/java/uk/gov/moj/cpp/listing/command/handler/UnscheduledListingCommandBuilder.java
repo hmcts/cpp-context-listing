@@ -32,7 +32,7 @@ import uk.gov.moj.cpp.listing.domain.Type;
 
 import java.io.StringReader;
 import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,7 +41,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonReader;
+import jakarta.json.JsonReader;
 
 public class UnscheduledListingCommandBuilder {
 
@@ -88,7 +88,7 @@ public class UnscheduledListingCommandBuilder {
     static final String OFFENCE_START_DATE = "2018-06-01";
     static final String OFFENCE_END_DATE = "2018-06-07";
     static final String NON_SITTING_DAY = "2018-06-02";
-    static final ZonedDateTime COURT_PROCEEDINGS_INITIATED = ZonedDateTime.of(2019, 1, 1, 0, 0, 0, 0, ZoneId.of("UTC"));
+    static final ZonedDateTime COURT_PROCEEDINGS_INITIATED = ZonedDateTime.of(2019, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
     static final List<LocalDate> NON_SITTING_DAYS1 = singletonList(LocalDate.parse(NON_SITTING_DAY));
     static final String NON_DEFAULT_DAY = "2018-06-04T11:00:00Z";
     static final int INITIAL_ESTIMATE_MINUTES = 640;
@@ -274,7 +274,7 @@ public class UnscheduledListingCommandBuilder {
                 .withHearingLanguageNeeds(of(HearingLanguageNeeds.ENGLISH))
                 .withId(DEFENDANT_ID1)
                 .withMasterDefendantId(Optional.of(DEFENDANT_ID1))
-                .withCourtProceedingsInitiated(Optional.of(ZonedDateTimes.fromString("2020-03-05T14:24:03.148Z").withZoneSameInstant(ZoneId.of("UTC"))))
+                .withCourtProceedingsInitiated(Optional.of(ZonedDateTimes.fromString("2020-03-05T14:24:03.148Z").withZoneSameInstant(ZoneOffset.UTC)))
                 .withOrganisationName(Optional.empty())
                 .withSpecificRequirements(of("Screen"))
                 .withIsYouth(empty())

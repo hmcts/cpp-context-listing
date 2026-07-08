@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence
+                                 https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
+             version="3.0">
+
+    <!-- Real-Postgres test persistence unit for the persistence integration tests. Targets the stack-provisioned
+         `listingviewstore` DB, which runIntegrationTests.sh (runViewStoreLiquibase) applies the production Liquibase
+         schema to before this test runs (and before the app is deployed) — so it is reproducible under rit/CI without
+         a hand-created DB. Tests roll back per test (HibernateTestEntityManagerProvider), so nothing is persisted.
+         The entity classes live in the listing-viewstore-persistence dependency jar, so they are listed explicitly. -->
+    <persistence-unit name="listing-test-persistence-unit" transaction-type="RESOURCE_LOCAL">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+
+        <class>uk.gov.moj.cpp.listing.persistence.entity.Hearing</class>
+        <class>uk.gov.moj.cpp.listing.persistence.entity.HearingDays</class>
+        <class>uk.gov.moj.cpp.listing.persistence.entity.ListedCases</class>
+        <class>uk.gov.moj.cpp.listing.persistence.entity.CourtApplications</class>
+        <class>uk.gov.moj.cpp.listing.persistence.entity.Defendant</class>
+        <class>uk.gov.moj.cpp.listing.persistence.entity.LinkedCase</class>
+        <class>uk.gov.moj.cpp.listing.persistence.entity.Notes</class>
+        <class>uk.gov.moj.cpp.listing.persistence.entity.CacheRefDataCourtroom</class>
+        <class>uk.gov.moj.cpp.listing.persistence.entity.query.CaseByDefendant</class>
+        <class>uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList</class>
+        <class>uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatus</class>
+        <exclude-unlisted-classes>true</exclude-unlisted-classes>
+
+        <properties>
+            <property name="jakarta.persistence.jdbc.driver" value="org.postgresql.Driver"/>
+            <property name="jakarta.persistence.jdbc.url"
+                      value="jdbc:postgresql://localhost:5432/listingviewstore"/>
+            <property name="jakarta.persistence.jdbc.user" value="listing"/>
+            <property name="jakarta.persistence.jdbc.password" value="listing"/>
+            <!-- Schema is the production Liquibase schema (applied to listingviewstoretest); Hibernate must not touch it.
+                 'none' (not 'validate') because Hearing maps read-only virtual columns (hearing_date, totalCount, ...)
+                 that only exist as native-query aliases, not as real table columns. -->
+            <property name="hibernate.hbm2ddl.auto" value="none"/>
+            <property name="hibernate.show_sql" value="false"/>
+        </properties>
+    </persistence-unit>
+</persistence>

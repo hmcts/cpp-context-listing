@@ -17,9 +17,9 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import javax.inject.Inject;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
+import jakarta.inject.Inject;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 
 import org.slf4j.Logger;
 

@@ -30,8 +30,8 @@ import uk.gov.moj.cpp.listing.steps.data.RestrictCourtListData;
 
 import java.util.Arrays;
 
-import javax.json.JsonObject;
-import javax.ws.rs.core.Response;
+import jakarta.json.JsonObject;
+import jakarta.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Filter;

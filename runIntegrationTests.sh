@@ -33,7 +33,7 @@ runLiquibase() {
 }
 
 # TODO: Should probably move this function to cpp-developers-docker as it's already generic
-deltaspikeIntegrationTests() {
+hibernateIntegrationTests() {
   echo
   echo "Running Deltaspike Persistence Integration Tests"
   mvn -B verify -pl ${CONTEXT_NAME}-integration-test-persistence -P${CONTEXT_NAME}-integration-test -DINTEGRATION_HOST_KEY=localhost
@@ -46,7 +46,7 @@ buildDeployAndTest() {
   undeployWarsFromDocker
   buildAndStartContainers
   runLiquibase
-#  deltaspikeIntegrationTests
+  hibernateIntegrationTests
   deployWiremock
   deployWars
   healthchecks

@@ -7,7 +7,7 @@ import uk.gov.justice.listing.commands.PublishCourtListType;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class UUIDService {

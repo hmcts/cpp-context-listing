@@ -4,15 +4,29 @@ import uk.gov.moj.cpp.listing.persistence.entity.CacheRefDataCourtroom;
 
 import java.util.UUID;
 
-import org.apache.deltaspike.data.api.EntityRepository;
-import org.apache.deltaspike.data.api.Modifying;
-import org.apache.deltaspike.data.api.Query;
-import org.apache.deltaspike.data.api.Repository;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
-@Repository
-public interface CacheRefDataCourtroomRepository extends EntityRepository<CacheRefDataCourtroom, UUID> {
+@ApplicationScoped
+public class CacheRefDataCourtroomRepository {
 
-    @Modifying
-    @Query("delete from CacheRefDataCourtroom")
-    int deleteAll();
+    @PersistenceContext(unitName = "listing-persistence-unit")
+    EntityManager entityManager;
+
+    public CacheRefDataCourtroom findBy(final UUID id) {
+        return entityManager.find(CacheRefDataCourtroom.class, id);
+    }
+
+    public CacheRefDataCourtroom save(final CacheRefDataCourtroom entity) {
+        return entityManager.merge(entity);
+    }
+
+    public void remove(final CacheRefDataCourtroom entity) {
+        entityManager.remove(entityManager.contains(entity) ? entity : entityManager.merge(entity));
+    }
+
+    public int deleteAll() {
+        return entityManager.createQuery("delete from CacheRefDataCourtroom").executeUpdate();
+    }
 }

@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.persistence.repository.courtlist;
 
-import static javax.persistence.EnumType.STRING;
+import static jakarta.persistence.EnumType.STRING;
 
 import uk.gov.justice.listing.event.PublishCourtListType;
 
@@ -8,15 +8,16 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Enumerated;
-import javax.persistence.Id;
-import javax.persistence.IdClass;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.Table;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @IdClass(PublishedCourtListPrimaryKey.class)
@@ -37,7 +38,7 @@ public class PublishedCourtList {
     private LocalDate startDate;
 
     @Column(name = "court_list_json", columnDefinition = "jsonb", nullable = false)
-    @Type(type = "jsonb-node")
+    @JdbcTypeCode(SqlTypes.JSON)
     private JsonNode courtListJson;
 
     @Column(name = "last_updated", nullable = false)

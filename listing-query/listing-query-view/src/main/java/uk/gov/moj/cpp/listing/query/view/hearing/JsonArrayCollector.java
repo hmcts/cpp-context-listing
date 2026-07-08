@@ -9,9 +9,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collector;
 
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonArrayBuilder;
+import jakarta.json.JsonObject;
 
 public class JsonArrayCollector implements Collector<JsonObject, JsonArrayBuilder, JsonArray> {
 

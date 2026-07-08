@@ -10,7 +10,7 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.justice.core.courts.ConfirmedDefendant;
@@ -30,7 +30,7 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.event.processor.command.AddHearingToCaseCommandFromHearingAddedToCaseConverter;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @ServiceComponent(EVENT_PROCESSOR)
 public class UpdateExistingHearingEventProcessor {

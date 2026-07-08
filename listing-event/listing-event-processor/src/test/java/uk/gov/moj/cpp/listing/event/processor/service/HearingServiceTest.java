@@ -22,7 +22,7 @@ import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 
 import java.util.UUID;
 
-import javax.json.JsonObjectBuilder;
+import jakarta.json.JsonObjectBuilder;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

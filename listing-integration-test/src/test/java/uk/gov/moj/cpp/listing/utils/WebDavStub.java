@@ -8,13 +8,13 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
-import static javax.ws.rs.core.MediaType.APPLICATION_XML;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_XML;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.waitForPutStubToBeReady;
 
 import java.util.List;
 import java.util.Optional;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import org.apache.commons.collections.CollectionUtils;

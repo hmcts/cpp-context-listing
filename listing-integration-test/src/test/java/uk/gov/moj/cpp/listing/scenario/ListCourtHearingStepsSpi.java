@@ -6,10 +6,10 @@ import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 
 import org.hamcrest.Matcher;
 
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import javax.ws.rs.core.Response;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.LocalTime;
 import java.util.Map;

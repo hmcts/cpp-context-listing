@@ -52,11 +52,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.json.JsonArray;
-import javax.json.JsonObject;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -155,7 +154,7 @@ public class RangeSearchQueryTest {
 
     @BeforeEach
     public void setup() throws IllegalAccessException {
-        final ObjectMapper objectMapper = new ObjectMapper();
+        final ObjectMapper objectMapper = OBJECT_MAPPER;
         FieldUtils.writeField(this.listToJsonArrayConverter, "mapper", objectMapper, true);
         FieldUtils.writeField(this.listToJsonArrayConverter, "stringToJsonObjectConverter", stringToJsonObjectConverter, true);
         FieldUtils.writeField(this.rangeSearchQuery, "listToJsonArrayConverter", listToJsonArrayConverter, true);
@@ -759,7 +758,7 @@ public class RangeSearchQueryTest {
         LocalDate today = LocalDate.now();
         LocalDate tmrw = today.plusDays(1);
         testJsonString = testJsonString.replace("HEARING_DATE1", today.toString()).replace("HEARING_DATE2", tmrw.toString());
-        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing1 = new Hearing(randomUUID(), toJsonNode(testJsonString));
         hearing1.setAllocated(true);
         hearing1.setTotalCount(Long.valueOf(2));
         final HearingDays hd1 = new HearingDays();
@@ -769,7 +768,7 @@ public class RangeSearchQueryTest {
         hearing1.getHearingDays().add(hd1);
         hearing1.getHearingDays().add(hd2);
 
-        final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing2 = new Hearing(randomUUID(), toJsonNode(testJsonString));
         hearing2.setAllocated(true);
         hearing2.getHearingDays().add(hd1);
         hearing2.getHearingDays().add(hd2);
@@ -779,10 +778,10 @@ public class RangeSearchQueryTest {
 
     private List<Hearing> hearingsJson(String allocated, boolean possibleDisqualification) {
         final String testJsonString = "{ \"allocated\":\"" + allocated + "\",\"isPossibleDisqualification\":" + possibleDisqualification + ", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
-        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing1 = new Hearing(randomUUID(), toJsonNode(testJsonString));
         hearing1.setTotalCount(Long.valueOf(1));
         hearing1.setAllocated(true);
-        final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing2 = new Hearing(randomUUID(), toJsonNode(testJsonString));
         return newArrayList(hearing1, hearing2);
     }
 
@@ -809,10 +808,10 @@ public class RangeSearchQueryTest {
                 "\t\t\"courtApplications\": [{\n" +
                 "\t\t}]\n" +
                 "\t}";
-        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonStringForAllocated));
+        final Hearing hearing1 = new Hearing(randomUUID(), toJsonNode(testJsonStringForAllocated));
         hearing1.setTotalCount(2L);
         hearing1.setAllocated(true);
-        final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonStringForUnallocated));
+        final Hearing hearing2 = new Hearing(randomUUID(), toJsonNode(testJsonStringForUnallocated));
         hearing2.setAllocated(false);
         hearing2.setTotalCount(2L);
         return newArrayList(hearing1, hearing2);
@@ -844,15 +843,26 @@ public class RangeSearchQueryTest {
                 "\t\t\"courtApplications\": [{\n" +
                 "\t\t}]\n" +
                 "\t}";
-        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonStringForAllocated));
+        final Hearing hearing1 = new Hearing(randomUUID(), toJsonNode(testJsonStringForAllocated));
         hearing1.setTotalCount(1L);
         hearing1.setAllocated(false);
-        final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonStringForUnallocated));
+        final Hearing hearing2 = new Hearing(randomUUID(), toJsonNode(testJsonStringForUnallocated));
         return newArrayList(hearing1, hearing2);
 
     }
 
     private List<Notes> createNotesList() {
         return newArrayList(new Notes(UUID.randomUUID(), fromString("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18"), LocalDates.from("2020-09-03"), "Note 1"));
+    }
+
+    private static final com.fasterxml.jackson.databind.ObjectMapper OBJECT_MAPPER =
+            new uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer().objectMapper();
+
+    private static com.fasterxml.jackson.databind.JsonNode toJsonNode(final String json) {
+        try {
+            return OBJECT_MAPPER.readTree(json);
+        } catch (final java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

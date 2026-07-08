@@ -3,7 +3,7 @@
     <parent>
         <artifactId>listing-domain</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <version>17.104.4-SNAPSHOT</version>
+        <version>25.104.0-M1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -15,25 +15,27 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
-            <groupId>javax.xml.bind</groupId>
-            <artifactId>jaxb-api</artifactId>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <!-- Jakarta successor of the deprecated org.jvnet.jaxb2.maven2:maven-jaxb2-plugin; emits jakarta.xml.bind.
+                 NOTE (listing team): the old -Xnamespace-prefix add-on (jaxb2-namespace-prefix, javax-only) was dropped —
+                 it only affects XML namespace-prefix output of the generated XHIBIT classes, not compilation. Re-add a
+                 Jakarta-compatible namespace-prefix plugin if the XHIBIT XML output requires the custom prefixes. -->
             <plugin>
-                <groupId>org.jvnet.jaxb2.maven2</groupId>
-                <artifactId>maven-jaxb2-plugin</artifactId>
-                <version>0.15.2</version>
+                <groupId>org.jvnet.jaxb</groupId>
+                <artifactId>jaxb-maven-plugin</artifactId>
+                <version>4.0.8</version>
                 <configuration>
                     <schemaDirectory>src/main/resources/xhibit/xsd</schemaDirectory>
                     <strict>false</strict>
                     <args>
                         <arg>-XautoNameResolution</arg>
                         <arg>-extension</arg>
-                        <arg>-Xnamespace-prefix</arg>
-
                     </args>
                 </configuration>
                 <executions>
@@ -42,19 +44,10 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-
-                            <generatePackage>uk.gov.moj.cpp.listing.domain.xhibit.generated
-                            </generatePackage>
+                            <generatePackage>uk.gov.moj.cpp.listing.domain.xhibit.generated</generatePackage>
                         </configuration>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.jvnet.jaxb2_commons</groupId>
-                        <artifactId>jaxb2-namespace-prefix</artifactId>
-                        <version>${jaxb2-namespace-prefix.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
         </plugins>
     </build>

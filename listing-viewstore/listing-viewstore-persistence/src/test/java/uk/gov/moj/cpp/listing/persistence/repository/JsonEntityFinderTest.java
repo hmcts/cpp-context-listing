@@ -18,7 +18,6 @@ import java.util.function.Function;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -84,8 +83,11 @@ public class JsonEntityFinderTest {
                     "\"" + STRING_FIELD + "\": \"" + EXPECTED_STRING + "\"," +
                     "\"" + BOOLEAN_FIELD + "\": " + EXPECTED_BOOLEAN +
                     "} ";
-    private static final ObjectNode EXPECTED_JSON_NODE_WITH_PATH = (ObjectNode) JacksonUtil.toJsonNode(EXPECTED_JSON_WITH_PATH);
-    private static final ObjectNode EXPECTED_JSON_NODE_WITHOUT_PATH = (ObjectNode) JacksonUtil.toJsonNode(EXPECTED_JSON_WITHOUT_PATH);
+    // Declared before the static fields below, which call toJsonNode during class initialisation.
+    private static final com.fasterxml.jackson.databind.ObjectMapper OBJECT_MAPPER =
+            new uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer().objectMapper();
+    private static final ObjectNode EXPECTED_JSON_NODE_WITH_PATH = (ObjectNode) toJsonNode(EXPECTED_JSON_WITH_PATH);
+    private static final ObjectNode EXPECTED_JSON_NODE_WITHOUT_PATH = (ObjectNode) toJsonNode(EXPECTED_JSON_WITHOUT_PATH);
 
     @Mock
     HearingRepository hearingRepository;
@@ -95,7 +97,7 @@ public class JsonEntityFinderTest {
 
     @Test
     public void shouldUpdateAndRemoveJsonPropertiesWithPath() {
-        ObjectNode hearingProperties = (ObjectNode) JacksonUtil.toJsonNode(TEST_JSON_WITH_PATH);
+        ObjectNode hearingProperties = (ObjectNode) toJsonNode(TEST_JSON_WITH_PATH);
         when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
         when(hearing.getProperties()).thenReturn(hearingProperties);
 
@@ -123,7 +125,7 @@ public class JsonEntityFinderTest {
 
     @Test
     public void shouldUpdateAndRemoveSubJsonPropertiesWithoutPath() {
-        ObjectNode hearingProperties = (ObjectNode) JacksonUtil.toJsonNode(TEST_JSON_WITHOUT_PATH);
+        ObjectNode hearingProperties = (ObjectNode) toJsonNode(TEST_JSON_WITHOUT_PATH);
         when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
         when(hearing.getProperties()).thenReturn(hearingProperties);
 
@@ -152,5 +154,13 @@ public class JsonEntityFinderTest {
 
     private Function<List<String>, List<String>> getListListFunction() {
         return o -> TEST_LIST;
+    }
+
+    private static com.fasterxml.jackson.databind.JsonNode toJsonNode(final String json) {
+        try {
+            return OBJECT_MAPPER.readTree(json);
+        } catch (final java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

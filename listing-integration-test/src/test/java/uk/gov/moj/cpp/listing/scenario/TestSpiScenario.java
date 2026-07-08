@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.it.util.ItClock;
 
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;

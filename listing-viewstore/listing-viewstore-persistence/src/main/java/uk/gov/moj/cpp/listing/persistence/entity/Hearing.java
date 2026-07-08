@@ -8,36 +8,22 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.vladmihalcea.hibernate.type.json.JsonNodeBinaryType;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
-import org.hibernate.type.PostgresUUIDType;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 
 @SuppressWarnings({"squid:S00107","squid:S2384","pmd:BeanMembersShouldSerialize"})
 @Entity
 @Table(name = "hearing")
-@TypeDefs({
-        @TypeDef(
-                name = "jsonb-node",
-                typeClass = JsonNodeBinaryType.class
-        ),
-        @TypeDef(
-                name = "pg-uuid",
-                typeClass = PostgresUUIDType.class,
-                defaultForType = UUID.class
-        )
-})
 public class Hearing implements JsonEntity {
 
     @Id
@@ -90,13 +76,15 @@ public class Hearing implements JsonEntity {
     private UUID typeOfListId;
 
     @Column(name = "properties", columnDefinition = "jsonb")
-    @Type( type = "jsonb-node" )
+    @JdbcTypeCode(SqlTypes.JSON)
     private JsonNode properties;
 
     @Column(name = "estimated_minutes")
     private Integer estimatedMinutes;
 
-    @Column(updatable = false, insertable = false)
+    // Native-query alias only ("... as totalCount"); not a real table column. Explicit lower-case name so
+    // Hibernate 6 maps the PG-lower-cased "totalcount" result label (H5 tolerated the unnamed field; H6 does not).
+    @Column(name = "totalcount", updatable = false, insertable = false)
     private Long totalCount;
 
     @Column(name = "is_possible_disqualification")

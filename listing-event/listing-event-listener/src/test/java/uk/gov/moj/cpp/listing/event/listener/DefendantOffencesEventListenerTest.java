@@ -32,8 +32,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-import javax.json.JsonObject;
-import javax.json.stream.JsonParser;
+import jakarta.json.JsonObject;
+import jakarta.json.stream.JsonParser;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

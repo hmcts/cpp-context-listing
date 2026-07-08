@@ -14,7 +14,7 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import java.time.Duration;
 import java.util.UUID;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.hamcrest.Matcher;
 

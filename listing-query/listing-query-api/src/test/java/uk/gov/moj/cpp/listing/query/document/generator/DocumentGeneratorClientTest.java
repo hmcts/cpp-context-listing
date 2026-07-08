@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

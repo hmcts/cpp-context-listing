@@ -11,7 +11,7 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;

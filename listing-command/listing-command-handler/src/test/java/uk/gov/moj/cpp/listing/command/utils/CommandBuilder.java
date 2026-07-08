@@ -10,10 +10,10 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import java.io.StringReader;
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 
 public class CommandBuilder {
 

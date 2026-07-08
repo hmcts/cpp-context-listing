@@ -23,8 +23,8 @@ import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils;
 import java.util.List;
 
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -26,7 +26,7 @@ import uk.gov.moj.cpp.listing.query.view.dto.ProsecutionCase;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;

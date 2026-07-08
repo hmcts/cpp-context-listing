@@ -17,9 +17,9 @@ import uk.gov.moj.cpp.listing.steps.data.HearingData;
 
 import java.util.UUID;
 
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
+import jakarta.json.Json;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
 
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;

@@ -11,9 +11,9 @@ import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.Sitting;
 import java.util.List;
 
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
+import jakarta.json.JsonArrayBuilder;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 
 
 public class SittingsJsonGenerator {

@@ -84,14 +84,14 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import javax.persistence.NoResultException;
-import javax.ws.rs.NotFoundException;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonArrayBuilder;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
+import jakarta.persistence.NoResultException;
+import jakarta.ws.rs.NotFoundException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -352,16 +352,21 @@ public class HearingQueryView {
 
     private void removedReViewHearings(final List<Hearing> hearings, final List<Hearing> hearingsToRemove) {
         hearings.forEach(hearing -> {
-            if (hearing.getListedCases() != null) {
-                hearing.getListedCases().forEach(listedCase -> {
-                    final JsonNodeReader reader = JsonNodeReader.read(hearing.getProperties());
-                    if (nonNull(reader.get(TYPE))) {
-                        final String reviewType = reader.get(TYPE).getText("description");
-                        if (nonNull(hearing.getCourtApplications())  && !hearing.getCourtApplications().isEmpty() && "Review".equals(reviewType)) {
-                            hearingsToRemove.add(hearing);
-                        }
+            // Derive listed-cases / court-applications / type from the properties JSON blob instead of the entity's
+            // LAZY @OneToMany collections. Walking those collections materialises child rows whose (default-EAGER)
+            // @ManyToOne back-reference to Hearing triggers a full-column entity SELECT, which fails against the real
+            // schema because Hearing maps native-query-only virtual columns (hearing_date, totalcount, ...). This keeps
+            // the exact removal rule (>=1 listed case AND type "Review" AND >=1 court application) but never loads the
+            // Hearing entity graph. See the note in listing-viewstore-persistence META-INF/persistence.xml.
+            final JsonNode properties = hearing.getProperties();
+            if (nonNull(properties) && properties.path("listedCases").size() > 0) {
+                final JsonNodeReader reader = JsonNodeReader.read(properties);
+                if (nonNull(reader.get(TYPE))) {
+                    final String reviewType = reader.get(TYPE).getText("description");
+                    if (properties.path("courtApplications").size() > 0 && "Review".equals(reviewType)) {
+                        hearingsToRemove.add(hearing);
                     }
-                });
+                }
             }
         });
     }

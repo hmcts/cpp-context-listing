@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.StatusLine;
@@ -88,7 +88,7 @@ class HearingSlotsServiceTest {
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
             when(statusLine.getStatusCode()).thenReturn(Response.Status.OK.getStatusCode());
             when(httpResponse.getEntity()).thenReturn(mock(org.apache.http.HttpEntity.class));
-            when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(javax.json.JsonObject.class));
+            when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(jakarta.json.JsonObject.class));
 
             // When
             Response response = hearingSlotsService.search(params);
@@ -137,7 +137,7 @@ class HearingSlotsServiceTest {
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
             when(statusLine.getStatusCode()).thenReturn(Response.Status.OK.getStatusCode());
             when(httpResponse.getEntity()).thenReturn(mock(org.apache.http.HttpEntity.class));
-            when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(javax.json.JsonObject.class));
+            when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(jakarta.json.JsonObject.class));
 
             // When
             Response response = hearingSlotsService.getCourtSchedulerHearingIds(params);
@@ -223,7 +223,7 @@ class HearingSlotsServiceTest {
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
             when(statusLine.getStatusCode()).thenReturn(Response.Status.OK.getStatusCode());
             when(httpResponse.getEntity()).thenReturn(mock(org.apache.http.HttpEntity.class));
-            when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(javax.json.JsonObject.class));
+            when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(jakarta.json.JsonObject.class));
 
             // When
             Response response = hearingSlotsService.getCourtSchedulesById(params);
@@ -357,7 +357,7 @@ class HearingSlotsServiceTest {
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
             when(statusLine.getStatusCode()).thenReturn(Response.Status.OK.getStatusCode());
             when(httpResponse.getEntity()).thenReturn(mock(org.apache.http.HttpEntity.class));
-            when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(javax.json.JsonObject.class));
+            when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(jakarta.json.JsonObject.class));
 
             // When
             Response response = hearingSlotsService.search(params);
@@ -400,7 +400,7 @@ class HearingSlotsServiceTest {
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
             when(statusLine.getStatusCode()).thenReturn(Response.Status.OK.getStatusCode());
             when(httpResponse.getEntity()).thenReturn(mock(org.apache.http.HttpEntity.class));
-            when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(javax.json.JsonObject.class));
+            when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(jakarta.json.JsonObject.class));
 
             // When
             Response response = hearingSlotsService.searchBookSlots(params);

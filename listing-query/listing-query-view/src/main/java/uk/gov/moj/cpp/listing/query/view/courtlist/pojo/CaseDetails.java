@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist.pojo;
 
-import javax.json.JsonArray;
-import javax.json.JsonObject;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
 
 public class CaseDetails {
 

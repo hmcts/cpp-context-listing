@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.query.view.hearing;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
-import static com.vladmihalcea.hibernate.type.json.internal.JacksonUtil.toJsonNode;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -13,7 +12,7 @@ import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import java.io.IOException;
 import java.util.UUID;
 
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 import org.junit.jupiter.api.Test;
 
@@ -47,5 +46,16 @@ public class HearingToJsonConverterTest {
 
         assertThat(hearingAsJson, payloadIsJson(withJsonPath("$.size()", equalTo(17))));
         assertThat(hearingAsJson, payloadIsJson(withJsonPath("$.id", equalTo("7c5e9d0c-9e28-46a9-b139-68fc0813842c"))));
+    }
+
+    private static final com.fasterxml.jackson.databind.ObjectMapper OBJECT_MAPPER =
+            new uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer().objectMapper();
+
+    private static com.fasterxml.jackson.databind.JsonNode toJsonNode(final String json) {
+        try {
+            return OBJECT_MAPPER.readTree(json);
+        } catch (final java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

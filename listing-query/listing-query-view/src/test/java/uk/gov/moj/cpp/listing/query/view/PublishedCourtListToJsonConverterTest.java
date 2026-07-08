@@ -14,10 +14,9 @@ import java.util.List;
 import java.util.UUID;
 
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,7 +29,7 @@ public class PublishedCourtListToJsonConverterTest {
     private final UUID courtCentreId = UUID.randomUUID();
     private final PublishCourtListType publishCourtListType = WARN;
     private final LocalDate startDate = LocalDate.now();
-    private final JsonNode courtListJson = JacksonUtil.toJsonNode("{}");
+    private final JsonNode courtListJson = toJsonNode("{}");
     private final ZonedDateTime lastUpdated = ZonedDateTime.now();
     private final ZonedDateTime lastExported = ZonedDateTime.now();
 
@@ -73,6 +72,17 @@ public class PublishedCourtListToJsonConverterTest {
         assertThat(courtListJson.getJsonObject("courtListJson"), is(JsonObjects.createObjectBuilder().build()));
         assertThat(courtListJson.getString("lastUpdated"), is(lastUpdated.toString()));
         assertThat(courtListJson.getString("lastExported"), is(lastExported.toString()));
+    }
+
+    private static final com.fasterxml.jackson.databind.ObjectMapper OBJECT_MAPPER =
+            new uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer().objectMapper();
+
+    private static com.fasterxml.jackson.databind.JsonNode toJsonNode(final String json) {
+        try {
+            return OBJECT_MAPPER.readTree(json);
+        } catch (final java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

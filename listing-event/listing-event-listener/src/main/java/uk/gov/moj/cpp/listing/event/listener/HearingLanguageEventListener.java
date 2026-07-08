@@ -11,7 +11,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.UUID;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class HearingLanguageEventListener {

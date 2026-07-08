@@ -5,8 +5,8 @@ import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerati
 
 import java.util.List;
 
-import javax.json.JsonObject;
-import javax.xml.bind.JAXBElement;
+import jakarta.json.JsonObject;
+import jakarta.xml.bind.JAXBElement;
 
 public abstract class AbstractCourtListMapper {
 
