@@ -12,6 +12,7 @@ import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
+import uk.gov.justice.listing.commands.NonDefaultDay;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource;
@@ -372,23 +373,40 @@ public class HearingEnrichmentOrchestrator {
     }
 
     /**
-     * Returns true when every hearingDay already has a courtScheduleId (previously fully allocated)
-     * but the courtRoomId assignment is now a MIX of present and absent — some days still carry the
-     * room they were booked with, others have had it removed. That mix is the signal that this is an
-     * in-flight unallocation rather than a fresh CourtSchedule-first allocation: a brand-new booking
-     * with a courtScheduleId but no room yet (all days lacking courtRoomId) still needs
-     * enrichCrownCourtScheduleFirst to resolve the room, so it must NOT match here. Checked before
-     * {@link #hasCourtScheduleId} so an in-flight unallocation routes to enrichUnallocationWithDraftSlots
-     * instead of re-resolving the (now stale) courtScheduleId via enrichCrownCourtScheduleFirst.
+     * Returns true when the payload signals a multiday CROWN unallocation: every session day already
+     * carries a {@code courtScheduleId} (previously fully allocated via courtscheduler) but the room
+     * assignment is now a MIX — some days still have a room, at least one has had its room removed.
+     *
+     * <p>Two payload shapes are supported:
+     * <ul>
+     *   <li><b>hearingDays</b> shape: some callers / tests pass days directly in {@code hearingDays}.
+     *       Detection uses {@code courtRoomId} (UUID field on HearingDay).</li>
+     *   <li><b>nonDefaultDays</b> shape: the court-calendar CROWN update sends session days in
+     *       {@code nonDefaultDays} with {@code roomId} (String UUID) for the room. hearingDays will
+     *       be empty in this case. Detection mirrors the hearingDays MIX logic using {@code roomId}.</li>
+     * </ul>
+     *
+     * <p>A brand-new allocation where all days lack a room (all rooms still to be assigned) does NOT
+     * match — the MIX requires at least one day with a room AND at least one without. Checked before
+     * {@link #hasCourtScheduleId} so an in-flight unallocation routes to
+     * {@code enrichUnallocationWithDraftSlots} instead of the stale-id path.
      */
     private static boolean isCrownUnallocation(final UpdateHearingForListing hearing) {
+        // hearingDays shape
         final List<HearingDay> days = hearing.getHearingDays();
-        if (isEmpty(days)) {
+        if (!isEmpty(days)) {
+            return days.stream().allMatch(d -> nonNull(d.getCourtScheduleId()))
+                    && days.stream().anyMatch(d -> nonNull(d.getCourtRoomId()))
+                    && days.stream().anyMatch(d -> isNull(d.getCourtRoomId()));
+        }
+        // nonDefaultDays shape — court-calendar CROWN update (roomId is the UUID room field here)
+        final List<NonDefaultDay> ndDays = hearing.getNonDefaultDays();
+        if (isEmpty(ndDays)) {
             return false;
         }
-        return days.stream().allMatch(d -> nonNull(d.getCourtScheduleId()))
-                && days.stream().anyMatch(d -> nonNull(d.getCourtRoomId()))
-                && days.stream().anyMatch(d -> isNull(d.getCourtRoomId()));
+        return ndDays.stream().allMatch(nd -> nonNull(nd.getCourtScheduleId()) && !nd.getCourtScheduleId().isBlank())
+                && ndDays.stream().anyMatch(nd -> nonNull(nd.getRoomId()))
+                && ndDays.stream().anyMatch(nd -> isNull(nd.getRoomId()));
     }
 
     /**

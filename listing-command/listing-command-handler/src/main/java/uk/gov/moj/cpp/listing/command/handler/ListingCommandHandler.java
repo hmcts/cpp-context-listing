@@ -1716,7 +1716,7 @@ public class ListingCommandHandler {
 
         return commandHearingDays.stream()
                 .map(commandHearingDay -> HearingDay.hearingDay()
-                        .withCourtCentreId(Optional.of(commandHearingDay.getCourtCentreId()))
+                        .withCourtCentreId(Optional.ofNullable(commandHearingDay.getCourtCentreId()))
                         .withCourtRoomId(Optional.ofNullable(commandHearingDay.getCourtRoomId()))
                         .withCourtScheduleId(Optional.ofNullable(commandHearingDay.getCourtScheduleId()))
                         .withDurationMinutes(commandHearingDay.getDurationMinutes())

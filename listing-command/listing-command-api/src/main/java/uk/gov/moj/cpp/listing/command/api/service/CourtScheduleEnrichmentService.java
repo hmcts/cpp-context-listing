@@ -1239,8 +1239,11 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
      * process the unallocation (the null-startTime guard in {@code assignHearingDaysV2} covers
      * the draft-day case).
      */
-    public UpdateHearingForListing enrichUnallocationWithDraftSlots(final UpdateHearingForListing hearing,
+    public UpdateHearingForListing enrichUnallocationWithDraftSlots(final UpdateHearingForListing rawHearing,
                                                                      final JsonEnvelope envelope) {
+        // Court-calendar CROWN updates carry session days in nonDefaultDays (hearingDays empty).
+        // Normalise to hearingDays so all subsequent logic has a consistent view.
+        final UpdateHearingForListing hearing = seedHearingDaysFromNonDefaultDaysIfEmpty(rawHearing);
         final UUID hearingId = hearing.getHearingId();
         LOGGER.info("[UNALLOC] CROWN unallocation for hearingId={}, hearingDays={}",
                 hearingId, hearing.getHearingDays().size());
@@ -1305,14 +1308,18 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return hearing;
         }
 
-        // Step 6: Build one hearing day per draft session
+        // Step 6: Build one hearing day per draft session.
+        // Resolve the court centre UUID once, reusing the same fallback chain that was
+        // already used for the multiDaySearchAndBook call (courtCentreId > selectedCourtCentre.id).
+        // Draft sessions from the scheduler carry no courtHouseId, so we always need this fallback.
+        final UUID resolvedCourtCentreId = !isBlank(courtCentreId) ? fromString(courtCentreId) : null;
         final int durationPerDay = totalDurationMinutes / draftSessions.size();
         final List<HearingDay> draftHearingDays = draftSessions.stream().map(session ->
                 HearingDay.hearingDay()
                         .withCourtScheduleId(fromString(session.getCourtScheduleId()))
                         .withCourtCentreId(nonNull(session.getCourtHouseId())
                                 ? fromString(session.getCourtHouseId())
-                                : hearing.getCourtCentreId())
+                                : resolvedCourtCentreId)
                         .withHearingDate(session.getSessionDate())
                         .withDurationMinutes(durationPerDay)
                         .withIsDraft(true)
