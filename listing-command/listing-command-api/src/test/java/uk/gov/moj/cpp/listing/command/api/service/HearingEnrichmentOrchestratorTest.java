@@ -509,7 +509,7 @@ public class HearingEnrichmentOrchestratorTest {
     // ─── CROWN unallocation enrichment tests ─────────────────────────────
 
     @Test
-    public void shouldRouteCrownUpdateThroughUnallocationPath_whenAllDaysHaveCourtScheduleIdAndAnyDayHasNoCourtRoomId() {
+    void shouldRouteCrownUpdateThroughUnallocationPath_whenAllDaysHaveCourtScheduleIdAndAnyDayHasNoCourtRoomId() {
         // All hearing days have courtScheduleId (previously fully allocated) and at least one
         // has no courtRoomId (room assignment removed) → unallocation path.
         UpdateHearingForListing crownUpdate = mock(UpdateHearingForListing.class);
@@ -546,7 +546,7 @@ public class HearingEnrichmentOrchestratorTest {
     }
 
     @Test
-    public void shouldNotRouteThroughUnallocationPath_whenOnlySomeDaysHaveCourtScheduleId() {
+    void shouldNotRouteThroughUnallocationPath_whenOnlySomeDaysHaveCourtScheduleId() {
         // Only some days have courtScheduleId — new allocation, NOT unallocation.
         UpdateHearingForListing crownUpdate = mock(UpdateHearingForListing.class);
         lenient().when(crownUpdate.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
@@ -579,7 +579,7 @@ public class HearingEnrichmentOrchestratorTest {
     }
 
     @Test
-    public void shouldRouteCrownUpdateThroughUnallocationPath_whenNonDefaultDaysHaveMixOfRoomIdPresentAndAbsent() {
+    void shouldRouteCrownUpdateThroughUnallocationPath_whenNonDefaultDaysHaveMixOfRoomIdPresentAndAbsent() {
         // Court-calendar CROWN unallocation shape: days come via nonDefaultDays (not hearingDays).
         // All days have courtScheduleId; at least one has roomId (still allocated), at least one
         // does not (being unallocated) — MIX → must route to enrichUnallocationWithDraftSlots.
@@ -617,7 +617,7 @@ public class HearingEnrichmentOrchestratorTest {
     }
 
     @Test
-    public void shouldNotRouteThroughUnallocationPath_whenAllNonDefaultDaysHaveRoomId() {
+    void shouldNotRouteThroughUnallocationPath_whenAllNonDefaultDaysHaveRoomId() {
         // All nonDefaultDays have courtScheduleId AND roomId — this is a regular allocation/room
         // update, not an unallocation. No MIX → must NOT route to enrichUnallocationWithDraftSlots.
         UpdateHearingForListing crownUpdate = mock(UpdateHearingForListing.class);
