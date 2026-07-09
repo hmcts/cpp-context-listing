@@ -6,14 +6,26 @@
     "courtCentreId": {
       "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
     },
+    "courtRoomId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
     "startDate": {
       "type": "string",
       "format": "date"
+    },
+    "endDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "hearingStartTime": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
     }
   },
   "required": [
     "courtCentreId",
-    "startDate"
+    "startDate",
+    "hearingStartTime"
   ],
   "additionalProperties": false
 }

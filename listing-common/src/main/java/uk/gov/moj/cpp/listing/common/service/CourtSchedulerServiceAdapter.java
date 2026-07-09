@@ -54,6 +54,9 @@ public class CourtSchedulerServiceAdapter {
     public static final String COURT_CENTRE_ID = "courtCentreId";
     public static final String JURISDICTION = "jurisdiction";
     public static final String START_DATE = "startDate";
+    public static final String END_DATE = "endDate";
+    public static final String HEARING_START_TIME = "hearingStartTime";
+    public static final String BOOKED_SLOTS = "bookedSlots";
     public static final String DURATION_IN_MINUTES = "durationInMinutes";
     public static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
     public static final String NO_SESSION_FOUND = "NO_SESSION_FOUND";
@@ -234,20 +237,32 @@ public class CourtSchedulerServiceAdapter {
     }
 
     /**
-     * MAGISTRATES-only. Calls courtscheduler's {@code move-hearing-to-past-date} action
-     * synchronously. CROWN moves are handled entirely listing-side and never reach this method
-     * (Baris decision D1). On any non-200 response the upstream errorCode/status is surfaced via
+     * MAGISTRATES-only from listing today (courtscheduler itself now supports both jurisdictions;
+     * CROWN moves stay listing-side until Phase 2 - Baris decision D1). courtscheduler expands
+     * [startDate, endDate] into sitting days and books every day in one atomic call, returning one
+     * booked slot per day. On any non-200 the upstream errorCode/status is surfaced via
      * {@link MoveHearingToPastDateException} so the caller sends no event.
+     *
+     * @param hearingStartTime the requested start time already converted to UTC (HH:mm), matched by
+     *                         courtscheduler against the UTC session windows (range-containment).
      */
-    public MoveHearingToPastDateResult moveHearingToPastDate(final UUID hearingId,
-                                                              final UUID courtCentreId,
-                                                              final LocalDate startDate,
-                                                              final Integer durationInMinutes) {
+    public List<MoveHearingToPastDateResult> moveHearingToPastDate(final UUID hearingId,
+                                                                   final UUID courtCentreId,
+                                                                   final UUID courtRoomId,
+                                                                   final LocalDate startDate,
+                                                                   final LocalDate endDate,
+                                                                   final String hearingStartTime,
+                                                                   final Integer durationInMinutes) {
         // hearingId travels only in the URL path; courtscheduler's REST adapter injects it
         final JsonObjectBuilder requestBuilder = Json.createObjectBuilder()
                 .add(COURT_CENTRE_ID, courtCentreId.toString())
                 .add(JURISDICTION, MAGISTRATES_JURISDICTION)
-                .add(START_DATE, startDate.toString());
+                .add(START_DATE, startDate.toString())
+                .add(END_DATE, endDate.toString())
+                .add(HEARING_START_TIME, hearingStartTime);
+        if (courtRoomId != null) {
+            requestBuilder.add(COURT_ROOM_ID, courtRoomId.toString());
+        }
         if (durationInMinutes != null) {
             requestBuilder.add(DURATION_IN_MINUTES, durationInMinutes);
         }
@@ -259,7 +274,7 @@ public class CourtSchedulerServiceAdapter {
                 : Json.createObjectBuilder().build();
 
         if (HttpStatus.SC_OK == status) {
-            return parseMoveHearingToPastDateResult(body);
+            return parseMoveHearingToPastDateResults(body);
         }
 
         LOGGER.error("moveHearingToPastDate from courtscheduler returned status {} for hearingId {}: {}",
@@ -271,7 +286,7 @@ public class CourtSchedulerServiceAdapter {
             final JsonObject noSessionBody = Json.createObjectBuilder()
                     .add(ERROR_CODE, NO_SESSION_FOUND)
                     .add(MESSAGE, body.getString(MESSAGE,
-                            "No court-schedule session found for hearingId " + hearingId + " on " + startDate))
+                            "No court-schedule session found for hearingId " + hearingId + " between " + startDate + " and " + endDate))
                     .build();
             throw new MoveHearingToPastDateException(HttpStatus.SC_UNPROCESSABLE_ENTITY, noSessionBody,
                     "moveHearingToPastDate found no session for hearingId " + hearingId);
@@ -281,13 +296,24 @@ public class CourtSchedulerServiceAdapter {
                 "moveHearingToPastDate returned " + status + " for hearingId " + hearingId);
     }
 
-    private static MoveHearingToPastDateResult parseMoveHearingToPastDateResult(final JsonObject body) {
+    private static List<MoveHearingToPastDateResult> parseMoveHearingToPastDateResults(final JsonObject body) {
+        final List<MoveHearingToPastDateResult> results = new ArrayList<>();
+        final JsonArray bookedSlots = body.containsKey(BOOKED_SLOTS) ? body.getJsonArray(BOOKED_SLOTS) : null;
+        if (bookedSlots != null) {
+            for (int i = 0; i < bookedSlots.size(); i++) {
+                results.add(parseMoveHearingToPastDateResult(bookedSlots.getJsonObject(i)));
+            }
+        }
+        return results;
+    }
+
+    private static MoveHearingToPastDateResult parseMoveHearingToPastDateResult(final JsonObject slot) {
         return new MoveHearingToPastDateResult(
-                body.containsKey("courtScheduleId") ? UUID.fromString(body.getString("courtScheduleId")) : null,
-                body.getString(COURT_ROOM_ID, null),
-                body.containsKey("sessionDate") ? LocalDate.parse(body.getString("sessionDate")) : null,
-                body.getString("sessionStartTime", null),
-                body.getString("sessionEndTime", null),
-                body.containsKey(DURATION_IN_MINUTES) ? body.getInt(DURATION_IN_MINUTES) : null);
+                slot.containsKey("courtScheduleId") ? UUID.fromString(slot.getString("courtScheduleId")) : null,
+                slot.getString(COURT_ROOM_ID, null),
+                slot.containsKey("sessionDate") ? LocalDate.parse(slot.getString("sessionDate")) : null,
+                slot.getString("sessionStartTime", null),
+                slot.getString("sessionEndTime", null),
+                slot.containsKey(DURATION_IN_MINUTES) ? slot.getInt(DURATION_IN_MINUTES) : null);
     }
 }

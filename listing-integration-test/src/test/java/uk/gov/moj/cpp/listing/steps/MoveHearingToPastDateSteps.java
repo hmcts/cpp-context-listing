@@ -58,15 +58,29 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
     }
 
     public Response whenHearingIsMovedWithMissingCourtCentre(final LocalDate date) {
-        final String payload = "{\"startDate\":\"" + date + "\"}";
+        // courtCentreId omitted (schema-mandatory) - hearingStartTime present so the 400 is unambiguously the missing centre
+        final String payload = "{\"startDate\":\"" + date + "\",\"hearingStartTime\":\"10:00\"}";
         return postMove(hearingId, payload);
+    }
+
+    /** A multi-day move over [startDate, endDate], optionally scoped to a specific room. */
+    public Response whenHearingIsMovedToPastDateRange(final LocalDate startDate, final LocalDate endDate, final String courtRoomId) {
+        final StringBuilder payload = new StringBuilder("{\"courtCentreId\":\"").append(courtCentreId)
+                .append("\",\"startDate\":\"").append(startDate)
+                .append("\",\"endDate\":\"").append(endDate)
+                .append("\",\"hearingStartTime\":\"10:00\"");
+        if (courtRoomId != null) {
+            payload.append(",\"courtRoomId\":\"").append(courtRoomId).append("\"");
+        }
+        payload.append("}");
+        return postMove(payload.toString());
     }
 
     /** Submits the move against an arbitrary hearingId (e.g. one that was never listed), reusing this
      * steps' own courtCentreId so only the hearingId lookup is exercised. The target hearing is
      * identified purely by the URL path - hearingId is not part of the body. */
     public Response whenHearingIsMovedToPastDateForHearing(final UUID otherHearingId, final LocalDate date) {
-        final String payload = "{\"courtCentreId\":\"" + courtCentreId + "\",\"startDate\":\"" + date + "\"}";
+        final String payload = "{\"courtCentreId\":\"" + courtCentreId + "\",\"startDate\":\"" + date + "\",\"hearingStartTime\":\"10:00\"}";
         return postMove(otherHearingId.toString(), payload);
     }
 
@@ -90,6 +104,19 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
                         payload().isJson(org.hamcrest.CoreMatchers.allOf(
                                 withJsonPath("$.id", is(hearingId)),
                                 withJsonPath("$.hearingDays[*].courtScheduleId", hasItem(expectedCourtScheduleId))
+                        )));
+    }
+
+    public void verifyHearingDayCount(final int expectedCount) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty(LISTING_QUERY_HEARING), hearingId));
+
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARING).withHeader(USER_ID, getLoggedInUser()).build())
+                .until(
+                        status().is(OK),
+                        payload().isJson(org.hamcrest.CoreMatchers.allOf(
+                                withJsonPath("$.id", is(hearingId)),
+                                withJsonPath("$.hearingDays.length()", is(expectedCount))
                         )));
     }
 
