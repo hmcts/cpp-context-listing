@@ -78,11 +78,8 @@ public class HearingEnrichmentOrchestrator {
                     HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
                     enrichedHearings.add(stripRoomInfoIfAnyDraft(withDurations));
                 } else {
-                    // CROWN without courtScheduleId: legacy HearingDays -> Duration -> CourtSchedule order.
-                    // Crown fallback search-and-book is invoked by callers that explicitly need it
-                    // (wired via enrichCrownCourtScheduleFirst direct call with no courtScheduleId);
-                    // the default list-court-hearing path preserves legacy enrichment so existing
-                    // IT fixtures (without courtscheduler-seeded sessions) continue to pass.
+                    // CROWN without courtScheduleId: legacy HearingDays -> Duration -> CourtSchedule
+                    // order. Preserves legacy enrichment so existing IT fixtures continue to pass.
                     HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(crownHearing, envelope);
                     HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
                     HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDurations, envelope);
