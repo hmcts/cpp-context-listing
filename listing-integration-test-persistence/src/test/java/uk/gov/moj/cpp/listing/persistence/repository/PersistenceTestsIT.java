@@ -926,6 +926,129 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].linkedCases[0].caseUrn", equalTo(LINKED_CASE_URN)));
     }
 
+    @Test
+    public void shouldFindAllAvailableHearingsByCaseUrnRegardlessOfAllocation() {
+        //given - one allocated, one unallocated hearing, both with the same case reference
+        givenAvailableHearingsWithMixedAllocation();
+
+        final Set<String> caseUrnSet = new HashSet<>();
+        caseUrnSet.add(CASE_REFERENCE);
+        final Set<String> masterDefendantIdSet = new HashSet<>();
+        masterDefendantIdSet.add(EMPTY_STRING);
+        final Set<String> jurisdictionTypeSet = new HashSet<>();
+        jurisdictionTypeSet.add(JurisdictionType.CROWN.name());
+        final Set<String> linkedCaseUrn = new HashSet<>();
+        linkedCaseUrn.add(EMPTY_STRING);
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearings(
+                jurisdictionTypeSet,
+                null,
+                caseUrnSet,
+                masterDefendantIdSet,
+                linkedCaseUrn,
+                null,
+                now());
+
+        //then - both allocated and unallocated hearings are returned
+        assertThat(actualHearings.size(), is(2));
+        assertThat(extractFields(actualHearings, "$.id"), containsInAnyOrder(HEARING_ID.toString(), OTHER_HEARING_ID.toString()));
+        assertThat(extractFields(actualHearings, "$.allocated"), containsInAnyOrder(TRUE.toString(), FALSE.toString()));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.caseReference", equalTo(CASE_REFERENCE)));
+    }
+
+    @Test
+    public void shouldFindAllAvailableHearingsByMasterDefendantIdRegardlessOfAllocation() {
+        //given - one allocated, one unallocated hearing, both with the same master defendant
+        givenAvailableHearingsWithMixedAllocation();
+
+        final Set<String> caseUrnSet = new HashSet<>();
+        caseUrnSet.add(EMPTY_STRING);
+        final Set<String> masterDefendantIdSet = new HashSet<>();
+        masterDefendantIdSet.add(MASTER_DEFENDANT_ID);
+        final Set<String> jurisdictionTypeSet = new HashSet<>();
+        jurisdictionTypeSet.add(JurisdictionType.CROWN.name());
+        final Set<String> linkedCaseUrn = new HashSet<>();
+        linkedCaseUrn.add(EMPTY_STRING);
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearings(
+                jurisdictionTypeSet,
+                null,
+                caseUrnSet,
+                masterDefendantIdSet,
+                linkedCaseUrn,
+                null,
+                now());
+
+        //then - both allocated and unallocated hearings are returned
+        assertThat(actualHearings.size(), is(2));
+        assertThat(extractFields(actualHearings, "$.id"), containsInAnyOrder(HEARING_ID.toString(), OTHER_HEARING_ID.toString()));
+        assertThat(extractFields(actualHearings, "$.allocated"), containsInAnyOrder(TRUE.toString(), FALSE.toString()));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].defendants[0].masterDefendantId", equalTo(MASTER_DEFENDANT_ID)));
+    }
+
+    @Test
+    public void shouldFindAllAvailableHearingsByCaseUrnForLinkedCasesRegardlessOfAllocation() {
+        //given - one allocated, one unallocated hearing, both with a linked case pointing back to the same case reference
+        givenAvailableHearingsWithMixedAllocation();
+
+        final Set<String> caseUrnSet = new HashSet<>();
+        caseUrnSet.add(EMPTY_STRING);
+        final Set<String> masterDefendantIdSet = new HashSet<>();
+        masterDefendantIdSet.add(EMPTY_STRING);
+        final Set<String> jurisdictionTypeSet = new HashSet<>();
+        jurisdictionTypeSet.add(CROWN.name());
+        final Set<String> linkedCaseUrn = new HashSet<>();
+        linkedCaseUrn.add(EMPTY_STRING);
+        final String caseUrnForLinkedCases = CASE_REFERENCE;
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearings(
+                jurisdictionTypeSet,
+                null,
+                caseUrnSet,
+                masterDefendantIdSet,
+                linkedCaseUrn,
+                caseUrnForLinkedCases,
+                now());
+
+        //then - both allocated and unallocated hearings are returned
+        assertThat(actualHearings.size(), is(2));
+        assertThat(extractFields(actualHearings, "$.id"), containsInAnyOrder(HEARING_ID.toString(), OTHER_HEARING_ID.toString()));
+        assertThat(extractFields(actualHearings, "$.allocated"), containsInAnyOrder(TRUE.toString(), FALSE.toString()));
+    }
+
+    @Test
+    public void shouldFindAllAvailableHearingsByLinkedCaseUrnRegardlessOfAllocation() {
+        //given - one allocated, one unallocated hearing, both with the same linked case URN
+        givenAvailableHearingsWithMixedAllocation();
+
+        final Set<String> caseUrnSet = new HashSet<>();
+        caseUrnSet.add(EMPTY_STRING);
+        final Set<String> masterDefendantIdSet = new HashSet<>();
+        masterDefendantIdSet.add(EMPTY_STRING);
+        final Set<String> jurisdictionTypeSet = new HashSet<>();
+        jurisdictionTypeSet.add(JurisdictionType.CROWN.name());
+        final Set<String> linkedCaseUrn = new HashSet<>();
+        linkedCaseUrn.add(LINKED_CASE_URN);
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearings(
+                jurisdictionTypeSet,
+                null,
+                caseUrnSet,
+                masterDefendantIdSet,
+                linkedCaseUrn,
+                null,
+                now());
+
+        //then - both allocated and unallocated hearings are returned
+        assertThat(actualHearings.size(), is(2));
+        assertThat(extractFields(actualHearings, "$.id"), containsInAnyOrder(HEARING_ID.toString(), OTHER_HEARING_ID.toString()));
+        assertThat(extractFields(actualHearings, "$.allocated"), containsInAnyOrder(TRUE.toString(), FALSE.toString()));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].linkedCases[0].caseUrn", equalTo(LINKED_CASE_URN)));
+    }
 
     @Test
     public void shouldFindUnscheduledHearingsWithoutParameters() {
@@ -1802,6 +1925,70 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
                 .build()));
         hearingsToBeCreated.forEach(hearingToBeCreated -> hearingRepository.save(hearingToBeCreated));
         return hearingsToBeCreated;
+    }
+
+    private void givenAvailableHearingsWithMixedAllocation() {
+        hearingRepository.save(getHearingJson(hearingRepositoryContext()
+                .withHearingId(HEARING_ID)
+                .withCourtCentreId(COURT_CENTRE_ID)
+                .withCourtRoomId(COURT_ROOM_ID)
+                .withAllocated(TRUE)
+                .withVacated(NOT_VACATED)
+                .withAuthorityId(AUTHORITY_ID)
+                .withHearingType(HEARING_TYPE)
+                .withJurisdictionType(JURISDICTION_TYPE)
+                .withJudicialId(JUDICIAL_ID)
+                .withStartDate(START_DATE)
+                .withEndDate(END_DATE)
+                .withStartTime(START_TIME)
+                .withEndTime(END_TIME)
+                .withHearingDate(HEARING_DATE)
+                .withHearingDateDay1(DAY_1_HEARING_DATE)
+                .withStartTimeDay1(DAY_1_START_TIME)
+                .withEndTimeDay1(DAY_1_END_TIME)
+                .withCancelledDay1(false)
+                .withHearingDateDay2(DAY_2_HEARING_DATE)
+                .withStartTimeDay2(DAY_2_START_TIME)
+                .withEndTimeDay2(DAY_2_END_TIME)
+                .withCancelledDay2(false)
+                .withHearingDateDay3(DAY_3_HEARING_DATE)
+                .withStartTimeDay3(DAY_3_START_TIME)
+                .withEndTimeDay3(DAY_3_END_TIME)
+                .withCancelledDay3(false)
+                .withFileLocation(TEST_DATA_SAMPLE_MULTIDAY_HEARING_JSON)
+                .withMultidayHearing(true)
+                .build()));
+
+        hearingRepository.save(getHearingJson(hearingRepositoryContext()
+                .withHearingId(OTHER_HEARING_ID)
+                .withCourtCentreId(COURT_CENTRE_ID)
+                .withCourtRoomId(COURT_ROOM_ID)
+                .withAllocated(FALSE)
+                .withVacated(NOT_VACATED)
+                .withAuthorityId(AUTHORITY_ID)
+                .withHearingType(HEARING_TYPE)
+                .withJurisdictionType(JURISDICTION_TYPE)
+                .withJudicialId(JUDICIAL_ID)
+                .withStartDate(START_DATE)
+                .withEndDate(END_DATE)
+                .withStartTime(START_TIME)
+                .withEndTime(END_TIME)
+                .withHearingDate(HEARING_DATE)
+                .withHearingDateDay1(DAY_1_HEARING_DATE)
+                .withStartTimeDay1(DAY_1_START_TIME)
+                .withEndTimeDay1(DAY_1_END_TIME)
+                .withCancelledDay1(false)
+                .withHearingDateDay2(DAY_2_HEARING_DATE)
+                .withStartTimeDay2(DAY_2_START_TIME)
+                .withEndTimeDay2(DAY_2_END_TIME)
+                .withCancelledDay2(false)
+                .withHearingDateDay3(DAY_3_HEARING_DATE)
+                .withStartTimeDay3(DAY_3_START_TIME)
+                .withEndTimeDay3(DAY_3_END_TIME)
+                .withCancelledDay3(false)
+                .withFileLocation(TEST_DATA_SAMPLE_MULTIDAY_HEARING_JSON)
+                .withMultidayHearing(true)
+                .build()));
     }
 
     private List<Hearing> givenAvailableHearingsForCrownAndMags() {
