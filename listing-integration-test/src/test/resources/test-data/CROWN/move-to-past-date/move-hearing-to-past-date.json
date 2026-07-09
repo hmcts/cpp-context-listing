@@ -1,4 +1,5 @@
 {
   "courtCentreId": "%%COURT_CENTRE_ID%%",
-  "startDate": "%%START_DATE%%"
+  "startDate": "%%START_DATE%%",
+  "hearingStartTime": "10:00"
 }

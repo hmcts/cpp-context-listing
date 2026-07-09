@@ -1440,25 +1440,47 @@ public class CourtSchedulerServiceStub {
 
     // --- move-hearing-to-past-date stubs (MAGISTRATES-only: CROWN never reaches courtscheduler, Baris decision D1) ---
 
-    /** Stub a successful POST /hearings/{hearingId} move-hearing-to-past-date response. */
+    /** Stub a successful single-day POST /hearings/{hearingId} move-hearing-to-past-date response
+     * (courtscheduler now returns a {@code bookedSlots} array, one slot per sitting day). */
     public static void stubMoveHearingToPastDate(final String hearingId,
                                                   final String courtScheduleId,
                                                   final String courtRoomId,
                                                   final LocalDate sessionDate,
                                                   final int durationInMinutes) {
-        final String startTime = sessionDate + "T09:00:00Z";
-        final String endTime = sessionDate + "T17:00:00Z";
-        final String body = format(
-                "{\"hearingId\":\"%s\",\"courtScheduleId\":\"%s\",\"courtRoomId\":\"%s\"," +
-                        "\"sessionDate\":\"%s\",\"sessionStartTime\":\"%s\",\"sessionEndTime\":\"%s\"," +
-                        "\"durationInMinutes\":%s}",
-                hearingId, courtScheduleId, courtRoomId, sessionDate, startTime, endTime, durationInMinutes);
+        stubMoveHearingToPastDateMultiDay(hearingId, courtRoomId, durationInMinutes,
+                java.util.List.of(courtScheduleId), java.util.List.of(sessionDate));
+    }
+
+    /** Stub a successful multi-day move: one booked slot per (courtScheduleId, sessionDate) pair. */
+    public static void stubMoveHearingToPastDateMultiDay(final String hearingId,
+                                                          final String courtRoomId,
+                                                          final int durationInMinutes,
+                                                          final java.util.List<String> courtScheduleIds,
+                                                          final java.util.List<LocalDate> sessionDates) {
+        final StringBuilder slots = new StringBuilder();
+        for (int i = 0; i < courtScheduleIds.size(); i++) {
+            if (i > 0) {
+                slots.append(",");
+            }
+            slots.append(moveBookedSlotJson(hearingId, courtScheduleIds.get(i), courtRoomId, sessionDates.get(i), durationInMinutes));
+        }
+        final String body = "{\"bookedSlots\":[" + slots + "]}";
 
         stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId)))
                 .withHeader(CONTENT_TYPE, containing(MOVE_HEARING_TO_PAST_DATE_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(body)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    private static String moveBookedSlotJson(final String hearingId, final String courtScheduleId, final String courtRoomId,
+                                             final LocalDate sessionDate, final int durationInMinutes) {
+        return format(
+                "{\"hearingId\":\"%s\",\"courtScheduleId\":\"%s\",\"courtRoomId\":\"%s\"," +
+                        "\"sessionDate\":\"%s\",\"sessionStartTime\":\"%s\",\"sessionEndTime\":\"%s\"," +
+                        "\"durationInMinutes\":%s,\"isDraft\":false,\"source\":\"MOVE_TO_PAST_DATE\"}",
+                hearingId, courtScheduleId, courtRoomId, sessionDate,
+                sessionDate + "T09:00:00Z", sessionDate + "T12:00:00Z", durationInMinutes);
     }
 
     /** Stub a courtscheduler rejection (e.g. 422 FUTURE_DATE_NOT_ALLOWED / NO_SESSION_FOUND, or a
