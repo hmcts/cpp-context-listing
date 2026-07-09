@@ -67,6 +67,8 @@ public class HearingSlotsService {
 
     private static final String COURTSCHEDULER_MOVE_TO_PAST_DATE = "application/vnd.courtscheduler.move-hearing-to-past-date+json";
 
+    public static final String COURTSCHEDULER_CHANGE_COURT_ROOM_MULTIDAY = "application/vnd.courtscheduler.change-court-room-for-multiday-hearing+json";
+
     private static final String CJS_CPP_UID = "CJSCPPUID";
     @Inject
     @Value(key = "courtscheduler.base.url", defaultValue = "http://localhost:8080/listingcourtscheduler-api/rest/courtscheduler")
@@ -178,6 +180,40 @@ public class HearingSlotsService {
                     .build();
         } catch (IOException ex) {
             LOGGER.error("Exception thrown on trying to move hearing to past date", ex);
+            return Response
+                    .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+                    .entity(ex.getMessage())
+                    .build();
+        }
+    }
+
+    public Response changeCourtRoomForMultidayHearing(final UUID hearingId, final JsonObject payload) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("change-court-room-for-multiday-hearing for hearing id '{}'", hearingId);
+        }
+
+        try {
+            final HttpPost httpPost = new HttpPost(new URL(baseUri + HEARINGS_RESOURCE + "/" + hearingId).toString());
+            httpPost.addHeader(CONTENT_TYPE, COURTSCHEDULER_CHANGE_COURT_ROOM_MULTIDAY);
+            httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
+
+            final StringEntity requestEntity = new StringEntity(payload.toString());
+            httpPost.setEntity(requestEntity);
+
+            final HttpResponse httpResponse = execute(httpPost);
+            final int statusCode = httpResponse.getStatusLine().getStatusCode();
+            final String entityBodyAsString = httpResponse.getEntity() == null ? "" : EntityUtils.toString(httpResponse.getEntity());
+
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("change-court-room-for-multiday-hearing returned status {}", statusCode);
+            }
+
+            return Response
+                    .status(statusCode)
+                    .entity(entityBodyAsString.isBlank() ? null : stringToJsonObjectConverter.convert(entityBodyAsString))
+                    .build();
+        } catch (IOException ex) {
+            LOGGER.error("Exception thrown on trying to change court room for multiday hearing", ex);
             return Response
                     .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
                     .entity(ex.getMessage())

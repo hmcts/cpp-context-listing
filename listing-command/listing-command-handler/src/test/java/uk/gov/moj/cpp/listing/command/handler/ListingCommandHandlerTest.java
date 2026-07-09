@@ -2600,6 +2600,45 @@ class ListingCommandHandlerTest {
     }
 
     @Test
+    public void listingCommandHandlerShouldChangeCourtRoomForMultidayHearing() throws Exception {
+        final UUID room2 = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID sched1 = randomUUID();
+        final UUID sched2 = randomUUID();
+        final JsonEnvelope commandEnvelope = getEnvelopeForChangeCourtRoomForMultidayHearing(room2, courtCentreId, sched1, sched2);
+
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.changeCourtRoomForMultidayHearing(eq(HEARING_ID_1), any(), any(), eq(true)))
+                .thenReturn(Stream.empty());
+
+        listingCommandHandler.changeCourtRoomForMultidayHearing(commandEnvelope);
+
+        final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.HearingDay>> daysCaptor = ArgumentCaptor.forClass(List.class);
+        final ArgumentCaptor<List<HearingDayCourtSchedule>> schedulesCaptor = ArgumentCaptor.forClass(List.class);
+        verify(hearing, times(1)).changeCourtRoomForMultidayHearing(eq(HEARING_ID_1), daysCaptor.capture(),
+                schedulesCaptor.capture(), eq(true));
+
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = daysCaptor.getValue();
+        assertThat(changedDays, hasSize(2));
+        final uk.gov.moj.cpp.listing.domain.HearingDay day1 = changedDays.get(0);
+        assertThat(day1.getHearingDate(), is(LocalDate.parse("2026-07-15")));
+        assertThat(day1.getStartTime(), is(ZonedDateTime.parse("2026-07-15T09:30:00Z")));
+        assertThat(day1.getEndTime(), is(ZonedDateTime.parse("2026-07-15T09:30:00Z").plusMinutes(360)));
+        assertThat(day1.getDurationMinutes(), is(360));
+        assertThat(day1.getCourtRoomId().orElse(null), is(room2));
+        assertThat(day1.getCourtCentreId().orElse(null), is(courtCentreId));
+        assertThat(day1.getCourtScheduleId().isPresent(), is(false));
+
+        final List<HearingDayCourtSchedule> changedSchedules = schedulesCaptor.getValue();
+        assertThat(changedSchedules, hasSize(2));
+        assertThat(changedSchedules.get(0).getHearingDate(), is(LocalDate.parse("2026-07-15")));
+        assertThat(changedSchedules.get(0).getCourtScheduleId(), is(sched1));
+        assertThat(changedSchedules.get(1).getHearingDate(), is(LocalDate.parse("2026-07-16")));
+        assertThat(changedSchedules.get(1).getCourtScheduleId(), is(sched2));
+    }
+
+    @Test
     public void listingCommandHandlerShouldHearingVacateTrial() throws Exception {
         final JsonEnvelope commandEnvelope = getEnvelopeForHearingVacateTrial(REASON);
 
@@ -2803,6 +2842,19 @@ class ListingCommandHandlerTest {
                 + "\",\"sessionDate\":\"" + startDate + "\",\"sessionStartTime\":\"" + startDate + "T10:00:00Z\",\"durationInMinutes\":25}";
         final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
         return createEnvelope("listing.command.move-hearing-to-past-date-enriched", jsonReader.readObject());
+    }
+
+    private JsonEnvelope getEnvelopeForChangeCourtRoomForMultidayHearing(final UUID room2, final UUID courtCentreId,
+            final UUID sched1, final UUID sched2) {
+        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"sendNotificationToParties\":true,"
+                + "\"changedDays\":["
+                + "{\"hearingDate\":\"2026-07-15\",\"startTime\":\"2026-07-15T09:30:00Z\",\"durationMinutes\":360,"
+                + "\"courtCentreId\":\"" + courtCentreId + "\",\"courtRoomId\":\"" + room2 + "\",\"courtScheduleId\":\"" + sched1 + "\"},"
+                + "{\"hearingDate\":\"2026-07-16\",\"startTime\":\"2026-07-16T09:30:00Z\",\"durationMinutes\":360,"
+                + "\"courtCentreId\":\"" + courtCentreId + "\",\"courtRoomId\":\"" + room2 + "\",\"courtScheduleId\":\"" + sched2 + "\"}"
+                + "]}";
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
+        return createEnvelope("listing.command.change-court-room-for-multiday-hearing-enriched", jsonReader.readObject());
     }
 
     private JsonEnvelope getEnvelopeForHearingVacateTrial(final UUID reason) {

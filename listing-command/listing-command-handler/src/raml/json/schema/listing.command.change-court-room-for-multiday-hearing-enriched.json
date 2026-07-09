@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/listing.command.change-court-room-for-multiday-hearing-enriched.json",
+  "description": "Enriched command to change the courtroom of SELECTED days of a multiday CROWN hearing. Contains only the changed days, each already resolved to a booked court schedule; unchanged days are preserved by the aggregate.",
+  "type": "object",
+  "properties": {
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "sendNotificationToParties": {
+      "type": "boolean"
+    },
+    "changedDays": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "hearingDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationMinutes": {
+            "type": "integer"
+          },
+          "courtCentreId": {
+            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          },
+          "courtRoomId": {
+            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          },
+          "courtScheduleId": {
+            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          }
+        },
+        "required": [
+          "hearingDate",
+          "startTime",
+          "durationMinutes",
+          "courtCentreId",
+          "courtRoomId",
+          "courtScheduleId"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "hearingId",
+    "sendNotificationToParties",
+    "changedDays"
+  ],
+  "additionalProperties": false
+}

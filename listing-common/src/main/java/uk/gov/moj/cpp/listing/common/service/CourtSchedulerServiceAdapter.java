@@ -5,6 +5,9 @@ import static java.util.Optional.empty;
 
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
+import uk.gov.moj.cpp.listing.common.courtroomchange.ChangeCourtRoomForMultidayException;
+import uk.gov.moj.cpp.listing.common.courtroomchange.ChangedDaySession;
+import uk.gov.moj.cpp.listing.common.courtroomchange.RequestedChangeDay;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult;
@@ -30,6 +33,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.Response;
@@ -64,6 +68,7 @@ public class CourtSchedulerServiceAdapter {
     private static final String SOURCE = "source";
     private static final String EARLIEST_HEARING_TIME = "earliestHearingTime";
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
+    private static final String ALLOCATED_SCHEDULES = "allocatedSchedules";
     private static final String SESSION_DATE = "sessionDate";
     private static final String SESSION_START_TIME = "sessionStartTime";
     private static final String SESSION_END_TIME = "sessionEndTime";
@@ -540,5 +545,71 @@ public class CourtSchedulerServiceAdapter {
                 body.getString(SESSION_START_TIME, null),
                 body.getString(SESSION_END_TIME, null),
                 body.containsKey(DURATION_IN_MINUTES) ? body.getInt(DURATION_IN_MINUTES) : null);
+    }
+
+    /**
+     * CROWN-only. Calls courtscheduler's {@code change-court-room-for-multiday-hearing} action
+     * synchronously, moving one or more days of a multi-day CROWN hearing to a different
+     * court-schedule session. On any non-200 response the upstream errorCode/status is surfaced
+     * via {@link ChangeCourtRoomForMultidayException} so the caller sends no event; a legacy bare
+     * 404 is normalised to 422 NO_SESSION_FOUND exactly as {@link #moveHearingToPastDate} does.
+     */
+    public List<ChangedDaySession> changeCourtRoomForMultidayHearing(final UUID hearingId,
+                                                                      final List<RequestedChangeDay> days) {
+        final JsonArrayBuilder daysArr = Json.createArrayBuilder();
+        days.forEach(d -> daysArr.add(Json.createObjectBuilder()
+                .add(SESSION_DATE, d.sessionDate().toString())
+                .add(COURT_SCHEDULE_ID, d.courtScheduleId().toString())
+                .add(DURATION_IN_MINUTES, d.durationInMinutes())));
+        final JsonObject payload = Json.createObjectBuilder().add("days", daysArr).build();
+
+        final Response response = hearingSlotsService.changeCourtRoomForMultidayHearing(hearingId, payload);
+        final int status = response.getStatus();
+        final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject)
+                ? (JsonObject) response.getEntity()
+                : Json.createObjectBuilder().build();
+
+        if (HttpStatus.SC_OK == status) {
+            return parseChangedDaySessions(body);
+        }
+
+        LOGGER.error("changeCourtRoomForMultidayHearing from courtscheduler returned status {} for hearingId {}: {}",
+                status, hearingId, body);
+
+        if (HttpStatus.SC_NOT_FOUND == status) {
+            // older courtscheduler releases signal no-session as a bare 404 - normalise to the
+            // 422 NO_SESSION_FOUND contract so callers see a single failure shape
+            final JsonObject noSessionBody = Json.createObjectBuilder()
+                    .add(ERROR_CODE, NO_SESSION_FOUND)
+                    .add(MESSAGE, body.getString(MESSAGE,
+                            "No court-schedule session found for hearingId " + hearingId))
+                    .build();
+            throw new ChangeCourtRoomForMultidayException(HttpStatus.SC_UNPROCESSABLE_ENTITY, noSessionBody,
+                    "changeCourtRoomForMultidayHearing found no session for hearingId " + hearingId);
+        }
+
+        throw new ChangeCourtRoomForMultidayException(status, body,
+                "changeCourtRoomForMultidayHearing returned " + status + " for hearingId " + hearingId);
+    }
+
+    private static List<ChangedDaySession> parseChangedDaySessions(final JsonObject body) {
+        if (!body.containsKey(ALLOCATED_SCHEDULES) || body.isNull(ALLOCATED_SCHEDULES)) {
+            return Collections.emptyList();
+        }
+        final JsonArray allocatedSchedules = body.getJsonArray(ALLOCATED_SCHEDULES);
+        final List<ChangedDaySession> sessions = new ArrayList<>();
+        for (int i = 0; i < allocatedSchedules.size(); i++) {
+            sessions.add(parseChangedDaySession(allocatedSchedules.getJsonObject(i)));
+        }
+        return sessions;
+    }
+
+    private static ChangedDaySession parseChangedDaySession(final JsonObject schedule) {
+        return new ChangedDaySession(
+                uuidOrNull(schedule, COURT_SCHEDULE_ID),
+                stringOrNull(schedule, COURT_ROOM_ID),
+                localDateOrNull(schedule, SESSION_DATE),
+                stringOrNull(schedule, SESSION_START_TIME),
+                intOrNull(schedule, DURATION_IN_MINUTES));
     }
 }
