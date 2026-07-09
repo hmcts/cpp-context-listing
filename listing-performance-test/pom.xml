@@ -7,6 +7,7 @@
         <artifactId>listing-parent</artifactId>
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.4-DD-41473-SNAPSHOT</version>
 =======
         <version>17.103.178-PAST-SNAPSHOT</version>
@@ -14,6 +15,9 @@
 =======
         <version>17.103.179-PAST-SNAPSHOT</version>
 >>>>>>> b3e463051a (New 17.103.179-PAST-SNAPSHOT)
+=======
+        <version>17.103.180-PAST-SNAPSHOT</version>
+>>>>>>> cac861236a (New 17.103.180-PAST-SNAPSHOT)
     </parent>
 
     <artifactId>listing-performance-test</artifactId>
