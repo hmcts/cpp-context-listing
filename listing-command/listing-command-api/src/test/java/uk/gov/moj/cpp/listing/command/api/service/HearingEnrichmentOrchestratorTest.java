@@ -506,6 +506,153 @@ public class HearingEnrichmentOrchestratorTest {
         assertEquals(afterDuration, result);
     }
 
+    // ─── CROWN unallocation enrichment tests ─────────────────────────────
+
+    @Test
+    void shouldRouteCrownUpdateThroughUnallocationPath_whenAllDaysHaveCourtScheduleIdAndAnyDayHasNoCourtRoomId() {
+        // All hearing days have courtScheduleId (previously fully allocated) and at least one
+        // has no courtRoomId (room assignment removed) → unallocation path.
+        UpdateHearingForListing crownUpdate = mock(UpdateHearingForListing.class);
+        lenient().when(crownUpdate.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
+        HearingDay d1 = HearingDay.hearingDay()
+                .withHearingDate(LocalDate.parse("2026-05-27"))
+                .withCourtScheduleId(UUID.randomUUID())
+                .withCourtRoomId(UUID.randomUUID())
+                .withDurationMinutes(360)
+                .build();
+        HearingDay d2 = HearingDay.hearingDay()
+                .withHearingDate(LocalDate.parse("2026-05-28"))
+                .withCourtScheduleId(UUID.randomUUID())
+                // courtRoomId intentionally null — signals unallocation of this day
+                .withDurationMinutes(360)
+                .build();
+        lenient().when(crownUpdate.getHearingDays()).thenReturn(Arrays.asList(d1, d2));
+        lenient().when(crownUpdate.getNonDefaultDays()).thenReturn(Collections.emptyList());
+
+        UpdateHearingForListing afterDraftSlots = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing afterHearingDays = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing afterDuration = mock(UpdateHearingForListing.class);
+
+        when(courtScheduleEnrichmentService.enrichUnallocationWithDraftSlots(crownUpdate, envelope)).thenReturn(afterDraftSlots);
+        when(hearingDaysEnrichmentService.enrichHearing(afterDraftSlots, envelope)).thenReturn(afterHearingDays);
+        when(hearingDurationEnrichmentService.enrichWithDurationForUpdate(afterHearingDays, envelope)).thenReturn(afterDuration);
+
+        UpdateHearingForListing result = orchestrator.enrichUpdateHearingForListing(crownUpdate, envelope);
+
+        verify(courtScheduleEnrichmentService).enrichUnallocationWithDraftSlots(crownUpdate, envelope);
+        verify(courtScheduleEnrichmentService, never()).enrichCrownCourtScheduleFirst(any(UpdateHearingForListing.class));
+        verify(courtScheduleEnrichmentService, never()).handleCrownMultiDayExtension(any(UpdateHearingForListing.class));
+        assertEquals(afterDuration, result);
+    }
+
+    @Test
+    void shouldNotRouteThroughUnallocationPath_whenOnlySomeDaysHaveCourtScheduleId() {
+        // Only some days have courtScheduleId — new allocation, NOT unallocation.
+        UpdateHearingForListing crownUpdate = mock(UpdateHearingForListing.class);
+        lenient().when(crownUpdate.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
+        HearingDay d1 = HearingDay.hearingDay()
+                .withHearingDate(LocalDate.parse("2026-05-27"))
+                .withCourtScheduleId(UUID.randomUUID())
+                .withDurationMinutes(360)
+                .build();
+        HearingDay d2 = HearingDay.hearingDay()
+                .withHearingDate(LocalDate.parse("2026-05-28"))
+                .withDurationMinutes(360)
+                // no courtScheduleId on d2
+                .build();
+        lenient().when(crownUpdate.getHearingDays()).thenReturn(Arrays.asList(d1, d2));
+        lenient().when(crownUpdate.getNonDefaultDays()).thenReturn(Collections.emptyList());
+
+        UpdateHearingForListing afterCourtSchedule = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing afterHearingDays = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing afterDuration = mock(UpdateHearingForListing.class);
+
+        when(courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(crownUpdate)).thenReturn(afterCourtSchedule);
+        when(hearingDaysEnrichmentService.enrichHearing(afterCourtSchedule, envelope)).thenReturn(afterHearingDays);
+        when(hearingDurationEnrichmentService.enrichWithDurationForUpdate(afterHearingDays, envelope)).thenReturn(afterDuration);
+
+        UpdateHearingForListing result = orchestrator.enrichUpdateHearingForListing(crownUpdate, envelope);
+
+        verify(courtScheduleEnrichmentService, never()).enrichUnallocationWithDraftSlots(any(), any());
+        verify(courtScheduleEnrichmentService).enrichCrownCourtScheduleFirst(crownUpdate);
+        assertEquals(afterDuration, result);
+    }
+
+    @Test
+    void shouldRouteCrownUpdateThroughUnallocationPath_whenNonDefaultDaysHaveMixOfRoomIdPresentAndAbsent() {
+        // Court-calendar CROWN unallocation shape: days come via nonDefaultDays (not hearingDays).
+        // All days have courtScheduleId; at least one has roomId (still allocated), at least one
+        // does not (being unallocated) — MIX → must route to enrichUnallocationWithDraftSlots.
+        UpdateHearingForListing crownUpdate = mock(UpdateHearingForListing.class);
+        lenient().when(crownUpdate.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
+        lenient().when(crownUpdate.getHearingDays()).thenReturn(Collections.emptyList());
+
+        NonDefaultDay nd1 = NonDefaultDay.nonDefaultDay()
+                .withCourtScheduleId(UUID.randomUUID().toString())
+                .withRoomId(UUID.randomUUID().toString())                // still allocated
+                .withStartTime(ZonedDateTime.parse("2026-05-27T09:00:00Z"))
+                .withDuration(360)
+                .build();
+        NonDefaultDay nd2 = NonDefaultDay.nonDefaultDay()
+                .withCourtScheduleId(UUID.randomUUID().toString())
+                // no withRoomId — room removed, signals unallocation
+                .withStartTime(ZonedDateTime.parse("2026-05-28T09:00:00Z"))
+                .withDuration(360)
+                .build();
+        lenient().when(crownUpdate.getNonDefaultDays()).thenReturn(Arrays.asList(nd1, nd2));
+
+        UpdateHearingForListing afterDraftSlots = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing afterHearingDays = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing afterDuration = mock(UpdateHearingForListing.class);
+
+        when(courtScheduleEnrichmentService.enrichUnallocationWithDraftSlots(crownUpdate, envelope)).thenReturn(afterDraftSlots);
+        when(hearingDaysEnrichmentService.enrichHearing(afterDraftSlots, envelope)).thenReturn(afterHearingDays);
+        when(hearingDurationEnrichmentService.enrichWithDurationForUpdate(afterHearingDays, envelope)).thenReturn(afterDuration);
+
+        UpdateHearingForListing result = orchestrator.enrichUpdateHearingForListing(crownUpdate, envelope);
+
+        verify(courtScheduleEnrichmentService).enrichUnallocationWithDraftSlots(crownUpdate, envelope);
+        verify(courtScheduleEnrichmentService, never()).enrichCrownCourtScheduleFirst(any(UpdateHearingForListing.class));
+        assertEquals(afterDuration, result);
+    }
+
+    @Test
+    void shouldNotRouteThroughUnallocationPath_whenAllNonDefaultDaysHaveRoomId() {
+        // All nonDefaultDays have courtScheduleId AND roomId — this is a regular allocation/room
+        // update, not an unallocation. No MIX → must NOT route to enrichUnallocationWithDraftSlots.
+        UpdateHearingForListing crownUpdate = mock(UpdateHearingForListing.class);
+        lenient().when(crownUpdate.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
+        lenient().when(crownUpdate.getHearingDays()).thenReturn(Collections.emptyList());
+
+        NonDefaultDay nd1 = NonDefaultDay.nonDefaultDay()
+                .withCourtScheduleId(UUID.randomUUID().toString())
+                .withRoomId(UUID.randomUUID().toString())
+                .withStartTime(ZonedDateTime.parse("2026-05-27T09:00:00Z"))
+                .withDuration(360)
+                .build();
+        NonDefaultDay nd2 = NonDefaultDay.nonDefaultDay()
+                .withCourtScheduleId(UUID.randomUUID().toString())
+                .withRoomId(UUID.randomUUID().toString())
+                .withStartTime(ZonedDateTime.parse("2026-05-28T09:00:00Z"))
+                .withDuration(360)
+                .build();
+        lenient().when(crownUpdate.getNonDefaultDays()).thenReturn(Arrays.asList(nd1, nd2));
+
+        UpdateHearingForListing afterCourtSchedule = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing afterHearingDays = mock(UpdateHearingForListing.class);
+        UpdateHearingForListing afterDuration = mock(UpdateHearingForListing.class);
+
+        when(courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(crownUpdate)).thenReturn(afterCourtSchedule);
+        when(hearingDaysEnrichmentService.enrichHearing(afterCourtSchedule, envelope)).thenReturn(afterHearingDays);
+        when(hearingDurationEnrichmentService.enrichWithDurationForUpdate(afterHearingDays, envelope)).thenReturn(afterDuration);
+
+        UpdateHearingForListing result = orchestrator.enrichUpdateHearingForListing(crownUpdate, envelope);
+
+        verify(courtScheduleEnrichmentService, never()).enrichUnallocationWithDraftSlots(any(), any());
+        verify(courtScheduleEnrichmentService).enrichCrownCourtScheduleFirst(crownUpdate);
+        assertEquals(afterDuration, result);
+    }
+
     // ─── MAGS update enrichment tests ────────────────────────────────────
 
     @Test

@@ -1093,6 +1093,7 @@ public class Hearing implements Aggregate {
 
         if (!this.hearingDays.isEmpty()) {
             final Map<ZonedDateTime, HearingDay> existingHearingDays = this.hearingDays.stream()
+                    .filter(hd -> hd.getStartTime() != null)
                     .collect(toMap(HearingDay::getStartTime, hearingDay -> hearingDay, (hd1, hd2) -> hd2));
             final List<uk.gov.justice.listing.events.HearingDay> newHearingDaysWithExistingSequences =
                     mergeHearingDaySequences(hearingDaysChangedForHearing, existingHearingDays);
@@ -1123,6 +1124,7 @@ public class Hearing implements Aggregate {
 
         if (!this.hearingDays.isEmpty()) {
             final Map<ZonedDateTime, HearingDay> existingHearingDays = this.hearingDays.stream()
+                    .filter(hd -> hd.getStartTime() != null)
                     .collect(toMap(HearingDay::getStartTime, hearingDay -> hearingDay, (hd1, hd2) -> hd2));
 
             List<uk.gov.justice.listing.events.HearingDay> newHearingDaysWithExistingInfo =
@@ -1134,6 +1136,7 @@ public class Hearing implements Aggregate {
                         .filter(hd -> hd.getCourtRoomId() != null) // we do not want to preserve any null courtroom
                         .filter(hd -> !newParentCourtRoom.equals(hd.getCourtRoomId())) // The courtRoom on the parent is not the same as the one on this day
                         .filter(hd -> !daysOfNonDefaultDays.contains(hd.getHearingDate())) // if we are right now changing this room
+                        .filter(hd -> hd.getHearingDate() != null) // skip unallocated days with no hearing date
                         .collect(toMap(HearingDay::getHearingDate, hearingDay -> hearingDay, (hd1, hd2) -> hd2));
 
                newHearingDaysWithExistingInfo = mergePreviouslyChangedCourtRooms(newHearingDaysWithExistingInfo, existingHearingDaysWithChangedRooms);
@@ -2363,24 +2366,17 @@ public class Hearing implements Aggregate {
 
 
     private HearingUnallocatedForListing hearingUnallocatedForListingEvent(final Optional<String> source) {
-        if (nonNull(prosecutionCaseDefendantOffenceIds)) {
-            final Optional<OffenceIds> offenceIds = prosecutionCaseDefendantOffenceIds.stream()
-                    .flatMap(pc -> pc.getDefendants().stream())
-                    .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
-                    .filter(o -> nonNull(o.getSeedingHearing()))
-                    .findFirst();
-            if (offenceIds.isPresent()) {
-                return hearingUnallocatedForListing()
-                        .withHearingId(this.hearingId)
-                        .withSeededHearing(true)
-                        .withSource(source.isPresent() ? source.get() : null)
-                        .withCourtCentreId(this.courtCentreId)
-                        .build();
-            }
-        }
+        final boolean isSeeded = nonNull(prosecutionCaseDefendantOffenceIds) &&
+                prosecutionCaseDefendantOffenceIds.stream()
+                        .flatMap(pc -> pc.getDefendants().stream())
+                        .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
+                        .anyMatch(o -> nonNull(o.getSeedingHearing()));
 
         return hearingUnallocatedForListing()
                 .withHearingId(this.hearingId)
+                .withCourtCentreId(this.courtCentreId)
+                .withSeededHearing(isSeeded ? true : null)
+                .withSource(source.orElse(null))
                 .build();
     }
 
