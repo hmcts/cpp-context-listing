@@ -14,11 +14,11 @@
           "startTime": { "type": "string", "format": "date-time" },
           "duration": { "type": "integer", "maximum": 360 },
           "courtCentreId": { "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid" },
-          "courtRoomId": { "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid" },
+          "roomId": { "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid" },
           "courtScheduleId": { "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid" },
           "virtual": { "type": "boolean", "enum": [true] }
         },
-        "required": ["startTime", "duration", "courtCentreId", "courtRoomId", "courtScheduleId", "virtual"],
+        "required": ["startTime", "duration", "courtCentreId", "roomId", "courtScheduleId", "virtual"],
         "additionalProperties": false
       }
     }

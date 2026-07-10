@@ -100,6 +100,7 @@ public class ListingCommandApi {
     private static final String ESTIMATED_MINUTES = "estimatedMinutes";
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
     private static final String COURT_ROOM_ID = "courtRoomId";
+    private static final String ROOM_ID = "roomId";
     private static final String SESSION_DATE = "sessionDate";
     private static final String SESSION_START_TIME = "sessionStartTime";
     private static final String SESSION_END_TIME = "sessionEndTime";
@@ -549,7 +550,7 @@ public class ListingCommandApi {
                     .add(DAY_START_TIME, session.sessionStartTime() != null ? session.sessionStartTime() : requested.getString(DAY_START_TIME))
                     .add(DAY_DURATION_MINUTES, requested.getInt(NON_DEFAULT_DAY_DURATION))
                     .add(COURT_CENTRE_ID, requested.getString(COURT_CENTRE_ID))
-                    .add(COURT_ROOM_ID, session.courtRoomId() != null ? session.courtRoomId() : requested.getString(COURT_ROOM_ID))
+                    .add(COURT_ROOM_ID, session.courtRoomId() != null ? session.courtRoomId() : requested.getString(ROOM_ID))
                     .add(COURT_SCHEDULE_ID, session.courtScheduleId().toString()));
         }
 

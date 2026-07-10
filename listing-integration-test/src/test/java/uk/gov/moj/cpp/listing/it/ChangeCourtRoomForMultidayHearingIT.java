@@ -189,7 +189,7 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
                 + "\"startTime\":\"" + hearing.day2 + "T09:00:00Z\","
                 + "\"duration\":" + DAY_DURATION_MINUTES + ","
                 + "\"courtCentreId\":\"" + hearing.courtCentreId + "\","
-                + "\"courtRoomId\":\"" + hearing.courtRoomId + "\","
+                + "\"roomId\":\"" + hearing.courtRoomId + "\","
                 + "\"courtScheduleId\":\"" + UUID.randomUUID() + "\","
                 + "\"virtual\":false}]}";
 
@@ -207,7 +207,7 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
                 + "\"startTime\":\"" + hearing.day2 + "T09:00:00Z\","
                 + "\"duration\":720,"
                 + "\"courtCentreId\":\"" + hearing.courtCentreId + "\","
-                + "\"courtRoomId\":\"" + hearing.courtRoomId + "\","
+                + "\"roomId\":\"" + hearing.courtRoomId + "\","
                 + "\"courtScheduleId\":\"" + UUID.randomUUID() + "\","
                 + "\"virtual\":true}]}";
 
@@ -225,7 +225,7 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
                 + "\"startTime\":\"" + hearing.day2 + "T09:00:00Z\","
                 + "\"duration\":" + DAY_DURATION_MINUTES + ","
                 + "\"courtCentreId\":\"" + hearing.courtCentreId + "\","
-                + "\"courtRoomId\":\"" + hearing.courtRoomId + "\","
+                + "\"roomId\":\"" + hearing.courtRoomId + "\","
                 + "\"virtual\":true}]}";
 
         final Response response = postChangeCourtRoom(hearing.hearingId, payload);
@@ -468,7 +468,7 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
                     .add("startTime", day.date + "T09:00:00Z")
                     .add("duration", DAY_DURATION_MINUTES)
                     .add("courtCentreId", courtCentreId.toString())
-                    .add("courtRoomId", day.courtRoomId.toString())
+                    .add("roomId", day.courtRoomId.toString())
                     .add("courtScheduleId", day.targetCourtScheduleId.toString())
                     .add("virtual", true);
             nonDefaultDays.add(dayBuilder);
