@@ -45,7 +45,6 @@ import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.VacateTrialEnriched;
-import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -103,6 +102,8 @@ public class ListingCommandApi {
     public static final String START_DATE_TOO_OLD = "START_DATE_TOO_OLD";
     private static final String END_DATE = "endDate";
     private static final String HEARING_START_TIME = "hearingStartTime";
+    private static final String START_TIME = "startTime";
+    private static final String END_TIME = "endTime";
     private static final String SEQUENCE = "sequence";
     private static final int MAX_PAST_MONTHS = 6;
     private static final String CROWN_JURISDICTION = "CROWN";
@@ -378,12 +379,18 @@ public class ListingCommandApi {
 
         final UUID hearingId = fromString(payload.getString(HEARING_ID));
         final UUID courtCentreId = fromString(payload.getString(COURT_CENTRE_ID));
-        final UUID courtRoomId = (payload.containsKey(COURT_ROOM_ID) && !payload.isNull(COURT_ROOM_ID))
-                ? fromString(payload.getString(COURT_ROOM_ID)) : null;
-        final LocalDate startDate = LocalDate.parse(payload.getString(START_DATE));
-        final LocalDate endDate = (payload.containsKey(END_DATE) && !payload.isNull(END_DATE))
-                ? LocalDate.parse(payload.getString(END_DATE)) : startDate;
-        final String hearingStartTime = payload.getString(HEARING_START_TIME);
+        final UUID courtRoomId = fromString(payload.getString(COURT_ROOM_ID));
+        // startTime/endTime are absolute UTC instants (e.g. 2026-07-02T17:00:00.000Z); the day and
+        // time-of-day for the move are derived directly from them - no local->UTC conversion needed.
+        final String startTimeStr = payload.getString(START_TIME);
+        final String endTimeStr = (payload.containsKey(END_TIME) && !payload.isNull(END_TIME))
+                ? payload.getString(END_TIME) : null;
+        final ZonedDateTime startInstant = ZonedDateTime.parse(startTimeStr);
+        final ZonedDateTime endInstant = endTimeStr != null ? ZonedDateTime.parse(endTimeStr) : startInstant;
+        final LocalDate startDate = startInstant.toLocalDate();
+        final LocalDate endDate = endInstant.toLocalDate();
+        final LocalTime startLocalTime = startInstant.toLocalTime();
+        final String utcHearingStartTime = String.format("%02d:%02d", startInstant.getHour(), startInstant.getMinute());
 
         validateMoveDates(startDate, endDate);
         final List<LocalDate> sittingDays = workingDaysBetween(startDate, endDate);
@@ -401,14 +408,14 @@ public class ListingCommandApi {
                 .add(START_DATE, startDate.toString())
                 .add(END_DATE, endDate.toString())
                 .add(COURT_CENTRE_ID, courtCentreId.toString())
-                .add(HEARING_START_TIME, hearingStartTime);
+                .add(HEARING_START_TIME, utcHearingStartTime);
 
         if (CROWN_JURISDICTION.equals(jurisdictionType)) {
             // Baris decision D1: CROWN moves are listing-side only, courtscheduler is never called
             // (Phase 2 will route CROWN through courtscheduler).
-            enrichWithExistingDayDetails(enrichedBuilder, hearing, sittingDays, courtRoomId, hearingStartTime);
+            enrichWithExistingDayDetails(enrichedBuilder, hearing, sittingDays, courtRoomId, startLocalTime);
         } else {
-            enrichWithBookedPastDateSlots(enrichedBuilder, hearingId, courtCentreId, courtRoomId, startDate, endDate, hearingStartTime, hearing);
+            enrichWithBookedPastDateSlots(enrichedBuilder, hearingId, courtCentreId, courtRoomId, startTimeStr, endTimeStr, hearing);
         }
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_MOVE_HEARING_TO_PAST_DATE_ENRICHED),
@@ -463,41 +470,15 @@ public class ListingCommandApi {
     }
 
     /**
-     * Converts the mandatory local (Europe/London) hearingStartTime to a UTC instant on the given day.
-     * Done per day so a multi-day span crossing a DST boundary stays anchored to the same local time.
-     */
-    private static ZonedDateTime toUtcStart(final LocalDate day, final String hearingStartTime) {
-        final int hour = Integer.parseInt(hearingStartTime.substring(0, 2));
-        final int minute = Integer.parseInt(hearingStartTime.substring(3, 5));
-        final LocalTime utcTime = DateAndTimeUtils.getUtcLocalTimeForDate(day, hour, minute);
-        return ZonedDateTime.of(day, utcTime, ZoneOffset.UTC);
-    }
-
-    /** The HH:mm form of the local hearingStartTime in UTC, for the courtscheduler range-containment search. */
-    private static String toUtcTimeString(final LocalDate day, final String hearingStartTime) {
-        final LocalTime utc = toUtcStart(day, hearingStartTime).toLocalTime();
-        return String.format("%02d:%02d", utc.getHour(), utc.getMinute());
-    }
-
-    /**
-     * CROWN moves never call courtscheduler. Each sitting day is re-issued on the new past date with
-     * the requested hearingStartTime (converted local -> UTC per day) and the requested room, falling
-     * back to the hearing's own current first-day room. Duration is copied from that existing first day.
+     * CROWN moves never call courtscheduler. Each sitting day is re-issued on the new past date at the
+     * requested UTC start time and in the requested room (both mandatory). Duration is copied from the
+     * hearing's own current first day.
      */
     private static void enrichWithExistingDayDetails(final JsonObjectBuilder enrichedBuilder, final JsonObject hearing,
-                                                     final List<LocalDate> sittingDays, final UUID requestedCourtRoomId,
-                                                     final String hearingStartTime) {
+                                                     final List<LocalDate> sittingDays, final UUID courtRoomId,
+                                                     final LocalTime startLocalTime) {
         final JsonArray existingDays = hearing.containsKey(HEARING_DAYS) ? hearing.getJsonArray(HEARING_DAYS) : null;
         final JsonObject firstDay = (existingDays != null && !existingDays.isEmpty()) ? existingDays.getJsonObject(0) : null;
-
-        final String courtRoomId;
-        if (requestedCourtRoomId != null) {
-            courtRoomId = requestedCourtRoomId.toString();
-        } else if (firstDay != null && firstDay.containsKey(COURT_ROOM_ID) && !firstDay.isNull(COURT_ROOM_ID)) {
-            courtRoomId = firstDay.getString(COURT_ROOM_ID);
-        } else {
-            courtRoomId = null;
-        }
 
         final Integer durationInMinutes = (firstDay != null && firstDay.containsKey(DAY_DURATION_MINUTES) && !firstDay.isNull(DAY_DURATION_MINUTES))
                 ? firstDay.getInt(DAY_DURATION_MINUTES) : null;
@@ -505,14 +486,12 @@ public class ListingCommandApi {
         final JsonArrayBuilder daysBuilder = createArrayBuilder();
         int sequence = 1;
         for (final LocalDate day : sittingDays) {
-            final ZonedDateTime start = toUtcStart(day, hearingStartTime);
+            final ZonedDateTime start = ZonedDateTime.of(day, startLocalTime, ZoneOffset.UTC);
             final JsonObjectBuilder dayBuilder = createObjectBuilder()
                     .add(SESSION_DATE, day.toString())
                     .add(SESSION_START_TIME, start.toString())
-                    .add(SEQUENCE, sequence++);
-            if (courtRoomId != null) {
-                dayBuilder.add(COURT_ROOM_ID, courtRoomId);
-            }
+                    .add(SEQUENCE, sequence++)
+                    .add(COURT_ROOM_ID, courtRoomId.toString());
             if (durationInMinutes != null) {
                 dayBuilder.add(DURATION_IN_MINUTES, durationInMinutes);
                 dayBuilder.add(SESSION_END_TIME, start.plusMinutes(durationInMinutes).toString());
@@ -528,14 +507,13 @@ public class ListingCommandApi {
      * enriched hearingDays[]. A no-session/booking failure surfaces synchronously as a 422.
      */
     private void enrichWithBookedPastDateSlots(final JsonObjectBuilder enrichedBuilder, final UUID hearingId,
-                                               final UUID courtCentreId, final UUID courtRoomId, final LocalDate startDate,
-                                               final LocalDate endDate, final String hearingStartTime, final JsonObject hearing) {
+                                               final UUID courtCentreId, final UUID courtRoomId, final String startTime,
+                                               final String endTime, final JsonObject hearing) {
         final Integer durationInMinutes = (hearing.containsKey(ESTIMATED_MINUTES) && !hearing.isNull(ESTIMATED_MINUTES))
                 ? hearing.getInt(ESTIMATED_MINUTES) : null;
 
-        final String utcHearingStartTime = toUtcTimeString(startDate, hearingStartTime);
         final List<MoveHearingToPastDateResult> slots = courtSchedulerServiceAdapter.moveHearingToPastDate(
-                hearingId, courtCentreId, courtRoomId, startDate, endDate, utcHearingStartTime, durationInMinutes);
+                hearingId, courtCentreId, courtRoomId, startTime, endTime, durationInMinutes);
 
         final JsonArrayBuilder daysBuilder = createArrayBuilder();
         int sequence = 1;
