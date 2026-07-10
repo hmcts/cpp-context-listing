@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.4-DD-41473-SNAPSHOT</version>
 =======
         <version>17.103.178-PAST-SNAPSHOT</version>
@@ -17,6 +18,9 @@
 =======
         <version>17.103.180-PAST-SNAPSHOT</version>
 >>>>>>> cac861236a (New 17.103.180-PAST-SNAPSHOT)
+=======
+        <version>17.103.181-PAST-SNAPSHOT</version>
+>>>>>>> 88f471e135 (New 17.103.181-PAST-SNAPSHOT)
     </parent>
 
     <artifactId>listing-query-view</artifactId>
