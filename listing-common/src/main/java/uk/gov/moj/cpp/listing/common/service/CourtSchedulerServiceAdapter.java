@@ -53,9 +53,8 @@ public class CourtSchedulerServiceAdapter {
     public static final String HEARING_ID = "hearingId";
     public static final String COURT_CENTRE_ID = "courtCentreId";
     public static final String JURISDICTION = "jurisdiction";
-    public static final String START_DATE = "startDate";
-    public static final String END_DATE = "endDate";
-    public static final String HEARING_START_TIME = "hearingStartTime";
+    public static final String START_TIME = "startTime";
+    public static final String END_TIME = "endTime";
     public static final String BOOKED_SLOTS = "bookedSlots";
     public static final String DURATION_IN_MINUTES = "durationInMinutes";
     public static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
@@ -249,19 +248,18 @@ public class CourtSchedulerServiceAdapter {
     public List<MoveHearingToPastDateResult> moveHearingToPastDate(final UUID hearingId,
                                                                    final UUID courtCentreId,
                                                                    final UUID courtRoomId,
-                                                                   final LocalDate startDate,
-                                                                   final LocalDate endDate,
-                                                                   final String hearingStartTime,
+                                                                   final String startTime,
+                                                                   final String endTime,
                                                                    final Integer durationInMinutes) {
-        // hearingId travels only in the URL path; courtscheduler's REST adapter injects it
+        // hearingId travels only in the URL path; courtscheduler's REST adapter injects it.
+        // startTime/endTime are absolute UTC instants (e.g. 2026-07-02T17:00:00.000Z).
         final JsonObjectBuilder requestBuilder = Json.createObjectBuilder()
                 .add(COURT_CENTRE_ID, courtCentreId.toString())
+                .add(COURT_ROOM_ID, courtRoomId.toString())
                 .add(JURISDICTION, MAGISTRATES_JURISDICTION)
-                .add(START_DATE, startDate.toString())
-                .add(END_DATE, endDate.toString())
-                .add(HEARING_START_TIME, hearingStartTime);
-        if (courtRoomId != null) {
-            requestBuilder.add(COURT_ROOM_ID, courtRoomId.toString());
+                .add(START_TIME, startTime);
+        if (endTime != null) {
+            requestBuilder.add(END_TIME, endTime);
         }
         if (durationInMinutes != null) {
             requestBuilder.add(DURATION_IN_MINUTES, durationInMinutes);
@@ -286,7 +284,7 @@ public class CourtSchedulerServiceAdapter {
             final JsonObject noSessionBody = Json.createObjectBuilder()
                     .add(ERROR_CODE, NO_SESSION_FOUND)
                     .add(MESSAGE, body.getString(MESSAGE,
-                            "No court-schedule session found for hearingId " + hearingId + " between " + startDate + " and " + endDate))
+                            "No court-schedule session found for hearingId " + hearingId + " between " + startTime + " and " + endTime))
                     .build();
             throw new MoveHearingToPastDateException(HttpStatus.SC_UNPROCESSABLE_ENTITY, noSessionBody,
                     "moveHearingToPastDate found no session for hearingId " + hearingId);
