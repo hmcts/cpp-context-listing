@@ -182,6 +182,16 @@ class MoveHearingToPastDateIT extends AbstractIT {
     }
 
     @Test
+    void shouldRejectMoveWith400WhenCourtRoomIdMissing() {
+        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(MAGISTRATES_JURISDICTION);
+        final MoveHearingToPastDateSteps moveSteps = new MoveHearingToPastDateSteps(hearingsData);
+
+        final Response response = moveSteps.whenHearingIsMovedWithMissingCourtRoom(pastWorkingDay(1));
+
+        assertThat(response.getStatus(), is(400));
+    }
+
+    @Test
     void shouldMoveCrownHearingToPastDateListingSideOnlyWithoutCallingCourtScheduler() {
         final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(CROWN_JURISDICTION);
         final LocalDate pastDate = pastWorkingDay(1);
@@ -214,7 +224,7 @@ class MoveHearingToPastDateIT extends AbstractIT {
         stubMoveHearingToPastDateMultiDay(moveSteps.getHearingId(), COURT_ROOM_ID, 30,
                 List.of(firstScheduleId, secondScheduleId), List.of(startDate, endDate));
 
-        final Response response = moveSteps.whenHearingIsMovedToPastDateRange(startDate, endDate, null);
+        final Response response = moveSteps.whenHearingIsMovedToPastDateRange(startDate, endDate, COURT_ROOM_ID);
 
         assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
         verifyMoveHearingToPastDateCalled(moveSteps.getHearingId());
