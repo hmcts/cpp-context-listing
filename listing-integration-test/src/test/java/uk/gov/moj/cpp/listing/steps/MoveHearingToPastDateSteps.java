@@ -37,11 +37,13 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
 
     private final String hearingId;
     private final UUID courtCentreId;
+    private final UUID courtRoomId;
 
     public MoveHearingToPastDateSteps(final HearingsData hearingsData) {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
         this.hearingId = hearingData.getId().toString();
         this.courtCentreId = hearingData.getCourtCentreId();
+        this.courtRoomId = hearingData.getCourtRoomId();
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
@@ -52,14 +54,23 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
     public Response whenHearingIsMovedToPastDate(final String jurisdictionDir, final LocalDate date) {
         final String payload = getPayload("test-data/" + jurisdictionDir + "/move-to-past-date/move-hearing-to-past-date.json")
                 .replace("%%COURT_CENTRE_ID%%", courtCentreId.toString())
+                .replace("%%COURT_ROOM_ID%%", courtRoomId.toString())
                 .replace("%%START_DATE%%", date.toString());
 
         return postMove(payload);
     }
 
     public Response whenHearingIsMovedWithMissingCourtCentre(final LocalDate date) {
-        // courtCentreId omitted (schema-mandatory) - hearingStartTime present so the 400 is unambiguously the missing centre
-        final String payload = "{\"startDate\":\"" + date + "\",\"hearingStartTime\":\"10:00\"}";
+        // courtCentreId omitted (schema-mandatory); courtRoomId/startDate/hearingStartTime present so the
+        // 400 is unambiguously the missing centre.
+        final String payload = "{\"courtRoomId\":\"" + courtRoomId + "\",\"startDate\":\"" + date + "\",\"hearingStartTime\":\"10:00\"}";
+        return postMove(hearingId, payload);
+    }
+
+    public Response whenHearingIsMovedWithMissingCourtRoom(final LocalDate date) {
+        // courtRoomId omitted (now schema-mandatory); every other mandatory field present so the 400 is
+        // unambiguously the missing courtRoomId.
+        final String payload = "{\"courtCentreId\":\"" + courtCentreId + "\",\"startDate\":\"" + date + "\",\"hearingStartTime\":\"10:00\"}";
         return postMove(hearingId, payload);
     }
 
@@ -80,7 +91,8 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
      * steps' own courtCentreId so only the hearingId lookup is exercised. The target hearing is
      * identified purely by the URL path - hearingId is not part of the body. */
     public Response whenHearingIsMovedToPastDateForHearing(final UUID otherHearingId, final LocalDate date) {
-        final String payload = "{\"courtCentreId\":\"" + courtCentreId + "\",\"startDate\":\"" + date + "\",\"hearingStartTime\":\"10:00\"}";
+        final String payload = "{\"courtCentreId\":\"" + courtCentreId + "\",\"courtRoomId\":\"" + courtRoomId
+                + "\",\"startDate\":\"" + date + "\",\"hearingStartTime\":\"10:00\"}";
         return postMove(otherHearingId.toString(), payload);
     }
 
