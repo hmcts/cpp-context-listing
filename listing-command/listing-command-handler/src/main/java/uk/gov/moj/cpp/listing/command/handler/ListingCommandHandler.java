@@ -1494,7 +1494,7 @@ public class ListingCommandHandler {
 
         final List<uk.gov.justice.listing.events.HearingDay> hearingDays = new ArrayList<>();
 
-        payload.getJsonArray("hearingDays").getValuesAs(JsonObject.class).stream()
+        payload.getJsonArray(HEARING_DAYS).getValuesAs(JsonObject.class).stream()
                 .forEach(hearingDay -> hearingDays.add(jsonObjectConverter.convert(hearingDay, uk.gov.justice.listing.events.HearingDay.class)));
 
         updateHearingEventStream(commandEnvelope, hearingId, (Hearing hearing) ->  hearing.raiseHearingDaysWithoutCourtCentreCorrected(hearingId, hearingDays));
