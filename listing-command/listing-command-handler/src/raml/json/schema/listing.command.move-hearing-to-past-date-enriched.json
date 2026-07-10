@@ -14,34 +14,58 @@
       "type": "string",
       "format": "date"
     },
-    "courtCentreId": {
-      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
-    },
-    "courtScheduleId": {
-      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
-    },
-    "courtRoomId": {
-      "type": "string"
-    },
-    "sessionDate": {
+    "endDate": {
       "type": "string",
       "format": "date"
     },
-    "sessionStartTime": {
+    "courtCentreId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "hearingStartTime": {
       "type": "string"
     },
-    "sessionEndTime": {
-      "type": "string"
-    },
-    "durationInMinutes": {
-      "type": "integer"
+    "hearingDays": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "sessionDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "courtScheduleId": {
+            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          },
+          "courtRoomId": {
+            "type": "string"
+          },
+          "sessionStartTime": {
+            "type": "string"
+          },
+          "sessionEndTime": {
+            "type": "string"
+          },
+          "durationInMinutes": {
+            "type": "integer"
+          },
+          "sequence": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sessionDate"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [
     "hearingId",
     "jurisdiction",
     "startDate",
-    "courtCentreId"
+    "courtCentreId",
+    "hearingDays"
   ],
   "additionalProperties": false
 }
