@@ -15,8 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import javax.json.JsonObject;
-import javax.xml.bind.JAXBElement;
+import jakarta.json.JsonObject;
+import jakarta.xml.bind.JAXBElement;
 
 public class FirmListMapper extends AbstractCourtListMapper {
     private static final String COURT_ROOM_ID = "courtRoomId";

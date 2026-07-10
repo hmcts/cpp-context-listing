@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
 

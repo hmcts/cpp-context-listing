@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence
+                                 https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
+             version="3.0">
+
+    <!-- Real-Postgres test persistence unit for repository ITs. Targets the stack-provisioned `listingviewstore` DB
+         (production Liquibase schema applied by runIntegrationTests.sh / the docker stack). Tests roll back per test
+         (HibernateTestEntityManagerProvider), so nothing is persisted. -->
+    <persistence-unit name="listing-test-persistence-unit" transaction-type="RESOURCE_LOCAL">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <jar-file>../classes</jar-file>
+        <exclude-unlisted-classes>false</exclude-unlisted-classes>
+        <properties>
+            <property name="jakarta.persistence.jdbc.driver" value="org.postgresql.Driver"/>
+            <property name="jakarta.persistence.jdbc.url"
+                      value="jdbc:postgresql://localhost:5432/listingviewstore"/>
+            <property name="jakarta.persistence.jdbc.user" value="listing"/>
+            <property name="jakarta.persistence.jdbc.password" value="listing"/>
+            <property name="hibernate.archive.autodetection" value="class"/>
+            <!-- Schema is the production Liquibase schema (applied to listingviewstoretest); Hibernate must not touch it.
+                 'none' (not 'validate') because Hearing maps read-only virtual columns (hearing_date, totalCount, ...)
+                 that only exist as native-query aliases, not as real table columns. -->
+            <property name="hibernate.hbm2ddl.auto" value="none"/>
+            <property name="hibernate.show_sql" value="false"/>
+        </properties>
+    </persistence-unit>
+</persistence>

@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.StatusLine;
@@ -85,7 +85,7 @@ class CourtSchedulerServiceTest {
             org.apache.http.HttpEntity entity = mock(org.apache.http.HttpEntity.class);
             when(httpResponse.getEntity()).thenReturn(entity);
             entityUtilsMockedStatic.when(() -> EntityUtils.toString(entity)).thenReturn("test response");
-            when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(javax.json.JsonObject.class));
+            when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(jakarta.json.JsonObject.class));
 
             // When
             Response response = courtSchedulerService.getCourtSchedulesById(params);
@@ -220,7 +220,7 @@ class CourtSchedulerServiceTest {
             org.apache.http.HttpEntity entity = mock(org.apache.http.HttpEntity.class);
             when(httpResponse.getEntity()).thenReturn(entity);
             entityUtilsMockedStatic.when(() -> EntityUtils.toString(entity)).thenReturn("test response");
-            when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(javax.json.JsonObject.class));
+            when(stringToJsonObjectConverter.convert(any())).thenReturn(mock(jakarta.json.JsonObject.class));
 
             // When
             Response response = courtSchedulerService.getCourtSchedulesById(params);

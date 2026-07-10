@@ -6,7 +6,7 @@ import uk.gov.moj.cpp.listing.command.fields.PublishCourtListFields;
 import java.time.format.DateTimeFormatter;
 
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonValue;
+import jakarta.json.JsonValue;
 
 public class PublishCourtListJsonSupport {
 

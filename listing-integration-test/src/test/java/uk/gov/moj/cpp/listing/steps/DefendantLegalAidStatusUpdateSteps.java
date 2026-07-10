@@ -17,7 +17,7 @@ import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.util.UUID;
 
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;

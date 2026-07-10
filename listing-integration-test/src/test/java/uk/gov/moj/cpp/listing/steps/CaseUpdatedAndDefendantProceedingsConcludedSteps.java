@@ -20,7 +20,7 @@ import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 
 import java.util.UUID;
 
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matcher;

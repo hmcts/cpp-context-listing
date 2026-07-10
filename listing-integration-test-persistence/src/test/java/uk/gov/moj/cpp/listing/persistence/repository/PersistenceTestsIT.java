@@ -3,7 +3,6 @@ package uk.gov.moj.cpp.listing.persistence.repository;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
-import static com.vladmihalcea.hibernate.type.json.internal.JacksonUtil.toJsonNode;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.time.LocalDate.now;
@@ -40,7 +39,8 @@ import static uk.gov.moj.cpp.listing.persistence.repository.utils.HearingReposit
 import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
-import uk.gov.justice.services.test.utils.persistence.BaseTransactionalTest;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.test.utils.persistence.HibernateTestEntityManagerProvider;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.domain.Type;
 import uk.gov.moj.cpp.listing.persistence.entity.CaseIdentifier;
@@ -73,52 +73,54 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Predicate;
-import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
-import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 /*
  * These repository tests needs a direct db connection and has been configured to use listingsystem .
  * CdiTestRunner needs to update db according to entities in the repository and viewstore cannot be used  as IT test requires them for assertions
  * */
-@RunWith(CdiTestRunner.class)
-public class PersistenceTestsIT extends BaseTransactionalTest implements PersistenceTestsInt {
+public class PersistenceTestsIT implements PersistenceTestsInt {
 
     private static final String WOFD_HEARING_TYPE_ID = "638ced9d-3f95-4e99-b27b-47fa5a2c6add";
     private static final String PCB_HEARING_TYPE_ID = "3a2d160f-363b-4360-96e1-0007a400a64c";
 
-    @Inject
+    @RegisterExtension
+    static final HibernateTestEntityManagerProvider hibernateTestEntityManagerProvider =
+            new HibernateTestEntityManagerProvider("listing-test-persistence-unit");
+
     public HearingRepository hearingRepository;
-
-    @Inject
     public ObjectToJsonValueConverter objectToJsonValueConverter;
-
-    @Inject
     public ObjectMapper objectMapper;
-
-    @Inject
     public PublishedCourtListRepository publishedCourtListRepository;
-
-    @Inject
     NotesRepository notesRepository;
 
-    @Before
-    public void clear() {
-        final List<Hearing> all = hearingRepository.findAll();
-        all.forEach(e -> hearingRepository.remove(e));
-        hearingRepository.flush();
+    @BeforeEach
+    public void createRepositoriesAndClearDatabase() {
+        hearingRepository = new HearingRepository();
+        hibernateTestEntityManagerProvider.injectEntityManagerInto(hearingRepository);
+        publishedCourtListRepository = new PublishedCourtListRepository();
+        hibernateTestEntityManagerProvider.injectEntityManagerInto(publishedCourtListRepository);
+        notesRepository = new NotesRepository();
+        hibernateTestEntityManagerProvider.injectEntityManagerInto(notesRepository);
+        objectMapper = new ObjectMapperProducer().objectMapper();
+        objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
+
+        // Hearing maps read-only virtual columns (hearing_date, totalcount, hearing_day_count, ...) that exist only
+        // as native-query aliases, so a JPQL "SELECT h FROM Hearing h" (findAll) selects columns that are absent from
+        // the real schema and fails. Wipe hearings and their FK-dependent child tables with a native TRUNCATE ...
+        // CASCADE on the throwaway test DB instead (rolled back per test by the provider, like every other statement).
+        hibernateTestEntityManagerProvider.getEntityManager()
+                .createNativeQuery("TRUNCATE TABLE hearing CASCADE")
+                .executeUpdate();
 
         final List<PublishedCourtList> all1 = publishedCourtListRepository.findAll();
         all1.forEach(e -> publishedCourtListRepository.remove(e));
@@ -1571,11 +1573,11 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
     }
 
     private JsonNode getContentOne() throws IOException {
-        return new ObjectMapper().readTree(FileUtil.getPayload("test-data/courtListJson1.txt"));
+        return objectMapper.readTree(FileUtil.getPayload("test-data/courtListJson1.txt"));
     }
 
     private JsonNode getContentTwo() throws IOException {
-        return new ObjectMapper().readTree(FileUtil.getPayload("test-data/courtListJson2.txt"));
+        return objectMapper.readTree(FileUtil.getPayload("test-data/courtListJson2.txt"));
     }
 
     private PublishedCourtListPrimaryKey toKey(final PublishedCourtList publishedCourtList) {
@@ -1638,13 +1640,13 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         notesRepository.save(notes);
 
         final List<Notes> byCourtRoomCourtCentreAndDate = notesRepository.findByCourtRoomIdAndDate(courtRoomId, date);
-        Assert.assertThat(byCourtRoomCourtCentreAndDate.size(), is(1));
+        assertThat(byCourtRoomCourtCentreAndDate.size(), is(1));
     }
 
     @Test
     public void shouldNotFindNoteByCourtRoomCourtCentreAndDate() {
         final List<Notes> byCourtRoomCourtCentreAndDate = notesRepository.findByCourtRoomIdAndDate(randomUUID(), LocalDate.now());
-        Assert.assertThat(byCourtRoomCourtCentreAndDate.size(), is(0));
+        assertThat(byCourtRoomCourtCentreAndDate.size(), is(0));
     }
 
 
@@ -1661,8 +1663,8 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         Notes optionalById = notesRepository.findOptionalById(noteId);
 
         //Then
-        Assert.assertThat(optionalById.getId(), is(noteId));
-        Assert.assertThat(optionalById.getNote(), is("random note description"));
+        assertThat(optionalById.getId(), is(noteId));
+        assertThat(optionalById.getNote(), is("random note description"));
     }
 
     @Test
@@ -1677,13 +1679,13 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         //When
         Notes optionalById = notesRepository.findOptionalById(noteId);
         optionalById.setNote("edited note description");
-        notesRepository.save(note);
+        notesRepository.save(optionalById);
         Notes noteAfterChangingDescription = notesRepository.findOptionalById(noteId);
 
         //Then
-        Assert.assertThat(noteAfterChangingDescription.getNote(), is("edited note description"));
+        assertThat(noteAfterChangingDescription.getNote(), is("edited note description"));
         List<Notes> allNotes = notesRepository.findAll();
-        Assert.assertThat(allNotes.size(), is(1));
+        assertThat(allNotes.size(), is(1));
 
     }
 
@@ -2908,7 +2910,7 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
                 .withStartDate(startDate)
                 .withWeekCommencingEndDate(weekCommencingEndDate)
                 .withWeekCommencingStartDate(weekCommencingStartDate)
-                .withProperties(JacksonUtil.toJsonNode(hearingString))
+                .withProperties(toJsonNode(hearingString))
                 .build();
     }
 
@@ -2957,5 +2959,16 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
                         .replaceAll(WEEK_COMMENCING_START_FIELD, ofNullable(weekCommencingStartDate).map(LocalDate::toString).orElse(null))
                         .replaceAll(WEEK_COMMENCING_END_FIELD, ofNullable(weekCommencingEndDate).map(LocalDate::toString).orElse(null));
 
+    }
+
+    private static final com.fasterxml.jackson.databind.ObjectMapper OBJECT_MAPPER =
+            new uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer().objectMapper();
+
+    private static com.fasterxml.jackson.databind.JsonNode toJsonNode(final String json) {
+        try {
+            return OBJECT_MAPPER.readTree(json);
+        } catch (final java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

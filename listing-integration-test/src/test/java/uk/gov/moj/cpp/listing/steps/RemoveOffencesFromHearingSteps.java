@@ -16,8 +16,8 @@ import uk.gov.moj.cpp.listing.it.AbstractIT;
 import java.util.List;
 
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObjectBuilder;
+import jakarta.json.JsonArrayBuilder;
+import jakarta.json.JsonObjectBuilder;
 
 import io.restassured.path.json.JsonPath;
 

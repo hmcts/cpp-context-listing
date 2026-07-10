@@ -21,9 +21,9 @@ import uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import javax.inject.Inject;
-import javax.json.JsonObject;
-import javax.ws.rs.core.Response;
+import jakarta.inject.Inject;
+import jakarta.json.JsonObject;
+import jakarta.ws.rs.core.Response;
 
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
@@ -112,7 +112,7 @@ class CourtScheduleEnrichmentServiceTest {
 
         // Mock search response (first available slot). Shape must match getFirstAvailableSlot()
         final String bookedCourtScheduleId = java.util.UUID.randomUUID().toString();
-        final javax.json.JsonObject searchJson =
+        final jakarta.json.JsonObject searchJson =
                 JsonObjects.createObjectBuilder()
                         .add("hearingSlots", JsonObjects.createArrayBuilder()
                                 .add(JsonObjects.createObjectBuilder()
@@ -134,7 +134,7 @@ class CourtScheduleEnrichmentServiceTest {
                         .build());
 
         // Mock list response used by combineSearchAndBookResponseAndListResponse()
-        final javax.json.JsonObject listJson =
+        final jakarta.json.JsonObject listJson =
                 JsonObjects.createObjectBuilder()
                         .add("hearings", JsonObjects.createArrayBuilder()
                                 .add(JsonObjects.createObjectBuilder()
@@ -146,15 +146,15 @@ class CourtScheduleEnrichmentServiceTest {
         final Response listResponse = org.mockito.Mockito.mock(Response.class);
         when(listResponse.getStatus()).thenReturn(org.apache.http.HttpStatus.SC_OK);
         when(listResponse.getEntity()).thenReturn(listJson);
-        when(hearingSlotsService.listHearingInCourtSessions(any(javax.json.JsonObject.class))).thenReturn(listResponse);
+        when(hearingSlotsService.listHearingInCourtSessions(any(jakarta.json.JsonObject.class))).thenReturn(listResponse);
         when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
 
         // jsonObjectConverter must translate each "hearings" item to ListUpdateHearing (POJO with setters)
         when(jsonObjectConverter.convert(
-                org.mockito.ArgumentMatchers.any(javax.json.JsonObject.class),
+                org.mockito.ArgumentMatchers.any(jakarta.json.JsonObject.class),
                 org.mockito.ArgumentMatchers.eq(uk.gov.moj.cpp.listing.domain.ListUpdateHearing.class)))
                 .thenAnswer(inv -> {
-                    javax.json.JsonObject jo = inv.getArgument(0);
+                    jakarta.json.JsonObject jo = inv.getArgument(0);
                     uk.gov.moj.cpp.listing.domain.ListUpdateHearing luh = new uk.gov.moj.cpp.listing.domain.ListUpdateHearing();
                     luh.setCourtScheduleId(jo.getString("courtScheduleId"));
                     luh.setHearingStartTime(jo.getString("hearingStartTime"));
@@ -221,7 +221,7 @@ class CourtScheduleEnrichmentServiceTest {
 
         // Mock search response (first available slot)
         final String bookedCourtScheduleId = java.util.UUID.randomUUID().toString();
-        final javax.json.JsonObject searchJson =
+        final jakarta.json.JsonObject searchJson =
                 JsonObjects.createObjectBuilder()
                         .add("hearingSlots", JsonObjects.createArrayBuilder()
                                 .add(JsonObjects.createObjectBuilder()
@@ -241,7 +241,7 @@ class CourtScheduleEnrichmentServiceTest {
                 .thenReturn(JsonObjects.createArrayBuilder().add(bookedCourtScheduleId).build());
 
         // Mock list response used by combineSearchAndBookResponseAndListResponse()
-        final javax.json.JsonObject listJson =
+        final jakarta.json.JsonObject listJson =
                 JsonObjects.createObjectBuilder()
                         .add("hearings", JsonObjects.createArrayBuilder()
                                 .add(JsonObjects.createObjectBuilder()
@@ -253,15 +253,15 @@ class CourtScheduleEnrichmentServiceTest {
         final Response listResponse = org.mockito.Mockito.mock(Response.class);
         when(listResponse.getStatus()).thenReturn(org.apache.http.HttpStatus.SC_OK);
         when(listResponse.getEntity()).thenReturn(listJson);
-        when(hearingSlotsService.listHearingInCourtSessions(any(javax.json.JsonObject.class))).thenReturn(listResponse);
+        when(hearingSlotsService.listHearingInCourtSessions(any(jakarta.json.JsonObject.class))).thenReturn(listResponse);
         when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
 
         // Map each "hearings" item to ListUpdateHearing
         when(jsonObjectConverter.convert(
-                org.mockito.ArgumentMatchers.any(javax.json.JsonObject.class),
+                org.mockito.ArgumentMatchers.any(jakarta.json.JsonObject.class),
                 org.mockito.ArgumentMatchers.eq(uk.gov.moj.cpp.listing.domain.ListUpdateHearing.class)))
                 .thenAnswer(inv -> {
-                    javax.json.JsonObject jo = inv.getArgument(0);
+                    jakarta.json.JsonObject jo = inv.getArgument(0);
                     uk.gov.moj.cpp.listing.domain.ListUpdateHearing luh = new uk.gov.moj.cpp.listing.domain.ListUpdateHearing();
                     luh.setCourtScheduleId(jo.getString("courtScheduleId"));
                     luh.setHearingStartTime(jo.getString("hearingStartTime"));

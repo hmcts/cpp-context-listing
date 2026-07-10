@@ -11,7 +11,7 @@ import uk.gov.moj.cpp.listing.domain.referencedata.Judiciary;
 import uk.gov.moj.cpp.listing.persistence.enums.CsvRecordType;
 import uk.gov.moj.cpp.listing.common.progression.ProgressionNotesCache;
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.query.view.dto.csv.HearingCsvData;

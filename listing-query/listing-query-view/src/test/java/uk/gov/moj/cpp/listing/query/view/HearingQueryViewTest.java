@@ -12,7 +12,6 @@ import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
-import static org.apache.deltaspike.core.util.ArraysUtils.asSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyString;
@@ -98,14 +97,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.json.JsonValue;
-import javax.ws.rs.NotFoundException;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonValue;
+import jakarta.ws.rs.NotFoundException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.ReadContext;
-import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
@@ -119,6 +117,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class HearingQueryViewTest {
+
+    @SafeVarargs
+    private static <T> java.util.Set<T> asSet(final T... values) {
+        return new java.util.HashSet<>(java.util.Arrays.asList(values));
+    }
 
     private static final UUID COURT_CENTRE_ID = randomUUID();
     private static final String PUBLISH_COURT_LIST_TYPES = "FIRM,FINAL";
@@ -887,8 +890,7 @@ public class HearingQueryViewTest {
         hearingsJson.get(0).getListedCases().add(listedCases1);
         hearingsJson.get(1).getListedCases().add(listedCases2);
 
-        final ObjectMapper objectMapper = new ObjectMapper();
-        hearingsJson.get(0).setProperties(objectMapper.readTree("{\"type\":{\"description\":\"Review\"}}"));
+        hearingsJson.get(0).setProperties(OBJECT_MAPPER.readTree("{\"type\":{\"description\":\"Review\"}}"));
 
         final UUID applicationId = UUID.randomUUID();
         final JsonEnvelope query = envelopeFrom(
@@ -1312,11 +1314,11 @@ public class HearingQueryViewTest {
         final String testJsonString1 = "{ \"allocated\":\"" + true + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
         final String testJsonString2 = "{ \"allocated\":\"" + true + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{\"id\":\"72876919-396e-4f9f-8c39-c678d7548120\"}] , \"listedCases\" : [{}] , \"type\" : {\"id\":\"bd4dab38-ea91-434b-8e73-e0d50ef0cbdf\", \"description\":\"Review\"}}";
         final Hearing hearing1 = Hearing.builder().withId(randomUUID())
-                .withProperties(JacksonUtil.toJsonNode(testJsonString1))
+                .withProperties(toJsonNode(testJsonString1))
                 .withListedCases(asSet(new ListedCases(randomUUID(), randomUUID(), null, null, null, null, null, false)))
                 .build();
         final Hearing hearing2 = Hearing.builder().withId(randomUUID())
-                .withProperties(JacksonUtil.toJsonNode(testJsonString2))
+                .withProperties(toJsonNode(testJsonString2))
                 .withListedCases(asSet(new ListedCases(randomUUID(), randomUUID(), null, null, null, null, null, false)))
                 .withCourtApplications(asSet(new CourtApplications(randomUUID(), applicationId, null, null, null, null,null, false)))
                 .build();
@@ -1350,11 +1352,11 @@ public class HearingQueryViewTest {
         final String testJsonString2 = "{ \"allocated\":\"" + true + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] , \"type\" : {\"id\":\"bd4dab38-ea91-434b-8e73-e0d50ef0cbdf\", \"description\":\"Review\"}}";
 
         final Hearing hearing1 = Hearing.builder().withId(randomUUID())
-                .withProperties(JacksonUtil.toJsonNode(testJsonString1))
+                .withProperties(toJsonNode(testJsonString1))
                 .withListedCases(asSet(new ListedCases(randomUUID(), randomUUID(), null, null, null, null, null, false)))
                 .build();
         final Hearing hearing2 = Hearing.builder().withId(randomUUID())
-                .withProperties(JacksonUtil.toJsonNode(testJsonString2))
+                .withProperties(toJsonNode(testJsonString2))
                 .withListedCases(asSet(new ListedCases(randomUUID(), randomUUID(), null, null, null, null, null, false)))
                 .build();
 
@@ -1537,22 +1539,22 @@ public class HearingQueryViewTest {
     }
 
     private Hearing generateMinimalHearing() {
-        return new Hearing(ID, JacksonUtil.toJsonNode(String.format("{ \"id\": \"%s\" }", ID.toString())));
+        return new Hearing(ID, toJsonNode(String.format("{ \"id\": \"%s\" }", ID.toString())));
     }
 
 
     private List<Hearing> hearingsJson(String allocated) {
         final String testJsonString = "{ \"allocated\":\"" + allocated + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
-        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing1 = new Hearing(randomUUID(), toJsonNode(testJsonString));
         hearing1.setTotalCount(Long.valueOf(2));
-        final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing2 = new Hearing(randomUUID(), toJsonNode(testJsonString));
         return newArrayList(hearing1, hearing2);
     }
 
     private List<Hearing> singleHearingsJson(String allocated) {
         final String testJsonString = "{ \"allocated\":\"" + allocated + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\"," +
                 " \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
-        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing1 = new Hearing(randomUUID(), toJsonNode(testJsonString));
         hearing1.setTotalCount(Long.valueOf(2));
         return newArrayList(hearing1);
     }
@@ -1560,7 +1562,7 @@ public class HearingQueryViewTest {
     private List<Hearing> childHearingsJson(String allocated) {
         final String testJsonString = "{ \"allocated\":\"" + allocated + "\", \"startDate\": \"2020-10-10\", \"courtRoomId\": \"42481915-4d98-437b-a5dd-ace41e2ab0ea\"," +
                 " \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
-        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing1 = new Hearing(randomUUID(), toJsonNode(testJsonString));
         hearing1.setTotalCount(Long.valueOf(2));
         return newArrayList(hearing1);
     }
@@ -1574,8 +1576,8 @@ public class HearingQueryViewTest {
 
     private List<Hearing> hearingJsonForEjected() {
         final String testJsonString = "{\"hearings\":[{\"id\":\"54482cb7-31aa-4c64-8656-3be6e3a4d158\",\"listedCases\":[{\"isEjected\":\"true\"}],\"courtApplications\":[{\"isEjected\":\"true\"}]}]}";
-        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
-        final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing1 = new Hearing(randomUUID(), toJsonNode(testJsonString));
+        final Hearing hearing2 = new Hearing(randomUUID(), toJsonNode(testJsonString));
         return newArrayList(hearing1, hearing2);
 
     }
@@ -1583,12 +1585,12 @@ public class HearingQueryViewTest {
     private Hearing getHearingById() {
         final String testJsonHearing = "{\"id\":\"b7b136da-7156-4391-ab0e-24e90c2bc599\",\"endDate\":\"END_DATE\",\"allocated\":false,\"startDate\":\"2020-03-17\",\"listedCases\":[{\"id\":\"523b6826-3e56-48d0-bb1b-a0209e7b9c70\",\"defendants\":[{\"id\":\"367f1f6d-f300-4e35-9a8b-92f0c81a28b5\",\"masterDefendantId\":\"d676f354-ba50-462e-bd55-4e8842d29ebd\"}],\"caseIdentifier\":{\"caseReference\":\"EEE555\"},\"restrictFromCourtList\":false,\"linkedCases\":[{\"caseId\":\"367f1f6d-f300-4e35-9a8b-92f0c81a298e\",\"caseUrn\":\"URN1\"},{\"caseId\":\"367f1f6d-f300-4e35-9a8b-92f0c81a246g\",\"caseUrn\":\"URN2\"}]}]}";
         String testJson = testJsonHearing.replace("END_DATE", LocalDate.now().toString());
-        return new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJson));
+        return new Hearing(randomUUID(), toJsonNode(testJson));
     }
 
     private Hearing getUnscheduledHearingById() {
         final String testJsonHearing = "{\"id\":\"b7b136da-7156-4391-ab0e-24e90c2bc599\",\"allocated\":false,\"unscheduled:\":true,\"startDate\":\"2020-03-17\",\"listedCases\":[{\"id\":\"523b6826-3e56-48d0-bb1b-a0209e7b9c70\",\"defendants\":[{\"id\":\"367f1f6d-f300-4e35-9a8b-92f0c81a28b5\",\"masterDefendantId\":\"d676f354-ba50-462e-bd55-4e8842d29ebd\"}],\"caseIdentifier\":{\"caseReference\":\"EEE555\"},\"restrictFromCourtList\":false,\"linkedCases\":[{\"caseId\":\"367f1f6d-f300-4e35-9a8b-92f0c81a298e\",\"caseUrn\":\"URN1\"},{\"caseId\":\"367f1f6d-f300-4e35-9a8b-92f0c81a246g\",\"caseUrn\":\"URN2\"}]}]}";
-        return new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonHearing));
+        return new Hearing(randomUUID(), toJsonNode(testJsonHearing));
     }
 
     private List<Notes> createNotesList() {
@@ -1726,6 +1728,17 @@ public class HearingQueryViewTest {
                 () -> hearingsQueryView.generateHearingCsvReport(query));
 
         assertThat(exception.getMessage(), is("Invalid start date: " + invalidStartDate));
+    }
+
+    private static final com.fasterxml.jackson.databind.ObjectMapper OBJECT_MAPPER =
+            new uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer().objectMapper();
+
+    private static com.fasterxml.jackson.databind.JsonNode toJsonNode(final String json) {
+        try {
+            return OBJECT_MAPPER.readTree(json);
+        } catch (final java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

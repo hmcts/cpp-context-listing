@@ -19,10 +19,10 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import java.io.StringReader;
 import java.util.UUID;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 
 public class ExtendHearingHelper {
 

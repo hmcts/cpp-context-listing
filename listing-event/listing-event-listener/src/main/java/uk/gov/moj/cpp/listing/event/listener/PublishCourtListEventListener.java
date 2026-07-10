@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -45,6 +45,9 @@ public class PublishCourtListEventListener {
 
     @Inject
     private PublishedCourtListRepository publishedCourtListRepository;
+
+    @Inject
+    private ObjectMapper objectMapper;
 
     @Handles("listing.event.publish-court-list-requested")
     public void courtListPublishRequested(final Envelope<PublishCourtListRequested> event) {
@@ -84,7 +87,7 @@ public class PublishCourtListEventListener {
                         publishedCourtListStored.getCourtCentreId(),
                         publishedCourtListStored.getPublishCourtListType(),
                         publishedCourtListStored.getStartDate(),
-                        new ObjectMapper().readTree(publishedCourtListStored.getCourtListJson()),
+                        objectMapper.readTree(publishedCourtListStored.getCourtListJson()),
                         publishedCourtListStored.getLastUpdated(),
                         null,
                         publishedCourtListStored.getCourtListId()

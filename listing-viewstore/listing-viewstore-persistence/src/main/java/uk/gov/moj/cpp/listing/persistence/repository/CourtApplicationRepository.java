@@ -5,13 +5,21 @@ import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
 import java.util.List;
 import java.util.UUID;
 
-import org.apache.deltaspike.data.api.EntityRepository;
-import org.apache.deltaspike.data.api.Repository;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
+@ApplicationScoped
+public class CourtApplicationRepository {
 
-@Repository
-public interface CourtApplicationRepository extends EntityRepository<CourtApplications, UUID> {
+    @PersistenceContext(unitName = "listing-persistence-unit")
+    EntityManager entityManager;
 
-    List<CourtApplications> findByParentApplicationId(UUID id);
-
+    public List<CourtApplications> findByParentApplicationId(final UUID id) {
+        return entityManager.createQuery(
+                        "SELECT courtApplications FROM CourtApplications courtApplications WHERE courtApplications.parentApplicationId = :id",
+                        CourtApplications.class)
+                .setParameter("id", id)
+                .getResultList();
+    }
 }

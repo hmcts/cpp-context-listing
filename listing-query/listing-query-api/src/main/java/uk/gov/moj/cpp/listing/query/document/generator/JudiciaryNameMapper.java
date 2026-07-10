@@ -2,7 +2,7 @@ package uk.gov.moj.cpp.listing.query.document.generator;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 public class JudiciaryNameMapper {
 

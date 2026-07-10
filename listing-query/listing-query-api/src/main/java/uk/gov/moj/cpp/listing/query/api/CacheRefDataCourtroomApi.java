@@ -12,7 +12,7 @@ import uk.gov.moj.cpp.listing.query.view.service.CacheRefDataCourtroomLoader;
 
 import java.time.Instant;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @ServiceComponent(Component.QUERY_API)
 public class CacheRefDataCourtroomApi {

@@ -22,7 +22,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -177,23 +176,34 @@ public class NotesServiceTest {
 
     private List<Hearing> hearingsJsonWithHearingDays(String allocated) {
         final String testJsonString = "{ \"allocated\":\"" + allocated+ "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"hearingDays\": [ {\"hearingDate\":\"2020-09-03\"},{\"hearingDate\":\"2020-09-04\"}], \"listedCases\" : [{}] }";
-        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing1 = new Hearing(randomUUID(), toJsonNode(testJsonString));
         return newArrayList(hearing1);
     }
 
     private List<Hearing> hearingsJson(String allocated) {
         final String testJsonString = "{ \"allocated\":\"" + allocated+ "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
         final String testJsonString2 = "{ \"allocated\":\"" + allocated+ "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c19\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
-        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
-        final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString2));
+        final Hearing hearing1 = new Hearing(randomUUID(), toJsonNode(testJsonString));
+        final Hearing hearing2 = new Hearing(randomUUID(), toJsonNode(testJsonString2));
         return newArrayList(hearing1, hearing2);
     }
 
     private List<Hearing> hearingsJsonWithNullRoomId(String allocated) {
         final String testJsonString = "{ \"allocated\":\"" + allocated+ "\", \"startDate\": \"2020-09-03\",  \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
         final String testJsonString2 = "{ \"allocated\":\"" + allocated+ "\", \"startDate\": \"2020-09-03\",  \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
-        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
-        final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString2));
+        final Hearing hearing1 = new Hearing(randomUUID(), toJsonNode(testJsonString));
+        final Hearing hearing2 = new Hearing(randomUUID(), toJsonNode(testJsonString2));
         return newArrayList(hearing1, hearing2);
+    }
+
+    private static final com.fasterxml.jackson.databind.ObjectMapper OBJECT_MAPPER =
+            new uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer().objectMapper();
+
+    private static com.fasterxml.jackson.databind.JsonNode toJsonNode(final String json) {
+        try {
+            return OBJECT_MAPPER.readTree(json);
+        } catch (final java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

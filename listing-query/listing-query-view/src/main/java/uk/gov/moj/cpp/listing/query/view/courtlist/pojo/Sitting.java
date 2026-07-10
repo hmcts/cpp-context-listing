@@ -2,7 +2,7 @@ package uk.gov.moj.cpp.listing.query.view.courtlist.pojo;
 
 import java.util.List;
 
-import javax.json.JsonArray;
+import jakarta.json.JsonArray;
 
 public class Sitting {
 

@@ -35,8 +35,8 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-import javax.json.JsonObject;
-import javax.ws.rs.core.Response;
+import jakarta.json.JsonObject;
+import jakarta.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.awaitility.core.ConditionTimeoutException;

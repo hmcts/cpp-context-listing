@@ -7,7 +7,7 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 public class RequestedNameMapper {
 

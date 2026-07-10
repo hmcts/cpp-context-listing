@@ -3,7 +3,7 @@
     <parent>
         <artifactId>listing-event</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <version>17.104.4-SNAPSHOT</version>
+        <version>25.104.0-M1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -21,8 +21,8 @@
         </dependency>
 
         <dependency>
-            <groupId>javax</groupId>
-            <artifactId>javaee-api</artifactId>
+            <groupId>jakarta.platform</groupId>
+            <artifactId>jakarta.jakartaee-api</artifactId>
             <scope>provided</scope>
         </dependency>
 
@@ -75,7 +75,25 @@
     </dependencies>
     <build>
         <plugins>
-            <!-- MI schema contract validation tests jar dependency-->
+            <!-- =========================================================================================
+                 DISABLED DURING THE JAVA 25 / JAKARTA UPGRADE — LISTING TEAM ACTION REQUIRED.
+
+                 This plugin unpacked and ran mi-reportdata's consumer-driven schema-contract test-jar
+                 (uk.gov.moj.cpp.mi.reportdata:mireportdata-listing-event-listener:tests, which contains
+                 ListingSchemaContractValidationTest). It is disabled because:
+                   1. mi-reportdata has no released Jakarta build yet; its latest RELEASE is javax (17.0.114)
+                      and fails under Java 25 with NoClassDefFoundError: javax/json/JsonValue; and
+                   2. having listing's build pull a test artifact FROM a downstream context (mi-reportdata)
+                      is an undesirable coupling that the listing/MI teams should re-home properly.
+
+                 This was listing's ONLY dependency on mi-reportdata (test-scoped only — it never affected
+                 listing's production code or published artifacts).
+
+                 TO RE-ENABLE: uncomment the plugin below once mi-reportdata publishes a Jakarta (25.104.x)
+                 build of mireportdata-listing-event-listener:tests. <version>RELEASE</version> will then
+                 self-heal (it resolves to the latest release, which will be the Jakarta build).
+                 ========================================================================================= -->
+            <!--
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -101,6 +119,7 @@
                     </execution>
                 </executions>
             </plugin>
+            -->
 
         </plugins>
     </build>

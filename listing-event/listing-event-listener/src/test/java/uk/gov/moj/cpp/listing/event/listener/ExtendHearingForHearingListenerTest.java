@@ -35,7 +35,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 import static uk.gov.moj.cpp.listing.event.listener.utils.HearingUtils.*;
 
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 @ExtendWith(MockitoExtension.class)
 public class ExtendHearingForHearingListenerTest {

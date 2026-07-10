@@ -39,8 +39,8 @@ import uk.gov.moj.cpp.listing.query.api.util.FileUtil;
 import java.io.StringReader;
 import java.util.UUID;
 
-import javax.json.JsonObject;
-import javax.json.JsonReader;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 
 import com.google.common.collect.ImmutableMap;
 import org.hamcrest.Matchers;

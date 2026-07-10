@@ -2,8 +2,8 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
 import static java.lang.String.format;
 import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
-import static javax.xml.bind.JAXBContext.newInstance;
-import static javax.xml.bind.Marshaller.JAXB_FORMATTED_OUTPUT;
+import static jakarta.xml.bind.JAXBContext.newInstance;
+import static jakarta.xml.bind.Marshaller.JAXB_FORMATTED_OUTPUT;
 
 import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.GenerationFailedException;
 
@@ -12,12 +12,12 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URL;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBElement;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
@@ -28,10 +28,44 @@ import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.glassfish.jaxb.runtime.marshaller.NamespacePrefixMapper;
 import org.slf4j.Logger;
 import org.xml.sax.SAXException;
 
 public class XmlUtils {
+
+    private static final String COURT_SERVICE_NS = "http://www.courtservice.gov.uk/schemas/courtservice";
+    private static final String BS7666_NS = "http://www.govtalk.gov.uk/people/bs7666";
+    private static final String ADDRESS_AND_PERSONAL_DETAILS_NS = "http://www.govtalk.gov.uk/people/AddressAndPersonalDetails";
+    private static final String XSI_NS = "http://www.w3.org/2001/XMLSchema-instance";
+
+    /**
+     * Restores the fixed XHIBIT namespace prefixes (cs/p2/apd/xsi) that the generated JAXB classes emitted under the
+     * pre-EE9 jaxb2-namespace-prefix add-on. Jakarta's JAXB (org.glassfish.jaxb) otherwise emits default ns2/ns3
+     * prefixes, which the consuming XHIBIT systems (and the mapper contract tests) do not expect.
+     */
+    private static final NamespacePrefixMapper XHIBIT_PREFIX_MAPPER = new NamespacePrefixMapper() {
+        @Override
+        public String getPreferredPrefix(final String namespaceUri, final String suggestion, final boolean requirePrefix) {
+            switch (namespaceUri) {
+                case COURT_SERVICE_NS:
+                    return "cs";
+                case BS7666_NS:
+                    return "p2";
+                case ADDRESS_AND_PERSONAL_DETAILS_NS:
+                    return "apd";
+                case XSI_NS:
+                    return "xsi";
+                default:
+                    return suggestion;
+            }
+        }
+
+        @Override
+        public String[] getPreDeclaredNamespaceUris() {
+            return new String[]{BS7666_NS, ADDRESS_AND_PERSONAL_DETAILS_NS, XSI_NS};
+        }
+    };
 
     private static DatatypeFactory datatypeFactory;
 
@@ -60,6 +94,7 @@ public class XmlUtils {
         try {
             final Marshaller jaxbMarshaller = getJaxbContext().createMarshaller();
             jaxbMarshaller.setProperty(JAXB_FORMATTED_OUTPUT, true);
+            jaxbMarshaller.setProperty("org.glassfish.jaxb.namespacePrefixMapper", XHIBIT_PREFIX_MAPPER);
             jaxbMarshaller.marshal(documentRoot, sw);
         } catch (final JAXBException e) {
             throw new GenerationFailedException("Could not marshal XML", e);

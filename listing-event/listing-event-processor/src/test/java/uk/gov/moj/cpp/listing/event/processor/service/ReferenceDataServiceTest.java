@@ -30,8 +30,8 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;

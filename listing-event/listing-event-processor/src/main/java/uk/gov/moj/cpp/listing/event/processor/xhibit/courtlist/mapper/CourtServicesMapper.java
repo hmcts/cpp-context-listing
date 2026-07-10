@@ -59,9 +59,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.annotation.PreDestroy;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
+import jakarta.annotation.PreDestroy;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;

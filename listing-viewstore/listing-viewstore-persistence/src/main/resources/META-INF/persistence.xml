@@ -1,12 +1,21 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<persistence xmlns="http://java.sun.com/xml/ns/persistence"
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xsi:schemaLocation="http://java.sun.com/xml/ns/persistence
- http://java.sun.com/xml/ns/persistence/persistence_1_0.xsd" version="1.0">
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence
+ https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd" version="3.0">
 
     <persistence-unit name="listing-persistence-unit">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <jta-data-source>java:/DS.listing</jta-data-source>
+        <properties>
+            <!-- The hearings query path (HearingQueryView / ApplicationTypeFilter) walks Hearing's LAZY @OneToMany
+                 collections (listedCases, courtApplications) after the query transaction/session has ended, because
+                 hearings are loaded via native queries that don't fetch the associations. Under Hibernate 6 this throws
+                 LazyInitializationException ("no session") → HTTP 500 on GET .../hearings. Allow lazy loads outside a
+                 transaction to restore the pre-upgrade behaviour. (Listing team: consider fetch-joins/DTO projections
+                 as a longer-term alternative to avoid the temp-session-per-access cost.) -->
+            <property name="hibernate.enable_lazy_load_no_trans" value="true"/>
+        </properties>
     </persistence-unit>
 
 </persistence>

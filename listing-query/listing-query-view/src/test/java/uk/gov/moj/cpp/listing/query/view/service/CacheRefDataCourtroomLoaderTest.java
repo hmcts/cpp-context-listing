@@ -16,7 +16,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.CacheRefDataCourtroomReposi
 import java.util.UUID;
 
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;

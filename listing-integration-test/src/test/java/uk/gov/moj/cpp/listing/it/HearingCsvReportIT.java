@@ -2,7 +2,7 @@ package uk.gov.moj.cpp.listing.it;
 
 import static java.text.MessageFormat.format;
 import static java.util.Collections.emptyList;
-import static javax.ws.rs.core.Response.Status.OK;
+import static jakarta.ws.rs.core.Response.Status.OK;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.POLL_INTERVAL;
@@ -40,7 +40,7 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -140,7 +140,7 @@ public class HearingCsvReportIT extends AbstractIT {
         // getLoggedInHeader() reads a ThreadLocal user context. Awaitility evaluates the condition on a
         // SEPARATE polling thread where that ThreadLocal is unset, which would make userId null and 500 the
         // endpoint on every poll. Capture the header here on the test thread and reuse it inside the lambda.
-        final javax.ws.rs.core.MultivaluedMap<String, Object> loggedInHeader = getLoggedInHeader();
+        final jakarta.ws.rs.core.MultivaluedMap<String, Object> loggedInHeader = getLoggedInHeader();
         final AtomicReference<Response> responseRef = new AtomicReference<>();
         final AtomicReference<String> csvRef = new AtomicReference<>();
         await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {

@@ -12,7 +12,7 @@ import uk.gov.moj.cpp.listing.event.processor.service.ReferenceDataService;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 @SuppressWarnings({"squid:S1172", "squid:CommentedOutCodeLine"})
 public class PublicHearingFactory {
 

@@ -18,7 +18,7 @@ import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 import io.restassured.path.json.JsonPath;
 import org.slf4j.Logger;

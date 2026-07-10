@@ -218,7 +218,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Month;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -231,12 +230,12 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import javax.json.JsonReader;
-import javax.ws.rs.core.Response;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonArrayBuilder;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
+import jakarta.json.JsonReader;
+import jakarta.ws.rs.core.Response;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -308,7 +307,7 @@ class ListingCommandHandlerTest {
     private static final String OFFENCE_START_DATE = "2018-06-01";
     private static final String OFFENCE_END_DATE = "2018-06-07";
     private static final String NON_SITTING_DAY = "2018-06-02";
-    private static final ZonedDateTime COURT_PROCEEDINGS_INITIATED = ZonedDateTime.of(2019, 1, 1, 0, 0, 0, 0, ZoneId.of("UTC"));
+    private static final ZonedDateTime COURT_PROCEEDINGS_INITIATED = ZonedDateTime.of(2019, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
     private static final List<LocalDate> NON_SITTING_DAYS1 = singletonList(LocalDate.parse(NON_SITTING_DAY));
     private static final String NON_DEFAULT_DAY = "2018-06-01T11:00:00Z";
     private static final String NON_DEFAULT_DAY_PM = "2018-06-03T15:00:00Z";
@@ -643,7 +642,7 @@ class ListingCommandHandlerTest {
                         .build());
 
         final List<NonDefaultDay> nonDefaultDays = singletonList(NonDefaultDay.nonDefaultDay()
-                .withStartTime(parse(SLOT_START_TIME).withZoneSameInstant(ZoneId.of("UTC")))
+                .withStartTime(parse(SLOT_START_TIME).withZoneSameInstant(ZoneOffset.UTC))
                 .withDuration(of(SLOT_DURATION))
                 .withCourtRoomId(of(SLOT_COURT_ROOM_ID))
                 .withOucode(of(SLOT_OUCODE))
@@ -885,7 +884,7 @@ class ListingCommandHandlerTest {
         final CourtCentre defaultCourtCentre = CourtCentre.courtCentre().withId(COURT_CENTRE_ID).withRoomId(COURT_ROOM_ID).build();
 
         final List<NonDefaultDay> nonDefaultDays = Stream.of(NonDefaultDay.nonDefaultDay()
-                        .withStartTime(parse(NON_DEFAULT_DAY).withZoneSameInstant(ZoneId.of("UTC")))
+                        .withStartTime(parse(NON_DEFAULT_DAY).withZoneSameInstant(ZoneOffset.UTC))
                         .withDuration(of(SLOT_DURATION))
                         .withCourtScheduleId(of(COURT_SCHEDULE_ID_1).map(UUID::toString))
                         .withCourtRoomId(of(SLOT_COURT_ROOM_ID))
@@ -895,7 +894,7 @@ class ListingCommandHandlerTest {
                         .withRoomId(of(COURT_ROOM_ID).map(UUID::toString))
                         .build(),
                 NonDefaultDay.nonDefaultDay()
-                        .withStartTime(parse(NON_DEFAULT_DAY_PM).withZoneSameInstant(ZoneId.of("UTC")))
+                        .withStartTime(parse(NON_DEFAULT_DAY_PM).withZoneSameInstant(ZoneOffset.UTC))
                         .withDuration(of(SLOT_DURATION))
                         .withCourtScheduleId(of(COURT_SCHEDULE_ID_2).map(UUID::toString))
                         .withCourtRoomId(of(SLOT_COURT_ROOM_ID))
@@ -962,7 +961,7 @@ class ListingCommandHandlerTest {
         final CourtCentre defaultCourtCentre = CourtCentre.courtCentre().withId(COURT_CENTRE_ID).withRoomId(COURT_ROOM_ID).build();
 
         final List<NonDefaultDay> nonDefaultDays = Stream.of(NonDefaultDay.nonDefaultDay()
-                        .withStartTime(parse(NON_DEFAULT_DAY).withZoneSameInstant(ZoneId.of("UTC")))
+                        .withStartTime(parse(NON_DEFAULT_DAY).withZoneSameInstant(ZoneOffset.UTC))
                         .withDuration(of(SLOT_DURATION))
                         .withCourtScheduleId(of(COURT_SCHEDULE_ID_1).map(UUID::toString))
                         .withCourtRoomId(of(SLOT_COURT_ROOM_ID))
@@ -972,7 +971,7 @@ class ListingCommandHandlerTest {
                         .withRoomId(of(COURT_ROOM_ID).map(UUID::toString))
                         .build(),
                 NonDefaultDay.nonDefaultDay()
-                        .withStartTime(parse(NON_DEFAULT_DAY_PM).withZoneSameInstant(ZoneId.of("UTC")))
+                        .withStartTime(parse(NON_DEFAULT_DAY_PM).withZoneSameInstant(ZoneOffset.UTC))
                         .withDuration(of(SLOT_DURATION))
                         .withCourtScheduleId(of(COURT_SCHEDULE_ID_2).map(UUID::toString))
                         .withCourtRoomId(of(SLOT_COURT_ROOM_ID))
@@ -1038,7 +1037,7 @@ class ListingCommandHandlerTest {
 
     private static NonDefaultDay generateNonDefaultFay(final String startTime) {
         return NonDefaultDay.nonDefaultDay()
-                .withStartTime(parse(startTime).withZoneSameInstant(ZoneId.of("UTC")))
+                .withStartTime(parse(startTime).withZoneSameInstant(ZoneOffset.UTC))
                 .withDuration(of(SIX_HOUR_HEARING_DAY))
                 .withCourtRoomId(of(1))
                 .withOucode(of("B06AN00"))
@@ -1056,7 +1055,7 @@ class ListingCommandHandlerTest {
         final CourtCentre defaultCourtCentre = CourtCentre.courtCentre().withId(COURT_CENTRE_ID).withRoomId(COURT_ROOM_ID).build();
 
         final List<NonDefaultDay> nonDefaultDays = Stream.of(NonDefaultDay.nonDefaultDay()
-                        .withStartTime(parse(NON_DEFAULT_DAY).withZoneSameInstant(ZoneId.of("UTC")))
+                        .withStartTime(parse(NON_DEFAULT_DAY).withZoneSameInstant(ZoneOffset.UTC))
                         .withDuration(of(SLOT_DURATION))
                         .withCourtScheduleId(of(COURT_SCHEDULE_ID_1).map(UUID::toString))
                         .withCourtRoomId(of(SLOT_COURT_ROOM_ID))
@@ -1066,7 +1065,7 @@ class ListingCommandHandlerTest {
                         .withRoomId(of(COURT_ROOM_ID).map(UUID::toString))
                         .build(),
                 NonDefaultDay.nonDefaultDay()
-                        .withStartTime(parse(NON_DEFAULT_DAY_PM).withZoneSameInstant(ZoneId.of("UTC")))
+                        .withStartTime(parse(NON_DEFAULT_DAY_PM).withZoneSameInstant(ZoneOffset.UTC))
                         .withDuration(of(SLOT_DURATION))
                         .withCourtScheduleId(of(COURT_SCHEDULE_ID_2).map(UUID::toString))
                         .withCourtRoomId(of(SLOT_COURT_ROOM_ID))
@@ -1144,7 +1143,7 @@ class ListingCommandHandlerTest {
         final CourtCentre defaultCourtCentre = CourtCentre.courtCentre().withId(COURT_CENTRE_ID).withRoomId(COURT_ROOM_ID).build();
 
         final List<NonDefaultDay> nonDefaultDays = Stream.of(NonDefaultDay.nonDefaultDay()
-                        .withStartTime(parse(NON_DEFAULT_DAY).withZoneSameInstant(ZoneId.of("UTC")))
+                        .withStartTime(parse(NON_DEFAULT_DAY).withZoneSameInstant(ZoneOffset.UTC))
                         .withDuration(of(SLOT_DURATION))
                         .withCourtScheduleId(of(COURT_SCHEDULE_ID_1).map(UUID::toString))
                         .withCourtRoomId(of(SLOT_COURT_ROOM_ID))
@@ -1154,7 +1153,7 @@ class ListingCommandHandlerTest {
                         .withRoomId(of(COURT_ROOM_ID).map(UUID::toString))
                         .build(),
                 NonDefaultDay.nonDefaultDay()
-                        .withStartTime(parse(NON_DEFAULT_DAY_PM).withZoneSameInstant(ZoneId.of("UTC")))
+                        .withStartTime(parse(NON_DEFAULT_DAY_PM).withZoneSameInstant(ZoneOffset.UTC))
                         .withDuration(of(SLOT_DURATION))
                         .withCourtScheduleId(of(COURT_SCHEDULE_ID_2).map(UUID::toString))
                         .withCourtRoomId(of(SLOT_COURT_ROOM_ID))
@@ -1232,7 +1231,7 @@ class ListingCommandHandlerTest {
         final CourtCentre defaultCourtCentre = CourtCentre.courtCentre().withId(COURT_CENTRE_ID).withRoomId(COURT_ROOM_ID).build();
 
         final List<NonDefaultDay> nonDefaultDays = singletonList(NonDefaultDay.nonDefaultDay()
-                .withStartTime(parse(NON_DEFAULT_DAY).withZoneSameInstant(ZoneId.of("UTC")))
+                .withStartTime(parse(NON_DEFAULT_DAY).withZoneSameInstant(ZoneOffset.UTC))
                 .withDuration(of(1))
                 .withCourtScheduleId(empty())
                 .withCourtRoomId(empty())
@@ -2280,7 +2279,7 @@ class ListingCommandHandlerTest {
         final UUID courtListFileId = fromString("1deeec47-056b-431a-b131-0ea6f5d554ed");
         final String fileName = "FILENAME";
         final PublishCourtListType publishCourtListType = FIRM;
-        final ZonedDateTime producedTime = parse("2019-11-15T11:13:19.314Z[UTC]");
+        final ZonedDateTime producedTime = parse("2019-11-15T11:13:19.314Z");
         final LocalDate publishDate = LocalDate.now();
 
         when(aggregateService.get(eventStream, PublishCourtListRequestAggregate.class)).thenReturn(publishCourtListRequestAggregate);
@@ -3714,7 +3713,7 @@ class ListingCommandHandlerTest {
                 .withHearingLanguageNeeds(of(HearingLanguageNeeds.ENGLISH))
                 .withId(DEFENDANT_ID1)
                 .withMasterDefendantId(of(DEFENDANT_ID1))
-                .withCourtProceedingsInitiated(of(ZonedDateTimes.fromString("2020-03-05T14:24:03.148Z").withZoneSameInstant(ZoneId.of("UTC"))))
+                .withCourtProceedingsInitiated(of(ZonedDateTimes.fromString("2020-03-05T14:24:03.148Z").withZoneSameInstant(ZoneOffset.UTC)))
                 .withOrganisationName(empty())
                 .withSpecificRequirements(of("Screen"))
                 .withIsYouth(of(Boolean.TRUE))
@@ -3774,7 +3773,7 @@ class ListingCommandHandlerTest {
         return Defendant.defendant()
                 .withId(DEFENDANT_ID1)
                 .withMasterDefendantId(of(DEFENDANT_ID1))
-                .withCourtProceedingsInitiated(of(ZonedDateTimes.fromString("2019-01-01T00:00:00.000Z").withZoneSameInstant(ZoneId.of("UTC"))))
+                .withCourtProceedingsInitiated(of(ZonedDateTimes.fromString("2019-01-01T00:00:00.000Z").withZoneSameInstant(ZoneOffset.UTC)))
                 .withBailStatus(of(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(fromString("12e69486-4d01-3403-a50a-7419ca040635")).build()))
                 .withCustodyTimeLimit(of(CUSTODY_TIME_LIMIT))
                 .withDateOfBirth(of(DATE_OF_BIRTH))

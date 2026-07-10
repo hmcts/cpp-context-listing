@@ -11,8 +11,8 @@ import uk.gov.moj.cpp.listing.persistence.enums.CsvRecordType;
 import uk.gov.moj.cpp.listing.query.view.service.csv.HearingCsvJsonExtractionService;
 import uk.gov.moj.cpp.listing.persistence.repository.csv.HearingCsvRawDataRepository;
 import uk.gov.moj.cpp.listing.common.progression.ProgressionNotesCache;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;

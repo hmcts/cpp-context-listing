@@ -13,9 +13,9 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import java.util.UUID;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import uk.gov.justice.services.messaging.JsonObjects;
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 public class ListingReferenceDataService {
     private static final String REFERENCE_DATA_GET_COURTROOM = "referencedata.query.courtroom";

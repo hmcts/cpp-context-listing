@@ -12,8 +12,8 @@ import uk.gov.moj.cpp.listing.it.AbstractIT;
 
 import java.util.UUID;
 
-import javax.json.JsonObject;
-import javax.ws.rs.core.Response;
+import jakarta.json.JsonObject;
+import jakarta.ws.rs.core.Response;
 
 public class NotesSteps extends AbstractIT {
     private static final String LISTING_COMMAND_CREATE_LISTING_NOTE = "listing.command.create-listing-note";
