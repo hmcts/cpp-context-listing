@@ -5,7 +5,9 @@ import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 import static utils.HearingDayUtil.getNotCancelledHearingDays;
 
+import uk.gov.justice.listing.events.CrownHearingMigratedToCourtschedule;
 import uk.gov.justice.listing.events.HearingDay;
+import uk.gov.justice.listing.events.HearingDayCourtSchedule;
 import uk.gov.justice.listing.events.HearingDayCourtScheduleUpdated;
 import uk.gov.justice.listing.events.HearingDaysWithoutCourtCentreCorrected;
 import uk.gov.justice.listing.events.NonDefaultDay;
@@ -86,10 +88,19 @@ public class HearingDaysUpdateEventListener {
     @Handles("listing.events.hearing-day-court-schedule-updated")
     public void hearingDayCourtScheduleUpdated(Envelope<HearingDayCourtScheduleUpdated> event) throws JsonProcessingException {
         final HearingDayCourtScheduleUpdated hearingDaysEvent = event.payload();
-        final UUID hearingId = hearingDaysEvent.getHearingId();
+        mergeCourtScheduleIds(hearingDaysEvent.getHearingId(), hearingDaysEvent.getHearingDayCourtSchedules());
+    }
+
+    @Handles("listing.events.crown-hearing-migrated-to-courtschedule")
+    public void crownHearingMigratedToCourtSchedule(Envelope<CrownHearingMigratedToCourtschedule> event) throws JsonProcessingException {
+        final CrownHearingMigratedToCourtschedule migratedEvent = event.payload();
+        mergeCourtScheduleIds(migratedEvent.getHearingId(), migratedEvent.getHearingDayCourtSchedules());
+    }
+
+    private void mergeCourtScheduleIds(final UUID hearingId, final List<HearingDayCourtSchedule> hearingDayCourtSchedules) throws JsonProcessingException {
         final uk.gov.justice.listing.events.Hearing existingHearing = findHearingBy(hearingId);
         final Map<LocalDate, UUID> scheduledHearingDateMap = new HashMap<>();
-        hearingDaysEvent.getHearingDayCourtSchedules().forEach(
+        hearingDayCourtSchedules.forEach(
                 hd -> scheduledHearingDateMap.put(hd.getHearingDate(), hd.getCourtScheduleId()));
 
         updateHearingDays(existingHearing, scheduledHearingDateMap);
