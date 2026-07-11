@@ -5,7 +5,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.listing</groupId>
         <artifactId>listing-parent</artifactId>
-        <version>17.104.4-PAST-SNAPSHOT</version>
+        <version>17.104.5-PAST-SNAPSHOT</version>
     </parent>
 
     <artifactId>listing-performance-test</artifactId>
