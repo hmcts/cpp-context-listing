@@ -484,6 +484,7 @@ public class ReferenceDataCacheTest {
             final String courtIdVal        = "432";
             final String courtSiteId       = "433";
             final String courtName         = "BLACKFRIARS CROWN";
+            final String welshCourtName    = "CORON BLACKFRIARS";
             final String courtShortName    = "BLF";
             final String courtSiteName     = "BLACKFRIARS SITE";
             final String welshCourtSiteName = "SAFLE BLACKFRIARS";
@@ -496,6 +497,7 @@ public class ReferenceDataCacheTest {
                     .withCrestCourtId(courtIdVal)
                     .withCrestCourtSiteId(courtSiteId)
                     .withCrestCourtName(courtName)
+                    .withWelshCrestCourtName(welshCourtName)
                     .withCrestCourtShortName(courtShortName)
                     .withCrestCourtSiteName(courtSiteName)
                     .withWelshCrestCourtSiteName(welshCourtSiteName)
@@ -524,6 +526,7 @@ public class ReferenceDataCacheTest {
             assertThat(rebuilt.getCrestCourtId(),       is(courtIdVal));
             assertThat(rebuilt.getCrestCourtSiteId(),   is(courtSiteId));
             assertThat(rebuilt.getCrestCourtName(),     is(courtName));
+            assertThat(rebuilt.getWelshCrestCourtName(), is(welshCourtName));
             assertThat(rebuilt.getCrestCourtShortName(), is(courtShortName));
             assertThat(rebuilt.getCrestCourtSiteName(), is(courtSiteName));
             assertThat(rebuilt.getWelshCrestCourtSiteName(), is(welshCourtSiteName));

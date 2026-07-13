@@ -150,6 +150,7 @@ public class ReferenceDataCache {
                             .withCrestCourtId(mapping.getCrestCourtId())
                             .withCrestCourtSiteId(mapping.getCrestCourtSiteId())
                             .withCrestCourtName(mapping.getCrestCourtName())
+                            .withWelshCrestCourtName(mapping.getWelshCrestCourtName())
                             .withCrestCourtShortName(mapping.getCrestCourtShortName())
                             .withWelshCrestCourtShortName(mapping.getWelshCrestCourtShortName())
                             .withCrestCourtSiteName(mapping.getCrestCourtSiteName())
