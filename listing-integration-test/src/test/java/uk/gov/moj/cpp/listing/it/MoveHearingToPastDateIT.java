@@ -192,6 +192,16 @@ class MoveHearingToPastDateIT extends AbstractIT {
     }
 
     @Test
+    void shouldRejectMoveWith400WhenStartTimeMissing() {
+        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(MAGISTRATES_JURISDICTION);
+        final MoveHearingToPastDateSteps moveSteps = new MoveHearingToPastDateSteps(hearingsData);
+
+        final Response response = moveSteps.whenHearingIsMovedWithMissingStartTime();
+
+        assertThat(response.getStatus(), is(400));
+    }
+
+    @Test
     void shouldMoveCrownHearingToPastDateListingSideOnlyWithoutCallingCourtScheduler() {
         final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(CROWN_JURISDICTION);
         final LocalDate pastDate = pastWorkingDay(1);
