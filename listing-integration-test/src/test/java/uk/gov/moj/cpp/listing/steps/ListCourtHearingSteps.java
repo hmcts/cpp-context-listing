@@ -1404,6 +1404,35 @@ public class ListCourtHearingSteps extends AbstractIT {
                         )));
     }
 
+    /**
+     * Verifies that both allocated and unallocated hearings matching the given masterDefendantId are returned
+     * when returnAllHearings=true is passed (exercises branch 3 of the 7-param findHearings SQL).
+     */
+    public void verifyAllAvailableHearingsListedForMatchedDefendantIdWithJmsDelay(final UUID masterDefendantId) {
+
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.available.search.hearings-defendant.ids.with.return.all.hearings"),
+                        masterDefendantId.toString(),
+                        "true"));
+
+        // Use JMS-aware polling to handle asynchronous message processing
+        pollWithDelayForJms(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()).build())
+                .until(status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings.size()", is(2)),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
+                                        equalTo(masterDefendantId.toString())),
+                                withJsonPath("$.hearings[1].listedCases[0].defendants[0].masterDefendantId",
+                                        equalTo(masterDefendantId.toString())),
+                                withJsonPath("$.notes.size()",
+                                        equalTo(0)),
+                                anyOf(allOf(withJsonPath("$.hearings[0].allocated", equalTo(true)),
+                                                withJsonPath("$.hearings[1].allocated", equalTo(false))),
+                                        allOf(withJsonPath("$.hearings[0].allocated", equalTo(false)),
+                                                withJsonPath("$.hearings[1].allocated", equalTo(true))))
+                        )));
+    }
+
     public void verifyAvailableHearingListedForCaseInHearingAndMatchedDefendant(final CaseAndDefendantData caseAndDefendantData) {
 
         final String searchHearingUrlForCrown = String.format("%s/%s", getBaseUri(),

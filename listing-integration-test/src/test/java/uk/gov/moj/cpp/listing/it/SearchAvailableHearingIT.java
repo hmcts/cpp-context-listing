@@ -146,6 +146,29 @@ public class SearchAvailableHearingIT extends AbstractIT {
     }
 
     @Test
+    void shouldListAllAvailableHearingsForMatchedDefendantIdRegardlessOfAllocation() {
+
+        final UUID hearingId1 = randomUUID();
+        final UUID hearingId2 = randomUUID();
+        final UUID masterDefendantId = randomUUID();
+        final String caseUrn = STRING.next();
+        final String jurisdictionTypeCrown = JurisdictionType.CROWN.name();
+
+        // Hearing 1: allocated = true
+        final CaseAndDefendantData caseAndDefendantData1 = new CaseAndDefendantData(hearingId1, null, caseUrn, masterDefendantId, MATCHED_DEFENDANTS, null, jurisdictionTypeCrown,
+                null, null);
+        // Hearing 2: allocated = false (unallocated)
+        final CaseAndDefendantData caseAndDefendantData2 = new CaseAndDefendantData(hearingId2, null, caseUrn, masterDefendantId, null, null, jurisdictionTypeCrown,
+                null, null);
+
+        ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData1));
+        listCourtHearingSteps1.whenCaseIsSubmittedForListing();
+        ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(HearingsData.hearingsDataWithUnAllocationDataAndJudiciary(caseAndDefendantData2));
+        listCourtHearingSteps2.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps2.verifyAllAvailableHearingsListedForMatchedDefendantIdWithJmsDelay(masterDefendantId);
+    }
+
+    @Test
     void shouldListAvailableHearingsWithCaseUrnForLinkedCases() {
         final UUID hearingId1 = randomUUID();
         final UUID masterDefendantId1 = randomUUID();
