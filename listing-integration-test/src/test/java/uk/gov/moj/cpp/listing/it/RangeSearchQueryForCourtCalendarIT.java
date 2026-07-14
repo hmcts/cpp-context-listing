@@ -17,6 +17,7 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -24,6 +25,7 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 
 import uk.gov.justice.services.test.utils.core.http.RequestParams;
+import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -183,7 +185,7 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
                 .withHeader(CPP_UID_HEADER.getName(), CPP_UID_HEADER.getValue())
                 .build();
 
-        pollWithDefaults(requestParams).until(status().is(OK),
+        final ResponseData response = pollWithDefaults(requestParams).until(status().is(OK),
                 payload().isJson(allOf(
                         withJsonPath("$.hearings.size()", is(2)),
                         withJsonPath("$.hearings[0].id", is(hearingId.toString())),
@@ -193,6 +195,11 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
                         withJsonPath("$.hearings[*].hearingDays[*].hearingDate", hasItem(dA.toString()))
                 ))
         );
+
+        // Explicit assertion on the settled response (also satisfies Sonar java:S2699): the seeded date
+        // dA is still present after per-day de-duplication instead of collapsing onto a single date.
+        assertThat(response.getPayload(),
+                isJson(withJsonPath("$.hearings[*].hearingDays[*].hearingDate", hasItem(dA.toString()))));
     }
 
     private static void checkPayload(final String payload, final int hearingCount, List<TestData> testDataList, final int pageSize, final int pageNumber) throws JsonProcessingException {
