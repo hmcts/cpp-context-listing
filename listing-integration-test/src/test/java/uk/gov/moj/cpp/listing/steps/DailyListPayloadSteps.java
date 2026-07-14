@@ -17,6 +17,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetProsecutorPo
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCpCourtRooms;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataResultDefinitions;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataXhibitCourtRoomMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 
@@ -26,6 +27,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
 import java.time.LocalTime;
+import java.util.UUID;
 
 public class DailyListPayloadSteps extends AbstractIT {
 
@@ -34,6 +36,7 @@ public class DailyListPayloadSteps extends AbstractIT {
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 0);
     private static final String EXPECTED_JUDICIARY_NAME = "Recorder Ainsworth judge";
     private static final String EXPECTED_PROSECUTOR_ORGANISATION_NAME = "Transport for London";
+    private static final UUID JUDICIAL_RESULT_ID = UUID.fromString("065b6fcb-0787-4f0d-a9cd-af4b5c36e047");
 
     private final UpdatedHearingData updatedHearingData;
 
@@ -50,6 +53,7 @@ public class DailyListPayloadSteps extends AbstractIT {
         stubOrganisationUnit(updatedHearingData.getCourtCentreId());
         stubGetReferenceDataJudiciaries(updatedHearingData.getJudiciary().get(0).getJudicialId());
         stubGetProsecutorPoliceFlag(hearingsData.getHearingData().get(0).getListedCases().get(0).getAuthorityId());
+        stubGetReferenceDataResultDefinitions(JUDICIAL_RESULT_ID);
     }
 
     public void verifyDailyListPayloadContainsHearing(final String publishCourtListType) {
