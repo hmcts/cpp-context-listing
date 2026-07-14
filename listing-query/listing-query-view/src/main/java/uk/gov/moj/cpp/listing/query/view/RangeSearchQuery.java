@@ -316,7 +316,15 @@ public class RangeSearchQuery {
         final List<Hearing> enrichedHearingList = isEmpty(hearingIdsResponse.getUuids())
                 ? emptyList() : enrichAllCourtSchedulerHearingIdsIntoHearings(hearingIdsResponse.getUuids());
         logger.info("getCourtSchedulerHearings found {} hearings", hearingIdsResponse.getResults());
-        return buildHearingsResponse(query, allocated, courtRoomId, startDate, enrichedHearingList, hearingIdsResponse.getResults(), hearingIdsResponse, paginationParameter);
+        // When the whole result set fits on one page, the rows we actually return (allocated,
+        // de-duplicated per hearing-day) ARE the true total, so report that instead of the raw
+        // courtscheduler count which still includes draft sessions. For genuinely paged results we
+        // cannot derive the allocated total from a single page, so keep the courtscheduler total
+        // (draft exclusion for the multi-page count is a courtscheduler-side follow-up).
+        final long courtSchedulerTotal = hearingIdsResponse.getResults();
+        final long results = courtSchedulerTotal <= paginationParameter.getPageSize()
+                ? enrichedHearingList.size() : courtSchedulerTotal;
+        return buildHearingsResponse(query, allocated, courtRoomId, startDate, enrichedHearingList, results, hearingIdsResponse, paginationParameter);
     }
 
 
@@ -328,12 +336,17 @@ public class RangeSearchQuery {
 
         final List<Hearing> enrichedHearings = new ArrayList<>();
         hearingIds.forEach(id -> {
-            final Hearing hearing = hearingsById.get(id.hearingId());
-            if (hearing != null) {
-                hearing.setHearingDate(id.hearingDate());
-                hearing.setHearingDayCount(id.hearingDayCount());
-                hearing.setHearingDayPosition(id.hearingDayPosition());
-                enrichedHearings.add(hearing);
+            final Hearing base = hearingsById.get(id.hearingId());
+            // The court-calendar allocated view must show confirmed-allocated hearings only; the
+            // courtscheduler id list can include draft (unallocated) sessions, so skip those.
+            if (base != null && Boolean.TRUE.equals(base.getAllocated())) {
+                // Give each hearing-day its own Hearing (deep-copied properties) so a multi-day
+                // hearing renders one distinct row per day rather than collapsing onto the last day.
+                final Hearing perDay = new Hearing(base);
+                perDay.setHearingDate(id.hearingDate());
+                perDay.setHearingDayCount(id.hearingDayCount());
+                perDay.setHearingDayPosition(id.hearingDayPosition());
+                enrichedHearings.add(perDay);
             }
         });
 

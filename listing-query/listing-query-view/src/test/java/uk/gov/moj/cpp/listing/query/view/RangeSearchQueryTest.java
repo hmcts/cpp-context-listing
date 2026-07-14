@@ -862,6 +862,98 @@ public class RangeSearchQueryTest {
                 1);
     }
 
+    @Test
+    void rangeSearchCourtCalendarShouldSplitMultiDayCrownHearingIntoDistinctPerDayRows() {
+        final UUID multiDayId = randomUUID();
+        final String props = "{ \"allocated\":\"true\", \"startDate\": \"2026-07-14\", \"courtRoomId\": \"" + COURT_ROOM_ID
+                + "\", \"courtApplications\": [{}], \"listedCases\": [{}], \"hearingDays\": ["
+                + "{\"hearingDate\": \"2026-07-14\"}, {\"hearingDate\": \"2026-07-15\"}, {\"hearingDate\": \"2026-07-16\"}] }";
+        final Hearing multiDay = new Hearing(multiDayId, JacksonUtil.toJsonNode(props));
+        multiDay.setAllocated(true);
+
+        final List<IdResponse> hearingIds = new ArrayList<>();
+        hearingIds.add(new IdResponse(multiDayId, randomUUID(), LocalDate.parse("2026-07-14"), 3, 1));
+        hearingIds.add(new IdResponse(multiDayId, randomUUID(), LocalDate.parse("2026-07-15"), 3, 2));
+        hearingIds.add(new IdResponse(multiDayId, randomUUID(), LocalDate.parse("2026-07-16"), 3, 3));
+        final HearingIdsResponse response = new HearingIdsResponse(hearingIds, hearingIds.size(), 1);
+
+        when(courtSchedulerServiceAdapter.getCourtSchedulerHearings(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(response);
+        when(hearingRepository.findAllCourtSchedulerHearingByIds(anyList())).thenReturn(newArrayList(multiDay));
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(COURT_SESSION_QUERY_PARAMETER, "AD")
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(START_DATE_QUERY_PARAMETER, "2026-07-14")
+                        .add(END_DATE_QUERY_PARAMETER, "2026-07-17")
+                        .add(OU_CODE_QUERY_PARAMETER, "C01CY00")
+                        .add(PAGE_SIZE, 40)
+                        .add(PAGE_NUMBER, 1)
+                        .build());
+
+        final JsonObject payload = rangeSearchQuery.rangeSearchCourtCalendar(query).payloadAsJsonObject();
+        final JsonArray hearings = payload.getJsonArray("hearings");
+
+        final java.util.Set<String> dates = new java.util.HashSet<>();
+        for (int i = 0; i < hearings.size(); i++) {
+            dates.add(hearings.getJsonObject(i).getJsonArray("hearingDays").getJsonObject(0).getString("hearingDate"));
+        }
+        assertThat(hearings.size(), is(3));
+        assertThat(dates.size(), is(3)); // aliasing bug collapses all rows onto the last day -> size 1
+        assertThat(dates.contains("2026-07-14") && dates.contains("2026-07-15") && dates.contains("2026-07-16"), is(true));
+        assertThat(payload.getInt("results"), is(3));
+    }
+
+    @Test
+    void rangeSearchCourtCalendarShouldExcludeDraftUnallocatedHearingsFromAllocatedView() {
+        final UUID allocatedId = randomUUID();
+        final UUID draftId = randomUUID();
+        final String allocatedProps = "{ \"allocated\":\"true\", \"startDate\": \"2026-07-14\", \"courtRoomId\": \"" + COURT_ROOM_ID
+                + "\", \"courtApplications\": [{}], \"listedCases\": [{}], \"hearingDays\": [{\"hearingDate\": \"2026-07-14\"}] }";
+        final String draftProps = "{ \"allocated\":\"false\", \"startDate\": \"2026-07-02\", \"courtApplications\": [{}], "
+                + "\"listedCases\": [{}], \"hearingDays\": [{\"hearingDate\": \"2026-07-14\"}] }";
+        final Hearing allocated = new Hearing(allocatedId, JacksonUtil.toJsonNode(allocatedProps));
+        allocated.setAllocated(true);
+        final Hearing draft = new Hearing(draftId, JacksonUtil.toJsonNode(draftProps));
+        draft.setAllocated(false);
+
+        final List<IdResponse> hearingIds = new ArrayList<>();
+        hearingIds.add(new IdResponse(allocatedId, randomUUID(), LocalDate.parse("2026-07-14"), 1, 1));
+        hearingIds.add(new IdResponse(draftId, randomUUID(), LocalDate.parse("2026-07-14"), 1, 1));
+        final HearingIdsResponse response = new HearingIdsResponse(hearingIds, hearingIds.size(), 1);
+
+        when(courtSchedulerServiceAdapter.getCourtSchedulerHearings(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(response);
+        when(hearingRepository.findAllCourtSchedulerHearingByIds(anyList())).thenReturn(newArrayList(allocated, draft));
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(COURT_SESSION_QUERY_PARAMETER, "AD")
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(START_DATE_QUERY_PARAMETER, "2026-07-14")
+                        .add(END_DATE_QUERY_PARAMETER, "2026-07-17")
+                        .add(OU_CODE_QUERY_PARAMETER, "C01CY00")
+                        .add(PAGE_SIZE, 40)
+                        .add(PAGE_NUMBER, 1)
+                        .build());
+
+        final JsonObject payload = rangeSearchQuery.rangeSearchCourtCalendar(query).payloadAsJsonObject();
+        final JsonArray hearings = payload.getJsonArray("hearings");
+
+        assertThat(hearings.size(), is(1)); // draft (allocated=false) must not appear on the allocated view
+        for (int i = 0; i < hearings.size(); i++) {
+            assertThat(hearings.getJsonObject(i).getString("allocated"), is("true"));
+        }
+        assertThat(payload.getInt("results"), is(1));
+    }
+
     // -----------------------------------------------------------------------
     // rangeSearchCourtCalendar – missing branch coverage
     // -----------------------------------------------------------------------
