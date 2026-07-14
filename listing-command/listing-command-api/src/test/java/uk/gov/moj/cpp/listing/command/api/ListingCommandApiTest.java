@@ -7,6 +7,7 @@ import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -606,6 +607,17 @@ public class ListingCommandApiTest {
         return day;
     }
 
+    // most recent Saturday strictly before today - with the following Sunday it forms a pure-weekend
+    // span that is always past, ordered, and within 6 months (endDate is at latest today, when today
+    // is Sunday), so only the no-sitting-day rule can reject it
+    private static LocalDate mostRecentSaturday() {
+        LocalDate day = LocalDate.now().minusDays(1);
+        while (day.getDayOfWeek() != java.time.DayOfWeek.SATURDAY) {
+            day = day.minusDays(1);
+        }
+        return day;
+    }
+
     private static final UUID MOVE_COURT_ROOM_ID = randomUUID();
 
     // startTime is an absolute UTC instant (e.g. 2026-07-02T10:00:00.000Z); the request carries no
@@ -671,6 +683,26 @@ public class ListingCommandApiTest {
 
         assertThat(thrown.getHttpStatus(), is(422));
         assertThat(thrown.getErrorCode(), is("INVALID_DATE_RANGE"));
+        verify(sender, never()).send(any());
+    }
+
+    @Test
+    public void shouldRejectMoveWhenRangeContainsNoSittingDay() {
+        // Saturday..Sunday span: passes validateMoveDates (past, ordered, within 6 months) but
+        // expands to zero sitting days - courts do not sit at weekends.
+        final LocalDate saturday = mostRecentSaturday();
+        stubMovePayload(randomUUID(), randomUUID(), saturday, "10:00");
+        given(payload.containsKey("endTime")).willReturn(true);
+        given(payload.isNull("endTime")).willReturn(false);
+        given(payload.getString("endTime")).willReturn(saturday.plusDays(1) + "T10:00:00.000Z");
+
+        final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
+                () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
+
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getErrorCode(), is("INVALID_DATE_RANGE"));
+        // distinguishes the no-sitting-day INVALID_DATE_RANGE from the end-before-start one
+        assertThat(thrown.getResponseBody().getString("message"), containsString("sitting"));
         verify(sender, never()).send(any());
     }
 
