@@ -74,6 +74,13 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
         return postMove(hearingId, payload);
     }
 
+    public Response whenHearingIsMovedWithMissingStartTime() {
+        // startTime omitted (schema-mandatory); both ids present so the 400 is unambiguously the
+        // missing startTime. No date parameter - the payload carries no instant at all.
+        final String payload = "{\"courtCentreId\":\"" + courtCentreId + "\",\"courtRoomId\":\"" + courtRoomId + "\"}";
+        return postMove(hearingId, payload);
+    }
+
     /** A multi-day move over [startTime, endTime], scoped to a specific room. */
     public Response whenHearingIsMovedToPastDateRange(final LocalDate startDate, final LocalDate endDate, final String courtRoomId) {
         final String payload = "{\"courtCentreId\":\"" + courtCentreId
