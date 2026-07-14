@@ -4,27 +4,7 @@
     <parent>
         <artifactId>listing-command</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
         <version>17.104.4-DD-41473-SNAPSHOT</version>
-=======
-        <version>17.103.178-PAST-SNAPSHOT</version>
->>>>>>> 6e8679380e (New 17.103.178-PAST-SNAPSHOT)
-=======
-        <version>17.103.179-PAST-SNAPSHOT</version>
->>>>>>> b3e463051a (New 17.103.179-PAST-SNAPSHOT)
-=======
-        <version>17.103.180-PAST-SNAPSHOT</version>
->>>>>>> cac861236a (New 17.103.180-PAST-SNAPSHOT)
-=======
-        <version>17.103.181-PAST-SNAPSHOT</version>
->>>>>>> 88f471e135 (New 17.103.181-PAST-SNAPSHOT)
-=======
-        <version>17.104.5-PAST-SNAPSHOT</version>
->>>>>>> 797525c364 (New 17.104.5-PAST-SNAPSHOT)
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
