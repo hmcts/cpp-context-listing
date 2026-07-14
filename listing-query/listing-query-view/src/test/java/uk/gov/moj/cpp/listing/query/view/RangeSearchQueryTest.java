@@ -315,6 +315,75 @@ public class RangeSearchQueryTest {
         assertThat(results.metadata().name(), is("listing.search.hearings"));
     }
 
+    @Test
+    public void multiDayHearingShouldKeepPerDayPositionAndScheduleId() {
+        final UUID hearingId = randomUUID();
+        final UUID schedule1 = randomUUID();
+        final UUID schedule2 = randomUUID();
+
+        final String propsJson = "{ \"allocated\":\"true\", \"startDate\": \"2026-07-20\", "
+                + "\"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", "
+                + "\"courtApplications\" : [{}] , \"listedCases\" : [{}], "
+                + "\"hearingDays\" : [{\"hearingDate\": \"2026-07-20\"}, {\"hearingDate\": \"2026-07-21\"}] }";
+        final Hearing hearing = new Hearing(hearingId, JacksonUtil.toJsonNode(propsJson));
+        hearing.setAllocated(true);
+        hearing.setTotalCount(2L);
+
+        // one hearing, two hearing days -> two IdResponses sharing the same hearingId
+        final List<IdResponse> hearingIds = new ArrayList<>();
+        hearingIds.add(new IdResponse(hearingId, schedule1, parse("2026-07-20"), 2, 1));
+        hearingIds.add(new IdResponse(hearingId, schedule2, parse("2026-07-21"), 2, 2));
+        final HearingIdsResponse response = new HearingIdsResponse(hearingIds, 2, 1);
+
+        when(courtSchedulerServiceAdapter
+                .getCourtSchedulerHearings(
+                        OU_CODE,
+                        Optional.of(COURT_SESSION),
+                        COURT_ROOM_ID.toString(),
+                        SEARCH_DATE.toString(),
+                        SEARCH_DATE.toString(),
+                        Optional.empty(),
+                        Optional.of(BUSINESS_TYPE),
+                        Optional.of(JURISDICTION_TYPE.toString()),
+                        "ADULT,YOUTH", 50, 1)).thenReturn(response);
+
+        when(hearingRepository.findAllCourtSchedulerHearingByIds(anyList())).thenReturn(newArrayList(hearing));
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, ALLOCATED)
+                        .add(OU_CODE_QUERY_PARAMETER, OU_CODE)
+                        .add(COURT_SESSION_QUERY_PARAMETER, COURT_SESSION.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(BUSINESS_TYPE_QUERY_PARAMETER, BUSINESS_TYPE.toString())
+                        .add(PAGE_SIZE, "50")
+                        .add(PAGE_NUMBER, "1")
+                        .build());
+
+        final JsonEnvelope results = rangeSearchQuery.rangeSearchCourtCalendar(query);
+        final JsonArray hearingsArr = results.payloadAsJsonObject().getJsonArray("hearings");
+
+        assertThat(hearingsArr.size(), is(2));
+
+        // Day 1 of 2 - its own position, date and court schedule id
+        final JsonObject firstDay = hearingsArr.getJsonObject(0);
+        assertThat(firstDay.getInt("hearingDayPosition"), is(1));
+        assertThat(firstDay.getJsonArray("hearingDays").size(), is(1));
+        assertThat(firstDay.getJsonArray("hearingDays").getJsonObject(0).getString("hearingDate"), is("2026-07-20"));
+        assertThat(firstDay.getJsonArray("hearingDays").getJsonObject(0).getString("courtScheduleId"), is(schedule1.toString()));
+
+        // Day 2 of 2 - must NOT be overwritten by day 1 (or vice versa)
+        final JsonObject secondDay = hearingsArr.getJsonObject(1);
+        assertThat(secondDay.getInt("hearingDayPosition"), is(2));
+        assertThat(secondDay.getJsonArray("hearingDays").size(), is(1));
+        assertThat(secondDay.getJsonArray("hearingDays").getJsonObject(0).getString("hearingDate"), is("2026-07-21"));
+        assertThat(secondDay.getJsonArray("hearingDays").getJsonObject(0).getString("courtScheduleId"), is(schedule2.toString()));
+    }
+
 
     @Test
     public void searchHearingsWithDateRangeWithAllParametersProvidedWithoutPagination() {

@@ -46,6 +46,7 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 
 @SuppressWarnings({"squid:S1067", "pmd:NullAssignment", "java:S107"})
@@ -330,14 +331,29 @@ public class RangeSearchQuery {
         hearingIds.forEach(id -> {
             final Hearing hearing = hearingsById.get(id.hearingId());
             if (hearing != null) {
-                hearing.setHearingDate(id.hearingDate());
-                hearing.setHearingDayCount(id.hearingDayCount());
-                hearing.setHearingDayPosition(id.hearingDayPosition());
-                enrichedHearings.add(hearing);
+                // A multi-day hearing yields one IdResponse per day, all sharing the same hearingId.
+                // Build a separate flattened hearing per day so that setting the day fields here - and
+                // the converter later mutating the properties JSON in place - cannot overwrite the
+                // other days of the same hearing.
+                enrichedHearings.add(flattenHearingForDay(hearing, id));
             }
         });
 
         return enrichedHearings;
+    }
+
+    /**
+     * Produces an independent flattened hearing for a single hearing-day. The response for this path
+     * is rendered from the hearing's {@code properties} JSON (plus the flattened day fields), so the
+     * properties node is deep-copied to keep each day's rendering isolated from the others.
+     */
+    private Hearing flattenHearingForDay(final Hearing source, final IdResponse id) {
+        final JsonNode propertiesCopy = source.getProperties() == null ? null : source.getProperties().deepCopy();
+        final Hearing hearingForDay = new Hearing(source.getId(), propertiesCopy);
+        hearingForDay.setHearingDate(id.hearingDate());
+        hearingForDay.setHearingDayCount(id.hearingDayCount());
+        hearingForDay.setHearingDayPosition(id.hearingDayPosition());
+        return hearingForDay;
     }
 
     private boolean isMags(final String jurisdictionType) {
