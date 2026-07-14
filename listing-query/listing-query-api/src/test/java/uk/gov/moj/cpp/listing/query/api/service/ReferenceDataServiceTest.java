@@ -97,6 +97,23 @@ public class ReferenceDataServiceTest {
     }
 
     @Test
+    public void shouldGetResultDefinitionsByIdList() {
+        final JsonEnvelope eventEnvelope = generateEmptyEnvelope();
+
+        final UUID resultDefinitionId = randomUUID();
+
+        referenceDataService.getResultDefinitionsByIdList(asList(resultDefinitionId), eventEnvelope);
+
+        verify(requester).requestAsAdmin(argumentCaptorForRequestEnvelope.capture());
+        final JsonEnvelope requestEnvelope = argumentCaptorForRequestEnvelope.getValue();
+        assertThat(requestEnvelope.metadata().name(), is("referencedata.query-result-definitions-by-ids"));
+        final JsonObject expectedPayload = createObjectBuilder()
+                .add("ids", resultDefinitionId.toString())
+                .build();
+        assertThat(requestEnvelope.payloadAsJsonObject(), is(expectedPayload));
+    }
+
+    @Test
     public void shouldGetProsecutorById() {
         final JsonEnvelope eventEnvelope = generateEmptyEnvelope();
         final JsonEnvelope returnedResponseEnvelope = generateEmptyEnvelope();
