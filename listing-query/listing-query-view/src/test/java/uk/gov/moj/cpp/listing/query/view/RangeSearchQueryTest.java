@@ -285,7 +285,7 @@ public class RangeSearchQueryTest {
                         Optional.empty(),
                         Optional.of(BUSINESS_TYPE),
                         Optional.of(MAGISTRATES_TYPE.toString()),
-                        Boolean.FALSE,
+                        "FINAL",
                         "ADULT,YOUTH", 50, 1)).thenReturn(response);
 
         when(hearingRepository.findAllCourtSchedulerHearingByIds(anyList())).thenReturn(hearings);
@@ -771,7 +771,7 @@ public class RangeSearchQueryTest {
                 Optional.empty(),
                 Optional.of("GENC"),
                 Optional.of(JURISDICTION_TYPE.toString()),
-                Boolean.FALSE,
+                "FINAL",
                 "ADULT,YOUTH",
                 40,
                 1
@@ -807,7 +807,7 @@ public class RangeSearchQueryTest {
                 Optional.empty(),
                 Optional.of("GENC"),
                 Optional.of(JURISDICTION_TYPE.toString()),
-                Boolean.FALSE,
+                "FINAL",
                 "ADULT,YOUTH",
                 40,
                 1);
@@ -829,7 +829,7 @@ public class RangeSearchQueryTest {
                 Optional.empty(),
                 Optional.of("GENC"),
                 Optional.of(JURISDICTION_TYPE.toString()),
-                Boolean.FALSE,
+                "FINAL",
                 "ADULT,YOUTH",
                 40,
                 1
@@ -866,7 +866,7 @@ public class RangeSearchQueryTest {
                 Optional.empty(),
                 Optional.of("GENC"),
                 Optional.of(JURISDICTION_TYPE.toString()),
-                Boolean.FALSE,
+                "FINAL",
                 "ADULT,YOUTH",
                 40,
                 1);
@@ -921,7 +921,7 @@ public class RangeSearchQueryTest {
     @Test
     void rangeSearchCourtCalendarShouldExcludeDraftUnallocatedHearingsFromAllocatedView() {
         // Draft (unallocated) exclusion moved from listing-side enrich to the courtscheduler call
-        // itself: the allocated court-calendar view now requests isDraft=false so drafts never
+        // itself: the allocated court-calendar view now requests status=FINAL so drafts never
         // come back in the hearingId list to begin with. This test pins that contract at the
         // adapter-invocation boundary rather than asserting listing-side enrich drops anything
         // (enrich no longer filters on allocated at all - see matchesHearingType).
@@ -956,7 +956,7 @@ public class RangeSearchQueryTest {
         rangeSearchQuery.rangeSearchCourtCalendar(query);
 
         verify(courtSchedulerServiceAdapter).getCourtSchedulerHearings(
-                eq("C01CY00"), any(), any(), any(), any(), any(), any(), any(), eq(Boolean.FALSE), any(), any(), any());
+                eq("C01CY00"), any(), any(), any(), any(), any(), any(), any(), eq("FINAL"), any(), any(), any());
     }
 
     @Test
@@ -988,7 +988,7 @@ public class RangeSearchQueryTest {
 
         // allocated=true on the court-calendar view must always ask courtscheduler to exclude drafts.
         verify(courtSchedulerServiceAdapter).getCourtSchedulerHearings(
-                eq("C01CY00"), any(), any(), any(), any(), any(), any(), any(), eq(Boolean.FALSE), any(), any(), any());
+                eq("C01CY00"), any(), any(), any(), any(), any(), any(), any(), eq("FINAL"), any(), any(), any());
     }
 
     @Test
@@ -1166,7 +1166,7 @@ public class RangeSearchQueryTest {
                 Optional.empty(),
                 Optional.of("GENC"),
                 Optional.of(JURISDICTION_TYPE.toString()),
-                Boolean.FALSE,
+                "FINAL",
                 "ADULT,YOUTH",
                 40,
                 1
@@ -1203,7 +1203,7 @@ public class RangeSearchQueryTest {
                 Optional.empty(),
                 Optional.of("GENC"),
                 Optional.of(JURISDICTION_TYPE.toString()),
-                Boolean.FALSE,
+                "FINAL",
                 "ADULT,YOUTH",
                 40,
                 1);
@@ -1490,9 +1490,9 @@ public class RangeSearchQueryTest {
                 Optional.empty(),
                 Optional.of(BUSINESS_TYPE),
                 Optional.of(MAGISTRATES_TYPE.toString()),
-                // The plain (non-calendar) range-search path always passes isDraft=null - draft
+                // The plain (non-calendar) range-search path always passes status=null - draft
                 // exclusion is a court-calendar-only concern - so the adapter stub must match null
-                // here, not Boolean.FALSE.
+                // here, not "FINAL".
                 null,
                 "ADULT,YOUTH", 50, 1)
         ).thenReturn(response);

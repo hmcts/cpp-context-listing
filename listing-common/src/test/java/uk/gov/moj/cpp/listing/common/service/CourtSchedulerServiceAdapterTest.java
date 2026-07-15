@@ -219,7 +219,7 @@ class CourtSchedulerServiceAdapterTest {
         when(response.getEntity()).thenReturn(hearingIdsResponse);
         when(hearingSlotsService.getCourtSchedulerHearingIds(anyMap())).thenReturn(response);
 
-        final HearingIdsResponse finalResp = courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, Optional.of(Instant.now()), businessTypeOptional, Optional.of("MAGISTRATES"), Boolean.FALSE, "ADULT,YOUTH", pageSize, pageNumber);
+        final HearingIdsResponse finalResp = courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, Optional.of(Instant.now()), businessTypeOptional, Optional.of("MAGISTRATES"), "FINAL", "ADULT,YOUTH", pageSize, pageNumber);
 
         assertThat(finalResp.getUuids().size(), is(4));
         assertThat(finalResp.getPageCount(), is(1L));
@@ -227,7 +227,7 @@ class CourtSchedulerServiceAdapterTest {
     }
 
     @Test
-    void getCourtSchedulerHearingsShouldAddIsDraftFalseToQueryParamsWhenIsDraftIsFalse() {
+    void getCourtSchedulerHearingsShouldAddStatusFinalToQueryParamsWhenStatusIsFinal() {
         final String courtCentreId = UUID.randomUUID().toString();
         final Optional<String> courtSessionOptional = Optional.of("AD");
         final String courtRoomId = UUID.randomUUID().toString();
@@ -243,16 +243,16 @@ class CourtSchedulerServiceAdapterTest {
         when(response.getEntity()).thenReturn(hearingIdsResponse);
         when(hearingSlotsService.getCourtSchedulerHearingIds(anyMap())).thenReturn(response);
 
-        courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, Optional.of(Instant.now()), businessTypeOptional, Optional.of("MAGISTRATES"), Boolean.FALSE, "ADULT,YOUTH", pageSize, pageNumber);
+        courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, Optional.of(Instant.now()), businessTypeOptional, Optional.of("MAGISTRATES"), "FINAL", "ADULT,YOUTH", pageSize, pageNumber);
 
         final ArgumentCaptor<Map<String, String>> queryParamsCaptor = ArgumentCaptor.forClass(Map.class);
         verify(hearingSlotsService).getCourtSchedulerHearingIds(queryParamsCaptor.capture());
 
-        assertThat(queryParamsCaptor.getValue().get("isDraft"), is("false"));
+        assertThat(queryParamsCaptor.getValue().get("status"), is("FINAL"));
     }
 
     @Test
-    void getCourtSchedulerHearingsShouldOmitIsDraftFromQueryParamsWhenIsDraftIsNull() {
+    void getCourtSchedulerHearingsShouldOmitStatusFromQueryParamsWhenStatusIsNull() {
         final String courtCentreId = UUID.randomUUID().toString();
         final Optional<String> courtSessionOptional = Optional.of("AD");
         final String courtRoomId = UUID.randomUUID().toString();
@@ -273,7 +273,7 @@ class CourtSchedulerServiceAdapterTest {
         final ArgumentCaptor<Map<String, String>> queryParamsCaptor = ArgumentCaptor.forClass(Map.class);
         verify(hearingSlotsService).getCourtSchedulerHearingIds(queryParamsCaptor.capture());
 
-        assertFalse(queryParamsCaptor.getValue().containsKey("isDraft"));
+        assertFalse(queryParamsCaptor.getValue().containsKey("status"));
     }
 
     @Test

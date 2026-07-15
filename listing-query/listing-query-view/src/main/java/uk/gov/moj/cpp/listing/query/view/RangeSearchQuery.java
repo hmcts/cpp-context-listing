@@ -310,13 +310,13 @@ public class RangeSearchQuery {
     }
 
 
-     private JsonEnvelope getCourtSchedulerHearings(final JsonEnvelope query, final boolean allocated, final String ouCode, final Optional<String> courtSessionOptional, final String courtRoomId, final String startDate, final String endDate, final Optional<Instant> startDateTime, final Optional<String> businessType, final Optional<String> jurisdiction, final Boolean isDraft, final String hearingTypeId, final String panel, final PaginationParameter paginationParameter) {
-        final HearingIdsResponse hearingIdsResponse = courtSchedulerServiceAdapter.getCourtSchedulerHearings(ouCode, courtSessionOptional, courtRoomId, startDate, endDate, startDateTime, businessType, jurisdiction, isDraft, panel, paginationParameter.getPageSize(), paginationParameter.getPageNumber());
+     private JsonEnvelope getCourtSchedulerHearings(final JsonEnvelope query, final boolean allocated, final String ouCode, final Optional<String> courtSessionOptional, final String courtRoomId, final String startDate, final String endDate, final Optional<Instant> startDateTime, final Optional<String> businessType, final Optional<String> jurisdiction, final String status, final String hearingTypeId, final String panel, final PaginationParameter paginationParameter) {
+        final HearingIdsResponse hearingIdsResponse = courtSchedulerServiceAdapter.getCourtSchedulerHearings(ouCode, courtSessionOptional, courtRoomId, startDate, endDate, startDateTime, businessType, jurisdiction, status, panel, paginationParameter.getPageSize(), paginationParameter.getPageNumber());
         logger.info("CourtScheduler Hearings response : {}", hearingIdsResponse);
         // hearingType is held only in the listing viewstore (not courtscheduler), so it is filtered
-        // here during enrichment. Draft exclusion is applied courtscheduler-side via the isDraft flag,
-        // so no allocated/draft filter is applied here. Pagination and the result count are left
-        // exactly as before: the caller's pageSize is forwarded to courtscheduler and its results
+        // here during enrichment. Draft exclusion is applied courtscheduler-side via the status=FINAL
+        // filter, so no allocated/draft filter is applied here. Pagination and the result count are
+        // left exactly as before: the caller's pageSize is forwarded to courtscheduler and its results
         // count is passed straight through.
         final List<Hearing> enrichedHearingList = isEmpty(hearingIdsResponse.getUuids())
                 ? emptyList() : enrichAllCourtSchedulerHearingIdsIntoHearings(hearingIdsResponse.getUuids(), hearingTypeId);
@@ -376,7 +376,7 @@ public class RangeSearchQuery {
 
         if (params.courtSessionOptional().isPresent() || params.businessType().isPresent()) {
             if(params.allocated() && params.ouCode() != null ) {
-                return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.exactHearingStartDateTime(), params.businessType(), Optional.ofNullable(params.jurisdictionType()), params.allocated() ? Boolean.FALSE : null, params.hearingTypeId(), PANEL_ADULT_YOUTH, params.paginationParameter());
+                return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.exactHearingStartDateTime(), params.businessType(), Optional.ofNullable(params.jurisdictionType()), params.allocated() ? "FINAL" : null, params.hearingTypeId(), PANEL_ADULT_YOUTH, params.paginationParameter());
             }
         }
 
