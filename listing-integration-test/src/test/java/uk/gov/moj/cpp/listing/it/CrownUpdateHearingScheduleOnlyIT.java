@@ -3,6 +3,8 @@ package uk.gov.moj.cpp.listing.it;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForCourtSchedule;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMultiDaySearchAndBook;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchCourtSchedulesByIdSession;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
@@ -24,7 +26,10 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -69,6 +74,8 @@ public class CrownUpdateHearingScheduleOnlyIT extends AbstractIT {
             "listing.command.update-hearing-for-listing";
     private static final String SCHEDULE_ONLY_PAYLOAD =
             "test-data/CROWN/update-hearing-for-listing/update-hearing-for-listing-crown-singleday-schedule-only.json";
+    private static final String MULTIDAY_SCHEDULE_ONLY_PAYLOAD =
+            "test-data/CROWN/update-hearing-for-listing/update-hearing-for-listing-crown-multiday-schedule-only.json";
 
     @Test
     void shouldAllocateAndDeriveRoomFromSchedule_whenScheduleOnlyPayloadResolvesToFinalSession() throws Exception {
@@ -176,6 +183,64 @@ public class CrownUpdateHearingScheduleOnlyIT extends AbstractIT {
                                         JsonPathMatchers.hasNoJsonPath("$.hearingDays[0].courtRoomId"))));
     }
 
+    /**
+     * Multi-day CROWN, schedule-only payload, draft sessions: courtscheduler returns two sessions
+     * with isDraft=true. The fix in CourtScheduleEnrichmentService ensures that courtCentreId is
+     * set on each HearingDay from the session's courtHouseId even when the session is draft.
+     * courtRoomId must be absent (draft = unallocated, ADR-005).
+     */
+    @Test
+    void shouldSetCourtCentreIdOnHearingDays_whenMultiDayScheduleOnlyPayloadResolvesToDraftSessions() throws Exception {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID scheduleCourtHouseId = UUID.randomUUID();
+        final UUID scheduleCourtRoomId = UUID.randomUUID();
+        final UUID scheduleId1 = UUID.randomUUID();
+        final UUID scheduleId2 = UUID.randomUUID();
+
+        final LocalDate startDate = ItClock.plusWorkingDays(ItClock.today(), 10);
+        final LocalDate endDate = startDate.plusDays(57);
+        final ZonedDateTime sessionStart = startDate.atTime(9, 0).atZone(ZoneOffset.UTC);
+
+        // Multi-day draft: courtscheduler returns 2 sessions with isDraft=true.
+        // The stub includes courtRoomId in the response body; the service must suppress it for
+        // draft sessions via the !isDraft guard, while still propagating courtHouseId as courtCentreId.
+        final List<String> scheduleIds = Arrays.asList(scheduleId1.toString(), scheduleId2.toString());
+        stubMultiDaySearchAndBook(scheduleIds, scheduleCourtHouseId, scheduleCourtRoomId, startDate, true);
+        stubListHearingInCourtSessionsWithMultipleSchedules(
+                hearingId.toString(),
+                scheduleId1.toString(),
+                scheduleId2.toString(),
+                sessionStart,
+                540);
+
+        givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+        givenARealHearingExists(hearingId);
+        givenReferenceDataStubsForUpdateHearing(courtCentreId, scheduleCourtRoomId);
+
+        AbstractIT.restClient.postCommand(
+                buildUpdateHearingUrl(hearingId),
+                MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
+                multiDayScheduleOnlyPayload(courtCentreId, startDate, endDate, sessionStart, scheduleId1),
+                getLoggedInHeader());
+
+        // After the fix: courtCentreId must appear on each hearing day (derived from the session's
+        // courtHouseId). courtRoomId must be absent — draft sessions are not yet allocated.
+        pollHearingView(hearingId)
+                .until(
+                        ResponseStatusMatcher.status().is(Status.OK),
+                        ResponsePayloadMatcher.payload()
+                                .isJson(allOf(
+                                        JsonPathMatchers.withJsonPath("$.startDate",
+                                                is(startDate.toString())),
+                                        JsonPathMatchers.withJsonPath("$.allocated",
+                                                is(false)),
+                                        JsonPathMatchers.hasNoJsonPath("$.courtRoomId"),
+                                        JsonPathMatchers.withJsonPath("$.hearingDays[0].courtCentreId",
+                                                is(scheduleCourtHouseId.toString())),
+                                        JsonPathMatchers.hasNoJsonPath("$.hearingDays[0].courtRoomId"))));
+    }
+
     private String scheduleOnlyPayload(final UUID courtCentreId,
                                        final LocalDate targetDate,
                                        final UUID courtScheduleId) throws Exception {
@@ -184,6 +249,20 @@ public class CrownUpdateHearingScheduleOnlyIT extends AbstractIT {
         placeholders.put("%%TARGET_DATE%%", targetDate.toString());
         placeholders.put("%%COURT_SCHEDULE_ID%%", courtScheduleId.toString());
         return loadAndSubstitute(SCHEDULE_ONLY_PAYLOAD, placeholders);
+    }
+
+    private String multiDayScheduleOnlyPayload(final UUID courtCentreId,
+                                               final LocalDate startDate,
+                                               final LocalDate endDate,
+                                               final ZonedDateTime sessionStart,
+                                               final UUID courtScheduleId) throws Exception {
+        final Map<String, String> placeholders = new HashMap<>();
+        placeholders.put("%%COURT_CENTRE_ID%%", courtCentreId.toString());
+        placeholders.put("%%START_DATE%%", startDate.toString());
+        placeholders.put("%%END_DATE%%", endDate.toString());
+        placeholders.put("%%START_TIME%%", sessionStart.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        placeholders.put("%%COURT_SCHEDULE_ID%%", courtScheduleId.toString());
+        return loadAndSubstitute(MULTIDAY_SCHEDULE_ONLY_PAYLOAD, placeholders);
     }
 
     private uk.gov.justice.services.test.utils.core.http.RestPoller pollHearingView(final UUID hearingId) {
