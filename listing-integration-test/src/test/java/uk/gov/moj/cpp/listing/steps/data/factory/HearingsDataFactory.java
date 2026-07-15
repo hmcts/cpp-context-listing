@@ -56,7 +56,11 @@ public class HearingsDataFactory {
     private static final int HEARING_ESTIMATE_MINUTES = 30;
     public static final String ESTIMATED_DURATION = "1 week";
     private static final HearingTypeData PTP_HEARING_TYPE = new HearingTypeData(UUID.fromString("52edf232-3c09-4c74-a6ad-737985c2e662"), "PTP", "welshPTP");
-    private static final HearingTypeData TRIAL_HEARING_TYPE = new HearingTypeData(UUID.fromString("bf8155e1-90b9-4080-b133-bfbad895d6e4"), "Trial", "welsh trial");
+    public static final HearingTypeData TRIAL_HEARING_TYPE = new HearingTypeData(UUID.fromString("bf8155e1-90b9-4080-b133-bfbad895d6e4"), "Trial", "welsh trial");
+    /** SPRDT-1164: second, distinct hearing type used to discriminate the court-calendar PATH A
+     * courtSession=AM/AD scenarios from the courtSession=AD/Trial hearing via the listing-side
+     * hearingTypeId viewstore filter (courtscheduler itself has no notion of hearing type). */
+    public static final HearingTypeData PLEA_HEARING_TYPE = new HearingTypeData(UUID.fromString("eab66a6c-bbcf-4dc9-8291-36def87bcfd5"), "Plea", "welsh plea");
     private static final BailStatus BAIL_CONDITIONAL = new BailStatus.Builder().withId(fromString("34443c87-fa6f-34c0-897f-0cce45773df5")).withCode("P").withDescription("Custody or remanded into custody").build();
 
     public static final ZonedDateTime SLOT_START_TIME = ItClock.nowUtc();
@@ -259,6 +263,18 @@ public class HearingsDataFactory {
         return manyRandomHearingsWithAllocationDataWithDate(1, caseAndDefendantData, courtCentreId, courtRoomId,  hearingEndDate, hearingStartTime);
     }
 
+    /** SPRDT-1164: variant that lets the caller pin the hearing type (e.g. Trial/Plea) so the
+     * seeded hearing's viewstore type_id can be asserted on by the court-calendar PATH B hearingTypeId
+     * filter and used to discriminate PATH A courtSession stub responses. */
+    public static List<HearingData> hearingsDataWithAllocationDataAndJudiciaryWithDate(final CaseAndDefendantData caseAndDefendantData,
+                                                                                       final UUID courtCentreId,
+                                                                                       final UUID courtRoomId,
+                                                                                       final LocalDate hearingEndDate,
+                                                                                       final ZonedDateTime hearingStartTime,
+                                                                                       final HearingTypeData hearingTypeData) {
+        return manyRandomHearingsWithAllocationDataWithDate(1, caseAndDefendantData, courtCentreId, courtRoomId, hearingEndDate, hearingStartTime, hearingTypeData);
+    }
+
     public static List<HearingData> hearingsDataWithUnAllocationDataAndJudiciary(final CaseAndDefendantData caseAndDefendantData) {
         return manyRandomHearingsWithUnAllocationData(2, caseAndDefendantData);
     }
@@ -420,6 +436,19 @@ public class HearingsDataFactory {
 
         return IntStream.range(0, numberOfHearings)
                 .mapToObj((int i) -> randomHearing(hearingStartTime, hearingEndDate, courtCentreId, courtRoomId, singletonList(randomJudicialRole()), caseAndDefendantData))
+                .collect(toList());
+    }
+
+    private static List<HearingData> manyRandomHearingsWithAllocationDataWithDate(final Integer numberOfHearings,
+                                                                                  final CaseAndDefendantData caseAndDefendantData,
+                                                                                  final UUID courtCentreId,
+                                                                                  final UUID courtRoomId,
+                                                                                  final LocalDate hearingEndDate,
+                                                                                  final ZonedDateTime hearingStartTime,
+                                                                                  final HearingTypeData hearingTypeData) {
+
+        return IntStream.range(0, numberOfHearings)
+                .mapToObj((int i) -> randomHearing(hearingStartTime, hearingEndDate, courtCentreId, courtRoomId, singletonList(randomJudicialRole()), caseAndDefendantData, hearingTypeData))
                 .collect(toList());
     }
 
@@ -1409,6 +1438,22 @@ public class HearingsDataFactory {
         final List<ListedCaseData> listedCaseData = manyRandomListingCases(1, caseAndDefendantData);
         final LocalDate hearingStartDate = hearingStartTime.toLocalDate();
         return new HearingData(caseAndDefendantData.getHearingId(), courtCentreId, PTP_HEARING_TYPE, hearingStartDate,
+                hearingEndDate, HEARING_ESTIMATE_MINUTES, ESTIMATED_DURATION,
+                courtRoomId, hearingStartTime, listedCaseData,
+                judicialRoles, caseAndDefendantData.getJurisdictionType(), STRING.next(),
+                singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
+                singletonList(randomCourtApplicationPartyNeed()), "Carmarthen Magistrates Court");
+    }
+
+    /** SPRDT-1164: same as above but with a caller-supplied hearing type, so the seeded hearing's
+     * viewstore type_id can be pinned to a specific value (e.g. Trial vs Plea). */
+    private static HearingData randomHearing(final ZonedDateTime hearingStartTime,
+                                 final LocalDate hearingEndDate,
+                                 final UUID courtCentreId, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles,
+                                 final CaseAndDefendantData caseAndDefendantData, final HearingTypeData hearingTypeData) {
+        final List<ListedCaseData> listedCaseData = manyRandomListingCases(1, caseAndDefendantData);
+        final LocalDate hearingStartDate = hearingStartTime.toLocalDate();
+        return new HearingData(caseAndDefendantData.getHearingId(), courtCentreId, hearingTypeData, hearingStartDate,
                 hearingEndDate, HEARING_ESTIMATE_MINUTES, ESTIMATED_DURATION,
                 courtRoomId, hearingStartTime, listedCaseData,
                 judicialRoles, caseAndDefendantData.getJurisdictionType(), STRING.next(),
