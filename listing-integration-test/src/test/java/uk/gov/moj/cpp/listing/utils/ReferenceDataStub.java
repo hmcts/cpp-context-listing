@@ -58,8 +58,6 @@ public class ReferenceDataStub {
     private static final String REFERENCE_DATA_OU_COURTROOMS_MEDIA_TYPE = "application/vnd.referencedata.ou-courtrooms+json";
     private static final String REFERENCE_DATA_PROSECUTOR_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/prosecutors/%s";
     private static final String REFERENCE_DATA_PROSECUTOR_MEDIA_TYPE = "application/vnd.referencedata.query.prosecutor+json";
-    private static final String REFERENCE_DATA_RESULT_DEFINITIONS_URL = "/referencedata-service/query/api/rest/referencedata/result-definitions";
-    private static final String REFERENCE_DATA_RESULT_DEFINITIONS_MEDIA_TYPE = "application/vnd.referencedata.query-result-definitions-by-ids+json";
 
     private static final Map<UUID, String> COURT_CENTER_IDS = new HashMap<>(){{
         put(fromString("9b583616-049b-30f9-a14f-028a53b7cfe8"), "Liverpool Crown Court");
@@ -414,19 +412,6 @@ public class ReferenceDataStub {
                 .willReturn(aResponse().withStatus(SC_OK)
                         .withHeader("CPPID", UUID.randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_ORGANISATIONAL_UNITS_MEDIA_TYPE)
-                        .withBody(payload)));
-    }
-
-    public static void stubGetReferenceDataResultDefinitions(final UUID judicialResultId) {
-        stubPingForReferenceDataService();
-        String payload = getPayload("stub-data/referencedata.query-result-definitions-by-ids.json")
-                .replace("JUDICIAL_RESULT_ID", judicialResultId.toString());
-
-        stubFor(get(urlPathMatching(REFERENCE_DATA_RESULT_DEFINITIONS_URL))
-                .withQueryParam("ids", containing(judicialResultId.toString()))
-                .willReturn(aResponse().withStatus(SC_OK)
-                        .withHeader("CPPID", randomUUID().toString())
-                        .withHeader("Content-Type", REFERENCE_DATA_RESULT_DEFINITIONS_MEDIA_TYPE)
                         .withBody(payload)));
     }
 
