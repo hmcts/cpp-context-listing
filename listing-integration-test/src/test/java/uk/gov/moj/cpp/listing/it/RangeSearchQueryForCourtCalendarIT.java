@@ -288,8 +288,11 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
 
         // 7. AM + hearingTypeId=Trial -> PATH A returns hearing #2's rows, but the post-enrichment
         // hearingTypeId filter removes them (hearing #2 is Plea, not Trial) -> empty
-        pollWithDefaults(courtCalendarRequest(baseUrl + "&courtSession=AM&hearingTypeId=" + TRIAL_HEARING_TYPE.getTypeId())).until(status().is(OK),
+        final ResponseData response = pollWithDefaults(courtCalendarRequest(baseUrl + "&courtSession=AM&hearingTypeId=" + TRIAL_HEARING_TYPE.getTypeId())).until(status().is(OK),
                 payload().isJson(withJsonPath("$.hearings.size()", is(0))));
+        // explicit assertion on the final polled payload (Sonar java:S2699 does not recognise the
+        // pollWithDefaults(...).until(...) matchers as assertions)
+        assertThat(response.getPayload(), isJson(withJsonPath("$.hearings.size()", is(0))));
     }
 
     private static RequestParams courtCalendarRequest(final String url) {
