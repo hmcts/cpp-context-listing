@@ -336,11 +336,11 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                             .withHearingDate(session.getSessionDate())
                             .withDurationMinutes(durationPerDay)
                             .withIsDraft(session.isDraft());
-                    if (!session.isDraft()) {
+                    if (nonNull(session.getCourtHouseId())) {
                         dayBuilder.withCourtCentreId(fromString(session.getCourtHouseId()));
-                        if (nonNull(session.getCourtRoomId())) {
-                            dayBuilder.withCourtRoomId(fromString(session.getCourtRoomId()));
-                        }
+                    }
+                    if (!session.isDraft() && nonNull(session.getCourtRoomId())) {
+                        dayBuilder.withCourtRoomId(fromString(session.getCourtRoomId()));
                     }
                     return dayBuilder.build();
             }).toList();
