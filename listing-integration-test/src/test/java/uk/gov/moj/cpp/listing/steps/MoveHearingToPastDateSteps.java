@@ -55,38 +55,42 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
         final String payload = getPayload("test-data/" + jurisdictionDir + "/move-to-past-date/move-hearing-to-past-date.json")
                 .replace("%%COURT_CENTRE_ID%%", courtCentreId.toString())
                 .replace("%%COURT_ROOM_ID%%", courtRoomId.toString())
-                .replace("%%START_TIME%%", utc(date));
+                .replace("%%START_TIME%%", utc(date))
+                .replace("%%END_TIME%%", utcEnd(date));
 
         return postMove(payload);
     }
 
     public Response whenHearingIsMovedWithMissingCourtCentre(final LocalDate date) {
-        // courtCentreId omitted (schema-mandatory); courtRoomId/startTime present so the 400 is
+        // courtCentreId omitted (schema-mandatory); every other mandatory field present so the 400 is
         // unambiguously the missing centre.
-        final String payload = "{\"courtRoomId\":\"" + courtRoomId + "\",\"startTime\":\"" + utc(date) + "\"}";
+        final String payload = "{\"courtRoomId\":\"" + courtRoomId + "\",\"startDateTime\":\"" + utc(date)
+                + "\",\"endDateTime\":\"" + utcEnd(date) + "\"}";
         return postMove(hearingId, payload);
     }
 
     public Response whenHearingIsMovedWithMissingCourtRoom(final LocalDate date) {
         // courtRoomId omitted (schema-mandatory); every other mandatory field present so the 400 is
         // unambiguously the missing courtRoomId.
-        final String payload = "{\"courtCentreId\":\"" + courtCentreId + "\",\"startTime\":\"" + utc(date) + "\"}";
+        final String payload = "{\"courtCentreId\":\"" + courtCentreId + "\",\"startDateTime\":\"" + utc(date)
+                + "\",\"endDateTime\":\"" + utcEnd(date) + "\"}";
         return postMove(hearingId, payload);
     }
 
     public Response whenHearingIsMovedWithMissingStartTime() {
-        // startTime omitted (schema-mandatory); both ids present so the 400 is unambiguously the
-        // missing startTime. No date parameter - the payload carries no instant at all.
-        final String payload = "{\"courtCentreId\":\"" + courtCentreId + "\",\"courtRoomId\":\"" + courtRoomId + "\"}";
+        // startDateTime omitted (schema-mandatory); the other mandatory fields present so the 400 is
+        // unambiguously the missing startDateTime. A fixed literal date avoids a wall-clock read.
+        final String payload = "{\"courtCentreId\":\"" + courtCentreId + "\",\"courtRoomId\":\"" + courtRoomId
+                + "\",\"endDateTime\":\"" + utcEnd(LocalDate.of(2026, 1, 1)) + "\"}";
         return postMove(hearingId, payload);
     }
 
-    /** A multi-day move over [startTime, endTime], scoped to a specific room. */
+    /** A multi-day move over [startDateTime, endDateTime], scoped to a specific room. */
     public Response whenHearingIsMovedToPastDateRange(final LocalDate startDate, final LocalDate endDate, final String courtRoomId) {
         final String payload = "{\"courtCentreId\":\"" + courtCentreId
                 + "\",\"courtRoomId\":\"" + courtRoomId
-                + "\",\"startTime\":\"" + utc(startDate)
-                + "\",\"endTime\":\"" + utc(endDate) + "\"}";
+                + "\",\"startDateTime\":\"" + utc(startDate)
+                + "\",\"endDateTime\":\"" + utcEnd(endDate) + "\"}";
         return postMove(payload);
     }
 
@@ -95,13 +99,18 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
      * is identified purely by the URL path - hearingId is not part of the body. */
     public Response whenHearingIsMovedToPastDateForHearing(final UUID otherHearingId, final LocalDate date) {
         final String payload = "{\"courtCentreId\":\"" + courtCentreId + "\",\"courtRoomId\":\"" + courtRoomId
-                + "\",\"startTime\":\"" + utc(date) + "\"}";
+                + "\",\"startDateTime\":\"" + utc(date) + "\",\"endDateTime\":\"" + utcEnd(date) + "\"}";
         return postMove(otherHearingId.toString(), payload);
     }
 
-    /** Fixed 10:00 UTC instant for the given day, matching the move contract's absolute-UTC startTime. */
+    /** Fixed 10:00 UTC instant for the given day, matching the move contract's absolute-UTC startDateTime. */
     private static String utc(final LocalDate date) {
         return date + "T10:00:00.000Z";
+    }
+
+    /** Fixed 10:30 UTC instant for the given day - a 30-minute single-day endDateTime window. */
+    private static String utcEnd(final LocalDate date) {
+        return date + "T10:30:00.000Z";
     }
 
     private Response postMove(final String payload) {
@@ -151,6 +160,21 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
                                 withJsonPath("$.id", is(hearingId)),
                                 withJsonPath("$.startDate", is(expectedStartDate.toString())),
                                 withJsonPath("$.hearingDays[0].hearingDate", is(expectedStartDate.toString()))
+                        )));
+    }
+
+    /** Main-level startDate/endDate must track the hearing days: earliest and latest hearing-day date. */
+    public void verifyStartAndEndDatesUpdated(final LocalDate expectedStartDate, final LocalDate expectedEndDate) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty(LISTING_QUERY_HEARING), hearingId));
+
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARING).withHeader(USER_ID, getLoggedInUser()).build())
+                .until(
+                        status().is(OK),
+                        payload().isJson(org.hamcrest.CoreMatchers.allOf(
+                                withJsonPath("$.id", is(hearingId)),
+                                withJsonPath("$.startDate", is(expectedStartDate.toString())),
+                                withJsonPath("$.endDate", is(expectedEndDate.toString()))
                         )));
     }
 }

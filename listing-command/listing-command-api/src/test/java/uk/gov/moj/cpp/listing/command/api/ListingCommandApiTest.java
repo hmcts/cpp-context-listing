@@ -69,7 +69,6 @@ import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
 import uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
-import uk.gov.moj.cpp.listing.command.api.service.HearingLookupService;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
@@ -138,8 +137,6 @@ public class ListingCommandApiTest {
     private HearingEnrichmentOrchestrator hearingEnrichmentOrchestrator;
     @Mock
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
-    @Mock
-    private HearingLookupService hearingLookupService;
 
     private static final Type HEARING_TYPE = Type.type()
             .withId(fromString("6e1bef55-7e13-4615-b3ba-8663f4438e16"))
@@ -620,42 +617,62 @@ public class ListingCommandApiTest {
 
     private static final UUID MOVE_COURT_ROOM_ID = randomUUID();
 
-    // startTime is an absolute UTC instant (e.g. 2026-07-02T10:00:00.000Z); the request carries no
-    // separate date / local-time fields. courtRoomId is mandatory, stubbed to MOVE_COURT_ROOM_ID.
+    // next weekday strictly after today - a valid future sitting day (future dates are now permitted)
+    private static LocalDate nextWorkingDayAfterToday() {
+        LocalDate day = LocalDate.now().plusDays(1);
+        while (day.getDayOfWeek() == java.time.DayOfWeek.SATURDAY || day.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
+            day = day.plusDays(1);
+        }
+        return day;
+    }
+
+    // Court-centre reference-data object; jurisdiction is derived from oucodeL1Name
+    // ("Crown Courts" -> CROWN, otherwise MAGISTRATES).
+    private static JsonObject courtCentre(final String oucodeL1Name) {
+        return Json.createObjectBuilder().add("oucodeL1Name", oucodeL1Name).build();
+    }
+
+    // A Monday comfortably in the past (>= a week ago) so [Mon, Mon+2=Wed] is a 3-day, weekend-free,
+    // within-6-months span - used to exercise the multi-day path deterministically.
+    private static LocalDate recentPastMonday() {
+        LocalDate day = LocalDate.now().minusDays(7);
+        while (day.getDayOfWeek() != java.time.DayOfWeek.MONDAY) {
+            day = day.minusDays(1);
+        }
+        return day;
+    }
+
+    // startDateTime/endDateTime are absolute UTC instants (e.g. 2026-07-20T10:30:00.000Z) and both
+    // mandatory. courtRoomId is mandatory, stubbed to MOVE_COURT_ROOM_ID. Single-day overload defaults
+    // endDateTime to the same instant as startDateTime.
     private void stubMovePayload(final UUID hearingId, final UUID courtCentreId, final LocalDate startDate, final String utcTimeHhmm) {
+        stubMovePayload(hearingId, courtCentreId, startDate, utcTimeHhmm, startDate, utcTimeHhmm);
+    }
+
+    private void stubMovePayload(final UUID hearingId, final UUID courtCentreId,
+                                 final LocalDate startDate, final String startHhmm,
+                                 final LocalDate endDate, final String endHhmm) {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(payload.getString("hearingId")).willReturn(hearingId.toString());
         given(payload.getString("courtCentreId")).willReturn(courtCentreId.toString());
         given(payload.getString("courtRoomId")).willReturn(MOVE_COURT_ROOM_ID.toString());
-        given(payload.getString("startTime")).willReturn(startDate + "T" + utcTimeHhmm + ":00.000Z");
+        given(payload.getString("startDateTime")).willReturn(startDate + "T" + startHhmm + ":00.000Z");
+        given(payload.getString("endDateTime")).willReturn(endDate + "T" + endHhmm + ":00.000Z");
     }
 
     @Test
-    public void shouldRejectMoveHearingToPastDateWhenHearingIdUnknown() {
+    public void shouldAllowMoveToFutureDate() {
+        // FUTURE_DATE_NOT_ALLOWED has been removed - a future sitting day is now accepted and enriched.
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
 
-        stubMovePayload(hearingId, courtCentreId, lastWorkingDayBeforeToday(), "10:00");
-        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.empty());
+        stubMovePayload(hearingId, courtCentreId, nextWorkingDayAfterToday(), "10:00");
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Crown Courts"));
 
-        final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
-                () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
+        listingCommandApi.handleMoveHearingToPastDate(envelope);
 
-        assertThat(thrown.getHttpStatus(), is(422));
-        assertThat(thrown.getErrorCode(), is("HEARING_ID_NOT_FOUND"));
-        verify(sender, never()).send(any());
-    }
-
-    @Test
-    public void shouldRejectMoveToFutureDate() {
-        stubMovePayload(randomUUID(), randomUUID(), LocalDate.now().plusDays(1), "10:00");
-
-        final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
-                () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
-
-        assertThat(thrown.getHttpStatus(), is(422));
-        assertThat(thrown.getErrorCode(), is("FUTURE_DATE_NOT_ALLOWED"));
-        verify(sender, never()).send(any());
+        verify(sender, times(1)).send(any());
     }
 
     @Test
@@ -673,10 +690,7 @@ public class ListingCommandApiTest {
     @Test
     public void shouldRejectMoveWhenEndDateBeforeStartDate() {
         final LocalDate startDate = lastWorkingDayBeforeToday();
-        stubMovePayload(randomUUID(), randomUUID(), startDate, "10:00");
-        given(payload.containsKey("endTime")).willReturn(true);
-        given(payload.isNull("endTime")).willReturn(false);
-        given(payload.getString("endTime")).willReturn(startDate.minusDays(1) + "T10:00:00.000Z");
+        stubMovePayload(randomUUID(), randomUUID(), startDate, "10:00", startDate.minusDays(1), "10:00");
 
         final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
                 () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
@@ -688,13 +702,10 @@ public class ListingCommandApiTest {
 
     @Test
     public void shouldRejectMoveWhenRangeContainsNoSittingDay() {
-        // Saturday..Sunday span: passes validateMoveDates (past, ordered, within 6 months) but
-        // expands to zero sitting days - courts do not sit at weekends.
+        // Saturday..Sunday span: passes validateMoveDates (ordered, within 6 months) but expands to
+        // zero sitting days - courts do not sit at weekends.
         final LocalDate saturday = mostRecentSaturday();
-        stubMovePayload(randomUUID(), randomUUID(), saturday, "10:00");
-        given(payload.containsKey("endTime")).willReturn(true);
-        given(payload.isNull("endTime")).willReturn(false);
-        given(payload.getString("endTime")).willReturn(saturday.plusDays(1) + "T10:00:00.000Z");
+        stubMovePayload(randomUUID(), randomUUID(), saturday, "10:00", saturday.plusDays(1), "10:00");
 
         final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
                 () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
@@ -716,16 +727,11 @@ public class ListingCommandApiTest {
         stubMovePayload(hearingId, courtCentreId, startDate, "10:00");
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
-        final JsonObject hearing = Json.createObjectBuilder()
-                .add("id", hearingId.toString())
-                .add("jurisdictionType", "MAGISTRATES")
-                .add("estimatedMinutes", 30)
-                .build();
-        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
+        given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Magistrates' Courts"));
 
         final MoveHearingToPastDateResult slot = new MoveHearingToPastDateResult(courtScheduleId,
                 "9d324f4f-6c3b-451f-ac1e-f459db781153", startDate, startDate + "T09:00:00Z", startDate + "T12:00:00Z", 30);
-        given(courtSchedulerServiceAdapter.moveHearingToPastDate(any(), any(), any(), any(), any(), any()))
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(any(), any(), any(), any(), any()))
                 .willReturn(List.of(slot));
 
         final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
@@ -736,6 +742,9 @@ public class ListingCommandApiTest {
         final JsonObject sent = (JsonObject) captor.getValue().payload();
         assertThat(sent.getString("hearingId"), is(hearingId.toString()));
         assertThat(sent.getString("jurisdiction"), is("MAGISTRATES"));
+        // main-level start/end track the (single) hearing day
+        assertThat(sent.getString("startDate"), is(startDate.toString()));
+        assertThat(sent.getString("endDate"), is(startDate.toString()));
         final JsonArray days = sent.getJsonArray("hearingDays");
         assertThat(days.size(), is(1));
         assertThat(days.getJsonObject(0).getString("courtScheduleId"), is(courtScheduleId.toString()));
@@ -753,22 +762,24 @@ public class ListingCommandApiTest {
         stubMovePayload(hearingId, courtCentreId, startDate, "10:00");
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
-        final JsonObject hearing = Json.createObjectBuilder()
-                .add("id", hearingId.toString()).add("jurisdictionType", "MAGISTRATES").add("estimatedMinutes", 30).build();
-        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
+        given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Magistrates' Courts"));
 
         final MoveHearingToPastDateResult day1 = new MoveHearingToPastDateResult(randomUUID(),
                 "room-1", LocalDate.parse("2026-07-01"), "2026-07-01T09:00:00Z", "2026-07-01T12:00:00Z", 30);
         final MoveHearingToPastDateResult day2 = new MoveHearingToPastDateResult(randomUUID(),
                 "room-1", LocalDate.parse("2026-07-02"), "2026-07-02T09:00:00Z", "2026-07-02T12:00:00Z", 30);
-        given(courtSchedulerServiceAdapter.moveHearingToPastDate(any(), any(), any(), any(), any(), any()))
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(any(), any(), any(), any(), any()))
                 .willReturn(List.of(day1, day2));
 
         final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
         listingCommandApi.handleMoveHearingToPastDate(envelope);
 
         verify(sender, times(1)).send(captor.capture());
-        final JsonArray days = ((JsonObject) captor.getValue().payload()).getJsonArray("hearingDays");
+        final JsonObject sent = (JsonObject) captor.getValue().payload();
+        // main-level start/end track the earliest/latest booked hearing day
+        assertThat(sent.getString("startDate"), is("2026-07-01"));
+        assertThat(sent.getString("endDate"), is("2026-07-02"));
+        final JsonArray days = sent.getJsonArray("hearingDays");
         assertThat(days.size(), is(2));
         assertThat(days.getJsonObject(0).getInt("sequence"), is(1));
         assertThat(days.getJsonObject(0).getString("sessionDate"), is("2026-07-01"));
@@ -785,10 +796,8 @@ public class ListingCommandApiTest {
         stubMovePayload(hearingId, courtCentreId, startDate, "10:00");
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
-        final JsonObject hearing = Json.createObjectBuilder()
-                .add("id", hearingId.toString()).add("jurisdictionType", "MAGISTRATES").add("estimatedMinutes", 30).build();
-        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
-        given(courtSchedulerServiceAdapter.moveHearingToPastDate(any(), any(), any(), any(), any(), any()))
+        given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Magistrates' Courts"));
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(any(), any(), any(), any(), any()))
                 .willReturn(List.of(new MoveHearingToPastDateResult(randomUUID(), MOVE_COURT_ROOM_ID.toString(), startDate,
                         startDate + "T09:00:00Z", startDate + "T12:00:00Z", 30)));
 
@@ -797,9 +806,9 @@ public class ListingCommandApiTest {
         final ArgumentCaptor<UUID> roomCaptor = forClass(UUID.class);
         final ArgumentCaptor<String> startTimeCaptor = forClass(String.class);
         verify(courtSchedulerServiceAdapter).moveHearingToPastDate(eq(hearingId), eq(courtCentreId),
-                roomCaptor.capture(), startTimeCaptor.capture(), any(), eq(30));
+                roomCaptor.capture(), startTimeCaptor.capture(), any());
         assertThat(roomCaptor.getValue(), is(MOVE_COURT_ROOM_ID));
-        // startTime is the absolute UTC instant from the request, forwarded unchanged (no conversion)
+        // startDateTime is the absolute UTC instant from the request, forwarded unchanged (no conversion)
         assertThat(startTimeCaptor.getValue(), is(startDate + "T10:00:00.000Z"));
     }
 
@@ -811,17 +820,13 @@ public class ListingCommandApiTest {
 
         stubMovePayload(hearingId, courtCentreId, startDate, "10:00");
 
-        final JsonObject hearing = Json.createObjectBuilder()
-                .add("id", hearingId.toString())
-                .add("jurisdictionType", "MAGISTRATES")
-                .build();
-        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
+        given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Magistrates' Courts"));
 
         final JsonObject noSessionBody = Json.createObjectBuilder()
                 .add("errorCode", "NO_SESSION_FOUND")
                 .add("message", "No court-schedule session found")
                 .build();
-        given(courtSchedulerServiceAdapter.moveHearingToPastDate(any(), any(), any(), any(), any(), any()))
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(any(), any(), any(), any(), any()))
                 .willThrow(new MoveHearingToPastDateException(422, noSessionBody, "no session"));
 
         final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
@@ -840,22 +845,19 @@ public class ListingCommandApiTest {
         stubMovePayload(hearingId, courtCentreId, startDate, "10:00");
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
-        final JsonObject hearing = Json.createObjectBuilder()
-                .add("id", hearingId.toString())
-                .add("jurisdictionType", "CROWN")
-                .build();
-        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
+        given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Crown Courts"));
 
         final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
 
         listingCommandApi.handleMoveHearingToPastDate(envelope);
 
-        verify(courtSchedulerServiceAdapter, never()).moveHearingToPastDate(any(), any(), any(), any(), any(), any());
+        verify(courtSchedulerServiceAdapter, never()).moveHearingToPastDate(any(), any(), any(), any(), any());
         verify(sender, times(1)).send(captor.capture());
         final JsonObject sent = (JsonObject) captor.getValue().payload();
         assertThat(sent.getString("hearingId"), is(hearingId.toString()));
         assertThat(sent.getString("jurisdiction"), is("CROWN"));
         assertThat(sent.getString("startDate"), is(startDate.toString()));
+        assertThat(sent.getString("endDate"), is(startDate.toString()));
         final JsonArray days = sent.getJsonArray("hearingDays");
         assertThat(days.size(), is(1));
         assertThat(days.getJsonObject(0).getString("sessionDate"), is(startDate.toString()));
@@ -863,44 +865,79 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldEnrichCrownMoveWithRequestedTimeAndExistingRoomAndDuration() {
+    public void shouldEnrichCrownMoveWithRequestedTimesAndRoomAndComputedDuration() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
-        final UUID crownRoomId = randomUUID();
         final LocalDate startDate = lastWorkingDayBeforeToday();
 
-        stubMovePayload(hearingId, courtCentreId, startDate, "10:30");
+        // single-day move 10:30 -> 11:15 = a 45-minute submitted window
+        stubMovePayload(hearingId, courtCentreId, startDate, "10:30", startDate, "11:15");
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
-        final JsonObject hearing = Json.createObjectBuilder()
-                .add("id", hearingId.toString())
-                .add("jurisdictionType", "CROWN")
-                .add("hearingDays", Json.createArrayBuilder()
-                        .add(Json.createObjectBuilder()
-                                .add("hearingDate", LocalDate.now().plusDays(3).toString())
-                                .add("startTime", LocalDate.now().plusDays(3) + "T14:00:00Z")
-                                .add("durationMinutes", 45)
-                                .add("courtRoomId", crownRoomId.toString())))
-                .build();
-        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
+        given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Crown Courts"));
 
         final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
 
         listingCommandApi.handleMoveHearingToPastDate(envelope);
 
-        verify(courtSchedulerServiceAdapter, never()).moveHearingToPastDate(any(), any(), any(), any(), any(), any());
+        verify(courtSchedulerServiceAdapter, never()).moveHearingToPastDate(any(), any(), any(), any(), any());
         verify(sender, times(1)).send(captor.capture());
         final JsonObject sent = (JsonObject) captor.getValue().payload();
         final JsonObject day0 = sent.getJsonArray("hearingDays").getJsonObject(0);
         assertThat(day0.getString("sessionDate"), is(startDate.toString()));
-        // courtRoomId now comes from the (mandatory) request, not the hearing's existing day
+        // courtRoomId comes from the (mandatory) request
         assertThat(day0.getString("courtRoomId"), is(MOVE_COURT_ROOM_ID.toString()));
+        // single-day duration is the submitted window (end - start) in minutes
         assertThat(day0.getInt("durationInMinutes"), is(45));
         assertThat(day0.containsKey("courtScheduleId"), is(false));
-        // start-time is the requested absolute UTC instant on the new past date (no conversion)
+        // start/end times are the requested absolute UTC instants on the new date (no conversion)
         final java.time.ZonedDateTime start = java.time.ZonedDateTime.parse(day0.getString("sessionStartTime"));
         assertThat(start.toLocalDate(), is(startDate));
         assertThat(start.withZoneSameInstant(java.time.ZoneOffset.UTC).toLocalTime(), is(java.time.LocalTime.of(10, 30)));
+        final java.time.ZonedDateTime end = java.time.ZonedDateTime.parse(day0.getString("sessionEndTime"));
+        assertThat(end.toLocalDate(), is(startDate));
+        assertThat(end.withZoneSameInstant(java.time.ZoneOffset.UTC).toLocalTime(), is(java.time.LocalTime.of(11, 15)));
+    }
+
+    @Test
+    public void shouldEnrichCrownMultiDayMoveWithFullCourtDayPerSittingDayAndSpanDatesFromDays() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final LocalDate monday = recentPastMonday();
+        final LocalDate wednesday = monday.plusDays(2);
+
+        // multi-day CROWN move Mon 10:30 -> Wed 17:00 (listing-side; courtscheduler never called)
+        stubMovePayload(hearingId, courtCentreId, monday, "10:30", wednesday, "17:00");
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Crown Courts"));
+
+        final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
+        listingCommandApi.handleMoveHearingToPastDate(envelope);
+
+        verify(courtSchedulerServiceAdapter, never()).moveHearingToPastDate(any(), any(), any(), any(), any());
+        verify(sender, times(1)).send(captor.capture());
+        final JsonObject sent = (JsonObject) captor.getValue().payload();
+
+        // main-level start/end span the sitting days (earliest..latest)
+        assertThat(sent.getString("startDate"), is(monday.toString()));
+        assertThat(sent.getString("endDate"), is(wednesday.toString()));
+
+        final JsonArray days = sent.getJsonArray("hearingDays");
+        assertThat(days.size(), is(3)); // Mon, Tue, Wed - a weekend-free span
+        assertThat(days.getJsonObject(0).getString("sessionDate"), is(monday.toString()));
+        assertThat(days.getJsonObject(2).getString("sessionDate"), is(wednesday.toString()));
+        for (int i = 0; i < days.size(); i++) {
+            final JsonObject day = days.getJsonObject(i);
+            // multi-day books a full court day (360) per sitting day
+            assertThat(day.getInt("durationInMinutes"), is(360));
+            assertThat(day.getString("courtRoomId"), is(MOVE_COURT_ROOM_ID.toString()));
+            assertThat(day.containsKey("courtScheduleId"), is(false));
+            // every day runs the submitted 10:30 -> 17:00 time-of-day
+            final java.time.ZonedDateTime s = java.time.ZonedDateTime.parse(day.getString("sessionStartTime"));
+            final java.time.ZonedDateTime e = java.time.ZonedDateTime.parse(day.getString("sessionEndTime"));
+            assertThat(s.withZoneSameInstant(java.time.ZoneOffset.UTC).toLocalTime(), is(java.time.LocalTime.of(10, 30)));
+            assertThat(e.withZoneSameInstant(java.time.ZoneOffset.UTC).toLocalTime(), is(java.time.LocalTime.of(17, 0)));
+        }
     }
 
     @Test
