@@ -438,6 +438,7 @@ public class CourtSchedulerServiceAdapter {
                                                         final String endDate, final Optional<Instant> exactHearingStartDateTime,
                                                         final Optional<String> businessTypeOptional,
                                                         final Optional<String> jurisdiction,
+                                                        final Boolean isDraft,
                                                         final String panel, final Integer pageSize, final Integer pageNumber
     ) {
         final Map<String, String> queryParams = new HashMap<>();
@@ -452,6 +453,11 @@ public class CourtSchedulerServiceAdapter {
         businessTypeOptional.ifPresent(businessType -> queryParams.put(BUSINESS_TYPE, businessType));
         jurisdiction.ifPresent(j -> queryParams.put(JURISDICTION, j));
         exactHearingStartDateTime.ifPresent(s -> queryParams.put(EXACT_HEARING_START_DATETIME, s.toString()));
+        // Draft (unallocated) court-schedule sessions are excluded at source when isDraft is supplied;
+        // a null isDraft leaves the courtscheduler result unfiltered (returns ALL).
+        if (isDraft != null) {
+            queryParams.put(IS_DRAFT, isDraft.toString());
+        }
 
         final Response hearingsResponse = getCourtSchedulerHearingIds(queryParams);
 

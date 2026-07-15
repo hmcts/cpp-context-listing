@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.common.utils.FileUtil.givenPayload;
 
@@ -19,6 +20,7 @@ import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -31,6 +33,7 @@ import org.apache.http.HttpStatus;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -216,11 +219,61 @@ class CourtSchedulerServiceAdapterTest {
         when(response.getEntity()).thenReturn(hearingIdsResponse);
         when(hearingSlotsService.getCourtSchedulerHearingIds(anyMap())).thenReturn(response);
 
-        final HearingIdsResponse finalResp = courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, Optional.of(Instant.now()), businessTypeOptional, Optional.of("MAGISTRATES"), "ADULT,YOUTH", pageSize, pageNumber);
+        final HearingIdsResponse finalResp = courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, Optional.of(Instant.now()), businessTypeOptional, Optional.of("MAGISTRATES"), Boolean.FALSE, "ADULT,YOUTH", pageSize, pageNumber);
 
         assertThat(finalResp.getUuids().size(), is(4));
         assertThat(finalResp.getPageCount(), is(1L));
         assertThat(finalResp.getResults(), is(4L));
+    }
+
+    @Test
+    void getCourtSchedulerHearingsShouldAddIsDraftFalseToQueryParamsWhenIsDraftIsFalse() {
+        final String courtCentreId = UUID.randomUUID().toString();
+        final Optional<String> courtSessionOptional = Optional.of("AD");
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String startDate = LocalDate.now().toString();
+        final String endDate = LocalDate.now().plusDays(7).toString();
+        final Optional<String> businessTypeOptional = Optional.of("BA123");
+        final Integer pageSize = 50;
+        final Integer pageNumber = 1;
+
+        final JsonObject hearingIdsResponse = givenPayload("/mock-data/azure.rotasl.getHearingIds.stub-data.json");
+
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(hearingIdsResponse);
+        when(hearingSlotsService.getCourtSchedulerHearingIds(anyMap())).thenReturn(response);
+
+        courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, Optional.of(Instant.now()), businessTypeOptional, Optional.of("MAGISTRATES"), Boolean.FALSE, "ADULT,YOUTH", pageSize, pageNumber);
+
+        final ArgumentCaptor<Map<String, String>> queryParamsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).getCourtSchedulerHearingIds(queryParamsCaptor.capture());
+
+        assertThat(queryParamsCaptor.getValue().get("isDraft"), is("false"));
+    }
+
+    @Test
+    void getCourtSchedulerHearingsShouldOmitIsDraftFromQueryParamsWhenIsDraftIsNull() {
+        final String courtCentreId = UUID.randomUUID().toString();
+        final Optional<String> courtSessionOptional = Optional.of("AD");
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String startDate = LocalDate.now().toString();
+        final String endDate = LocalDate.now().plusDays(7).toString();
+        final Optional<String> businessTypeOptional = Optional.of("BA123");
+        final Integer pageSize = 50;
+        final Integer pageNumber = 1;
+
+        final JsonObject hearingIdsResponse = givenPayload("/mock-data/azure.rotasl.getHearingIds.stub-data.json");
+
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(hearingIdsResponse);
+        when(hearingSlotsService.getCourtSchedulerHearingIds(anyMap())).thenReturn(response);
+
+        courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, Optional.of(Instant.now()), businessTypeOptional, Optional.of("MAGISTRATES"), null, "ADULT,YOUTH", pageSize, pageNumber);
+
+        final ArgumentCaptor<Map<String, String>> queryParamsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).getCourtSchedulerHearingIds(queryParamsCaptor.capture());
+
+        assertFalse(queryParamsCaptor.getValue().containsKey("isDraft"));
     }
 
     @Test

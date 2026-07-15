@@ -583,6 +583,23 @@ public class CourtSchedulerServiceStub {
                 ));
     }
 
+    /**
+     * SPRDT-1164: stub the courtscheduler get-hearing-ids endpoint scoped to a specific courtSession
+     * (AM/AD), so two different courtSession queries in the same test can be driven to two different
+     * bodies (e.g. one hearing's day-tuples for AD, another hearing's for AM). isDraft and pageSize are
+     * left unconstrained so this still matches production's court-calendar allocated path, which now
+     * sends isDraft=false.
+     */
+    public static void stubGetHearingIdsWithBody(final String courtSession, final String body) {
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
+                .withHeader("Accept", containing("application/vnd.courtscheduler.get.hearing.ids+json"))
+                .withQueryParam("courtSession", WireMock.equalTo(courtSession))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(body)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
     public static void stubGetHearingIds(final Instant exactHearingStartDateTime) {
         stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
                 .withQueryParam("sessionStartDate", matching("1900-01-01"))

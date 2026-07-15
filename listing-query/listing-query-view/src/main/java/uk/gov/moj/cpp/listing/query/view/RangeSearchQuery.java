@@ -124,7 +124,7 @@ public class RangeSearchQuery {
         if (params.courtSessionOptional().isPresent() || params.businessType().isPresent()) {
 
             if(isMags(params.jurisdictionType()) && params.allocated() && params.ouCode() != null ) {
-                return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.exactHearingStartDateTime(), params.businessType(), Optional.ofNullable(params.jurisdictionType()), PANEL_ADULT_YOUTH, params.paginationParameter());
+                return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.exactHearingStartDateTime(), params.businessType(), Optional.ofNullable(params.jurisdictionType()), null, null, PANEL_ADULT_YOUTH, params.paginationParameter());
             }
 
             throw new BadRequestException("courtSession or businessType are only relevant to allocated MAGs with ouCode");
@@ -310,36 +310,36 @@ public class RangeSearchQuery {
     }
 
 
-     private JsonEnvelope getCourtSchedulerHearings(final JsonEnvelope query, final boolean allocated, final String ouCode, final Optional<String> courtSessionOptional, final String courtRoomId, final String startDate, final String endDate, final Optional<Instant> startDateTime, final Optional<String> businessType, final Optional<String> jurisdiction, final String panel, final PaginationParameter paginationParameter) {
-        final HearingIdsResponse hearingIdsResponse = courtSchedulerServiceAdapter.getCourtSchedulerHearings(ouCode, courtSessionOptional, courtRoomId, startDate, endDate, startDateTime, businessType, jurisdiction, panel, paginationParameter.getPageSize(), paginationParameter.getPageNumber());
+     private JsonEnvelope getCourtSchedulerHearings(final JsonEnvelope query, final boolean allocated, final String ouCode, final Optional<String> courtSessionOptional, final String courtRoomId, final String startDate, final String endDate, final Optional<Instant> startDateTime, final Optional<String> businessType, final Optional<String> jurisdiction, final Boolean isDraft, final String hearingTypeId, final String panel, final PaginationParameter paginationParameter) {
+        final HearingIdsResponse hearingIdsResponse = courtSchedulerServiceAdapter.getCourtSchedulerHearings(ouCode, courtSessionOptional, courtRoomId, startDate, endDate, startDateTime, businessType, jurisdiction, isDraft, panel, paginationParameter.getPageSize(), paginationParameter.getPageNumber());
         logger.info("CourtScheduler Hearings response : {}", hearingIdsResponse);
+        // hearingType is held only in the listing viewstore (not courtscheduler), so it is filtered
+        // here during enrichment. Draft exclusion is applied courtscheduler-side via the isDraft flag,
+        // so no allocated/draft filter is applied here. Pagination and the result count are left
+        // exactly as before: the caller's pageSize is forwarded to courtscheduler and its results
+        // count is passed straight through.
         final List<Hearing> enrichedHearingList = isEmpty(hearingIdsResponse.getUuids())
-                ? emptyList() : enrichAllCourtSchedulerHearingIdsIntoHearings(hearingIdsResponse.getUuids());
+                ? emptyList() : enrichAllCourtSchedulerHearingIdsIntoHearings(hearingIdsResponse.getUuids(), hearingTypeId);
         logger.info("getCourtSchedulerHearings found {} hearings", hearingIdsResponse.getResults());
-        // When the whole result set fits on one page, the rows we actually return (allocated,
-        // de-duplicated per hearing-day) ARE the true total, so report that instead of the raw
-        // courtscheduler count which still includes draft sessions. For genuinely paged results we
-        // cannot derive the allocated total from a single page, so keep the courtscheduler total
-        // (draft exclusion for the multi-page count is a courtscheduler-side follow-up).
-        final long courtSchedulerTotal = hearingIdsResponse.getResults();
-        final long results = courtSchedulerTotal <= paginationParameter.getPageSize()
-                ? enrichedHearingList.size() : courtSchedulerTotal;
-        return buildHearingsResponse(query, allocated, courtRoomId, startDate, enrichedHearingList, results, hearingIdsResponse, paginationParameter);
+        return buildHearingsResponse(query, allocated, courtRoomId, startDate, enrichedHearingList, hearingIdsResponse.getResults(), hearingIdsResponse, paginationParameter);
     }
 
 
-    private List<Hearing> enrichAllCourtSchedulerHearingIdsIntoHearings(final List<IdResponse> hearingIds) {
+    private List<Hearing> enrichAllCourtSchedulerHearingIdsIntoHearings(final List<IdResponse> hearingIds, final String hearingTypeId) {
 
-        final List<Hearing> hearings = repository.findAllCourtSchedulerHearingByIds(hearingIds.stream().map(a -> a.hearingId()).toList());
+        // De-duplicate hearing ids before hitting the listing viewstore: a multi-day hearing arrives
+        // as one IdResponse per day, all sharing the same hearingId.
+        final List<UUID> distinctHearingIds = hearingIds.stream().map(IdResponse::hearingId).distinct().toList();
+        final List<Hearing> hearings = repository.findAllCourtSchedulerHearingByIds(distinctHearingIds);
         final HashMap<UUID, Hearing> hearingsById = new HashMap<>();
         hearings.forEach(h -> hearingsById.put(h.getId(), h));
 
         final List<Hearing> enrichedHearings = new ArrayList<>();
         hearingIds.forEach(id -> {
             final Hearing base = hearingsById.get(id.hearingId());
-            // The court-calendar allocated view must show confirmed-allocated hearings only; the
-            // courtscheduler id list can include draft (unallocated) sessions, so skip those.
-            if (base != null && Boolean.TRUE.equals(base.getAllocated())) {
+            // hearingType is not known to courtscheduler, so it is filtered listing-side against the
+            // viewstore. Draft/allocated filtering is handled courtscheduler-side (the isDraft flag).
+            if (base != null && matchesHearingType(base, hearingTypeId)) {
                 // Give each hearing-day its own Hearing (deep-copied properties) so a multi-day
                 // hearing renders one distinct row per day rather than collapsing onto the last day.
                 final Hearing perDay = new Hearing(base);
@@ -351,6 +351,11 @@ public class RangeSearchQuery {
         });
 
         return enrichedHearings;
+    }
+
+    private static boolean matchesHearingType(final Hearing hearing, final String hearingTypeId) {
+        return hearingTypeId == null
+                || (hearing.getTypeId() != null && hearingTypeId.equals(hearing.getTypeId().toString()));
     }
 
     private boolean isMags(final String jurisdictionType) {
@@ -371,7 +376,7 @@ public class RangeSearchQuery {
 
         if (params.courtSessionOptional().isPresent() || params.businessType().isPresent()) {
             if(params.allocated() && params.ouCode() != null ) {
-                return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.exactHearingStartDateTime(), params.businessType(), Optional.ofNullable(params.jurisdictionType()), PANEL_ADULT_YOUTH, params.paginationParameter());
+                return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), params.startDate(), params.endDate(), params.exactHearingStartDateTime(), params.businessType(), Optional.ofNullable(params.jurisdictionType()), params.allocated() ? Boolean.FALSE : null, params.hearingTypeId(), PANEL_ADULT_YOUTH, params.paginationParameter());
             }
         }
 
