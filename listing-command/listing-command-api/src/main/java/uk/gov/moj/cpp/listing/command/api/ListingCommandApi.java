@@ -104,11 +104,6 @@ public class ListingCommandApi {
     private static final String NON_SITTING_DAYS = "nonSittingDays";
     private static final String NON_DEFAULT_DAYS = "nonDefaultDays";
     private static final String NDD_START_TIME = "startTime";
-    // The canonical nonDefaultDay field set carried forward verbatim on a move (matches the enriched
-    // schema and the query-view shape); copying only these keys keeps the enriched payload strict.
-    private static final String[] NON_DEFAULT_DAY_KEYS = {
-            "startTime", "duration", "courtScheduleId", "session", "oucode", "courtRoomId", "courtCentreId", "roomId", "virtual"
-    };
     private static final String END_DATE = "endDate";
     private static final String START_DATE_TIME = "startDateTime";
     private static final String END_DATE_TIME = "endDateTime";
@@ -474,45 +469,50 @@ public class ListingCommandApi {
             return;
         }
         final JsonObject currentHearing = hearing.get();
-
-        if (currentHearing.containsKey(NON_SITTING_DAYS) && !currentHearing.isNull(NON_SITTING_DAYS)) {
-            final JsonArray existing = currentHearing.getJsonArray(NON_SITTING_DAYS);
-            if (!existing.isEmpty()) {
-                final JsonArrayBuilder retained = createArrayBuilder();
-                for (int i = 0; i < existing.size(); i++) {
-                    final String dayStr = existing.getString(i);
-                    if (isWithin(LocalDate.parse(dayStr), newStartDate, newEndDate)) {
-                        retained.add(dayStr);
-                    }
-                }
-                enrichedBuilder.add(NON_SITTING_DAYS, retained);
-            }
-        }
-
-        if (currentHearing.containsKey(NON_DEFAULT_DAYS) && !currentHearing.isNull(NON_DEFAULT_DAYS)) {
-            final JsonArray existing = currentHearing.getJsonArray(NON_DEFAULT_DAYS);
-            if (!existing.isEmpty()) {
-                final JsonArrayBuilder retained = createArrayBuilder();
-                for (int i = 0; i < existing.size(); i++) {
-                    final JsonObject nonDefaultDay = existing.getJsonObject(i);
-                    final LocalDate day = ZonedDateTime.parse(nonDefaultDay.getString(NDD_START_TIME)).toLocalDate();
-                    if (isWithin(day, newStartDate, newEndDate)) {
-                        retained.add(copyNonDefaultDay(nonDefaultDay));
-                    }
-                }
-                enrichedBuilder.add(NON_DEFAULT_DAYS, retained);
-            }
-        }
+        retainNonSittingDays(currentHearing, newStartDate, newEndDate)
+                .ifPresent(retained -> enrichedBuilder.add(NON_SITTING_DAYS, retained));
+        retainNonDefaultDays(currentHearing, newStartDate, newEndDate)
+                .ifPresent(retained -> enrichedBuilder.add(NON_DEFAULT_DAYS, retained));
     }
 
-    private static JsonObjectBuilder copyNonDefaultDay(final JsonObject src) {
-        final JsonObjectBuilder builder = createObjectBuilder();
-        for (final String key : NON_DEFAULT_DAY_KEYS) {
-            if (src.containsKey(key) && !src.isNull(key)) {
-                builder.add(key, src.get(key));
+    private static Optional<JsonArrayBuilder> retainNonSittingDays(final JsonObject hearing, final LocalDate start, final LocalDate end) {
+        final JsonArray existing = nonEmptyArray(hearing, NON_SITTING_DAYS);
+        if (existing == null) {
+            return Optional.empty();
+        }
+        final JsonArrayBuilder retained = createArrayBuilder();
+        for (int i = 0; i < existing.size(); i++) {
+            final String dayStr = existing.getString(i);
+            if (isWithin(LocalDate.parse(dayStr), start, end)) {
+                retained.add(dayStr);
             }
         }
-        return builder;
+        return Optional.of(retained);
+    }
+
+    private static Optional<JsonArrayBuilder> retainNonDefaultDays(final JsonObject hearing, final LocalDate start, final LocalDate end) {
+        final JsonArray existing = nonEmptyArray(hearing, NON_DEFAULT_DAYS);
+        if (existing == null) {
+            return Optional.empty();
+        }
+        final JsonArrayBuilder retained = createArrayBuilder();
+        for (int i = 0; i < existing.size(); i++) {
+            final JsonObject nonDefaultDay = existing.getJsonObject(i);
+            final LocalDate day = ZonedDateTime.parse(nonDefaultDay.getString(NDD_START_TIME)).toLocalDate();
+            if (isWithin(day, start, end)) {
+                retained.add(nonDefaultDay);
+            }
+        }
+        return Optional.of(retained);
+    }
+
+    /** The array under {@code key}, or null when the hearing has no (or an empty) array there. */
+    private static JsonArray nonEmptyArray(final JsonObject hearing, final String key) {
+        if (!hearing.containsKey(key) || hearing.isNull(key)) {
+            return null;
+        }
+        final JsonArray array = hearing.getJsonArray(key);
+        return array.isEmpty() ? null : array;
     }
 
     private static boolean isWithin(final LocalDate day, final LocalDate start, final LocalDate end) {
