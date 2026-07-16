@@ -344,12 +344,12 @@ public class CourtServicesMapper {
         for (final JsonObject hearingJson : hearingJsonList) {
 
             if (!hearingJson.getBoolean(RESTRICT_FROM_COURT_LIST)) {
-                if (hearingJson.containsKey(CASE_IDENTIFIER) || hearingJson.containsKey(PROSECUTOR)) {
-                    sittingStructureHearings.getHearing().add(generateHearingStructureForListedCase(hearingJson, hearingSequenceNumber++, weekCommencing));
-                }
-
+                // A court application hearing may also carry a caseIdentifier (for its case reference),
+                // so applicationReference must be checked first to keep these mutually exclusive.
                 if (hearingJson.containsKey(APPLICATION_REFERENCE)) {
-                     sittingStructureHearings.getHearing().add(generateHearingStructureForCourtApplication(hearingJson, hearingSequenceNumber++, weekCommencing));
+                    sittingStructureHearings.getHearing().add(generateHearingStructureForCourtApplication(hearingJson, hearingSequenceNumber++, weekCommencing));
+                } else if (hearingJson.containsKey(CASE_IDENTIFIER) || hearingJson.containsKey(PROSECUTOR)) {
+                    sittingStructureHearings.getHearing().add(generateHearingStructureForListedCase(hearingJson, hearingSequenceNumber++, weekCommencing));
                 }
             }
         }
@@ -822,12 +822,12 @@ public class CourtServicesMapper {
 
     private void generateCaseStructureForCaseOrCourtApplication(
             final CasesStructure casesStructure, final JsonObject hearingJson) {
-        if (hearingJson.containsKey(CASE_IDENTIFIER)) {
-            casesStructure.getCase().add(generateCaseStructureForCase(hearingJson));
-        }
-
+        // A court application hearing may also carry a caseIdentifier (for its case reference),
+        // so applicationReference must be checked first to keep these mutually exclusive.
         if (hearingJson.containsKey(APPLICATION_REFERENCE)) {
             casesStructure.getCase().add(generateCaseStructureForCourtApplication(hearingJson));
+        } else if (hearingJson.containsKey(CASE_IDENTIFIER)) {
+            casesStructure.getCase().add(generateCaseStructureForCase(hearingJson));
         }
     }
 

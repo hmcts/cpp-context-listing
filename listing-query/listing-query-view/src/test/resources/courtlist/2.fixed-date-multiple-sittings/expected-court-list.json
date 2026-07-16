@@ -74,7 +74,9 @@
               "weekCommencing": false,
               "endTime": "2019-12-16T09:51:11",
               "applicationReference": "41TL769069",
-              "caseReference": "41TL769069",
+              "caseIdentifier": {
+                "caseReference": "41TL769069"
+              },
               "applicant": {
                 "id": "cb9ee4d4-369f-422e-8a5f-fa2af408247b",
                 "lastName": "BENINI",
@@ -91,6 +93,24 @@
                   "isRespondent": true,
                   "restrictFromCourtList": false,
                   "courtApplicationPartyType": "PERSON"
+                }
+              ],
+              "defendants": [
+                {
+                  "id": "a1ac08ac-99e9-4507-ad84-77ec9b674e06",
+                  "lastName": "MARIE",
+                  "firstName": "Eula",
+                  "isRespondent": true,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON"
+                },
+                {
+                  "id": "cb9ee4d4-369f-422e-8a5f-fa2af408247b",
+                  "lastName": "BENINI",
+                  "firstName": "Olga",
+                  "isRespondent": false,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON_DEFENDANT"
                 }
               ],
               "hasVideoLink": false
@@ -196,7 +216,9 @@
               "weekCommencing": false,
               "endTime": "2019-12-16T09:51:00",
               "applicationReference": "19RV576068",
-              "caseReference": "19RV576068",
+              "caseIdentifier": {
+                "caseReference": "19RV576068"
+              },
               "applicant": {
                 "id": "8d41b127-ad50-4175-b590-3d253356f1de",
                 "lastName": "LUCAS",
@@ -213,6 +235,24 @@
                   "isRespondent": true,
                   "restrictFromCourtList": false,
                   "courtApplicationPartyType": "PERSON"
+                }
+              ],
+              "defendants": [
+                {
+                  "id": "9cc9b614-ccc6-42b0-aa1b-1bfc27382e32",
+                  "lastName": "BOUVIER",
+                  "firstName": "Adele",
+                  "isRespondent": true,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON"
+                },
+                {
+                  "id": "8d41b127-ad50-4175-b590-3d253356f1de",
+                  "lastName": "LUCAS",
+                  "firstName": "Vernon",
+                  "isRespondent": false,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON_DEFENDANT"
                 }
               ],
               "hasVideoLink": false
