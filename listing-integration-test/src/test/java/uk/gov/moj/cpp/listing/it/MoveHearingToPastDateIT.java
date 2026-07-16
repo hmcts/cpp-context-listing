@@ -16,6 +16,7 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMoveHea
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyMoveHearingToPastDateCalled;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyMoveHearingToPastDateNeverCalled;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCrownCourtCentreById;
 
 import uk.gov.moj.cpp.listing.it.util.ItClock;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -70,6 +71,12 @@ class MoveHearingToPastDateIT extends AbstractIT {
             stubProvisionalBookingWithCustomParams(stubParams);
             stubListHearingInCourtSessions(listCourtHearingSteps.getHearingsData().getHearingData().get(0).getId().toString(),
                     listedCourtScheduleId, hearingStartTime);
+        } else if (CROWN_JURISDICTION.equals(jurisdiction)) {
+            // The move derives jurisdiction from the target court centre's oucodeL1Name; stub this CROWN
+            // hearing's court centre as a Crown court centre so the move stays listing-side (no courtscheduler).
+            stubGetReferenceDataCrownCourtCentreById(
+                    listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtCentreId(),
+                    listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId());
         }
 
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
