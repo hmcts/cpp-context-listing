@@ -66,7 +66,7 @@ import uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher;
  * <p>Sibling {@link CrownUpdateHearingSingleDayIT} covers the room-bearing (UI-parity) payload;
  * this class locks the schedule-only shape sent by API callers.
  */
-public class CrownUpdateHearingScheduleOnlyIT extends AbstractIT {
+class CrownUpdateHearingScheduleOnlyIT extends AbstractIT {
 
     private static final String MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING =
             "application/vnd.listing.command.update-hearing-for-listing+json";
@@ -183,12 +183,6 @@ public class CrownUpdateHearingScheduleOnlyIT extends AbstractIT {
                                         JsonPathMatchers.hasNoJsonPath("$.hearingDays[0].courtRoomId"))));
     }
 
-    /**
-     * Multi-day CROWN, schedule-only payload, draft sessions: courtscheduler returns two sessions
-     * with isDraft=true. The fix in CourtScheduleEnrichmentService ensures that courtCentreId is
-     * set on each HearingDay from the session's courtHouseId even when the session is draft.
-     * courtRoomId must be absent (draft = unallocated, ADR-005).
-     */
     @Test
     void shouldSetCourtCentreIdOnHearingDays_whenMultiDayScheduleOnlyPayloadResolvesToDraftSessions() throws Exception {
         final UUID hearingId = UUID.randomUUID();

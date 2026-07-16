@@ -344,9 +344,14 @@ public class CourtSchedulerServiceStub {
             final LocalDate sessionDate = firstSessionDate.plusDays(i);
             body.append("{")
                     .append("\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\",")
-                    .append("\"courtHouseId\":\"").append(courtHouseId).append("\",")
-                    .append("\"courtRoomId\":\"").append(courtRoomId).append("\",")
-                    .append("\"sessionDate\":\"").append(sessionDate).append("\",")
+                    .append("\"courtHouseId\":\"").append(courtHouseId).append("\",");
+            // Draft sessions have no courtroom — real courtscheduler nulls rooms via CourtScheduleRoomSanitiser.
+            // Omitting courtRoomId here replicates that: the service must derive courtCentreId from courtHouseId
+            // but must NOT set courtRoomId, mirroring the production draft-session shape.
+            if (!isDraft && courtRoomId != null) {
+                body.append("\"courtRoomId\":\"").append(courtRoomId).append("\",");
+            }
+            body.append("\"sessionDate\":\"").append(sessionDate).append("\",")
                     .append("\"hearingStartTime\":\"").append(sessionDate).append("T09:00:00Z\",")
                     .append("\"isDraft\":").append(isDraft)
                     .append("}");
