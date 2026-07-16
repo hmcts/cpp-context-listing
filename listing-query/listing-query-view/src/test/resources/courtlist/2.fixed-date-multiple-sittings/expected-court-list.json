@@ -74,6 +74,7 @@
               "weekCommencing": false,
               "endTime": "2019-12-16T09:51:11",
               "applicationReference": "41TL769069",
+              "caseReference": "41TL769069",
               "applicant": {
                 "id": "cb9ee4d4-369f-422e-8a5f-fa2af408247b",
                 "lastName": "BENINI",
@@ -195,6 +196,7 @@
               "weekCommencing": false,
               "endTime": "2019-12-16T09:51:00",
               "applicationReference": "19RV576068",
+              "caseReference": "19RV576068",
               "applicant": {
                 "id": "8d41b127-ad50-4175-b590-3d253356f1de",
                 "lastName": "LUCAS",

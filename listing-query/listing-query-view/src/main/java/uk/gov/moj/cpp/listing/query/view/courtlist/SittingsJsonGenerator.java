@@ -106,6 +106,7 @@ public class SittingsJsonGenerator {
 
             hearingJsonBuilder
                     .add("applicationReference", courtApplicationDetails.getApplicationReference())
+                    .add("caseReference", courtApplicationDetails.getApplicationReference())
                     .add("applicant", courtApplicationDetails.getApplicant())
                     .add("respondents", courtApplicationDetails.getRespondents());
 
