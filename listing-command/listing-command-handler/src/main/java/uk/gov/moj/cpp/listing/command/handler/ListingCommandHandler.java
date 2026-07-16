@@ -427,10 +427,10 @@ public class ListingCommandHandler {
         updateHearingEventStream(command, vacateTrialEnriched.getHearingId(), (Hearing hearing) -> hearing.vacateTrial(vacateTrialEnriched.getHearingId(), vacateTrialEnriched.getVacatedTrialReasonId()));
     }
 
-    @Handles("listing.command.move-hearing-to-past-date-enriched")
-    public void moveHearingToPastDate(final JsonEnvelope command) throws EventStreamException {
+    @Handles("listing.command.move-hearing-date-enriched")
+    public void moveHearingDate(final JsonEnvelope command) throws EventStreamException {
 
-        LOGGER.info("'listing.command.move-hearing-to-past-date-enriched' received with payload {}", command.toObfuscatedDebugString());
+        LOGGER.info("'listing.command.move-hearing-date-enriched' received with payload {}", command.toObfuscatedDebugString());
 
         final JsonObject payload = command.payloadAsJsonObject();
         final UUID hearingId = fromString(payload.getString(HEARING_ID));
@@ -443,7 +443,7 @@ public class ListingCommandHandler {
                 ? Optional.of(fromString(payload.getString(MOVE_COURT_CENTRE_ID))) : Optional.empty();
 
         // hearing-day-court-schedule-updated matches days BY DATE in the projection, so it cannot
-        // move a day to a new date. Both paths re-issue every sitting day on the new past date instead:
+        // move a day to a new date. Both paths re-issue every sitting day on the new date instead:
         // MAGS carries the slot(s) booked by courtscheduler (one per working day), CROWN carries the
         // hearing's own room + the requested hearingStartTime (enriched by command-api - courtscheduler
         // is never called for CROWN before Phase 2, Baris decision D1).

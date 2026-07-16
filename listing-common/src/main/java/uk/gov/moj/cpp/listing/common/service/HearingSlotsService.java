@@ -57,7 +57,7 @@ public class HearingSlotsService {
     private static final String COURTSCHEDULER_SEARCH_BOOK_COURTSCHEDULES = "application/vnd.courtscheduler.search.book.hearing.slots+json";
 
     private static final String HEARINGS_RESOURCE = "/hearings/";
-    private static final String COURTSCHEDULER_MOVE_TO_PAST_DATE = "application/vnd.courtscheduler.move-hearing-date+json";
+    private static final String COURTSCHEDULER_MOVE_HEARING_DATE = "application/vnd.courtscheduler.move-hearing-date+json";
 
     private static final String CJS_CPP_UID = "CJSCPPUID";
     @Inject
@@ -123,14 +123,14 @@ public class HearingSlotsService {
         return query(COURTSCHEDULES_RESOURCE, COURTSCHEDULER_SEARCH_COURTSCHEDULES_BY_ID, params);
     }
 
-    public Response moveHearingToPastDate(final UUID hearingId, final JsonObject payload) {
+    public Response moveHearingDate(final UUID hearingId, final JsonObject payload) {
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("move-hearing-date for hearing id '{}'", hearingId);
         }
 
         try {
             final HttpPost httpPost = new HttpPost(new URL(baseUri + HEARINGS_RESOURCE + hearingId).toString());
-            httpPost.addHeader(CONTENT_TYPE, COURTSCHEDULER_MOVE_TO_PAST_DATE);
+            httpPost.addHeader(CONTENT_TYPE, COURTSCHEDULER_MOVE_HEARING_DATE);
             httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
 
             final StringEntity requestEntity = new StringEntity(payload.toString());
@@ -149,7 +149,7 @@ public class HearingSlotsService {
                     .entity(entityBodyAsString.isBlank() ? null : stringToJsonObjectConverter.convert(entityBodyAsString))
                     .build();
         } catch (IOException ex) {
-            LOGGER.error("Exception thrown on trying to move hearing to past date", ex);
+            LOGGER.error("Exception thrown on trying to move hearing date", ex);
             return Response
                     .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
                     .entity(ex.getMessage())

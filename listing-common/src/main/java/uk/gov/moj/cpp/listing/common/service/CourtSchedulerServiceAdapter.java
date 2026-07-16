@@ -5,8 +5,8 @@ import static java.util.Optional.empty;
 
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
-import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
-import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
+import uk.gov.moj.cpp.listing.common.movehearingdate.MoveHearingDateException;
+import uk.gov.moj.cpp.listing.common.movehearingdate.MoveHearingDateResult;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 
@@ -242,12 +242,12 @@ public class CourtSchedulerServiceAdapter {
      * CROWN moves stay listing-side until Phase 2 - Baris decision D1). courtscheduler expands
      * [startDate, endDate] into sitting days and books every day in one atomic call, returning one
      * booked slot per day. On any non-200 the upstream errorCode/status is surfaced via
-     * {@link MoveHearingToPastDateException} so the caller sends no event.
+     * {@link MoveHearingDateException} so the caller sends no event.
      *
      * @param hearingStartTime the requested start time already converted to UTC (HH:mm), matched by
      *                         courtscheduler against the UTC session windows (range-containment).
      */
-    public List<MoveHearingToPastDateResult> moveHearingToPastDate(final UUID hearingId,
+    public List<MoveHearingDateResult> moveHearingDate(final UUID hearingId,
                                                                    final UUID courtCentreId,
                                                                    final UUID courtRoomId,
                                                                    final String startTime,
@@ -264,17 +264,17 @@ public class CourtSchedulerServiceAdapter {
             requestBuilder.add(END_TIME, endTime);
         }
 
-        final Response response = hearingSlotsService.moveHearingToPastDate(hearingId, requestBuilder.build());
+        final Response response = hearingSlotsService.moveHearingDate(hearingId, requestBuilder.build());
         final int status = response.getStatus();
         final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject)
                 ? (JsonObject) response.getEntity()
                 : Json.createObjectBuilder().build();
 
         if (HttpStatus.SC_OK == status) {
-            return parseMoveHearingToPastDateResults(body);
+            return parseMoveHearingDateResults(body);
         }
 
-        LOGGER.error("moveHearingToPastDate from courtscheduler returned status {} for hearingId {}: {}",
+        LOGGER.error("moveHearingDate from courtscheduler returned status {} for hearingId {}: {}",
                 status, hearingId, body);
 
         if (HttpStatus.SC_NOT_FOUND == status) {
@@ -284,27 +284,27 @@ public class CourtSchedulerServiceAdapter {
                     .add(ERROR_CODE, NO_SESSION_FOUND)
                     .add(MESSAGE, NO_SESSION_FOUND_MESSAGE)
                     .build();
-            throw new MoveHearingToPastDateException(HttpStatus.SC_UNPROCESSABLE_ENTITY, noSessionBody,
-                    "moveHearingToPastDate found no session for hearingId " + hearingId);
+            throw new MoveHearingDateException(HttpStatus.SC_UNPROCESSABLE_ENTITY, noSessionBody,
+                    "moveHearingDate found no session for hearingId " + hearingId);
         }
 
-        throw new MoveHearingToPastDateException(status, body,
-                "moveHearingToPastDate returned " + status + " for hearingId " + hearingId);
+        throw new MoveHearingDateException(status, body,
+                "moveHearingDate returned " + status + " for hearingId " + hearingId);
     }
 
-    private static List<MoveHearingToPastDateResult> parseMoveHearingToPastDateResults(final JsonObject body) {
-        final List<MoveHearingToPastDateResult> results = new ArrayList<>();
+    private static List<MoveHearingDateResult> parseMoveHearingDateResults(final JsonObject body) {
+        final List<MoveHearingDateResult> results = new ArrayList<>();
         final JsonArray bookedSlots = body.containsKey(BOOKED_SLOTS) ? body.getJsonArray(BOOKED_SLOTS) : null;
         if (bookedSlots != null) {
             for (int i = 0; i < bookedSlots.size(); i++) {
-                results.add(parseMoveHearingToPastDateResult(bookedSlots.getJsonObject(i)));
+                results.add(parseMoveHearingDateResult(bookedSlots.getJsonObject(i)));
             }
         }
         return results;
     }
 
-    private static MoveHearingToPastDateResult parseMoveHearingToPastDateResult(final JsonObject slot) {
-        return new MoveHearingToPastDateResult(
+    private static MoveHearingDateResult parseMoveHearingDateResult(final JsonObject slot) {
+        return new MoveHearingDateResult(
                 slot.containsKey("courtScheduleId") ? UUID.fromString(slot.getString("courtScheduleId")) : null,
                 slot.getString(COURT_ROOM_ID, null),
                 slot.containsKey("sessionDate") ? LocalDate.parse(slot.getString("sessionDate")) : null,

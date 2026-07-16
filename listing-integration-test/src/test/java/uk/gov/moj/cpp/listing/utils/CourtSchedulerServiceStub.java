@@ -57,7 +57,7 @@ public class CourtSchedulerServiceStub {
     private static final String SEARCH_COURT_SCHEDULES_BY_ID = "/courtschedule/search.court-schedules-by-id";
     private static final String CROWN_FALLBACK_SEARCH_BOOK = "/crownfallbacksearchandbook/hearingslots";
     private static final String CROWN_FALLBACK_SEARCH_BOOK_TYPE = "application/vnd.courtscheduler.crown.fallback.search.book.hearing.slots+json";
-    private static final String MOVE_HEARING_TO_PAST_DATE_TYPE = "application/vnd.courtscheduler.move-hearing-date+json";
+    private static final String MOVE_HEARING_DATE_TYPE = "application/vnd.courtscheduler.move-hearing-date+json";
     private static final String COURTSCHEDULER_GET_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.get.hearing.slots+json";
     private static final String COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE = "application/vnd.courtscheduler.validate.session.availability+json";
     public static final String COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE = "application/vnd.courtscheduler.get.provisional.booking+json";
@@ -1438,21 +1438,21 @@ public class CourtSchedulerServiceStub {
                 ));
     }
 
-    // --- move-hearing-to-past-date stubs (MAGISTRATES-only: CROWN never reaches courtscheduler, Baris decision D1) ---
+    // --- move-hearing-date stubs (MAGISTRATES-only: CROWN never reaches courtscheduler, Baris decision D1) ---
 
-    /** Stub a successful single-day POST /hearings/{hearingId} move-hearing-to-past-date response
+    /** Stub a successful single-day POST /hearings/{hearingId} move-hearing-date response
      * (courtscheduler now returns a {@code bookedSlots} array, one slot per sitting day). */
-    public static void stubMoveHearingToPastDate(final String hearingId,
+    public static void stubMoveHearingDate(final String hearingId,
                                                   final String courtScheduleId,
                                                   final String courtRoomId,
                                                   final LocalDate sessionDate,
                                                   final int durationInMinutes) {
-        stubMoveHearingToPastDateMultiDay(hearingId, courtRoomId, durationInMinutes,
+        stubMoveHearingDateMultiDay(hearingId, courtRoomId, durationInMinutes,
                 java.util.List.of(courtScheduleId), java.util.List.of(sessionDate));
     }
 
     /** Stub a successful multi-day move: one booked slot per (courtScheduleId, sessionDate) pair. */
-    public static void stubMoveHearingToPastDateMultiDay(final String hearingId,
+    public static void stubMoveHearingDateMultiDay(final String hearingId,
                                                           final String courtRoomId,
                                                           final int durationInMinutes,
                                                           final java.util.List<String> courtScheduleIds,
@@ -1467,7 +1467,7 @@ public class CourtSchedulerServiceStub {
         final String body = "{\"bookedSlots\":[" + slots + "]}";
 
         stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId)))
-                .withHeader(CONTENT_TYPE, containing(MOVE_HEARING_TO_PAST_DATE_TYPE))
+                .withHeader(CONTENT_TYPE, containing(MOVE_HEARING_DATE_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(body)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
@@ -1484,8 +1484,8 @@ public class CourtSchedulerServiceStub {
     }
 
     /** Stub a courtscheduler rejection (e.g. 422 FUTURE_DATE_NOT_ALLOWED / NO_SESSION_FOUND, or a
-     * legacy 404 no-session) for move-hearing-to-past-date. */
-    public static void stubMoveHearingToPastDateFailure(final String hearingId,
+     * legacy 404 no-session) for move-hearing-date. */
+    public static void stubMoveHearingDateFailure(final String hearingId,
                                                          final int statusCode,
                                                          final String errorCode,
                                                          final String message) {
@@ -1496,15 +1496,15 @@ public class CourtSchedulerServiceStub {
         body.append("\"message\":\"").append(message).append("\"}");
 
         stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId)))
-                .withHeader(CONTENT_TYPE, containing(MOVE_HEARING_TO_PAST_DATE_TYPE))
+                .withHeader(CONTENT_TYPE, containing(MOVE_HEARING_DATE_TYPE))
                 .willReturn(aResponse().withStatus(statusCode)
                         .withBody(body.toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
     }
 
-    /** Verify courtscheduler's move-hearing-to-past-date endpoint was called for the given hearing
+    /** Verify courtscheduler's move-hearing-date endpoint was called for the given hearing
      * (matched on the URL path - hearingId no longer travels in the request body). */
-    public static void verifyMoveHearingToPastDateCalled(final String hearingId) {
+    public static void verifyMoveHearingDateCalled(final String hearingId) {
         Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
             try {
                 WireMock.verify(WireMock.postRequestedFor(urlPathMatching(
@@ -1517,7 +1517,7 @@ public class CourtSchedulerServiceStub {
     }
 
     /** Regression guard for the CROWN listing-side-only path: courtscheduler must never be called. */
-    public static void verifyMoveHearingToPastDateNeverCalled(final String hearingId) {
+    public static void verifyMoveHearingDateNeverCalled(final String hearingId) {
         WireMock.verify(0, WireMock.postRequestedFor(urlPathMatching(
                 COURT_SCHEDULER_ENDPOINT + "/hearings/" + hearingId)));
     }

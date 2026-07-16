@@ -12,8 +12,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
-import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
+import uk.gov.moj.cpp.listing.common.movehearingdate.MoveHearingDateException;
+import uk.gov.moj.cpp.listing.common.movehearingdate.MoveHearingDateResult;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -32,7 +32,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class CourtSchedulerServiceAdapterMoveHearingToPastDateTest {
+class CourtSchedulerServiceAdapterMoveHearingDateTest {
 
     // Absolute UTC instants sent as the move request's startTime/endTime (no separate date/local-time).
     // courtscheduler derives the per-day times and the duration from these, so the adapter no longer
@@ -73,10 +73,10 @@ class CourtSchedulerServiceAdapterMoveHearingToPastDateTest {
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.hasEntity()).thenReturn(true);
         when(response.getEntity()).thenReturn(body);
-        when(hearingSlotsService.moveHearingToPastDate(eq(hearingId), any())).thenReturn(response);
+        when(hearingSlotsService.moveHearingDate(eq(hearingId), any())).thenReturn(response);
 
-        final List<MoveHearingToPastDateResult> result =
-                adapter.moveHearingToPastDate(hearingId, courtCentreId, UUID.randomUUID(), START_TIME, START_TIME);
+        final List<MoveHearingDateResult> result =
+                adapter.moveHearingDate(hearingId, courtCentreId, UUID.randomUUID(), START_TIME, START_TIME);
 
         assertThat(result, hasSize(1));
         assertThat(result.get(0).courtScheduleId(), is(courtScheduleId));
@@ -97,9 +97,9 @@ class CourtSchedulerServiceAdapterMoveHearingToPastDateTest {
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.hasEntity()).thenReturn(true);
         when(response.getEntity()).thenReturn(body);
-        when(hearingSlotsService.moveHearingToPastDate(eq(hearingId), any())).thenReturn(response);
+        when(hearingSlotsService.moveHearingDate(eq(hearingId), any())).thenReturn(response);
 
-        final List<MoveHearingToPastDateResult> result = adapter.moveHearingToPastDate(
+        final List<MoveHearingDateResult> result = adapter.moveHearingDate(
                 hearingId, UUID.randomUUID(), UUID.randomUUID(), DAY_1_TIME, DAY_2_TIME);
 
         assertThat(result, hasSize(2));
@@ -118,9 +118,9 @@ class CourtSchedulerServiceAdapterMoveHearingToPastDateTest {
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.hasEntity()).thenReturn(true);
         when(response.getEntity()).thenReturn(body);
-        when(hearingSlotsService.moveHearingToPastDate(eq(hearingId), any())).thenReturn(response);
+        when(hearingSlotsService.moveHearingDate(eq(hearingId), any())).thenReturn(response);
 
-        final List<MoveHearingToPastDateResult> result = adapter.moveHearingToPastDate(
+        final List<MoveHearingDateResult> result = adapter.moveHearingDate(
                 hearingId, UUID.randomUUID(), UUID.randomUUID(), START_TIME, START_TIME);
 
         assertThat(result.get(0).durationInMinutes(), is(nullValue()));
@@ -135,10 +135,10 @@ class CourtSchedulerServiceAdapterMoveHearingToPastDateTest {
         when(response.getStatus()).thenReturn(422);
         when(response.hasEntity()).thenReturn(true);
         when(response.getEntity()).thenReturn(body);
-        when(hearingSlotsService.moveHearingToPastDate(any(), any())).thenReturn(response);
+        when(hearingSlotsService.moveHearingDate(any(), any())).thenReturn(response);
 
-        final MoveHearingToPastDateException ex = assertThrows(MoveHearingToPastDateException.class,
-                () -> adapter.moveHearingToPastDate(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+        final MoveHearingDateException ex = assertThrows(MoveHearingDateException.class,
+                () -> adapter.moveHearingDate(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                         START_TIME, START_TIME));
 
         assertThat(ex.getHttpStatus(), is(422));
@@ -151,10 +151,10 @@ class CourtSchedulerServiceAdapterMoveHearingToPastDateTest {
         when(response.getStatus()).thenReturn(HttpStatus.SC_NOT_FOUND);
         when(response.hasEntity()).thenReturn(true);
         when(response.getEntity()).thenReturn(body);
-        when(hearingSlotsService.moveHearingToPastDate(any(), any())).thenReturn(response);
+        when(hearingSlotsService.moveHearingDate(any(), any())).thenReturn(response);
 
-        final MoveHearingToPastDateException ex = assertThrows(MoveHearingToPastDateException.class,
-                () -> adapter.moveHearingToPastDate(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+        final MoveHearingDateException ex = assertThrows(MoveHearingDateException.class,
+                () -> adapter.moveHearingDate(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                         START_TIME, START_TIME));
 
         assertThat(ex.getHttpStatus(), is(HttpStatus.SC_UNPROCESSABLE_ENTITY));
@@ -173,12 +173,12 @@ class CourtSchedulerServiceAdapterMoveHearingToPastDateTest {
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.hasEntity()).thenReturn(true);
         when(response.getEntity()).thenReturn(body);
-        when(hearingSlotsService.moveHearingToPastDate(eq(hearingId), any())).thenReturn(response);
+        when(hearingSlotsService.moveHearingDate(eq(hearingId), any())).thenReturn(response);
 
-        adapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, DAY_1_TIME, DAY_2_TIME);
+        adapter.moveHearingDate(hearingId, courtCentreId, courtRoomId, DAY_1_TIME, DAY_2_TIME);
 
         final ArgumentCaptor<JsonObject> requestCaptor = ArgumentCaptor.forClass(JsonObject.class);
-        verify(hearingSlotsService).moveHearingToPastDate(eq(hearingId), requestCaptor.capture());
+        verify(hearingSlotsService).moveHearingDate(eq(hearingId), requestCaptor.capture());
         final JsonObject request = requestCaptor.getValue();
         assertThat(request.containsKey("hearingId"), is(false));
         assertThat(request.getString("courtCentreId"), is(courtCentreId.toString()));

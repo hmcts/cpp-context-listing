@@ -272,7 +272,7 @@ public class ReferenceDataStub {
 
     /**
      * Stubs a specific court centre id as a CROWN court centre (oucodeL1Name "Crown Courts") so the
-     * move-hearing-to-past-date jurisdiction lookup (which reads oucodeL1Name) resolves CROWN. Registered
+     * move-hearing-date jurisdiction lookup (which reads oucodeL1Name) resolves CROWN. Registered
      * at high WireMock priority so it overrides the generic Magistrates court-centre stub for this id.
      */
     public static void stubGetReferenceDataCrownCourtCentreById(final UUID courtCentreId, final UUID courtRoomId) {

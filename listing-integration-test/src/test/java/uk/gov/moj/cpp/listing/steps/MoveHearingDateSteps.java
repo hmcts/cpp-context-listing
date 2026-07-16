@@ -24,22 +24,22 @@ import java.util.UUID;
 import javax.ws.rs.core.Response;
 
 /**
- * Steps for the listing.command.move-hearing-to-past-date wrapper endpoint. Same
+ * Steps for the listing.command.move-hearing-date wrapper endpoint. Same
  * {@code POST /hearings/{hearingId}} resource as vacate-trial/extend-hearing, distinguished by
  * media type {@code application/vnd.listing.command.move-hearing-date+json}.
  */
-public class MoveHearingToPastDateSteps extends AbstractIT {
+public class MoveHearingDateSteps extends AbstractIT {
 
     private static final String LISTING_QUERY_HEARING = "listing.search.hearing";
     private static final String MEDIA_TYPE_SEARCH_HEARING = "application/vnd.listing.search.hearing+json";
-    private static final String LISTING_COMMAND_MOVE = "listing.command.move-hearing-to-past-date";
+    private static final String LISTING_COMMAND_MOVE = "listing.command.move-hearing-date";
     private static final String MEDIA_TYPE_MOVE = "application/vnd.listing.command.move-hearing-date+json";
 
     private final String hearingId;
     private final UUID courtCentreId;
     private final UUID courtRoomId;
 
-    public MoveHearingToPastDateSteps(final HearingsData hearingsData) {
+    public MoveHearingDateSteps(final HearingsData hearingsData) {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
         this.hearingId = hearingData.getId().toString();
         this.courtCentreId = hearingData.getCourtCentreId();
@@ -52,7 +52,7 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
     }
 
     public Response whenHearingIsMovedToPastDate(final String jurisdictionDir, final LocalDate date) {
-        final String payload = getPayload("test-data/" + jurisdictionDir + "/move-to-past-date/move-hearing-to-past-date.json")
+        final String payload = getPayload("test-data/" + jurisdictionDir + "/move-hearing-date/move-hearing-date.json")
                 .replace("%%COURT_CENTRE_ID%%", courtCentreId.toString())
                 .replace("%%COURT_ROOM_ID%%", courtRoomId.toString())
                 .replace("%%START_TIME%%", utc(date))

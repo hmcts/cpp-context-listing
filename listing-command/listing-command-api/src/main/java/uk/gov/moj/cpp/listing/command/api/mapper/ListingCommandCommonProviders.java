@@ -27,7 +27,7 @@ public class ListingCommandCommonProviders extends DefaultCommonProviders {
     @Override
     public Set<Class<?>> providers() {
         final Set<Class<?>> providers = super.providers();
-        providers.add(MoveHearingToPastDateExceptionMapper.class);
+        providers.add(MoveHearingDateExceptionMapper.class);
         return providers;
     }
 }

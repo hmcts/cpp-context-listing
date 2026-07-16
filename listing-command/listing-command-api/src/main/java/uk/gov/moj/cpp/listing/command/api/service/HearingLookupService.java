@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Synchronous, in-process lookup of a hearing from the listing viewstore, for command-api-side
  * existence/validation checks that must happen before a command is sent (e.g.
- * move-hearing-to-past-date's unknown-hearingId 422). Mirrors the
+ * move-hearing-date's unknown-hearingId 422). Mirrors the
  * {@code uk.gov.moj.cpp.listing.command.service.HearingService} pattern already used from
  * listing-command-handler, moved into command-api since the check has to happen here to be able
  * to reject with a synchronous 422 before anything is sent.

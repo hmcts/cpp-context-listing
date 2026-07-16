@@ -40,8 +40,8 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
 import uk.gov.moj.cpp.listing.command.api.service.HearingLookupService;
-import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
-import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
+import uk.gov.moj.cpp.listing.common.movehearingdate.MoveHearingDateException;
+import uk.gov.moj.cpp.listing.common.movehearingdate.MoveHearingDateResult;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.VacateTrialEnriched;
@@ -82,7 +82,7 @@ public class ListingCommandApi {
     private static final String LISTING_COMMAND_LIST_UNSCHEDULED_NEXT_HEARINGS_ENRICHED = "listing.command.list-unscheduled-next-hearings-enriched";
     private static final String LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING_ENRICHED = "listing.command.extend-hearing-for-hearing-enriched";
     private static final String LISTING_COMMAND_VACATE_TRIAL = "listing.command.vacate-trial-enriched";
-    private static final String LISTING_COMMAND_MOVE_HEARING_TO_PAST_DATE_ENRICHED = "listing.command.move-hearing-to-past-date-enriched";
+    private static final String LISTING_COMMAND_MOVE_HEARING_DATE_ENRICHED = "listing.command.move-hearing-date-enriched";
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String START_DATE = "startDate";
     private static final String JURISDICTION = "jurisdiction";
@@ -109,7 +109,7 @@ public class ListingCommandApi {
     private static final String END_DATE_TIME = "endDateTime";
     private static final String SEQUENCE = "sequence";
     private static final int MAX_PAST_MONTHS = 6;
-    // A multi-day move books a full court day per sitting day (see moveHearingToPastDate duration rule).
+    // A multi-day move books a full court day per sitting day (see moveHearingDate duration rule).
     private static final int MULTI_DAY_DURATION_MINUTES = 360;
     private static final String CROWN_JURISDICTION = "CROWN";
     private static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
@@ -376,7 +376,7 @@ public class ListingCommandApi {
     }
 
     @Handles("listing.command.move-hearing-date")
-    public void handleMoveHearingToPastDate(final JsonEnvelope envelope) {
+    public void handleMoveHearingDate(final JsonEnvelope envelope) {
         final JsonObject payload = envelope.payloadAsJsonObject();
 
         if (LOGGER.isDebugEnabled()) {
@@ -426,7 +426,7 @@ public class ListingCommandApi {
         // sitting days; MAGS = booked slots).
         final List<LocalDate> hearingDayDates = CROWN_JURISDICTION.equals(jurisdictionType)
                 ? enrichWithReissuedDays(enrichedBuilder, sittingDays, courtRoomId, startInstant, endInstant, durationInMinutes)
-                : enrichWithBookedPastDateSlots(enrichedBuilder, hearingId, courtCentreId, courtRoomId, startTimeStr, endTimeStr);
+                : enrichWithBookedSlots(enrichedBuilder, hearingId, courtCentreId, courtRoomId, startTimeStr, endTimeStr);
 
         // Main-level startDate/endDate track the hearing days: earliest and latest hearing-day date
         // (mirrors the update-hearing-for-listing / list-court-hearing enrichment that derives them from days).
@@ -441,7 +441,7 @@ public class ListingCommandApi {
         // pushed outside it.
         enrichPreservedDays(enrichedBuilder, hearingId, envelope, newStartDate, newEndDate);
 
-        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_MOVE_HEARING_TO_PAST_DATE_ENRICHED),
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_MOVE_HEARING_DATE_ENRICHED),
                 enrichedBuilder.build()));
     }
 
@@ -449,8 +449,8 @@ public class ListingCommandApi {
         try {
             return ZonedDateTime.parse(value);
         } catch (final DateTimeParseException e) {
-            throw new MoveHearingToPastDateException(422,
-                    buildMoveHearingToPastDateErrorBody(INVALID_DATE, field + " is not a valid date"),
+            throw new MoveHearingDateException(422,
+                    buildMoveHearingDateErrorBody(INVALID_DATE, field + " is not a valid date"),
                     field + " '" + value + "' is not a valid calendar date/time");
         }
     }
@@ -527,13 +527,13 @@ public class ListingCommandApi {
     private static void validateMoveDates(final LocalDate startDate, final LocalDate endDate) {
         final LocalDate today = LocalDate.now();
         if (endDate.isBefore(startDate)) {
-            throw new MoveHearingToPastDateException(422,
-                    buildMoveHearingToPastDateErrorBody(INVALID_DATE_RANGE, "endDate must not be earlier than startDate"),
+            throw new MoveHearingDateException(422,
+                    buildMoveHearingDateErrorBody(INVALID_DATE_RANGE, "endDate must not be earlier than startDate"),
                     "endDate " + endDate + " is earlier than startDate " + startDate);
         }
         if (startDate.isBefore(today.minusMonths(MAX_PAST_MONTHS))) {
-            throw new MoveHearingToPastDateException(422,
-                    buildMoveHearingToPastDateErrorBody(START_DATE_TOO_OLD,
+            throw new MoveHearingDateException(422,
+                    buildMoveHearingDateErrorBody(START_DATE_TOO_OLD,
                             "startDate cannot be earlier than " + MAX_PAST_MONTHS + " months before today"),
                     "startDate " + startDate + " is more than " + MAX_PAST_MONTHS + " months in the past");
         }
@@ -588,19 +588,19 @@ public class ListingCommandApi {
      * call (releasing prior allocations once), returning one booked slot per day, which we map into the
      * enriched hearingDays[]. A no-session/booking failure surfaces synchronously as a 422.
      */
-    private List<LocalDate> enrichWithBookedPastDateSlots(final JsonObjectBuilder enrichedBuilder, final UUID hearingId,
+    private List<LocalDate> enrichWithBookedSlots(final JsonObjectBuilder enrichedBuilder, final UUID hearingId,
                                                           final UUID courtCentreId, final UUID courtRoomId, final String startTime,
                                                           final String endTime) {
         // courtscheduler derives the per-day submitted start/end time-of-day and the duration
         // (single-day window / multi-day full court day) from startTime/endTime and returns one slot
         // per sitting day, which we map straight into the enriched hearingDays.
-        final List<MoveHearingToPastDateResult> slots = courtSchedulerServiceAdapter.moveHearingToPastDate(
+        final List<MoveHearingDateResult> slots = courtSchedulerServiceAdapter.moveHearingDate(
                 hearingId, courtCentreId, courtRoomId, startTime, endTime);
 
         final JsonArrayBuilder daysBuilder = createArrayBuilder();
         final List<LocalDate> dayDates = new ArrayList<>();
         int sequence = 1;
-        for (final MoveHearingToPastDateResult slot : slots) {
+        for (final MoveHearingDateResult slot : slots) {
             final JsonObjectBuilder dayBuilder = createObjectBuilder().add(SEQUENCE, sequence++);
             if (slot.sessionDate() != null) {
                 dayBuilder.add(SESSION_DATE, slot.sessionDate().toString());
@@ -627,7 +627,7 @@ public class ListingCommandApi {
         return dayDates;
     }
 
-    private static JsonObject buildMoveHearingToPastDateErrorBody(final String errorCode, final String message) {
+    private static JsonObject buildMoveHearingDateErrorBody(final String errorCode, final String message) {
         return createObjectBuilder()
                 .add(ERROR_CODE, errorCode)
                 .add(MESSAGE, message)

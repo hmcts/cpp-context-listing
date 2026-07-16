@@ -430,7 +430,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldPostMoveHearingToPastDateSuccessfully() throws Exception {
+    public void shouldPostMoveHearingDateSuccessfully() throws Exception {
         // Given
         when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
         final javax.json.JsonObject payload = javax.json.Json.createObjectBuilder()
@@ -446,7 +446,7 @@ class HearingSlotsServiceTest {
             when(httpResponse.getEntity()).thenReturn(null);
 
             // When
-            final Response response = hearingSlotsService.moveHearingToPastDate(TEST_HEARING_ID, payload);
+            final Response response = hearingSlotsService.moveHearingDate(TEST_HEARING_ID, payload);
 
             // Then
             assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -459,7 +459,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldHandleMoveHearingToPastDateErrorResponse() throws Exception {
+    public void shouldHandleMoveHearingDateErrorResponse() throws Exception {
         // Given
         when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
         final javax.json.JsonObject payload = javax.json.Json.createObjectBuilder()
@@ -475,7 +475,7 @@ class HearingSlotsServiceTest {
             when(httpResponse.getEntity()).thenReturn(null);
 
             // When
-            final Response response = hearingSlotsService.moveHearingToPastDate(TEST_HEARING_ID, payload);
+            final Response response = hearingSlotsService.moveHearingDate(TEST_HEARING_ID, payload);
 
             // Then
             assertThat(response.getStatus(), is(422));
@@ -483,7 +483,7 @@ class HearingSlotsServiceTest {
     }
 
     @Test
-    public void shouldHandleMoveHearingToPastDateIOException() throws Exception {
+    public void shouldHandleMoveHearingDateIOException() throws Exception {
         // Given
         when(systemUserProvider.getContextSystemUserId()).thenReturn(java.util.Optional.of(TEST_USER_ID));
         final javax.json.JsonObject payload = javax.json.Json.createObjectBuilder()
@@ -496,7 +496,7 @@ class HearingSlotsServiceTest {
             when(httpClient.execute(any(HttpPost.class))).thenThrow(new IOException("Test exception"));
 
             // When
-            final Response response = hearingSlotsService.moveHearingToPastDate(TEST_HEARING_ID, payload);
+            final Response response = hearingSlotsService.moveHearingDate(TEST_HEARING_ID, payload);
 
             // Then
             assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));

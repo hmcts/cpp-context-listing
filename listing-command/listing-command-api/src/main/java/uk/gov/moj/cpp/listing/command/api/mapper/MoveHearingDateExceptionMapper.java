@@ -5,7 +5,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.status;
 import static uk.gov.justice.services.messaging.JsonObjects.getString;
 
-import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
+import uk.gov.moj.cpp.listing.common.movehearingdate.MoveHearingDateException;
 
 import javax.inject.Inject;
 import javax.json.JsonObject;
@@ -17,14 +17,14 @@ import javax.ws.rs.ext.Provider;
 import org.slf4j.Logger;
 
 @Provider
-public class MoveHearingToPastDateExceptionMapper implements ExceptionMapper<MoveHearingToPastDateException> {
+public class MoveHearingDateExceptionMapper implements ExceptionMapper<MoveHearingDateException> {
 
     @Inject
     Logger logger;
 
     @Override
-    public Response toResponse(final MoveHearingToPastDateException exception) {
-        logger.debug("move-hearing-to-past-date rejected", exception);
+    public Response toResponse(final MoveHearingDateException exception) {
+        logger.debug("move-hearing-date rejected", exception);
 
         final JsonObjectBuilder builder = createObjectBuilder();
         if (exception.getErrorCode() != null) {

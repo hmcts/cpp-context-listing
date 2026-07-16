@@ -10,17 +10,17 @@ import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAll
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROWN_JURISDICTION;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMoveHearingToPastDate;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMoveHearingToPastDateMultiDay;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMoveHearingToPastDateFailure;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMoveHearingDate;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMoveHearingDateMultiDay;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMoveHearingDateFailure;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyMoveHearingToPastDateCalled;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyMoveHearingToPastDateNeverCalled;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyMoveHearingDateCalled;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyMoveHearingDateNeverCalled;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCrownCourtCentreById;
 
 import uk.gov.moj.cpp.listing.it.util.ItClock;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
-import uk.gov.moj.cpp.listing.steps.MoveHearingToPastDateSteps;
+import uk.gov.moj.cpp.listing.steps.MoveHearingDateSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.time.DayOfWeek;
@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
  * the returned slot as enrichment; CROWN is listing-side-only (Baris decision D1) and never calls
  * courtscheduler. Past and future dates are accepted; single- and multi-day ranges are covered.
  */
-class MoveHearingToPastDateIT extends AbstractIT {
+class MoveHearingDateIT extends AbstractIT {
 
     private static final String COURT_ROOM_ID = "731816c1-27ea-4711-8d92-0a1c2f3ab7de";
 
@@ -51,7 +51,7 @@ class MoveHearingToPastDateIT extends AbstractIT {
      * VacateHearingIT: MAGS listing needs the provisional-booking + list-hearing-in-court-sessions
      * stubs; CROWN listing never calls courtscheduler pre-Phase-2.
      */
-    private MoveHearingToPastDateSteps givenAListedHearing(final String jurisdiction) {
+    private MoveHearingDateSteps givenAListedHearing(final String jurisdiction) {
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(jurisdiction);
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
 
@@ -88,45 +88,45 @@ class MoveHearingToPastDateIT extends AbstractIT {
         pollUntilHearingIsPresent(hearingsData.getHearingData().get(0).getCourtCentreId().toString(),
                 ALLOCATED, getLoggedInUser().toString(), hearingsData.getHearingData().get(0).getId().toString());
 
-        return new MoveHearingToPastDateSteps(hearingsData);
+        return new MoveHearingDateSteps(hearingsData);
     }
 
     @Test
-    void shouldMoveMagistratesHearingToPastDateAndStoreCourtScheduleEnrichment() {
-        final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
+    void shouldMoveMagistratesHearingDateAndStoreCourtScheduleEnrichment() {
+        final MoveHearingDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
 
         final LocalDate pastDate = pastWorkingDay(1);
         final String courtScheduleId = randomUUID().toString();
-        stubMoveHearingToPastDate(moveSteps.getHearingId(), courtScheduleId, COURT_ROOM_ID, pastDate, 30);
+        stubMoveHearingDate(moveSteps.getHearingId(), courtScheduleId, COURT_ROOM_ID, pastDate, 30);
 
         final Response response = moveSteps.whenHearingIsMovedToPastDate("MAGS", pastDate);
 
         assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
-        verifyMoveHearingToPastDateCalled(moveSteps.getHearingId());
+        verifyMoveHearingDateCalled(moveSteps.getHearingId());
         moveSteps.verifyCourtScheduleStored(courtScheduleId);
     }
 
     @Test
     void shouldReleasePriorAllocationWhenMagistratesHearingMovedAgain() {
-        final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
+        final MoveHearingDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
         final LocalDate pastDate = pastWorkingDay(1);
 
         final String firstCourtScheduleId = randomUUID().toString();
-        stubMoveHearingToPastDate(moveSteps.getHearingId(), firstCourtScheduleId, COURT_ROOM_ID, pastDate, 30);
+        stubMoveHearingDate(moveSteps.getHearingId(), firstCourtScheduleId, COURT_ROOM_ID, pastDate, 30);
         assertThat(moveSteps.whenHearingIsMovedToPastDate("MAGS", pastDate).getStatus(), is(ACCEPTED.getStatusCode()));
         moveSteps.verifyCourtScheduleStored(firstCourtScheduleId);
 
         final String secondCourtScheduleId = randomUUID().toString();
-        stubMoveHearingToPastDate(moveSteps.getHearingId(), secondCourtScheduleId, COURT_ROOM_ID, pastDate, 30);
+        stubMoveHearingDate(moveSteps.getHearingId(), secondCourtScheduleId, COURT_ROOM_ID, pastDate, 30);
         assertThat(moveSteps.whenHearingIsMovedToPastDate("MAGS", pastDate).getStatus(), is(ACCEPTED.getStatusCode()));
         moveSteps.verifyCourtScheduleStored(secondCourtScheduleId);
     }
 
     @Test
     void shouldRejectMagistratesMoveWith422WhenNoCourtScheduleSessionExists() {
-        final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
+        final MoveHearingDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
 
-        stubMoveHearingToPastDateFailure(moveSteps.getHearingId(), 422, "NO_SESSION_FOUND",
+        stubMoveHearingDateFailure(moveSteps.getHearingId(), 422, "NO_SESSION_FOUND",
                 "No court-schedule session found for the given date and court centre");
 
         final Response response = moveSteps.whenHearingIsMovedToPastDate("MAGS", pastWorkingDay(1));
@@ -139,9 +139,9 @@ class MoveHearingToPastDateIT extends AbstractIT {
      * normalises that to the 422 NO_SESSION_FOUND contract. */
     @Test
     void shouldNormaliseLegacyCourtscheduler404ToA422NoSessionFound() {
-        final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
+        final MoveHearingDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
 
-        stubMoveHearingToPastDateFailure(moveSteps.getHearingId(), 404, null,
+        stubMoveHearingDateFailure(moveSteps.getHearingId(), 404, null,
                 "No court-schedule session found for the given date and court centre");
 
         final Response response = moveSteps.whenHearingIsMovedToPastDate("MAGS", pastWorkingDay(1));
@@ -153,7 +153,7 @@ class MoveHearingToPastDateIT extends AbstractIT {
     @Test
     void shouldRejectMoveWith400WhenMandatoryFieldMissing() {
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(MAGISTRATES_JURISDICTION);
-        final MoveHearingToPastDateSteps moveSteps = new MoveHearingToPastDateSteps(hearingsData);
+        final MoveHearingDateSteps moveSteps = new MoveHearingDateSteps(hearingsData);
 
         final Response response = moveSteps.whenHearingIsMovedWithMissingCourtCentre(pastWorkingDay(1));
 
@@ -163,7 +163,7 @@ class MoveHearingToPastDateIT extends AbstractIT {
     @Test
     void shouldRejectMoveWith400WhenCourtRoomIdMissing() {
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(MAGISTRATES_JURISDICTION);
-        final MoveHearingToPastDateSteps moveSteps = new MoveHearingToPastDateSteps(hearingsData);
+        final MoveHearingDateSteps moveSteps = new MoveHearingDateSteps(hearingsData);
 
         final Response response = moveSteps.whenHearingIsMovedWithMissingCourtRoom(pastWorkingDay(1));
 
@@ -173,7 +173,7 @@ class MoveHearingToPastDateIT extends AbstractIT {
     @Test
     void shouldRejectMoveWith400WhenStartTimeMissing() {
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(MAGISTRATES_JURISDICTION);
-        final MoveHearingToPastDateSteps moveSteps = new MoveHearingToPastDateSteps(hearingsData);
+        final MoveHearingDateSteps moveSteps = new MoveHearingDateSteps(hearingsData);
 
         final Response response = moveSteps.whenHearingIsMovedWithMissingStartTime();
 
@@ -181,14 +181,14 @@ class MoveHearingToPastDateIT extends AbstractIT {
     }
 
     @Test
-    void shouldMoveCrownHearingToPastDateListingSideOnlyWithoutCallingCourtScheduler() {
-        final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(CROWN_JURISDICTION);
+    void shouldMoveCrownHearingDateListingSideOnlyWithoutCallingCourtScheduler() {
+        final MoveHearingDateSteps moveSteps = givenAListedHearing(CROWN_JURISDICTION);
         final LocalDate pastDate = pastWorkingDay(1);
 
         final Response response = moveSteps.whenHearingIsMovedToPastDate("CROWN", pastDate);
 
         assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
-        verifyMoveHearingToPastDateNeverCalled(moveSteps.getHearingId());
+        verifyMoveHearingDateNeverCalled(moveSteps.getHearingId());
         moveSteps.verifyStartDateUpdated(pastDate);
     }
 
@@ -196,30 +196,30 @@ class MoveHearingToPastDateIT extends AbstractIT {
      * still stays listing-side (courtscheduler is never called for CROWN). */
     @Test
     void shouldAllowCrownMoveToFutureDateWithoutCallingCourtScheduler() {
-        final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(CROWN_JURISDICTION);
+        final MoveHearingDateSteps moveSteps = givenAListedHearing(CROWN_JURISDICTION);
         final LocalDate futureDate = futureWorkingDay(1);
 
         final Response response = moveSteps.whenHearingIsMovedToPastDate("CROWN", futureDate);
 
         assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
-        verifyMoveHearingToPastDateNeverCalled(moveSteps.getHearingId());
+        verifyMoveHearingDateNeverCalled(moveSteps.getHearingId());
         moveSteps.verifyStartDateUpdated(futureDate);
     }
 
     @Test
-    void shouldMoveMagistratesHearingToPastDateOverAMultiDayRange() {
-        final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
+    void shouldMoveMagistratesHearingDateOverAMultiDayRange() {
+        final MoveHearingDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
         final LocalDate startDate = pastWorkingDay(2);
         final LocalDate endDate = pastWorkingDay(1);
         final String firstScheduleId = randomUUID().toString();
         final String secondScheduleId = randomUUID().toString();
-        stubMoveHearingToPastDateMultiDay(moveSteps.getHearingId(), COURT_ROOM_ID, 30,
+        stubMoveHearingDateMultiDay(moveSteps.getHearingId(), COURT_ROOM_ID, 30,
                 List.of(firstScheduleId, secondScheduleId), List.of(startDate, endDate));
 
         final Response response = moveSteps.whenHearingIsMovedToPastDateRange(startDate, endDate, COURT_ROOM_ID);
 
         assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
-        verifyMoveHearingToPastDateCalled(moveSteps.getHearingId());
+        verifyMoveHearingDateCalled(moveSteps.getHearingId());
         moveSteps.verifyHearingDayCount(2);
         moveSteps.verifyCourtScheduleStored(firstScheduleId);
         moveSteps.verifyCourtScheduleStored(secondScheduleId);
@@ -229,15 +229,15 @@ class MoveHearingToPastDateIT extends AbstractIT {
 
     @Test
     void shouldMoveMagistratesHearingWithinTheRequestedRoom() {
-        final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
+        final MoveHearingDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
         final LocalDate pastDate = pastWorkingDay(1);
         final String courtScheduleId = randomUUID().toString();
-        stubMoveHearingToPastDate(moveSteps.getHearingId(), courtScheduleId, COURT_ROOM_ID, pastDate, 30);
+        stubMoveHearingDate(moveSteps.getHearingId(), courtScheduleId, COURT_ROOM_ID, pastDate, 30);
 
         final Response response = moveSteps.whenHearingIsMovedToPastDateRange(pastDate, pastDate, COURT_ROOM_ID);
 
         assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
-        verifyMoveHearingToPastDateCalled(moveSteps.getHearingId());
+        verifyMoveHearingDateCalled(moveSteps.getHearingId());
         moveSteps.verifyCourtScheduleStored(courtScheduleId);
     }
 
