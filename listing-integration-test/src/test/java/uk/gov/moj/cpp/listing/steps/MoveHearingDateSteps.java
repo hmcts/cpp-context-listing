@@ -163,6 +163,37 @@ public class MoveHearingDateSteps extends AbstractIT {
                         )));
     }
 
+    /** A non-sitting day whose date is still inside the moved span must survive the move. */
+    public void verifyNonSittingDayRetained(final LocalDate expectedNonSittingDay) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty(LISTING_QUERY_HEARING), hearingId));
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARING).withHeader(USER_ID, getLoggedInUser()).build())
+                .until(status().is(OK), payload().isJson(org.hamcrest.CoreMatchers.allOf(
+                        withJsonPath("$.id", is(hearingId)),
+                        withJsonPath("$.nonSittingDays", hasItem(expectedNonSittingDay.toString())))));
+    }
+
+    /** The hearing's single non-default day is still present after the move (date inside the new span). */
+    public void verifyNonDefaultDaysRetained() {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty(LISTING_QUERY_HEARING), hearingId));
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARING).withHeader(USER_ID, getLoggedInUser()).build())
+                .until(status().is(OK), payload().isJson(org.hamcrest.CoreMatchers.allOf(
+                        withJsonPath("$.id", is(hearingId)),
+                        withJsonPath("$.nonDefaultDays", org.hamcrest.Matchers.hasSize(1)))));
+    }
+
+    /** Non-sitting / non-default days the move pushed outside the new span must be cleared. */
+    public void verifyNonSittingAndNonDefaultDaysCleared() {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty(LISTING_QUERY_HEARING), hearingId));
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARING).withHeader(USER_ID, getLoggedInUser()).build())
+                .until(status().is(OK), payload().isJson(org.hamcrest.CoreMatchers.allOf(
+                        withJsonPath("$.id", is(hearingId)),
+                        withJsonPath("$.nonSittingDays", org.hamcrest.Matchers.hasSize(0)),
+                        withJsonPath("$.nonDefaultDays", org.hamcrest.Matchers.hasSize(0)))));
+    }
+
     /** Main-level startDate/endDate must track the hearing days: earliest and latest hearing-day date. */
     public void verifyStartAndEndDatesUpdated(final LocalDate expectedStartDate, final LocalDate expectedEndDate) {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),

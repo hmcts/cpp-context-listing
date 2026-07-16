@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.ACCEPTED;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -9,6 +10,7 @@ import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearing
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROWN_JURISDICTION;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetCourtSchedulesByIdWithDraftStatus;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMoveHearingDate;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMoveHearingDateMultiDay;
@@ -16,19 +18,28 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMoveHea
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyMoveHearingDateCalled;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyMoveHearingDateNeverCalled;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCrownCourtCentreById;
 
 import uk.gov.moj.cpp.listing.it.util.ItClock;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.MoveHearingDateSteps;
+import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
+import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData;
+import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.ws.rs.core.Response;
@@ -239,6 +250,95 @@ class MoveHearingDateIT extends AbstractIT {
         assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
         verifyMoveHearingDateCalled(moveSteps.getHearingId());
         moveSteps.verifyCourtScheduleStored(courtScheduleId);
+    }
+
+    // ---- non-sitting / non-default day preservation (retain unaffected, drop affected) ----
+
+    @Test
+    void shouldRetainNonSittingAndNonDefaultDaysStillWithinTheMovedSpan() {
+        final LocalDate spanStart = ItClock.today().minusDays(20);
+        final LocalDate spanEnd = spanStart.plusDays(4);
+        final LocalDate nonSittingDay = spanStart.plusDays(2);              // middle of the span
+        final String nonDefaultStartTime = spanStart.plusDays(3) + "T11:30:00Z";
+
+        final HearingsData hearingsData = givenAListedCrownHearingWithNonSittingAndNonDefaultDays(
+                spanStart, spanEnd, nonSittingDay, nonDefaultStartTime);
+        final MoveHearingDateSteps moveSteps = new MoveHearingDateSteps(hearingsData);
+        final String roomId = hearingsData.getHearingData().get(0).getCourtRoomId().toString();
+
+        // precondition: the update has projected the non-sitting / non-default days onto the hearing
+        moveSteps.verifyNonSittingDayRetained(nonSittingDay);
+
+        // move to the SAME span - both days stay inside [spanStart, spanEnd], so both are retained
+        final Response response = moveSteps.whenHearingIsMovedToPastDateRange(spanStart, spanEnd, roomId);
+
+        assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
+        verifyMoveHearingDateNeverCalled(moveSteps.getHearingId());        // CROWN stays listing-side
+        moveSteps.verifyNonSittingDayRetained(nonSittingDay);
+        moveSteps.verifyNonDefaultDaysRetained();
+    }
+
+    @Test
+    void shouldDropNonSittingAndNonDefaultDaysPushedOutsideTheMovedSpan() {
+        final LocalDate spanStart = ItClock.today().minusDays(20);
+        final LocalDate spanEnd = spanStart.plusDays(4);
+        final LocalDate nonSittingDay = spanStart.plusDays(2);
+        final String nonDefaultStartTime = spanStart.plusDays(3) + "T11:30:00Z";
+
+        final HearingsData hearingsData = givenAListedCrownHearingWithNonSittingAndNonDefaultDays(
+                spanStart, spanEnd, nonSittingDay, nonDefaultStartTime);
+        final MoveHearingDateSteps moveSteps = new MoveHearingDateSteps(hearingsData);
+        final String roomId = hearingsData.getHearingData().get(0).getCourtRoomId().toString();
+
+        moveSteps.verifyNonSittingDayRetained(nonSittingDay);              // update projected
+
+        // move to a later, non-overlapping span - both existing days now fall outside it, so both drop
+        final LocalDate newStart = spanEnd.plusDays(10);
+        final Response response = moveSteps.whenHearingIsMovedToPastDateRange(newStart, newStart.plusDays(2), roomId);
+
+        assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
+        verifyMoveHearingDateNeverCalled(moveSteps.getHearingId());
+        moveSteps.verifyNonSittingAndNonDefaultDaysCleared();
+    }
+
+    /**
+     * Lists a multi-day CROWN hearing, then updates it to carry a non-sitting day and a non-default-room
+     * day inside its span, so a subsequent move can be shown to retain or drop them by date. CROWN keeps
+     * the whole flow listing-side (no courtscheduler).
+     */
+    private HearingsData givenAListedCrownHearingWithNonSittingAndNonDefaultDays(
+            final LocalDate spanStart, final LocalDate spanEnd, final LocalDate nonSittingDay, final String nonDefaultStartTime) {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = getRandomCourtCenterId();
+        final UUID courtRoomId = getRandomCourtRoomId();
+        final ZonedDateTime hearingStartTime = spanStart.atTime(10, 30).atZone(ZoneOffset.UTC);
+
+        final CaseAndDefendantData caseData = new CaseAndDefendantData(hearingId, null, "CASE_URN_" + hearingId,
+                randomUUID(), null, CROWN_JURISDICTION, CROWN_JURISDICTION, null, null);
+        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(
+                caseData, courtCentreId, courtRoomId, spanEnd, hearingStartTime);
+
+        final ListCourtHearingSteps listSteps = new ListCourtHearingSteps(hearingsData);
+        final String listedCourtScheduleId = randomUUID().toString();
+        stubGetCourtSchedulesByIdWithDraftStatus(singletonList(listedCourtScheduleId), false);
+        stubListHearingInCourtSessions(hearingId.toString(), listedCourtScheduleId, hearingStartTime);
+        stubGetReferenceDataCrownCourtCentreById(courtCentreId, courtRoomId);
+
+        listSteps.whenCaseIsSubmittedForListing();
+        listSteps.verifyHearingListedFromAPI(ALLOCATED);
+        pollUntilHearingIsPresent(courtCentreId.toString(), ALLOCATED, getLoggedInUser().toString(), hearingId.toString());
+
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final List<NonDefaultDayData> nonDefaultDays = singletonList(new NonDefaultDayData(
+                nonDefaultStartTime, Optional.of(360), Optional.of(courtCentreId.toString()), Optional.of(courtRoomId.toString())));
+        final UpdatedHearingData updated = new UpdatedHearingData(
+                hearingId, courtCentreId, hearingData.getName(), courtRoomId, hearingData.getHearingTypeData(),
+                spanStart.toString(), spanEnd.toString(), nonDefaultDays, singletonList(nonSittingDay.toString()),
+                "ENGLISH", hearingData.getJudiciary(), CROWN_JURISDICTION, null, null, null,
+                hearingData.getHasVideoLink(), hearingData.getPublicListNote(), "High", null, null, false, null);
+        new UpdateHearingSteps(hearingsData, updated).whenHearingIsUpdatedForListing();
+
+        return hearingsData;
     }
 
     /** n-th working (Mon-Fri) day strictly before ItClock.today() - keeps past-date moves off weekends. */

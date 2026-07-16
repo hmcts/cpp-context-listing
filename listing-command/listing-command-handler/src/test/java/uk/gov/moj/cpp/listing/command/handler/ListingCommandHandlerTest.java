@@ -2574,6 +2574,9 @@ class ListingCommandHandlerTest {
         final uk.gov.moj.cpp.listing.domain.HearingDay movedDay = captor.getValue().get(0);
         assertThat(movedDay.getCourtScheduleId().orElse(null), is(courtScheduleId));
         assertThat(movedDay.getHearingDate(), is(LocalDate.parse("2026-05-01")));
+        // This hearing has no non-sitting/non-default days, so a move must touch ONLY startDate,
+        // endDate and hearingDays - assert no other interaction with the aggregate.
+        verifyNoMoreInteractions(hearing);
     }
 
     @Test
@@ -2651,6 +2654,14 @@ class ListingCommandHandlerTest {
         final uk.gov.moj.cpp.listing.domain.NonDefaultDay nonDefaultDay = nonDefaultCaptor.getValue().get(0);
         assertThat(nonDefaultDay.getCourtRoomId().orElse(null), is(2331));
         assertThat(nonDefaultDay.getStartTime(), is(java.time.ZonedDateTime.parse("2026-05-01T14:00:00.000Z")));
+
+        // A move must touch ONLY startDate + endDate + hearingDays + the retained non-sitting/non-default
+        // days - nothing else on the hearing. Verify the exact allowed calls and assert no others.
+        verify(hearing).changeStartDate(LocalDate.parse("2026-05-01"), HEARING_ID_1);
+        verify(hearing).changeEndDate(LocalDate.parse("2026-05-01"), HEARING_ID_1);
+        verify(hearing).assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
+                eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()));
+        verifyNoMoreInteractions(hearing);
     }
 
     @Test
