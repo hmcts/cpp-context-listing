@@ -24,5 +24,21 @@
       "durationInMinutes": 30,
       "sequence": 2
     }
+  ],
+  "nonSittingDays": [
+    "2026-07-02"
+  ],
+  "nonDefaultDays": [
+    {
+      "startTime": "2026-07-02T14:00:00.000Z",
+      "duration": 1,
+      "courtScheduleId": "59080b16-9c7b-3a20-9492-1545c672ba80",
+      "session": "PM",
+      "oucode": "B01LY00",
+      "courtRoomId": 2331,
+      "courtCentreId": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+      "roomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+      "virtual": false
+    }
   ]
 }

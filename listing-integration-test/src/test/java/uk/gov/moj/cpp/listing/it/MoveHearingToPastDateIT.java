@@ -36,9 +36,9 @@ import javax.ws.rs.core.Response;
 import org.junit.jupiter.api.Test;
 
 /**
- * Covers listing.command.move-hearing-to-past-date: MAGISTRATES wraps courtscheduler synchronously
- * and stores the returned slot as enrichment; CROWN is listing-side-only (Baris decision D1) and
- * never calls courtscheduler. Single-day only.
+ * Covers listing.command.move-hearing-date: MAGISTRATES wraps courtscheduler synchronously and stores
+ * the returned slot as enrichment; CROWN is listing-side-only (Baris decision D1) and never calls
+ * courtscheduler. Past and future dates are accepted; single- and multi-day ranges are covered.
  */
 class MoveHearingToPastDateIT extends AbstractIT {
 

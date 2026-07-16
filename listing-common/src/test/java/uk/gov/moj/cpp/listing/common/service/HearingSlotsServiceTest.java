@@ -454,7 +454,7 @@ class HearingSlotsServiceTest {
             final HttpPost capturedPost = httpPostCaptor.getValue();
             assertThat(capturedPost.getURI().toString(), is(BASE_URI + "/hearings/" + TEST_HEARING_ID));
             assertThat(capturedPost.getFirstHeader("Content-Type").getValue(),
-                    is("application/vnd.courtscheduler.move-hearing-to-past-date+json"));
+                    is("application/vnd.courtscheduler.move-hearing-date+json"));
         }
     }
 

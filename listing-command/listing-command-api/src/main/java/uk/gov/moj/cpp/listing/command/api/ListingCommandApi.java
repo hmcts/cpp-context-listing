@@ -39,22 +39,24 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
+import uk.gov.moj.cpp.listing.command.api.service.HearingLookupService;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.VacateTrialEnriched;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -98,6 +100,15 @@ public class ListingCommandApi {
     public static final String FUTURE_DATE_NOT_ALLOWED = "FUTURE_DATE_NOT_ALLOWED";
     public static final String INVALID_DATE_RANGE = "INVALID_DATE_RANGE";
     public static final String START_DATE_TOO_OLD = "START_DATE_TOO_OLD";
+    public static final String INVALID_DATE = "INVALID_DATE";
+    private static final String NON_SITTING_DAYS = "nonSittingDays";
+    private static final String NON_DEFAULT_DAYS = "nonDefaultDays";
+    private static final String NDD_START_TIME = "startTime";
+    // The canonical nonDefaultDay field set carried forward verbatim on a move (matches the enriched
+    // schema and the query-view shape); copying only these keys keeps the enriched payload strict.
+    private static final String[] NON_DEFAULT_DAY_KEYS = {
+            "startTime", "duration", "courtScheduleId", "session", "oucode", "courtRoomId", "courtCentreId", "roomId", "virtual"
+    };
     private static final String END_DATE = "endDate";
     private static final String START_DATE_TIME = "startDateTime";
     private static final String END_DATE_TIME = "endDateTime";
@@ -139,6 +150,8 @@ public class ListingCommandApi {
     private HearingEnrichmentOrchestrator hearingEnrichmentOrchestrator;
     @Inject
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
+    @Inject
+    private HearingLookupService hearingLookupService;
 
     @Handles("listing.command.list-court-hearing")
     public void handleListCourtHearing(final JsonEnvelope envelope) {
@@ -367,29 +380,33 @@ public class ListingCommandApi {
                 envelope.payload()));
     }
 
-    @Handles("listing.command.move-hearing-to-past-date")
+    @Handles("listing.command.move-hearing-date")
     public void handleMoveHearingToPastDate(final JsonEnvelope envelope) {
         final JsonObject payload = envelope.payloadAsJsonObject();
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("'listing.command.move-hearing-to-past-date' received with payload {}", envelope.toObfuscatedDebugString());
+            LOGGER.debug("'listing.command.move-hearing-date' received with payload {}", envelope.toObfuscatedDebugString());
         }
 
         final UUID hearingId = fromString(payload.getString(HEARING_ID));
         final UUID courtCentreId = fromString(payload.getString(COURT_CENTRE_ID));
         final UUID courtRoomId = fromString(payload.getString(COURT_ROOM_ID));
         // startDateTime/endDateTime are absolute UTC instants (e.g. 2026-07-20T10:30:00.000Z) and both
-        // mandatory. Keep the raw strings for the MAGS courtscheduler call (its request schema needs the
-        // exact T HH:mm:ss wire format); parse instants once for the date and duration derivations.
+        // mandatory. The request schema only range-checks digits with a regex, so an impossible calendar
+        // date such as 2026-04-31 passes schema validation and reaches here - parseInstant converts that
+        // into a clean 422 INVALID_DATE rather than an unhandled 500. Keep the raw strings for the MAGS
+        // courtscheduler call (its request schema needs the exact T HH:mm:ss wire format).
         final String startTimeStr = payload.getString(START_DATE_TIME);
         final String endTimeStr = payload.getString(END_DATE_TIME);
-        final ZonedDateTime startInstant = ZonedDateTime.parse(startTimeStr);
-        final ZonedDateTime endInstant = ZonedDateTime.parse(endTimeStr);
+        final ZonedDateTime startInstant = parseInstant(startTimeStr, START_DATE_TIME);
+        final ZonedDateTime endInstant = parseInstant(endTimeStr, END_DATE_TIME);
         final LocalDate startDate = startInstant.toLocalDate();
         final LocalDate endDate = endInstant.toLocalDate();
 
         validateMoveDates(startDate, endDate);
-        final List<LocalDate> sittingDays = workingDaysBetween(startDate, endDate);
+        // Weekends are permitted: every calendar day in [startDate, endDate] is a sitting day, so a
+        // Saturday or Sunday can be the start, the end, or fall inside a multi-day span.
+        final List<LocalDate> sittingDays = datesBetween(startDate, endDate);
 
         // Duration rule: a multi-day move (endDate after startDate) books a full court day
         // (MULTI_DAY_DURATION_MINUTES) per sitting day; a single-day move uses the submitted window.
@@ -409,8 +426,9 @@ public class ListingCommandApi {
                 .add(JURISDICTION, jurisdictionType)
                 .add(COURT_CENTRE_ID, courtCentreId.toString());
 
-        // CROWN moves are listing-side only (Baris decision D1); MAGS delegates to courtscheduler. Both
-        // return the actual hearing-day dates they produced (CROWN = sitting days; MAGS = booked slots).
+        // CROWN moves are listing-side only (Baris decision D1) and never call courtscheduler; MAGS
+        // delegates to courtscheduler. Both return the actual hearing-day dates they produced (CROWN =
+        // sitting days; MAGS = booked slots).
         final List<LocalDate> hearingDayDates = CROWN_JURISDICTION.equals(jurisdictionType)
                 ? enrichWithReissuedDays(enrichedBuilder, sittingDays, courtRoomId, startInstant, endInstant, durationInMinutes)
                 : enrichWithBookedPastDateSlots(enrichedBuilder, hearingId, courtCentreId, courtRoomId, startTimeStr, endTimeStr);
@@ -418,11 +436,87 @@ public class ListingCommandApi {
         // Main-level startDate/endDate track the hearing days: earliest and latest hearing-day date
         // (mirrors the update-hearing-for-listing / list-court-hearing enrichment that derives them from days).
         final List<LocalDate> sortedDayDates = hearingDayDates.stream().sorted().collect(Collectors.toList());
-        enrichedBuilder.add(START_DATE, sortedDayDates.get(0).toString());
-        enrichedBuilder.add(END_DATE, sortedDayDates.get(sortedDayDates.size() - 1).toString());
+        final LocalDate newStartDate = sortedDayDates.get(0);
+        final LocalDate newEndDate = sortedDayDates.get(sortedDayDates.size() - 1);
+        enrichedBuilder.add(START_DATE, newStartDate.toString());
+        enrichedBuilder.add(END_DATE, newEndDate.toString());
+
+        // Preserve the hearing's existing non-sitting / non-default days that the move does not affect
+        // (their date still falls within the new [newStartDate, newEndDate] span); drop those the move
+        // pushed outside it.
+        enrichPreservedDays(enrichedBuilder, hearingId, envelope, newStartDate, newEndDate);
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_MOVE_HEARING_TO_PAST_DATE_ENRICHED),
                 enrichedBuilder.build()));
+    }
+
+    private static ZonedDateTime parseInstant(final String value, final String field) {
+        try {
+            return ZonedDateTime.parse(value);
+        } catch (final DateTimeParseException e) {
+            throw new MoveHearingToPastDateException(422,
+                    buildMoveHearingToPastDateErrorBody(INVALID_DATE, field + " is not a valid date"),
+                    field + " '" + value + "' is not a valid calendar date/time");
+        }
+    }
+
+    /**
+     * Fetches the latest known hearing (best effort - a move never fails just because the lookup is
+     * empty) and carries forward only the nonSittingDays / nonDefaultDays whose date still falls within
+     * the new [newStartDate, newEndDate] span. Entries the move pushed outside the new span are dropped.
+     * A retained array is added only when the hearing actually had entries of that kind, so an untouched
+     * hearing sends nothing and the command handler leaves that aggregate state alone.
+     */
+    private void enrichPreservedDays(final JsonObjectBuilder enrichedBuilder, final UUID hearingId,
+                                     final JsonEnvelope envelope, final LocalDate newStartDate, final LocalDate newEndDate) {
+        final Optional<JsonObject> hearing = hearingLookupService.findHearing(hearingId, envelope);
+        if (hearing.isEmpty()) {
+            return;
+        }
+        final JsonObject currentHearing = hearing.get();
+
+        if (currentHearing.containsKey(NON_SITTING_DAYS) && !currentHearing.isNull(NON_SITTING_DAYS)) {
+            final JsonArray existing = currentHearing.getJsonArray(NON_SITTING_DAYS);
+            if (!existing.isEmpty()) {
+                final JsonArrayBuilder retained = createArrayBuilder();
+                for (int i = 0; i < existing.size(); i++) {
+                    final String dayStr = existing.getString(i);
+                    if (isWithin(LocalDate.parse(dayStr), newStartDate, newEndDate)) {
+                        retained.add(dayStr);
+                    }
+                }
+                enrichedBuilder.add(NON_SITTING_DAYS, retained);
+            }
+        }
+
+        if (currentHearing.containsKey(NON_DEFAULT_DAYS) && !currentHearing.isNull(NON_DEFAULT_DAYS)) {
+            final JsonArray existing = currentHearing.getJsonArray(NON_DEFAULT_DAYS);
+            if (!existing.isEmpty()) {
+                final JsonArrayBuilder retained = createArrayBuilder();
+                for (int i = 0; i < existing.size(); i++) {
+                    final JsonObject nonDefaultDay = existing.getJsonObject(i);
+                    final LocalDate day = ZonedDateTime.parse(nonDefaultDay.getString(NDD_START_TIME)).toLocalDate();
+                    if (isWithin(day, newStartDate, newEndDate)) {
+                        retained.add(copyNonDefaultDay(nonDefaultDay));
+                    }
+                }
+                enrichedBuilder.add(NON_DEFAULT_DAYS, retained);
+            }
+        }
+    }
+
+    private static JsonObjectBuilder copyNonDefaultDay(final JsonObject src) {
+        final JsonObjectBuilder builder = createObjectBuilder();
+        for (final String key : NON_DEFAULT_DAY_KEYS) {
+            if (src.containsKey(key) && !src.isNull(key)) {
+                builder.add(key, src.get(key));
+            }
+        }
+        return builder;
+    }
+
+    private static boolean isWithin(final LocalDate day, final LocalDate start, final LocalDate end) {
+        return !day.isBefore(start) && !day.isAfter(end);
     }
 
     /**
@@ -446,23 +540,17 @@ public class ListingCommandApi {
     }
 
     /**
-     * Expands an inclusive [startDate, endDate] span into sitting (Mon-Fri) days. Courts do not sit at
-     * weekends so a multi-day move skips Sat/Sun; a pure-weekend span has no sitting day and is rejected.
+     * Expands an inclusive [startDate, endDate] span into one sitting day per calendar date. Weekends
+     * are permitted, so every day (including Saturday and Sunday) becomes a sitting day of the move.
+     * validateMoveDates has already guaranteed endDate is not before startDate, so this never returns
+     * an empty list.
      */
-    private static List<LocalDate> workingDaysBetween(final LocalDate startDate, final LocalDate endDate) {
+    private static List<LocalDate> datesBetween(final LocalDate startDate, final LocalDate endDate) {
         final List<LocalDate> days = new ArrayList<>();
         LocalDate cursor = startDate;
         while (!cursor.isAfter(endDate)) {
-            final DayOfWeek dow = cursor.getDayOfWeek();
-            if (dow != DayOfWeek.SATURDAY && dow != DayOfWeek.SUNDAY) {
-                days.add(cursor);
-            }
+            days.add(cursor);
             cursor = cursor.plusDays(1);
-        }
-        if (days.isEmpty()) {
-            throw new MoveHearingToPastDateException(422,
-                    buildMoveHearingToPastDateErrorBody(INVALID_DATE_RANGE, "No sitting (weekday) day in the requested range"),
-                    "No working day between " + startDate + " and " + endDate);
         }
         return days;
     }

@@ -69,6 +69,7 @@ import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
 import uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
+import uk.gov.moj.cpp.listing.command.api.service.HearingLookupService;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
@@ -137,6 +138,8 @@ public class ListingCommandApiTest {
     private HearingEnrichmentOrchestrator hearingEnrichmentOrchestrator;
     @Mock
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
+    @Mock
+    private HearingLookupService hearingLookupService;
 
     private static final Type HEARING_TYPE = Type.type()
             .withId(fromString("6e1bef55-7e13-4615-b3ba-8663f4438e16"))
@@ -701,20 +704,116 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldRejectMoveWhenRangeContainsNoSittingDay() {
-        // Saturday..Sunday span: passes validateMoveDates (ordered, within 6 months) but expands to
-        // zero sitting days - courts do not sit at weekends.
+    public void shouldAllowMoveAcrossAWeekend() {
+        // Weekends are now permitted: a Saturday..Sunday span expands to two sitting days (no rejection).
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
         final LocalDate saturday = mostRecentSaturday();
-        stubMovePayload(randomUUID(), randomUUID(), saturday, "10:00", saturday.plusDays(1), "10:00");
+        stubMovePayload(hearingId, courtCentreId, saturday, "10:00", saturday.plusDays(1), "10:00");
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Crown Courts"));
+
+        final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
+        listingCommandApi.handleMoveHearingToPastDate(envelope);
+
+        verify(sender, times(1)).send(captor.capture());
+        final JsonObject sent = (JsonObject) captor.getValue().payload();
+        final JsonArray days = sent.getJsonArray("hearingDays");
+        assertThat(days.size(), is(2));
+        assertThat(days.getJsonObject(0).getString("sessionDate"), is(saturday.toString()));
+        assertThat(days.getJsonObject(1).getString("sessionDate"), is(saturday.plusDays(1).toString()));
+        assertThat(sent.getString("startDate"), is(saturday.toString()));
+        assertThat(sent.getString("endDate"), is(saturday.plusDays(1).toString()));
+    }
+
+    @Test
+    public void shouldRejectMoveWhenDateIsNotARealCalendarDate() {
+        // 31 April passes the request schema's digit-only regex but is not a real date; the handler must
+        // turn the parse failure into a clean 422 INVALID_DATE rather than an unhandled 500.
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(payload.getString("hearingId")).willReturn(randomUUID().toString());
+        given(payload.getString("courtCentreId")).willReturn(randomUUID().toString());
+        given(payload.getString("courtRoomId")).willReturn(MOVE_COURT_ROOM_ID.toString());
+        given(payload.getString("startDateTime")).willReturn("2026-04-31T10:00:00.000Z");
+        given(payload.getString("endDateTime")).willReturn("2026-04-31T10:00:00.000Z");
 
         final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
                 () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
 
         assertThat(thrown.getHttpStatus(), is(422));
-        assertThat(thrown.getErrorCode(), is("INVALID_DATE_RANGE"));
-        // distinguishes the no-sitting-day INVALID_DATE_RANGE from the end-before-start one
-        assertThat(thrown.getResponseBody().getString("message"), containsString("sitting"));
+        assertThat(thrown.getErrorCode(), is("INVALID_DATE"));
         verify(sender, never()).send(any());
+    }
+
+    @Test
+    public void shouldRetainNonSittingAndNonDefaultDaysThatStayWithinTheNewSpan() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final LocalDate monday = recentPastMonday();
+        final LocalDate tuesday = monday.plusDays(1);
+        final LocalDate wednesday = monday.plusDays(2);
+
+        // multi-day CROWN move Mon..Wed; the existing non-sitting/non-default day sits on Tuesday, which
+        // is still inside the new [Mon, Wed] span, so it must be carried forward.
+        stubMovePayload(hearingId, courtCentreId, monday, "10:30", wednesday, "17:00");
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Crown Courts"));
+        given(hearingLookupService.findHearing(eq(hearingId), any()))
+                .willReturn(Optional.of(hearingWithNonSittingAndNonDefaultDayOn(tuesday, courtCentreId)));
+
+        final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
+        listingCommandApi.handleMoveHearingToPastDate(envelope);
+
+        verify(sender, times(1)).send(captor.capture());
+        final JsonObject sent = (JsonObject) captor.getValue().payload();
+        assertThat(sent.getJsonArray("nonSittingDays").size(), is(1));
+        assertThat(sent.getJsonArray("nonSittingDays").getString(0), is(tuesday.toString()));
+        assertThat(sent.getJsonArray("nonDefaultDays").size(), is(1));
+        assertThat(sent.getJsonArray("nonDefaultDays").getJsonObject(0).getString("startTime"),
+                is(tuesday + "T14:00:00.000Z"));
+        assertThat(sent.getJsonArray("nonDefaultDays").getJsonObject(0).getInt("courtRoomId"), is(2331));
+    }
+
+    @Test
+    public void shouldDropNonSittingAndNonDefaultDaysPushedOutsideTheNewSpan() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final LocalDate monday = recentPastMonday();
+        final LocalDate wednesday = monday.plusDays(2);
+        // the existing non-sitting/non-default day sits well before the new [Mon, Wed] span, so the move
+        // pushes it outside the hearing and it must be dropped (empty retained arrays clear it downstream).
+        final LocalDate outside = monday.minusDays(30);
+
+        stubMovePayload(hearingId, courtCentreId, monday, "10:30", wednesday, "17:00");
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Crown Courts"));
+        given(hearingLookupService.findHearing(eq(hearingId), any()))
+                .willReturn(Optional.of(hearingWithNonSittingAndNonDefaultDayOn(outside, courtCentreId)));
+
+        final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
+        listingCommandApi.handleMoveHearingToPastDate(envelope);
+
+        verify(sender, times(1)).send(captor.capture());
+        final JsonObject sent = (JsonObject) captor.getValue().payload();
+        assertThat(sent.getJsonArray("nonSittingDays").size(), is(0));
+        assertThat(sent.getJsonArray("nonDefaultDays").size(), is(0));
+    }
+
+    // A hearing view carrying a single non-sitting day and a single non-default day, both dated {@code day}.
+    private JsonObject hearingWithNonSittingAndNonDefaultDayOn(final LocalDate day, final UUID courtCentreId) {
+        return Json.createObjectBuilder()
+                .add("nonSittingDays", Json.createArrayBuilder().add(day.toString()))
+                .add("nonDefaultDays", Json.createArrayBuilder().add(Json.createObjectBuilder()
+                        .add("startTime", day + "T14:00:00.000Z")
+                        .add("duration", 1)
+                        .add("courtScheduleId", "59080b16-9c7b-3a20-9492-1545c672ba80")
+                        .add("session", "PM")
+                        .add("oucode", "B01LY00")
+                        .add("courtRoomId", 2331)
+                        .add("courtCentreId", courtCentreId.toString())
+                        .add("roomId", "b4562684-9209-3ec4-a544-7f80dabd94d8")
+                        .add("virtual", false)))
+                .build();
     }
 
     @Test

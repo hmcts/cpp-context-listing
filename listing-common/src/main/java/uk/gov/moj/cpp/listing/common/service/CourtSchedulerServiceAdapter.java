@@ -60,7 +60,7 @@ public class CourtSchedulerServiceAdapter {
     public static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
     public static final String NO_SESSION_FOUND = "NO_SESSION_FOUND";
     public static final String NO_SESSION_FOUND_MESSAGE =
-            "No suitable sessions are available for the selected date. Please create a session or select another date.";
+            "No suitable sessions are available for the selected date. Please select another date.";
     private static final String ERROR_CODE = "errorCode";
     private static final String MESSAGE = "message";
     @Inject

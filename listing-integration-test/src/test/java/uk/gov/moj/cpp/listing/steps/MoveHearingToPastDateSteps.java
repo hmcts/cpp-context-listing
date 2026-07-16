@@ -26,14 +26,14 @@ import javax.ws.rs.core.Response;
 /**
  * Steps for the listing.command.move-hearing-to-past-date wrapper endpoint. Same
  * {@code POST /hearings/{hearingId}} resource as vacate-trial/extend-hearing, distinguished by
- * media type {@code application/vnd.listing.command.move-hearing-to-past-date+json}.
+ * media type {@code application/vnd.listing.command.move-hearing-date+json}.
  */
 public class MoveHearingToPastDateSteps extends AbstractIT {
 
     private static final String LISTING_QUERY_HEARING = "listing.search.hearing";
     private static final String MEDIA_TYPE_SEARCH_HEARING = "application/vnd.listing.search.hearing+json";
     private static final String LISTING_COMMAND_MOVE = "listing.command.move-hearing-to-past-date";
-    private static final String MEDIA_TYPE_MOVE = "application/vnd.listing.command.move-hearing-to-past-date+json";
+    private static final String MEDIA_TYPE_MOVE = "application/vnd.listing.command.move-hearing-date+json";
 
     private final String hearingId;
     private final UUID courtCentreId;

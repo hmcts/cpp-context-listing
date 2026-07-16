@@ -202,6 +202,14 @@ public class ListingCommandHandler {
     private static final String CROWN_JURISDICTION = "CROWN";
     private static final String HEARING_DAYS = "hearingDays";
     private static final String SEQUENCE = "sequence";
+    private static final String NON_SITTING_DAYS = "nonSittingDays";
+    private static final String NON_DEFAULT_DAYS = "nonDefaultDays";
+    private static final String NDD_START_TIME = "startTime";
+    private static final String NDD_DURATION = "duration";
+    private static final String NDD_OUCODE = "oucode";
+    private static final String NDD_SESSION = "session";
+    private static final String NDD_ROOM_ID = "roomId";
+    private static final String NDD_VIRTUAL = "virtual";
 
     @Inject
     private EventSource eventSource;
@@ -449,11 +457,28 @@ public class ListingCommandHandler {
                 ? uk.gov.justice.core.courts.JurisdictionType.CROWN
                 : uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
 
-        updateHearingEventStream(command, hearingId, (Hearing hearing) -> Stream.concat(
-                Stream.concat(
-                        hearing.changeStartDate(startDate, hearingId),
-                        hearing.changeEndDate(endDate, hearingId)),
-                hearing.assignHearingDaysV2(hearingId, movedDays, null, null, jurisdictionType, emptyList())));
+        // The command-api has already trimmed nonSittingDays/nonDefaultDays to the entries whose date
+        // still falls within the moved [startDate, endDate] span; entries the move pushed outside the
+        // new span are dropped. Re-assign the retained subset so a move keeps the days it should and
+        // clears the ones it shouldn't. A null list means the hearing had none, so we skip the call;
+        // assignNon*Days itself no-ops when the retained list is unchanged.
+        final List<LocalDate> retainedNonSittingDays = readNonSittingDays(payload);
+        final List<uk.gov.moj.cpp.listing.domain.NonDefaultDay> retainedNonDefaultDays = readNonDefaultDays(payload);
+
+        updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
+            Stream<Object> events = Stream.concat(
+                    Stream.concat(
+                            hearing.changeStartDate(startDate, hearingId),
+                            hearing.changeEndDate(endDate, hearingId)),
+                    hearing.assignHearingDaysV2(hearingId, movedDays, null, null, jurisdictionType, emptyList()));
+            if (retainedNonSittingDays != null) {
+                events = Stream.concat(events, hearing.assignNonSittingDays(retainedNonSittingDays, hearingId));
+            }
+            if (retainedNonDefaultDays != null) {
+                events = Stream.concat(events, hearing.assignNonDefaultDays(retainedNonDefaultDays, hearingId));
+            }
+            return events;
+        });
     }
 
     private static uk.gov.moj.cpp.listing.domain.HearingDay buildMovedHearingDay(final JsonObject day,
@@ -491,6 +516,56 @@ public class ListingCommandHandler {
                 .withCourtCentreId(courtCentreId)
                 .withCourtRoomId(courtRoomId)
                 .build();
+    }
+
+    /**
+     * Retained nonSittingDays carried on the move-enriched command (see command-api). A missing key
+     * means the hearing had none, so we return {@code null} to skip the aggregate call entirely; an
+     * empty array means every existing non-sitting day was pushed outside the new span and should be
+     * cleared.
+     */
+    private static List<LocalDate> readNonSittingDays(final JsonObject payload) {
+        if (!payload.containsKey(NON_SITTING_DAYS) || payload.isNull(NON_SITTING_DAYS)) {
+            return null;
+        }
+        final JsonArray arr = payload.getJsonArray(NON_SITTING_DAYS);
+        final List<LocalDate> days = new ArrayList<>();
+        for (int i = 0; i < arr.size(); i++) {
+            days.add(parse(arr.getString(i)));
+        }
+        return days;
+    }
+
+    /** Retained nonDefaultDays carried on the move-enriched command; same null/empty contract as {@link #readNonSittingDays}. */
+    private static List<uk.gov.moj.cpp.listing.domain.NonDefaultDay> readNonDefaultDays(final JsonObject payload) {
+        if (!payload.containsKey(NON_DEFAULT_DAYS) || payload.isNull(NON_DEFAULT_DAYS)) {
+            return null;
+        }
+        final JsonArray arr = payload.getJsonArray(NON_DEFAULT_DAYS);
+        final List<uk.gov.moj.cpp.listing.domain.NonDefaultDay> days = new ArrayList<>();
+        for (int i = 0; i < arr.size(); i++) {
+            days.add(buildNonDefaultDay(arr.getJsonObject(i)));
+        }
+        return days;
+    }
+
+    /** Rebuilds a domain NonDefaultDay verbatim from the query-view JSON shape (retain-as-is). */
+    private static uk.gov.moj.cpp.listing.domain.NonDefaultDay buildNonDefaultDay(final JsonObject o) {
+        return uk.gov.moj.cpp.listing.domain.NonDefaultDay.nonDefaultDay()
+                .withStartTime(ZonedDateTime.parse(o.getString(NDD_START_TIME)))
+                .withDuration(o.containsKey(NDD_DURATION) && !o.isNull(NDD_DURATION) ? of(o.getInt(NDD_DURATION)) : empty())
+                .withCourtScheduleId(optString(o, COURT_SCHEDULE_ID))
+                .withCourtRoomId(o.containsKey(MOVE_COURT_ROOM_ID) && !o.isNull(MOVE_COURT_ROOM_ID) ? of(o.getInt(MOVE_COURT_ROOM_ID)) : empty())
+                .withOucode(optString(o, NDD_OUCODE))
+                .withSession(optString(o, NDD_SESSION))
+                .withRoomId(optString(o, NDD_ROOM_ID))
+                .withCourtCentreId(optString(o, MOVE_COURT_CENTRE_ID))
+                .withVirtual(o.containsKey(NDD_VIRTUAL) && !o.isNull(NDD_VIRTUAL) ? of(o.getBoolean(NDD_VIRTUAL)) : empty())
+                .build();
+    }
+
+    private static Optional<String> optString(final JsonObject o, final String key) {
+        return o.containsKey(key) && !o.isNull(key) ? of(o.getString(key)) : empty();
     }
 
     @Handles("listing.command.hearing-vacate-trial")

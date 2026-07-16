@@ -2627,6 +2627,53 @@ class ListingCommandHandlerTest {
     }
 
     @Test
+    public void listingCommandHandlerShouldAssignRetainedNonSittingAndNonDefaultDaysOnMove() throws Exception {
+        final JsonEnvelope commandEnvelope = getEnvelopeForMoveHearingWithRetainedDays();
+
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.changeStartDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.changeEndDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
+                eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()))).thenReturn(Stream.empty());
+        when(hearing.assignNonSittingDays(anyList(), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.assignNonDefaultDays(anyList(), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+
+        listingCommandHandler.moveHearingToPastDate(commandEnvelope);
+
+        final ArgumentCaptor<List<LocalDate>> nonSittingCaptor = ArgumentCaptor.forClass(List.class);
+        verify(hearing).assignNonSittingDays(nonSittingCaptor.capture(), eq(HEARING_ID_1));
+        assertThat(nonSittingCaptor.getValue(), is(List.of(LocalDate.parse("2026-05-01"))));
+
+        final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.NonDefaultDay>> nonDefaultCaptor = ArgumentCaptor.forClass(List.class);
+        verify(hearing).assignNonDefaultDays(nonDefaultCaptor.capture(), eq(HEARING_ID_1));
+        assertThat(nonDefaultCaptor.getValue().size(), is(1));
+        final uk.gov.moj.cpp.listing.domain.NonDefaultDay nonDefaultDay = nonDefaultCaptor.getValue().get(0);
+        assertThat(nonDefaultDay.getCourtRoomId().orElse(null), is(2331));
+        assertThat(nonDefaultDay.getStartTime(), is(java.time.ZonedDateTime.parse("2026-05-01T14:00:00.000Z")));
+    }
+
+    @Test
+    public void listingCommandHandlerShouldClearNonSittingAndNonDefaultDaysWhenRetainedListsAreEmpty() throws Exception {
+        final JsonEnvelope commandEnvelope = getEnvelopeForMoveHearingWithEmptyRetainedDays();
+
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.changeStartDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.changeEndDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
+                eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()))).thenReturn(Stream.empty());
+        when(hearing.assignNonSittingDays(anyList(), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.assignNonDefaultDays(anyList(), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+
+        listingCommandHandler.moveHearingToPastDate(commandEnvelope);
+
+        // empty retained arrays are still forwarded so the aggregate can clear now-orphaned days
+        verify(hearing).assignNonSittingDays(emptyList(), HEARING_ID_1);
+        verify(hearing).assignNonDefaultDays(emptyList(), HEARING_ID_1);
+    }
+
+    @Test
     public void listingCommandHandlerShouldHearingVacateTrial() throws Exception {
         final JsonEnvelope commandEnvelope = getEnvelopeForHearingVacateTrial(REASON);
 
@@ -2840,6 +2887,30 @@ class ListingCommandHandlerTest {
                 + "\",\"endDate\":\"" + startDate + "\",\"courtCentreId\":\"" + randomUUID() + "\",\"hearingStartTime\":\"10:00\",\"hearingDays\":[{"
                 + "\"sessionDate\":\"" + startDate + "\",\"courtRoomId\":\"" + courtRoomId + "\",\"sessionStartTime\":\"" + startDate
                 + "T10:00:00Z\",\"durationInMinutes\":25,\"sequence\":1}]}";
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
+        return createEnvelope("listing.command.move-hearing-to-past-date-enriched", jsonReader.readObject());
+    }
+
+    private JsonEnvelope getEnvelopeForMoveHearingWithRetainedDays() {
+        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"jurisdiction\":\"MAGISTRATES\",\"startDate\":\"2026-05-01\","
+                + "\"endDate\":\"2026-05-01\",\"courtCentreId\":\"" + randomUUID() + "\",\"hearingStartTime\":\"09:00\","
+                + "\"hearingDays\":[{\"sessionDate\":\"2026-05-01\",\"courtScheduleId\":\"" + randomUUID()
+                + "\",\"sessionStartTime\":\"2026-05-01T09:00:00Z\",\"durationInMinutes\":30,\"sequence\":1}],"
+                + "\"nonSittingDays\":[\"2026-05-01\"],"
+                + "\"nonDefaultDays\":[{\"startTime\":\"2026-05-01T14:00:00.000Z\",\"duration\":1,"
+                + "\"courtScheduleId\":\"59080b16-9c7b-3a20-9492-1545c672ba80\",\"session\":\"PM\",\"oucode\":\"B01LY00\","
+                + "\"courtRoomId\":2331,\"courtCentreId\":\"" + randomUUID()
+                + "\",\"roomId\":\"b4562684-9209-3ec4-a544-7f80dabd94d8\",\"virtual\":false}]}";
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
+        return createEnvelope("listing.command.move-hearing-to-past-date-enriched", jsonReader.readObject());
+    }
+
+    private JsonEnvelope getEnvelopeForMoveHearingWithEmptyRetainedDays() {
+        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"jurisdiction\":\"MAGISTRATES\",\"startDate\":\"2026-05-01\","
+                + "\"endDate\":\"2026-05-01\",\"courtCentreId\":\"" + randomUUID() + "\",\"hearingStartTime\":\"09:00\","
+                + "\"hearingDays\":[{\"sessionDate\":\"2026-05-01\",\"courtScheduleId\":\"" + randomUUID()
+                + "\",\"sessionStartTime\":\"2026-05-01T09:00:00Z\",\"durationInMinutes\":30,\"sequence\":1}],"
+                + "\"nonSittingDays\":[],\"nonDefaultDays\":[]}";
         final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
         return createEnvelope("listing.command.move-hearing-to-past-date-enriched", jsonReader.readObject());
     }

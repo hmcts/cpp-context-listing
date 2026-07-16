@@ -57,7 +57,7 @@ public class HearingSlotsService {
     private static final String COURTSCHEDULER_SEARCH_BOOK_COURTSCHEDULES = "application/vnd.courtscheduler.search.book.hearing.slots+json";
 
     private static final String HEARINGS_RESOURCE = "/hearings/";
-    private static final String COURTSCHEDULER_MOVE_TO_PAST_DATE = "application/vnd.courtscheduler.move-hearing-to-past-date+json";
+    private static final String COURTSCHEDULER_MOVE_TO_PAST_DATE = "application/vnd.courtscheduler.move-hearing-date+json";
 
     private static final String CJS_CPP_UID = "CJSCPPUID";
     @Inject
@@ -125,7 +125,7 @@ public class HearingSlotsService {
 
     public Response moveHearingToPastDate(final UUID hearingId, final JsonObject payload) {
         if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("move-hearing-to-past-date for hearing id '{}'", hearingId);
+            LOGGER.info("move-hearing-date for hearing id '{}'", hearingId);
         }
 
         try {
@@ -141,7 +141,7 @@ public class HearingSlotsService {
             final String entityBodyAsString = httpResponse.getEntity() == null ? "" : EntityUtils.toString(httpResponse.getEntity());
 
             if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("move-hearing-to-past-date returned status {}", statusCode);
+                LOGGER.info("move-hearing-date returned status {}", statusCode);
             }
 
             return Response

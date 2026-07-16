@@ -46,7 +46,7 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     private static final String ACTION_MARK_UNALLOCATED_HEARING_AS_DUPLICATE = "listing.mark-unallocated-hearing-as-duplicate";
     private static final String ACTION_DELETE_HEARING = "listing.command.delete-hearing";
     private static final String ACTION_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING = "listing.delete-previous-hearings-and-create-next-hearing";
-    private static final String ACTION_MOVE_HEARING_TO_PAST_DATE = "listing.command.move-hearing-to-past-date";
+    private static final String ACTION_MOVE_HEARING_TO_PAST_DATE = "listing.command.move-hearing-date";
 
 
 
