@@ -506,23 +506,7 @@ public class ListingCommandApi {
         final UUID hearingId = fromString(payload.getString(HEARING_ID));
         final JsonArray nonDefaultDays = payload.getJsonArray(NON_DEFAULT_DAYS);
 
-        final JsonObject hearing = hearingLookupService.findHearing(hearingId, envelope)
-                .orElseThrow(() -> new ChangeCourtRoomForMultidayException(422,
-                        buildChangeCourtRoomForMultidayErrorBody(HEARING_ID_NOT_FOUND, NO_HEARING_FOUND_FOR_HEARING_ID + hearingId),
-                        NO_HEARING_FOUND_FOR_HEARING_ID + hearingId));
-
-        if (!CROWN_JURISDICTION.equals(hearing.getString(JURISDICTION_TYPE, null))) {
-            throw new ChangeCourtRoomForMultidayException(422,
-                    buildChangeCourtRoomForMultidayErrorBody(NOT_CROWN_HEARING, "change-court-room-for-multiday-hearing is CROWN-only"),
-                    "change-court-room-for-multiday-hearing is CROWN-only");
-        }
-
-        final JsonArray hearingDays = hearing.containsKey(HEARING_DAYS) ? hearing.getJsonArray(HEARING_DAYS) : null;
-        if (hearingDays == null || hearingDays.size() < 2) {
-            throw new ChangeCourtRoomForMultidayException(422,
-                    buildChangeCourtRoomForMultidayErrorBody(NOT_MULTIDAY_HEARING, "Hearing " + hearingId + " is not a multiday hearing"),
-                    "Hearing " + hearingId + " is not a multiday hearing");
-        }
+        validateCrownMultidayHearingOrThrow(hearingId, envelope);
 
         // Each requested day is either VIRTUAL (virtual=true -> (re)booked in courtscheduler and
         // converted into a hearing day) or REAL (virtual false/absent -> persisted as a nonDefaultDay,
@@ -548,31 +532,12 @@ public class ListingCommandApi {
                 virtualDays.add(new RequestedChangeDay(date, fromString(nonDefaultDay.getString(COURT_SCHEDULE_ID)),
                         nonDefaultDay.getInt(NON_DEFAULT_DAY_DURATION)));
             } else {
-                // roomId is the uuid room identity; the FE's legacy integer courtRoomId (if sent) is ignored.
-                realNonDefaultDays.add(createObjectBuilder()
-                        .add(DAY_START_TIME, nonDefaultDay.getString(DAY_START_TIME))
-                        .add(DAY_DURATION_MINUTES, nonDefaultDay.getInt(NON_DEFAULT_DAY_DURATION))
-                        .add(COURT_CENTRE_ID, nonDefaultDay.getString(COURT_CENTRE_ID))
-                        .add(ROOM_ID, nonDefaultDay.getString(ROOM_ID))
-                        .add(COURT_SCHEDULE_ID, nonDefaultDay.getString(COURT_SCHEDULE_ID)));
+                realNonDefaultDays.add(buildEnrichedRealNonDefaultDay(nonDefaultDay));
             }
         }
 
         // Only virtual days are sent to courtscheduler; real days are never booked.
-        final JsonArrayBuilder changedDays = createArrayBuilder();
-        if (!virtualDays.isEmpty()) {
-            final List<ChangedDaySession> booked = courtSchedulerServiceAdapter.changeCourtRoomForMultidayHearing(hearingId, virtualDays);
-            for (final ChangedDaySession session : booked) {
-                final JsonObject requested = virtualRequestedByDate.get(session.sessionDate());
-                changedDays.add(createObjectBuilder()
-                        .add(HEARING_DATE, session.sessionDate().toString())
-                        .add(DAY_START_TIME, session.sessionStartTime() != null ? session.sessionStartTime() : requested.getString(DAY_START_TIME))
-                        .add(DAY_DURATION_MINUTES, requested.getInt(NON_DEFAULT_DAY_DURATION))
-                        .add(COURT_CENTRE_ID, requested.getString(COURT_CENTRE_ID))
-                        .add(COURT_ROOM_ID, session.courtRoomId() != null ? session.courtRoomId() : requested.getString(ROOM_ID))
-                        .add(COURT_SCHEDULE_ID, session.courtScheduleId().toString()));
-            }
-        }
+        final JsonArrayBuilder changedDays = bookVirtualDaysIntoChangedDays(hearingId, virtualDays, virtualRequestedByDate);
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_CHANGE_COURT_ROOM_FOR_MULTIDAY_HEARING_ENRICHED),
                 createObjectBuilder()
@@ -581,6 +546,58 @@ public class ListingCommandApi {
                         .add(CHANGED_DAYS, changedDays.build())
                         .add(NON_DEFAULT_DAYS, realNonDefaultDays.build())
                         .build()));
+    }
+
+    /** CROWN-only business validations for change-court-room-for-multiday: hearing must exist, be CROWN, and be multiday. */
+    private void validateCrownMultidayHearingOrThrow(final UUID hearingId, final JsonEnvelope envelope) {
+        final JsonObject hearing = hearingLookupService.findHearing(hearingId, envelope)
+                .orElseThrow(() -> new ChangeCourtRoomForMultidayException(422,
+                        buildChangeCourtRoomForMultidayErrorBody(HEARING_ID_NOT_FOUND, NO_HEARING_FOUND_FOR_HEARING_ID + hearingId),
+                        NO_HEARING_FOUND_FOR_HEARING_ID + hearingId));
+
+        if (!CROWN_JURISDICTION.equals(hearing.getString(JURISDICTION_TYPE, null))) {
+            throw new ChangeCourtRoomForMultidayException(422,
+                    buildChangeCourtRoomForMultidayErrorBody(NOT_CROWN_HEARING, "change-court-room-for-multiday-hearing is CROWN-only"),
+                    "change-court-room-for-multiday-hearing is CROWN-only");
+        }
+
+        final JsonArray hearingDays = hearing.containsKey(HEARING_DAYS) ? hearing.getJsonArray(HEARING_DAYS) : null;
+        if (hearingDays == null || hearingDays.size() < 2) {
+            throw new ChangeCourtRoomForMultidayException(422,
+                    buildChangeCourtRoomForMultidayErrorBody(NOT_MULTIDAY_HEARING, "Hearing " + hearingId + " is not a multiday hearing"),
+                    "Hearing " + hearingId + " is not a multiday hearing");
+        }
+    }
+
+    /** Enriched nonDefaultDay for a real day. roomId is the uuid room identity; the FE's legacy integer courtRoomId (if sent) is ignored. */
+    private JsonObjectBuilder buildEnrichedRealNonDefaultDay(final JsonObject nonDefaultDay) {
+        return createObjectBuilder()
+                .add(DAY_START_TIME, nonDefaultDay.getString(DAY_START_TIME))
+                .add(DAY_DURATION_MINUTES, nonDefaultDay.getInt(NON_DEFAULT_DAY_DURATION))
+                .add(COURT_CENTRE_ID, nonDefaultDay.getString(COURT_CENTRE_ID))
+                .add(ROOM_ID, nonDefaultDay.getString(ROOM_ID))
+                .add(COURT_SCHEDULE_ID, nonDefaultDay.getString(COURT_SCHEDULE_ID));
+    }
+
+    /** Sends the virtual days to courtscheduler (once) and enriches the booked sessions into changedDays, joined by date. */
+    private JsonArrayBuilder bookVirtualDaysIntoChangedDays(final UUID hearingId, final List<RequestedChangeDay> virtualDays,
+            final Map<LocalDate, JsonObject> virtualRequestedByDate) {
+        final JsonArrayBuilder changedDays = createArrayBuilder();
+        if (virtualDays.isEmpty()) {
+            return changedDays;
+        }
+        final List<ChangedDaySession> booked = courtSchedulerServiceAdapter.changeCourtRoomForMultidayHearing(hearingId, virtualDays);
+        for (final ChangedDaySession session : booked) {
+            final JsonObject requested = virtualRequestedByDate.get(session.sessionDate());
+            changedDays.add(createObjectBuilder()
+                    .add(HEARING_DATE, session.sessionDate().toString())
+                    .add(DAY_START_TIME, session.sessionStartTime() != null ? session.sessionStartTime() : requested.getString(DAY_START_TIME))
+                    .add(DAY_DURATION_MINUTES, requested.getInt(NON_DEFAULT_DAY_DURATION))
+                    .add(COURT_CENTRE_ID, requested.getString(COURT_CENTRE_ID))
+                    .add(COURT_ROOM_ID, session.courtRoomId() != null ? session.courtRoomId() : requested.getString(ROOM_ID))
+                    .add(COURT_SCHEDULE_ID, session.courtScheduleId().toString()));
+        }
+        return changedDays;
     }
 
     private static JsonObject buildChangeCourtRoomForMultidayErrorBody(final String errorCode, final String message) {
