@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "id": "http://justice.gov.uk/listing/courts/listing.command.change-court-room-for-multiday-hearing.json",
-  "description": "Change the courtroom of SELECTED days of a multiday CROWN hearing. Contains only the changed days; unsubmitted days are never touched. Schema violations are 400; all business failures are 422.",
+  "description": "Change the courtroom of SELECTED days of a multiday CROWN hearing. Contains only the changed days; unsubmitted days are never touched. Each day carries an optional 'virtual' flag: virtual=true means the day is (re)booked via its courtScheduleId and converted to a hearing day; virtual=false/absent means the day is persisted as a real nonDefaultDay without a courtscheduler booking. The legacy integer 'courtRoomId' is accepted but ignored (room identity is 'roomId'). Schema violations are 400; all business failures are 422.",
   "type": "object",
   "properties": {
     "sendNotificationToParties": { "type": "boolean" },
@@ -16,9 +16,10 @@
           "courtCentreId": { "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid" },
           "roomId": { "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid" },
           "courtScheduleId": { "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid" },
-          "virtual": { "type": "boolean", "enum": [true] }
+          "virtual": { "type": "boolean" },
+          "courtRoomId": { "type": "integer" }
         },
-        "required": ["startTime", "duration", "courtCentreId", "roomId", "courtScheduleId", "virtual"],
+        "required": ["startTime", "duration", "courtCentreId", "roomId", "courtScheduleId"],
         "additionalProperties": false
       }
     }

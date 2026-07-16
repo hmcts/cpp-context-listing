@@ -902,6 +902,131 @@ public class ListingCommandApiTest {
     }
 
     @Test
+    public void shouldPartitionVirtualDaysToCourtschedulerAndRealDaysToNonDefaultDays() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID realRoomId = randomUUID();
+        final UUID virtualRoomId = randomUUID();
+        final UUID realScheduleId = randomUUID();
+        final UUID virtualScheduleId = randomUUID();
+        final LocalDate d1 = LocalDate.parse("2026-07-14");
+        final LocalDate d2 = LocalDate.parse("2026-07-15");   // real day (virtual absent)
+        final LocalDate d3 = LocalDate.parse("2026-07-16");   // virtual day
+
+        final JsonObject hearing = Json.createObjectBuilder()
+                .add("id", hearingId.toString())
+                .add("jurisdictionType", "CROWN")
+                .add("hearingDays", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder().add("hearingDate", d1.toString()))
+                        .add(Json.createObjectBuilder().add("hearingDate", d2.toString()))
+                        .add(Json.createObjectBuilder().add("hearingDate", d3.toString())))
+                .build();
+        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
+
+        final JsonArray nonDefaultDays = Json.createArrayBuilder()
+                // REAL day: no 'virtual' flag, plus the FE's legacy integer courtRoomId that must be ignored.
+                .add(Json.createObjectBuilder()
+                        .add("startTime", d2 + "T09:00:00Z")
+                        .add("duration", 360)
+                        .add("courtCentreId", courtCentreId.toString())
+                        .add("roomId", realRoomId.toString())
+                        .add("courtScheduleId", realScheduleId.toString())
+                        .add("courtRoomId", 772))
+                // VIRTUAL day.
+                .add(Json.createObjectBuilder()
+                        .add("startTime", d3 + "T09:00:00Z")
+                        .add("duration", 360)
+                        .add("courtCentreId", courtCentreId.toString())
+                        .add("roomId", virtualRoomId.toString())
+                        .add("courtScheduleId", virtualScheduleId.toString())
+                        .add("virtual", true))
+                .build();
+
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(payload.getString("hearingId")).willReturn(hearingId.toString());
+        given(payload.getJsonArray("nonDefaultDays")).willReturn(nonDefaultDays);
+        given(payload.getBoolean("sendNotificationToParties", true)).willReturn(true);
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+
+        given(courtSchedulerServiceAdapter.changeCourtRoomForMultidayHearing(eq(hearingId), any()))
+                .willReturn(List.of(new ChangedDaySession(virtualScheduleId, "confirmed-room-3", d3, d3 + "T10:00:00Z", 360)));
+
+        listingCommandApi.handleChangeCourtRoomForMultidayHearing(envelope);
+
+        // Only the VIRTUAL day is sent to courtscheduler.
+        final ArgumentCaptor<List<RequestedChangeDay>> daysCaptor = forClass(List.class);
+        verify(courtSchedulerServiceAdapter).changeCourtRoomForMultidayHearing(eq(hearingId), daysCaptor.capture());
+        assertThat(daysCaptor.getValue(), is(List.of(new RequestedChangeDay(d3, virtualScheduleId, 360))));
+
+        final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
+        verify(sender, times(1)).send(captor.capture());
+        final JsonObject sent = (JsonObject) captor.getValue().payload();
+
+        // changedDays holds ONLY the virtual day, resolved from the adapter response.
+        final JsonArray changedDays = sent.getJsonArray("changedDays");
+        assertThat(changedDays.size(), is(1));
+        assertThat(changedDays.getJsonObject(0).getString("hearingDate"), is(d3.toString()));
+        assertThat(changedDays.getJsonObject(0).getString("courtRoomId"), is("confirmed-room-3"));
+
+        // nonDefaultDays holds ONLY the real day; the legacy integer courtRoomId is dropped, roomId kept.
+        final JsonArray enrichedNonDefaultDays = sent.getJsonArray("nonDefaultDays");
+        assertThat(enrichedNonDefaultDays.size(), is(1));
+        final JsonObject realDay = enrichedNonDefaultDays.getJsonObject(0);
+        assertThat(realDay.getString("startTime"), is(d2 + "T09:00:00Z"));
+        assertThat(realDay.getInt("durationMinutes"), is(360));
+        assertThat(realDay.getString("courtCentreId"), is(courtCentreId.toString()));
+        assertThat(realDay.getString("roomId"), is(realRoomId.toString()));
+        assertThat(realDay.getString("courtScheduleId"), is(realScheduleId.toString()));
+        assertThat(realDay.containsKey("courtRoomId"), is(false));
+    }
+
+    @Test
+    public void shouldNotCallCourtschedulerWhenAllDaysAreReal() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID realRoomId = randomUUID();
+        final LocalDate d1 = LocalDate.parse("2026-07-14");
+        final LocalDate d2 = LocalDate.parse("2026-07-15");
+        final LocalDate d3 = LocalDate.parse("2026-07-16");
+
+        final JsonObject hearing = Json.createObjectBuilder()
+                .add("id", hearingId.toString())
+                .add("jurisdictionType", "CROWN")
+                .add("hearingDays", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder().add("hearingDate", d1.toString()))
+                        .add(Json.createObjectBuilder().add("hearingDate", d2.toString()))
+                        .add(Json.createObjectBuilder().add("hearingDate", d3.toString())))
+                .build();
+        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
+
+        final JsonArray nonDefaultDays = Json.createArrayBuilder()
+                .add(Json.createObjectBuilder()
+                        .add("startTime", d2 + "T09:00:00Z")
+                        .add("duration", 360)
+                        .add("courtCentreId", courtCentreId.toString())
+                        .add("roomId", realRoomId.toString())
+                        .add("courtScheduleId", randomUUID().toString())
+                        .add("virtual", false))
+                .build();
+
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(payload.getString("hearingId")).willReturn(hearingId.toString());
+        given(payload.getJsonArray("nonDefaultDays")).willReturn(nonDefaultDays);
+        given(payload.getBoolean("sendNotificationToParties", true)).willReturn(true);
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+
+        listingCommandApi.handleChangeCourtRoomForMultidayHearing(envelope);
+
+        verify(courtSchedulerServiceAdapter, never()).changeCourtRoomForMultidayHearing(any(), any());
+
+        final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
+        verify(sender, times(1)).send(captor.capture());
+        final JsonObject sent = (JsonObject) captor.getValue().payload();
+        assertThat(sent.getJsonArray("changedDays").size(), is(0));
+        assertThat(sent.getJsonArray("nonDefaultDays").size(), is(1));
+    }
+
+    @Test
     public void shouldRejectChangeCourtRoomForMultidayHearingWhenHearingIdUnknown() {
         final UUID hearingId = randomUUID();
 

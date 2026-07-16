@@ -101,6 +101,7 @@ public class ListingCommandApi {
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
     private static final String COURT_ROOM_ID = "courtRoomId";
     private static final String ROOM_ID = "roomId";
+    private static final String VIRTUAL = "virtual";
     private static final String SESSION_DATE = "sessionDate";
     private static final String SESSION_START_TIME = "sessionStartTime";
     private static final String SESSION_END_TIME = "sessionEndTime";
@@ -523,35 +524,54 @@ public class ListingCommandApi {
                     "Hearing " + hearingId + " is not a multiday hearing");
         }
 
-        // requested days keyed by date, so the adapter response (booked sessions) can be joined
-        // back to the originating request BY DATE - the adapter is free to return its sessions in
-        // any order, so a positional join would silently mismatch rooms/times across days.
-        final Map<LocalDate, JsonObject> requestedByDate = new LinkedHashMap<>();
-        final List<RequestedChangeDay> days = new ArrayList<>();
+        // Each requested day is either VIRTUAL (virtual=true -> (re)booked in courtscheduler and
+        // converted into a hearing day) or REAL (virtual false/absent -> persisted as a nonDefaultDay,
+        // never booked). Dates must be unique across the WHOLE request regardless of type.
+        //
+        // Virtual days are keyed by date, so the adapter response (booked sessions) can be joined back
+        // to the originating request BY DATE - the adapter is free to return its sessions in any order,
+        // so a positional join would silently mismatch rooms/times across days.
+        final Set<LocalDate> seenDates = new HashSet<>();
+        final Map<LocalDate, JsonObject> virtualRequestedByDate = new LinkedHashMap<>();
+        final List<RequestedChangeDay> virtualDays = new ArrayList<>();
+        final JsonArrayBuilder realNonDefaultDays = createArrayBuilder();
         for (final JsonValue value : nonDefaultDays) {
             final JsonObject nonDefaultDay = (JsonObject) value;
             final LocalDate date = ZonedDateTime.parse(nonDefaultDay.getString(DAY_START_TIME)).toLocalDate();
-            if (requestedByDate.put(date, nonDefaultDay) != null) {
+            if (!seenDates.add(date)) {
                 throw new ChangeCourtRoomForMultidayException(422,
                         buildChangeCourtRoomForMultidayErrorBody(DUPLICATE_DAY_DATES, "Duplicate day " + date + " in nonDefaultDays"),
                         "Duplicate day " + date + " in nonDefaultDays");
             }
-            days.add(new RequestedChangeDay(date, fromString(nonDefaultDay.getString(COURT_SCHEDULE_ID)),
-                    nonDefaultDay.getInt(NON_DEFAULT_DAY_DURATION)));
+            if (nonDefaultDay.getBoolean(VIRTUAL, false)) {
+                virtualRequestedByDate.put(date, nonDefaultDay);
+                virtualDays.add(new RequestedChangeDay(date, fromString(nonDefaultDay.getString(COURT_SCHEDULE_ID)),
+                        nonDefaultDay.getInt(NON_DEFAULT_DAY_DURATION)));
+            } else {
+                // roomId is the uuid room identity; the FE's legacy integer courtRoomId (if sent) is ignored.
+                realNonDefaultDays.add(createObjectBuilder()
+                        .add(DAY_START_TIME, nonDefaultDay.getString(DAY_START_TIME))
+                        .add(DAY_DURATION_MINUTES, nonDefaultDay.getInt(NON_DEFAULT_DAY_DURATION))
+                        .add(COURT_CENTRE_ID, nonDefaultDay.getString(COURT_CENTRE_ID))
+                        .add(ROOM_ID, nonDefaultDay.getString(ROOM_ID))
+                        .add(COURT_SCHEDULE_ID, nonDefaultDay.getString(COURT_SCHEDULE_ID)));
+            }
         }
 
-        final List<ChangedDaySession> booked = courtSchedulerServiceAdapter.changeCourtRoomForMultidayHearing(hearingId, days);
-
+        // Only virtual days are sent to courtscheduler; real days are never booked.
         final JsonArrayBuilder changedDays = createArrayBuilder();
-        for (final ChangedDaySession session : booked) {
-            final JsonObject requested = requestedByDate.get(session.sessionDate());
-            changedDays.add(createObjectBuilder()
-                    .add(HEARING_DATE, session.sessionDate().toString())
-                    .add(DAY_START_TIME, session.sessionStartTime() != null ? session.sessionStartTime() : requested.getString(DAY_START_TIME))
-                    .add(DAY_DURATION_MINUTES, requested.getInt(NON_DEFAULT_DAY_DURATION))
-                    .add(COURT_CENTRE_ID, requested.getString(COURT_CENTRE_ID))
-                    .add(COURT_ROOM_ID, session.courtRoomId() != null ? session.courtRoomId() : requested.getString(ROOM_ID))
-                    .add(COURT_SCHEDULE_ID, session.courtScheduleId().toString()));
+        if (!virtualDays.isEmpty()) {
+            final List<ChangedDaySession> booked = courtSchedulerServiceAdapter.changeCourtRoomForMultidayHearing(hearingId, virtualDays);
+            for (final ChangedDaySession session : booked) {
+                final JsonObject requested = virtualRequestedByDate.get(session.sessionDate());
+                changedDays.add(createObjectBuilder()
+                        .add(HEARING_DATE, session.sessionDate().toString())
+                        .add(DAY_START_TIME, session.sessionStartTime() != null ? session.sessionStartTime() : requested.getString(DAY_START_TIME))
+                        .add(DAY_DURATION_MINUTES, requested.getInt(NON_DEFAULT_DAY_DURATION))
+                        .add(COURT_CENTRE_ID, requested.getString(COURT_CENTRE_ID))
+                        .add(COURT_ROOM_ID, session.courtRoomId() != null ? session.courtRoomId() : requested.getString(ROOM_ID))
+                        .add(COURT_SCHEDULE_ID, session.courtScheduleId().toString()));
+            }
         }
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_CHANGE_COURT_ROOM_FOR_MULTIDAY_HEARING_ENRICHED),
@@ -559,6 +579,7 @@ public class ListingCommandApi {
                         .add(HEARING_ID, hearingId.toString())
                         .add(SEND_NOTIFICATION_TO_PARTIES, payload.getBoolean(SEND_NOTIFICATION_TO_PARTIES, true))
                         .add(CHANGED_DAYS, changedDays.build())
+                        .add(NON_DEFAULT_DAYS, realNonDefaultDays.build())
                         .build()));
     }
 

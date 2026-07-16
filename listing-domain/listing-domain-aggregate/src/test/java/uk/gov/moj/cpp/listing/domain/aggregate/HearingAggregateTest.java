@@ -8747,6 +8747,93 @@ class HearingAggregateTest {
         assertThat(emittedCancelledSibling.getIsDraft(), is(cancelledD2Sibling.getIsDraft()));
     }
 
+    @Test
+    void changeCourtRoom_realDay_persistedAsNonDefaultDayNotHearingDay() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final LocalDate d3Date = now().plusDays(9);
+        applyThreeDayCrownAllocatedHearing(room1, courtCentre1, d1Date, d2Date, d3Date);
+
+        // A real day (virtual false) carried only in the nonDefaultDays list, with no virtual days at all.
+        final ZonedDateTime realStart = ZonedDateTime.of(d2Date, LocalTime.parse("11:00"), UTC);
+        final List<NonDefaultDay> realDays = List.of(NonDefaultDay.nonDefaultDay()
+                .withStartTime(realStart)
+                .withDuration(of(CHANGE_ROOM_DAY_DURATION))
+                .withCourtCentreId(of(courtCentre1.toString()))
+                .withRoomId(of(room2.toString()))
+                .withCourtScheduleId(of(randomUUID().toString()))
+                .withVirtual(of(false))
+                .build());
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(
+                hearingId, List.of(), List.of(), realDays, true)
+                .collect(Collectors.toList());
+
+        // Persisted as a nonDefaultDay ...
+        final uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing assigned = events.stream()
+                .filter(uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing.class::isInstance)
+                .map(uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(assigned.getNonDefaultDays(), hasSize(1));
+        assertThat(assigned.getNonDefaultDays().get(0).getRoomId(), is(room2.toString()));
+        assertThat(assigned.getNonDefaultDays().get(0).getStartTime(), is(realStart));
+
+        // ... and NOT converted into a hearing day (no hearing-days-changed emitted).
+        assertThat(events.stream().anyMatch(HearingDaysChangedForHearing.class::isInstance), is(false));
+    }
+
+    @Test
+    void changeCourtRoom_mixed_virtualBecomesHearingDay_realBecomesNonDefaultDay() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID room3 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final LocalDate d3Date = now().plusDays(9);
+        applyThreeDayCrownAllocatedHearing(room1, courtCentre1, d1Date, d2Date, d3Date);
+
+        // d2 is a VIRTUAL day (already booked by COMMAND_API) -> becomes a hearing day in room2.
+        final ZonedDateTime virtualStart = ZonedDateTime.of(d2Date, LocalTime.parse("11:00"), UTC);
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = List.of(
+                changedDomainDay(d2Date, room2, courtCentre1, virtualStart));
+        final List<HearingDayCourtSchedule> schedules = List.of(new HearingDayCourtSchedule(randomUUID(), d2Date));
+
+        // d3 is a REAL day -> persisted as a nonDefaultDay in room3, never a hearing-day change.
+        final ZonedDateTime realStart = ZonedDateTime.of(d3Date, LocalTime.parse("11:00"), UTC);
+        final List<NonDefaultDay> realDays = List.of(NonDefaultDay.nonDefaultDay()
+                .withStartTime(realStart)
+                .withDuration(of(CHANGE_ROOM_DAY_DURATION))
+                .withCourtCentreId(of(courtCentre1.toString()))
+                .withRoomId(of(room3.toString()))
+                .withCourtScheduleId(of(randomUUID().toString()))
+                .withVirtual(of(false))
+                .build());
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(
+                hearingId, changedDays, schedules, realDays, true)
+                .collect(Collectors.toList());
+
+        final HearingDaysChangedForHearing daysChanged = events.stream()
+                .filter(HearingDaysChangedForHearing.class::isInstance)
+                .map(HearingDaysChangedForHearing.class::cast)
+                .findFirst().orElseThrow();
+        // The virtual day moved to room2; the real day (d3) is left UNTOUCHED among the hearing days.
+        assertThat(dayFor(daysChanged, d2Date).getCourtRoomId(), is(room2));
+        assertThat(dayFor(daysChanged, d3Date).getCourtRoomId(), is(room1));
+
+        // The real day lands in the nonDefaultDays projection instead.
+        final uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing assigned = events.stream()
+                .filter(uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing.class::isInstance)
+                .map(uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(assigned.getNonDefaultDays(), hasSize(1));
+        assertThat(assigned.getNonDefaultDays().get(0).getRoomId(), is(room3.toString()));
+    }
+
     private UUID changeRoomCaseId;
 
     private List<HearingDay> applyThreeDayCrownAllocatedHearing(final UUID room1, final UUID courtCentre1,

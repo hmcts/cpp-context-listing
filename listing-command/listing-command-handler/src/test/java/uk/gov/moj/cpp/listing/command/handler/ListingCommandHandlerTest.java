@@ -2609,15 +2609,16 @@ class ListingCommandHandlerTest {
 
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
-        when(hearing.changeCourtRoomForMultidayHearing(eq(HEARING_ID_1), any(), any(), eq(true)))
+        when(hearing.changeCourtRoomForMultidayHearing(eq(HEARING_ID_1), any(), any(), any(), eq(true)))
                 .thenReturn(Stream.empty());
 
         listingCommandHandler.changeCourtRoomForMultidayHearing(commandEnvelope);
 
         final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.HearingDay>> daysCaptor = ArgumentCaptor.forClass(List.class);
         final ArgumentCaptor<List<HearingDayCourtSchedule>> schedulesCaptor = ArgumentCaptor.forClass(List.class);
+        final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.NonDefaultDay>> nonDefaultDaysCaptor = ArgumentCaptor.forClass(List.class);
         verify(hearing, times(1)).changeCourtRoomForMultidayHearing(eq(HEARING_ID_1), daysCaptor.capture(),
-                schedulesCaptor.capture(), eq(true));
+                schedulesCaptor.capture(), nonDefaultDaysCaptor.capture(), eq(true));
 
         final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = daysCaptor.getValue();
         assertThat(changedDays, hasSize(2));
@@ -2636,6 +2637,9 @@ class ListingCommandHandlerTest {
         assertThat(changedSchedules.get(0).getCourtScheduleId(), is(sched1));
         assertThat(changedSchedules.get(1).getHearingDate(), is(LocalDate.parse("2026-07-16")));
         assertThat(changedSchedules.get(1).getCourtScheduleId(), is(sched2));
+
+        // This enriched command carries only virtual (changed) days, so no real nonDefaultDays are passed.
+        assertThat(nonDefaultDaysCaptor.getValue(), hasSize(0));
     }
 
     @Test

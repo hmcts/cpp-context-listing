@@ -69,8 +69,10 @@ import uk.gov.justice.services.test.utils.core.http.ResponseData;
  * allocated multi-day CROWN hearing, distinguished by the media type
  * {@code application/vnd.listing.command.change-court-room-for-multiday-hearing+json}.
  *
- * <p>Schema violations (virtual != true, duration > 360, missing courtScheduleId) are rejected as
- * 400 by the framework before COMMAND_API runs, so courtscheduler is never called. Business
+ * <p>Each day carries an optional {@code virtual} flag. Virtual days (virtual=true) are (re)booked
+ * in courtscheduler and converted into hearing days; real days (virtual false/absent) are persisted
+ * as nonDefaultDays without any courtscheduler booking. Schema violations (duration > 360, missing
+ * courtScheduleId/roomId) are rejected as 400 by the framework before COMMAND_API runs. Business
  * failures (unknown hearing, non-CROWN, non-multiday, duplicate day dates, or a courtscheduler
  * rejection) are surfaced synchronously as 422 via {@code ChangeCourtRoomForMultidayException}.
  * The happy path is asynchronous: the enriched command is sent, the aggregate emits
@@ -182,21 +184,89 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
     // ---------------------------------------------------------------------------------------
 
     @Test
-    void shouldReturn400WhenVirtualIsNotTrue() {
+    void shouldAcceptRealDayWithoutBookingWhenVirtualIsFalse() {
         final ThreeDayCrownHearing hearing = givenAllocatedThreeDayCrownHearing();
 
-        final String payload = "{\"nonDefaultDays\":[{"
+        // A real day (virtual:false) is accepted (no longer a 400): it is NOT booked in courtscheduler
+        // and NOT converted into a hearing day - it is persisted as a nonDefaultDay. The FE's legacy
+        // integer courtRoomId is tolerated and ignored (roomId is the room identity).
+        final String payload = "{\"sendNotificationToParties\":false,\"nonDefaultDays\":[{"
                 + "\"startTime\":\"" + hearing.day2 + "T09:00:00Z\","
                 + "\"duration\":" + DAY_DURATION_MINUTES + ","
                 + "\"courtCentreId\":\"" + hearing.courtCentreId + "\","
-                + "\"roomId\":\"" + hearing.courtRoomId + "\","
+                + "\"roomId\":\"" + UUID.randomUUID() + "\","
                 + "\"courtScheduleId\":\"" + UUID.randomUUID() + "\","
+                + "\"courtRoomId\":772,"
                 + "\"virtual\":false}]}";
 
         final Response response = postChangeCourtRoom(hearing.hearingId, payload);
 
-        assertThat(response.getStatus(), is(400));
+        assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
+        // Real day is never sent to courtscheduler.
         verifyChangeCourtRoomForMultidayHearingNeverCalled(hearing.hearingId.toString());
+
+        // d2 is NOT converted into a hearing day: its hearing-day courtScheduleId stays the original
+        // one (a virtual day would have been rebooked and its courtScheduleId replaced).
+        pollWithDefaults(requestParams(searchHearingUrl(hearing.hearingId), MEDIA_TYPE_SEARCH_HEARING)
+                .withHeader(USER_ID, getLoggedInUser()).build())
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.id", is(hearing.hearingId.toString())),
+                                withJsonPath("$.hearingDays", hasSize(3)),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].courtScheduleId",
+                                        hasItem(hearing.scheduleD2.toString()))
+                        )));
+    }
+
+    @Test
+    void shouldConvertVirtualDayAndLeaveRealDayUnbookedInMixedRequest() {
+        final ThreeDayCrownHearing hearing = givenAllocatedThreeDayCrownHearing();
+
+        final UUID room2 = UUID.randomUUID();
+        final UUID room3 = UUID.randomUUID();
+        final UUID targetScheduleD2 = UUID.randomUUID();
+
+        // Courtscheduler is stubbed for the VIRTUAL day (d2) only - the real day (d3) must never reach it.
+        stubChangeCourtRoomForMultidayHearing(hearing.hearingId.toString(), of(
+                new ChangeCourtRoomStubSession(targetScheduleD2.toString(), room2.toString(),
+                        hearing.day2.toString(), hearing.day2 + "T09:00:00Z", DAY_DURATION_MINUTES)));
+
+        // d2 virtual -> booked + converted to a hearing day; d3 real -> persisted as a nonDefaultDay only.
+        final String payload = "{\"sendNotificationToParties\":false,\"nonDefaultDays\":["
+                + "{\"startTime\":\"" + hearing.day2 + "T09:00:00Z\",\"duration\":" + DAY_DURATION_MINUTES + ","
+                + "\"courtCentreId\":\"" + hearing.courtCentreId + "\",\"roomId\":\"" + room2 + "\","
+                + "\"courtScheduleId\":\"" + targetScheduleD2 + "\",\"virtual\":true},"
+                + "{\"startTime\":\"" + hearing.day3 + "T09:00:00Z\",\"duration\":" + DAY_DURATION_MINUTES + ","
+                + "\"courtCentreId\":\"" + hearing.courtCentreId + "\",\"roomId\":\"" + room3 + "\","
+                + "\"courtScheduleId\":\"" + UUID.randomUUID() + "\",\"courtRoomId\":772,\"virtual\":false}]}";
+
+        final Response response = postChangeCourtRoom(hearing.hearingId, payload);
+
+        assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
+        verifyChangeCourtRoomForMultidayHearingCalled(hearing.hearingId.toString());
+
+        pollWithDefaults(requestParams(searchHearingUrl(hearing.hearingId), MEDIA_TYPE_SEARCH_HEARING)
+                .withHeader(USER_ID, getLoggedInUser()).build())
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.id", is(hearing.hearingId.toString())),
+                                withJsonPath("$.hearingDays", hasSize(3)),
+                                // d2 (virtual) converted: room + courtScheduleId updated to the booked session.
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].courtRoomId",
+                                        hasItem(room2.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].courtScheduleId",
+                                        hasItem(targetScheduleD2.toString())),
+                                // d3 (real) NOT converted: its hearing day keeps the original room + courtScheduleId.
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day3 + "')].courtRoomId",
+                                        hasItem(hearing.courtRoomId.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day3 + "')].courtScheduleId",
+                                        hasItem(hearing.scheduleD3.toString())),
+                                // d1 untouched.
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtScheduleId",
+                                        hasItem(hearing.scheduleD1.toString()))
+                        )));
     }
 
     @Test
