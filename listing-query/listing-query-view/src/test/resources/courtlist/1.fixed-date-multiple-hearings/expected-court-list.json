@@ -109,6 +109,7 @@
               "weekCommencing": false,
               "endTime": "2019-12-16T15:44:00",
               "applicationReference": "65OF146907",
+              "caseReference": "65OF146907",
               "applicant": {
                 "id": "9aee20ca-b0b2-4133-b512-7bec3d835134",
                 "lastName": "PINZAUTI",
