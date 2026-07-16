@@ -827,27 +827,30 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "and (h.jurisdiction_type in (:jurisdictionTypes)) " +
             "and (h.end_date is null OR h.end_date >= :currentDate) " +
             "and (:hearingId is null or h.id != cast(cast(:hearingId as varchar) as uuid)) " +
-            "AND " +
-            "(h.id in (select distinct h.id from hearing h  " +
-            " inner join listed_cases lc on lc.hearing_id = h.id where UPPER(lc.case_reference) in (:caseUrnSet)  " +
-            " and (:hearingId is null or h.id != cast(cast(:hearingId as varchar) as uuid))) " +
-            "OR " +
-            "(h.id in (SELECT distinct(hrng.id) FROM hearing hrng inner join listed_cases lc3 on lc3.hearing_id = hrng.id " +
-            "   WHERE lc3.case_reference IN (select lnkCase.case_urn as linkedCaseUrn from hearing h2  " +
-            "   inner join listed_cases listCase on listCase.hearing_id = h2.id  " +
-            "   inner join linked_case lnkCase on lnkCase.listed_case_id = listCase.id  " +
-            "   where listCase.case_reference = cast(:caseUrnForLinkedCases as text)))) " +
-            "OR " +
-            " (h.id in (select distinct h5.id from " +
-            "hearing h5 inner join listed_cases lc6 on lc6.hearing_id = h5.id where " +
-            "lc6.case_id in (select distinct lc5.case_id from hearing h4 inner join listed_cases lc5 on lc5.hearing_id = h4.id  " +
-            "inner join defendant d on d.listed_case_id = lc5.id where cast(d.master_defendant_id as varchar) in (:masterDefendantIdSet)) " +
-            " and (:hearingId is null or h5.id != cast(cast(:hearingId as varchar) as uuid))) " +
-            "OR " +
-            "(h.id in (select distinct h.id from hearing h  " +
-            " inner join listed_cases lc on lc.hearing_id = h.id where UPPER(lc.case_reference) in (:linkedCaseUrn)  " +
-            " and (:hearingId is null or h.id != cast(cast(:hearingId as varchar) as uuid))) " +
-            ")))"
+            "AND h.id IN ( " +
+            "  select lc1.hearing_id from listed_cases lc1 " +
+            "  where UPPER(lc1.case_reference) in (:caseUrnSet) " +
+            "  and (:hearingId is null or lc1.hearing_id != cast(cast(:hearingId as varchar) as uuid)) " +
+            "  UNION " +
+            "  select lc3.hearing_id from listed_cases lc3 " +
+            "  where lc3.case_reference in ( " +
+            "    select lnk.case_urn from listed_cases lc2 " +
+            "    inner join linked_case lnk on lnk.listed_case_id = lc2.id " +
+            "    where lc2.case_reference = cast(:caseUrnForLinkedCases as text) " +
+            "  ) " +
+            "  UNION " +
+            "  select lc4.hearing_id from listed_cases lc4 " +
+            "  where lc4.case_id in ( " +
+            "    select lc5.case_id from listed_cases lc5 " +
+            "    inner join defendant d on d.listed_case_id = lc5.id " +
+            "    where cast(d.master_defendant_id as varchar) in (:masterDefendantIdSet) " +
+            "  ) " +
+            "  and (:hearingId is null or lc4.hearing_id != cast(cast(:hearingId as varchar) as uuid)) " +
+            "  UNION " +
+            "  select lc6.hearing_id from listed_cases lc6 " +
+            "  where UPPER(lc6.case_reference) in (:linkedCaseUrn) " +
+            "  and (:hearingId is null or lc6.hearing_id != cast(cast(:hearingId as varchar) as uuid)) " +
+            ")"
             , isNative = true)
     public abstract List<Hearing> findHearings(@QueryParam("jurisdictionTypes") final Set<String> jurisdictionTypes,
                                                @QueryParam("hearingId") final String hearingId,
