@@ -154,7 +154,6 @@
                         }
                       },
                       "applicationReference": { "type": "string" },
-                      "caseReference": { "type": "string" },
                       "applicant": {
                         "type": "object",
                         "properties": {

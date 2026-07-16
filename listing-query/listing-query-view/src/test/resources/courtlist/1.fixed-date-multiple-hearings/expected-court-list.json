@@ -109,7 +109,9 @@
               "weekCommencing": false,
               "endTime": "2019-12-16T15:44:00",
               "applicationReference": "65OF146907",
-              "caseReference": "65OF146907",
+              "caseIdentifier": {
+                "caseReference": "65OF146907"
+              },
               "applicant": {
                 "id": "9aee20ca-b0b2-4133-b512-7bec3d835134",
                 "lastName": "PINZAUTI",
@@ -126,6 +128,24 @@
                   "isRespondent": true,
                   "restrictFromCourtList": false,
                   "courtApplicationPartyType": "PERSON"
+                }
+              ],
+              "defendants": [
+                {
+                  "id": "5f12406b-3609-4659-a1ba-0200e7bb4ed9",
+                  "lastName": "WALTER",
+                  "firstName": "Addie",
+                  "isRespondent": true,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON"
+                },
+                {
+                  "id": "9aee20ca-b0b2-4133-b512-7bec3d835134",
+                  "lastName": "PINZAUTI",
+                  "firstName": "Adrian",
+                  "isRespondent": false,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON_DEFENDANT"
                 }
               ],
               "hasVideoLink": false

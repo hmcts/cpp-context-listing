@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
@@ -9,7 +10,9 @@ import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.Hearing;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.Sitting;
 
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArrayBuilder;
@@ -20,6 +23,7 @@ import javax.json.JsonObjectBuilder;
 public class SittingsJsonGenerator {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    private static final String PARTY_ID = "id";
 
     private SittingsJsonGenerator() {
         throw new IllegalStateException("Utility class");
@@ -106,7 +110,8 @@ public class SittingsJsonGenerator {
 
             hearingJsonBuilder
                     .add("applicationReference", courtApplicationDetails.getApplicationReference())
-                    .add("caseReference", courtApplicationDetails.getApplicationReference())
+                    .add("caseIdentifier", JsonObjects.createObjectBuilder()
+                            .add("caseReference", courtApplicationDetails.getApplicationReference()))
                     .add("applicant", courtApplicationDetails.getApplicant())
                     .add("respondents", courtApplicationDetails.getRespondents());
 
@@ -114,8 +119,39 @@ public class SittingsJsonGenerator {
             if (courtApplicationDetails.getSubject() != null) {
                 hearingJsonBuilder.add("subject", courtApplicationDetails.getSubject());
             }
+
+            hearingJsonBuilder.add("defendants", buildCourtApplicationDefendants(courtApplicationDetails));
         }
 
         return hearingJsonBuilder.build();
+    }
+
+    // Treat the application's applicant, subject and every respondent like a defendant. Deduped by
+    // id only, so the same party isn't listed twice when e.g. applicant and subject are the same person.
+    private static JsonArrayBuilder buildCourtApplicationDefendants(final CourtApplicationDetails courtApplicationDetails) {
+
+        final JsonArrayBuilder defendants = JsonObjects.createArrayBuilder();
+        final Set<String> addedPartyIds = new HashSet<>();
+
+        if (nonNull(courtApplicationDetails.getRespondents())) {
+            for (final JsonObject respondent : courtApplicationDetails.getRespondents().getValuesAs(JsonObject.class)) {
+                addDefendant(defendants, addedPartyIds, respondent);
+            }
+        }
+
+        addDefendant(defendants, addedPartyIds, courtApplicationDetails.getApplicant());
+        addDefendant(defendants, addedPartyIds, courtApplicationDetails.getSubject());
+
+        return defendants;
+    }
+
+    private static void addDefendant(final JsonArrayBuilder defendants, final Set<String> addedPartyIds, final JsonObject party) {
+        if (isNull(party)) {
+            return;
+        }
+        final String partyId = party.getString(PARTY_ID, null);
+        if (partyId == null || addedPartyIds.add(partyId)) {
+            defendants.add(party);
+        }
     }
 }
