@@ -5,6 +5,7 @@ import static java.text.MessageFormat.format;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
@@ -192,6 +193,27 @@ public class MoveHearingDateSteps extends AbstractIT {
                         withJsonPath("$.id", is(hearingId)),
                         withJsonPath("$.nonSittingDays", org.hamcrest.Matchers.hasSize(0)),
                         withJsonPath("$.nonDefaultDays", org.hamcrest.Matchers.hasSize(0)))));
+    }
+
+    /**
+     * A CROWN move over a span containing a non-sitting day: that day is excluded from hearingDays (so the
+     * days come out in order d0,d1,d2,d3 with the non-sitting day gone) and the day at {@code d2} keeps the
+     * DB start-time-of-day {@code d2UtcTimePrefix} (e.g. "11:30") rather than the submitted move time -
+     * proving db takes precedence over the payload.
+     */
+    public void verifyCrownMoveExcludedNonSittingDayAndKeptDbStartTime(final LocalDate d0, final LocalDate d1,
+            final LocalDate d2, final LocalDate d3, final String d2UtcTimePrefix) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty(LISTING_QUERY_HEARING), hearingId));
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARING).withHeader(USER_ID, getLoggedInUser()).build())
+                .until(status().is(OK), payload().isJson(org.hamcrest.CoreMatchers.allOf(
+                        withJsonPath("$.id", is(hearingId)),
+                        withJsonPath("$.hearingDays.length()", is(4)),
+                        withJsonPath("$.hearingDays[0].hearingDate", is(d0.toString())),
+                        withJsonPath("$.hearingDays[1].hearingDate", is(d1.toString())),
+                        withJsonPath("$.hearingDays[2].hearingDate", is(d2.toString())),
+                        withJsonPath("$.hearingDays[3].hearingDate", is(d3.toString())),
+                        withJsonPath("$.hearingDays[2].startTime", startsWith(d2 + "T" + d2UtcTimePrefix)))));
     }
 
     /** Main-level startDate/endDate must track the hearing days: earliest and latest hearing-day date. */

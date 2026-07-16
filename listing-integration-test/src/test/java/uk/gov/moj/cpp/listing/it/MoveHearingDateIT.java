@@ -278,6 +278,38 @@ class MoveHearingDateIT extends AbstractIT {
         moveSteps.verifyNonDefaultDaysRetained();
     }
 
+    /**
+     * Baris's worked example end-to-end: a 5-day CROWN hearing Mon..Fri with Wednesday a non-sitting day
+     * has 4 hearing days (Wednesday excluded). The move re-issues exactly those 4 days in order and the
+     * non-default Thursday keeps its DB start-time (11:30) even though the move payload submits 10:00 -
+     * proving db takes precedence over the payload and the non-sitting day never becomes a hearing day.
+     */
+    @Test
+    void shouldExcludeNonSittingDayFromHearingDaysAndKeepDbStartTimesOnCrownMove() {
+        final LocalDate monday = recentPastMonday();
+        final LocalDate tuesday = monday.plusDays(1);
+        final LocalDate wednesday = monday.plusDays(2);        // non-sitting day
+        final LocalDate thursday = monday.plusDays(3);         // non-default day at 11:30
+        final LocalDate friday = monday.plusDays(4);
+        final String nonDefaultStartTime = thursday + "T11:30:00Z";
+
+        final HearingsData hearingsData = givenAListedCrownHearingWithNonSittingAndNonDefaultDays(
+                monday, friday, wednesday, nonDefaultStartTime);
+        final MoveHearingDateSteps moveSteps = new MoveHearingDateSteps(hearingsData);
+        final String roomId = hearingsData.getHearingData().get(0).getCourtRoomId().toString();
+
+        moveSteps.verifyNonSittingDayRetained(wednesday);      // precondition: the update projected it
+
+        // move to the SAME Mon..Fri span (payload time is 10:00, deliberately different from the DB times)
+        final Response response = moveSteps.whenHearingIsMovedToPastDateRange(monday, friday, roomId);
+
+        assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
+        verifyMoveHearingDateNeverCalled(moveSteps.getHearingId());
+        // 4 hearing days (Wednesday excluded), and Thursday keeps its DB 11:30 start-time, not the payload's 10:00
+        moveSteps.verifyCrownMoveExcludedNonSittingDayAndKeptDbStartTime(monday, tuesday, thursday, friday, "11:30");
+        moveSteps.verifyNonSittingDayRetained(wednesday);      // still persisted after the move
+    }
+
     @Test
     void shouldDropNonSittingAndNonDefaultDaysPushedOutsideTheMovedSpan() {
         final LocalDate spanStart = ItClock.today().minusDays(20);
@@ -339,6 +371,15 @@ class MoveHearingDateIT extends AbstractIT {
         new UpdateHearingSteps(hearingsData, updated).whenHearingIsUpdatedForListing();
 
         return hearingsData;
+    }
+
+    /** A recent past Monday, so a Mon..Fri span has no weekend inside it and the day counts are deterministic. */
+    private static LocalDate recentPastMonday() {
+        LocalDate day = ItClock.today().minusDays(14);
+        while (day.getDayOfWeek() != DayOfWeek.MONDAY) {
+            day = day.minusDays(1);
+        }
+        return day;
     }
 
     /** n-th working (Mon-Fri) day strictly before ItClock.today() - keeps past-date moves off weekends. */

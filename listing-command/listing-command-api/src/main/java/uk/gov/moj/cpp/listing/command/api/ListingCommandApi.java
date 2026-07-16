@@ -103,7 +103,10 @@ public class ListingCommandApi {
     public static final String INVALID_DATE = "INVALID_DATE";
     private static final String NON_SITTING_DAYS = "nonSittingDays";
     private static final String NON_DEFAULT_DAYS = "nonDefaultDays";
-    private static final String NDD_START_TIME = "startTime";
+    // "startTime" is the key on both a nonDefaultDay and a DB query-view hearingDay.
+    private static final String START_TIME = "startTime";
+    private static final String DB_END_TIME = "endTime";
+    private static final String DB_DURATION_MINUTES = "durationMinutes";
     private static final String END_DATE = "endDate";
     private static final String START_DATE_TIME = "startDateTime";
     private static final String END_DATE_TIME = "endDateTime";
@@ -399,11 +402,9 @@ public class ListingCommandApi {
         final LocalDate endDate = endInstant.toLocalDate();
 
         validateMoveDates(startDate, endDate);
-        // Weekends are permitted: every calendar day in [startDate, endDate] is a sitting day, so a
-        // Saturday or Sunday can be the start, the end, or fall inside a multi-day span.
-        final List<LocalDate> sittingDays = datesBetween(startDate, endDate);
 
-        // Duration rule: a multi-day move (endDate after startDate) books a full court day
+        // Duration rule (used only as the fallback for a sitting day that has no DB hearing day to inherit
+        // from - e.g. the move lengthens the hearing): a multi-day move books a full court day
         // (MULTI_DAY_DURATION_MINUTES) per sitting day; a single-day move uses the submitted window.
         final int durationInMinutes = endDate.isAfter(startDate)
                 ? MULTI_DAY_DURATION_MINUTES
@@ -416,17 +417,41 @@ public class ListingCommandApi {
         final String jurisdictionType = oucodeL1Name.toUpperCase(Locale.ROOT).contains(CROWN_JURISDICTION)
                 ? CROWN_JURISDICTION : MAGISTRATES_JURISDICTION;
 
+        // Latest known hearing (best effort - a move never fails just because the lookup is empty). For
+        // CROWN it is the source of each day's court room / start-time / duration and of the non-sitting
+        // days to exclude from the re-issued hearingDays; for both jurisdictions it carries forward the
+        // preserved non-sitting / non-default days.
+        final Optional<JsonObject> dbHearing = hearingLookupService.findHearing(hearingId, envelope);
+
         final JsonObjectBuilder enrichedBuilder = createObjectBuilder()
                 .add(HEARING_ID, hearingId.toString())
                 .add(JURISDICTION, jurisdictionType)
                 .add(COURT_CENTRE_ID, courtCentreId.toString());
 
-        // CROWN moves are listing-side only (Baris decision D1) and never call courtscheduler; MAGS
-        // delegates to courtscheduler. Both return the actual hearing-day dates they produced (CROWN =
-        // sitting days; MAGS = booked slots).
-        final List<LocalDate> hearingDayDates = CROWN_JURISDICTION.equals(jurisdictionType)
-                ? enrichWithReissuedDays(enrichedBuilder, sittingDays, courtRoomId, startInstant, endInstant, durationInMinutes)
-                : enrichWithBookedSlots(enrichedBuilder, hearingId, courtCentreId, courtRoomId, startTimeStr, endTimeStr);
+        // CROWN moves are listing-side only (Baris decision D1) and never call courtscheduler. They
+        // re-issue one hearing day per sitting day - every calendar day in [startDate, endDate] MINUS the
+        // hearing's non-sitting days (weekends stay in; non-sitting days are excluded from hearingDays but
+        // still persisted, mirroring HearingDaysCalculator) - and take each day's room / start-time /
+        // duration from the DB hearing day at the same position (db takes precedence), falling back to the
+        // submitted values only for days beyond the DB set. MAGS still delegates the whole span to
+        // courtscheduler unchanged.
+        final List<LocalDate> hearingDayDates;
+        if (CROWN_JURISDICTION.equals(jurisdictionType)) {
+            final List<LocalDate> nonSittingDays = dbHearing
+                    .map(hearing -> nonSittingWithin(hearing, startDate, endDate))
+                    .orElseGet(List::of);
+            final List<LocalDate> sittingDays = datesBetween(startDate, endDate).stream()
+                    .filter(day -> !nonSittingDays.contains(day))
+                    .collect(Collectors.toList());
+            final List<JsonObject> dbHearingDays = dbHearing
+                    .map(ListingCommandApi::readDbHearingDays)
+                    .orElseGet(List::of);
+            hearingDayDates = enrichWithReissuedDays(enrichedBuilder, sittingDays, dbHearingDays,
+                    courtRoomId, startInstant, endInstant, durationInMinutes);
+        } else {
+            hearingDayDates = enrichWithBookedSlots(enrichedBuilder, hearingId, courtCentreId, courtRoomId,
+                    startTimeStr, endTimeStr);
+        }
 
         // Main-level startDate/endDate track the hearing days: earliest and latest hearing-day date
         // (mirrors the update-hearing-for-listing / list-court-hearing enrichment that derives them from days).
@@ -436,10 +461,9 @@ public class ListingCommandApi {
         enrichedBuilder.add(START_DATE, newStartDate.toString());
         enrichedBuilder.add(END_DATE, newEndDate.toString());
 
-        // Preserve the hearing's existing non-sitting / non-default days that the move does not affect
-        // (their date still falls within the new [newStartDate, newEndDate] span); drop those the move
-        // pushed outside it.
-        enrichPreservedDays(enrichedBuilder, hearingId, envelope, newStartDate, newEndDate);
+        // Preserve the hearing's existing non-sitting / non-default days whose date still falls within the
+        // move span [startDate, endDate]; drop those the move pushed outside it.
+        enrichPreservedDays(enrichedBuilder, dbHearing, startDate, endDate);
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_MOVE_HEARING_DATE_ENRICHED),
                 enrichedBuilder.build()));
@@ -456,23 +480,49 @@ public class ListingCommandApi {
     }
 
     /**
-     * Fetches the latest known hearing (best effort - a move never fails just because the lookup is
-     * empty) and carries forward only the nonSittingDays / nonDefaultDays whose date still falls within
-     * the new [newStartDate, newEndDate] span. Entries the move pushed outside the new span are dropped.
-     * A retained array is added only when the hearing actually had entries of that kind, so an untouched
-     * hearing sends nothing and the command handler leaves that aggregate state alone.
+     * Carries forward only the nonSittingDays / nonDefaultDays whose date still falls within the move span
+     * [spanStart, spanEnd]. Entries the move pushed outside the span are dropped. A retained array is added
+     * only when the hearing actually had entries of that kind, so an untouched hearing sends nothing and
+     * the command handler leaves that aggregate state alone. The hearing was already looked up (best
+     * effort) by the caller, so an empty lookup simply preserves nothing.
      */
-    private void enrichPreservedDays(final JsonObjectBuilder enrichedBuilder, final UUID hearingId,
-                                     final JsonEnvelope envelope, final LocalDate newStartDate, final LocalDate newEndDate) {
-        final Optional<JsonObject> hearing = hearingLookupService.findHearing(hearingId, envelope);
-        if (hearing.isEmpty()) {
+    private static void enrichPreservedDays(final JsonObjectBuilder enrichedBuilder, final Optional<JsonObject> dbHearing,
+                                     final LocalDate spanStart, final LocalDate spanEnd) {
+        if (dbHearing.isEmpty()) {
             return;
         }
-        final JsonObject currentHearing = hearing.get();
-        retainNonSittingDays(currentHearing, newStartDate, newEndDate)
+        final JsonObject currentHearing = dbHearing.get();
+        retainNonSittingDays(currentHearing, spanStart, spanEnd)
                 .ifPresent(retained -> enrichedBuilder.add(NON_SITTING_DAYS, retained));
-        retainNonDefaultDays(currentHearing, newStartDate, newEndDate)
+        retainNonDefaultDays(currentHearing, spanStart, spanEnd)
                 .ifPresent(retained -> enrichedBuilder.add(NON_DEFAULT_DAYS, retained));
+    }
+
+    /** The hearing's nonSittingDays whose date falls within the move span [start, end], date-ascending. */
+    private static List<LocalDate> nonSittingWithin(final JsonObject hearing, final LocalDate start, final LocalDate end) {
+        final JsonArray existing = nonEmptyArray(hearing, NON_SITTING_DAYS);
+        if (existing == null) {
+            return List.of();
+        }
+        final List<LocalDate> within = new ArrayList<>();
+        for (int i = 0; i < existing.size(); i++) {
+            final LocalDate day = LocalDate.parse(existing.getString(i));
+            if (isWithin(day, start, end)) {
+                within.add(day);
+            }
+        }
+        return within;
+    }
+
+    /** The DB hearing's query-view hearingDays, ordered by sequence (falls back to an empty list). */
+    private static List<JsonObject> readDbHearingDays(final JsonObject hearing) {
+        final JsonArray days = nonEmptyArray(hearing, HEARING_DAYS);
+        if (days == null) {
+            return List.of();
+        }
+        return days.getValuesAs(JsonObject.class).stream()
+                .sorted(java.util.Comparator.comparingInt(day -> day.getInt(SEQUENCE, Integer.MAX_VALUE)))
+                .collect(Collectors.toList());
     }
 
     private static Optional<JsonArrayBuilder> retainNonSittingDays(final JsonObject hearing, final LocalDate start, final LocalDate end) {
@@ -498,7 +548,7 @@ public class ListingCommandApi {
         final JsonArrayBuilder retained = createArrayBuilder();
         for (int i = 0; i < existing.size(); i++) {
             final JsonObject nonDefaultDay = existing.getJsonObject(i);
-            final LocalDate day = ZonedDateTime.parse(nonDefaultDay.getString(NDD_START_TIME)).toLocalDate();
+            final LocalDate day = ZonedDateTime.parse(nonDefaultDay.getString(START_TIME)).toLocalDate();
             if (isWithin(day, start, end)) {
                 retained.add(nonDefaultDay);
             }
@@ -556,31 +606,47 @@ public class ListingCommandApi {
     }
 
     /**
-     * CROWN moves never call courtscheduler. Each sitting day is re-issued on the new date at the
-     * submitted start/end time-of-day, in the requested room (mandatory), with the caller's computed
-     * duration (single-day = submitted window, multi-day = a full court day).
+     * CROWN moves never call courtscheduler. Each sitting day is re-issued on its new date; the court
+     * room, start/end time-of-day and duration are taken from the DB hearing day at the same position
+     * (db takes precedence, so a non-default day's own room/time - already baked into its DB row - is
+     * preserved automatically). A sitting day beyond the DB set (the move lengthened the hearing) falls
+     * back to the submitted room, start/end time-of-day and computed duration.
      */
     private static List<LocalDate> enrichWithReissuedDays(final JsonObjectBuilder enrichedBuilder,
-                                                          final List<LocalDate> sittingDays, final UUID courtRoomId,
-                                                          final ZonedDateTime startInstant, final ZonedDateTime endInstant,
-                                                          final int durationInMinutes) {
-        final LocalTime startLocalTime = startInstant.toLocalTime();
-        final LocalTime endLocalTime = endInstant.toLocalTime();
+                                                          final List<LocalDate> sittingDays, final List<JsonObject> dbHearingDays,
+                                                          final UUID courtRoomId, final ZonedDateTime startInstant,
+                                                          final ZonedDateTime endInstant, final int durationInMinutes) {
         final JsonArrayBuilder daysBuilder = createArrayBuilder();
         int sequence = 1;
-        for (final LocalDate day : sittingDays) {
+        for (int i = 0; i < sittingDays.size(); i++) {
+            final LocalDate day = sittingDays.get(i);
+            final JsonObject dbDay = i < dbHearingDays.size() ? dbHearingDays.get(i) : null;
+
+            final String roomId = dbDay != null ? dbDay.getString(COURT_ROOM_ID) : courtRoomId.toString();
+            final LocalTime startLocalTime = dbDay != null
+                    ? utcTimeOf(dbDay.getString(START_TIME)) : startInstant.toLocalTime();
+            final LocalTime endLocalTime = dbDay != null && dbDay.containsKey(DB_END_TIME)
+                    ? utcTimeOf(dbDay.getString(DB_END_TIME)) : endInstant.toLocalTime();
+            final int dayDuration = dbDay != null && dbDay.containsKey(DB_DURATION_MINUTES)
+                    ? dbDay.getInt(DB_DURATION_MINUTES) : durationInMinutes;
+
             final ZonedDateTime start = ZonedDateTime.of(day, startLocalTime, ZoneOffset.UTC);
             final ZonedDateTime end = ZonedDateTime.of(day, endLocalTime, ZoneOffset.UTC);
             daysBuilder.add(createObjectBuilder()
                     .add(SESSION_DATE, day.toString())
                     .add(SESSION_START_TIME, start.toString())
                     .add(SESSION_END_TIME, end.toString())
-                    .add(DURATION_IN_MINUTES, durationInMinutes)
+                    .add(DURATION_IN_MINUTES, dayDuration)
                     .add(SEQUENCE, sequence++)
-                    .add(COURT_ROOM_ID, courtRoomId.toString()));
+                    .add(COURT_ROOM_ID, roomId));
         }
         enrichedBuilder.add(HEARING_DAYS, daysBuilder);
         return sittingDays;
+    }
+
+    /** Time-of-day (UTC) of an absolute ISO instant such as a DB hearing day's {@code startTime}. */
+    private static LocalTime utcTimeOf(final String isoInstant) {
+        return ZonedDateTime.parse(isoInstant).withZoneSameInstant(ZoneOffset.UTC).toLocalTime();
     }
 
     /**

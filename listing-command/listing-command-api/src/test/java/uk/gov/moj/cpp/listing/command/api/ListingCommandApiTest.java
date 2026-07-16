@@ -9,6 +9,7 @@ import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -1037,6 +1038,148 @@ public class ListingCommandApiTest {
             assertThat(s.withZoneSameInstant(java.time.ZoneOffset.UTC).toLocalTime(), is(java.time.LocalTime.of(10, 30)));
             assertThat(e.withZoneSameInstant(java.time.ZoneOffset.UTC).toLocalTime(), is(java.time.LocalTime.of(17, 0)));
         }
+    }
+
+    @Test
+    public void shouldTakeCourtRoomStartTimeAndDurationFromTheDbHearingDayWhenTheyDifferFromThePayload() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID dbRoom = randomUUID();
+        final LocalDate day = lastWorkingDayBeforeToday();
+
+        // The payload asks for MOVE_COURT_ROOM_ID at 10:30 -> 11:15 (45'). The DB hearing day is a
+        // DIFFERENT room, at 14:00, for 90 minutes - the DB day must win (Baris: db takes precedence).
+        stubMovePayload(hearingId, courtCentreId, day, "10:30", day, "11:15");
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Crown Courts"));
+        given(hearingLookupService.findHearing(eq(hearingId), any()))
+                .willReturn(Optional.of(dbHearingWith(dbDay(day, dbRoom, "14:00", "15:30", 90, 1))));
+
+        final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
+        listingCommandApi.handleMoveHearingDate(envelope);
+
+        verify(sender, times(1)).send(captor.capture());
+        final JsonObject day0 = ((JsonObject) captor.getValue().payload()).getJsonArray("hearingDays").getJsonObject(0);
+        // room, duration and time-of-day are the DB day's, not the payload's; the date is the moved day
+        assertThat(day0.getString("courtRoomId"), is(dbRoom.toString()));
+        assertThat(day0.getInt("durationInMinutes"), is(90));
+        final java.time.ZonedDateTime start = java.time.ZonedDateTime.parse(day0.getString("sessionStartTime"));
+        assertThat(start.toLocalDate(), is(day));
+        assertThat(start.withZoneSameInstant(java.time.ZoneOffset.UTC).toLocalTime(), is(java.time.LocalTime.of(14, 0)));
+    }
+
+    @Test
+    public void shouldExcludeTheNonSittingDayFromHearingDaysAndTakeEachSittingDayFromItsDbHearingDay() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID room0 = randomUUID();
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID room3 = randomUUID();
+        final LocalDate monday = recentPastMonday();
+        final LocalDate tuesday = monday.plusDays(1);
+        final LocalDate wednesday = monday.plusDays(2);
+        final LocalDate thursday = monday.plusDays(3);
+        final LocalDate friday = monday.plusDays(4);
+
+        // Baris's worked example: a 5-day CROWN span Mon..Fri where Wednesday is a non-sitting day -> only
+        // 4 hearing days (Mon, Tue, Thu, Fri), each taking room + time + duration from the DB day at its
+        // position. The payload (08:00 -> 18:00, MOVE_COURT_ROOM_ID) is deliberately different and must
+        // never be used because every sitting day has a DB day.
+        stubMovePayload(hearingId, courtCentreId, monday, "08:00", friday, "18:00");
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Crown Courts"));
+        given(hearingLookupService.findHearing(eq(hearingId), any())).willReturn(Optional.of(
+                Json.createObjectBuilder()
+                        .add("nonSittingDays", Json.createArrayBuilder().add(wednesday.toString()))
+                        .add("hearingDays", Json.createArrayBuilder()
+                                .add(dbDay(monday, room0, "09:00", "12:00", 180, 1))
+                                .add(dbDay(tuesday, room1, "10:00", "16:00", 360, 2))
+                                .add(dbDay(thursday, room2, "11:00", "13:00", 120, 3))
+                                .add(dbDay(friday, room3, "14:00", "17:00", 180, 4)))
+                        .build()));
+
+        final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
+        listingCommandApi.handleMoveHearingDate(envelope);
+
+        verify(sender, times(1)).send(captor.capture());
+        final JsonObject sent = (JsonObject) captor.getValue().payload();
+        final JsonArray days = sent.getJsonArray("hearingDays");
+        // Wednesday (non-sitting) is excluded from hearingDays but still persisted
+        assertThat(days.size(), is(4));
+        for (int i = 0; i < days.size(); i++) {
+            assertThat(days.getJsonObject(i).getString("sessionDate"), is(not(wednesday.toString())));
+        }
+        assertThat(sent.getJsonArray("nonSittingDays").size(), is(1));
+        assertThat(sent.getJsonArray("nonSittingDays").getString(0), is(wednesday.toString()));
+        // each surviving day carries its positional DB day's room + start-time-of-day + duration
+        assertDay(days.getJsonObject(0), monday, room0, "09:00", 180);
+        assertDay(days.getJsonObject(1), tuesday, room1, "10:00", 360);
+        assertDay(days.getJsonObject(2), thursday, room2, "11:00", 120);
+        assertDay(days.getJsonObject(3), friday, room3, "14:00", 180);
+    }
+
+    @Test
+    public void shouldFallBackToThePayloadRoomAndTimeForSittingDaysBeyondTheDbSet() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID dbRoom = randomUUID();
+        final LocalDate monday = recentPastMonday();
+        final LocalDate tuesday = monday.plusDays(1);
+        final LocalDate wednesday = monday.plusDays(2);
+
+        // A 3-day move but the DB hearing only has ONE day: day 0 (Mon) inherits the DB day; the move
+        // lengthened the hearing so Tue/Wed have no DB day and fall back to the submitted 10:30 room/time
+        // and the multi-day full-court-day duration (360).
+        stubMovePayload(hearingId, courtCentreId, monday, "10:30", wednesday, "17:00");
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Crown Courts"));
+        given(hearingLookupService.findHearing(eq(hearingId), any()))
+                .willReturn(Optional.of(dbHearingWith(dbDay(monday, dbRoom, "09:00", "12:00", 180, 1))));
+
+        final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
+        listingCommandApi.handleMoveHearingDate(envelope);
+
+        verify(sender, times(1)).send(captor.capture());
+        final JsonArray days = ((JsonObject) captor.getValue().payload()).getJsonArray("hearingDays");
+        assertThat(days.size(), is(3));
+        assertDay(days.getJsonObject(0), monday, dbRoom, "09:00", 180);
+        assertDay(days.getJsonObject(1), tuesday, MOVE_COURT_ROOM_ID, "10:30", 360);
+        assertDay(days.getJsonObject(2), wednesday, MOVE_COURT_ROOM_ID, "10:30", 360);
+    }
+
+    // Asserts a re-issued hearingDay's date, room, start-time-of-day (UTC) and duration.
+    private static void assertDay(final JsonObject day, final LocalDate date, final UUID room,
+                                  final String startHhmm, final int durationMinutes) {
+        assertThat(day.getString("sessionDate"), is(date.toString()));
+        assertThat(day.getString("courtRoomId"), is(room.toString()));
+        assertThat(day.getInt("durationInMinutes"), is(durationMinutes));
+        final java.time.ZonedDateTime start = java.time.ZonedDateTime.parse(day.getString("sessionStartTime"));
+        assertThat(start.toLocalDate(), is(date));
+        assertThat(start.withZoneSameInstant(java.time.ZoneOffset.UTC).toLocalTime(),
+                is(java.time.LocalTime.parse(startHhmm)));
+    }
+
+    // A hearing view whose hearingDays array is the supplied day rows (query-view shape).
+    private static JsonObject dbHearingWith(final javax.json.JsonObjectBuilder... days) {
+        final javax.json.JsonArrayBuilder arr = Json.createArrayBuilder();
+        for (final javax.json.JsonObjectBuilder day : days) {
+            arr.add(day);
+        }
+        return Json.createObjectBuilder().add("hearingDays", arr).build();
+    }
+
+    // One query-view hearingDay row: startTime/endTime are absolute UTC instants on {@code date}.
+    private static javax.json.JsonObjectBuilder dbDay(final LocalDate date, final UUID roomId,
+                                           final String startHhmm, final String endHhmm,
+                                           final int durationMinutes, final int sequence) {
+        return Json.createObjectBuilder()
+                .add("hearingDate", date.toString())
+                .add("startTime", date + "T" + startHhmm + ":00.000Z")
+                .add("endTime", date + "T" + endHhmm + ":00.000Z")
+                .add("courtRoomId", roomId.toString())
+                .add("durationMinutes", durationMinutes)
+                .add("sequence", sequence);
     }
 
     @Test
