@@ -59,6 +59,8 @@ public class CourtSchedulerServiceAdapter {
     public static final String DURATION_IN_MINUTES = "durationInMinutes";
     public static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
     public static final String NO_SESSION_FOUND = "NO_SESSION_FOUND";
+    public static final String NO_SESSION_FOUND_MESSAGE =
+            "No suitable sessions are available for the selected date. Please select another date.";
     private static final String ERROR_CODE = "errorCode";
     private static final String MESSAGE = "message";
     @Inject
@@ -249,10 +251,10 @@ public class CourtSchedulerServiceAdapter {
                                                                    final UUID courtCentreId,
                                                                    final UUID courtRoomId,
                                                                    final String startTime,
-                                                                   final String endTime,
-                                                                   final Integer durationInMinutes) {
+                                                                   final String endTime) {
         // hearingId travels only in the URL path; courtscheduler's REST adapter injects it.
-        // startTime/endTime are absolute UTC instants (e.g. 2026-07-02T17:00:00.000Z).
+        // startTime/endTime are absolute UTC instants (e.g. 2026-07-20T10:30:00.000Z); courtscheduler
+        // derives the per-day start/end time-of-day and the duration from them.
         final JsonObjectBuilder requestBuilder = Json.createObjectBuilder()
                 .add(COURT_CENTRE_ID, courtCentreId.toString())
                 .add(COURT_ROOM_ID, courtRoomId.toString())
@@ -260,9 +262,6 @@ public class CourtSchedulerServiceAdapter {
                 .add(START_TIME, startTime);
         if (endTime != null) {
             requestBuilder.add(END_TIME, endTime);
-        }
-        if (durationInMinutes != null) {
-            requestBuilder.add(DURATION_IN_MINUTES, durationInMinutes);
         }
 
         final Response response = hearingSlotsService.moveHearingToPastDate(hearingId, requestBuilder.build());
@@ -278,13 +277,13 @@ public class CourtSchedulerServiceAdapter {
         LOGGER.error("moveHearingToPastDate from courtscheduler returned status {} for hearingId {}: {}",
                 status, hearingId, body);
 
-        if (HttpStatus.SC_NOT_FOUND == status) {
-            // older courtscheduler releases signal no-session as a bare 404 - normalise to the
-            // 422 NO_SESSION_FOUND contract so callers see a single failure shape
+        // No-session failures are normalised to one fixed user-facing shape regardless of how the
+        // courtscheduler signalled them: a legacy bare 404, or a 422 whose body carries its internal
+        // diagnostic message (e.g. "No session available at courtCentreId=... on ...").
+        if (HttpStatus.SC_NOT_FOUND == status || NO_SESSION_FOUND.equals(body.getString(ERROR_CODE, null))) {
             final JsonObject noSessionBody = Json.createObjectBuilder()
                     .add(ERROR_CODE, NO_SESSION_FOUND)
-                    .add(MESSAGE, body.getString(MESSAGE,
-                            "No court-schedule session found for hearingId " + hearingId + " between " + startTime + " and " + endTime))
+                    .add(MESSAGE, NO_SESSION_FOUND_MESSAGE)
                     .build();
             throw new MoveHearingToPastDateException(HttpStatus.SC_UNPROCESSABLE_ENTITY, noSessionBody,
                     "moveHearingToPastDate found no session for hearingId " + hearingId);
