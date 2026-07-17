@@ -24,6 +24,8 @@ public class SittingsJsonGenerator {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
     private static final String PARTY_ID = "id";
+    private static final String COURT_APPLICATION_PARTY_TYPE = "courtApplicationPartyType";
+    private static final String PERSON_DEFENDANT_PARTY_TYPE = "PERSON_DEFENDANT";
 
     private SittingsJsonGenerator() {
         throw new IllegalStateException("Utility class");
@@ -146,12 +148,16 @@ public class SittingsJsonGenerator {
     }
 
     private static void addDefendant(final JsonArrayBuilder defendants, final Set<String> addedPartyIds, final JsonObject party) {
-        if (isNull(party)) {
+        if (isNull(party) || !isPersonDefendantParty(party)) {
             return;
         }
         final String partyId = party.getString(PARTY_ID, null);
         if (partyId == null || addedPartyIds.add(partyId)) {
             defendants.add(party);
         }
+    }
+
+    private static boolean isPersonDefendantParty(final JsonObject party) {
+        return PERSON_DEFENDANT_PARTY_TYPE.equals(party.getString(COURT_APPLICATION_PARTY_TYPE, null));
     }
 }

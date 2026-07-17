@@ -73,8 +73,6 @@ public class DailyListPayloadIT extends AbstractIT {
 
     @Test
     void shouldReturnDailyListPayloadForFirm() {
-//        dailyListPayloadSteps.verifyWeekCommencingListPayloadContainsHearing("FIRM", updatedHearingData.getEndDate());
-
         // Also submit a standalone application (no case) on its own isolated court centre and
         // verify it shows up on a FIRM list too. Kept on a separate centre from the case: a
         // standalone application has no judiciary, so it always lands in a different sitting than
