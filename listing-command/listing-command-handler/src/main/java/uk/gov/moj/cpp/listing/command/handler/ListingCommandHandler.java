@@ -198,6 +198,7 @@ public class ListingCommandHandler {
     private static final String SESSION_DATE = "sessionDate";
     private static final String MOVE_COURT_CENTRE_ID = "courtCentreId";
     private static final String MOVE_COURT_ROOM_ID = "courtRoomId";
+    private static final String IS_DRAFT = "isDraft";
     private static final String SESSION_START_TIME = "sessionStartTime";
     private static final String SESSION_END_TIME = "sessionEndTime";
     private static final String DURATION_IN_MINUTES = "durationInMinutes";
@@ -517,8 +518,8 @@ public class ListingCommandHandler {
                         .withCourtCentreId(of(fromString(day.getString(MOVE_COURT_CENTRE_ID))))
                         .withCourtRoomId(of(fromString(day.getString(MOVE_COURT_ROOM_ID))))
                         .withCourtScheduleId(of(fromString(day.getString(COURT_SCHEDULE_ID))))
-                        .withIsDraft(day.containsKey("isDraft") && !day.isNull("isDraft")
-                                ? of(day.getBoolean("isDraft")) : Optional.empty())
+                        .withIsDraft(day.containsKey(IS_DRAFT) && !day.isNull(IS_DRAFT)
+                                ? of(day.getBoolean(IS_DRAFT)) : Optional.empty())
                         .build());
                 changedSchedules.add(HearingDayCourtSchedule.hearingDayCourtSchedule()
                         .withHearingDate(LocalDate.parse(day.getString("hearingDate")))
