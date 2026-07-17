@@ -949,7 +949,7 @@ public class ListingCommandApiTest {
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
         given(courtSchedulerServiceAdapter.changeCourtRoomForMultidayHearing(eq(hearingId), any()))
-                .willReturn(List.of(new ChangedDaySession(virtualScheduleId, "confirmed-room-3", d3, d3 + "T10:00:00Z", 360)));
+                .willReturn(List.of(new ChangedDaySession(virtualScheduleId, "confirmed-room-3", d3, d3 + "T10:00:00Z", 360, true)));
 
         listingCommandApi.handleChangeCourtRoomForMultidayHearing(envelope);
 
@@ -962,11 +962,13 @@ public class ListingCommandApiTest {
         verify(sender, times(1)).send(captor.capture());
         final JsonObject sent = (JsonObject) captor.getValue().payload();
 
-        // changedDays holds ONLY the virtual day, resolved from the adapter response.
+        // changedDays holds ONLY the virtual day, resolved from the adapter response - including the
+        // booked session's draft state, threaded through so the hearing day doesn't lose isDraft.
         final JsonArray changedDays = sent.getJsonArray("changedDays");
         assertThat(changedDays.size(), is(1));
         assertThat(changedDays.getJsonObject(0).getString("hearingDate"), is(d3.toString()));
         assertThat(changedDays.getJsonObject(0).getString("courtRoomId"), is("confirmed-room-3"));
+        assertThat(changedDays.getJsonObject(0).getBoolean("isDraft"), is(true));
 
         // nonDefaultDays holds ONLY the real day; the legacy integer courtRoomId is dropped, roomId kept.
         final JsonArray enrichedNonDefaultDays = sent.getJsonArray("nonDefaultDays");

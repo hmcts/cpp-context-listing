@@ -1190,14 +1190,19 @@ public class Hearing implements Aggregate {
             return Stream.empty();
         }
 
-        // Virtual days (already booked by COMMAND_API) are merged into hearing days, with their court
-        // schedules updated. Extracted to a helper to keep this method's cognitive complexity low.
-        final Stream<Object> hearingDayEvents = hasChangedDays
-                ? raiseChangedHearingDayEvents(hearingId, changedDays, changedSchedules)
-                : Stream.empty();
+        // EVERY submitted day - virtual or real - moves its hearing day to the new room. Virtual days
+        // arrive pre-booked (new courtScheduleId + session isDraft); real days derive an equivalent
+        // hearing-day change from the nonDefaultDay (their courtScheduleId is the existing one, so no
+        // schedule change and no booking). Fields the change doesn't own (isDraft when absent,
+        // isCancelled) are preserved from the existing day inside the merge.
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> allChangedDays = new ArrayList<>(changedDays);
+        if (hasChangedNonDefaultDays) {
+            changedNonDefaultDays.forEach(realDay -> allChangedDays.add(toHearingDayChange(realDay)));
+        }
+        final Stream<Object> hearingDayEvents = raiseChangedHearingDayEvents(hearingId, allChangedDays, changedSchedules);
 
-        // Real days (virtual false/absent) are persisted as nonDefaultDays, never booked and never
-        // converted into hearing days. Merge by date so untouched nonDefaultDays are preserved.
+        // Real days (virtual false/absent) are additionally persisted as nonDefaultDays. Merge by date
+        // so untouched nonDefaultDays are preserved and existing record fields survive the change.
         final Stream<Object> nonDefaultDayEvents = hasChangedNonDefaultDays
                 ? assignNonDefaultDays(mergeNonDefaultDaysByDate(this.nonDefaultDays, changedNonDefaultDays), hearingId)
                 : Stream.empty();
@@ -1242,7 +1247,7 @@ public class Hearing implements Aggregate {
 
         final List<uk.gov.moj.cpp.listing.domain.HearingDay> mergedDays = this.hearingDays.stream()
                 .map(existing -> existing == replacementTargetByDate.get(existing.getHearingDate())
-                        ? changedByDate.get(existing.getHearingDate())
+                        ? mergeChangedOntoExisting(existing, changedByDate.get(existing.getHearingDate()))
                         : toDomainHearingDay(existing))
                 .collect(toList());
 
@@ -1255,8 +1260,55 @@ public class Hearing implements Aggregate {
         // re-derived by startTime inside mergeHearingDaySequences, so it is not carried on the changed days.
         final Stream<Object> dayEvents = assignHearingDaysV2(hearingId, mergedDays, parentCourtRoom, parentCourtRoom,
                 uk.gov.justice.core.courts.JurisdictionType.CROWN, changedDates);
-        final Stream<Object> scheduleEvents = raiseHearingDayCourtSchedulesUpdated(hearingId, changedSchedules);
+        // Real days keep their existing schedule, so a request with no virtual days has no schedule updates.
+        final Stream<Object> scheduleEvents = changedSchedules.isEmpty()
+                ? Stream.empty() : raiseHearingDayCourtSchedulesUpdated(hearingId, changedSchedules);
         return Stream.concat(dayEvents, scheduleEvents);
+    }
+
+    /**
+     * The changed day owns the fields this command is allowed to move (times, duration, centre, room)
+     * plus - when supplied by the booking - courtScheduleId and the session's isDraft. Everything the
+     * change does NOT carry is preserved from the existing aggregate day, so a room change can never
+     * silently null-out isDraft/isCancelled/courtScheduleId in the hearing json blob.
+     */
+    private uk.gov.moj.cpp.listing.domain.HearingDay mergeChangedOntoExisting(final HearingDay existing,
+            final uk.gov.moj.cpp.listing.domain.HearingDay changed) {
+        return uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay()
+                .withHearingDate(changed.getHearingDate())
+                .withStartTime(changed.getStartTime())
+                .withEndTime(changed.getEndTime())
+                .withDurationMinutes(changed.getDurationMinutes())
+                .withCourtCentreId(changed.getCourtCentreId().isPresent()
+                        ? changed.getCourtCentreId() : ofNullable(existing.getCourtCentreId()))
+                .withCourtRoomId(changed.getCourtRoomId().isPresent()
+                        ? changed.getCourtRoomId() : ofNullable(existing.getCourtRoomId()))
+                .withCourtScheduleId(changed.getCourtScheduleId().isPresent()
+                        ? changed.getCourtScheduleId() : ofNullable(existing.getCourtScheduleId()))
+                .withIsDraft(changed.getIsDraft().isPresent()
+                        ? changed.getIsDraft() : ofNullable(existing.isDraft()))
+                .withIsCancelled(changed.getIsCancelled().isPresent()
+                        ? changed.getIsCancelled() : ofNullable(existing.isCancelled()))
+                .build();
+    }
+
+    /**
+     * A real (virtual=false/absent) changed day expressed as its equivalent hearing-day change: same
+     * date/times/duration/centre with the NEW room; courtScheduleId is the day's existing schedule
+     * (real days are never rebooked). isDraft is deliberately left absent so the merge preserves it.
+     */
+    private uk.gov.moj.cpp.listing.domain.HearingDay toHearingDayChange(final uk.gov.moj.cpp.listing.domain.NonDefaultDay realDay) {
+        final ZonedDateTime start = realDay.getStartTime();
+        final Integer duration = realDay.getDuration().orElse(null);
+        return uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay()
+                .withHearingDate(start.toLocalDate())
+                .withStartTime(start)
+                .withEndTime(duration != null ? start.plusMinutes(duration) : null)
+                .withDurationMinutes(duration)
+                .withCourtCentreId(realDay.getCourtCentreId().map(UUID::fromString))
+                .withCourtRoomId(realDay.getRoomId().map(UUID::fromString))
+                .withCourtScheduleId(realDay.getCourtScheduleId().map(UUID::fromString))
+                .build();
     }
 
     /**
@@ -1278,7 +1330,7 @@ public class Hearing implements Aggregate {
                 final LocalDate date = day.getStartTime().toLocalDate();
                 final uk.gov.moj.cpp.listing.domain.NonDefaultDay replacement = changedByDate.get(date);
                 if (replacement != null) {
-                    merged.add(replacement);
+                    merged.add(mergeNonDefaultDayOntoExisting(day, replacement));
                     replaced.add(date);
                 } else {
                     merged.add(day);
@@ -1291,6 +1343,27 @@ public class Hearing implements Aggregate {
             }
         });
         return merged;
+    }
+
+    /**
+     * Field-preserving replacement of an existing nonDefaultDay by a changed one on the same date: the
+     * change owns startTime/duration/courtCentreId/roomId/courtScheduleId; oucode and session survive
+     * from the stored record. The legacy integer courtRoomId is deliberately DROPPED - it identifies
+     * the OLD room, so carrying it across a room change would persist a stale reference.
+     */
+    private uk.gov.moj.cpp.listing.domain.NonDefaultDay mergeNonDefaultDayOntoExisting(
+            final uk.gov.moj.cpp.listing.domain.NonDefaultDay existing,
+            final uk.gov.moj.cpp.listing.domain.NonDefaultDay changed) {
+        return uk.gov.moj.cpp.listing.domain.NonDefaultDay.nonDefaultDay()
+                .withValuesFrom(existing)
+                .withStartTime(changed.getStartTime())
+                .withDuration(changed.getDuration().isPresent() ? changed.getDuration() : existing.getDuration())
+                .withCourtCentreId(changed.getCourtCentreId().isPresent() ? changed.getCourtCentreId() : existing.getCourtCentreId())
+                .withRoomId(changed.getRoomId().isPresent() ? changed.getRoomId() : existing.getRoomId())
+                .withCourtScheduleId(changed.getCourtScheduleId().isPresent() ? changed.getCourtScheduleId() : existing.getCourtScheduleId())
+                .withCourtRoomId(java.util.Optional.empty())
+                .withVirtual(ofNullable(Boolean.FALSE))
+                .build();
     }
 
     public Stream<Object> applyAllocationRules(final Optional<UUID> bookingReference, final Boolean sendNotificationToParties, final Boolean isNotificationRelatedAllocatedFieldsUpdated,

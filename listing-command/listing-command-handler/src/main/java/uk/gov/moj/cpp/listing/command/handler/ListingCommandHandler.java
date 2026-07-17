@@ -506,7 +506,8 @@ public class ListingCommandHandler {
                 final JsonObject day = (JsonObject) value;
                 final ZonedDateTime start = ZonedDateTime.parse(day.getString("startTime"));
                 final int durationMinutes = day.getInt("durationMinutes");
-                // courtScheduleId is carried on the schedule, not the day; the day never carries a sequence
+                // The day carries the NEW courtScheduleId and the booked session's draft state, so the
+                // aggregate merge doesn't wipe them on the room change; the day never carries a sequence
                 // (assignHearingDaysV2 re-derives it by startTime).
                 changedDays.add(hearingDay()
                         .withHearingDate(LocalDate.parse(day.getString("hearingDate")))
@@ -515,6 +516,9 @@ public class ListingCommandHandler {
                         .withDurationMinutes(durationMinutes)
                         .withCourtCentreId(of(fromString(day.getString(MOVE_COURT_CENTRE_ID))))
                         .withCourtRoomId(of(fromString(day.getString(MOVE_COURT_ROOM_ID))))
+                        .withCourtScheduleId(of(fromString(day.getString(COURT_SCHEDULE_ID))))
+                        .withIsDraft(day.containsKey("isDraft") && !day.isNull("isDraft")
+                                ? of(day.getBoolean("isDraft")) : Optional.empty())
                         .build());
                 changedSchedules.add(HearingDayCourtSchedule.hearingDayCourtSchedule()
                         .withHearingDate(LocalDate.parse(day.getString("hearingDate")))

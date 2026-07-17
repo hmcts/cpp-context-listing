@@ -34,6 +34,10 @@
           },
           "courtScheduleId": {
             "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          },
+          "isDraft": {
+            "type": "boolean",
+            "description": "Draft state of the booked target session, carried onto the hearing day"
           }
         },
         "required": [

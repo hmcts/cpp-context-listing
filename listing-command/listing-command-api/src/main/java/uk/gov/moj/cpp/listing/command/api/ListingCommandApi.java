@@ -102,6 +102,7 @@ public class ListingCommandApi {
     private static final String COURT_ROOM_ID = "courtRoomId";
     private static final String ROOM_ID = "roomId";
     private static final String VIRTUAL = "virtual";
+    private static final String IS_DRAFT = "isDraft";
     private static final String SESSION_DATE = "sessionDate";
     private static final String SESSION_START_TIME = "sessionStartTime";
     private static final String SESSION_END_TIME = "sessionEndTime";
@@ -589,13 +590,19 @@ public class ListingCommandApi {
         final List<ChangedDaySession> booked = courtSchedulerServiceAdapter.changeCourtRoomForMultidayHearing(hearingId, virtualDays);
         for (final ChangedDaySession session : booked) {
             final JsonObject requested = virtualRequestedByDate.get(session.sessionDate());
-            changedDays.add(createObjectBuilder()
+            final JsonObjectBuilder dayBuilder = createObjectBuilder()
                     .add(HEARING_DATE, session.sessionDate().toString())
                     .add(DAY_START_TIME, session.sessionStartTime() != null ? session.sessionStartTime() : requested.getString(DAY_START_TIME))
                     .add(DAY_DURATION_MINUTES, requested.getInt(NON_DEFAULT_DAY_DURATION))
                     .add(COURT_CENTRE_ID, requested.getString(COURT_CENTRE_ID))
                     .add(COURT_ROOM_ID, session.courtRoomId() != null ? session.courtRoomId() : requested.getString(ROOM_ID))
-                    .add(COURT_SCHEDULE_ID, session.courtScheduleId().toString()));
+                    .add(COURT_SCHEDULE_ID, session.courtScheduleId().toString());
+            // The booked session's draft state travels with the day so the aggregate can stamp it
+            // onto the hearing day (isDraft would otherwise be lost on the room change).
+            if (session.isDraft() != null) {
+                dayBuilder.add(IS_DRAFT, session.isDraft());
+            }
+            changedDays.add(dayBuilder);
         }
         return changedDays;
     }

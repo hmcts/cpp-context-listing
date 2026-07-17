@@ -2629,7 +2629,15 @@ class ListingCommandHandlerTest {
         assertThat(day1.getDurationMinutes(), is(360));
         assertThat(day1.getCourtRoomId().orElse(null), is(room2));
         assertThat(day1.getCourtCentreId().orElse(null), is(courtCentreId));
-        assertThat(day1.getCourtScheduleId().isPresent(), is(false));
+        // The day now carries the NEW schedule id and the booked session's draft state (when present),
+        // so the aggregate merge can stamp them onto the hearing day instead of wiping them.
+        assertThat(day1.getCourtScheduleId().orElse(null), is(sched1));
+        assertThat(day1.getIsDraft().orElse(null), is(true));
+
+        final uk.gov.moj.cpp.listing.domain.HearingDay day2 = changedDays.get(1);
+        assertThat(day2.getCourtScheduleId().orElse(null), is(sched2));
+        // isDraft absent on the wire -> left empty so the aggregate preserves the existing day's value.
+        assertThat(day2.getIsDraft().isPresent(), is(false));
 
         final List<HearingDayCourtSchedule> changedSchedules = schedulesCaptor.getValue();
         assertThat(changedSchedules, hasSize(2));
@@ -2898,7 +2906,7 @@ class ListingCommandHandlerTest {
         final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"sendNotificationToParties\":true,"
                 + "\"changedDays\":["
                 + "{\"hearingDate\":\"2026-07-15\",\"startTime\":\"2026-07-15T09:30:00Z\",\"durationMinutes\":360,"
-                + "\"courtCentreId\":\"" + courtCentreId + "\",\"courtRoomId\":\"" + room2 + "\",\"courtScheduleId\":\"" + sched1 + "\"},"
+                + "\"courtCentreId\":\"" + courtCentreId + "\",\"courtRoomId\":\"" + room2 + "\",\"courtScheduleId\":\"" + sched1 + "\",\"isDraft\":true},"
                 + "{\"hearingDate\":\"2026-07-16\",\"startTime\":\"2026-07-16T09:30:00Z\",\"durationMinutes\":360,"
                 + "\"courtCentreId\":\"" + courtCentreId + "\",\"courtRoomId\":\"" + room2 + "\",\"courtScheduleId\":\"" + sched2 + "\"}"
                 + "]}";
