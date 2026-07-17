@@ -270,6 +270,27 @@ public class ReferenceDataStub {
                         .withBody(payload)));
     }
 
+    /**
+     * Stubs a specific court centre id as a CROWN court centre (oucodeL1Name "Crown Courts") so the
+     * move-hearing-to-past-date jurisdiction lookup (which reads oucodeL1Name) resolves CROWN. Registered
+     * at high WireMock priority so it overrides the generic Magistrates court-centre stub for this id.
+     */
+    public static void stubGetReferenceDataCrownCourtCentreById(final UUID courtCentreId, final UUID courtRoomId) {
+        stubPingForReferenceDataService();
+        final String urlPath = String.format(REFERENCE_DATA_COURT_ROOM_QUERY_URL, courtCentreId);
+        final String payload = withCourtRoom(getPayload("stub-data/referencedata.query.courtroom.json")
+                .replace("COURT_CENTRE_ID", courtCentreId.toString())
+                .replace("DEFAULT_START_TIME", "10:30")
+                .replace("DEFAULT_DURATION_HOURS_MINS", "6:30")
+                .replace("Magistrates' Courts", "Crown Courts"), courtRoomId);
+
+        stubFor(get(urlPathMatching(urlPath)).atPriority(1)
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader("Content-Type", REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE)
+                        .withBody(payload)));
+    }
+
     public static void stubGetAllCrownCourtCentres(final UUID courtCentreIdOne, final UUID courtCentreIdTwo) {
         stubPingForReferenceDataService();
         String payload = getPayload("stub-data/reference.query.courtroom_crown_courts_only.json")

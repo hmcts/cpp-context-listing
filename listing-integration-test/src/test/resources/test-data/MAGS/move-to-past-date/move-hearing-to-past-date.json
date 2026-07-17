@@ -1,5 +1,6 @@
 {
   "courtCentreId": "%%COURT_CENTRE_ID%%",
   "courtRoomId": "%%COURT_ROOM_ID%%",
-  "startTime": "%%START_TIME%%"
+  "startDateTime": "%%START_TIME%%",
+  "endDateTime": "%%END_TIME%%"
 }
