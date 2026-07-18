@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 
 public class Hearing {
@@ -21,6 +22,8 @@ public class Hearing {
     private Optional<CaseDetails> caseDetails;
 
     private Optional<CourtApplicationDetails> courtApplicationDetails;
+
+    private JsonArray courtApplicationOffences;
 
     private boolean weekCommencing;
 
@@ -82,6 +85,14 @@ public class Hearing {
 
     public void setCourtApplicationDetails(final Optional<CourtApplicationDetails> courtApplicationDetails) {
         this.courtApplicationDetails = courtApplicationDetails;
+    }
+
+    public JsonArray getCourtApplicationOffences() {
+        return courtApplicationOffences;
+    }
+
+    public void setCourtApplicationOffences(final JsonArray courtApplicationOffences) {
+        this.courtApplicationOffences = courtApplicationOffences;
     }
 
     public boolean isWeekCommencing() {

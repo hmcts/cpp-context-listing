@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 import uk.gov.justice.services.messaging.JsonObjects;
+import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -23,6 +24,7 @@ import javax.json.JsonObjectBuilder;
 public class SittingsJsonGenerator {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    private static final DateTimeFormatter COURT_PROCEEDINGS_INITIATED_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
     private static final String PARTY_ID = "id";
     private static final String COURT_APPLICATION_PARTY_TYPE = "courtApplicationPartyType";
     private static final String PERSON_DEFENDANT_PARTY_TYPE = "PERSON_DEFENDANT";
@@ -112,8 +114,6 @@ public class SittingsJsonGenerator {
 
             hearingJsonBuilder
                     .add("applicationReference", courtApplicationDetails.getApplicationReference())
-                    .add("caseIdentifier", JsonObjects.createObjectBuilder()
-                            .add("caseReference", courtApplicationDetails.getApplicationReference()))
                     .add("applicant", courtApplicationDetails.getApplicant())
                     .add("respondents", courtApplicationDetails.getRespondents());
 
@@ -122,7 +122,9 @@ public class SittingsJsonGenerator {
                 hearingJsonBuilder.add("subject", courtApplicationDetails.getSubject());
             }
 
-            hearingJsonBuilder.add("defendants", buildCourtApplicationDefendants(courtApplicationDetails));
+            final String courtProceedingsInitiated = hearing.getStartTime().format(COURT_PROCEEDINGS_INITIATED_FORMATTER);
+
+            hearingJsonBuilder.add("defendants", buildCourtApplicationDefendants(courtApplicationDetails, hearing.getCourtApplicationOffences(), courtProceedingsInitiated));
         }
 
         return hearingJsonBuilder.build();
@@ -130,31 +132,45 @@ public class SittingsJsonGenerator {
 
     // Treat the application's applicant, subject and every respondent like a defendant. Deduped by
     // id only, so the same party isn't listed twice when e.g. applicant and subject are the same person.
-    private static JsonArrayBuilder buildCourtApplicationDefendants(final CourtApplicationDetails courtApplicationDetails) {
+    private static JsonArrayBuilder buildCourtApplicationDefendants(final CourtApplicationDetails courtApplicationDetails, final JsonArray applicationOffences, final String courtProceedingsInitiated) {
 
         final JsonArrayBuilder defendants = JsonObjects.createArrayBuilder();
         final Set<String> addedPartyIds = new HashSet<>();
 
         if (nonNull(courtApplicationDetails.getRespondents())) {
             for (final JsonObject respondent : courtApplicationDetails.getRespondents().getValuesAs(JsonObject.class)) {
-                addDefendant(defendants, addedPartyIds, respondent);
+                addDefendant(defendants, addedPartyIds, respondent, applicationOffences, courtProceedingsInitiated);
             }
         }
 
-        addDefendant(defendants, addedPartyIds, courtApplicationDetails.getApplicant());
-        addDefendant(defendants, addedPartyIds, courtApplicationDetails.getSubject());
+        addDefendant(defendants, addedPartyIds, courtApplicationDetails.getApplicant(), applicationOffences, courtProceedingsInitiated);
+        addDefendant(defendants, addedPartyIds, courtApplicationDetails.getSubject(), applicationOffences, courtProceedingsInitiated);
 
         return defendants;
     }
 
-    private static void addDefendant(final JsonArrayBuilder defendants, final Set<String> addedPartyIds, final JsonObject party) {
+    private static void addDefendant(final JsonArrayBuilder defendants, final Set<String> addedPartyIds, final JsonObject party, final JsonArray applicationOffences, final String courtProceedingsInitiated) {
         if (isNull(party) || !isPersonDefendantParty(party)) {
             return;
         }
         final String partyId = party.getString(PARTY_ID, null);
         if (partyId == null || addedPartyIds.add(partyId)) {
-            defendants.add(party);
+            defendants.add(withMandatoryDefendantFields(party, applicationOffences, courtProceedingsInitiated));
         }
+    }
+
+    private static JsonObjectBuilder withMandatoryDefendantFields(final JsonObject party, final JsonArray applicationOffences, final String courtProceedingsInitiated) {
+        final JsonObjectBuilder partyBuilder = JsonObjects.createObjectBuilder(party);
+
+        if (!party.containsKey("offences")) {
+            partyBuilder.add("offences", nonNull(applicationOffences) ? applicationOffences : JsonObjects.createArrayBuilder().build());
+        }
+
+        if (!party.containsKey("courtProceedingsInitiated")) {
+            partyBuilder.add("courtProceedingsInitiated", courtProceedingsInitiated);
+        }
+
+        return partyBuilder;
     }
 
     private static boolean isPersonDefendantParty(final JsonObject party) {
