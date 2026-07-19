@@ -2559,6 +2559,7 @@ class ListingCommandHandlerTest {
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearing.changeStartDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.changeEndDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
         when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()))).thenReturn(Stream.empty());
 
@@ -2566,6 +2567,7 @@ class ListingCommandHandlerTest {
 
         final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.HearingDay>> captor = ArgumentCaptor.forClass(List.class);
         verify(hearing, times(1)).changeStartDate(LocalDate.parse("2026-05-01"), HEARING_ID_1);
+        verify(hearing, times(1)).changeEndDate(LocalDate.parse("2026-05-01"), HEARING_ID_1);
         verify(hearing, times(1)).assignHearingDaysV2(eq(HEARING_ID_1), captor.capture(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()));
         verify(hearing, never()).raiseHearingDayCourtSchedulesUpdated(any(), any());
@@ -2583,6 +2585,7 @@ class ListingCommandHandlerTest {
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearing.changeStartDate(eq(LocalDate.parse(startDate)), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.changeEndDate(eq(LocalDate.parse(startDate)), eq(HEARING_ID_1))).thenReturn(Stream.empty());
         when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.CROWN), eq(emptyList()))).thenReturn(Stream.empty());
 
@@ -2590,6 +2593,7 @@ class ListingCommandHandlerTest {
 
         final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.HearingDay>> captor = ArgumentCaptor.forClass(List.class);
         verify(hearing, times(1)).changeStartDate(LocalDate.parse(startDate), HEARING_ID_1);
+        verify(hearing, times(1)).changeEndDate(LocalDate.parse(startDate), HEARING_ID_1);
         verify(hearing, times(1)).assignHearingDaysV2(eq(HEARING_ID_1), captor.capture(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.CROWN), eq(emptyList()));
         verify(hearing, never()).raiseHearingDayCourtSchedulesUpdated(any(), any());
@@ -2606,6 +2610,7 @@ class ListingCommandHandlerTest {
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearing.changeStartDate(eq(LocalDate.parse("2026-07-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.changeEndDate(eq(LocalDate.parse("2026-07-02")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
         when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()))).thenReturn(Stream.empty());
 
@@ -2613,6 +2618,7 @@ class ListingCommandHandlerTest {
 
         final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.HearingDay>> captor = ArgumentCaptor.forClass(List.class);
         verify(hearing, times(1)).changeStartDate(LocalDate.parse("2026-07-01"), HEARING_ID_1);
+        verify(hearing, times(1)).changeEndDate(LocalDate.parse("2026-07-02"), HEARING_ID_1);
         verify(hearing, times(1)).assignHearingDaysV2(eq(HEARING_ID_1), captor.capture(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()));
         assertThat(captor.getValue().size(), is(2));

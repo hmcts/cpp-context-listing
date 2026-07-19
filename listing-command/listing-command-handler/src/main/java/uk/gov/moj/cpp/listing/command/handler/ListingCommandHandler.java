@@ -191,6 +191,7 @@ public class ListingCommandHandler {
     public static final String OUCODE = "oucode";
     private static final String JURISDICTION = "jurisdiction";
     private static final String START_DATE = "startDate";
+    private static final String END_DATE = "endDate";
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
     private static final String SESSION_DATE = "sessionDate";
     private static final String MOVE_COURT_CENTRE_ID = "courtCentreId";
@@ -426,7 +427,10 @@ public class ListingCommandHandler {
         final JsonObject payload = command.payloadAsJsonObject();
         final UUID hearingId = fromString(payload.getString(HEARING_ID));
         final String jurisdiction = payload.getString(JURISDICTION);
+        // startDate/endDate are the earliest/latest hearing-day dates, derived in the command-api
+        // enrichment; only these two main-level fields (plus hearingDays) are changed by a move.
         final LocalDate startDate = parse(payload.getString(START_DATE));
+        final LocalDate endDate = payload.containsKey(END_DATE) ? parse(payload.getString(END_DATE)) : startDate;
         final Optional<UUID> courtCentreId = payload.containsKey(MOVE_COURT_CENTRE_ID)
                 ? Optional.of(fromString(payload.getString(MOVE_COURT_CENTRE_ID))) : Optional.empty();
 
@@ -446,7 +450,9 @@ public class ListingCommandHandler {
                 : uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
 
         updateHearingEventStream(command, hearingId, (Hearing hearing) -> Stream.concat(
-                hearing.changeStartDate(startDate, hearingId),
+                Stream.concat(
+                        hearing.changeStartDate(startDate, hearingId),
+                        hearing.changeEndDate(endDate, hearingId)),
                 hearing.assignHearingDaysV2(hearingId, movedDays, null, null, jurisdictionType, emptyList())));
     }
 
