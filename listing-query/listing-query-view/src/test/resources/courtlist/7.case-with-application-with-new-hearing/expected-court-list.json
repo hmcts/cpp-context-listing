@@ -59,9 +59,6 @@
               },
               "hasVideoLink": false,
               "applicationReference": "52GD7078825",
-              "caseIdentifier": {
-                "caseReference": "52GD7078825"
-              },
               "startTime": "2019-12-16T10:30:00",
               "endTime": "2019-12-16T10:50:00",
               "restrictFromCourtList": false,
@@ -90,7 +87,23 @@
                   },
                   "isRespondent": true,
                   "id": "edc625d0-4670-4863-b1bf-19dd7afdd4a6",
-                  "restrictFromCourtList": false
+                  "restrictFromCourtList": false,
+                  "offences": [
+                    {
+                      "id": "2bcae532-c44e-48bb-8113-105a78329389",
+                      "count": 0,
+                      "startDate": "2019-06-11",
+                      "orderIndex": 1,
+                      "offenceCode": "TW01046",
+                      "offenceWording": "Test Prosecution charge wording",
+                      "statementOfOffence": {
+                        "title": "Occupy reserved seat / berth without a valid ticket on the Tyne and Wear Metro",
+                        "welshTitle": "Occupy reserved seat / berth without a valid ticket on the Tyne and Wear Metro",
+                        "legislation": "Contrary to byelaw 19 and 31(1) of the Tyne and Wear Metro Byelaws made under sections 58 and 62 of the Tyneside Metropolitan Railway Act 1973."
+                      }
+                    }
+                  ],
+                  "courtProceedingsInitiated": "2019-12-16T10:30:00Z"
                 }
               ]
             }

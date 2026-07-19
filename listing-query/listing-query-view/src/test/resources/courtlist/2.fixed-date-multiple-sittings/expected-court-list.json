@@ -74,9 +74,6 @@
               "weekCommencing": false,
               "endTime": "2019-12-16T09:51:11",
               "applicationReference": "41TL769069",
-              "caseIdentifier": {
-                "caseReference": "41TL769069"
-              },
               "applicant": {
                 "id": "cb9ee4d4-369f-422e-8a5f-fa2af408247b",
                 "lastName": "BENINI",
@@ -102,7 +99,9 @@
                   "firstName": "Olga",
                   "isRespondent": false,
                   "restrictFromCourtList": false,
-                  "courtApplicationPartyType": "PERSON_DEFENDANT"
+                  "courtApplicationPartyType": "PERSON_DEFENDANT",
+                  "offences": [],
+                  "courtProceedingsInitiated": "2019-12-16T09:21:11Z"
                 }
               ],
               "hasVideoLink": false
@@ -208,9 +207,6 @@
               "weekCommencing": false,
               "endTime": "2019-12-16T09:51:00",
               "applicationReference": "19RV576068",
-              "caseIdentifier": {
-                "caseReference": "19RV576068"
-              },
               "applicant": {
                 "id": "8d41b127-ad50-4175-b590-3d253356f1de",
                 "lastName": "LUCAS",
@@ -236,7 +232,9 @@
                   "firstName": "Vernon",
                   "isRespondent": false,
                   "restrictFromCourtList": false,
-                  "courtApplicationPartyType": "PERSON_DEFENDANT"
+                  "courtApplicationPartyType": "PERSON_DEFENDANT",
+                  "offences": [],
+                  "courtProceedingsInitiated": "2019-12-16T09:21:00Z"
                 }
               ],
               "hasVideoLink": false
