@@ -617,6 +617,7 @@ public class CourtSchedulerServiceAdapter {
                 stringOrNull(schedule, COURT_ROOM_ID),
                 localDateOrNull(schedule, SESSION_DATE),
                 stringOrNull(schedule, SESSION_START_TIME),
-                intOrNull(schedule, DURATION_IN_MINUTES));
+                intOrNull(schedule, DURATION_IN_MINUTES),
+                booleanOrNull(schedule, IS_DRAFT));
     }
 }

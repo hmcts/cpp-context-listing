@@ -14,5 +14,12 @@ public record ChangedDaySession(UUID courtScheduleId,
                                  String courtRoomId,
                                  LocalDate sessionDate,
                                  String sessionStartTime,
-                                 Integer durationInMinutes) {
+                                 Integer durationInMinutes,
+                                 Boolean isDraft) {
+
+    /** Convenience constructor for callers/tests that don't care about the session's draft state. */
+    public ChangedDaySession(final UUID courtScheduleId, final String courtRoomId, final LocalDate sessionDate,
+                             final String sessionStartTime, final Integer durationInMinutes) {
+        this(courtScheduleId, courtRoomId, sessionDate, sessionStartTime, durationInMinutes, null);
+    }
 }

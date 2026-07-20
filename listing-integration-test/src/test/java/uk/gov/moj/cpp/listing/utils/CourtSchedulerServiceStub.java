@@ -1595,12 +1595,20 @@ public class CourtSchedulerServiceStub {
             "application/vnd.courtscheduler.change-court-room-for-multiday-hearing+json";
 
     /** One allocated day returned in the {@code allocatedSchedules} array of a successful
-     * change-court-room-for-multiday-hearing response. */
+     * change-court-room-for-multiday-hearing response. The real courtscheduler serialises the whole
+     * CourtSchedule entity, so isDraft is part of the response and mirrored here. */
     public record ChangeCourtRoomStubSession(String courtScheduleId,
                                               String courtRoomId,
                                               String sessionDate,
                                               String sessionStartTime,
-                                              int durationInMinutes) {
+                                              int durationInMinutes,
+                                              Boolean isDraft) {
+
+        public ChangeCourtRoomStubSession(final String courtScheduleId, final String courtRoomId,
+                                          final String sessionDate, final String sessionStartTime,
+                                          final int durationInMinutes) {
+            this(courtScheduleId, courtRoomId, sessionDate, sessionStartTime, durationInMinutes, null);
+        }
     }
 
     /** Stub a successful POST /hearings/{hearingId} (change-court-room-for-multiday-hearing) response,
@@ -1619,8 +1627,11 @@ public class CourtSchedulerServiceStub {
                     .append("\"courtRoomId\":\"").append(session.courtRoomId()).append("\",")
                     .append("\"sessionDate\":\"").append(session.sessionDate()).append("\",")
                     .append("\"sessionStartTime\":\"").append(session.sessionStartTime()).append("\",")
-                    .append("\"durationInMinutes\":").append(session.durationInMinutes())
-                    .append("}");
+                    .append("\"durationInMinutes\":").append(session.durationInMinutes());
+            if (session.isDraft() != null) {
+                body.append(",\"isDraft\":").append(session.isDraft());
+            }
+            body.append("}");
         }
         body.append("]}");
 

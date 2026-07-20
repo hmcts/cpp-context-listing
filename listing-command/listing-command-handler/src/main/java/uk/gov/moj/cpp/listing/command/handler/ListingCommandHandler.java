@@ -198,6 +198,7 @@ public class ListingCommandHandler {
     private static final String SESSION_DATE = "sessionDate";
     private static final String MOVE_COURT_CENTRE_ID = "courtCentreId";
     private static final String MOVE_COURT_ROOM_ID = "courtRoomId";
+    private static final String IS_DRAFT = "isDraft";
     private static final String SESSION_START_TIME = "sessionStartTime";
     private static final String SESSION_END_TIME = "sessionEndTime";
     private static final String DURATION_IN_MINUTES = "durationInMinutes";
@@ -498,30 +499,54 @@ public class ListingCommandHandler {
         final UUID hearingId = fromString(payload.getString(HEARING_ID));
         final Boolean sendNotificationToParties = payload.getBoolean("sendNotificationToParties", true);
 
+        // VIRTUAL days already (re)booked by COMMAND_API -> become hearing days + schedule updates.
         final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = new ArrayList<>();
         final List<HearingDayCourtSchedule> changedSchedules = new ArrayList<>();
-        for (final JsonValue value : payload.getJsonArray("changedDays")) {
-            final JsonObject day = (JsonObject) value;
-            final ZonedDateTime start = ZonedDateTime.parse(day.getString("startTime"));
-            final int durationMinutes = day.getInt("durationMinutes");
-            // courtScheduleId is carried on the schedule, not the day; the day never carries a sequence
-            // (assignHearingDaysV2 re-derives it by startTime).
-            changedDays.add(hearingDay()
-                    .withHearingDate(LocalDate.parse(day.getString("hearingDate")))
-                    .withStartTime(start)
-                    .withEndTime(start.plusMinutes(durationMinutes))
-                    .withDurationMinutes(durationMinutes)
-                    .withCourtCentreId(of(fromString(day.getString(MOVE_COURT_CENTRE_ID))))
-                    .withCourtRoomId(of(fromString(day.getString(MOVE_COURT_ROOM_ID))))
-                    .build());
-            changedSchedules.add(HearingDayCourtSchedule.hearingDayCourtSchedule()
-                    .withHearingDate(LocalDate.parse(day.getString("hearingDate")))
-                    .withCourtScheduleId(fromString(day.getString(COURT_SCHEDULE_ID)))
-                    .build());
+        if (payload.containsKey("changedDays")) {
+            for (final JsonValue value : payload.getJsonArray("changedDays")) {
+                final JsonObject day = (JsonObject) value;
+                final ZonedDateTime start = ZonedDateTime.parse(day.getString("startTime"));
+                final int durationMinutes = day.getInt("durationMinutes");
+                // The day carries the NEW courtScheduleId and the booked session's draft state, so the
+                // aggregate merge doesn't wipe them on the room change; the day never carries a sequence
+                // (assignHearingDaysV2 re-derives it by startTime).
+                changedDays.add(hearingDay()
+                        .withHearingDate(LocalDate.parse(day.getString("hearingDate")))
+                        .withStartTime(start)
+                        .withEndTime(start.plusMinutes(durationMinutes))
+                        .withDurationMinutes(durationMinutes)
+                        .withCourtCentreId(of(fromString(day.getString(MOVE_COURT_CENTRE_ID))))
+                        .withCourtRoomId(of(fromString(day.getString(MOVE_COURT_ROOM_ID))))
+                        .withCourtScheduleId(of(fromString(day.getString(COURT_SCHEDULE_ID))))
+                        .withIsDraft(day.containsKey(IS_DRAFT) && !day.isNull(IS_DRAFT)
+                                ? of(day.getBoolean(IS_DRAFT)) : Optional.empty())
+                        .build());
+                changedSchedules.add(HearingDayCourtSchedule.hearingDayCourtSchedule()
+                        .withHearingDate(LocalDate.parse(day.getString("hearingDate")))
+                        .withCourtScheduleId(fromString(day.getString(COURT_SCHEDULE_ID)))
+                        .build());
+            }
+        }
+
+        // REAL days (virtual false/absent) are persisted as nonDefaultDays - never booked, never
+        // converted to hearing days. courtCentreId/roomId/courtScheduleId are carried as uuid strings.
+        final List<NonDefaultDay> changedNonDefaultDays = new ArrayList<>();
+        if (payload.containsKey("nonDefaultDays")) {
+            for (final JsonValue value : payload.getJsonArray("nonDefaultDays")) {
+                final JsonObject day = (JsonObject) value;
+                changedNonDefaultDays.add(NonDefaultDay.nonDefaultDay()
+                        .withStartTime(ZonedDateTime.parse(day.getString("startTime")))
+                        .withDuration(of(day.getInt("durationMinutes")))
+                        .withCourtCentreId(of(day.getString(MOVE_COURT_CENTRE_ID)))
+                        .withRoomId(of(day.getString("roomId")))
+                        .withCourtScheduleId(of(day.getString(COURT_SCHEDULE_ID)))
+                        .withVirtual(of(false))
+                        .build());
+            }
         }
 
         updateHearingEventStream(command, hearingId, (Hearing hearing) ->
-                hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, changedSchedules, sendNotificationToParties));
+                hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, changedSchedules, changedNonDefaultDays, sendNotificationToParties));
     }
 
     @Handles("listing.command.hearing-vacate-trial")

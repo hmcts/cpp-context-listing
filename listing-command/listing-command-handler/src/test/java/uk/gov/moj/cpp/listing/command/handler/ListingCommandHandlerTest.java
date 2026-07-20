@@ -2609,15 +2609,16 @@ class ListingCommandHandlerTest {
 
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
-        when(hearing.changeCourtRoomForMultidayHearing(eq(HEARING_ID_1), any(), any(), eq(true)))
+        when(hearing.changeCourtRoomForMultidayHearing(eq(HEARING_ID_1), any(), any(), any(), eq(true)))
                 .thenReturn(Stream.empty());
 
         listingCommandHandler.changeCourtRoomForMultidayHearing(commandEnvelope);
 
         final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.HearingDay>> daysCaptor = ArgumentCaptor.forClass(List.class);
         final ArgumentCaptor<List<HearingDayCourtSchedule>> schedulesCaptor = ArgumentCaptor.forClass(List.class);
+        final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.NonDefaultDay>> nonDefaultDaysCaptor = ArgumentCaptor.forClass(List.class);
         verify(hearing, times(1)).changeCourtRoomForMultidayHearing(eq(HEARING_ID_1), daysCaptor.capture(),
-                schedulesCaptor.capture(), eq(true));
+                schedulesCaptor.capture(), nonDefaultDaysCaptor.capture(), eq(true));
 
         final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = daysCaptor.getValue();
         assertThat(changedDays, hasSize(2));
@@ -2628,7 +2629,15 @@ class ListingCommandHandlerTest {
         assertThat(day1.getDurationMinutes(), is(360));
         assertThat(day1.getCourtRoomId().orElse(null), is(room2));
         assertThat(day1.getCourtCentreId().orElse(null), is(courtCentreId));
-        assertThat(day1.getCourtScheduleId().isPresent(), is(false));
+        // The day now carries the NEW schedule id and the booked session's draft state (when present),
+        // so the aggregate merge can stamp them onto the hearing day instead of wiping them.
+        assertThat(day1.getCourtScheduleId().orElse(null), is(sched1));
+        assertThat(day1.getIsDraft().orElse(null), is(true));
+
+        final uk.gov.moj.cpp.listing.domain.HearingDay day2 = changedDays.get(1);
+        assertThat(day2.getCourtScheduleId().orElse(null), is(sched2));
+        // isDraft absent on the wire -> left empty so the aggregate preserves the existing day's value.
+        assertThat(day2.getIsDraft().isPresent(), is(false));
 
         final List<HearingDayCourtSchedule> changedSchedules = schedulesCaptor.getValue();
         assertThat(changedSchedules, hasSize(2));
@@ -2636,6 +2645,54 @@ class ListingCommandHandlerTest {
         assertThat(changedSchedules.get(0).getCourtScheduleId(), is(sched1));
         assertThat(changedSchedules.get(1).getHearingDate(), is(LocalDate.parse("2026-07-16")));
         assertThat(changedSchedules.get(1).getCourtScheduleId(), is(sched2));
+
+        // This enriched command carries only virtual (changed) days, so no real nonDefaultDays are passed.
+        assertThat(nonDefaultDaysCaptor.getValue(), hasSize(0));
+    }
+
+    @Test
+    public void listingCommandHandlerShouldPersistRealDaysAsNonDefaultDaysForChangeCourtRoom() throws Exception {
+        final UUID room3 = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID realScheduleId = randomUUID();
+        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"sendNotificationToParties\":false,"
+                + "\"changedDays\":[],"
+                + "\"nonDefaultDays\":["
+                + "{\"startTime\":\"2026-07-17T09:00:00Z\",\"durationMinutes\":360,"
+                + "\"courtCentreId\":\"" + courtCentreId + "\",\"roomId\":\"" + room3 + "\","
+                + "\"courtScheduleId\":\"" + realScheduleId + "\"}"
+                + "]}";
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
+        final JsonEnvelope commandEnvelope = createEnvelope(
+                "listing.command.change-court-room-for-multiday-hearing-enriched", jsonReader.readObject());
+
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.changeCourtRoomForMultidayHearing(eq(HEARING_ID_1), any(), any(), any(), eq(false)))
+                .thenReturn(Stream.empty());
+
+        listingCommandHandler.changeCourtRoomForMultidayHearing(commandEnvelope);
+
+        final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.HearingDay>> daysCaptor = ArgumentCaptor.forClass(List.class);
+        final ArgumentCaptor<List<HearingDayCourtSchedule>> schedulesCaptor = ArgumentCaptor.forClass(List.class);
+        final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.NonDefaultDay>> nonDefaultDaysCaptor = ArgumentCaptor.forClass(List.class);
+        verify(hearing, times(1)).changeCourtRoomForMultidayHearing(eq(HEARING_ID_1), daysCaptor.capture(),
+                schedulesCaptor.capture(), nonDefaultDaysCaptor.capture(), eq(false));
+
+        // No virtual days -> no hearing-day changes or schedules.
+        assertThat(daysCaptor.getValue(), hasSize(0));
+        assertThat(schedulesCaptor.getValue(), hasSize(0));
+
+        // The real day is parsed into a domain NonDefaultDay (virtual=false), never booked.
+        final List<uk.gov.moj.cpp.listing.domain.NonDefaultDay> nonDefaultDays = nonDefaultDaysCaptor.getValue();
+        assertThat(nonDefaultDays, hasSize(1));
+        final uk.gov.moj.cpp.listing.domain.NonDefaultDay ndd = nonDefaultDays.get(0);
+        assertThat(ndd.getStartTime(), is(ZonedDateTime.parse("2026-07-17T09:00:00Z")));
+        assertThat(ndd.getDuration().orElse(null), is(360));
+        assertThat(ndd.getCourtCentreId().orElse(null), is(courtCentreId.toString()));
+        assertThat(ndd.getRoomId().orElse(null), is(room3.toString()));
+        assertThat(ndd.getCourtScheduleId().orElse(null), is(realScheduleId.toString()));
+        assertThat(ndd.getVirtual().orElse(null), is(false));
     }
 
     @Test
@@ -2849,7 +2906,7 @@ class ListingCommandHandlerTest {
         final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"sendNotificationToParties\":true,"
                 + "\"changedDays\":["
                 + "{\"hearingDate\":\"2026-07-15\",\"startTime\":\"2026-07-15T09:30:00Z\",\"durationMinutes\":360,"
-                + "\"courtCentreId\":\"" + courtCentreId + "\",\"courtRoomId\":\"" + room2 + "\",\"courtScheduleId\":\"" + sched1 + "\"},"
+                + "\"courtCentreId\":\"" + courtCentreId + "\",\"courtRoomId\":\"" + room2 + "\",\"courtScheduleId\":\"" + sched1 + "\",\"isDraft\":true},"
                 + "{\"hearingDate\":\"2026-07-16\",\"startTime\":\"2026-07-16T09:30:00Z\",\"durationMinutes\":360,"
                 + "\"courtCentreId\":\"" + courtCentreId + "\",\"courtRoomId\":\"" + room2 + "\",\"courtScheduleId\":\"" + sched2 + "\"}"
                 + "]}";
