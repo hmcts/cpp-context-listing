@@ -207,6 +207,17 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithDate(caseAndDefendantData, courtCentreId, courtRoomId, hearingEndDate, hearingStartTime));
     }
 
+    /** SPRDT-1164: variant that pins the seeded hearing's hearing type (e.g. Trial/Plea), so the
+     * viewstore type_id can be asserted on directly by court-calendar hearingTypeId-filter tests. */
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciary(final CaseAndDefendantData caseAndDefendantData,
+                                                                          final UUID courtCentreId,
+                                                                          final UUID courtRoomId,
+                                                                          final LocalDate hearingEndDate,
+                                                                          final ZonedDateTime hearingStartTime,
+                                                                          final HearingTypeData hearingTypeData) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithDate(caseAndDefendantData, courtCentreId, courtRoomId, hearingEndDate, hearingStartTime, hearingTypeData));
+    }
+
 
     public static HearingsData hearingsDataWithUnAllocationDataAndJudiciary(final CaseAndDefendantData caseAndDefendantData) {
         return new HearingsData(HearingsDataFactory.hearingsDataWithUnAllocationDataAndJudiciary(caseAndDefendantData));

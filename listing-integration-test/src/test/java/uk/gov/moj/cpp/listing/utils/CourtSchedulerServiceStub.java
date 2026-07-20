@@ -344,9 +344,14 @@ public class CourtSchedulerServiceStub {
             final LocalDate sessionDate = firstSessionDate.plusDays(i);
             body.append("{")
                     .append("\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\",")
-                    .append("\"courtHouseId\":\"").append(courtHouseId).append("\",")
-                    .append("\"courtRoomId\":\"").append(courtRoomId).append("\",")
-                    .append("\"sessionDate\":\"").append(sessionDate).append("\",")
+                    .append("\"courtHouseId\":\"").append(courtHouseId).append("\",");
+            // Draft sessions have no courtroom — real courtscheduler nulls rooms via CourtScheduleRoomSanitiser.
+            // Omitting courtRoomId here replicates that: the service must derive courtCentreId from courtHouseId
+            // but must NOT set courtRoomId, mirroring the production draft-session shape.
+            if (!isDraft && courtRoomId != null) {
+                body.append("\"courtRoomId\":\"").append(courtRoomId).append("\",");
+            }
+            body.append("\"sessionDate\":\"").append(sessionDate).append("\",")
                     .append("\"hearingStartTime\":\"").append(sessionDate).append("T09:00:00Z\",")
                     .append("\"isDraft\":").append(isDraft)
                     .append("}");
@@ -564,6 +569,38 @@ public class CourtSchedulerServiceStub {
                 .withHeader("Accept", containing("application/vnd.courtscheduler.get.hearing.ids+json"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(isEmpty ? "stub-data/listing.search.hearing.ids.empty.json" : "stub-data/listing.search.hearing.ids.json"))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    /**
+     * Stubs the courtscheduler get-hearing-ids endpoint with a caller-supplied body, matching any query
+     * params (only the endpoint + get.hearing.ids Accept header). Lets a test drive the exact
+     * (hearingId, courtScheduleId, hearingDate, hearingDayCount, hearingDayPosition) tuples returned to
+     * the court-calendar PATH A enrichment.
+     */
+    public static void stubGetHearingIdsWithBody(final String body) {
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
+                .withHeader("Accept", containing("application/vnd.courtscheduler.get.hearing.ids+json"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(body)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    /**
+     * SPRDT-1164: stub the courtscheduler get-hearing-ids endpoint scoped to a specific courtSession
+     * (AM/AD), so two different courtSession queries in the same test can be driven to two different
+     * bodies (e.g. one hearing's day-tuples for AD, another hearing's for AM). isDraft and pageSize are
+     * left unconstrained so this still matches production's court-calendar allocated path, which now
+     * sends isDraft=false.
+     */
+    public static void stubGetHearingIdsWithBody(final String courtSession, final String body) {
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
+                .withHeader("Accept", containing("application/vnd.courtscheduler.get.hearing.ids+json"))
+                .withQueryParam("courtSession", WireMock.equalTo(courtSession))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(body)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
