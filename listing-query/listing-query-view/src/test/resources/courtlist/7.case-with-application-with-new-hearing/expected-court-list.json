@@ -88,6 +88,7 @@
                   "isRespondent": true,
                   "id": "edc625d0-4670-4863-b1bf-19dd7afdd4a6",
                   "restrictFromCourtList": false,
+                  "prosecutionCaseId": "1cdcaabe-de61-4f5c-a7da-3efc59f5cdaa",
                   "offences": [
                     {
                       "id": "2bcae532-c44e-48bb-8113-105a78329389",
