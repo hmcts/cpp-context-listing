@@ -190,7 +190,7 @@ class MoveHearingToPastDateIT extends AbstractIT {
         moveSteps.verifyStartDateUpdated(pastDate);
     }
 
-    /** This endpoint moves hearings to past dates only - a future date is rejected synchronously
+    /** This endpoint moves hearings to earlier dates only - a future date is rejected synchronously
      * with 422 FUTURE_DATE_NOT_ALLOWED before any event is sent or courtscheduler call is made. */
     @Test
     void shouldRejectMoveToFutureDateWith422() {
@@ -201,8 +201,44 @@ class MoveHearingToPastDateIT extends AbstractIT {
         final Response response = moveSteps.whenHearingIsMovedToPastDate("CROWN", futureDate);
 
         assertThat(response.getStatus(), is(422));
-        assertThat(response.readEntity(String.class), containsString("FUTURE_DATE_NOT_ALLOWED"));
+        final String body = response.readEntity(String.class);
+        assertThat(body, containsString("FUTURE_DATE_NOT_ALLOWED"));
+        assertThat(body, containsString("Hearings can only be moved to an earlier date"));
         verifyMoveHearingToPastDateNeverCalled(moveSteps.getHearingId());
+    }
+
+    /** Today is no longer a valid target - a hearing can only be moved to a date strictly before
+     * today. Rejected synchronously with 422 FUTURE_DATE_NOT_ALLOWED before any event or
+     * courtscheduler call, for the same reason a future date is. */
+    @Test
+    void shouldRejectMoveToTodayWith422() {
+        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(CROWN_JURISDICTION);
+        final MoveHearingToPastDateSteps moveSteps = new MoveHearingToPastDateSteps(hearingsData);
+
+        final Response response = moveSteps.whenHearingIsMovedToPastDate("CROWN", ItClock.today());
+
+        assertThat(response.getStatus(), is(422));
+        final String body = response.readEntity(String.class);
+        assertThat(body, containsString("FUTURE_DATE_NOT_ALLOWED"));
+        assertThat(body, containsString("Hearings can only be moved to an earlier date"));
+        verifyMoveHearingToPastDateNeverCalled(moveSteps.getHearingId());
+    }
+
+    /** The target hearing must already exist in the listing viewstore. A move against a hearingId
+     * that was never listed is rejected synchronously with 422 HEARING_ID_NOT_FOUND (via
+     * hearingLookupService) before any court-centre lookup, courtscheduler call, or event - even
+     * though the date itself is a valid past working day. */
+    @Test
+    void shouldRejectMoveWhenHearingDoesNotExistInViewstoreWith422() {
+        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(MAGISTRATES_JURISDICTION);
+        final MoveHearingToPastDateSteps moveSteps = new MoveHearingToPastDateSteps(hearingsData);
+        final UUID unknownHearingId = randomUUID();
+
+        final Response response = moveSteps.whenHearingIsMovedToPastDateForHearing(unknownHearingId, pastWorkingDay(1));
+
+        assertThat(response.getStatus(), is(422));
+        assertThat(response.readEntity(String.class), containsString("HEARING_ID_NOT_FOUND"));
+        verifyMoveHearingToPastDateNeverCalled(unknownHearingId.toString());
     }
 
     /** Courts do not sit at weekends, so a weekend date can never have a bookable session. Rejected

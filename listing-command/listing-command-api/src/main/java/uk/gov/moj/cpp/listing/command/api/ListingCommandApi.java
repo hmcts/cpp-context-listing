@@ -39,6 +39,7 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
+import uk.gov.moj.cpp.listing.command.api.service.HearingLookupService;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
@@ -100,6 +101,9 @@ public class ListingCommandApi {
     public static final String INVALID_DATE_RANGE = "INVALID_DATE_RANGE";
     public static final String MULTI_DAY_NOT_ALLOWED = "MULTI_DAY_NOT_ALLOWED";
     public static final String START_DATE_TOO_OLD = "START_DATE_TOO_OLD";
+    public static final String HEARING_ID_NOT_FOUND = "HEARING_ID_NOT_FOUND";
+    private static final String NO_HEARING_FOUND_FOR_HEARING_ID = "No hearing found for hearingId ";
+    private static final String MOVE_TO_EARLIER_DATE_ONLY = "Hearings can only be moved to an earlier date";
     private static final String END_DATE = "endDate";
     private static final String START_DATE_TIME = "startDateTime";
     private static final String END_DATE_TIME = "endDateTime";
@@ -139,6 +143,8 @@ public class ListingCommandApi {
     private HearingEnrichmentOrchestrator hearingEnrichmentOrchestrator;
     @Inject
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
+    @Inject
+    private HearingLookupService hearingLookupService;
 
     @Handles("listing.command.list-court-hearing")
     public void handleListCourtHearing(final JsonEnvelope envelope) {
@@ -393,6 +399,16 @@ public class ListingCommandApi {
         validateMoveDates(startInstant, endInstant);
         final List<LocalDate> sittingDays = workingDaysBetween(startDate, endDate);
 
+        // The hearing must already exist in the listing viewstore. An unknown hearingId is rejected
+        // synchronously with a 422 here - before any court-centre lookup, courtscheduler booking, or
+        // enriched event - so a move can never be issued for a hearing that was never listed. Checked
+        // after the cheap in-memory date/working-day validation so a malformed request still fails fast
+        // without a viewstore read.
+        hearingLookupService.findHearing(hearingId, envelope)
+                .orElseThrow(() -> new MoveHearingToPastDateException(422,
+                        buildMoveHearingToPastDateErrorBody(HEARING_ID_NOT_FOUND, NO_HEARING_FOUND_FOR_HEARING_ID + hearingId),
+                        NO_HEARING_FOUND_FOR_HEARING_ID + hearingId));
+
         // Single-day only (multi-day is rejected by validateMoveDates): the duration is the
         // submitted window between startDateTime and endDateTime.
         final int durationInMinutes = (int) java.time.temporal.ChronoUnit.MINUTES.between(startInstant, endInstant);
@@ -427,19 +443,21 @@ public class ListingCommandApi {
 
     /**
      * Validated for ALL jurisdictions in the synchronous layer so the caller gets a 422 before any
-     * event is sent or slot booked: no future dates, endDateTime not before startDateTime (full
-     * instant comparison, so a same-day end time earlier than the start time is also rejected),
-     * single day only (endDate must equal startDate), and startDate no older than
-     * {@value #MAX_PAST_MONTHS} months before today.
+     * event is sent or slot booked: the target must be strictly earlier than today (today and any
+     * future date are rejected), endDateTime not before startDateTime (full instant comparison, so a
+     * same-day end time earlier than the start time is also rejected), single day only (endDate must
+     * equal startDate), and startDate no older than {@value #MAX_PAST_MONTHS} months before today.
      */
     private static void validateMoveDates(final ZonedDateTime startInstant, final ZonedDateTime endInstant) {
         final LocalDate startDate = startInstant.toLocalDate();
         final LocalDate endDate = endInstant.toLocalDate();
         final LocalDate today = LocalDate.now();
-        if (startDate.isAfter(today) || endDate.isAfter(today)) {
+        // A hearing can only be moved to a date strictly before today - today itself and any future
+        // date are rejected (isBefore is exclusive of today).
+        if (!startDate.isBefore(today) || !endDate.isBefore(today)) {
             throw new MoveHearingToPastDateException(422,
-                    buildMoveHearingToPastDateErrorBody(FUTURE_DATE_NOT_ALLOWED, "Hearings can only be moved to today or an earlier date"),
-                    "Hearings can only be moved to today or an earlier date");
+                    buildMoveHearingToPastDateErrorBody(FUTURE_DATE_NOT_ALLOWED, MOVE_TO_EARLIER_DATE_ONLY),
+                    MOVE_TO_EARLIER_DATE_ONLY);
         }
         if (endInstant.isBefore(startInstant)) {
             throw new MoveHearingToPastDateException(422,

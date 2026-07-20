@@ -28,7 +28,7 @@ class MoveHearingToPastDateExceptionMapperTest {
     void futureDate_returns422_withErrorCodeAndMessage() {
         final JsonObject body = createObjectBuilder()
                 .add("errorCode", "FUTURE_DATE_NOT_ALLOWED")
-                .add("message", "Hearings can only be moved to today or an earlier date")
+                .add("message", "Hearings can only be moved to an earlier date")
                 .build();
 
         final Response response = mapper.toResponse(new MoveHearingToPastDateException(422, body, "rejected"));
@@ -36,7 +36,7 @@ class MoveHearingToPastDateExceptionMapperTest {
         assertThat(response.getStatus(), is(422));
         final String entity = response.getEntity().toString();
         assertThat(entity, containsString("\"errorCode\":\"FUTURE_DATE_NOT_ALLOWED\""));
-        assertThat(entity, containsString("\"message\":\"Hearings can only be moved to today or an earlier date\""));
+        assertThat(entity, containsString("\"message\":\"Hearings can only be moved to an earlier date\""));
     }
 
     @Test
