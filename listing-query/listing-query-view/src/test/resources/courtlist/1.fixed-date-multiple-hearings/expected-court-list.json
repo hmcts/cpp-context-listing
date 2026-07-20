@@ -49,6 +49,7 @@
               "defendants": [
                 {
                   "id": "641fb670-5beb-4de1-9684-9970fb6c432f",
+                  "prosecutionCaseId": "7bfbb044-49e5-4b35-b7fc-98975119c4df",
                   "lastName": "ROBERTSON",
                   "defenceOrganisation": "Flynch and Fleece Solicitors",
                   "offences": [
@@ -74,6 +75,7 @@
                 },
                 {
                   "id": "9a933369-66ba-43db-aa99-62d270b5eaa5",
+                  "prosecutionCaseId": "7bfbb044-49e5-4b35-b7fc-98975119c4df",
                   "lastName": "MONTINI",
                   "offences": [
                     {
