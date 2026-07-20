@@ -185,6 +185,7 @@ public class SittingsPojoBuilder {
                 hearing.setRestrictFromCourtList(((JsonObject) courtApplication).getBoolean("restrictFromCourtList", false));
                 hearing.setCourtApplicationDetails(buildCourtApplicationDetails((JsonObject) courtApplication));
                 hearing.setCourtApplicationOffences(((JsonObject) courtApplication).getJsonArray("offences"));
+                hearing.setCourtApplicationLinkedCaseIds(((JsonObject) courtApplication).getJsonArray("linkedCaseIds"));
                 hearing.setCaseDetails(empty());
                 convertedHearings.add(hearing);
 

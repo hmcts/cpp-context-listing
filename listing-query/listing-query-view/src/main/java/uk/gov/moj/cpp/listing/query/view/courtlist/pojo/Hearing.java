@@ -25,6 +25,8 @@ public class Hearing {
 
     private JsonArray courtApplicationOffences;
 
+    private JsonArray courtApplicationLinkedCaseIds;
+
     private boolean weekCommencing;
 
     private boolean hasVideoLink;
@@ -93,6 +95,14 @@ public class Hearing {
 
     public void setCourtApplicationOffences(final JsonArray courtApplicationOffences) {
         this.courtApplicationOffences = courtApplicationOffences;
+    }
+
+    public JsonArray getCourtApplicationLinkedCaseIds() {
+        return courtApplicationLinkedCaseIds;
+    }
+
+    public void setCourtApplicationLinkedCaseIds(final JsonArray courtApplicationLinkedCaseIds) {
+        this.courtApplicationLinkedCaseIds = courtApplicationLinkedCaseIds;
     }
 
     public boolean isWeekCommencing() {

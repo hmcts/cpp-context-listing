@@ -124,7 +124,7 @@ public class SittingsJsonGenerator {
 
             final String courtProceedingsInitiated = hearing.getStartTime().format(COURT_PROCEEDINGS_INITIATED_FORMATTER);
 
-            hearingJsonBuilder.add("defendants", buildCourtApplicationDefendants(courtApplicationDetails, hearing.getCourtApplicationOffences(), courtProceedingsInitiated));
+            hearingJsonBuilder.add("defendants", buildCourtApplicationDefendants(courtApplicationDetails, hearing.getCourtApplicationOffences(), courtProceedingsInitiated, hearing.getCourtApplicationLinkedCaseIds()));
         }
 
         return hearingJsonBuilder.build();
@@ -132,34 +132,34 @@ public class SittingsJsonGenerator {
 
     // Treat the application's applicant, subject and every respondent like a defendant. Deduped by
     // id only, so the same party isn't listed twice when e.g. applicant and subject are the same person.
-    private static JsonArrayBuilder buildCourtApplicationDefendants(final CourtApplicationDetails courtApplicationDetails, final JsonArray applicationOffences, final String courtProceedingsInitiated) {
+    private static JsonArrayBuilder buildCourtApplicationDefendants(final CourtApplicationDetails courtApplicationDetails, final JsonArray applicationOffences, final String courtProceedingsInitiated, final JsonArray linkedCaseIds) {
 
         final JsonArrayBuilder defendants = JsonObjects.createArrayBuilder();
         final Set<String> addedPartyIds = new HashSet<>();
 
         if (nonNull(courtApplicationDetails.getRespondents())) {
             for (final JsonObject respondent : courtApplicationDetails.getRespondents().getValuesAs(JsonObject.class)) {
-                addDefendant(defendants, addedPartyIds, respondent, applicationOffences, courtProceedingsInitiated);
+                addDefendant(defendants, addedPartyIds, respondent, applicationOffences, courtProceedingsInitiated, linkedCaseIds);
             }
         }
 
-        addDefendant(defendants, addedPartyIds, courtApplicationDetails.getApplicant(), applicationOffences, courtProceedingsInitiated);
-        addDefendant(defendants, addedPartyIds, courtApplicationDetails.getSubject(), applicationOffences, courtProceedingsInitiated);
+        addDefendant(defendants, addedPartyIds, courtApplicationDetails.getApplicant(), applicationOffences, courtProceedingsInitiated, linkedCaseIds);
+        addDefendant(defendants, addedPartyIds, courtApplicationDetails.getSubject(), applicationOffences, courtProceedingsInitiated, linkedCaseIds);
 
         return defendants;
     }
 
-    private static void addDefendant(final JsonArrayBuilder defendants, final Set<String> addedPartyIds, final JsonObject party, final JsonArray applicationOffences, final String courtProceedingsInitiated) {
+    private static void addDefendant(final JsonArrayBuilder defendants, final Set<String> addedPartyIds, final JsonObject party, final JsonArray applicationOffences, final String courtProceedingsInitiated, final JsonArray linkedCaseIds) {
         if (isNull(party) || !isPersonDefendantParty(party)) {
             return;
         }
         final String partyId = party.getString(PARTY_ID, null);
         if (partyId == null || addedPartyIds.add(partyId)) {
-            defendants.add(withMandatoryDefendantFields(party, applicationOffences, courtProceedingsInitiated));
+            defendants.add(withMandatoryDefendantFields(party, applicationOffences, courtProceedingsInitiated, linkedCaseIds));
         }
     }
 
-    private static JsonObjectBuilder withMandatoryDefendantFields(final JsonObject party, final JsonArray applicationOffences, final String courtProceedingsInitiated) {
+    private static JsonObjectBuilder withMandatoryDefendantFields(final JsonObject party, final JsonArray applicationOffences, final String courtProceedingsInitiated, final JsonArray linkedCaseIds) {
         final JsonObjectBuilder partyBuilder = JsonObjects.createObjectBuilder(party);
 
         if (!party.containsKey("offences")) {
@@ -168,6 +168,10 @@ public class SittingsJsonGenerator {
 
         if (!party.containsKey("courtProceedingsInitiated")) {
             partyBuilder.add("courtProceedingsInitiated", courtProceedingsInitiated);
+        }
+
+        if (!party.containsKey("prosecutionCaseId") && nonNull(linkedCaseIds) && !linkedCaseIds.isEmpty()) {
+            partyBuilder.add("prosecutionCaseId", linkedCaseIds.getString(0));
         }
 
         return partyBuilder;
