@@ -68,6 +68,7 @@ import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
 import uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
+import uk.gov.moj.cpp.listing.command.api.service.HearingLookupService;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
@@ -136,6 +137,8 @@ public class ListingCommandApiTest {
     private HearingEnrichmentOrchestrator hearingEnrichmentOrchestrator;
     @Mock
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
+    @Mock
+    private HearingLookupService hearingLookupService;
 
     private static final Type HEARING_TYPE = Type.type()
             .withId(fromString("6e1bef55-7e13-4615-b3ba-8663f4438e16"))
@@ -660,7 +663,7 @@ public class ListingCommandApiTest {
 
     @Test
     public void shouldRejectMoveToFutureDate() {
-        // moving a hearing to a future date is not allowed - this endpoint moves to past dates only
+        // moving a hearing to a future date is not allowed - this endpoint moves to earlier dates only
         stubMovePayload(randomUUID(), randomUUID(), nextWorkingDayAfterToday(), "10:00");
 
         final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
@@ -668,6 +671,38 @@ public class ListingCommandApiTest {
 
         assertThat(thrown.getHttpStatus(), is(422));
         assertThat(thrown.getErrorCode(), is("FUTURE_DATE_NOT_ALLOWED"));
+        assertThat(thrown.getResponseBody().getString("message"), is("Hearings can only be moved to an earlier date"));
+        verify(sender, never()).send(any());
+    }
+
+    @Test
+    public void shouldRejectMoveToTodayWith422() {
+        // today is no longer allowed - a hearing can only be moved to a date strictly before today.
+        stubMovePayload(randomUUID(), randomUUID(), LocalDate.now(), "10:00");
+
+        final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
+                () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
+
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getErrorCode(), is("FUTURE_DATE_NOT_ALLOWED"));
+        assertThat(thrown.getResponseBody().getString("message"), is("Hearings can only be moved to an earlier date"));
+        verify(sender, never()).send(any());
+    }
+
+    @Test
+    public void shouldRejectMoveWhenHearingDoesNotExistInViewstore() {
+        // a valid past working-day move for a hearingId that is not in the viewstore is rejected
+        // synchronously with 422 HEARING_ID_NOT_FOUND, before any court-centre lookup or event.
+        stubMovePayload(randomUUID(), randomUUID(), lastWorkingDayBeforeToday(), "10:00");
+        given(hearingLookupService.findHearing(any(), any())).willReturn(Optional.empty());
+
+        final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
+                () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
+
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getErrorCode(), is("HEARING_ID_NOT_FOUND"));
+        verify(courtCentreFactory, never()).getOrganisationUnit(any(), any());
+        verify(courtSchedulerServiceAdapter, never()).moveHearingToPastDate(any(), any(), any(), any(), any());
         verify(sender, never()).send(any());
     }
 
@@ -747,6 +782,13 @@ public class ListingCommandApiTest {
         given(payload.getString("endDateTime")).willReturn(endDateTime);
     }
 
+    // The move requires the target hearing to already exist in the viewstore; stub the synchronous
+    // lookup so a valid past-date move reaches the enrichment/send path. The returned content is
+    // irrelevant - the handler only checks presence (jurisdiction comes from the court centre).
+    private void givenHearingExistsInViewstore() {
+        given(hearingLookupService.findHearing(any(), any())).willReturn(Optional.of(Json.createObjectBuilder().build()));
+    }
+
     @Test
     public void shouldRejectWeekendMoveWithNoSessionFoundFixedCopy() {
         // single Saturday: passes validateMoveDates (past, single-day, within 6 months) but courts do
@@ -773,6 +815,7 @@ public class ListingCommandApiTest {
         final LocalDate startDate = lastWorkingDayBeforeToday();
 
         stubMovePayload(hearingId, courtCentreId, startDate, "10:00");
+        givenHearingExistsInViewstore();
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
         given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Magistrates' Courts"));
@@ -810,6 +853,7 @@ public class ListingCommandApiTest {
         final LocalDate startDate = lastWorkingDayBeforeToday();
 
         stubMovePayload(hearingId, courtCentreId, startDate, "10:00");
+        givenHearingExistsInViewstore();
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
         given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Magistrates' Courts"));
@@ -844,6 +888,7 @@ public class ListingCommandApiTest {
         final LocalDate startDate = lastWorkingDayBeforeToday();
 
         stubMovePayload(hearingId, courtCentreId, startDate, "10:00");
+        givenHearingExistsInViewstore();
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
         given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Magistrates' Courts"));
@@ -869,6 +914,7 @@ public class ListingCommandApiTest {
         final LocalDate startDate = lastWorkingDayBeforeToday();
 
         stubMovePayload(hearingId, courtCentreId, startDate, "10:00");
+        givenHearingExistsInViewstore();
 
         given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Magistrates' Courts"));
 
@@ -893,6 +939,7 @@ public class ListingCommandApiTest {
         final LocalDate startDate = lastWorkingDayBeforeToday();
 
         stubMovePayload(hearingId, courtCentreId, startDate, "10:00");
+        givenHearingExistsInViewstore();
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
         given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Crown Courts"));
@@ -922,6 +969,7 @@ public class ListingCommandApiTest {
 
         // single-day move 10:30 -> 11:15 = a 45-minute submitted window
         stubMovePayload(hearingId, courtCentreId, startDate, "10:30", startDate, "11:15");
+        givenHearingExistsInViewstore();
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
         given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Crown Courts"));
