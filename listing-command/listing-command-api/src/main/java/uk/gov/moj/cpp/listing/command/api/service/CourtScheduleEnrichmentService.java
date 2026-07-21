@@ -1248,23 +1248,28 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         LOGGER.info("[UNALLOC] CROWN unallocation for hearingId={}, hearingDays={}",
                 hearingId, hearing.getHearingDays().size());
 
-        // Step 1: Release existing slots (best-effort — don't fail the whole flow)
-        try {
-            hearingSlotsService.delete(hearingId);
-            LOGGER.info("[UNALLOC] Released court-scheduler slots for hearingId={}", hearingId);
-        } catch (final Exception e) {
-            LOGGER.warn("[UNALLOC] Could not release slots for hearingId={} — continuing", hearingId, e);
-        }
-
-        // Step 2: Total duration = one full court day (360 min) per hearing day
+        // Step 1: Total duration. F4: honour the virtual block descriptor's TOTAL duration when
+        // present — the frontend multi-day shape sends ONE virtual nonDefaultDay carrying the whole
+        // block (e.g. 720 for a 2-day hearing), so counting seeded days (1 × 360) silently converted
+        // the multiday hearing to single-day. Fall back to the larger of one court day per seeded day
+        // and the seeded days' own durations.
         final int dayCount = hearing.getHearingDays().size();
         if (dayCount == 0) {
             LOGGER.warn("[UNALLOC] No hearing days for hearingId={}, returning unchanged", hearingId);
             return hearing;
         }
-        final int totalDurationMinutes = dayCount * HearingDurationEnrichmentService.MINUTES_IN_DAY;
+        final int seededDaysDuration = hearing.getHearingDays().stream()
+                .mapToInt(d -> d.getDurationMinutes() != null ? d.getDurationMinutes() : HearingDurationEnrichmentService.MINUTES_IN_DAY)
+                .sum();
+        final int descriptorDuration = virtualAnchorNonDefaultDay(hearing)
+                .map(NonDefaultDay::getDuration)
+                .filter(java.util.Objects::nonNull)
+                .orElse(0);
+        final int totalDurationMinutes = Math.max(
+                Math.max(dayCount * HearingDurationEnrichmentService.MINUTES_IN_DAY, seededDaysDuration),
+                descriptorDuration);
 
-        // Step 3: Resolve ouCode for the draft-session search
+        // Step 2: Resolve ouCode for the draft-session search
         final String ouCode;
         try {
             ouCode = getOrRetrieveOucode(hearing, envelope);
@@ -1278,20 +1283,33 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return hearing;
         }
 
-        // Step 4: Find a draft anchor session with consecutive availability
+        // Step 3: Find a draft anchor session with consecutive availability. F6: do NOT release the
+        // hearing's existing slots up front — booking (crown search-and-book move leg) releases the
+        // old allocation only once a new run is confirmed. The explicit release is a FALLBACK for
+        // when the anchor search cannot see past the hearing's own booked capacity.
         final LocalDate startDate = extractFirstHearingDate(hearing);
         if (startDate == null) {
             LOGGER.warn("[UNALLOC] Cannot derive startDate for hearingId={}, returning unchanged", hearingId);
             return hearing;
         }
-        final String anchorCourtScheduleId = findDraftAnchorSession(ouCode, startDate, totalDurationMinutes);
+        String anchorCourtScheduleId = findDraftAnchorSession(ouCode, startDate, totalDurationMinutes);
+        if (isBlank(anchorCourtScheduleId)) {
+            LOGGER.info("[UNALLOC] No draft anchor found for hearingId={} before releasing own slots — releasing and retrying", hearingId);
+            try {
+                hearingSlotsService.delete(hearingId);
+                LOGGER.info("[UNALLOC] Released court-scheduler slots for hearingId={}", hearingId);
+            } catch (final Exception e) {
+                LOGGER.warn("[UNALLOC] Could not release slots for hearingId={} — continuing", hearingId, e);
+            }
+            anchorCourtScheduleId = findDraftAnchorSession(ouCode, startDate, totalDurationMinutes);
+        }
         if (isBlank(anchorCourtScheduleId)) {
             LOGGER.warn("[UNALLOC] No draft anchor found for hearingId={} (ouCode={}, start={}, duration={}) — returning unchanged",
                     hearingId, ouCode, startDate, totalDurationMinutes);
             return hearing;
         }
 
-        // Step 5: Atomically book N consecutive draft sessions via multiday search-and-book
+        // Step 4: Atomically book N consecutive draft sessions via multiday search-and-book
         // courtCentreId falls back to the hearing's own selected court centre, never to a
         // court-schedule id (mirrors the fallback in handleCrownMultiDayEnrichment).
         final String fallbackCourtCentreId = hearing.getSelectedCourtCentre() != null && hearing.getSelectedCourtCentre().getId() != null

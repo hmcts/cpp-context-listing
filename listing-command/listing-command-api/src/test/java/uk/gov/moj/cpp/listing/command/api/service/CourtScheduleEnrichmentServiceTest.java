@@ -2774,6 +2774,187 @@ class CourtScheduleEnrichmentServiceTest {
 
     // ─── Helper methods ──────────────────────────────────────────────────
 
+    // ─── F4 + F6: CROWN unallocation — block-descriptor duration & book-before-release ─────
+
+    @Test
+    void shouldBookTwoDraftDaysFromBlockDescriptorDuration_whenUnallocatingMultidayHearing() {
+        // F4: the single virtual nonDefaultDay carries the block TOTAL (720). The unallocation path
+        // must search and book 720 minutes (2 draft days) — the old dayCount × 360 computation saw
+        // one seeded day and silently converted the multiday hearing to a single day.
+        // F6: when the draft anchor is found first time, the hearing's existing slots are NOT
+        // released up front — booking itself performs the release once the new run is confirmed.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID anchorCsId = UUID.randomUUID();
+        final UUID day2CsId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.of(2026, 7, 21);
+
+        final UpdateHearingForListing hearing = buildUnallocationHearing(hearingId, anchorCsId, courtCentreId, day1);
+
+        stubDraftAnchorSearch(anchorCsId.toString());
+        stubMultiDayBooking(
+                buildCourtSchedule(anchorCsId, sessionCourtRoomId, courtCentreId, day1, true),
+                buildCourtSchedule(day2CsId, sessionCourtRoomId, courtCentreId, day1.plusDays(1), true));
+
+        final UpdateHearingForListing result =
+                courtScheduleEnrichmentService.enrichUnallocationWithDraftSlots(hearing, mock(JsonEnvelope.class));
+
+        // F4: the block total, not dayCount × 360, drives both the anchor search and the booking
+        final ArgumentCaptor<Map<String, String>> searchParams = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).search(searchParams.capture());
+        assertThat(searchParams.getValue().get("durationInMinutes"), is("720"));
+
+        final ArgumentCaptor<Map<String, String>> bookParams = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(bookParams.capture());
+        assertThat(bookParams.getValue().get("durationInMinutes"), is("720"));
+        assertThat(bookParams.getValue().get("courtScheduleId"), is(anchorCsId.toString()));
+        assertThat(bookParams.getValue().get("hearingDate"), is(day1.toString()));
+
+        // Two draft days rebuilt — the multiday shape survives
+        assertThat(result.getHearingDays().size(), is(2));
+        assertThat(result.getHearingDays().get(0).getHearingDate(), is(day1));
+        assertThat(result.getHearingDays().get(1).getHearingDate(), is(day1.plusDays(1)));
+        result.getHearingDays().forEach(day -> {
+            assertThat(day.getIsDraft(), is(Boolean.TRUE));
+            assertThat(day.getCourtRoomId(), is(nullValue()));
+            assertThat(day.getDurationMinutes(), is(360));
+        });
+
+        // F6: no upfront release on the happy path
+        verify(hearingSlotsService, never()).delete(any(UUID.class));
+    }
+
+    @Test
+    void shouldReleaseSlotsAndRetryAnchorSearch_whenOwnBookingHidesDraftCapacity() {
+        // F6 fallback: the first anchor search fails because the hearing's own booked capacity
+        // consumes the draft sessions. Only then are the hearing's slots released, and the search
+        // retried — after which booking proceeds normally.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID anchorCsId = UUID.randomUUID();
+        final UUID day2CsId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.of(2026, 7, 21);
+
+        final UpdateHearingForListing hearing = buildUnallocationHearing(hearingId, anchorCsId, courtCentreId, day1);
+
+        // First search: no anchors. Second search (after release): anchor found.
+        final JsonObject emptySearchJson = JsonObjects.createObjectBuilder()
+                .add("hearingSlots", JsonObjects.createArrayBuilder())
+                .build();
+        final JsonObject anchorSearchJson = JsonObjects.createObjectBuilder()
+                .add("hearingSlots", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", anchorCsId.toString())))
+                .build();
+        final Response emptySearchResponse = mock(Response.class);
+        when(emptySearchResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(emptySearchResponse.getEntity()).thenReturn(emptySearchJson);
+        when(objectToJsonObjectConverter.convert(emptySearchJson)).thenReturn(emptySearchJson);
+        final Response anchorSearchResponse = mock(Response.class);
+        when(anchorSearchResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(anchorSearchResponse.getEntity()).thenReturn(anchorSearchJson);
+        when(objectToJsonObjectConverter.convert(anchorSearchJson)).thenReturn(anchorSearchJson);
+        when(hearingSlotsService.search(anyMap())).thenReturn(emptySearchResponse, anchorSearchResponse);
+
+        stubMultiDayBooking(
+                buildCourtSchedule(anchorCsId, sessionCourtRoomId, courtCentreId, day1, true),
+                buildCourtSchedule(day2CsId, sessionCourtRoomId, courtCentreId, day1.plusDays(1), true));
+
+        final UpdateHearingForListing result =
+                courtScheduleEnrichmentService.enrichUnallocationWithDraftSlots(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, times(2)).search(anyMap());
+        verify(hearingSlotsService).delete(hearingId);
+        assertThat(result.getHearingDays().size(), is(2));
+    }
+
+    @Test
+    void shouldReturnHearingUnchanged_whenNoDraftAnchorExistsEvenAfterRelease() {
+        // Both anchor searches come back empty: the hearing is returned unchanged (seeded day only)
+        // and no booking is attempted. The release fallback ran exactly once.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID anchorCsId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.of(2026, 7, 21);
+
+        final UpdateHearingForListing hearing = buildUnallocationHearing(hearingId, anchorCsId, courtCentreId, day1);
+
+        final JsonObject emptySearchJson = JsonObjects.createObjectBuilder()
+                .add("hearingSlots", JsonObjects.createArrayBuilder())
+                .build();
+        final Response emptySearchResponse = mock(Response.class);
+        when(emptySearchResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(emptySearchResponse.getEntity()).thenReturn(emptySearchJson);
+        when(objectToJsonObjectConverter.convert(emptySearchJson)).thenReturn(emptySearchJson);
+        when(hearingSlotsService.search(anyMap())).thenReturn(emptySearchResponse);
+
+        final UpdateHearingForListing result =
+                courtScheduleEnrichmentService.enrichUnallocationWithDraftSlots(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, times(2)).search(anyMap());
+        verify(hearingSlotsService).delete(hearingId);
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getHearingDate(), is(day1));
+    }
+
+    /** Court-calendar CROWN unallocation shape: ONE virtual block descriptor (720 = 2 court days). */
+    private UpdateHearingForListing buildUnallocationHearing(final UUID hearingId, final UUID anchorCsId,
+                                                             final UUID courtCentreId, final LocalDate day1) {
+        return UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .withStartDate(day1)
+                .withEndDate(day1.plusDays(1))
+                .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre()
+                        .withId(courtCentreId)
+                        .withOuCode("C01CY00")
+                        .build())
+                .withNonDefaultDays(Collections.singletonList(NonDefaultDay.nonDefaultDay()
+                        .withStartTime(ZonedDateTime.parse(day1 + "T09:00:00Z"))
+                        .withDuration(720)
+                        .withCourtScheduleId(anchorCsId.toString())
+                        .withCourtCentreId(courtCentreId.toString())
+                        .withVirtual(Boolean.TRUE)
+                        .build()))
+                .build();
+    }
+
+    private void stubDraftAnchorSearch(final String anchorCourtScheduleId) {
+        final JsonObject searchJson = JsonObjects.createObjectBuilder()
+                .add("hearingSlots", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", anchorCourtScheduleId)))
+                .build();
+        final Response searchResponse = mock(Response.class);
+        when(searchResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(searchResponse.getEntity()).thenReturn(searchJson);
+        when(objectToJsonObjectConverter.convert(searchJson)).thenReturn(searchJson);
+        when(hearingSlotsService.search(anyMap())).thenReturn(searchResponse);
+    }
+
+    private void stubMultiDayBooking(final CourtSchedule... sessions) {
+        final var sessionsArray = JsonObjects.createArrayBuilder();
+        for (final CourtSchedule cs : sessions) {
+            sessionsArray.add(buildCsJson(cs));
+        }
+        final JsonObject bookingJson = JsonObjects.createObjectBuilder()
+                .add("sessions", sessionsArray)
+                .build();
+        final Response bookingResponse = mock(Response.class);
+        when(bookingResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(bookingResponse.getEntity()).thenReturn(bookingJson);
+        when(objectToJsonObjectConverter.convert(bookingJson)).thenReturn(bookingJson);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(bookingResponse);
+        if (sessions.length == 1) {
+            when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(sessions[0]);
+        } else if (sessions.length > 1) {
+            when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                    .thenReturn(sessions[0], Arrays.copyOfRange(sessions, 1, sessions.length));
+        }
+    }
+
     private CourtSchedule buildCourtSchedule(UUID courtScheduleId, UUID courtRoomId, UUID courtHouseId, LocalDate sessionDate, boolean isDraft) {
         final CourtSchedule cs = new CourtSchedule();
         cs.setCourtScheduleId(courtScheduleId.toString());
