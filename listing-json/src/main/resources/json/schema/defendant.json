@@ -10,6 +10,10 @@
       "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid",
       "description": "Technical identifier that uniquely identifies the defendant on CPP i.e. across prosecution cases.  Case defendants that are the same person will be matched and provided the same defendantMasterId"
     },
+    "prosecutionCaseId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid",
+      "description": "The identifier of the prosecution case that this defendant belongs to"
+    },
     "courtProceedingsInitiated": {
       "type": "string",
       "format": "date-time",
