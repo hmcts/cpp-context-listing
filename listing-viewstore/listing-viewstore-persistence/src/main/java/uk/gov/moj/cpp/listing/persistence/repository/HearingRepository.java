@@ -830,26 +830,23 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "AND h.id IN ( " +
             "  select lc1.hearing_id from listed_cases lc1 " +
             "  where UPPER(lc1.case_reference) in (:caseUrnSet) " +
-            "  and (:hearingId is null or lc1.hearing_id != cast(cast(:hearingId as varchar) as uuid)) " +
-            "  UNION " +
+            "  UNION ALL " +
             "  select lc3.hearing_id from listed_cases lc3 " +
             "  where lc3.case_reference in ( " +
             "    select lnk.case_urn from listed_cases lc2 " +
             "    inner join linked_case lnk on lnk.listed_case_id = lc2.id " +
             "    where lc2.case_reference = cast(:caseUrnForLinkedCases as text) " +
             "  ) " +
-            "  UNION " +
+            "  UNION ALL " +
             "  select lc4.hearing_id from listed_cases lc4 " +
             "  where lc4.case_id in ( " +
             "    select lc5.case_id from listed_cases lc5 " +
             "    inner join defendant d on d.listed_case_id = lc5.id " +
             "    where cast(d.master_defendant_id as varchar) in (:masterDefendantIdSet) " +
             "  ) " +
-            "  and (:hearingId is null or lc4.hearing_id != cast(cast(:hearingId as varchar) as uuid)) " +
-            "  UNION " +
+            "  UNION ALL " +
             "  select lc6.hearing_id from listed_cases lc6 " +
             "  where UPPER(lc6.case_reference) in (:linkedCaseUrn) " +
-            "  and (:hearingId is null or lc6.hearing_id != cast(cast(:hearingId as varchar) as uuid)) " +
             ")"
             , isNative = true)
     public abstract List<Hearing> findHearings(@QueryParam("jurisdictionTypes") final Set<String> jurisdictionTypes,
