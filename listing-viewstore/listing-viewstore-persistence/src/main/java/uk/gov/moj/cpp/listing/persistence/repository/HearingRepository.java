@@ -798,7 +798,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
      * @param jurisdictionTypes     to search for or <code>null</code> for any jurisdictionTypes.
      * @param hearingId             property to search for - mandatory.
      * @param caseUrnSet            to search for or <code>empty string</code> for any case urn.
-     * @param masterDefendantIdSet  to search for or <code>empty string</code> for any master
+     * @param masterDefendantIdSet  to search for or the <code>nil UUID</code>
+     *                              (00000000-0000-0000-0000-000000000000) for any master
      *                              defendant id.
      * @param linkedCaseUrn         to search for or <code>empty string</code> for any linked case
      *                              urn.
@@ -842,7 +843,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "  where lc4.case_id in ( " +
             "    select lc5.case_id from listed_cases lc5 " +
             "    inner join defendant d on d.listed_case_id = lc5.id " +
-            "    where cast(d.master_defendant_id as varchar) in (:masterDefendantIdSet) " +
+            "    where d.master_defendant_id in (:masterDefendantIdSet) " +
             "  ) " +
             "  UNION ALL " +
             "  select lc6.hearing_id from listed_cases lc6 " +
@@ -852,7 +853,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
     public abstract List<Hearing> findHearings(@QueryParam("jurisdictionTypes") final Set<String> jurisdictionTypes,
                                                @QueryParam("hearingId") final String hearingId,
                                                @QueryParam("caseUrnSet") final Set<String> caseUrnSet,
-                                               @QueryParam("masterDefendantIdSet") final Set<String> masterDefendantIdSet,
+                                               @QueryParam("masterDefendantIdSet") final Set<UUID> masterDefendantIdSet,
                                                @QueryParam("linkedCaseUrn") final Set<String> linkedCaseUrn,
                                                @QueryParam("caseUrnForLinkedCases") final String caseUrnForLinkedCases,
                                                @QueryParam("currentDate") final LocalDate currentDate);
