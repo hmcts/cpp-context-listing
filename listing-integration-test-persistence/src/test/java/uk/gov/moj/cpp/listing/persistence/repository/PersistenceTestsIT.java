@@ -934,8 +934,8 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         final Set<String> caseUrnSet = new HashSet<>();
         caseUrnSet.add(CASE_REFERENCE);
-        final Set<String> masterDefendantIdSet = new HashSet<>();
-        masterDefendantIdSet.add(EMPTY_STRING);
+        final Set<UUID> masterDefendantIdSet = new HashSet<>();
+        masterDefendantIdSet.add(new UUID(0, 0));
         final Set<String> jurisdictionTypeSet = new HashSet<>();
         jurisdictionTypeSet.add(JurisdictionType.CROWN.name());
         final Set<String> linkedCaseUrn = new HashSet<>();
@@ -965,8 +965,8 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         final Set<String> caseUrnSet = new HashSet<>();
         caseUrnSet.add(EMPTY_STRING);
-        final Set<String> masterDefendantIdSet = new HashSet<>();
-        masterDefendantIdSet.add(MASTER_DEFENDANT_ID);
+        final Set<UUID> masterDefendantIdSet = new HashSet<>();
+        masterDefendantIdSet.add(UUID.fromString(MASTER_DEFENDANT_ID));
         final Set<String> jurisdictionTypeSet = new HashSet<>();
         jurisdictionTypeSet.add(JurisdictionType.CROWN.name());
         final Set<String> linkedCaseUrn = new HashSet<>();
@@ -996,8 +996,8 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         final Set<String> caseUrnSet = new HashSet<>();
         caseUrnSet.add(EMPTY_STRING);
-        final Set<String> masterDefendantIdSet = new HashSet<>();
-        masterDefendantIdSet.add(EMPTY_STRING);
+        final Set<UUID> masterDefendantIdSet = new HashSet<>();
+        masterDefendantIdSet.add(new UUID(0, 0));
         final Set<String> jurisdictionTypeSet = new HashSet<>();
         jurisdictionTypeSet.add(CROWN.name());
         final Set<String> linkedCaseUrn = new HashSet<>();
@@ -1027,8 +1027,8 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         final Set<String> caseUrnSet = new HashSet<>();
         caseUrnSet.add(EMPTY_STRING);
-        final Set<String> masterDefendantIdSet = new HashSet<>();
-        masterDefendantIdSet.add(EMPTY_STRING);
+        final Set<UUID> masterDefendantIdSet = new HashSet<>();
+        masterDefendantIdSet.add(new UUID(0, 0));
         final Set<String> jurisdictionTypeSet = new HashSet<>();
         jurisdictionTypeSet.add(JurisdictionType.CROWN.name());
         final Set<String> linkedCaseUrn = new HashSet<>();
@@ -1094,8 +1094,8 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         final Set<String> caseUrnSet = new HashSet<>();
         caseUrnSet.add(CASE_REFERENCE);
-        final Set<String> masterDefendantIdSet = new HashSet<>();
-        masterDefendantIdSet.add(EMPTY_STRING);
+        final Set<UUID> masterDefendantIdSet = new HashSet<>();
+        masterDefendantIdSet.add(new UUID(0, 0));
         final Set<String> jurisdictionTypeSet = new HashSet<>();
         jurisdictionTypeSet.add(CROWN.name());
         final Set<String> linkedCaseUrn = new HashSet<>();
