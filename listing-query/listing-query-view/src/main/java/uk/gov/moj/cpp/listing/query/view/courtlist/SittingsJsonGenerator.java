@@ -23,7 +23,6 @@ import javax.json.JsonObjectBuilder;
 
 public class SittingsJsonGenerator {
 
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
     private static final DateTimeFormatter COURT_PROCEEDINGS_INITIATED_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
     private static final String PARTY_ID = "id";
     private static final String COURT_APPLICATION_PARTY_TYPE = "courtApplicationPartyType";
@@ -76,7 +75,7 @@ public class SittingsJsonGenerator {
     private static JsonObject buildHearingJson(final Hearing hearing) {
 
         final JsonObjectBuilder hearingJsonBuilder = JsonObjects.createObjectBuilder()
-                .add("startTime", hearing.getStartTime().format(DATE_TIME_FORMATTER))
+                .add("startTime", hearing.getStartTime().toString())
                 .add("hearingType", hearing.getHearingType())
                 .add("restrictFromCourtList", hearing.isRestrictFromCourtList())
                 .add("weekCommencing", hearing.isWeekCommencing());
@@ -90,7 +89,7 @@ public class SittingsJsonGenerator {
         }
 
         if (hearing.getEndTime().isPresent()) {
-            hearingJsonBuilder.add("endTime", hearing.getEndTime().orElseThrow(IllegalStateException::new).format(DATE_TIME_FORMATTER));
+            hearingJsonBuilder.add("endTime", hearing.getEndTime().orElseThrow(IllegalStateException::new).toString());
         }
 
         if (hearing.getCommittingCourtCentreId().isPresent()) {
