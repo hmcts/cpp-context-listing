@@ -11,14 +11,6 @@
 
     <properties>
         <jboss-logging.version>3.3.1.Final</jboss-logging.version>
-        <!--
-          Optional frozen-clock override for ItClock. Empty by default (live system UTC clock);
-          set -Dit.clock=2026-06-15T00:30:00+01:00[Europe/London] to simulate the 00:00-01:00 BST
-          band without waiting for real midnight (see run-it-midnight.sh). Declared here so the
-          failsafe systemPropertyVariables interpolation below resolves to "" when unset rather than
-          leaking the literal ${it.clock}.
-        -->
-        <it.clock />
     </properties>
 
     <dependencies>
