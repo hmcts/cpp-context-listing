@@ -152,6 +152,76 @@ public class HearingDaysIT extends AbstractIT {
 
     }
 
+    /**
+     * Same split journey as {@link #testHearingDaysWithCourtCentreForSplit}, but the payload's
+     * nonDefaultDays carry {@code virtual: true} — the shape sent when splitting an offence /
+     * defendant out of a hearing and allocating it as a multi-day hearing, where the virtual days
+     * are courtscheduler booking proxies rather than genuine non-default-day overrides.
+     *
+     * <p>The new hearing raised for the split must NOT persist any nonDefaultDays derived from
+     * those proxies: the private hearing-requested-for-listing event (and its public republish)
+     * must carry no nonDefaultDays at all. The sibling test above locks the inverse guard — a
+     * split WITHOUT the virtual flag still derives its nonDefaultDays from the hearing days.
+     */
+    @Test
+    void testSplitWithVirtualNonDefaultDaysDoesNotCreateNonDefaultDaysOnNewHearing() throws IOException {
+        stubGetAvailableHearingSlots();
+
+        startDate = ItClock.today();
+        endDate = ItClock.today().plusDays(1);
+        hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
+        hearingId = randomUUID();
+        caseId = randomUUID();
+        courtCentreId = getRandomCourtCenterId();
+        courtRoomId = getRandomCourtRoomId();
+        caseUrn = "TVL16116BT1UU";
+        otherCourtCentreId = getRandomCourtCenterId(asList(courtCentreId));
+        otherCourtRoomId = randomUUID();
+
+        final HearingsData hearingsData = HearingsData.singleHearingsDataWithAllocationDataAndJudiciary();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ZonedDateTime hearingStartTime = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime();
+        final LocalDate hearingDate = hearingStartTime.toLocalDate();
+        final UUID courtroomId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId();
+        final UUID bookingId = randomUUID();
+        final String courtScheduleId = randomUUID().toString();
+        final UUID courtCentreId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtCentreId();
+
+        Map<String, String> stubParams = new HashMap<>();
+        stubParams.put("SESSION_DATE", hearingDate.toString());
+        stubParams.put("COURT_CENTRE_ID", courtCentreId.toString());
+        stubParams.put("COURT_SCHEDULE_ID", courtScheduleId);
+        stubParams.put("COURT_ROOM_ID", courtroomId.toString());
+        stubParams.put("BOOKING_ID", bookingId.toString());
+        stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
+        stubProvisionalBookingWithCustomParams(stubParams);
+
+        stubListHearingInCourtSessions(hearingsData.getHearingData().get(0).getId().toString(),
+                courtScheduleId, hearingsData.getHearingData().get(0).getHearingStartTime());
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+
+        UpdateHearingSteps updateHearingStepsSplit = new UpdateHearingSteps();
+
+        final LocalDate splitStartDate = ItClock.plusWorkingDays(hearingData.getHearingStartDate(), 1);
+        final LocalDate splitEndDate = ItClock.plusWorkingDays(splitStartDate, 2);
+
+        final JsonObject updateHearingJsonObjectSplit =
+                updateHearingStepsSplit.preparePayloadToUpdateHearing(UPDATE_HEARING_FOR_LISTING_SPLIT_JSON,
+                getSplitPayloadValues(hearingData.getId().toString(), hearingData.getListedCases().get(0).getCaseId().toString(),
+                        hearingData.getCourtCentreId().toString(), hearingData.getCourtRoomId().toString(),
+                        splitStartDate.toString(), splitEndDate.toString(),
+                        hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString(),
+                        hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().get(1).getOffenceId().toString(), courtScheduleId));
+
+        final JsonNode jsonNode = populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateHearingJsonObjectSplit, courtScheduleId, true);
+        updateHearingStepsSplit.updateHearingForListing(objectMapper.treeToValue(jsonNode, JsonObject.class), hearingData.getId());
+        updateHearingStepsSplit.verifyHearingRequestedForListingEventWithoutNonDefaultDays();
+        updateHearingStepsSplit.verifyHearingRequestedForListingInPublicMQWithoutNonDefaultDays();
+    }
+
     private Map<String, String> getSplitPayloadValues(final String hearingId,
                                                       final String caseId,
                                                       final String courtCentreId,
@@ -275,6 +345,10 @@ public class HearingDaysIT extends AbstractIT {
     }
 
     private JsonNode populateNonDefaultDays(final UUID otherCourtCentreId, final UUID otherCourtRoomId, final JsonObject updateHearingJsonObject, final String courtScheduleId) throws IOException {
+        return populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateHearingJsonObject, courtScheduleId, false);
+    }
+
+    private JsonNode populateNonDefaultDays(final UUID otherCourtCentreId, final UUID otherCourtRoomId, final JsonObject updateHearingJsonObject, final String courtScheduleId, final boolean virtual) throws IOException {
         final JsonNode hearingNode = convertToNode(updateHearingJsonObject);
         ((ObjectNode) hearingNode).putArray("nonDefaultDays").add(convertToNode(createObjectBuilder()
                         .add("duration", defaultDuration)
@@ -286,6 +360,7 @@ public class HearingDaysIT extends AbstractIT {
                         .add("session", "AM")
                         .add("oucode", "B01BLYO")
                         .add("courtScheduleId", courtScheduleId)
+                        .add("virtual", virtual)
                         .build()))
                 .add(convertToNode(createObjectBuilder()
                         .add("duration", defaultDuration)
@@ -297,6 +372,7 @@ public class HearingDaysIT extends AbstractIT {
                         .add("session", "AM")
                         .add("oucode", "B01BH8U")
                         .add("courtScheduleId", courtScheduleId)
+                        .add("virtual", virtual)
                         .build()));
         return hearingNode;
     }

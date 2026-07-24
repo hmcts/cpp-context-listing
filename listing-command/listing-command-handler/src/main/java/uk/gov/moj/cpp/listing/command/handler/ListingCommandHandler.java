@@ -729,6 +729,16 @@ public class ListingCommandHandler {
                     updateHearingForListing.getType() != null && updateHearingForListing.getType().getId() != null
                             ? updateHearingForListing.getType().getId().toString() : null,
                     hearingTypeFactory.getHearingTypesIdDurationMap(command));
+            // Virtual nonDefaultDays are courtscheduler booking proxies (block descriptor /
+            // per-day proxies) — they must never be persisted as nonDefaultDays on the new
+            // split hearing. Mirrors the virtual filter applied before assignNonDefaultDays
+            // on the non-split path.
+            final boolean hasVirtualNonDefaultDays = isNotEmpty(updateHearingForListing.getNonDefaultDays())
+                    && updateHearingForListing.getNonDefaultDays().stream()
+                            .anyMatch(ndd -> Boolean.TRUE.equals(ndd.getVirtual()));
+            final List<NonDefaultDay> splitNonDefaultDays = hasVirtualNonDefaultDays
+                    ? emptyList()
+                    : convertCommandHearingDaysToDomainNonDefaultDays(hearingDays);
             updateHearingEventStream(command, eventStream, hearingAggregate, (Hearing hearing) -> {
                 final Stream<Object> hearingListedEvent = hearing.listForSplit(type,
                         listedCases,
@@ -740,7 +750,7 @@ public class ListingCommandHandler {
                         weekCommencingStartDate,
                         weekCommencingDurationInWeeks,
                         judiciaryInfoByUpdate,
-                        convertCommandHearingDaysToDomainNonDefaultDays(hearingDays),
+                        splitNonDefaultDays,
                         hearingTypeDuration);
                 return Stream.of(hearingListedEvent).flatMap(i -> i);
             });
