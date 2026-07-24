@@ -861,6 +861,12 @@ public class UpdateHearingSteps extends AbstractIT {
         assertThat(((ArrayList) jsonResponse.get("listNewHearing.nonDefaultDays")).size(), is(2));
     }
 
+    public void verifyHearingRequestedForListingInPublicMQWithoutNonDefaultDays() {
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingRequested);
+        assertNotNull(jsonResponse);
+        assertThat(jsonResponse.get("listNewHearing.nonDefaultDays"), is(nullValue()));
+    }
+
     public void verifyPublicEventVacatedTrialUpdated(final boolean allocated, final boolean isVacated) {
         final String expectedHearingId = updatedHearingData.getHearingId().toString();
         final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerVacatedTrialUpdated,
@@ -944,6 +950,14 @@ public class UpdateHearingSteps extends AbstractIT {
         final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingRequestedForListing, VLD_LATENCY_RETRIEVE_TIMEOUT);
         assertThat(jsonResponse.getMap("listNewHearing").get("nonDefaultDays"), is(notNullValue()));
         assertThat(((ArrayList) jsonResponse.getMap("listNewHearing").get("nonDefaultDays")).size(), is(count));
+    }
+
+    public void verifyHearingRequestedForListingEventWithoutNonDefaultDays() {
+        // Split raised from a payload whose nonDefaultDays are virtual booking proxies: the new
+        // hearing's CourtHearingRequest must carry NO nonDefaultDays at all — they are never
+        // persisted (mirrors the virtual filter on the non-split update path).
+        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingRequestedForListing, VLD_LATENCY_RETRIEVE_TIMEOUT);
+        assertThat(jsonResponse.getMap("listNewHearing").get("nonDefaultDays"), is(nullValue()));
     }
 
     public void verifyProsecutionCaseDefendantsOffenceIds(final int count) {

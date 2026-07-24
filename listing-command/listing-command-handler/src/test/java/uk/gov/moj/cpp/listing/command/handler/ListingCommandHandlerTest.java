@@ -181,6 +181,7 @@ import uk.gov.moj.cpp.listing.command.utils.ProsecutionCaseDefendantOffenceIdsBu
 import uk.gov.moj.cpp.listing.command.utils.ProsecutionCasesBuilder;
 import uk.gov.moj.cpp.listing.command.utils.RotaSlotToNonDefaultDayConverter;
 import uk.gov.moj.cpp.listing.command.utils.hearing.ExtendHearingUtils;
+import uk.gov.moj.cpp.listing.command.utils.hearing.HearingUpdateOperationType;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.common.service.ProvisionalBookingService;
 import uk.gov.moj.cpp.listing.domain.Address;
@@ -4470,6 +4471,51 @@ class ListingCommandHandlerTest {
         verify(hearing).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any(), any());
         verify(hearing).applyAllocationRules(any(), any(), anyBoolean(),anyBoolean(), any());
         verify(hearing).assignNonDefaultDays(any(), any());
+    }
+
+    @Test
+    public void shouldNotCreateNonDefaultDaysForSplitHearingWhenPayloadNonDefaultDaysAreVirtual() throws Exception {
+        final JsonEnvelope commandEnvelope = updateHearingForListingCommandEnvelope(
+                "/test-data/listing.command.update-hearing-for-listing-split-with-virtual-non-default-days.json");
+
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime", "09:00").build());
+        when(hearing.updateUnallocatedHearingPartially(any(), any(), any())).thenReturn(Stream.of(new Object()));
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+        doReturn(HearingUpdateOperationType.SPLIT).when(extendHearingUtils)
+                .getOperationType(any(), any(), any(), any(), any(), any(), any(), any());
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<List<NonDefaultDay>> nonDefaultDaysCaptor = ArgumentCaptor.forClass(List.class);
+        when(hearing.listForSplit(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                nonDefaultDaysCaptor.capture(), any())).thenReturn(Stream.of());
+
+        listingCommandHandler.updateHearingForListing(commandEnvelope);
+
+        assertThat("virtual nonDefaultDays are courtscheduler booking proxies and must not be persisted "
+                        + "as nonDefaultDays on the new split hearing",
+                nonDefaultDaysCaptor.getValue(), hasSize(0));
+    }
+
+    @Test
+    public void shouldCreateNonDefaultDaysFromHearingDaysForSplitHearingWhenPayloadNonDefaultDaysAreNotVirtual() throws Exception {
+        final JsonEnvelope commandEnvelope = updateHearingForListingCommandEnvelope(
+                "/test-data/listing.command.update-hearing-for-listing-split-with-real-non-default-days.json");
+
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime", "09:00").build());
+        when(hearing.updateUnallocatedHearingPartially(any(), any(), any())).thenReturn(Stream.of(new Object()));
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+        doReturn(HearingUpdateOperationType.SPLIT).when(extendHearingUtils)
+                .getOperationType(any(), any(), any(), any(), any(), any(), any(), any());
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<List<NonDefaultDay>> nonDefaultDaysCaptor = ArgumentCaptor.forClass(List.class);
+        when(hearing.listForSplit(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                nonDefaultDaysCaptor.capture(), any())).thenReturn(Stream.of());
+
+        listingCommandHandler.updateHearingForListing(commandEnvelope);
+
+        assertThat(nonDefaultDaysCaptor.getValue(), hasSize(1));
+        assertThat(nonDefaultDaysCaptor.getValue().get(0).getRoomId(), is(of(COURT_ROOM_ID.toString())));
     }
 
     @Test
