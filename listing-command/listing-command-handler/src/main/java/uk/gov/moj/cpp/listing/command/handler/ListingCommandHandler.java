@@ -26,6 +26,7 @@ import static uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
 import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.convertHoursAndMinutesToMinutes;
 import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.getNextWorkingDay;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.BST;
 import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
 import static uk.gov.moj.cpp.listing.domain.utils.HmiConstants.SOURCE_HMI;
 
@@ -151,7 +152,6 @@ import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -549,7 +549,7 @@ public class ListingCommandHandler {
             final Stream<Object> courtRoomEvents = courtRoomId != null ?
                     hearing.assignCourtRoom(courtRoomId, hearingId, panelFromCommand) : hearing.removeCourtRoom(hearingId);
 
-            final List<LocalDate> daysOfNonDefaultDays =  updateHearingForListing.getNonDefaultDays() == null ? emptyList(): updateHearingForListing.getNonDefaultDays().stream().filter(ndd -> ndd.getStartTime() != null).map(ndd -> ndd.getStartTime().toLocalDate()).toList();
+            final List<LocalDate> daysOfNonDefaultDays =  updateHearingForListing.getNonDefaultDays() == null ? emptyList(): updateHearingForListing.getNonDefaultDays().stream().filter(ndd -> ndd.getStartTime() != null).map(ndd -> ndd.getStartTime().withZoneSameInstant(BST).toLocalDate()).toList();
             final Stream<Object> hearingDayEvents = hearing.assignHearingDaysV2(hearingId, convertHearingDaysCommandToDomain(updateHearingForListing.getHearingDays()), oldCourtRoomId, courtRoomId, uk.gov.justice.core.courts.JurisdictionType.valueOf(jurisdictionType.name()), daysOfNonDefaultDays);
 
             final Stream<Object> weekCommencingDateEvents = weekCommencingStartDate != null && weekCommencingEndDate != null ?

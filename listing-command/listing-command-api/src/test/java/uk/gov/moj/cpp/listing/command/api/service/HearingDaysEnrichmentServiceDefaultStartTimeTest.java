@@ -277,6 +277,31 @@ class HearingDaysEnrichmentServiceDefaultStartTimeTest {
         assertEquals(expectedStartTime, enrichedHearing.getHearingDays().get(0).getStartTime());
     }
 
+    @Test
+    void shouldUseCourtCentreDefaultStartTimeForCrownJurisdictionWith() {
+        // Given - Crown jurisdiction with court centre default start time
+        LocalDate testDate = LocalDate.of(2026, 7, 18); // Summer date
+        LocalTime courtDefaultStartTime = LocalTime.of(23, 30); // 23:30 AM local time
+
+        CourtCentreDetails courtCentreDetails = createCourtCentreDetails(courtDefaultStartTime);
+        UpdateHearingForListing hearing = createUpdateHearingForListing(testDate, testDate);
+        hearing = UpdateHearingForListing.updateHearingForListing()
+                .withValuesFrom(hearing)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .build();
+
+        // When
+        UpdateHearingForListing enrichedHearing = hearingDaysEnrichmentService.enrichHearing(
+                hearing, jsonEnvelope, courtCentreDetails);
+
+        // Then
+        assertNotNull(enrichedHearing);
+        assertNotNull(enrichedHearing.getHearingDays());
+        assertEquals(1, enrichedHearing.getHearingDays().size());
+        assertEquals(testDate, enrichedHearing.getHearingDays().get(0).getHearingDate());
+    }
+
+
     private CourtCentreDetails createCourtCentreDetails(LocalTime defaultStartTime) {
         return CourtCentreDetails.courtCentreDetails()
                 .withId(courtCentreId)

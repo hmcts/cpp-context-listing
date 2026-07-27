@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.command.utils;
 
 import static java.util.stream.Collectors.toList;
 import static uk.gov.justice.listing.events.HearingDay.hearingDay;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.BST;
 
 import uk.gov.justice.core.courts.HearingDay;
 import uk.gov.justice.services.common.converter.Converter;
@@ -16,7 +17,7 @@ public class HearingDaysCoreToDomainConverter implements Converter<List<HearingD
                 .map(hearingDay -> hearingDay()
                         .withCourtRoomId(hearingDay.getCourtRoomId())
                         .withCourtCentreId(hearingDay.getCourtCentreId())
-                        .withHearingDate(hearingDay.getSittingDay().toLocalDate())
+                        .withHearingDate(hearingDay.getSittingDay().withZoneSameInstant(BST).toLocalDate())
                         .withStartTime(hearingDay.getSittingDay())
                         .withSequence(hearingDay.getListingSequence())
                         .withDurationMinutes(hearingDay.getListedDurationMinutes())

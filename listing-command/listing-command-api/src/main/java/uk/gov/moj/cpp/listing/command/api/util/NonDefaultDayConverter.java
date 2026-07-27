@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.command.api.util;
 
 import static java.util.Objects.nonNull;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.BST;
 
 import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.commands.HearingDay;
@@ -37,7 +38,7 @@ public class NonDefaultDayConverter {
                     .withCourtRoomId(UUID.fromString(nonDefaultDay.getRoomId()))
                     .withDurationMinutes(nonDefaultDay.getDuration())
                     .withStartTime(nonDefaultDay.getStartTime())
-                    .withHearingDate(nonDefaultDay.getStartTime().toLocalDate());
+                    .withHearingDate(nonDefaultDay.getStartTime().withZoneSameInstant(BST).toLocalDate());
             if (nonNull(nonDefaultDay.getCourtScheduleId())) {
                 builder.withCourtScheduleId(UUID.fromString(nonDefaultDay.getCourtScheduleId()));
             }
@@ -54,7 +55,7 @@ public class NonDefaultDayConverter {
                     .withCourtRoomId(UUID.fromString(slot.getRoomId()))
                     .withCourtScheduleId(UUID.fromString(slot.getCourtScheduleId()))
                     .withDurationMinutes(slot.getDuration())
-                    .withHearingDate(slot.getStartTime().toLocalDate())
+                    .withHearingDate(slot.getStartTime().withZoneSameInstant(BST).toLocalDate())
                     .withStartTime(slot.getStartTime())
                     .build());
         }

@@ -9,6 +9,7 @@ import static java.util.Optional.ofNullable;
 import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.BST;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -215,7 +216,7 @@ public class JudgeListTemplateAssembler {
 
     private HearingDay buildHearingDay(final FlatHearing flatHearing) {
         final JsonObject hearingDayJson = flatHearing.getCaseHearings().getJsonArray(HEARING_DAYS).getValuesAs(JsonObject.class).stream()
-                .filter(hd -> flatHearing.getHearingDate().equals(ZonedDateTime.parse(hd.getString(START_TIME)).toLocalDate()))
+                .filter(hd -> flatHearing.getHearingDate().equals(ZonedDateTime.parse(hd.getString(START_TIME)).withZoneSameInstant(BST).toLocalDate()))
                 .findFirst()
                 .orElseThrow(IllegalArgumentException::new);
         final String startTime = prettifyDate(hearingDayJson, START_TIME);

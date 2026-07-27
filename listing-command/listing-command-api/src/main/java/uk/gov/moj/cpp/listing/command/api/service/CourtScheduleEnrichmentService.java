@@ -9,6 +9,7 @@ import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static uk.gov.moj.cpp.listing.command.api.service.HearingDaysEnrichmentService.log;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.BST;
 
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
@@ -291,7 +292,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 HearingSlotSearchResponse hearingSlotSearchResponse = searchAndBookSlots(
                         hearing.getId().toString(),
                         hearing.getCourtCentre().getId().toString(),
-                        hearing.getListedStartDateTime().toLocalDate().toString(),
+                        hearing.getListedStartDateTime().withZoneSameInstant(BST).toLocalDate().toString(),
                         hearing.getCourtCentre().getRoomId().toString(),
                         hearing.getEndDate(),
                         DateAndTimeUtils.toIsoString(hearing.getListedStartDateTime()),
