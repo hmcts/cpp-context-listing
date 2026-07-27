@@ -46,7 +46,6 @@ import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.VacateTrialEnriched;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
@@ -397,12 +396,15 @@ public class ListingCommandApi {
         final LocalDate endDate = endInstant.toLocalDate();
 
         validateMoveDates(startInstant, endInstant);
-        final List<LocalDate> sittingDays = workingDaysBetween(startDate, endDate);
+        // Weekends are permitted target dates: magistrates courts sit Saturdays (remand courts), so
+        // whether a session exists on the requested day is courtscheduler's decision - not a
+        // listing-side calendar rule. CROWN moves take the requested date as-is.
+        final List<LocalDate> sittingDays = datesBetween(startDate, endDate);
 
         // The hearing must already exist in the listing viewstore. An unknown hearingId is rejected
         // synchronously with a 422 here - before any court-centre lookup, courtscheduler booking, or
         // enriched event - so a move can never be issued for a hearing that was never listed. Checked
-        // after the cheap in-memory date/working-day validation so a malformed request still fails fast
+        // after the cheap in-memory date validation so a malformed request still fails fast
         // without a viewstore read.
         hearingLookupService.findHearing(hearingId, envelope)
                 .orElseThrow(() -> new MoveHearingToPastDateException(422,
@@ -478,26 +480,17 @@ public class ListingCommandApi {
     }
 
     /**
-     * Expands an inclusive [startDate, endDate] span into sitting (Mon-Fri) days. Courts do not sit at
-     * weekends; a weekend date has no sitting day and no bookable session, so it is rejected with the
-     * same NO_SESSION_FOUND fixed copy the courtscheduler no-slot case surfaces - the caller sees one
-     * uniform "no suitable session on that date" failure shape.
+     * Expands an inclusive [startDate, endDate] span into one sitting day per calendar date. Weekends
+     * are permitted, so a Saturday or Sunday becomes a sitting day like any other date.
+     * validateMoveDates has already guaranteed endDate is not before startDate, so this never returns
+     * an empty list.
      */
-    private static List<LocalDate> workingDaysBetween(final LocalDate startDate, final LocalDate endDate) {
+    private static List<LocalDate> datesBetween(final LocalDate startDate, final LocalDate endDate) {
         final List<LocalDate> days = new ArrayList<>();
         LocalDate cursor = startDate;
         while (!cursor.isAfter(endDate)) {
-            final DayOfWeek dow = cursor.getDayOfWeek();
-            if (dow != DayOfWeek.SATURDAY && dow != DayOfWeek.SUNDAY) {
-                days.add(cursor);
-            }
+            days.add(cursor);
             cursor = cursor.plusDays(1);
-        }
-        if (days.isEmpty()) {
-            throw new MoveHearingToPastDateException(422,
-                    buildMoveHearingToPastDateErrorBody(CourtSchedulerServiceAdapter.NO_SESSION_FOUND,
-                            CourtSchedulerServiceAdapter.NO_SESSION_FOUND_MESSAGE),
-                    "No working day between " + startDate + " and " + endDate);
         }
         return days;
     }
