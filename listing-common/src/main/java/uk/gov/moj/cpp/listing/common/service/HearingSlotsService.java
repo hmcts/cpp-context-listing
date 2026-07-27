@@ -280,11 +280,13 @@ public class HearingSlotsService {
         }
 
         try {
-            final URIBuilder uriBuilder = new URIBuilder(baseUri + urlPath);
-            params.forEach(uriBuilder::addParameter);
-            final HttpGet httpGet = new HttpGet(uriBuilder.build());
+            final HttpGet httpGet = new HttpGet(new URL(baseUri + urlPath).toString());
             httpGet.addHeader(ACCEPT, acceptHeader);
             httpGet.addHeader(CJS_CPP_UID, getUserId().toString());
+
+            final URIBuilder uriBuilder = new URIBuilder(httpGet.getURI());
+            params.forEach(uriBuilder::addParameter);
+            httpGet.setURI(uriBuilder.build());
 
             final HttpResponse httpResponse = execute(httpGet);
 

@@ -3,6 +3,8 @@ package uk.gov.moj.cpp.listing.command.api.service;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -11,6 +13,7 @@ import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.moj.cpp.listing.command.api.service.HearingDaysEnrichmentService.log;
 
 import uk.gov.justice.core.courts.CourtCentre;
+import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.commands.HearingDay;

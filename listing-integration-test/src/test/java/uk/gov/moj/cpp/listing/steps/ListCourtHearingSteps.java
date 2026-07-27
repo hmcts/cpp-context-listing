@@ -149,6 +149,7 @@ import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Filter;
+import com.jayway.jsonpath.PathNotFoundException;
 import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;

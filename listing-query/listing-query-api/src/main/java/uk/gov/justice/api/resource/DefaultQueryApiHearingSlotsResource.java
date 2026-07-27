@@ -8,6 +8,12 @@ import uk.gov.moj.cpp.listing.common.NoteUUIDService;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import javax.inject.Inject;
 import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;

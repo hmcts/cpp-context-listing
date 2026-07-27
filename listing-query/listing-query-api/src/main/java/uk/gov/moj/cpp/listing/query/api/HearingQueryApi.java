@@ -9,6 +9,8 @@ import static uk.gov.justice.services.core.annotation.Component.QUERY_API;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilderWithFilter;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.ALPHABETICAL;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.JUDGE;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.ONLINE_PUBLIC;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
 
@@ -25,7 +27,9 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.xhibit.ReferenceDataLoader;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
+import uk.gov.moj.cpp.listing.query.api.service.AlphabeticalCourtListService;
 import uk.gov.moj.cpp.listing.query.api.service.ReferenceDataService;
+import uk.gov.moj.cpp.listing.query.document.generator.JudgeListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
@@ -63,6 +67,7 @@ public class HearingQueryApi {
     public static final String RESTRICTED = "restricted";
     public static final String INCLUDE_APPLICATIONS = "includeApplications";
     private static final String LIST_ID = "listId";
+    private static final String START_DATE = "startDate";
     private static final String OU_L2_CODE = "oucodeL2Code";
     private static final String FIRST_NAME = "firstName";
     private static final String LAST_NAME = "lastName";
@@ -85,6 +90,12 @@ public class HearingQueryApi {
 
     @Inject
     private StandardPublicCourtListTemplateAssembler standardPublicCourtListAssembler;
+
+    @Inject
+    private AlphabeticalCourtListService alphabeticalCourtListService;
+
+    @Inject
+    private JudgeListTemplateAssembler judgeListTemplateAssembler;
 
     @Inject
     private ReferenceDataService referenceDataService;
@@ -165,14 +176,17 @@ public class HearingQueryApi {
 
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
         final String courtRoomId = query.payloadAsJsonObject().getString(COURT_ROOM_ID, null);
+        final String startDate = query.payloadAsJsonObject().getString(START_DATE, null);
         final String listId = query.payloadAsJsonObject().getString(LIST_ID);
         final boolean restricted = Optional.ofNullable(query.payloadAsJsonObject().get(RESTRICTED)).map(restrictedJson -> Boolean.valueOf(restrictedJson.toString())).orElse(false);
         final boolean includeApplications = Optional.ofNullable(query.payloadAsJsonObject().get(INCLUDE_APPLICATIONS)).map(includeApplicationsJson -> Boolean.valueOf(includeApplicationsJson.toString())).orElse(false);
         final Optional<CourtListType> courtListType = CourtListType.valueFor(listId);
 
         if(courtListType.isPresent()) {
-            final JsonEnvelope queryResponse = hearingQueryView.getCourtListContent(query);
-            final Optional<JsonObject> courtListData = standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType.get(), restricted, includeApplications);
+            final JsonEnvelope queryResponse = JUDGE.equals(courtListType.get())
+                    ? hearingQueryView.rangeSearchHearingsForJudge(query)
+                    : hearingQueryView.getCourtListContent(query);
+            final Optional<JsonObject> courtListData = buildCourtListData(queryResponse, courtCentreId, courtRoomId, courtListType.get(), restricted, includeApplications, startDate);
             if (courtListData.isPresent()) {
                 final JsonObject courtListPayload = courtListData.get();
                 final boolean isWelsh = referenceDataService.isHearingLanguageWelsh(queryResponse, courtCentreId).orElse(false);
@@ -288,6 +302,23 @@ public class HearingQueryApi {
                 .collect(Collectors.toList());
 
         return this.hearingQueryView.getCasesByDefendantAndHearingDate(caseIds, defendants, hearingDate, query);
+    }
+
+    /**
+     * Builds the court list payload for the given type, routing ALPHABETICAL and JUDGE to their dedicated
+     * assemblers (mirroring the binary /courtlist endpoint). Without this, those types fall through to the
+     * standard assembler and yield an empty payload.
+     */
+    private Optional<JsonObject> buildCourtListData(final JsonEnvelope queryResponse, final String courtCentreId, final String courtRoomId,
+                                                    final CourtListType courtListType, final boolean restricted,
+                                                    final boolean includeApplications, final String startDate) {
+        if (ALPHABETICAL.equals(courtListType)) {
+            return alphabeticalCourtListService.buildAlphabeticalCourtListData(queryResponse, courtCentreId);
+        }
+        if (JUDGE.equals(courtListType)) {
+            return judgeListTemplateAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType, startDate);
+        }
+        return standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType, restricted, includeApplications);
     }
 
     private String getTemplateName(final CourtListType courtListType, boolean welsh) {
