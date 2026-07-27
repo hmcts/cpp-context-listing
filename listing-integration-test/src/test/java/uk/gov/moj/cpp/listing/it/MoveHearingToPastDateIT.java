@@ -241,23 +241,21 @@ class MoveHearingToPastDateIT extends AbstractIT {
         verifyMoveHearingToPastDateNeverCalled(unknownHearingId.toString());
     }
 
-    /** Courts do not sit at weekends, so a weekend date can never have a bookable session. Rejected
-     * synchronously with the same 422 NO_SESSION_FOUND fixed copy as the courtscheduler no-slot case
-     * (uniform failure shape for the caller), before any event or courtscheduler call. */
+    /** Weekends are permitted target dates: magistrates courts sit Saturdays (e.g. remand courts),
+     * so a Saturday move is delegated to courtscheduler like any other day - whether a session
+     * exists on the requested day is courtscheduler's decision, not a listing-side calendar rule. */
     @Test
-    void shouldRejectWeekendMoveWithNoSessionFoundFixedCopy() {
-        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(MAGISTRATES_JURISDICTION);
-        final MoveHearingToPastDateSteps moveSteps = new MoveHearingToPastDateSteps(hearingsData);
+    void shouldMoveMagistratesHearingToSaturdayPastDate() {
+        final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
         final LocalDate saturday = mostRecentSaturday();
+        final String courtScheduleId = randomUUID().toString();
+        stubMoveHearingToPastDate(moveSteps.getHearingId(), courtScheduleId, COURT_ROOM_ID, saturday, 30);
 
         final Response response = moveSteps.whenHearingIsMovedToPastDateRange(saturday, saturday, COURT_ROOM_ID);
 
-        assertThat(response.getStatus(), is(422));
-        final String body = response.readEntity(String.class);
-        assertThat(body, containsString("NO_SESSION_FOUND"));
-        assertThat(body, containsString(
-                "No suitable sessions are available for the selected date. Please select another date."));
-        verifyMoveHearingToPastDateNeverCalled(moveSteps.getHearingId());
+        assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
+        verifyMoveHearingToPastDateCalled(moveSteps.getHearingId());
+        moveSteps.verifyCourtScheduleStored(courtScheduleId);
     }
 
     /** The request schema's regex only range-checks digits, so an impossible calendar date such as
@@ -353,8 +351,8 @@ class MoveHearingToPastDateIT extends AbstractIT {
         return day;
     }
 
-    /** most recent Saturday strictly before ItClock.today() - always past, single-day, within 6 months,
-     * so only the weekend (no-sitting-day) rule can reject it. */
+    /** most recent Saturday strictly before ItClock.today() - always past, single-day, within 6 months;
+     * used to prove weekend dates are valid move targets. */
     private static LocalDate mostRecentSaturday() {
         LocalDate day = ItClock.today().minusDays(1);
         while (day.getDayOfWeek() != DayOfWeek.SATURDAY) {

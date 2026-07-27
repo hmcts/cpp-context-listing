@@ -606,8 +606,8 @@ public class ListingCommandApiTest {
         return day;
     }
 
-    // most recent Saturday strictly before today - always past, single-day, and within 6 months,
-    // so only the no-sitting-day (weekend) rule can reject it
+    // most recent Saturday strictly before today - always past, single-day, and within 6 months;
+    // used to prove weekend dates are valid move targets
     private static LocalDate mostRecentSaturday() {
         LocalDate day = LocalDate.now().minusDays(1);
         while (day.getDayOfWeek() != java.time.DayOfWeek.SATURDAY) {
@@ -790,21 +790,63 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldRejectWeekendMoveWithNoSessionFoundFixedCopy() {
-        // single Saturday: passes validateMoveDates (past, single-day, within 6 months) but courts do
-        // not sit at weekends, so no session can exist - surfaced as the same NO_SESSION_FOUND fixed
-        // copy as the courtscheduler no-slot case (uniform failure shape for the caller).
+    public void shouldMoveMagistratesHearingToSaturdayViaCourtscheduler() {
+        // Weekends are permitted target dates: magistrates courts do sit on Saturdays (e.g. remand
+        // courts), so whether a session exists on the requested day is courtscheduler's decision -
+        // not a listing-side calendar rule. A Saturday move is delegated like any other day.
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID courtScheduleId = randomUUID();
         final LocalDate saturday = mostRecentSaturday();
-        stubMovePayload(randomUUID(), randomUUID(), saturday, "10:00");
 
-        final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
-                () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
+        stubMovePayload(hearingId, courtCentreId, saturday, "10:00");
+        givenHearingExistsInViewstore();
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Magistrates' Courts"));
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(any(), any(), any(), any(), any()))
+                .willReturn(List.of(new MoveHearingToPastDateResult(courtScheduleId, MOVE_COURT_ROOM_ID.toString(),
+                        saturday, saturday + "T09:00:00Z", saturday + "T12:00:00Z", 30)));
 
-        assertThat(thrown.getHttpStatus(), is(422));
-        assertThat(thrown.getErrorCode(), is("NO_SESSION_FOUND"));
-        assertThat(thrown.getResponseBody().getString("message"),
-                is("No suitable sessions are available for the selected date. Please select another date."));
-        verify(sender, never()).send(any());
+        final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
+
+        listingCommandApi.handleMoveHearingToPastDate(envelope);
+
+        verify(courtSchedulerServiceAdapter).moveHearingToPastDate(eq(hearingId), eq(courtCentreId), any(), any(), any());
+        verify(sender, times(1)).send(captor.capture());
+        final JsonObject sent = (JsonObject) captor.getValue().payload();
+        assertThat(sent.getString("startDate"), is(saturday.toString()));
+        assertThat(sent.getString("endDate"), is(saturday.toString()));
+        final JsonArray days = sent.getJsonArray("hearingDays");
+        assertThat(days.size(), is(1));
+        assertThat(days.getJsonObject(0).getString("sessionDate"), is(saturday.toString()));
+        assertThat(days.getJsonObject(0).getString("courtScheduleId"), is(courtScheduleId.toString()));
+    }
+
+    @Test
+    public void shouldMoveCrownHearingToSaturdayListingSide() {
+        // CROWN moves never call courtscheduler, and the weekend rule must not reject them either -
+        // the requested Saturday becomes the (single) re-issued hearing day.
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final LocalDate saturday = mostRecentSaturday();
+
+        stubMovePayload(hearingId, courtCentreId, saturday, "10:00");
+        givenHearingExistsInViewstore();
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(courtCentreFactory.getOrganisationUnit(any(), any())).willReturn(courtCentre("Crown Courts"));
+
+        final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
+
+        listingCommandApi.handleMoveHearingToPastDate(envelope);
+
+        verify(courtSchedulerServiceAdapter, never()).moveHearingToPastDate(any(), any(), any(), any(), any());
+        verify(sender, times(1)).send(captor.capture());
+        final JsonObject sent = (JsonObject) captor.getValue().payload();
+        assertThat(sent.getString("startDate"), is(saturday.toString()));
+        assertThat(sent.getString("endDate"), is(saturday.toString()));
+        final JsonArray days = sent.getJsonArray("hearingDays");
+        assertThat(days.size(), is(1));
+        assertThat(days.getJsonObject(0).getString("sessionDate"), is(saturday.toString()));
     }
 
     @Test
