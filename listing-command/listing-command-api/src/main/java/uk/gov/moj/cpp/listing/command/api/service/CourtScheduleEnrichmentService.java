@@ -12,6 +12,7 @@ import static uk.gov.moj.cpp.listing.command.api.service.HearingDaysEnrichmentSe
 
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
+import uk.gov.justice.core.courts.InitiationCode;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.commands.HearingDay;
@@ -74,6 +75,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     public static final String HEARING_ID = "hearingId";
     public static final String COURT_ROOM_ID = "courtRoomId";
     public static final String COURT_CENTRE_ID = "courtCentreId";
+    public static final String BUSINESS_TYPE = "businessType";
+    public static final String ENFORCEMENT_BUSINESS_TYPE = "ENF";
+    public static final String ENFORCEMENT_AUTO_BUSINESS_TYPE = "ENF_AUTO";
     @Inject
     CourtCentreFactory courtCentreFactory;
     @Inject
@@ -130,10 +134,24 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         boolean hasAssignedCourtRoom = nonNull(hearing.getCourtCentre().getRoomId());
         boolean hasJurisdictionType = nonNull(hearing.getJurisdictionType());
 
+        if (isOtherTypeCases(hearing)) {
+            return hasJurisdictionType
+                    && hasValidStartDateTime;
+        } else {
+            return hasJurisdictionType
+                    && hasValidStartDateTime
+                    && hasAssignedCourtRoom;
+        }
+    }
 
-        return hasJurisdictionType
-                && hasValidStartDateTime
-                && hasAssignedCourtRoom;
+    static boolean isOtherTypeCases(final HearingListingNeeds hearing) {
+        final List<uk.gov.justice.core.courts.ProsecutionCase> prosecutionCases = hearing.getProsecutionCases();
+        return isNotEmpty(prosecutionCases) && prosecutionCases.stream()
+                .allMatch(prosecutionCase -> InitiationCode.O.equals(prosecutionCase.getInitiationCode()));
+    }
+
+    private static ZonedDateTime resolveSearchStartDateTime(final HearingListingNeeds hearing) {
+        return nonNull(hearing.getListedStartDateTime()) ? hearing.getListedStartDateTime() : hearing.getEarliestStartDateTime();
     }
 
     public static boolean isCandidateForAllocation(final UpdateHearingForListing hearing) {
@@ -284,20 +302,33 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     private AllocationResult handleAllocationCandidate(HearingListingNeeds hearing, JsonEnvelope envelope) {
         List<HearingDay> hearingDaysBySearchAndBook = new ArrayList<>();
         List<JudicialRole> judicialRolesBySearchAndBook = new ArrayList<>();
+        final boolean isOtherType = isOtherTypeCases(hearing);
+        // Courtscheduler's own multi-day search loop (hearingSessionDateSearchCutOff) only applies
+        // when isPolice=true, gated to police-only business types - not usable here. For OTHER-type
+        // hearings with a date range, this service does its own day-by-day search instead.
+        final boolean searchDayByDayAcrossRange = isOtherType && nonNull(hearing.getEndDate());
 
         hearing.getHearingDays().forEach(hearingDay -> {
             if (isNull(hearingDay.getCourtScheduleId())) {
                 boolean isPolice = isPolice(hearing, envelope);
-                HearingSlotSearchResponse hearingSlotSearchResponse = searchAndBookSlots(
-                        hearing.getId().toString(),
-                        hearing.getCourtCentre().getId().toString(),
-                        hearing.getListedStartDateTime().toLocalDate().toString(),
-                        hearing.getCourtCentre().getRoomId().toString(),
-                        hearing.getEndDate(),
-                        DateAndTimeUtils.toIsoString(hearing.getListedStartDateTime()),
-                        hearing.getEstimatedMinutes(),
-                        isPolice
-                );
+                final String courtRoomId = isOtherType ? null : hearing.getCourtCentre().getRoomId().toString();
+                final String businessType = !isOtherType ? null
+                        : searchDayByDayAcrossRange ? ENFORCEMENT_AUTO_BUSINESS_TYPE : ENFORCEMENT_BUSINESS_TYPE;
+                final String hearingStartTime = searchDayByDayAcrossRange || isNull(hearing.getListedStartDateTime())
+                        ? null : DateAndTimeUtils.toIsoString(hearing.getListedStartDateTime());
+                HearingSlotSearchResponse hearingSlotSearchResponse = searchDayByDayAcrossRange
+                        ? searchAndBookFirstAvailableSlotInDateRange(hearing, courtRoomId, businessType, isPolice)
+                        : searchAndBookSlots(
+                                hearing.getId().toString(),
+                                hearing.getCourtCentre().getId().toString(),
+                                resolveSearchStartDateTime(hearing).toLocalDate().toString(),
+                                courtRoomId,
+                                hearing.getEndDate(),
+                                hearingStartTime,
+                                hearing.getEstimatedMinutes(),
+                                isPolice,
+                                businessType
+                        );
                 if (hearingSlotSearchResponse == null) {
                     //If you can't find by searchandBook add HearingDay as it is, it will be unallocated.
                     hearingDaysBySearchAndBook.add(hearingDay);
@@ -311,6 +342,39 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             }
         });
         return new AllocationResult(hearingDaysBySearchAndBook, judicialRolesBySearchAndBook);
+    }
+
+    /**
+     * Searches one day at a time, starting from the hearing's start date up to (and including)
+     * its end date, stopping at the first date an available slot is found and booked. Each call is
+     * a single-day search (no hearingSessionDateSearchCutOff) - courtscheduler's own cutoff-driven
+     * multi-day loop is police-only and not applicable to OTHER-type hearings.
+     */
+    private HearingSlotSearchResponse searchAndBookFirstAvailableSlotInDateRange(final HearingListingNeeds hearing,
+                                                                                 final String courtRoomId,
+                                                                                 final String businessType,
+                                                                                 final boolean isPolice) {
+        final LocalDate endDate = LocalDate.parse(hearing.getEndDate());
+        LocalDate searchDate = resolveSearchStartDateTime(hearing).toLocalDate();
+
+        while (!searchDate.isAfter(endDate)) {
+            final HearingSlotSearchResponse hearingSlotSearchResponse = searchAndBookSlots(
+                    hearing.getId().toString(),
+                    hearing.getCourtCentre().getId().toString(),
+                    searchDate.toString(),
+                    courtRoomId,
+                    null,
+                    null,
+                    hearing.getEstimatedMinutes(),
+                    isPolice,
+                    businessType
+            );
+            if (nonNull(hearingSlotSearchResponse)) {
+                return hearingSlotSearchResponse;
+            }
+            searchDate = searchDate.plusDays(1);
+        }
+        return null;
     }
 
     private List<HearingDay> generateHearingDaysFromCourtSchedule(final List<HearingDay> hearingDays, final List<CourtSchedule> courtScheduleList, final HearingListingNeeds hearing) {
@@ -351,8 +415,21 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                                                            final String hearingStartTime,
                                                            final Integer durationInMinutes,
                                                            final boolean isPolice) {
-        LOGGER.info("searchAndBookSlots hearingId : {}, ouCode : {}, hearingSessionDate : {}, courtRoomId : {}, hearingSessionDateSearchCutOff : {}, hearingStartTime : {}, durationInMinutes : {}",
-                hearingId, ouCode, hearingSessionDate, courtRoomId, hearingSessionDateSearchCutOff, hearingStartTime, durationInMinutes);
+        return searchAndBookSlots(hearingId, ouCode, hearingSessionDate, courtRoomId, hearingSessionDateSearchCutOff,
+                hearingStartTime, durationInMinutes, isPolice, null);
+    }
+
+    protected HearingSlotSearchResponse searchAndBookSlots(final String hearingId,
+                                                           final String ouCode,
+                                                           final String hearingSessionDate,
+                                                           final String courtRoomId,
+                                                           final String hearingSessionDateSearchCutOff,
+                                                           final String hearingStartTime,
+                                                           final Integer durationInMinutes,
+                                                           final boolean isPolice,
+                                                           final String businessType) {
+        LOGGER.info("searchAndBookSlots hearingId : {}, ouCode : {}, hearingSessionDate : {}, courtRoomId : {}, hearingSessionDateSearchCutOff : {}, hearingStartTime : {}, durationInMinutes : {}, businessType : {}",
+                hearingId, ouCode, hearingSessionDate, courtRoomId, hearingSessionDateSearchCutOff, hearingStartTime, durationInMinutes, businessType);
 
         final Map<String, String> queryParams = new HashMap<>();
         //mandatory params
@@ -367,6 +444,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             queryParams.put(HEARING_SESSION_DATE_CUT_OFF, hearingSessionDateSearchCutOff);
         if (nonNull(hearingStartTime) && !hearingStartTime.isEmpty())
             queryParams.put(HEARING_START_TIME, hearingStartTime);
+        if (nonNull(businessType) && !businessType.isEmpty())
+            queryParams.put(BUSINESS_TYPE, businessType);
 
         final Response searchAndBookResponse = hearingSlotsService.searchBookSlots(queryParams);
 
