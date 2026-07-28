@@ -96,12 +96,15 @@ class MoveHearingToPastDateIT extends AbstractIT {
         final LocalDate pastDate = pastWorkingDay(1);
         final String courtScheduleId = randomUUID().toString();
         stubMoveHearingToPastDate(moveSteps.getHearingId(), courtScheduleId, COURT_ROOM_ID, pastDate, 30);
+        moveSteps.armPublicEventConsumers();
 
         final Response response = moveSteps.whenHearingIsMovedToPastDate("MAGS", pastDate);
 
         assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
         verifyMoveHearingToPastDateCalled(moveSteps.getHearingId());
         moveSteps.verifyCourtScheduleStored(courtScheduleId);
+        moveSteps.verifyPublicHearingUpdatedWithNotificationsSuppressed(pastDate);
+        moveSteps.verifyPublicVacatedTrialUpdatedAsRescheduled();
     }
 
     @Test
@@ -182,12 +185,15 @@ class MoveHearingToPastDateIT extends AbstractIT {
     void shouldMoveCrownHearingToPastDateListingSideOnlyWithoutCallingCourtScheduler() {
         final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(CROWN_JURISDICTION);
         final LocalDate pastDate = pastWorkingDay(1);
+        moveSteps.armPublicEventConsumers();
 
         final Response response = moveSteps.whenHearingIsMovedToPastDate("CROWN", pastDate);
 
         assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
         verifyMoveHearingToPastDateNeverCalled(moveSteps.getHearingId());
         moveSteps.verifyStartDateUpdated(pastDate);
+        moveSteps.verifyPublicHearingUpdatedWithNotificationsSuppressed(pastDate);
+        moveSteps.verifyPublicVacatedTrialUpdatedAsRescheduled();
     }
 
     /** This endpoint moves hearings to earlier dates only - a future date is rejected synchronously

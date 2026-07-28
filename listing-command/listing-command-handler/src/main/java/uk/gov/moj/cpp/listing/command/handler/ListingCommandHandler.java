@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.command.handler;
 import static java.lang.String.format;
 import static java.time.LocalDate.parse;
 import static java.time.ZonedDateTime.now;
+import static java.lang.Boolean.FALSE;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -449,11 +450,23 @@ public class ListingCommandHandler {
                 ? uk.gov.justice.core.courts.JurisdictionType.CROWN
                 : uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
 
-        updateHearingEventStream(command, hearingId, (Hearing hearing) -> Stream.concat(
-                Stream.concat(
-                        hearing.changeStartDate(startDate, hearingId),
-                        hearing.changeEndDate(endDate, hearingId)),
-                hearing.assignHearingDaysV2(hearingId, movedDays, null, null, jurisdictionType, emptyList())));
+        updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
+            // Collected (not streamed) because applyRescheduledCheck inspects the occurred events —
+            // a StartDateChangedForHearing among them raises hearing-rescheduled →
+            // public.listing.vacated-trial-updated, exactly as update-hearing-for-listing does.
+            final List<Object> startDateEvents = hearing.changeStartDate(startDate, hearingId).collect(toList());
+            final Stream<Object> endDateEvents = hearing.changeEndDate(endDate, hearingId);
+            // Allocation rules run AFTER the date/day events so the allocated-hearing-updated private
+            // event snapshots the moved days; on an allocated hearing it becomes
+            // public.listing.hearing-updated (progression → hearing) and feeds MI's listing listener.
+            // Both notification flags are hard-coded FALSE: a past-date move must never notify parties
+            // (progression's gate is sendNotificationToParties && isNotificationAllocationFieldUpdated).
+            final Stream<Object> hearingDayEvents = hearing.assignHearingDaysV2(hearingId, movedDays, null, null, jurisdictionType, emptyList());
+            final Stream<Object> allocationEvents = hearing.applyAllocationRules(emptyList(), FALSE, FALSE);
+            final Stream<Object> rescheduledEvents = hearing.applyRescheduledCheck(startDateEvents);
+            return Stream.of(startDateEvents.stream(), endDateEvents, hearingDayEvents, allocationEvents, rescheduledEvents)
+                    .flatMap(i -> i);
+        });
     }
 
     private static uk.gov.moj.cpp.listing.domain.HearingDay buildMovedHearingDay(final JsonObject day,
