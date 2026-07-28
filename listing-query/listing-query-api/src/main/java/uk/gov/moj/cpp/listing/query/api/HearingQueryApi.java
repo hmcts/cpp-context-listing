@@ -44,7 +44,6 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import uk.gov.justice.services.messaging.JsonObjects;
 
-import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -183,14 +182,16 @@ public class HearingQueryApi {
         final Optional<CourtListType> courtListType = CourtListType.valueFor(listId);
 
         if(courtListType.isPresent()) {
-            final JsonEnvelope queryResponse = JUDGE.equals(courtListType.get())
+            final CourtListType listType = courtListType.get();
+            // JUDGE uses a different query (range search by judge); all other types use the standard court list content.
+            final JsonEnvelope queryResponse = JUDGE.equals(listType)
                     ? hearingQueryView.rangeSearchHearingsForJudge(query)
                     : hearingQueryView.getCourtListContent(query);
-            final Optional<JsonObject> courtListData = buildCourtListData(queryResponse, courtCentreId, courtRoomId, courtListType.get(), restricted, includeApplications, startDate);
+            final Optional<JsonObject> courtListData = buildCourtListData(queryResponse, courtCentreId, courtRoomId, listType, restricted, includeApplications, startDate);
             if (courtListData.isPresent()) {
                 final JsonObject courtListPayload = courtListData.get();
                 final boolean isWelsh = referenceDataService.isHearingLanguageWelsh(queryResponse, courtCentreId).orElse(false);
-                final String templateName = getTemplateName(courtListType.get(), isWelsh);
+                final String templateName = getTemplateName(listType, isWelsh);
                 final JsonObjectBuilder builder = JsonObjects.createObjectBuilder();
                 courtListPayload.forEach(builder::add);
                 builder.add("templateName", templateName);
@@ -322,7 +323,7 @@ public class HearingQueryApi {
     }
 
     private String getTemplateName(final CourtListType courtListType, boolean welsh) {
-        if ((PUBLIC.equals(courtListType) || ONLINE_PUBLIC.equals(courtListType)) && welsh) {
+        if ((ALPHABETICAL.equals(courtListType) || PUBLIC.equals(courtListType) || ONLINE_PUBLIC.equals(courtListType)) && welsh) {
             return courtListType.getWelshTemplateName();
         }
         return courtListType.getTemplateName();
@@ -371,7 +372,7 @@ public class HearingQueryApi {
 
                     if (appDetails.isPresent()) {
                         final CourtApplication courtApplicationObj = jsonObjectToObjectConverter.convert(appDetails.get().getJsonObject("courtApplication"), CourtApplication.class);
-                        final JsonObjectBuilder appBuilder = Json.createObjectBuilder();
+                        final JsonObjectBuilder appBuilder = JsonObjects.createObjectBuilder();
                         application.forEach(appBuilder::add);
                         appBuilder.add("applicationTypeCode", courtApplicationObj.getType().getCode());
                         applicationsBuilder.add(appBuilder.build());
@@ -387,7 +388,7 @@ public class HearingQueryApi {
     }
 
     private static JsonObject buildHearingPayloadWithUpdatedApplications(final JsonObject hearing, final JsonArrayBuilder applicationsBuilder) {
-        final JsonObjectBuilder hearingBuilder = Json.createObjectBuilder();
+        final JsonObjectBuilder hearingBuilder = JsonObjects.createObjectBuilder();
         hearing.forEach((key, value) -> {
             if (!COURT_APPLICATIONS.equals(key)) {
                 hearingBuilder.add(key, value);
@@ -398,7 +399,7 @@ public class HearingQueryApi {
     }
 
     private static @NonNull JsonObjectBuilder buildResponsePayloadWithUpdatedHearing(final JsonObject payload, final JsonArrayBuilder hearingsBuilder) {
-        final JsonObjectBuilder payloadBuilder = Json.createObjectBuilder();
+        final JsonObjectBuilder payloadBuilder = JsonObjects.createObjectBuilder();
         payload.forEach((key, value) -> {
             if (!HEARINGS.equals(key)) {
                 payloadBuilder.add(key, value);
