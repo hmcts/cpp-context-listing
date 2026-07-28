@@ -3,8 +3,11 @@ package uk.gov.moj.cpp.listing.steps;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static javax.ws.rs.core.Response.Status.OK;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
@@ -13,7 +16,10 @@ import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
@@ -22,6 +28,8 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import javax.ws.rs.core.Response;
+
+import io.restassured.path.json.JsonPath;
 
 /**
  * Steps for the listing.command.move-hearing-to-past-date wrapper endpoint. Same
@@ -34,10 +42,15 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
     private static final String MEDIA_TYPE_SEARCH_HEARING = "application/vnd.listing.search.hearing+json";
     private static final String LISTING_COMMAND_MOVE = "listing.command.move-hearing-to-past-date";
     private static final String MEDIA_TYPE_MOVE = "application/vnd.listing.command.move-hearing-to-past-date+json";
+    private static final String PUBLIC_EVENT_HEARING_UPDATED = "public.listing.hearing-updated";
+    private static final String PUBLIC_EVENT_VACATED_TRIAL_UPDATED = "public.listing.vacated-trial-updated";
 
     private final String hearingId;
     private final UUID courtCentreId;
     private final UUID courtRoomId;
+
+    private JmsMessageConsumerClient publicConsumerHearingUpdated;
+    private JmsMessageConsumerClient publicConsumerVacatedTrialUpdated;
 
     public MoveHearingToPastDateSteps(final HearingsData hearingsData) {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
@@ -169,6 +182,38 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
                                 withJsonPath("$.startDate", is(expectedStartDate.toString())),
                                 withJsonPath("$.hearingDays[0].hearingDate", is(expectedStartDate.toString()))
                         )));
+    }
+
+    /**
+     * Subscribes to the public topic BEFORE the move is posted — topics do not retain messages, so a
+     * consumer created after the command misses its events. Only the happy-path tests arm these;
+     * rejection tests produce no events and skip the consumers (IT guide rule 10).
+     */
+    public void armPublicEventConsumers() {
+        publicConsumerHearingUpdated = publicEvents.createPublicConsumer(PUBLIC_EVENT_HEARING_UPDATED);
+        publicConsumerVacatedTrialUpdated = publicEvents.createPublicConsumer(PUBLIC_EVENT_VACATED_TRIAL_UPDATED);
+    }
+
+    /**
+     * The cross-context contract of a move: public.listing.hearing-updated carries the moved days
+     * (progression merges it, then relays public.hearing-detail-changed to the hearing context) and
+     * must ALWAYS suppress party notifications — a past-date move never notifies. Matched by
+     * hearingId so stale events from other tests on the shared public topic are skipped.
+     */
+    public void verifyPublicHearingUpdatedWithNotificationsSuppressed(final LocalDate expectedDate) {
+        final JsonPath event = retrieveMessage(publicConsumerHearingUpdated, containsString(hearingId));
+        assertThat(event.getString("updatedHearing.id"), is(hearingId));
+        assertThat(event.getBoolean("sendNotificationToParties"), is(false));
+        assertThat(event.getString("updatedHearing.hearingDays[0].sittingDay"), startsWith(expectedDate.toString()));
+    }
+
+    /** A date move is a reschedule: vacated-trial-updated with isVacated=false clears any
+     * vacated-trial marker in progression and (for an allocated hearing) the hearing context. */
+    public void verifyPublicVacatedTrialUpdatedAsRescheduled() {
+        final JsonPath event = retrieveMessage(publicConsumerVacatedTrialUpdated, containsString(hearingId));
+        assertThat(event.getString("hearingId"), is(hearingId));
+        assertThat(event.getBoolean("isVacated"), is(false));
+        assertThat(event.getBoolean("allocated"), is(true));
     }
 
     /** Main-level startDate/endDate must track the hearing days: earliest and latest hearing-day date. */
