@@ -27,6 +27,7 @@ import static uk.gov.moj.cpp.listing.domain.CourtListType.BENCH;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.STANDARD;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.USHERS_CROWN;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.USHERS_MAGISTRATE;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.BST;
 import static uk.gov.moj.cpp.listing.domain.utils.JsonUtils.getString;
 import static uk.gov.moj.cpp.listing.domain.utils.ZonedDateTimeFormatter.adjustDateTime;
 import static uk.gov.moj.cpp.listing.query.document.generator.courtlist.Offence.offence;
@@ -288,7 +289,7 @@ public class StandardPublicCourtListTemplateAssembler {
 
         hearingsByCourtRoom.forEach(hearingJson -> {
             final List<JsonObject> hearingDays = hearingJson.getJsonArray(HEARING_DAYS).getValuesAs(JsonObject.class).stream()
-                    .filter(hd -> hearingDate.equals(ZonedDateTime.parse(hd.getString(START_TIME)).toLocalDate()))
+                    .filter(hd -> hearingDate.equals(ZonedDateTime.parse(hd.getString(START_TIME)).withZoneSameInstant(BST).toLocalDate()))
                     .filter(hd -> isBlank(getString(hd, COURT_ROOM_ID)) || courtRoomDetails.getId().equals(fromString(hd.getString(COURT_ROOM_ID))))
                     .collect(toList());
 

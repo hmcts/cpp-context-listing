@@ -155,4 +155,35 @@ class NonDefaultDayConverterTest {
         // Then
         assertThat(result, is(empty()));
     }
+
+    @Test
+    public void shouldConvertBookedSlotsToHearingDaysAndConvertTimeZone() {
+        // Given
+        List<RotaSlot> bookedSlots = new ArrayList<>();
+        String courtCentreId = UUID.randomUUID().toString();
+        String roomId = UUID.randomUUID().toString();
+        String courtScheduleId = UUID.randomUUID().toString();
+        ZonedDateTime startTime = ZonedDateTime.of(LocalDateTime.of(2026, 9, 13, 00, 00), BST).withZoneSameInstant(UTC);
+
+        RotaSlot slot = RotaSlot.rotaSlot()
+                .withCourtCentreId(courtCentreId)
+                .withRoomId(roomId)
+                .withCourtScheduleId(courtScheduleId)
+                .withStartTime(startTime)
+                .withDuration(30)
+                .build();
+        bookedSlots.add(slot);
+
+        // When
+        List<HearingDay> result = NonDefaultDayConverter.convertBookedSlotsToHearingDays(bookedSlots);
+
+        // Then
+        assertThat(result, hasSize(1));
+        assertThat(result.get(0).getCourtCentreId(), is(UUID.fromString(courtCentreId)));
+        assertThat(result.get(0).getCourtRoomId(), is(UUID.fromString(roomId)));
+        assertThat(result.get(0).getCourtScheduleId(), is(UUID.fromString(courtScheduleId)));
+        assertThat(result.get(0).getDurationMinutes(), is(30));
+        assertThat(result.get(0).getHearingDate().toString(), is("2026-09-13"));
+        assertThat(result.get(0).getStartTime(), is(startTime));
+    }
 } 

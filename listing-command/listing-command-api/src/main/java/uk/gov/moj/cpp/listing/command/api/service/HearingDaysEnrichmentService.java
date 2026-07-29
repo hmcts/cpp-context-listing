@@ -10,6 +10,7 @@ import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static uk.gov.moj.cpp.listing.command.api.ListingCommandApi.getCourtCentreId;
 import static uk.gov.moj.cpp.listing.command.api.util.NonDefaultDayConverter.convertBookedSlotsToHearingDays;
 import static uk.gov.moj.cpp.listing.command.api.util.NonDefaultDayConverter.convertCoreNonDefaultDaysToHearingDays;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.BST;
 import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.getUtcLocalTimeForDate;
 
 import uk.gov.justice.core.courts.JurisdictionType;
@@ -148,7 +149,7 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
 
             final ZonedDateTime earliestStartDateTime = firstHearingDay.getStartTime();
             final ZonedDateTime listedStartDateTime = firstHearingDay.getStartTime();
-            final LocalDate endDate = lastHearingDay.getStartTime().toLocalDate();
+            final LocalDate endDate = lastHearingDay.getStartTime().withZoneSameInstant(BST).toLocalDate();
 
             builder.withEarliestStartDateTime(earliestStartDateTime);
             builder.withListedStartDateTime(listedStartDateTime);
@@ -169,16 +170,16 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
         if (!validHearingDays.isEmpty()) {
             final HearingDay firstHearingDay = validHearingDays.get(0);
             final HearingDay lastHearingDay = validHearingDays.get(validHearingDays.size() - 1);
-            builder.withStartDate(firstHearingDay.getStartTime().toLocalDate());
-            builder.withEndDate(lastHearingDay.getStartTime().toLocalDate());
+            builder.withStartDate(firstHearingDay.getStartTime().withZoneSameInstant(BST).toLocalDate());
+            builder.withEndDate(lastHearingDay.getStartTime().withZoneSameInstant(BST).toLocalDate());
         }
     }
 
     private List<HearingDay> getValidHearingDays(List<HearingDay> hearingDays, List<LocalDate> nonSittingDays) {
         return hearingDays.stream()
                 .filter(hearingDay -> isEmpty(nonSittingDays) ||
-                        !nonSittingDays.contains(hearingDay.getStartTime().toLocalDate()))
-                .sorted(comparing(hearingDay -> hearingDay.getStartTime().toLocalDate()))
+                        !nonSittingDays.contains(hearingDay.getStartTime().withZoneSameInstant(BST).toLocalDate()))
+                .sorted(comparing(hearingDay -> hearingDay.getStartTime().withZoneSameInstant(BST).toLocalDate()))
                 .toList();
     }
 
@@ -227,14 +228,14 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
                 // Check if there's a non-default day for this date
                 final LocalDate dateForLambda = currentDate;
                 Optional<NonDefaultDay> matchingNonDefaultDay = nonDefaultDays.stream()
-                        .filter(nonDefaultDay -> nonDefaultDay.getStartTime().toLocalDate().equals(dateForLambda))
+                        .filter(nonDefaultDay -> nonDefaultDay.getStartTime().withZoneSameInstant(BST).toLocalDate().equals(dateForLambda))
                         .findFirst();
 
                 if (matchingNonDefaultDay.isPresent()) {
                     // Use the non-default day attributes
                     NonDefaultDay nonDefaultDay = matchingNonDefaultDay.get();
                     HearingDay.Builder hdbuilder = HearingDay.hearingDay()
-                            .withHearingDate(nonDefaultDay.getStartTime().toLocalDate())
+                            .withHearingDate(nonDefaultDay.getStartTime().withZoneSameInstant(BST).toLocalDate())
                             .withCourtCentreId(fromString(nonDefaultDay.getCourtCentreId()))
                             .withStartTime(nonDefaultDay.getStartTime())
                             .withDurationMinutes(nonDefaultDay.getDuration());
@@ -294,8 +295,8 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
 
     private static List<NonDefaultDay> getValidNonDefaultDays(final List<NonDefaultDay> nonDefaultDays, final LocalDate startDate, final LocalDate endDate, final List<LocalDate> nonSittingDays) {
         return nonDefaultDays.stream()
-                .filter(nonDefaultDay -> !nonDefaultDay.getStartTime().toLocalDate().isBefore(startDate) && !nonDefaultDay.getStartTime().toLocalDate().isAfter(endDate))
-                .filter(nonDefaultDay -> !nonSittingDays.contains(nonDefaultDay.getStartTime().toLocalDate()))
+                .filter(nonDefaultDay -> !nonDefaultDay.getStartTime().withZoneSameInstant(BST).toLocalDate().isBefore(startDate) && !nonDefaultDay.getStartTime().toLocalDate().isAfter(endDate))
+                .filter(nonDefaultDay -> !nonSittingDays.contains(nonDefaultDay.getStartTime().withZoneSameInstant(BST).toLocalDate()))
                 .toList();
     }
 
@@ -370,7 +371,7 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
     private List<HearingDay> convertNonDefaultDaysToHearingDays(List<NonDefaultDay> nonDefaultDays) {
         return nonDefaultDays.stream().map(nonDefaultDay -> {
             HearingDay.Builder hdbuilder = HearingDay.hearingDay();
-            hdbuilder.withHearingDate(nonDefaultDay.getStartTime().toLocalDate())
+            hdbuilder.withHearingDate(nonDefaultDay.getStartTime().withZoneSameInstant(BST).toLocalDate())
                     .withCourtCentreId(fromString(nonDefaultDay.getCourtCentreId()))
                     .withDurationMinutes(nonDefaultDay.getDuration())
                     .withStartTime(nonDefaultDay.getStartTime());
@@ -405,7 +406,7 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
             final ZonedDateTime startTime = nonNull(hearing.getListedStartDateTime()) ? hearing.getListedStartDateTime() : hearing.getEarliestStartDateTime();
             LOGGER.info("enriching HearingDays by By AllocationCandidate hearingid: {}", hearing.getId());
             builder.withHearingDays(List.of(HearingDay.hearingDay()
-                    .withHearingDate(startTime.toLocalDate())
+                    .withHearingDate(startTime.withZoneSameInstant(BST).toLocalDate())
                     .withStartTime(startTime)
                     .withCourtCentreId(hearing.getCourtCentre().getId())
                     .withCourtRoomId(hearing.getCourtCentre().getRoomId())
