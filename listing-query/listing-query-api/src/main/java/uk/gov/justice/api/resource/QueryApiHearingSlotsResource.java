@@ -26,6 +26,22 @@ import javax.ws.rs.core.Response;
 
 @Path("hearingSlots")
 public interface QueryApiHearingSlotsResource {
+    String PANEL = "panel";
+    String SESSION_START_DATE = "sessionStartDate";
+    String SESSION_END_DATE = "sessionEndDate";
+    String HEARING_START_TIME = "hearingStartTime";
+    String OU_L2_CODE = "oucodeL2Code";
+    String OUCODE = "ouCode";
+    String COURT_ROOM_ID = "courtRoomId";
+    String COURT_ROOM_NUMBER = "courtRoomNumber";
+    String BUSINESS_TYPE = "businessType";
+    String COURT_SESSION = "courtSession";
+    String IS_SLOT_BASED = "isSlotBased";
+    String SHOW_OVERBOOKED_SLOTS = "showOverbookedSlots";
+    String PAGE_SIZE = "pageSize";
+    String PAGE_NUMBER = "pageNumber";
+    String AVAILABLE_DURATION_MINS = "availableDurationMins";
+    String DURATION = "duration";
 
     @GET
     @Produces("application/vnd.listing.search.hearing.slots+json")

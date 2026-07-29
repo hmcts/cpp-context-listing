@@ -110,6 +110,7 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
         } else if (JurisdictionType.CROWN.equals(updateHearingForListing.getJurisdictionType())) {
             final List<LocalDate> nonSittingDays = enrichNonSittingDaysForCrown(updateHearingForListing);
             final List<NonDefaultDay> nonDefaultDays = enrichNonDefaultDaysForCrown(updateHearingForListing, nonSittingDays);
+            final List<HearingDay> hearingDays = enrichHearingDaysForCrown(updateHearingForListing, nonSittingDays, nonDefaultDays, courtCentreDetails);
             builder.withNonSittingDays(nonSittingDays);
             builder.withNonDefaultDays(nonDefaultDays);
             if (isCourtScheduleFirstResolved(updateHearingForListing)) {
@@ -451,6 +452,10 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
         return isEmpty(builder.build().getHearingDays());
     }
 
+    private List<uk.gov.justice.core.courts.NonDefaultDay> enrichNonDefaultDaysForCrown(HearingListingNeeds hearingListingNeeds) {
+        return null;
+    }
+
     private List<NonDefaultDay> enrichNonDefaultDaysForCrown(UpdateHearingForListing updateHearingForListing, List<LocalDate> nonSittingDays) {
         List<NonDefaultDay> validNonDefaultDays = getValidNonDefaultDays(updateHearingForListing.getNonDefaultDays(), updateHearingForListing.getStartDate(), updateHearingForListing.getEndDate(), nonSittingDays);
         return enrichValidNonDefaultDays(updateHearingForListing, validNonDefaultDays);
@@ -483,6 +488,10 @@ public class HearingDaysEnrichmentService implements EnrichmentService {
 
     static UUID getCourtRoomId(final UpdateHearingForListing updateHearingForListing) {
         return nonNull(updateHearingForListing.getSelectedCourtCentre()) ? updateHearingForListing.getSelectedCourtCentre().getCourtRoomId() : updateHearingForListing.getCourtRoomId();
+    }
+
+    private List<String> enrichNonSittingDaysForCrown(HearingListingNeeds hearingListingNeeds) {
+        return null;
     }
 
     private List<LocalDate> enrichNonSittingDaysForCrown(UpdateHearingForListing updateHearingForListing) {

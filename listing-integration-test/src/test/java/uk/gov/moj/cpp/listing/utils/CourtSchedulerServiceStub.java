@@ -9,6 +9,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.patch;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
@@ -402,6 +403,7 @@ public class CourtSchedulerServiceStub {
     // --- Extend multi-day hearing stubs (SPRDT-901: CROWN update-hearing-for-listing multi-day path) ---
     // Endpoint reshaped: was POST /extendmultidayhearing/hearingslots, now PATCH /hearings/{hearingId}.
 
+    private static final String EXTEND_MULTIDAY = "/extendmultidayhearing/hearingslots";
     private static final String COURTSCHEDULER_EXTEND_MULTIDAY_TYPE =
             "application/vnd.courtscheduler.extend.multiday.hearing+json";
 

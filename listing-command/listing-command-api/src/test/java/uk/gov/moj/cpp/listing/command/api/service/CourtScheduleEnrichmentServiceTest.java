@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.command.api.service;
 
+import uk.gov.justice.services.messaging.JsonObjects;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -49,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.inject.Inject;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
@@ -104,6 +107,7 @@ class CourtScheduleEnrichmentServiceTest {
 
     @Test
     void enrichShouldAddMultiDayParamsOnSearch() {
+        // Arrange: two hearing days -> isMultiDay = true
         final UUID hearingId = UUID.randomUUID();
         final UUID courtRoomId = UUID.randomUUID();
         final LocalDate day1 = LocalDate.now();
@@ -174,14 +178,17 @@ class CourtScheduleEnrichmentServiceTest {
                     return luh;
                 });
 
+        // Capture the search query maps for both days
         @SuppressWarnings("unchecked")
         final org.mockito.ArgumentCaptor<java.util.Map<String, String>> mapCaptor =
                 org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
 
         courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
 
+        // Assert: search() called twice (two days) and includes multi-day params
         verify(hearingSlotsService, times(2)).search(mapCaptor.capture());
 
+        // Each captured map must contain the multi-day flags
         for (java.util.Map<String, String> qp : mapCaptor.getAllValues()) {
             assertThat(qp.get("courtSession"), is("AD"));
             assertThat(qp.get("showOverbookedSlots"), is(Boolean.TRUE.toString()));
@@ -191,6 +198,7 @@ class CourtScheduleEnrichmentServiceTest {
 
     @Test
     void enrichShouldNotIncludeStartTimeForMultiDaySearch() {
+        // Arrange: two hearing days -> isMultiDay = true
         final UUID hearingId = UUID.randomUUID();
         final UUID courtRoomId = UUID.randomUUID();
         final LocalDate day1 = LocalDate.now();
@@ -261,12 +269,14 @@ class CourtScheduleEnrichmentServiceTest {
                     return luh;
                 });
 
+        // Capture the search query maps for both days
         @SuppressWarnings("unchecked")
         final org.mockito.ArgumentCaptor<java.util.Map<String, String>> mapCaptor =
                 org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
 
         courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
 
+        // Assert: search() called twice and multi-day flags present…
         verify(hearingSlotsService, times(2)).search(mapCaptor.capture());
         for (java.util.Map<String, String> qp : mapCaptor.getAllValues()) {
             assertThat(qp.get("courtSession"), is("AD"));
