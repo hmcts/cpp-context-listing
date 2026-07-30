@@ -54,6 +54,7 @@ import javax.json.JsonReader;
 import javax.ws.rs.core.Response;
 
 import io.restassured.path.json.JsonPath;
+import org.awaitility.core.ConditionTimeoutException;
 import org.custommonkey.xmlunit.XMLUnit;
 import org.custommonkey.xmlunit.XpathEngine;
 import org.hamcrest.Matchers;
@@ -115,17 +116,53 @@ public class PublishCourtListSteps extends CommonHearingSteps {
                 weekCommencing);
         final String searchCourtListUrl = String.format("%s/%s", getBaseUri(), queryPart);
 
-        final ResponseData response = pollWithDefaults(requestParams(searchCourtListUrl, MEDIA_TYPE_QUERY_COURT_LIST_STATUS).withHeader(USER_ID, getLoggedInUser()).build())
-                .until(
-                        status().is(OK),
-                        payload().isJson(allOf(
-                                withJsonPath("$.publishCourtListStatuses[*].courtCentreId", hasItem(courtCentreId)),
-                                withJsonPath("$.publishCourtListStatuses[*].publishCourtListType", hasItem(courtListType)),
-                                withJsonPath("$.publishCourtListStatuses[*].lastUpdated", hasItem(notNullValue())),
-                                withJsonPath("$.publishCourtListStatuses[*].publishStatus", hasItem(expectedPublishStatus))
-                        )));
+        final ResponseData response;
+        try {
+            response = pollWithDefaults(requestParams(searchCourtListUrl, MEDIA_TYPE_QUERY_COURT_LIST_STATUS).withHeader(USER_ID, getLoggedInUser()).build())
+                    .until(
+                            status().is(OK),
+                            payload().isJson(allOf(
+                                    withJsonPath("$.publishCourtListStatuses[*].courtCentreId", hasItem(courtCentreId)),
+                                    withJsonPath("$.publishCourtListStatuses[*].publishCourtListType", hasItem(courtListType)),
+                                    withJsonPath("$.publishCourtListStatuses[*].lastUpdated", hasItem(notNullValue())),
+                                    withJsonPath("$.publishCourtListStatuses[*].publishStatus", hasItem(expectedPublishStatus))
+                            )));
+        } catch (final ConditionTimeoutException e) {
+            // EXPORT_FAILED is a catch-all: CourtListExportService swallows every exception and only
+            // logs the cause to the Wildfly server.log. On CI that log is unreachable - there is no
+            // CPP_DOCKER_DIR on the agent, so ServerLogTestMarkerExtension is a no-op and nothing
+            // server-side reaches the build output. This query is the only channel that does, and it
+            // already carries the cause as failureMessage, so surface it here.
+            throw new AssertionError(e.getMessage()
+                    + System.lineSeparator()
+                    + "Expected publishStatus " + expectedPublishStatus + ". Last known court list publish status: "
+                    + describeCourtListPublishStatuses(searchCourtListUrl), e);
+        }
 
         jsonFromString(response.getPayload());
+    }
+
+    /**
+     * Re-reads the publish status query once, after a poll has already timed out, purely to put the
+     * server-side failure cause into the assertion message. Never throws - a diagnostic that fails
+     * must not mask the original timeout.
+     */
+    private String describeCourtListPublishStatuses(final String searchCourtListUrl) {
+        try {
+            final Response response = restClient.query(searchCourtListUrl, MEDIA_TYPE_QUERY_COURT_LIST_STATUS, getLoggedInHeader());
+            final String payload = response.readEntity(String.class);
+
+            if (response.getStatus() != OK.getStatusCode()) {
+                return String.format("query returned HTTP %d - %s", response.getStatus(), payload);
+            }
+
+            final JsonPath statuses = JsonPath.from(payload);
+            return String.format("publishStatus=%s failureMessage=%s",
+                    statuses.getList("publishCourtListStatuses.publishStatus"),
+                    statuses.getList("publishCourtListStatuses.failureMessage"));
+        } catch (final Exception e) {
+            return "could not be read - " + e;
+        }
     }
 
     public void createMessageConsumer() {

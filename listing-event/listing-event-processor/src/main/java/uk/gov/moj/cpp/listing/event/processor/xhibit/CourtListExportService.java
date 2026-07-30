@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit;
 
-import static org.apache.commons.lang3.exception.ExceptionUtils.getMessage;
+import static java.util.stream.Collectors.joining;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.xhibit.XhibitService;
@@ -11,10 +11,12 @@ import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListR
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.List;
 
 import javax.inject.Inject;
 import javax.json.JsonObject;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 
 public class CourtListExportService {
@@ -56,7 +58,25 @@ public class CourtListExportService {
         } catch (final Exception e) {
             logger.error("Court List export failed", e);
             publishCourtListCommandSender.recordCourtListExportFailed(parameters,
-                    getMessage(e), "NONE");
+                    exportFailureDetail(e), "NONE");
         }
+    }
+
+    /**
+     * The recorded errorMessage is the only diagnostic that escapes this service on CI, where the
+     * Wildfly server.log is not reachable from the build agent. {@code getMessage(e)} alone reports
+     * only the outermost wrapper - typically an EJBException, which hides the real fault - so record
+     * the whole causal chain plus the frame the root cause was thrown from.
+     */
+    private String exportFailureDetail(final Exception e) {
+        final List<Throwable> causalChain = ExceptionUtils.getThrowableList(e);
+
+        final String messages = causalChain.stream()
+                .map(ExceptionUtils::getMessage)
+                .collect(joining(" | caused by: "));
+
+        final StackTraceElement[] rootCauseTrace = causalChain.get(causalChain.size() - 1).getStackTrace();
+
+        return rootCauseTrace.length == 0 ? messages : messages + " | at " + rootCauseTrace[0];
     }
 }
