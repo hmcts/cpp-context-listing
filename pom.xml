@@ -11,7 +11,11 @@
 
     <groupId>uk.gov.moj.cpp.listing</groupId>
     <artifactId>listing-parent</artifactId>
+<<<<<<< HEAD
     <version>17.104.5-DD-41473-SNAPSHOT</version>
+=======
+    <version>17.104.6-SNAPSHOT</version>
+>>>>>>> 4660ea490a (updating poms for 17.104.6 branch with snapshot versions)
     <packaging>pom</packaging>
 
     <name>Listing Context Microservice Parent</name>
