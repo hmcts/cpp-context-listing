@@ -47,6 +47,7 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     private static final String ACTION_MIGRATE_CROWN_HEARINGS_TO_COURTSCHEDULES = "listing.migrate-crown-hearings-to-courtschedules";
     private static final String ACTION_DELETE_HEARING = "listing.command.delete-hearing";
     private static final String ACTION_DELETE_PREVIOUS_HEARINGS_AND_CREATE_NEXT_HEARING = "listing.delete-previous-hearings-and-create-next-hearing";
+    private static final String ACTION_MOVE_HEARING_TO_PAST_DATE = "listing.command.move-hearing-to-past-date";
 
 
 
@@ -323,6 +324,27 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     public void shouldNotAllowNonSystemUserToDeleteHearing() {
         final Action action = createActionFor(ACTION_DELETE_HEARING);
         given(userAndGroupProvider.isSystemUser(action)).willReturn(false);
+
+        final ExecutionResults results = executeRulesWith(action);
+
+        assertFailureOutcome(results);
+    }
+
+    @Test
+    public void shouldAllowAuthorisedUserToMoveHearingToPastDate() {
+        final Action action = createActionFor(ACTION_MOVE_HEARING_TO_PAST_DATE);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
+                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, COURT_CLERKS, LEGAL_ADVISERS, COURT_ASSOCIATE))
+                .willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldNotAllowUnauthorisedUserToMoveHearingToPastDate() {
+        final Action action = createActionFor(ACTION_MOVE_HEARING_TO_PAST_DATE);
 
         final ExecutionResults results = executeRulesWith(action);
 
