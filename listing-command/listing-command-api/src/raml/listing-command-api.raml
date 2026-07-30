@@ -104,6 +104,9 @@ protocols: [ HTTP, HTTPS ]
         requestType: application/vnd.listing.command.vacate-trial+json
         name: listing.command.vacate-trial
       (mapping):
+        requestType: application/vnd.listing.command.move-hearing-to-past-date+json
+        name: listing.command.move-hearing-to-past-date
+      (mapping):
         requestType: application/vnd.listing.duplicate-unallocated-hearing+json
         name: listing.mark-unallocated-hearing-as-duplicate
       (mapping):
@@ -144,6 +147,9 @@ protocols: [ HTTP, HTTPS ]
       application/vnd.listing.command.vacate-trial+json:
         example: !include json/listing.command.vacate-trial.json
         schema: !include json/schema/listing.command.vacate-trial.json
+      application/vnd.listing.command.move-hearing-to-past-date+json:
+        example: !include json/listing.command.move-hearing-to-past-date.json
+        schema: !include json/schema/listing.command.move-hearing-to-past-date.json
       application/vnd.listing.duplicate-unallocated-hearing+json: !!null
       application/vnd.listing.next-hearings-v2+json:
         example: !include json/listing.list-next-hearings-v2.json
@@ -292,6 +298,25 @@ protocols: [ HTTP, HTTPS ]
         application/vnd.listing.update-hearing-day-court-schedule+json:
             schema: !include json/schema/listing.update-hearing-day-court-schedule.json
             example: !include json/listing.update-hearing-day-court-schedule.json
+
+      responses:
+        202:
+          description: Request accepted
+
+/migrate-crown-hearings-to-courtschedules:
+   post:
+      description: |
+        Bulk-assign courtScheduleId to CROWN hearing days during court-schedule migration.
+        For each hearing, sets only the courtScheduleId on the matching hearing day; all other attributes are unchanged.
+        ...
+        (mapping):
+          requestType: application/vnd.listing.migrate-crown-hearings-to-courtschedules+json
+          name: listing.migrate-crown-hearings-to-courtschedules
+        ...
+      body:
+        application/vnd.listing.migrate-crown-hearings-to-courtschedules+json:
+            schema: !include json/schema/listing.migrate-crown-hearings-to-courtschedules.json
+            example: !include json/listing.migrate-crown-hearings-to-courtschedules.json
 
       responses:
         202:
