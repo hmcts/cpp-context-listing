@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/listing.migrate-crown-hearings-to-courtschedules.json",
+  "type": "object",
+  "properties": {
+    "hearings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/courts/migrate-crown-hearing.json"
+      }
+    }
+  },
+  "required": [
+    "hearings"
+  ],
+  "additionalProperties": false
+}

@@ -39,6 +39,8 @@ import uk.gov.justice.listing.events.CaseIdentifierUpdated;
 import uk.gov.justice.listing.events.CasesAddedToHearing;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
 import uk.gov.justice.listing.events.CourtListRestricted;
+import uk.gov.justice.listing.events.CrownHearingMigratedToCourtschedule;
+import uk.gov.justice.listing.events.HearingDayCourtSchedule;
 import uk.gov.justice.listing.events.CourtRoomRemovedFromHearing;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdatedV2;
@@ -61,6 +63,7 @@ import uk.gov.justice.listing.events.JudiciaryChangedForHearingsStatus;
 import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
 import uk.gov.justice.listing.events.NewDefendantDetailsUpdated;
+import uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing;
 import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.listing.events.OffenceAdded;
 import uk.gov.justice.listing.events.OffenceDeleted;
@@ -151,6 +154,105 @@ class HearingAggregateTest {
 
     private static final Logger LOGGER = Logger.getLogger(HearingAggregateTest.class.getName());
 
+    @Test
+    public void shouldRaiseCrownHearingMigratedToCourtScheduleEvent() {
+        final UUID courtScheduleId = randomUUID();
+        final LocalDate hearingDate = now();
+        final List<HearingDayCourtSchedule> schedules =
+                singletonList(new HearingDayCourtSchedule(courtScheduleId, hearingDate));
+
+        final List<Object> events = hearing.raiseCrownHearingMigratedToCourtSchedule(hearingId, schedules)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(CrownHearingMigratedToCourtschedule.class));
+        final CrownHearingMigratedToCourtschedule event = (CrownHearingMigratedToCourtschedule) events.get(0);
+        assertThat(event.getHearingId(), is(hearingId));
+        assertThat(event.getHearingDayCourtSchedules(), hasSize(1));
+        assertThat(event.getHearingDayCourtSchedules().get(0).getCourtScheduleId(), is(courtScheduleId));
+        assertThat(event.getHearingDayCourtSchedules().get(0).getHearingDate(), is(hearingDate));
+    }
+
+    @Test
+    public void shouldOnlySetCourtScheduleIdOnMatchingDayLeavingAllOtherHearingDayAndNonDefaultDayFieldsUnchanged() {
+        final LocalDate migratedDate = LocalDate.of(2027, 8, 17);
+        final LocalDate untouchedDate = LocalDate.of(2027, 8, 18);
+        final ZonedDateTime migratedStart = ZonedDateTime.of(migratedDate, LocalTime.of(10, 0), UTC);
+        final ZonedDateTime untouchedStart = ZonedDateTime.of(untouchedDate, LocalTime.of(10, 0), UTC);
+
+        final UUID oldScheduleId1 = randomUUID();
+        final UUID oldScheduleId2 = randomUUID();
+        final UUID newScheduleId = randomUUID();
+        final UUID roomId1 = randomUUID();
+        final UUID roomId2 = randomUUID();
+        final UUID centreId1 = randomUUID();
+        final UUID centreId2 = randomUUID();
+
+        // Seed hearingDays (+ currentHearingEventState) with two CROWN days, each already carrying a courtScheduleId.
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().withDescription("First Hearing").build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(List.of(
+                                HearingDay.hearingDay().withHearingDate(migratedDate).withStartTime(migratedStart)
+                                        .withDurationMinutes(60).withCourtScheduleId(oldScheduleId1)
+                                        .withCourtRoomId(roomId1).withCourtCentreId(centreId1).build(),
+                                HearingDay.hearingDay().withHearingDate(untouchedDate).withStartTime(untouchedStart)
+                                        .withDurationMinutes(90).withCourtScheduleId(oldScheduleId2)
+                                        .withCourtRoomId(roomId2).withCourtCentreId(centreId2).build()))
+                        .build())
+                .build());
+
+        // Seed full-fidelity nonDefaultDays (session/oucode/duration/courtScheduleId) matching the same two days.
+        hearing.apply(NonDefaultDaysAssignedToHearing.nonDefaultDaysAssignedToHearing()
+                .withHearingId(hearingId)
+                .withIsPublicEvent(false)
+                .withNonDefaultDays(List.of(
+                        uk.gov.justice.listing.events.NonDefaultDay.nonDefaultDay()
+                                .withStartTime(migratedStart).withDuration(60).withSession("AM").withOucode("OU1")
+                                .withCourtScheduleId(oldScheduleId1.toString()).build(),
+                        uk.gov.justice.listing.events.NonDefaultDay.nonDefaultDay()
+                                .withStartTime(untouchedStart).withDuration(90).withSession("PM").withOucode("OU2")
+                                .withCourtScheduleId(oldScheduleId2.toString()).build()))
+                .build());
+
+        // Migrate: supply a new courtScheduleId only for the first day.
+        hearing.raiseCrownHearingMigratedToCourtSchedule(hearingId,
+                        singletonList(new HearingDayCourtSchedule(newScheduleId, migratedDate)))
+                .collect(Collectors.toList());
+
+        final uk.gov.justice.listing.events.Hearing state = hearing.getCurrentHearingEventState();
+
+        // --- hearingDays: only the matching day's courtScheduleId changes; everything else is preserved ---
+        final HearingDay migratedDay = state.getHearingDays().stream()
+                .filter(hd -> migratedDate.equals(hd.getHearingDate())).findFirst().get();
+        final HearingDay untouchedDay = state.getHearingDays().stream()
+                .filter(hd -> untouchedDate.equals(hd.getHearingDate())).findFirst().get();
+
+        assertThat(migratedDay.getCourtScheduleId(), is(newScheduleId));
+        assertThat(migratedDay.getCourtRoomId(), is(roomId1));
+        assertThat(migratedDay.getCourtCentreId(), is(centreId1));
+        assertThat(migratedDay.getDurationMinutes(), is(60));
+        assertThat(untouchedDay.getCourtScheduleId(), is(oldScheduleId2));
+        assertThat(untouchedDay.getCourtRoomId(), is(roomId2));
+        assertThat(untouchedDay.getCourtCentreId(), is(centreId2));
+
+        // --- nonDefaultDays: same guarantee, including the non-courtScheduleId fields (session/oucode/duration) ---
+        final uk.gov.justice.listing.events.NonDefaultDay migratedNonDefaultDay = state.getNonDefaultDays().stream()
+                .filter(nd -> migratedDate.equals(nd.getStartTime().toLocalDate())).findFirst().get();
+        final uk.gov.justice.listing.events.NonDefaultDay untouchedNonDefaultDay = state.getNonDefaultDays().stream()
+                .filter(nd -> untouchedDate.equals(nd.getStartTime().toLocalDate())).findFirst().get();
+
+        assertThat(migratedNonDefaultDay.getCourtScheduleId(), is(newScheduleId.toString()));
+        assertThat(migratedNonDefaultDay.getSession(), is("AM"));
+        assertThat(migratedNonDefaultDay.getOucode(), is("OU1"));
+        assertThat(migratedNonDefaultDay.getDuration(), is(60));
+        assertThat(untouchedNonDefaultDay.getCourtScheduleId(), is(oldScheduleId2.toString()));
+        assertThat(untouchedNonDefaultDay.getSession(), is("PM"));
+        assertThat(untouchedNonDefaultDay.getOucode(), is("OU2"));
+    }
 
 
 
