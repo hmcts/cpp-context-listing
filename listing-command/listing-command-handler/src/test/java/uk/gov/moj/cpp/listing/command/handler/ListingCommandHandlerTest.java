@@ -4486,14 +4486,22 @@ class ListingCommandHandlerTest {
 
         @SuppressWarnings("unchecked")
         final ArgumentCaptor<List<NonDefaultDay>> nonDefaultDaysCaptor = ArgumentCaptor.forClass(List.class);
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<List<uk.gov.justice.core.courts.RotaSlot>> bookedSlotsCaptor = ArgumentCaptor.forClass(List.class);
         when(hearing.listForSplit(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                nonDefaultDaysCaptor.capture(), any())).thenReturn(Stream.of());
+                nonDefaultDaysCaptor.capture(), any(), bookedSlotsCaptor.capture())).thenReturn(Stream.of());
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
         assertThat("virtual nonDefaultDays are courtscheduler booking proxies and must not be persisted "
                         + "as nonDefaultDays on the new split hearing",
                 nonDefaultDaysCaptor.getValue(), hasSize(0));
+        assertThat("the booked courtscheduler sessions on the enriched hearingDays must ride on "
+                        + "bookedSlots so the new split hearing is listed allocated on them (multiday)",
+                bookedSlotsCaptor.getValue(), hasSize(1));
+        assertThat(bookedSlotsCaptor.getValue().get(0).getCourtScheduleId(), is(COURT_SCHEDULE_ID_1.toString()));
+        assertThat(bookedSlotsCaptor.getValue().get(0).getDuration(), is(360));
+        assertThat(bookedSlotsCaptor.getValue().get(0).getRoomId(), is(COURT_ROOM_ID.toString()));
     }
 
     @Test
@@ -4509,13 +4517,18 @@ class ListingCommandHandlerTest {
 
         @SuppressWarnings("unchecked")
         final ArgumentCaptor<List<NonDefaultDay>> nonDefaultDaysCaptor = ArgumentCaptor.forClass(List.class);
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<List<uk.gov.justice.core.courts.RotaSlot>> bookedSlotsCaptor = ArgumentCaptor.forClass(List.class);
         when(hearing.listForSplit(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                nonDefaultDaysCaptor.capture(), any())).thenReturn(Stream.of());
+                nonDefaultDaysCaptor.capture(), any(), bookedSlotsCaptor.capture())).thenReturn(Stream.of());
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
         assertThat(nonDefaultDaysCaptor.getValue(), hasSize(1));
         assertThat(nonDefaultDaysCaptor.getValue().get(0).getRoomId(), is(of(COURT_ROOM_ID.toString())));
+        // booked sessions on hearingDays are carried as bookedSlots on the non-virtual path too
+        assertThat(bookedSlotsCaptor.getValue(), hasSize(1));
+        assertThat(bookedSlotsCaptor.getValue().get(0).getCourtScheduleId(), is(COURT_SCHEDULE_ID_1.toString()));
     }
 
     @Test

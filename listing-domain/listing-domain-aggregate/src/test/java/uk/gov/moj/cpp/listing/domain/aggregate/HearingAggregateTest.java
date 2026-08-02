@@ -2885,7 +2885,7 @@ class HearingAggregateTest {
         nonDefaultDays.add(nonDefaultDay);
 
         final Stream<Object> listedHearing = hearing.listForSplit(type, listedCases, courtCentreId, "court name", courtRoomId, jurisdictionType, startDate,
-                null, null, emptyList(), nonDefaultDays, 90);
+                null, null, emptyList(), nonDefaultDays, 90, emptyList());
 
         final HearingRequestedForListing hearingRequestedForListing = listedHearing.findFirst().map(HearingRequestedForListing.class::cast).get();
 
@@ -2930,7 +2930,7 @@ class HearingAggregateTest {
 
         final LocalDate weekCommencingStartDate = LocalDate.now();
         final Stream<Object> listedHearing = hearing.listForSplit(type, listedCases, courtCentreId, "court name", courtRoomId, jurisdictionType, startDate,
-                weekCommencingStartDate, 1, emptyList(), nonDefaultDays, 120);
+                weekCommencingStartDate, 1, emptyList(), nonDefaultDays, 120, emptyList());
 
         final HearingRequestedForListing hearingRequestedForListing = listedHearing.findFirst().map(HearingRequestedForListing.class::cast).get();
 
@@ -8466,11 +8466,56 @@ class HearingAggregateTest {
 
         final Stream<Object> listedHearing = hearing.listForSplit(type, splitListedCases, courtCentreId,
                 "court name", courtRoomId, jurisdictionType, ZonedDateTime.now(),
-                null, null, emptyList(), emptyList(), hearingTypeDuration);
+                null, null, emptyList(), emptyList(), hearingTypeDuration, emptyList());
 
         final HearingRequestedForListing requested = listedHearing.findFirst()
                 .map(HearingRequestedForListing.class::cast).orElseThrow();
         assertThat(requested.getListNewHearing().getEstimatedMinutes(), is(expected));
+    }
+
+    // Multiday split (court-calendar CROWN): the booked sessions must ride on bookedSlots and their
+    // total duration must become the request's estimatedMinutes, so the returning list-court-hearing
+    // takes the CROWN multi-day CourtSchedule-first path and lists the new hearing ALLOCATED.
+    @Test
+    void shouldCarryBookedSlotsAndTheirTotalDurationOnListForSplit() {
+        final List<uk.gov.justice.listing.events.ListedCase> splitListedCases = singletonList(uk.gov.justice.listing.events.ListedCase
+                .listedCase()
+                .withId(randomUUID())
+                .withDefendants(singletonList(Defendant.defendant()
+                        .withId(randomUUID())
+                        .withOffences(singletonList(Offence.offence()
+                                .withId(randomUUID())
+                                .build()))
+                        .build()))
+                .build());
+
+        final String courtScheduleId1 = randomUUID().toString();
+        final String courtScheduleId2 = randomUUID().toString();
+        final List<uk.gov.justice.core.courts.RotaSlot> bookedSlots = asList(
+                uk.gov.justice.core.courts.RotaSlot.rotaSlot()
+                        .withCourtScheduleId(courtScheduleId1)
+                        .withStartTime(ZonedDateTime.now())
+                        .withDuration(360)
+                        .build(),
+                uk.gov.justice.core.courts.RotaSlot.rotaSlot()
+                        .withCourtScheduleId(courtScheduleId2)
+                        .withStartTime(ZonedDateTime.now().plusDays(1))
+                        .withDuration(360)
+                        .build());
+
+        final Stream<Object> listedHearing = hearing.listForSplit(type, splitListedCases, courtCentreId,
+                "court name", courtRoomId, jurisdictionType, ZonedDateTime.now(),
+                null, null, emptyList(), emptyList(), 90, bookedSlots);
+
+        final HearingRequestedForListing requested = listedHearing.findFirst()
+                .map(HearingRequestedForListing.class::cast).orElseThrow();
+        assertThat(requested.getListNewHearing().getBookedSlots().size(), is(2));
+        assertThat(requested.getListNewHearing().getBookedSlots().get(0).getCourtScheduleId(), is(courtScheduleId1));
+        assertThat(requested.getListNewHearing().getBookedSlots().get(1).getCourtScheduleId(), is(courtScheduleId2));
+        // total booked duration wins over hearingTypeDuration
+        assertThat(requested.getListNewHearing().getEstimatedMinutes(), is(720));
+        // SPRDT-1169 still holds: no nonDefaultDays on the request
+        assertThat(requested.getListNewHearing().getNonDefaultDays(), is(nullValue()));
     }
 
     // SPRDT-807 defence in depth — onHearingListed must never leave this.estimatedMinutes as null/0/1.
