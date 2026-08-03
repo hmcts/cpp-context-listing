@@ -1204,16 +1204,14 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     .withValuesFrom(hd)
                     .withHearingDate(session.getSessionDate())
                     .withIsDraft(session.isDraft());
+            if (nonNull(session.getCourtHouseId())) {
+                builder.withCourtCentreId(fromString(session.getCourtHouseId()));
+            }
             if (session.isDraft()) {
                 // Draft sessions: clear any inherited courtRoomId — room is not confirmed
                 builder.withCourtRoomId(null);
-            } else {
-                if (nonNull(session.getCourtRoomId())) {
-                    builder.withCourtRoomId(fromString(session.getCourtRoomId()));
-                }
-                if (nonNull(session.getCourtHouseId())) {
-                    builder.withCourtCentreId(fromString(session.getCourtHouseId()));
-                }
+            } else if (nonNull(session.getCourtRoomId())) {
+                builder.withCourtRoomId(fromString(session.getCourtRoomId()));
             }
             if (nonNull(session.getHearingStartTime())) {
                 builder.withStartTime(ZonedDateTime.parse(session.getHearingStartTime()));
