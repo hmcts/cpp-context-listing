@@ -168,6 +168,8 @@ class CrownUpdateHearingScheduleOnlyIT extends AbstractIT {
 
         // The update must project (startDate moves) with the hearing UNALLOCATED and ROOMLESS —
         // the draft schedule id lands on the day, but no courtroom may appear at any level.
+        // courtCentreId IS expected on the day (derived from the resolved session's courtHouseId
+        // regardless of draft status — see shouldSetCourtCentreIdOnHearingDays_whenSingleDayScheduleOnlyPayloadResolvesToDraftSession).
         pollHearingView(hearingId)
                 .until(
                         ResponseStatusMatcher.status().is(Status.OK),
@@ -180,6 +182,8 @@ class CrownUpdateHearingScheduleOnlyIT extends AbstractIT {
                                         JsonPathMatchers.hasNoJsonPath("$.courtRoomId"),
                                         JsonPathMatchers.withJsonPath("$.hearingDays[0].courtScheduleId",
                                                 is(draftCourtScheduleId.toString())),
+                                        JsonPathMatchers.withJsonPath("$.hearingDays[0].courtCentreId",
+                                                is(courtHouseId.toString())),
                                         JsonPathMatchers.hasNoJsonPath("$.hearingDays[0].courtRoomId"))));
     }
 
@@ -230,6 +234,61 @@ class CrownUpdateHearingScheduleOnlyIT extends AbstractIT {
                                         JsonPathMatchers.withJsonPath("$.allocated",
                                                 is(false)),
                                         JsonPathMatchers.hasNoJsonPath("$.courtRoomId"),
+                                        JsonPathMatchers.withJsonPath("$.hearingDays[0].courtCentreId",
+                                                is(scheduleCourtHouseId.toString())),
+                                        JsonPathMatchers.hasNoJsonPath("$.hearingDays[0].courtRoomId"))));
+    }
+
+    @Test
+    void shouldSetCourtCentreIdOnHearingDays_whenSingleDayScheduleOnlyPayloadResolvesToDraftSession() throws Exception {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID scheduleCourtHouseId = UUID.randomUUID();
+        final UUID draftCourtScheduleId = UUID.randomUUID();
+
+        final LocalDate targetDate = ItClock.plusWorkingDays(ItClock.today(), 10);
+        final ZonedDateTime sessionStart = targetDate.atTime(9, 0).atZone(ZoneOffset.UTC);
+
+        // DRAFT session: by-id resolution returns isDraft=true and NO courtroom (room-sanitised),
+        // but DOES carry a courtHouseId distinct from the payload's own courtCentreId — the fix
+        // must derive hearingDays[0].courtCentreId from this session value regardless of draft status.
+        stubSearchCourtSchedulesByIdSession(
+                draftCourtScheduleId.toString(),
+                scheduleCourtHouseId,
+                null,
+                targetDate,
+                sessionStart,
+                true);
+        stubListHearingInCourtSessionsForCourtSchedule(
+                hearingId.toString(),
+                draftCourtScheduleId.toString(),
+                sessionStart);
+
+        givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+        givenARealHearingExists(hearingId);
+        givenReferenceDataStubsForUpdateHearing(courtCentreId, UUID.randomUUID());
+
+        AbstractIT.restClient.postCommand(
+                buildUpdateHearingUrl(hearingId),
+                MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
+                scheduleOnlyPayload(courtCentreId, targetDate, draftCourtScheduleId),
+                getLoggedInHeader());
+
+        // After the fix: courtCentreId must appear on the hearing day (derived from the session's
+        // courtHouseId, regardless of draft status). The hearing itself stays UNALLOCATED and
+        // ROOMLESS — draft sessions never confirm a room.
+        pollHearingView(hearingId)
+                .until(
+                        ResponseStatusMatcher.status().is(Status.OK),
+                        ResponsePayloadMatcher.payload()
+                                .isJson(allOf(
+                                        JsonPathMatchers.withJsonPath("$.startDate",
+                                                is(targetDate.toString())),
+                                        JsonPathMatchers.withJsonPath("$.allocated",
+                                                is(false)),
+                                        JsonPathMatchers.hasNoJsonPath("$.courtRoomId"),
+                                        JsonPathMatchers.withJsonPath("$.hearingDays[0].courtScheduleId",
+                                                is(draftCourtScheduleId.toString())),
                                         JsonPathMatchers.withJsonPath("$.hearingDays[0].courtCentreId",
                                                 is(scheduleCourtHouseId.toString())),
                                         JsonPathMatchers.hasNoJsonPath("$.hearingDays[0].courtRoomId"))));
