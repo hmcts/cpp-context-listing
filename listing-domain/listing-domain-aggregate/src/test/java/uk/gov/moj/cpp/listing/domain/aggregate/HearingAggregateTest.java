@@ -8518,6 +8518,62 @@ class HearingAggregateTest {
         assertThat(requested.getListNewHearing().getNonDefaultDays(), is(nullValue()));
     }
 
+    // bookedSlots without usable durations must not zero the estimate — fall back to hearingTypeDuration.
+    @Test
+    void shouldFallBackToHearingTypeDurationWhenBookedSlotsCarryNoDurationsOnListForSplit() {
+        final List<uk.gov.justice.listing.events.ListedCase> splitListedCases = singletonList(uk.gov.justice.listing.events.ListedCase
+                .listedCase()
+                .withId(randomUUID())
+                .withDefendants(singletonList(Defendant.defendant()
+                        .withId(randomUUID())
+                        .withOffences(singletonList(Offence.offence()
+                                .withId(randomUUID())
+                                .build()))
+                        .build()))
+                .build());
+
+        final List<uk.gov.justice.core.courts.RotaSlot> slotsWithoutDurations = singletonList(
+                uk.gov.justice.core.courts.RotaSlot.rotaSlot()
+                        .withCourtScheduleId(randomUUID().toString())
+                        .withStartTime(ZonedDateTime.now())
+                        .build());
+
+        final Stream<Object> listedHearing = hearing.listForSplit(type, splitListedCases, courtCentreId,
+                "court name", courtRoomId, jurisdictionType, ZonedDateTime.now(),
+                null, null, emptyList(), emptyList(), 90, slotsWithoutDurations);
+
+        final HearingRequestedForListing requested = listedHearing.findFirst()
+                .map(HearingRequestedForListing.class::cast).orElseThrow();
+        // slots still ride on the request (courtScheduleId is the allocation anchor downstream)
+        assertThat(requested.getListNewHearing().getBookedSlots().size(), is(1));
+        // but the estimate falls back to the hearing type duration rather than 0
+        assertThat(requested.getListNewHearing().getEstimatedMinutes(), is(90));
+    }
+
+    // No booked sessions (legacy split shape) — the request must carry no bookedSlots at all.
+    @Test
+    void shouldNotSetBookedSlotsOnListForSplitWhenNoneProvided() {
+        final List<uk.gov.justice.listing.events.ListedCase> splitListedCases = singletonList(uk.gov.justice.listing.events.ListedCase
+                .listedCase()
+                .withId(randomUUID())
+                .withDefendants(singletonList(Defendant.defendant()
+                        .withId(randomUUID())
+                        .withOffences(singletonList(Offence.offence()
+                                .withId(randomUUID())
+                                .build()))
+                        .build()))
+                .build());
+
+        final Stream<Object> listedHearing = hearing.listForSplit(type, splitListedCases, courtCentreId,
+                "court name", courtRoomId, jurisdictionType, ZonedDateTime.now(),
+                null, null, emptyList(), emptyList(), 90, emptyList());
+
+        final HearingRequestedForListing requested = listedHearing.findFirst()
+                .map(HearingRequestedForListing.class::cast).orElseThrow();
+        assertThat(requested.getListNewHearing().getBookedSlots(), is(nullValue()));
+        assertThat(requested.getListNewHearing().getEstimatedMinutes(), is(90));
+    }
+
     // SPRDT-807 defence in depth — onHearingListed must never leave this.estimatedMinutes as null/0/1.
     @Test
     void shouldCoerceNullEstimatedMinutesOnHearingListedToDefaultMin() {
