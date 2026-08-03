@@ -4,14 +4,14 @@
     <parent>
         <groupId>uk.gov.moj.cpp.common</groupId>
         <artifactId>service-parent-pom</artifactId>
-        <version>17.103.8</version>
+        <version>17.104.1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
 
     <groupId>uk.gov.moj.cpp.listing</groupId>
     <artifactId>listing-parent</artifactId>
-    <version>17.103.209-CCSPH2N-SNAPSHOT</version>
+    <version>17.104.4-CCSPH2N-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Listing Context Microservice Parent</name>
