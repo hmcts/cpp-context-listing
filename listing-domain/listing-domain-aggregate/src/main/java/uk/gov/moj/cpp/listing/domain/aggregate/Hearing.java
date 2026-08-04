@@ -515,7 +515,8 @@ public class Hearing implements Aggregate {
                                        final Integer weekCommencingDurationInWeeks,
                                        final List<uk.gov.justice.core.courts.JudicialRole> judiciary,
                                        final List<NonDefaultDay> nonDefaultDays,
-                                       final Integer hearingTypeDuration) {
+                                       final Integer hearingTypeDuration,
+                                       final List<uk.gov.justice.core.courts.RotaSlot> bookedSlots) {
 
         if (this.duplicate || this.deleted) {
             return Stream.empty();
@@ -525,9 +526,22 @@ public class Hearing implements Aggregate {
                 .withRoomId(courtRoomId)
                 .withName(courtCenterName).build();
 
+        // When the split carries booked courtscheduler sessions (court-calendar CROWN flow), the
+        // sessions' total duration is the authoritative estimate: it is what makes the returning
+        // list-court-hearing take the multi-day path (> MINUTES_IN_DAY) instead of defaulting to a
+        // single-day hearing of hearingTypeDuration.
+        final int bookedSlotsTotalDuration = isNotEmpty(bookedSlots)
+                ? bookedSlots.stream()
+                        .mapToInt(slot -> slot.getDuration() != null ? slot.getDuration() : 0)
+                        .sum()
+                : 0;
+        final Integer splitEstimatedMinutes = bookedSlotsTotalDuration > 0
+                ? coerceToValidDuration(bookedSlotsTotalDuration)
+                : coerceToValidDuration(hearingTypeDuration);
+
         final CourtHearingRequest.Builder builder = CourtHearingRequest.courtHearingRequest();
         builder.withCourtCentre(defaultCourtCentre)
-                .withEstimatedMinutes(coerceToValidDuration(hearingTypeDuration))
+                .withEstimatedMinutes(splitEstimatedMinutes)
                 .withHearingType(HearingType.hearingType()
                         .withId(type.getId())
                         .withDescription(type.getDescription())
@@ -542,6 +556,15 @@ public class Hearing implements Aggregate {
 
         if (isNotEmpty(nonDefaultDays)) {
             builder.withNonDefaultDays(convertDomainToCore(nonDefaultDays));
+        }
+
+        // Carry the already-booked courtscheduler sessions on bookedSlots so the CROWN
+        // CourtSchedule-first flow (progression round-trip -> list-court-hearing) can anchor
+        // multiDaySearchAndBook / listHearingInCourtSessions off their courtScheduleIds and list the
+        // new hearing ALLOCATED on the selected room and days, rather than falling back to a draft
+        // single-day search. Virtual nonDefaultDay proxies are still never persisted (SPRDT-1169).
+        if (isNotEmpty(bookedSlots)) {
+            builder.withBookedSlots(bookedSlots);
         }
 
         if (nonNull(weekCommencingStartDate)) {

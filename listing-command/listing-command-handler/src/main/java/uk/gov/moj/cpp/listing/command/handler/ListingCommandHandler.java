@@ -739,6 +739,14 @@ public class ListingCommandHandler {
             final List<NonDefaultDay> splitNonDefaultDays = hasVirtualNonDefaultDays
                     ? emptyList()
                     : convertCommandHearingDaysToDomainNonDefaultDays(hearingDays);
+            // The enriched hearingDays carry the courtscheduler sessions already booked for the
+            // split (courtScheduleId per day). Carry them as bookedSlots on the new hearing's
+            // CourtHearingRequest — progression forwards bookedSlots onto the returning
+            // list-court-hearing, whose CROWN CourtSchedule-first flow then lists the new hearing
+            // ALLOCATED on those sessions (multi-day when their total duration spans multiple days).
+            // Without this the request carries no session info and the new hearing falls back to a
+            // draft single-day search: single-day, unallocated, no Manage Hearing link (CAAG).
+            final List<uk.gov.justice.core.courts.RotaSlot> splitBookedSlots = convertCommandHearingDaysToBookedSlots(hearingDays);
             updateHearingEventStream(command, eventStream, hearingAggregate, (Hearing hearing) -> {
                 final Stream<Object> hearingListedEvent = hearing.listForSplit(type,
                         listedCases,
@@ -751,7 +759,8 @@ public class ListingCommandHandler {
                         weekCommencingDurationInWeeks,
                         judiciaryInfoByUpdate,
                         splitNonDefaultDays,
-                        hearingTypeDuration);
+                        hearingTypeDuration,
+                        splitBookedSlots);
                 return Stream.of(hearingListedEvent).flatMap(i -> i);
             });
         }
@@ -1777,6 +1786,29 @@ public class ListingCommandHandler {
                     .build()).toList();
         }
         return domainNonDefaultDays;
+    }
+
+    /**
+     * Builds bookedSlots for the split's new-hearing request from the enriched hearingDays.
+     * Only days that carry a courtScheduleId (a courtscheduler session booked for the split —
+     * the court-calendar CROWN shape) become slots; a payload without booked sessions yields an
+     * empty list and the request falls back to the legacy behaviour. startTime is mandatory on
+     * RotaSlot, so days without one are skipped defensively.
+     */
+    private static List<uk.gov.justice.core.courts.RotaSlot> convertCommandHearingDaysToBookedSlots(final List<uk.gov.justice.listing.commands.HearingDay> hearingDays) {
+        if (isEmpty(hearingDays)) {
+            return emptyList();
+        }
+        return hearingDays.stream()
+                .filter(hearingDay -> nonNull(hearingDay.getCourtScheduleId()) && nonNull(hearingDay.getStartTime()))
+                .map(hearingDay -> uk.gov.justice.core.courts.RotaSlot.rotaSlot()
+                        .withCourtScheduleId(hearingDay.getCourtScheduleId().toString())
+                        .withStartTime(hearingDay.getStartTime())
+                        .withDuration(hearingDay.getDurationMinutes())
+                        .withCourtCentreId(nonNull(hearingDay.getCourtCentreId()) ? hearingDay.getCourtCentreId().toString() : null)
+                        .withRoomId(nonNull(hearingDay.getCourtRoomId()) ? hearingDay.getCourtRoomId().toString() : null)
+                        .build())
+                .toList();
     }
 
     private static List<HearingDay> convertHearingDaysCommandToDomain(final List<uk.gov.justice.listing.commands.HearingDay> commandHearingDays) {
