@@ -7,11 +7,14 @@ import uk.gov.justice.services.jdbc.persistence.DataAccessException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Test utility class for easy cleaning of a context's database.
@@ -35,7 +38,10 @@ import com.google.common.annotations.VisibleForTesting;
  */
 public class DatabaseCleaner {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseCleaner.class);
+
     private static final String SQL_PATTERN = "TRUNCATE TABLE %s CASCADE";
+    private static final long PUBLISH_DRAIN_POLL_INTERVAL_MILLIS = 100;
 
     private final TestJdbcConnectionProvider testJdbcConnectionProvider;
 
@@ -100,11 +106,15 @@ public class DatabaseCleaner {
      * with 6116 publisher errors in one 31s window. A commit landing after the re-sweep inserts
      * row and queue entry atomically, so it cannot create the orphan.
      *
-     * <p>Deliberately does NOT wait for the relay to drain first: truncating mid-relay is what
-     * suppresses the previous test's unpublished stale events. Draining first releases them onto
-     * the durable subscriptions, where under-filtered JMS consumers read them as instant
-     * wrong-payload failures (observed: {@code HearingIT} consumed a neighbouring test's
-     * hearing-confirmed event).
+     * <p>This method itself never waits for the relay: truncating mid-relay suppresses the
+     * previous test's unpublished stale events, and a FORCED drain with test consumers attached
+     * releases them as instant wrong-payload failures (observed: {@code HearingIT} consumed a
+     * neighbouring test's hearing-confirmed event). The bounded natural-drain wait lives in
+     * {@code AbstractIT#setUp} via {@link #awaitPublishQueuesEmpty(String, long)} instead, where
+     * it runs while NO test consumers exist and is followed by a consume-side quiesce and a full
+     * subscriber-queue purge — so anything the drain releases is consumed or swept inside the
+     * cleanup window. In the healthy case the relay is already empty by the time this truncation
+     * runs; the re-sweep below covers the give-up path.
      *
      * @param contextName the name of the context to clean the tables from
      */
@@ -124,6 +134,58 @@ public class DatabaseCleaner {
 
         } catch (SQLException e) {
             throw new DataAccessException("Failed to commit or close database connection", e);
+        }
+    }
+
+    /**
+     * Bounded wait for the event-store publish relay to drain naturally: polls
+     * {@code publish_queue} and {@code pre_publish_queue} until both are empty.
+     *
+     * <p>Why: a relay thread that latched a {@code publish_queue} row before truncation
+     * publishes it AFTER the truncate + purge, planting a stale {@code processed_event} row
+     * ({@code eventNumber=1}) that the next test's first event then collides with — the
+     * listener rolls back through every JMS redelivery, the event DLQs, the view store never
+     * updates and the test's poll times out. Waiting for the relay to finish, while no test
+     * consumers exist to observe the released events, closes that window (vld builds
+     * 765431/765486/765702, Aug 2026).
+     *
+     * <p>Best-effort: on timeout it logs loudly and returns {@code false} rather than failing
+     * the run — a wedged relay would otherwise fail every subsequent test at setup.
+     *
+     * @param contextName   the name of the context whose event store to poll
+     * @param timeoutMillis maximum time to wait for both relay queues to empty
+     * @return {@code true} if both queues were observed empty, {@code false} on timeout
+     */
+    public boolean awaitPublishQueuesEmpty(final String contextName, final long timeoutMillis) {
+        final long deadline = System.currentTimeMillis() + timeoutMillis;
+        long remaining = -1;
+        try (final Connection connection = testJdbcConnectionProvider.getEventStoreConnection(contextName)) {
+            while (System.currentTimeMillis() < deadline) {
+                remaining = countRows(connection, "publish_queue") + countRows(connection, "pre_publish_queue");
+                if (remaining == 0) {
+                    return true;
+                }
+                Thread.sleep(PUBLISH_DRAIN_POLL_INTERVAL_MILLIS);
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("Failed to open or close event-store connection", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+        LOGGER.error("Publish relay did not drain within {}ms ({} entries left in publish_queue/pre_publish_queue); "
+                + "proceeding with cleanup — the truncation may race the relay", timeoutMillis, remaining);
+        return false;
+    }
+
+    private long countRows(final Connection connection, final String tableName) {
+        final String sql = format("SELECT count(*) FROM %s", tableName);
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(sql);
+             final ResultSet resultSet = preparedStatement.executeQuery()) {
+            resultSet.next();
+            return resultSet.getLong(1);
+        } catch (SQLException e) {
+            throw new DataAccessException("Failed to count rows in table " + tableName, e);
         }
     }
 

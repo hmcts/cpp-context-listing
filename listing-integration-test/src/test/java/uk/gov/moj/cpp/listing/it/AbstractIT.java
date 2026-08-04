@@ -58,13 +58,24 @@ public class AbstractIT {
 
     static final String CONTEXT_NAME = "listing";
 
+    /** Publish-relay drain budget: generous because vld nodes lag under weekday load. */
+    private static final long PUBLISH_DRAIN_MAX_WAIT_MILLIS = 30_000;
 
     @BeforeEach
     void setUp() {
-        // Quiesce BEFORE purge+truncate: let any projection the previous test left in flight finish
-        // against intact tables, so the truncation below cannot race it (B2). Consume-side only —
-        // does not drain the publish relay, so suppressed stale events stay suppressed.
+        // (1) Publish-side quiesce: wait (bounded) for the relay to finish publishing whatever
+        // the previous test appended, while no test consumers exist to observe it (Steps
+        // consumers are created after setUp). A relay thread that latched a publish_queue row
+        // pre-truncate otherwise publishes it post-purge, planting a stale processed_event row
+        // (eventNumber=1) that this test's first event collides with — rollback → redelivery →
+        // DLQ → 90s poll timeout (vld builds 765431/765486/765702).
+        databaseCleaner.awaitPublishQueuesEmpty(CONTEXT_NAME, PUBLISH_DRAIN_MAX_WAIT_MILLIS);
+        // (2) Consume-side quiesce: let any projection still in flight (including events the
+        // drain above just released) finish against intact tables, so the truncation below
+        // cannot race it (B2).
         ArtemisQueuePurger.quiesceListingEventProcessing();
+        // (3) Purge everything the drain released onto subscriber queues before any of this
+        // test's consumers subscribe.
         ArtemisQueuePurger.purgeAllListingQueues();
         reset();
         // ASYNC-VULNERABLE stubs are re-armed FIRST after reset(): in-flight EVENT_PROCESSOR work
