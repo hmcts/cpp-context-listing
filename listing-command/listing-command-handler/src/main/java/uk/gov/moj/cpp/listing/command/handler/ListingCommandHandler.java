@@ -499,7 +499,8 @@ public class ListingCommandHandler {
         final UUID hearingId = fromString(payload.getString(HEARING_ID));
         final Boolean sendNotificationToParties = payload.getBoolean("sendNotificationToParties", true);
 
-        // VIRTUAL days already (re)booked by COMMAND_API -> become hearing days + schedule updates.
+        // Days already (re)booked by COMMAND_API (virtual days, plus real days whose schedule changed
+        // - SPRDT-1225) -> become hearing days + schedule updates.
         final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = new ArrayList<>();
         final List<HearingDayCourtSchedule> changedSchedules = new ArrayList<>();
         if (payload.containsKey("changedDays")) {
@@ -528,8 +529,9 @@ public class ListingCommandHandler {
             }
         }
 
-        // REAL days (virtual false/absent) are persisted as nonDefaultDays - never booked, never
-        // converted to hearing days. courtCentreId/roomId/courtScheduleId are carried as uuid strings.
+        // REAL days (virtual false/absent) are persisted as nonDefaultDays. A schedule-changing real
+        // day ALSO travels pre-booked in changedDays above; the aggregate dedupes by date so it is
+        // applied exactly once. courtCentreId/roomId/courtScheduleId are carried as uuid strings.
         final List<NonDefaultDay> changedNonDefaultDays = new ArrayList<>();
         if (payload.containsKey("nonDefaultDays")) {
             for (final JsonValue value : payload.getJsonArray("nonDefaultDays")) {
