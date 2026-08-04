@@ -32,9 +32,18 @@ public class ArtemisQueuePurger {
             "jms.queue.DLQ"
     );
 
-    /** Bounded budget for the consume-side quiescence wait before table truncation. */
-    private static final long QUIESCE_MAX_WAIT_MILLIS = 5000;
+    /**
+     * Bounded budget for the consume-side quiescence wait before table truncation. Generous
+     * because loaded vld nodes stretch event processing well past the old 5s budget (the give-up
+     * path is what let teardown truncation race in-flight projections on builds 765431-765702);
+     * the wait returns as soon as counts hit zero, so the healthy-case cost is unchanged.
+     */
+    private static final long QUIESCE_MAX_WAIT_MILLIS = 30_000;
     private static final long QUIESCE_POLL_INTERVAL_MILLIS = 100;
+    /** Consecutive polls with unreadable DeliveringCounts before giving up loudly. */
+    private static final int QUIESCE_MAX_UNREADABLE_POLLS = 3;
+    /** Sentinel: the delivering count could not be read, NOT the same as quiesced. */
+    private static final long DELIVERING_COUNT_UNKNOWN = -1;
 
     private static final List<String> EVENT_TOPICS = List.of(
             "jms.topic.listing.event",
@@ -52,17 +61,33 @@ public class ArtemisQueuePurger {
      *
      * <p>The signal is each listing/public subscriber queue's {@code DeliveringCount} (messages dispatched
      * to the MDB but not yet acked). When it reaches zero, no projection is mid-flight. This is a pure
-     * <em>consume-side</em> read — it never drains the event-store publish relay, so it cannot republish
-     * the previous test's suppressed stale events (the explicit no-drain contract in
-     * {@code DatabaseCleaner.cleanEventStoreTables}). Best-effort: if the count has not settled within
+     * <em>consume-side</em> read — it never drains the event-store publish relay itself; the publish side
+     * is handled separately by {@code DatabaseCleaner#awaitPublishQueuesEmpty}, which
+     * {@code AbstractIT#setUp} runs immediately before this wait so events the relay releases are then
+     * quiesced here and purged after. Best-effort: if the count has not settled within
      * {@value #QUIESCE_MAX_WAIT_MILLIS}ms (e.g. a failing redelivery loop), it returns and lets cleanup
-     * proceed rather than blocking the run.</p>
+     * proceed rather than blocking the run; unreadable counts are retried and then abandoned loudly
+     * instead of being silently treated as quiesced.</p>
      */
     public static void quiesceListingEventProcessing() {
         final long deadline = System.currentTimeMillis() + QUIESCE_MAX_WAIT_MILLIS;
+        int unreadablePolls = 0;
         while (System.currentTimeMillis() < deadline) {
-            if (totalDeliveringCount() == 0) {
+            final long delivering = totalDeliveringCount();
+            if (delivering == 0) {
                 return;
+            }
+            if (delivering == DELIVERING_COUNT_UNKNOWN) {
+                // Unreadable is NOT quiesced: silently treating it as zero is how a broken
+                // Jolokia path degrades the whole quiesce to a no-op. Retry a few times, then
+                // give up loudly rather than blocking every test's setup.
+                if (++unreadablePolls >= QUIESCE_MAX_UNREADABLE_POLLS) {
+                    LOGGER.error("Cannot read DeliveringCounts from Jolokia after {} attempts; "
+                            + "proceeding with cleanup UNQUIESCED — truncation may race in-flight projections", unreadablePolls);
+                    return;
+                }
+            } else {
+                unreadablePolls = 0;
             }
             try {
                 Thread.sleep(QUIESCE_POLL_INTERVAL_MILLIS);
@@ -71,14 +96,23 @@ public class ArtemisQueuePurger {
                 return;
             }
         }
-        LOGGER.warn("Event processing did not quiesce within {}ms; proceeding with cleanup", QUIESCE_MAX_WAIT_MILLIS);
+        LOGGER.error("Event processing did not quiesce within {}ms; proceeding with cleanup — "
+                + "truncation may race in-flight projections", QUIESCE_MAX_WAIT_MILLIS);
     }
 
     private static long totalDeliveringCount() {
         long total = 0;
         for (final String topic : EVENT_TOPICS) {
-            for (final String subscriberQueue : getSubscriberQueues(topic)) {
-                total += readDeliveringCount(topic, subscriberQueue);
+            final List<String> subscriberQueues = getSubscriberQueuesOrNull(topic);
+            if (subscriberQueues == null) {
+                return DELIVERING_COUNT_UNKNOWN;
+            }
+            for (final String subscriberQueue : subscriberQueues) {
+                final long count = readDeliveringCount(topic, subscriberQueue);
+                if (count == DELIVERING_COUNT_UNKNOWN) {
+                    return DELIVERING_COUNT_UNKNOWN;
+                }
+                total += count;
             }
         }
         return total;
@@ -94,8 +128,8 @@ public class ArtemisQueuePurger {
             final String value = extractValue(httpGet(url));
             return Long.parseLong(value.trim());
         } catch (final Exception e) {
-            // Unreadable count must not block cleanup — treat as quiesced.
-            return 0;
+            LOGGER.warn("Failed to read DeliveringCount for {}: {}", subscriberQueue, e.getMessage());
+            return DELIVERING_COUNT_UNKNOWN;
         }
     }
 
@@ -128,6 +162,17 @@ public class ArtemisQueuePurger {
     }
 
     private static List<String> getSubscriberQueues(final String topicAddress) {
+        final List<String> subscriberQueues = getSubscriberQueuesOrNull(topicAddress);
+        return subscriberQueues == null ? List.of() : subscriberQueues;
+    }
+
+    /**
+     * As {@link #getSubscriberQueues(String)} but returns {@code null} on failure so the
+     * quiesce path can distinguish "no subscribers" from "cannot see the broker" — the purge
+     * path degrades to an empty list, but for quiesce that conflation silently disables the
+     * whole wait.
+     */
+    private static List<String> getSubscriberQueuesOrNull(final String topicAddress) {
         try {
             final String url = JOLOKIA_BASE + "read/org.apache.activemq.artemis:address=%22"
                     + topicAddress.replace(".", "%2E")
@@ -136,7 +181,7 @@ public class ArtemisQueuePurger {
             return parseQueueNames(response);
         } catch (final Exception e) {
             LOGGER.warn("Failed to get subscriber queues for {}: {}", topicAddress, e.getMessage());
-            return List.of();
+            return null;
         }
     }
 
