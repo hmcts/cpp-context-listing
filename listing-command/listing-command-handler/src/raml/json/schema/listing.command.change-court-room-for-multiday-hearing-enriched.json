@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "id": "http://justice.gov.uk/listing/courts/listing.command.change-court-room-for-multiday-hearing-enriched.json",
-  "description": "Enriched command to change the courtroom of SELECTED days of a multiday CROWN hearing. Contains only the changed days. Virtual days are already resolved to a booked court schedule and carried in 'changedDays' (they become hearing days); real days are carried in 'nonDefaultDays' (persisted as nonDefaultDays, never booked). Unchanged days are preserved by the aggregate. At least one of the two arrays is non-empty.",
+  "description": "Enriched command to change the courtroom of SELECTED days of a multiday CROWN hearing. Contains only the changed days. Days already resolved to a booked court schedule are carried in 'changedDays' (they become hearing days): every virtual day, plus any real day whose courtScheduleId changed and was therefore rebooked in courtscheduler (SPRDT-1225). Real days are carried in 'nonDefaultDays' (persisted as nonDefaultDays) - a rebooked real day appears in BOTH arrays and the aggregate dedupes by date, preferring the pre-booked entry. Unchanged days are preserved by the aggregate. At least one of the two arrays is non-empty.",
   "type": "object",
   "properties": {
     "hearingId": {

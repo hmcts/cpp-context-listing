@@ -12,6 +12,7 @@ import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.concat;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
@@ -1191,12 +1192,13 @@ public class Hearing implements Aggregate {
     }
 
     /**
-     * CROWN multi-day courtroom change with mixed day types. {@code changedDays} are the VIRTUAL days,
-     * already (re)booked in courtscheduler by COMMAND_API - they are merged into hearingDays (converted
-     * into hearing days) exactly as before, with their court schedules updated. {@code changedNonDefaultDays}
-     * are the REAL days (virtual false/absent): they are never booked and never become hearing days here -
-     * each is merged by date into the aggregate's nonDefaultDays and persisted via
-     * NonDefaultDaysAssignedToHearing / NonDefaultDaysChangedForHearing. At least one list is non-empty.
+     * CROWN multi-day courtroom change with mixed day types. {@code changedDays} are the days already
+     * (re)booked in courtscheduler by COMMAND_API - every virtual day, plus any REAL day whose
+     * courtScheduleId changed (SPRDT-1225) - merged into hearingDays with their court schedules
+     * updated. {@code changedNonDefaultDays} are the REAL days (virtual false/absent): each is merged
+     * by date into the aggregate's nonDefaultDays and persisted via NonDefaultDaysAssignedToHearing /
+     * NonDefaultDaysChangedForHearing; a real day NOT pre-booked into {@code changedDays} derives its
+     * hearing-day change here without any booking. At least one list is non-empty.
      */
     public Stream<Object> changeCourtRoomForMultidayHearing(final UUID hearingId,
             final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays,
@@ -1213,14 +1215,23 @@ public class Hearing implements Aggregate {
             return Stream.empty();
         }
 
-        // EVERY submitted day - virtual or real - moves its hearing day to the new room. Virtual days
-        // arrive pre-booked (new courtScheduleId + session isDraft); real days derive an equivalent
-        // hearing-day change from the nonDefaultDay (their courtScheduleId is the existing one, so no
-        // schedule change and no booking). Fields the change doesn't own (isDraft when absent,
+        // EVERY submitted day - virtual or real - moves its hearing day to the new room. Days in
+        // changedDays arrive pre-booked (new courtScheduleId + session isDraft): all virtual days, plus
+        // real days whose schedule changed (SPRDT-1225 - COMMAND_API rebooks those in courtscheduler so
+        // the old session pays its duration back). A real day pre-booked that way is ALSO present in
+        // changedNonDefaultDays for nonDefaultDay persistence, so it must not derive a SECOND
+        // hearing-day change here - the date filter below keeps exactly one change per date, preferring
+        // the pre-booked entry. Real days keeping their schedule derive their hearing-day change from
+        // the nonDefaultDay (no booking). Fields the change doesn't own (isDraft when absent,
         // isCancelled) are preserved from the existing day inside the merge.
         final List<uk.gov.moj.cpp.listing.domain.HearingDay> allChangedDays = new ArrayList<>(changedDays);
         if (hasChangedNonDefaultDays) {
-            changedNonDefaultDays.forEach(realDay -> allChangedDays.add(toHearingDayChange(realDay)));
+            final Set<LocalDate> preBookedDates = changedDays.stream()
+                    .map(uk.gov.moj.cpp.listing.domain.HearingDay::getHearingDate)
+                    .collect(toSet());
+            changedNonDefaultDays.stream()
+                    .filter(realDay -> !preBookedDates.contains(realDay.getStartTime().toLocalDate()))
+                    .forEach(realDay -> allChangedDays.add(toHearingDayChange(realDay)));
         }
         final Stream<Object> hearingDayEvents = raiseChangedHearingDayEvents(hearingId, allChangedDays, changedSchedules);
 
@@ -1283,7 +1294,8 @@ public class Hearing implements Aggregate {
         // re-derived by startTime inside mergeHearingDaySequences, so it is not carried on the changed days.
         final Stream<Object> dayEvents = assignHearingDaysV2(hearingId, mergedDays, parentCourtRoom, parentCourtRoom,
                 uk.gov.justice.core.courts.JurisdictionType.CROWN, changedDates);
-        // Real days keep their existing schedule, so a request with no virtual days has no schedule updates.
+        // Schedule updates fire for every pre-booked day (virtual or rebooked real); a request whose
+        // days all keep their existing schedule has none.
         final Stream<Object> scheduleEvents = changedSchedules.isEmpty()
                 ? Stream.empty() : raiseHearingDayCourtSchedulesUpdated(hearingId, changedSchedules);
         return Stream.concat(dayEvents, scheduleEvents);
@@ -1317,8 +1329,10 @@ public class Hearing implements Aggregate {
 
     /**
      * A real (virtual=false/absent) changed day expressed as its equivalent hearing-day change: same
-     * date/times/duration/centre with the NEW room; courtScheduleId is the day's existing schedule
-     * (real days are never rebooked). isDraft is deliberately left absent so the merge preserves it.
+     * date/times/duration/centre with the NEW room; courtScheduleId is the day's existing schedule.
+     * Only called for real days NOT pre-booked into changedDays (a schedule-changing real day is
+     * rebooked by COMMAND_API and arrives there instead - SPRDT-1225). isDraft is deliberately left
+     * absent so the merge preserves it.
      */
     private uk.gov.moj.cpp.listing.domain.HearingDay toHearingDayChange(final uk.gov.moj.cpp.listing.domain.NonDefaultDay realDay) {
         final ZonedDateTime start = realDay.getStartTime();

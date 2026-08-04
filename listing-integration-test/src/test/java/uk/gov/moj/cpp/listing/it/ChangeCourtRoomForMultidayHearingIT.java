@@ -14,6 +14,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
@@ -72,7 +73,9 @@ import uk.gov.justice.services.test.utils.core.http.ResponseData;
  *
  * <p>Each day carries an optional {@code virtual} flag. Virtual days (virtual=true) are (re)booked
  * in courtscheduler and converted into hearing days; real days (virtual false/absent) are persisted
- * as nonDefaultDays without any courtscheduler booking. Schema violations (duration > 360, missing
+ * as nonDefaultDays - booked in courtscheduler ONLY when their courtScheduleId differs from the
+ * hearing day's current schedule on that date (SPRDT-1225), otherwise without any courtscheduler
+ * booking. Schema violations (duration > 360, missing
  * courtScheduleId/roomId) are rejected as 400 by the framework before COMMAND_API runs. Business
  * failures (unknown hearing, non-CROWN, non-multiday, duplicate day dates, or a courtscheduler
  * rejection) are surfaced synchronously as 422 via {@code ChangeCourtRoomForMultidayException}.
@@ -309,6 +312,76 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
                                         hasItem(hearing.courtRoomId.toString())),
                                 withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtScheduleId",
                                         hasItem(hearing.scheduleD1.toString()))
+                        )));
+    }
+
+    /**
+     * SPRDT-1225: a real day (virtual:false) whose courtScheduleId DIFFERS from the hearing day's
+     * current schedule is a room change onto another session, so it IS sent to courtscheduler -
+     * the old session pays its booked duration back and the new session is deducted there - and
+     * the hearing day carries the newly booked schedule while keeping the nonDefaultDay's custom
+     * start time. Same-schedule real days keep the no-booking behaviour proven by
+     * {@link #shouldMoveRealDayRoomWithoutBookingAndKeepScheduleWhenVirtualIsFalse}.
+     */
+    @Test
+    void shouldRebookRealDayInCourtschedulerWhenItsCourtScheduleIdChanges() {
+        final ThreeDayCrownHearing hearing = givenAllocatedThreeDayCrownHearing();
+
+        final UUID newRoom = UUID.randomUUID();
+        final UUID targetScheduleD2 = UUID.randomUUID();
+
+        // Courtscheduler is stubbed for the REAL day: a schedule-changing real day routes through
+        // the same change-court-room booking as a virtual day (release old date, book new session).
+        stubChangeCourtRoomForMultidayHearing(hearing.hearingId.toString(), of(
+                new ChangeCourtRoomStubSession(targetScheduleD2.toString(), newRoom.toString(),
+                        hearing.day2.toString(), hearing.day2 + "T09:00:00Z", DAY_DURATION_MINUTES, false)));
+
+        // Real day on d2 with a NEW courtScheduleId and a CUSTOM start time (11:00, unlike the
+        // seeded 09:00) - the custom time must survive the rebooking on the hearing day.
+        final String payload = "{\"sendNotificationToParties\":false,\"nonDefaultDays\":[{"
+                + "\"startTime\":\"" + hearing.day2 + "T11:00:00Z\","
+                + "\"duration\":" + DAY_DURATION_MINUTES + ","
+                + "\"courtCentreId\":\"" + hearing.courtCentreId + "\","
+                + "\"roomId\":\"" + newRoom + "\","
+                + "\"courtScheduleId\":\"" + targetScheduleD2 + "\","
+                + "\"virtual\":false}]}";
+
+        final Response response = postChangeCourtRoom(hearing.hearingId, payload);
+
+        assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
+        // Unlike the same-schedule real day, the schedule-changing real day IS booked.
+        verifyChangeCourtRoomForMultidayHearingCalled(hearing.hearingId.toString());
+
+        pollWithDefaults(requestParams(searchHearingUrl(hearing.hearingId), MEDIA_TYPE_SEARCH_HEARING)
+                .withHeader(USER_ID, getLoggedInUser()).build())
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.id", is(hearing.hearingId.toString())),
+                                withJsonPath("$.hearingDays", hasSize(3)),
+                                // d2 rebooked: new room + NEW courtScheduleId from the booked session,
+                                // isDraft threaded from the session response.
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].courtRoomId",
+                                        hasItem(newRoom.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].courtScheduleId",
+                                        hasItem(targetScheduleD2.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].isDraft",
+                                        hasItem(false)),
+                                // ...keeping the nonDefaultDay's CUSTOM 11:00 start time, not the session's
+                                // 09:00 (prefix match - the blob's timestamp format carries millis).
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].startTime",
+                                        hasItem(startsWith(hearing.day2 + "T11:00"))),
+                                // Persisted as a nonDefaultDay carrying the new room AND the new schedule.
+                                withJsonPath("$.nonDefaultDays[*].roomId", hasItem(newRoom.toString())),
+                                withJsonPath("$.nonDefaultDays[*].courtScheduleId",
+                                        hasItem(targetScheduleD2.toString())),
+                                // Untouched days keep room + schedule.
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtRoomId",
+                                        hasItem(hearing.courtRoomId.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtScheduleId",
+                                        hasItem(hearing.scheduleD1.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day3 + "')].courtScheduleId",
+                                        hasItem(hearing.scheduleD3.toString()))
                         )));
     }
 
