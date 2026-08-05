@@ -27,6 +27,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.util.SlotsToJsonStringConverter;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException;
@@ -2050,14 +2051,23 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 .map(ZonedDateTime::toString);
         final int durationInMinutes = aggregatedDuration > 0 ? aggregatedDuration : 1;
 
-        final CrownFallbackResult result = courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
-                hearing.getId(),
-                courtCentre.getId(),
-                hearingDate,
-                durationInMinutes,
-                courtRoomId,
-                earliestHearingTime,
-                fallbackSource);
+        final CrownFallbackResult result;
+        try {
+            result = courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                    hearing.getId(),
+                    courtCentre.getId(),
+                    hearingDate,
+                    durationInMinutes,
+                    courtRoomId,
+                    earliestHearingTime,
+                    fallbackSource);
+        } catch (final CrownFallbackNoSessionException e) {
+            // Fail open for list flows: an unbookable session must not reject the command — the hearing
+            // proceeds unallocated (legacy list-court-hearing semantics) and can be allocated later.
+            LOGGER.error("[CROWN-FB] No bookable session for hearingId={} (source={}); proceeding unallocated: {}",
+                    hearing.getId(), fallbackSource, e.getMessage());
+            return hearing;
+        }
 
         LOGGER.info("[CROWN-FB] hearingId={} booked courtScheduleId={} isDraft={} overbooked={} source={}",
                 hearing.getId(), result.courtScheduleId(), result.isDraft(), result.overbooked(), result.source());
@@ -2172,6 +2182,16 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             dayBuilder.withCourtCentreId(hearing.getCourtCentre().getId());
         }
         return List.of(dayBuilder.build());
+    }
+
+    /**
+     * True when a hearing date is derivable from the raw list payload (listedStartDateTime or a
+     * hearingDay date/startTime). The Crown fallback books by courtCentre + date, so without a
+     * derivable date it cannot act and the payload must keep the legacy enrichment order, where
+     * HearingDays enrichment constructs the days before court-schedule enrichment runs.
+     */
+    static boolean canDeriveCrownFallbackHearingDate(final HearingListingNeeds hearing) {
+        return extractFirstHearingDate(hearing) != null;
     }
 
     private static LocalDate extractFirstHearingDate(final HearingListingNeeds hearing) {

@@ -3246,6 +3246,40 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
+    void enrichCrownCourtScheduleFirst_shouldReturnUnchanged_whenFallbackFindsNoSession() {
+        // Fail-open: an unbookable session must not reject the list command — the hearing proceeds
+        // unallocated (legacy list-court-hearing semantics) and can be allocated later.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 4, 21);
+        final java.time.ZonedDateTime listedStart = hearingDate.atStartOfDay(java.time.ZoneOffset.UTC).plusHours(9);
+
+        final uk.gov.justice.core.courts.CourtCentre courtCentre = uk.gov.justice.core.courts.CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .withCode("C01CY00")
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withListedStartDateTime(listedStart)
+                .withEstimatedMinutes(10)
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate),
+                org.mockito.ArgumentMatchers.anyInt(),
+                any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING)))
+                .thenThrow(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException("no session"));
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result, is(hearing));
+    }
+
+    @Test
     void enrichCrownCourtScheduleFirst_shouldThrow_whenNoCourtScheduleIdAndMultiDayDuration() {
         // Multi-day Crown without an anchor courtScheduleId is a caller contract violation.
         final UUID hearingId = UUID.randomUUID();

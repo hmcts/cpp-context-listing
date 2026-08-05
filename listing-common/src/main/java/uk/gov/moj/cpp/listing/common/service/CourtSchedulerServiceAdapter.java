@@ -257,7 +257,15 @@ public class CourtSchedulerServiceAdapter {
         }
 
         final JsonObject body = objectToJsonObjectConverter.convert(response.getEntity());
-        return parseCrownFallbackResult(body);
+        final CrownFallbackResult result = parseCrownFallbackResult(body);
+        if (result.courtScheduleId() == null) {
+            // A 200 whose body carries no courtScheduleId is not a booking (e.g. a differently-shaped
+            // search-and-book response) — treating it as a booking would fabricate an all-null hearing day.
+            throw new CrownFallbackNoSessionException(
+                    "Crown fallback: courtscheduler returned 200 without a courtScheduleId for hearingId "
+                            + hearingId + " — treating as no bookable session");
+        }
+        return result;
     }
 
     private static CrownFallbackResult parseCrownFallbackResult(final JsonObject body) {
