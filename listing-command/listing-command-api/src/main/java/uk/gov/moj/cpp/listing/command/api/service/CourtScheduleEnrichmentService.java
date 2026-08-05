@@ -257,12 +257,20 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         final boolean anyHearingDayHasCourtScheduleId = !isEmpty(hearing.getHearingDays())
                 && hearing.getHearingDays().stream().anyMatch(d -> nonNull(d.getCourtScheduleId()));
         if (!anyHearingDayHasCourtScheduleId) {
+            if (isSplitCommand(hearing)) {
+                LOGGER.info("CROWN update split: no courtScheduleIds for hearingId {} - skipping search-and-book; booking here would bind the split's new sessions to the ORIGINAL hearing.", hearing.getHearingId());
+                return hearing;
+            }
             if (isCandidateForAllocation(hearing)) {
                 LOGGER.info("CROWN update: no courtScheduleIds but allocation candidate for hearingId {}. Searching and booking.", hearing.getHearingId());
                 return handleCrownUpdateSearchAndBook(hearing);
             }
             LOGGER.info("CROWN update: no courtScheduleIds on hearingDays for hearingId {}. Skipping court schedule enrichment.", hearing.getHearingId());
             return hearing;
+        }
+
+        if (isSplitCommand(hearing)) {
+            return enrichCrownSplitReadOnly(hearing);
         }
 
         // The single virtual=true nonDefaultDay (validated upstream by CrownNonDefaultDaysValidator)
@@ -394,6 +402,76 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         deriveCommandLevelCourtRoomFromFinalSessions(hearing, enrichedHearingDays, hearingBuilder);
 
         return hearingBuilder.build();
+    }
+
+    /**
+     * A SPLIT update command's session details (courtScheduleId on hearingDays / nonDefaultDays)
+     * describe the sessions chosen for the NEW hearing carved out of the split - NOT a move of the
+     * original hearing. The original hearing keeps its own sessions (the SPLIT branch of the
+     * command handler only removes the moved cases), and the new hearing is listed/booked onto
+     * these sessions under its OWN id by the returning list-court-hearing flow
+     * (enrichListCourtHearing case 2/3). Booking or listing here would run under the ORIGINAL
+     * hearingId and list the existing hearing into the split's new session on courtscheduler -
+     * the "split moves the existing hearing" defect. So this path resolves the sessions strictly
+     * READ-ONLY: fetch for enrichment (dates/rooms/isDraft), no listHearingInCourtSessions write,
+     * no multiDaySearchAndBook.
+     *
+     * <p>When a block-descriptor virtual nonDefaultDay is present it is the authoritative anchor
+     * (courtScheduleId + TOTAL block duration) - mirroring the non-split multi-day path - and the
+     * enriched hearingDays collapse to that single anchor day, so the downstream bookedSlots carry
+     * anchor + total duration without double-counting genuine per-day durations.
+     */
+    private UpdateHearingForListing enrichCrownSplitReadOnly(final UpdateHearingForListing hearing) {
+        final Optional<NonDefaultDay> virtualAnchor = virtualAnchorNonDefaultDay(hearing)
+                .filter(nd -> nonNull(nd.getCourtScheduleId()) && !isBlank(nd.getCourtScheduleId()));
+
+        final List<HearingDay> daysToResolve;
+        if (virtualAnchor.isPresent()) {
+            final NonDefaultDay anchor = virtualAnchor.get();
+            daysToResolve = List.of(HearingDay.hearingDay()
+                    .withCourtScheduleId(fromString(anchor.getCourtScheduleId()))
+                    .withHearingDate(nonNull(anchor.getStartTime()) ? anchor.getStartTime().toLocalDate() : hearing.getStartDate())
+                    .withStartTime(anchor.getStartTime())
+                    .withDurationMinutes(anchor.getDuration())
+                    .build());
+        } else {
+            daysToResolve = hearing.getHearingDays();
+        }
+
+        final List<String> courtScheduleIds = daysToResolve.stream()
+                .filter(d -> nonNull(d.getCourtScheduleId()))
+                .map(d -> d.getCourtScheduleId().toString())
+                .distinct()
+                .toList();
+
+        LOGGER.info("CROWN update split: read-only session resolution for hearingId {} over courtScheduleIds {} - the sessions are listed under the NEW hearing id by the returning list-court-hearing flow.",
+                hearing.getHearingId(), courtScheduleIds);
+
+        final List<CourtSchedule> sessions = fetchCourtSchedulesByIds(courtScheduleIds);
+        if (isEmpty(sessions)) {
+            LOGGER.warn("CROWN update split: failed to fetch court schedules for hearingId {} - marking days draft so allocation stays closed.", hearing.getHearingId());
+            return markDaysDraftWhenSessionsUnresolved(hearing);
+        }
+
+        final List<HearingDay> sanityCheckedDays = sanityCheckAndEnrichCrown(daysToResolve, sessions, hearing.getHearingId());
+        final List<HearingDay> enrichedHearingDays = applyGenuineNonDefaultDayStartTimes(
+                sanityCheckedDays, hearing.getNonDefaultDays(), hearing.getHearingId());
+
+        final UpdateHearingForListing.Builder hearingBuilder = UpdateHearingForListing.updateHearingForListing()
+                .withValuesFrom(hearing)
+                .withHearingDays(enrichedHearingDays);
+
+        deriveCommandLevelCourtRoomFromFinalSessions(hearing, enrichedHearingDays, hearingBuilder);
+
+        return hearingBuilder.build();
+    }
+
+    /**
+     * A non-blank splitHearing marks the update command as the originating half of a hearing
+     * split: session ids on the payload belong to the split's NEW hearing, never to this one.
+     */
+    private static boolean isSplitCommand(final UpdateHearingForListing hearing) {
+        return !isBlank(hearing.getSplitHearing());
     }
 
     /**
@@ -1400,6 +1478,10 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     }
 
     public UpdateHearingForListing handleCrownMultiDayExtension(final UpdateHearingForListing hearing) {
+        if (isSplitCommand(hearing)) {
+            LOGGER.info("CROWN update split: skipping extend-multiday for hearingId {} - extending here would grow the ORIGINAL hearing's booking; the split's new hearing books its own sessions on the returning list-court-hearing flow.", hearing.getHearingId());
+            return hearing;
+        }
         final int totalDuration = calculateAggregatedDuration(hearing);
 
         final JsonObject requestPayload = createObjectBuilder()
