@@ -65,9 +65,6 @@ subscriptions_descriptor:
         - name: public.events.listing.cases-added-for-updated-related-hearing
           schema_uri: http://justice.gov.uk/listing/courts/public.events.listing.cases-added-for-updated-related-hearing.json
 
-        - name: public.events.listing.hearing-days-without-court-centre-corrected
-          schema_uri: http://justice.gov.uk/listing/courts/public.listing.hearing-days-without-court-centre-corrected.json
-
         - name: public.listing.court-application-added-for-hearing
           schema_uri: http://justice.gov.uk/listing/courts/public.listing.court-application-added-for-hearing
 

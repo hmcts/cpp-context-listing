@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.6-SNAPSHOT</version>
@@ -16,6 +17,9 @@
 =======
         <version>17.104.7-SNAPSHOT</version>
 >>>>>>> 4569f8d00b (Updating develop poms back to pre merge state)
+=======
+        <version>17.104.8-SNAPSHOT</version>
+>>>>>>> 0408a0e829 (Team/cct 1981 release (#74))
     </parent>
     <modelVersion>4.0.0</modelVersion>
 

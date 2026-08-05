@@ -42,6 +42,7 @@
               "defendants":[
                 {
                   "id":"4399c3d5-54c5-4c50-b828-a8d9990bee47",
+                  "prosecutionCaseId": "c6a5f01c-e82b-4256-a832-58239ca081e7",
                   "isYouth":true,
                   "lastName":"ZOsG18cknt",
                   "offences":[
@@ -90,6 +91,7 @@
                 },
                 {
                   "id":"75b58da4-7aea-4298-92f2-45d11369cd02",
+                  "prosecutionCaseId": "c6a5f01c-e82b-4256-a832-58239ca081e7",
                   "isYouth":true,
                   "lastName":"HM7nHjH0Na",
                   "offences":[
@@ -156,6 +158,7 @@
               "defendants":[
                 {
                   "id":"34ceeb95-e2f6-4d9b-bf56-b54db4f08841",
+                  "prosecutionCaseId": "7b5afd3e-41b8-4bb4-b93c-590af4e2efed",
                   "isYouth":true,
                   "lastName":"1RFvAC8kJv",
                   "offences":[
@@ -204,6 +207,7 @@
                 },
                 {
                   "id":"6f11ab7d-53c1-4588-996f-23f6210c2eba",
+                  "prosecutionCaseId": "7b5afd3e-41b8-4bb4-b93c-590af4e2efed",
                   "isYouth":true,
                   "lastName":"0DkRgMdD9p",
                   "offences":[
@@ -287,6 +291,7 @@
               "defendants":[
                 {
                   "id":"4399c3d5-54c5-4c50-b828-a8d9990bee47",
+                  "prosecutionCaseId": "c6a5f01c-e82b-4256-a832-58239ca081e7",
                   "isYouth":true,
                   "lastName":"ZOsG18cknt",
                   "offences":[
@@ -335,6 +340,7 @@
                 },
                 {
                   "id":"75b58da4-7aea-4298-92f2-45d11369cd02",
+                  "prosecutionCaseId": "c6a5f01c-e82b-4256-a832-58239ca081e7",
                   "isYouth":true,
                   "lastName":"HM7nHjH0Na",
                   "offences":[
@@ -401,6 +407,7 @@
               "defendants":[
                 {
                   "id":"34ceeb95-e2f6-4d9b-bf56-b54db4f08841",
+                  "prosecutionCaseId": "7b5afd3e-41b8-4bb4-b93c-590af4e2efed",
                   "isYouth":true,
                   "lastName":"1RFvAC8kJv",
                   "offences":[
@@ -449,6 +456,7 @@
                 },
                 {
                   "id":"6f11ab7d-53c1-4588-996f-23f6210c2eba",
+                  "prosecutionCaseId": "7b5afd3e-41b8-4bb4-b93c-590af4e2efed",
                   "isYouth":true,
                   "lastName":"0DkRgMdD9p",
                   "offences":[

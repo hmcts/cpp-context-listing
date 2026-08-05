@@ -250,6 +250,94 @@ public class PublishCourtListCommandSenderTest {
     }
 
     @Test
+    public void shouldUseProsecutionCaseIdFromDefendantJson_WhenHearingHasNoCaseIdentifier() {
+
+        final UUID courtCentreId = randomUUID();
+        final UUID courtListId = randomUUID();
+        final LocalDate startDate = LocalDate.now();
+        final JsonObject courtListJson = givenPayload("/test-data/listing.event.court-list-export-requested-warn-courtListJson-applicationDefendantWithProsecutionCaseId.json");
+        final ZonedDateTime requestedTime = parse("2018-01-02T13:04:05+00:00[UTC]");
+        final PublishCourtListRequestParameters parameters = new PublishCourtListRequestParameters(
+                courtListId,
+                courtCentreId,
+                startDate,
+                startDate.plusDays(5),
+                PublishCourtListType.FIRM,
+                requestedTime,
+                true
+        );
+        final JsonObject courtListExportRequested = createObjectBuilder()
+                .add("courtCentreId", courtCentreId.toString())
+                .add("courtListId", courtListId.toString())
+                .add("publishCourtListType", PublishCourtListType.FIRM.name())
+                .add("startDate", startDate.toString())
+                .add("requestedTime", requestedTime.toString())
+                .build();
+        final Metadata metadata = metadataBuilder()
+                .withId(randomUUID())
+                .withStreamId(courtListId)
+                .withName("DUMMY")
+                .withUserId(randomUUID().toString()).build();
+        final JsonEnvelope tEnvelope = envelopeFrom(metadata, courtListExportRequested);
+
+        publishCourtListCommandSender.publishPublicMessageForCourtList(tEnvelope, parameters, courtListJson);
+
+        verify(sender, times(1)).send(envelopeArgumentCaptor.capture());
+        final JsonObject payload = envelopeArgumentCaptor.getValue().payloadAsJsonObject();
+        final JsonObject defendant = payload.getJsonArray("courtLists").getJsonObject(0)
+                .getJsonArray("hearings").getJsonObject(0)
+                .getJsonArray("defendants").getJsonObject(0);
+
+        assertThat(defendant.getString("prosecutionCaseId"), is("72b9df0f-4c81-4b17-ad3e-cea90833a882"));
+        verify(progressionService, never()).caseExistsByCaseUrn(any(JsonEnvelope.class), any(String.class));
+    }
+
+    @Test
+    public void shouldPreferProsecutionCaseIdOnDefendantJson_OverCaseIdentifierLookup() {
+
+        final UUID courtCentreId = randomUUID();
+        final UUID courtListId = randomUUID();
+        final LocalDate startDate = LocalDate.now();
+        final JsonObject courtListJson = givenPayload("/test-data/listing.event.court-list-export-requested-warn-courtListJson-defendantProsecutionCaseIdTakesPrecedence.json");
+        final ZonedDateTime requestedTime = parse("2018-01-02T13:04:05+00:00[UTC]");
+        final PublishCourtListRequestParameters parameters = new PublishCourtListRequestParameters(
+                courtListId,
+                courtCentreId,
+                startDate,
+                startDate.plusDays(5),
+                PublishCourtListType.FIRM,
+                requestedTime,
+                true
+        );
+        final JsonObject courtListExportRequested = createObjectBuilder()
+                .add("courtCentreId", courtCentreId.toString())
+                .add("courtListId", courtListId.toString())
+                .add("publishCourtListType", PublishCourtListType.FIRM.name())
+                .add("startDate", startDate.toString())
+                .add("requestedTime", requestedTime.toString())
+                .build();
+        final Metadata metadata = metadataBuilder()
+                .withId(randomUUID())
+                .withStreamId(courtListId)
+                .withName("DUMMY")
+                .withUserId(randomUUID().toString()).build();
+        final JsonEnvelope tEnvelope = envelopeFrom(metadata, courtListExportRequested);
+
+        final Optional<JsonObject> lookedUpCaseId = Optional.of(createObjectBuilder().add("caseId", "af31eb0f-bcf5-4a8f-822d-18e7a2e0ee03").build());
+        when(progressionService.caseExistsByCaseUrn(any(JsonEnvelope.class), any(String.class))).thenReturn(lookedUpCaseId);
+
+        publishCourtListCommandSender.publishPublicMessageForCourtList(tEnvelope, parameters, courtListJson);
+
+        verify(sender, times(1)).send(envelopeArgumentCaptor.capture());
+        final JsonObject payload = envelopeArgumentCaptor.getValue().payloadAsJsonObject();
+        final JsonObject defendant = payload.getJsonArray("courtLists").getJsonObject(0)
+                .getJsonArray("hearings").getJsonObject(0)
+                .getJsonArray("defendants").getJsonObject(0);
+
+        assertThat(defendant.getString("prosecutionCaseId"), is("72b9df0f-4c81-4b17-ad3e-cea90833a882"));
+    }
+
+    @Test
     public void shouldMapDefendantsWithinCourtListJson_MultipleDefendants() {
 
         final UUID courtCentreId = randomUUID();

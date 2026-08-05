@@ -285,9 +285,16 @@ public class PublishCourtListCommandSender {
     private JsonArrayBuilder mapListingDefendantToCoreDefendant(final JsonArray defendants, final Map<UUID, UUID> caseIdByDefendantId) {
         return defendants.getValuesAs(JsonObject.class).stream()
                 .map(defendant -> hearingListingToCoreConverter.convert(jsonObjectConverter.convert(defendant, Defendant.class),
-                        caseIdByDefendantId.get(fromString(defendant.getString("id")))))
+                        resolveProsecutionCaseId(defendant, caseIdByDefendantId)))
                 .map(defendant -> objectToJsonObjectConverter.convert(defendant))
                 .collect(JsonObjects::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
+    }
+
+    private UUID resolveProsecutionCaseId(final JsonObject defendant, final Map<UUID, UUID> caseIdByDefendantId) {
+        if (defendant.containsKey("prosecutionCaseId")) {
+            return fromString(defendant.getString("prosecutionCaseId"));
+        }
+        return caseIdByDefendantId.get(fromString(defendant.getString("id")));
     }
 
     private void sendCommandWith(final String commandName, final UUID streamId, final JsonObject payload) {
