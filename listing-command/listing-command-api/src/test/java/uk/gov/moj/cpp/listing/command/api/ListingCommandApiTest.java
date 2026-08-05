@@ -11,12 +11,14 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -69,6 +71,7 @@ import uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
 import uk.gov.moj.cpp.listing.command.api.service.HearingLookupService;
+import uk.gov.moj.cpp.listing.command.api.service.SplitDetectionService;
 import uk.gov.moj.cpp.listing.common.courtroomchange.ChangeCourtRoomForMultidayException;
 import uk.gov.moj.cpp.listing.common.courtroomchange.ChangedDaySession;
 import uk.gov.moj.cpp.listing.common.courtroomchange.RequestedChangeDay;
@@ -98,6 +101,7 @@ import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonValue;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -142,6 +146,19 @@ public class ListingCommandApiTest {
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
     @Mock
     private HearingLookupService hearingLookupService;
+    @Mock
+    private SplitDetectionService splitDetectionService;
+
+    /**
+     * Split detection is unit-tested in SplitDetectionServiceTest; here it must be a transparent
+     * pass-through so every update-hearing test exercises the API unchanged. lenient(): most
+     * tests never reach the update-hearing handlers.
+     */
+    @BeforeEach
+    void stubSplitDetectionAsPassThrough() {
+        lenient().when(splitDetectionService.flagSplitIfDetected(any(), any(), any()))
+                .thenAnswer(returnsFirstArg());
+    }
 
     private static final Type HEARING_TYPE = Type.type()
             .withId(fromString("6e1bef55-7e13-4615-b3ba-8663f4438e16"))

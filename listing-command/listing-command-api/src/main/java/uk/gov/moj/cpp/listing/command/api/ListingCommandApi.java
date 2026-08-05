@@ -40,6 +40,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
 import uk.gov.moj.cpp.listing.command.api.service.HearingLookupService;
+import uk.gov.moj.cpp.listing.command.api.service.SplitDetectionService;
 import uk.gov.moj.cpp.listing.common.courtroomchange.ChangeCourtRoomForMultidayException;
 import uk.gov.moj.cpp.listing.common.courtroomchange.ChangedDaySession;
 import uk.gov.moj.cpp.listing.common.courtroomchange.RequestedChangeDay;
@@ -151,6 +152,8 @@ public class ListingCommandApi {
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
     @Inject
     private HearingLookupService hearingLookupService;
+    @Inject
+    private SplitDetectionService splitDetectionService;
 
     @Handles("listing.command.list-court-hearing")
     public void handleListCourtHearing(final JsonEnvelope envelope) {
@@ -321,6 +324,10 @@ public class ListingCommandApi {
         }
 
         LOGGER.info("HandleUpdateHearingForListing for the hearing: {} ", updateHearingForListing.getHearingId());
+        // Flag splits BEFORE enrichment: a split's session details belong to the NEW hearing, so
+        // the CROWN enrichment must stay read-only for the original hearing (otherwise the
+        // original hearing's courtscheduler allocation is moved onto the split's new sessions).
+        updateHearingForListing = splitDetectionService.flagSplitIfDetected(updateHearingForListing, payload, envelope);
         final CourtCentreDetails courtCentre =
                 courtCentreFactory.getCourtCentre(getCourtCentreId(updateHearingForListing), envelope);
         updateHearingForListing = hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(updateHearingForListing, envelope, courtCentre);
@@ -353,7 +360,8 @@ public class ListingCommandApi {
             final UUID courtCentreId = getCourtCentreId(wrapper.updateHearingForListing());
 
             final CourtCentreDetails courtCentreDetails = courtCentreDetailsById.get(courtCentreId);
-            final UpdateHearingForListing enrichedHearing = hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(wrapper.updateHearingForListing(), envelope, courtCentreDetails) ;
+            final UpdateHearingForListing flaggedHearing = splitDetectionService.flagSplitIfDetected(wrapper.updateHearingForListing(), wrapper.fullPayload(), envelope);
+            final UpdateHearingForListing enrichedHearing = hearingEnrichmentOrchestrator.enrichUpdateHearingForListing(flaggedHearing, envelope, courtCentreDetails) ;
             final UpdateHearingForListingEnriched updateHearingEnriched =
                     updateHearingForListingEnriched(enrichedHearing, courtCentreDetails, wrapper.fullPayload());
             hearingsEnrichedArrayBuilder.add(objectToJsonValueConverter.convert(updateHearingEnriched));
