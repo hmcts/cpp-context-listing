@@ -4,7 +4,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.common</groupId>
         <artifactId>service-parent-pom</artifactId>
-        <version>25.104.0-M9</version>
+        <version>25.104.0-M10</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -29,7 +29,7 @@
         <sonar.report.export.path>sonar-report.json</sonar.report.export.path>
         <sonar.scm.provider>git</sonar.scm.provider>
         <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
-        <coredomain.version>25.104.0-M10</coredomain.version>
+        <coredomain.version>25.104.0-M11</coredomain.version>
         <!-- JUnit Platform launcher: aligned with junit-platform-engine/commons 1.14.3 (transitive from junit-jupiter
              ${junit.version}=5.14.3). Not managed by the BOM; the old hardcoded 1.9.2 clashed with 1.14.3 and broke
              failsafe test discovery ("OutputDirectoryCreator not available"). -->
