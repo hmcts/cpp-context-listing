@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.6-SNAPSHOT</version>
@@ -25,6 +26,9 @@
 =======
         <version>17.104.9-SNAPSHOT</version>
 >>>>>>> 54ecfb54d5 (updating poms for 17.104.9-SNAPSHOT development)
+=======
+        <version>17.104.8</version>
+>>>>>>> 6a517b8cf9 (updating develop poms to master versions to avoid merge conflicts)
     </parent>
 
     <artifactId>listing-domain</artifactId>
