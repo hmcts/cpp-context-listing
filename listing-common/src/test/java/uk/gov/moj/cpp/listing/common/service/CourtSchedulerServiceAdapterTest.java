@@ -425,6 +425,25 @@ class CourtSchedulerServiceAdapterTest {
                         uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING));
     }
 
+    @Test
+    void crownFallbackSearchAndBook_shouldThrowNoSession_on200WithoutCourtScheduleId() {
+        // A 200 whose body carries no courtScheduleId (e.g. a differently-shaped search-and-book
+        // response) is not a booking — accepting it would fabricate an all-null hearing day.
+        final JsonObject body = javax.json.Json.createObjectBuilder()
+                .add("hearingId", UUID.randomUUID().toString())
+                .build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException.class,
+                () -> courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                        UUID.randomUUID(), UUID.randomUUID(), LocalDate.of(2026, 4, 21), 10,
+                        Optional.empty(), Optional.empty(),
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING));
+    }
+
     // ─── getCourtScheduleDraftStatus ─────────────────────────────────────────
 
     @Test

@@ -68,18 +68,23 @@ public class HearingEnrichmentOrchestrator {
                 // provisional-booking concept). Resolve it against courtscheduler and promote the resolved
                 // session onto a bookedSlot so the CourtSchedule-first flow below lists/allocates it.
                 final HearingListingNeeds crownHearing = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing);
-                if (hasCourtScheduleId(crownHearing)) {
+                if (hasCourtScheduleId(crownHearing) || isCrownFallbackCandidate(crownHearing)) {
                     // CROWN with courtScheduleId (bookedSlots or hearingDays): CourtSchedule-first flow
                     // expands multi-day into N hearingDays, then HearingDays computes start/end,
                     // then Duration runs.
+                    // CROWN single-day without any courtScheduleId (COEW review meetings, DLRM — flows
+                    // whose prompts carry only courthouse/courtroom/date) takes the same flow: its no-id
+                    // branch applies the Crown fallback search-and-book (SPRDT-1159), which pins the
+                    // booking to the requested courtroom and date.
                     HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(
                             crownHearing, crownFallbackSource);
                     HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(withCourtSchedules, envelope);
                     HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
                     enrichedHearings.add(stripRoomInfoIfAnyDraft(withDurations));
                 } else {
-                    // CROWN without courtScheduleId: legacy HearingDays -> Duration -> CourtSchedule
-                    // order. Preserves legacy enrichment so existing IT fixtures continue to pass.
+                    // CROWN week-commencing (excluded from court schedule integration) and multi-day
+                    // without courtScheduleId (fallback is single-day only — upstream must supply session
+                    // ids for multi-day): legacy HearingDays -> Duration -> CourtSchedule order.
                     HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(crownHearing, envelope);
                     HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
                     HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDurations, envelope);
@@ -352,6 +357,21 @@ public class HearingEnrichmentOrchestrator {
         return hearing.getBookedSlots() != null
                 && hearing.getBookedSlots().stream()
                 .anyMatch(s -> s.getCourtScheduleId() != null && !s.getCourtScheduleId().isBlank());
+    }
+
+    /**
+     * Returns true when a CROWN list payload without any courtScheduleId should be booked via the
+     * Crown fallback search-and-book (SPRDT-1159) instead of the legacy allocation-candidate flow:
+     * not week-commencing (excluded from court schedule integration), single-day (the fallback
+     * rejects multi-day — upstream must supply session ids for multi-day Crown bookings), and with
+     * a derivable hearing date (the fallback books by courtCentre + date; payloads whose days are
+     * only constructed later by HearingDays enrichment must keep the legacy order).
+     */
+    private static boolean isCrownFallbackCandidate(final HearingListingNeeds hearing) {
+        return isNull(hearing.getWeekCommencingDate())
+                && CourtScheduleEnrichmentService.calculateAggregatedDuration(hearing)
+                        <= HearingDurationEnrichmentService.MINUTES_IN_DAY
+                && CourtScheduleEnrichmentService.canDeriveCrownFallbackHearingDate(hearing);
     }
 
     /**
