@@ -1,16 +1,19 @@
 package uk.gov.moj.cpp.listing.command.api.service;
 
 import static java.util.Objects.nonNull;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.listing.courts.SelectedCourtCentre;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
-import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -129,66 +132,37 @@ public class SplitDetectionService {
     }
 
     /**
-     * Request shape: prosecutionCases[].defendants[].offences[].offenceId — defendants without a
+     * Request shape: prosecutionCases[].defendants[].offences[].offenceId - defendants without a
      * defendantId are skipped, mirroring ExtendHearingUtils.buildRequestedCaseDefendantOffenceMap.
      */
     private static Set<String> extractRequestOffenceIds(final JsonObject rawPayload) {
-        final Set<String> offenceIds = new HashSet<>();
-        final JsonArray cases = rawPayload.getJsonArray(PROSECUTION_CASES);
-        if (cases == null) {
-            return offenceIds;
-        }
-        for (final JsonObject caseObject : cases.getValuesAs(JsonObject.class)) {
-            final JsonArray defendants = caseObject.getJsonArray(DEFENDANTS);
-            if (defendants == null) {
-                continue;
-            }
-            for (final JsonObject defendant : defendants.getValuesAs(JsonObject.class)) {
-                if (!defendant.containsKey(DEFENDANT_ID) || defendant.isNull(DEFENDANT_ID)) {
-                    continue;
-                }
-                final JsonArray offences = defendant.getJsonArray(OFFENCES);
-                if (offences == null) {
-                    continue;
-                }
-                for (final JsonObject offence : offences.getValuesAs(JsonObject.class)) {
-                    final String offenceId = offence.getString(OFFENCE_ID, null);
-                    if (offenceId != null) {
-                        offenceIds.add(offenceId);
-                    }
-                }
-            }
-        }
-        return offenceIds;
+        return extractOffenceIds(rawPayload.getJsonArray(PROSECUTION_CASES), SplitDetectionService::hasDefendantId, OFFENCE_ID);
     }
 
     /**
      * Stored (viewstore listing.search.hearing) shape: listedCases[].defendants[].offences[].id.
      */
     private static Set<String> extractStoredOffenceIds(final JsonObject storedHearing) {
-        final Set<String> offenceIds = new HashSet<>();
-        final JsonArray listedCases = storedHearing.getJsonArray(LISTED_CASES);
-        if (listedCases == null) {
-            return offenceIds;
-        }
-        for (final JsonObject caseObject : listedCases.getValuesAs(JsonObject.class)) {
-            final JsonArray defendants = caseObject.getJsonArray(DEFENDANTS);
-            if (defendants == null) {
-                continue;
-            }
-            for (final JsonObject defendant : defendants.getValuesAs(JsonObject.class)) {
-                final JsonArray offences = defendant.getJsonArray(OFFENCES);
-                if (offences == null) {
-                    continue;
-                }
-                for (final JsonObject offence : offences.getValuesAs(JsonObject.class)) {
-                    final String offenceId = offence.getString(ID, null);
-                    if (offenceId != null) {
-                        offenceIds.add(offenceId);
-                    }
-                }
-            }
-        }
-        return offenceIds;
+        return extractOffenceIds(storedHearing.getJsonArray(LISTED_CASES), defendant -> true, ID);
+    }
+
+    private static Set<String> extractOffenceIds(final JsonArray cases,
+                                                 final Predicate<JsonObject> defendantFilter,
+                                                 final String offenceIdField) {
+        return objectStream(cases)
+                .flatMap(caseObject -> objectStream(caseObject.getJsonArray(DEFENDANTS)))
+                .filter(defendantFilter)
+                .flatMap(defendant -> objectStream(defendant.getJsonArray(OFFENCES)))
+                .map(offence -> offence.getString(offenceIdField, null))
+                .filter(Objects::nonNull)
+                .collect(toSet());
+    }
+
+    private static Stream<JsonObject> objectStream(final JsonArray array) {
+        return array == null ? Stream.empty() : array.getValuesAs(JsonObject.class).stream();
+    }
+
+    private static boolean hasDefendantId(final JsonObject defendant) {
+        return defendant.containsKey(DEFENDANT_ID) && !defendant.isNull(DEFENDANT_ID);
     }
 }
