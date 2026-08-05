@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.RotaSlot;
+import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
@@ -175,15 +176,16 @@ public class HearingEnrichmentOrchestratorTest {
     }
 
     @Test
-    public void shouldNotPromoteCrownWhenNoBookingReferenceNorCourtScheduleId() {
-        // Given a CROWN hearing with neither a bookingReference nor a courtScheduleId (e.g. week-commencing
-        // or date-to-be-fixed) — the guard must leave it on the legacy path, unchanged, so search-and-book
-        // fallback can run as before.
+    public void shouldRouteCrownListThroughLegacyPath_whenWeekCommencingAndNoCourtScheduleId() {
+        // Given a week-commencing CROWN hearing with neither a bookingReference nor a courtScheduleId —
+        // week-commencing is excluded from court schedule integration, so it must stay on the legacy
+        // path and never enter the CourtSchedule-first / Crown-fallback flow.
         final HearingListingNeeds noRefHearing = mock(HearingListingNeeds.class);
         lenient().when(noRefHearing.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
         lenient().when(noRefHearing.getBookedSlots()).thenReturn(Collections.emptyList());
         lenient().when(noRefHearing.getHearingDays()).thenReturn(Collections.emptyList());
         lenient().when(noRefHearing.getBookingReference()).thenReturn(null);
+        lenient().when(noRefHearing.getWeekCommencingDate()).thenReturn(mock(WeekCommencingDate.class));
 
         final HearingListingNeeds withHearingDays = mock(HearingListingNeeds.class);
         final HearingListingNeeds withDurations = mock(HearingListingNeeds.class);
@@ -195,7 +197,99 @@ public class HearingEnrichmentOrchestratorTest {
         final List<HearingListingNeeds> result = orchestrator.enrichListCourtHearing(
                 Collections.singletonList(noRefHearing), envelope, CrownFallbackSource.LIST_NEXT_HEARINGS_V2);
 
-        // Then the legacy path ran and no promotion / CourtSchedule-first call happened
+        // Then the legacy path ran and no CourtSchedule-first call happened
+        assertEquals(1, result.size());
+        assertEquals(enrichedCrownHearing, result.get(0));
+        verify(courtScheduleEnrichmentService).enrichWithCourtSchedules(withDurations, envelope);
+        verify(courtScheduleEnrichmentService, never()).enrichCrownCourtScheduleFirst(any(HearingListingNeeds.class), any());
+    }
+
+    @Test
+    public void shouldRouteCrownListThroughCourtScheduleFirst_whenSingleDayAndNoCourtScheduleId() {
+        // SPRDT-1159: a single-day CROWN hearing without any courtScheduleId (COEW review meeting, DLRM —
+        // prompts carry only courthouse/courtroom/date) must enter the CourtSchedule-first flow, whose
+        // no-id branch applies the Crown fallback search-and-book — NOT the legacy allocation-candidate
+        // flow whose MAGS-rota search finds no Crown sessions.
+        final HearingListingNeeds noRefHearing = mock(HearingListingNeeds.class);
+        lenient().when(noRefHearing.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
+        lenient().when(noRefHearing.getBookedSlots()).thenReturn(Collections.emptyList());
+        lenient().when(noRefHearing.getHearingDays()).thenReturn(Collections.emptyList());
+        lenient().when(noRefHearing.getBookingReference()).thenReturn(null);
+        lenient().when(noRefHearing.getWeekCommencingDate()).thenReturn(null);
+        lenient().when(noRefHearing.getListedStartDateTime()).thenReturn(ZonedDateTime.now());
+
+        final HearingListingNeeds withCourtSchedules = mock(HearingListingNeeds.class);
+        final HearingListingNeeds withHearingDays = mock(HearingListingNeeds.class);
+        when(courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(noRefHearing, CrownFallbackSource.LIST_COURT_HEARING))
+                .thenReturn(withCourtSchedules);
+        when(hearingDaysEnrichmentService.enrichHearings(withCourtSchedules, envelope)).thenReturn(withHearingDays);
+        when(hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope)).thenReturn(enrichedCrownHearing);
+
+        // When
+        final List<HearingListingNeeds> result = orchestrator.enrichListCourtHearing(
+                Collections.singletonList(noRefHearing), envelope);
+
+        // Then the CourtSchedule-first flow ran (its no-id branch is the Crown fallback) and the legacy
+        // allocation-candidate flow did not
+        assertEquals(1, result.size());
+        assertEquals(enrichedCrownHearing, result.get(0));
+        verify(courtScheduleEnrichmentService).enrichCrownCourtScheduleFirst(noRefHearing, CrownFallbackSource.LIST_COURT_HEARING);
+        verify(courtScheduleEnrichmentService, never()).enrichWithCourtSchedules(any(HearingListingNeeds.class), any());
+    }
+
+    @Test
+    public void shouldRouteCrownListThroughLegacyPath_whenNoHearingDateDerivableAndNoCourtScheduleId() {
+        // No listedStartDateTime and no hearingDays: the fallback books by courtCentre + date, so
+        // without a derivable date the payload must keep the legacy order, where HearingDays
+        // enrichment constructs the days before court-schedule enrichment runs.
+        final HearingListingNeeds noRefHearing = mock(HearingListingNeeds.class);
+        lenient().when(noRefHearing.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
+        lenient().when(noRefHearing.getBookedSlots()).thenReturn(Collections.emptyList());
+        lenient().when(noRefHearing.getHearingDays()).thenReturn(Collections.emptyList());
+        lenient().when(noRefHearing.getBookingReference()).thenReturn(null);
+        lenient().when(noRefHearing.getWeekCommencingDate()).thenReturn(null);
+        lenient().when(noRefHearing.getListedStartDateTime()).thenReturn(null);
+
+        final HearingListingNeeds withHearingDays = mock(HearingListingNeeds.class);
+        final HearingListingNeeds withDurations = mock(HearingListingNeeds.class);
+        when(hearingDaysEnrichmentService.enrichHearings(noRefHearing, envelope)).thenReturn(withHearingDays);
+        when(hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope)).thenReturn(withDurations);
+        when(courtScheduleEnrichmentService.enrichWithCourtSchedules(withDurations, envelope)).thenReturn(enrichedCrownHearing);
+
+        // When
+        final List<HearingListingNeeds> result = orchestrator.enrichListCourtHearing(
+                Collections.singletonList(noRefHearing), envelope);
+
+        // Then
+        assertEquals(1, result.size());
+        assertEquals(enrichedCrownHearing, result.get(0));
+        verify(courtScheduleEnrichmentService).enrichWithCourtSchedules(withDurations, envelope);
+        verify(courtScheduleEnrichmentService, never()).enrichCrownCourtScheduleFirst(any(HearingListingNeeds.class), any());
+    }
+
+    @Test
+    public void shouldRouteCrownListThroughLegacyPath_whenMultiDayDurationAndNoCourtScheduleId() {
+        // Multi-day CROWN without a courtScheduleId: the Crown fallback is single-day only (upstream must
+        // supply session ids for multi-day bookings), so the legacy path must be preserved.
+        final HearingListingNeeds noRefHearing = mock(HearingListingNeeds.class);
+        lenient().when(noRefHearing.getJurisdictionType()).thenReturn(JurisdictionType.CROWN);
+        lenient().when(noRefHearing.getBookedSlots()).thenReturn(Collections.emptyList());
+        lenient().when(noRefHearing.getHearingDays()).thenReturn(Collections.emptyList());
+        lenient().when(noRefHearing.getBookingReference()).thenReturn(null);
+        lenient().when(noRefHearing.getWeekCommencingDate()).thenReturn(null);
+        lenient().when(noRefHearing.getEstimatedMinutes()).thenReturn(1080);
+
+        final HearingListingNeeds withHearingDays = mock(HearingListingNeeds.class);
+        final HearingListingNeeds withDurations = mock(HearingListingNeeds.class);
+        when(hearingDaysEnrichmentService.enrichHearings(noRefHearing, envelope)).thenReturn(withHearingDays);
+        when(hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope)).thenReturn(withDurations);
+        when(courtScheduleEnrichmentService.enrichWithCourtSchedules(withDurations, envelope)).thenReturn(enrichedCrownHearing);
+
+        // When
+        final List<HearingListingNeeds> result = orchestrator.enrichListCourtHearing(
+                Collections.singletonList(noRefHearing), envelope);
+
+        // Then
         assertEquals(1, result.size());
         assertEquals(enrichedCrownHearing, result.get(0));
         verify(courtScheduleEnrichmentService).enrichWithCourtSchedules(withDurations, envelope);
