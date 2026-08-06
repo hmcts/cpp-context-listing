@@ -4,6 +4,7 @@ import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.listing.courts.SelectedCourtCentre;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -25,10 +26,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Detects, BEFORE enrichment, that an update-hearing-for-listing command is the originating half
- * of a hearing SPLIT, and flags it via {@code splitHearing} so the CROWN enrichment stays
- * read-only for the original hearing (no listHearingInCourtSessions / multiDaySearchAndBook /
- * search-and-book under the original hearingId — those writes move the original hearing's
- * allocated_listings rows onto the split's new sessions in courtscheduler).
+ * of a hearing SPLIT, and flags it via {@code splitHearing} so enrichment (CROWN and
+ * MAGISTRATES alike) stays read-only for the original hearing (no listHearingInCourtSessions /
+ * multiDaySearchAndBook / search-and-book / slot search under the original hearingId — those
+ * writes move the original hearing's allocated_listings rows onto the split's new sessions in
+ * courtscheduler). The flag value follows the existing convention: "unallocated" when the
+ * carved-out cases go unallocated (no room / week-commencing), "allocated" for splits onto
+ * chosen session(s).
  *
  * <p>The handler only classifies SPLIT after enrichment ({@code ExtendHearingUtils.getOperationType}),
  * which is too late: the courtscheduler writes have already happened. This service mirrors that
@@ -43,6 +47,16 @@ public class SplitDetectionService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SplitDetectionService.class);
 
+    /**
+     * TEMPORARY SPRDT-1227 diagnostics. Logged at ERROR purely so the lines appear regardless of
+     * the pods' configured log level (ERROR passes every level filter - logging the same line at
+     * info+debug+error would just duplicate it on permissive pods). Grep marker: [SPLIT-DIAG].
+     * REMOVE once the MAGS split investigation is complete.
+     */
+    private static void diag(final String message, final Object... args) {
+        LOGGER.error("[SPLIT-DIAG] " + message, args);
+    }
+
     private static final String PROSECUTION_CASES = "prosecutionCases";
     private static final String LISTED_CASES = "listedCases";
     private static final String DEFENDANTS = "defendants";
@@ -50,8 +64,16 @@ public class SplitDetectionService {
     private static final String DEFENDANT_ID = "defendantId";
     private static final String OFFENCE_ID = "offenceId";
     private static final String ID = "id";
+    /** JSON field name on the stored (viewstore) hearing - the hearing's allocation state. */
     private static final String ALLOCATED = "allocated";
-    private static final String SPLIT_HEARING_DETECTED = "allocated";
+    /**
+     * splitHearing flag values. SPLIT_UNALLOCATED matches the pre-existing convention the FE and
+     * {@code ExtendHearingForHearingListener} use for splits whose carved-out cases go unallocated
+     * (no court room / week-commencing); SPLIT_ALLOCATED marks a split onto chosen session(s).
+     * SPLIT_ALLOCATED sharing the {@code ALLOCATED} literal is coincidence, not shared meaning.
+     */
+    private static final String SPLIT_UNALLOCATED = "unallocated";
+    private static final String SPLIT_ALLOCATED = "allocated";
 
     @Inject
     private HearingLookupService hearingLookupService;
@@ -59,36 +81,54 @@ public class SplitDetectionService {
     public UpdateHearingForListing flagSplitIfDetected(final UpdateHearingForListing hearing,
                                                        final JsonObject rawPayload,
                                                        final JsonEnvelope envelope) {
+        diag("flagSplitIfDetected ENTER: hearingId={}, jurisdiction={}, callerSplitHearing='{}', hearingDays={}, nonDefaultDays={}, commandCourtRoomId={}, selectedCourtCentreRoom={}",
+                hearing.getHearingId(), hearing.getJurisdictionType(), hearing.getSplitHearing(),
+                hearing.getHearingDays() == null ? null : hearing.getHearingDays().size(),
+                hearing.getNonDefaultDays() == null ? null : hearing.getNonDefaultDays().size(),
+                hearing.getCourtRoomId(),
+                hearing.getSelectedCourtCentre() == null ? null : hearing.getSelectedCourtCentre().getCourtRoomId());
         if (isNotBlank(hearing.getSplitHearing())) {
+            diag("hearingId={}: caller already supplied splitHearing='{}' - passing through, detection skipped.",
+                    hearing.getHearingId(), hearing.getSplitHearing());
             return hearing;
         }
+        final Optional<String> splitHearingValue;
         try {
-            if (!isSplitByCaseSubset(hearing, rawPayload, envelope)) {
-                return hearing;
-            }
+            splitHearingValue = detectSplitHearingValue(hearing, rawPayload, envelope);
         } catch (final RuntimeException e) {
             LOGGER.warn("Split detection failed for hearingId {} - treating as non-split.", hearing.getHearingId(), e);
+            diag("hearingId={}: detection threw {} ('{}') - FAIL-OPEN, not flagged.",
+                    hearing.getHearingId(), e.getClass().getSimpleName(), e.getMessage());
             return hearing;
         }
-        LOGGER.info("Split detected for hearingId {} (request offences are a strict subset of the stored hearing's) - flagging splitHearing so CROWN enrichment stays read-only for the original hearing.",
-                hearing.getHearingId());
+        if (splitHearingValue.isEmpty()) {
+            diag("hearingId={}: detection result = NOT A SPLIT (see preceding [SPLIT-DIAG] lines for which check rejected it).",
+                    hearing.getHearingId());
+            return hearing;
+        }
+        diag("hearingId={}: detection result = SPLIT, flagging splitHearing='{}'.", hearing.getHearingId(), splitHearingValue.get());
+        LOGGER.info("Split detected for hearingId {} (request offences are a strict subset of the stored hearing's) - flagging splitHearing={} so enrichment stays read-only for the original hearing.",
+                hearing.getHearingId(), splitHearingValue.get());
         return UpdateHearingForListing.updateHearingForListing()
                 .withValuesFrom(hearing)
-                .withSplitHearing(SPLIT_HEARING_DETECTED)
+                .withSplitHearing(splitHearingValue.get())
                 .build();
     }
 
-    private boolean isSplitByCaseSubset(final UpdateHearingForListing hearing,
-                                        final JsonObject rawPayload,
-                                        final JsonEnvelope envelope) {
+    private Optional<String> detectSplitHearingValue(final UpdateHearingForListing hearing,
+                                                     final JsonObject rawPayload,
+                                                     final JsonEnvelope envelope) {
         final Set<String> requestOffences = extractRequestOffenceIds(rawPayload);
         if (requestOffences.isEmpty()) {
-            return false;
+            diag("hearingId={}: NO request offences extracted from payload prosecutionCases (missing array, defendants without defendantId, or no offenceIds) - not a split.",
+                    hearing.getHearingId());
+            return Optional.empty();
         }
 
         final Optional<JsonObject> storedHearing = hearingLookupService.findHearing(hearing.getHearingId(), envelope);
         if (storedHearing.isEmpty()) {
-            return false;
+            diag("hearingId={}: stored hearing NOT FOUND in viewstore (listing.search.hearing) - not a split.", hearing.getHearingId());
+            return Optional.empty();
         }
         final Set<String> persistedOffences = extractStoredOffenceIds(storedHearing.get());
 
@@ -97,15 +137,20 @@ public class SplitDetectionService {
         // (the cases being carved out onto the new hearing).
         final boolean strictSubset = persistedOffences.containsAll(requestOffences)
                 && requestOffences.size() < persistedOffences.size();
+        diag("hearingId={}: requestOffences={}, storedOffences={}, containsAll={}, strictSubset={}",
+                hearing.getHearingId(), requestOffences.size(), persistedOffences.size(),
+                persistedOffences.containsAll(requestOffences), strictSubset);
         if (!strictSubset) {
-            return false;
+            return Optional.empty();
         }
 
         // Mirrors getOperationType's two SPLIT arms; anything else (e.g. PARTIAL_ALLOCATION,
         // where the original hearing IS meant to be re-listed) stays unflagged.
         final UUID courtRoomId = resolveCourtRoomId(hearing);
+        diag("hearingId={}: resolvedCourtRoomId={}, weekCommencingStartDate={}", hearing.getHearingId(), courtRoomId, hearing.getWeekCommencingStartDate());
         if (courtRoomId == null || nonNull(hearing.getWeekCommencingStartDate())) {
-            return true;
+            diag("hearingId={}: SPLIT arm 1 matched (no room / week-commencing) -> '{}'.", hearing.getHearingId(), SPLIT_UNALLOCATED);
+            return Optional.of(SPLIT_UNALLOCATED);
         }
         final boolean storedAllocated = storedHearing.get().getBoolean(ALLOCATED, false);
         // getOperationType evaluates this arm on the ENRICHED hearingDays, which for the
@@ -115,7 +160,19 @@ public class SplitDetectionService {
         // room (arm 1 false) are never flagged and enrichment writes under the original hearingId.
         final boolean daysPresent = (nonNull(hearing.getHearingDays()) && !hearing.getHearingDays().isEmpty())
                 || (nonNull(hearing.getNonDefaultDays()) && !hearing.getNonDefaultDays().isEmpty());
-        return daysPresent && storedAllocated;
+        diag("hearingId={}: daysPresent={}, storedAllocated={} (viewstore 'allocated' field raw={})",
+                hearing.getHearingId(), daysPresent, storedAllocated, storedHearing.get().get(ALLOCATED));
+        if (daysPresent && storedAllocated) {
+            diag("hearingId={}: SPLIT arm 3 matched (days present + stored allocated) -> '{}'.", hearing.getHearingId(), SPLIT_ALLOCATED);
+            return Optional.of(SPLIT_ALLOCATED);
+        }
+        // Split-shaped (strict offence subset) but no SPLIT arm matched - this is the
+        // PARTIAL_ALLOCATION shape where re-listing the original hearing is intended. Logged at
+        // INFO because it is rare and is the key diagnostic when a real split goes unflagged
+        // (e.g. a jurisdiction-specific payload shape we haven't accounted for).
+        LOGGER.info("Split-shaped update for hearingId {} NOT flagged: courtRoomId={}, weekCommencingStartDate={}, daysPresent={}, storedAllocated={} - treating as partial allocation.",
+                hearing.getHearingId(), courtRoomId, hearing.getWeekCommencingStartDate(), daysPresent, storedAllocated);
+        return Optional.empty();
     }
 
     /**
@@ -125,7 +182,7 @@ public class SplitDetectionService {
     private static UUID resolveCourtRoomId(final UpdateHearingForListing hearing) {
         final SelectedCourtCentre selectedCourtCentre = hearing.getSelectedCourtCentre();
         if (nonNull(selectedCourtCentre)
-                && uk.gov.justice.core.courts.JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
+                && JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
             return selectedCourtCentre.getCourtRoomId();
         }
         return hearing.getCourtRoomId();

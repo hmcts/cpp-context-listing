@@ -54,7 +54,30 @@ class SplitDetectionServiceTest {
         final UpdateHearingForListing result = splitDetectionService.flagSplitIfDetected(
                 hearing, requestPayloadWithOffences(offence1), mock(JsonEnvelope.class));
 
-        assertThat(result.getSplitHearing(), is("allocated"));
+        // No court room => the carved-out cases go unallocated: matches the pre-existing
+        // "unallocated" convention ExtendHearingForHearingListener branches on.
+        assertThat(result.getSplitHearing(), is("unallocated"));
+    }
+
+    @Test
+    void shouldFlagSplit_forMagistrates_ignoringSelectedCourtCentreRoom() {
+        // resolveCourtRoomId's selectedCourtCentre branch is CROWN-only: for MAGS the room must
+        // come from the command-level field (null here), so this is the no-room arm.
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withHearingId(hearingId)
+                .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre()
+                        .withId(UUID.randomUUID())
+                        .withCourtRoomId(UUID.randomUUID())
+                        .build())
+                .build();
+        when(hearingLookupService.findHearing(any(), any()))
+                .thenReturn(Optional.of(storedHearingWithOffences(true, offence1, offence2)));
+
+        final UpdateHearingForListing result = splitDetectionService.flagSplitIfDetected(
+                hearing, requestPayloadWithOffences(offence1), mock(JsonEnvelope.class));
+
+        assertThat(result.getSplitHearing(), is("unallocated"));
     }
 
     @Test

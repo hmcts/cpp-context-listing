@@ -110,6 +110,22 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         if (JurisdictionType.CROWN.equals(updateHearingForListing.getJurisdictionType())) {
             return enrichCrownUpdateHearing(updateHearingForListing);
         }
+        if (isSplitCommand(updateHearingForListing)) {
+            // Same defect class as the CROWN split (SPRDT-1227): the submitted days describe the
+            // split's NEW hearing, so searching a slot and calling listHearingInCourtSessions here
+            // would run under the ORIGINAL hearingId and move its courtscheduler allocation onto
+            // the split's slot. Keep enrichment read-only; the new hearing books its own slot on
+            // the returning list-court-hearing flow.
+            // TEMPORARY SPRDT-1227 [SPLIT-DIAG] at ERROR so it shows regardless of pod log level.
+            LOGGER.error("[SPLIT-DIAG] MAGS update split GATE FIRED: skipping slot search and listHearingInCourtSessions for hearingId {} (splitHearing='{}').",
+                    updateHearingForListing.getHearingId(), updateHearingForListing.getSplitHearing());
+            return updateHearingForListing;
+        }
+        // TEMPORARY SPRDT-1227 [SPLIT-DIAG]: this is the ungated MAGS path about to search+list
+        // under THIS hearingId - if this line shows during a split journey, detection missed it.
+        LOGGER.error("[SPLIT-DIAG] MAGS update NOT flagged as split: proceeding to slot search + listHearingInCourtSessions under hearingId {} (splitHearing='{}', hearingDays={}).",
+                updateHearingForListing.getHearingId(), updateHearingForListing.getSplitHearing(),
+                updateHearingForListing.getHearingDays() == null ? null : updateHearingForListing.getHearingDays().size());
         //HearingDays courtscheduleId provided in payload, we can list them directly
         List<HearingDay> hearingDaysWithCourScheduleId = new ArrayList<>();
 
@@ -446,6 +462,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 .toList();
 
         LOGGER.info("CROWN update split: read-only session resolution for hearingId {} over courtScheduleIds {} - the sessions are listed under the NEW hearing id by the returning list-court-hearing flow.",
+                hearing.getHearingId(), courtScheduleIds);
+        // TEMPORARY SPRDT-1227 [SPLIT-DIAG] at ERROR so it shows regardless of pod log level.
+        LOGGER.error("[SPLIT-DIAG] CROWN update split GATE FIRED: read-only resolution for hearingId {} over courtScheduleIds {}.",
                 hearing.getHearingId(), courtScheduleIds);
 
         final List<CourtSchedule> sessions = fetchCourtSchedulesByIds(courtScheduleIds);

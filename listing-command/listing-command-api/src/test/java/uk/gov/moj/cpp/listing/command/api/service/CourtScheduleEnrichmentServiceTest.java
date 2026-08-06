@@ -5259,6 +5259,36 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
+    void enrichMagsUpdateHearing_split_shouldSkipSlotSearchAndListing_forOriginalHearing() {
+        final UUID hearingId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withHearingId(hearingId)
+                .withSplitHearing("unallocated")
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withCourtRoomId(UUID.randomUUID())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(hearingDate)
+                                .withStartTime(hearingDate.atStartOfDay(ZoneOffset.UTC))
+                                .withCourtRoomId(UUID.randomUUID())
+                                .withDurationMinutes(60)
+                                .build()))
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // Same defect class as CROWN: the submitted day describes the split's NEW hearing, so no
+        // slot search and no listHearingInCourtSessions under the ORIGINAL hearingId.
+        assertThat(result, is(hearing));
+        verify(hearingSlotsService, never()).search(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+    }
+
+    @Test
     void handleCrownMultiDayExtension_split_shouldReturnUnchanged_withoutExtendingOriginalHearingBooking() {
         final UUID hearingId = UUID.randomUUID();
         final LocalDate startDate = LocalDate.now().plusDays(5);
