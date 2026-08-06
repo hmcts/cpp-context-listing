@@ -8550,6 +8550,110 @@ class HearingAggregateTest {
         assertThat(requested.getListNewHearing().getEstimatedMinutes(), is(90));
     }
 
+    // MAGS multi-day split (SPRDT-1227): no bookedSlots (read-only split enrichment books no
+    // slot for the original hearing), so the nonDefaultDays' total duration must drive the
+    // estimate - otherwise the new hearing collapses to a single day of hearingTypeDuration.
+    @Test
+    void shouldUseNonDefaultDaysTotalDurationWhenNoBookedSlotsOnListForSplit() {
+        final List<uk.gov.justice.listing.events.ListedCase> splitListedCases = singletonList(uk.gov.justice.listing.events.ListedCase
+                .listedCase()
+                .withId(randomUUID())
+                .withDefendants(singletonList(Defendant.defendant()
+                        .withId(randomUUID())
+                        .withOffences(singletonList(Offence.offence()
+                                .withId(randomUUID())
+                                .build()))
+                        .build()))
+                .build());
+
+        final List<NonDefaultDay> splitNonDefaultDays = asList(
+                NonDefaultDay.nonDefaultDay()
+                        .withStartTime(ZonedDateTime.now().plusDays(5))
+                        .withDuration(java.util.Optional.of(360))
+                        .build(),
+                NonDefaultDay.nonDefaultDay()
+                        .withStartTime(ZonedDateTime.now().plusDays(6))
+                        .withDuration(java.util.Optional.of(360))
+                        .build());
+
+        final Stream<Object> listedHearing = hearing.listForSplit(type, splitListedCases, courtCentreId,
+                "court name", courtRoomId, jurisdictionType, ZonedDateTime.now(),
+                null, null, emptyList(), splitNonDefaultDays, 90, emptyList());
+
+        final HearingRequestedForListing requested = listedHearing.findFirst()
+                .map(HearingRequestedForListing.class::cast).orElseThrow();
+        // total day duration wins over hearingTypeDuration -> multi-day (> 360)
+        assertThat(requested.getListNewHearing().getEstimatedMinutes(), is(720));
+        // the selected days still ride on the request for the round trip
+        assertThat(requested.getListNewHearing().getNonDefaultDays().size(), is(2));
+        assertThat(requested.getListNewHearing().getBookedSlots(), is(nullValue()));
+    }
+
+    // A single-day total on nonDefaultDays keeps the legacy estimate (hearingTypeDuration) -
+    // only totals spanning more than one court day (> 360) override it.
+    @Test
+    void shouldKeepHearingTypeDurationWhenNonDefaultDaysTotalIsSingleDayOnListForSplit() {
+        final List<uk.gov.justice.listing.events.ListedCase> splitListedCases = singletonList(uk.gov.justice.listing.events.ListedCase
+                .listedCase()
+                .withId(randomUUID())
+                .withDefendants(singletonList(Defendant.defendant()
+                        .withId(randomUUID())
+                        .withOffences(singletonList(Offence.offence()
+                                .withId(randomUUID())
+                                .build()))
+                        .build()))
+                .build());
+
+        final List<NonDefaultDay> splitNonDefaultDays = singletonList(
+                NonDefaultDay.nonDefaultDay()
+                        .withStartTime(ZonedDateTime.now().plusDays(5))
+                        .withDuration(java.util.Optional.of(240))
+                        .build());
+
+        final Stream<Object> listedHearing = hearing.listForSplit(type, splitListedCases, courtCentreId,
+                "court name", courtRoomId, jurisdictionType, ZonedDateTime.now(),
+                null, null, emptyList(), splitNonDefaultDays, 90, emptyList());
+
+        final HearingRequestedForListing requested = listedHearing.findFirst()
+                .map(HearingRequestedForListing.class::cast).orElseThrow();
+        assertThat(requested.getListNewHearing().getEstimatedMinutes(), is(90));
+    }
+
+    // When both are present, the booked sessions' total stays authoritative (CROWN shape).
+    @Test
+    void shouldPreferBookedSlotsTotalOverNonDefaultDaysTotalOnListForSplit() {
+        final List<uk.gov.justice.listing.events.ListedCase> splitListedCases = singletonList(uk.gov.justice.listing.events.ListedCase
+                .listedCase()
+                .withId(randomUUID())
+                .withDefendants(singletonList(Defendant.defendant()
+                        .withId(randomUUID())
+                        .withOffences(singletonList(Offence.offence()
+                                .withId(randomUUID())
+                                .build()))
+                        .build()))
+                .build());
+
+        final List<NonDefaultDay> splitNonDefaultDays = singletonList(
+                NonDefaultDay.nonDefaultDay()
+                        .withStartTime(ZonedDateTime.now().plusDays(5))
+                        .withDuration(java.util.Optional.of(120))
+                        .build());
+        final List<uk.gov.justice.core.courts.RotaSlot> bookedSlots = singletonList(
+                uk.gov.justice.core.courts.RotaSlot.rotaSlot()
+                        .withCourtScheduleId(randomUUID().toString())
+                        .withStartTime(ZonedDateTime.now())
+                        .withDuration(720)
+                        .build());
+
+        final Stream<Object> listedHearing = hearing.listForSplit(type, splitListedCases, courtCentreId,
+                "court name", courtRoomId, jurisdictionType, ZonedDateTime.now(),
+                null, null, emptyList(), splitNonDefaultDays, 90, bookedSlots);
+
+        final HearingRequestedForListing requested = listedHearing.findFirst()
+                .map(HearingRequestedForListing.class::cast).orElseThrow();
+        assertThat(requested.getListNewHearing().getEstimatedMinutes(), is(720));
+    }
+
     // No booked sessions (legacy split shape) — the request must carry no bookedSlots at all.
     @Test
     void shouldNotSetBookedSlotsOnListForSplitWhenNoneProvided() {
