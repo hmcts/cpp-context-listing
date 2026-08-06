@@ -532,6 +532,8 @@ public class ListingCommandHandler {
         // REAL days (virtual false/absent) are persisted as nonDefaultDays. A schedule-changing real
         // day ALSO travels pre-booked in changedDays above; the aggregate dedupes by date so it is
         // applied exactly once. courtCentreId/roomId/courtScheduleId are carried as uuid strings.
+        // courtScheduleId may be absent (the UI has none when no bookable slot exists for the
+        // room/date) - the aggregate's merge then keeps the stored day's existing schedule.
         final List<NonDefaultDay> changedNonDefaultDays = new ArrayList<>();
         if (payload.containsKey("nonDefaultDays")) {
             for (final JsonValue value : payload.getJsonArray("nonDefaultDays")) {
@@ -541,7 +543,7 @@ public class ListingCommandHandler {
                         .withDuration(of(day.getInt("durationMinutes")))
                         .withCourtCentreId(of(day.getString(MOVE_COURT_CENTRE_ID)))
                         .withRoomId(of(day.getString("roomId")))
-                        .withCourtScheduleId(of(day.getString(COURT_SCHEDULE_ID)))
+                        .withCourtScheduleId(ofNullable(day.getString(COURT_SCHEDULE_ID, null)))
                         .withVirtual(of(false))
                         .build());
             }
