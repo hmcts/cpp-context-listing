@@ -93,6 +93,7 @@ public class ListingCommandApi {
     public static final String NOT_CROWN_HEARING = "NOT_CROWN_HEARING";
     public static final String NOT_MULTIDAY_HEARING = "NOT_MULTIDAY_HEARING";
     public static final String DUPLICATE_DAY_DATES = "DUPLICATE_DAY_DATES";
+    public static final String MISSING_COURT_SCHEDULE_ID = "MISSING_COURT_SCHEDULE_ID";
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String START_DATE = "startDate";
     private static final String JURISDICTION = "jurisdiction";
@@ -493,10 +494,13 @@ public class ListingCommandApi {
      * hearing. Days not present in {@code nonDefaultDays} are never touched. Virtual days are always
      * (re)booked in courtscheduler; a REAL day is (re)booked too when its {@code courtScheduleId}
      * differs from the hearing day's current schedule on that date, so the old session's duration is
-     * paid back and the new session's deducted (SPRDT-1225). Schema violations (missing/malformed
-     * fields) are rejected as 400 by the framework via the request schema; business failures
-     * (unknown hearing, non-CROWN, non-multiday, duplicate day dates, or a courtscheduler rejection)
-     * are all surfaced as 422 via {@link ChangeCourtRoomForMultidayException} so no command is ever sent.
+     * paid back and the new session's deducted (SPRDT-1225). A real day WITHOUT a courtScheduleId is
+     * persisted and never booked - the UI omits the id when no bookable slot exists for the room/date
+     * (e.g. the day's own session is fully consumed), which must not be a contract violation. Schema
+     * violations (missing/malformed fields) are rejected as 400 by the framework via the request
+     * schema; business failures (unknown hearing, non-CROWN, non-multiday, duplicate day dates, a
+     * virtual day without a courtScheduleId, or a courtscheduler rejection) are all surfaced as 422
+     * via {@link ChangeCourtRoomForMultidayException} so no command is ever sent.
      */
     @Handles("listing.command.change-court-room-for-multiday-hearing")
     public void handleChangeCourtRoomForMultidayHearing(final JsonEnvelope envelope) {
@@ -517,8 +521,9 @@ public class ListingCommandApi {
         // A REAL day whose courtScheduleId differs from the hearing day's CURRENT schedule on that
         // date is a room change onto another session, so it is (re)booked in courtscheduler exactly
         // like a virtual day - the old session must pay its duration back and the new session must
-        // be deducted (SPRDT-1225). A real day echoing its current schedule (or on a date without a
-        // scheduled hearing day) is never booked. Dates must be unique across the WHOLE request.
+        // be deducted (SPRDT-1225). A real day echoing its current schedule, carrying no
+        // courtScheduleId at all, or on a date without a scheduled hearing day is never booked.
+        // Dates must be unique across the WHOLE request.
         //
         // Requested days are keyed by date, so the adapter response (booked sessions) can be joined back
         // to the originating request BY DATE - the adapter is free to return its sessions in any order,
@@ -537,6 +542,11 @@ public class ListingCommandApi {
                         "Duplicate day " + date + " in nonDefaultDays");
             }
             if (nonDefaultDay.getBoolean(VIRTUAL, false)) {
+                if (nonDefaultDay.getString(COURT_SCHEDULE_ID, null) == null) {
+                    throw new ChangeCourtRoomForMultidayException(422,
+                            buildChangeCourtRoomForMultidayErrorBody(MISSING_COURT_SCHEDULE_ID, "Virtual day " + date + " requires a courtScheduleId"),
+                            "Virtual day " + date + " requires a courtScheduleId");
+                }
                 virtualRequestedByDate.put(date, nonDefaultDay);
                 daysToBook.add(new RequestedChangeDay(date, fromString(nonDefaultDay.getString(COURT_SCHEDULE_ID)),
                         nonDefaultDay.getInt(NON_DEFAULT_DAY_DURATION)));
@@ -612,21 +622,34 @@ public class ListingCommandApi {
         return scheduleByDate;
     }
 
-    /** A real day changes schedule when its date has a scheduled hearing day whose courtScheduleId differs. */
+    /**
+     * A real day changes schedule when it carries a courtScheduleId and its date has a scheduled
+     * hearing day whose courtScheduleId differs. A day without a courtScheduleId never books - the
+     * UI omits the id when it has no bookable slot for the room/date.
+     */
     private static boolean isRealDayScheduleChange(final JsonObject nonDefaultDay, final LocalDate date,
             final Map<LocalDate, String> currentScheduleByDate) {
+        final String requestedScheduleId = nonDefaultDay.getString(COURT_SCHEDULE_ID, null);
         final String currentScheduleId = currentScheduleByDate.get(date);
-        return currentScheduleId != null && !currentScheduleId.equals(nonDefaultDay.getString(COURT_SCHEDULE_ID));
+        return requestedScheduleId != null && currentScheduleId != null && !currentScheduleId.equals(requestedScheduleId);
     }
 
-    /** Enriched nonDefaultDay for a real day. roomId is the uuid room identity; the FE's legacy integer courtRoomId (if sent) is ignored. */
+    /**
+     * Enriched nonDefaultDay for a real day. roomId is the uuid room identity; the FE's legacy integer
+     * courtRoomId (if sent) is ignored. courtScheduleId is carried only when supplied - the aggregate's
+     * merge keeps the stored day's existing schedule when it is absent.
+     */
     private JsonObjectBuilder buildEnrichedRealNonDefaultDay(final JsonObject nonDefaultDay) {
-        return createObjectBuilder()
+        final JsonObjectBuilder enriched = createObjectBuilder()
                 .add(DAY_START_TIME, nonDefaultDay.getString(DAY_START_TIME))
                 .add(DAY_DURATION_MINUTES, nonDefaultDay.getInt(NON_DEFAULT_DAY_DURATION))
                 .add(COURT_CENTRE_ID, nonDefaultDay.getString(COURT_CENTRE_ID))
-                .add(ROOM_ID, nonDefaultDay.getString(ROOM_ID))
-                .add(COURT_SCHEDULE_ID, nonDefaultDay.getString(COURT_SCHEDULE_ID));
+                .add(ROOM_ID, nonDefaultDay.getString(ROOM_ID));
+        final String courtScheduleId = nonDefaultDay.getString(COURT_SCHEDULE_ID, null);
+        if (courtScheduleId != null) {
+            enriched.add(COURT_SCHEDULE_ID, courtScheduleId);
+        }
+        return enriched;
     }
 
     /**

@@ -2697,6 +2697,47 @@ class ListingCommandHandlerTest {
         assertThat(ndd.getVirtual().orElse(null), is(false));
     }
 
+    /**
+     * SPRDT-1225 regression report: a real day may arrive without a courtScheduleId (the UI has none
+     * when no bookable slot exists for the room/date). It must parse into a domain NonDefaultDay with
+     * an empty schedule - the aggregate's merge keeps the stored day's existing one - not NPE.
+     */
+    @Test
+    public void listingCommandHandlerShouldPersistRealDayWithoutCourtScheduleIdForChangeCourtRoom() throws Exception {
+        final UUID room3 = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"sendNotificationToParties\":false,"
+                + "\"changedDays\":[],"
+                + "\"nonDefaultDays\":["
+                + "{\"startTime\":\"2026-08-17T11:00:00Z\",\"durationMinutes\":360,"
+                + "\"courtCentreId\":\"" + courtCentreId + "\",\"roomId\":\"" + room3 + "\"}"
+                + "]}";
+        final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
+        final JsonEnvelope commandEnvelope = createEnvelope(
+                "listing.command.change-court-room-for-multiday-hearing-enriched", jsonReader.readObject());
+
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.changeCourtRoomForMultidayHearing(eq(HEARING_ID_1), any(), any(), any(), eq(false)))
+                .thenReturn(Stream.empty());
+
+        listingCommandHandler.changeCourtRoomForMultidayHearing(commandEnvelope);
+
+        final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.NonDefaultDay>> nonDefaultDaysCaptor = ArgumentCaptor.forClass(List.class);
+        verify(hearing, times(1)).changeCourtRoomForMultidayHearing(eq(HEARING_ID_1), any(),
+                any(), nonDefaultDaysCaptor.capture(), eq(false));
+
+        final List<uk.gov.moj.cpp.listing.domain.NonDefaultDay> nonDefaultDays = nonDefaultDaysCaptor.getValue();
+        assertThat(nonDefaultDays, hasSize(1));
+        final uk.gov.moj.cpp.listing.domain.NonDefaultDay ndd = nonDefaultDays.get(0);
+        assertThat(ndd.getStartTime(), is(ZonedDateTime.parse("2026-08-17T11:00:00Z")));
+        assertThat(ndd.getDuration().orElse(null), is(360));
+        assertThat(ndd.getCourtCentreId().orElse(null), is(courtCentreId.toString()));
+        assertThat(ndd.getRoomId().orElse(null), is(room3.toString()));
+        assertThat(ndd.getCourtScheduleId().isPresent(), is(false));
+        assertThat(ndd.getVirtual().orElse(null), is(false));
+    }
+
     @Test
     public void listingCommandHandlerShouldHearingVacateTrial() throws Exception {
         final JsonEnvelope commandEnvelope = getEnvelopeForHearingVacateTrial(REASON);

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "id": "http://justice.gov.uk/listing/courts/listing.command.change-court-room-for-multiday-hearing.json",
-  "description": "Change the courtroom of SELECTED days of a multiday CROWN hearing. Contains only the changed days; unsubmitted days are never touched. Each day carries an optional 'virtual' flag: virtual=true means the day is (re)booked via its courtScheduleId and converted to a hearing day; virtual=false/absent means the day is persisted as a real nonDefaultDay - and when its courtScheduleId differs from the hearing day's current schedule on that date it is ALSO (re)booked in courtscheduler, releasing the old session's duration and deducting the new session's (SPRDT-1225). The legacy integer 'courtRoomId' is accepted but ignored (room identity is 'roomId'). Schema violations are 400; all business failures are 422.",
+  "description": "Change the courtroom of SELECTED days of a multiday CROWN hearing. Contains only the changed days; unsubmitted days are never touched. Each day carries an optional 'virtual' flag: virtual=true means the day is (re)booked via its courtScheduleId and converted to a hearing day; virtual=false/absent means the day is persisted as a real nonDefaultDay - and when it carries a courtScheduleId that differs from the hearing day's current schedule on that date it is ALSO (re)booked in courtscheduler, releasing the old session's duration and deducting the new session's (SPRDT-1225). courtScheduleId is OPTIONAL on a real day - the UI has none to send when no bookable slot exists for the room/date (e.g. the day's own session is fully consumed); such a day is persisted as-is and never booked. A virtual day without a courtScheduleId is a 422 (booking is its whole purpose). The legacy integer 'courtRoomId' is accepted but ignored (room identity is 'roomId'). Schema violations are 400; all business failures are 422.",
   "type": "object",
   "properties": {
     "sendNotificationToParties": { "type": "boolean" },
@@ -19,7 +19,7 @@
           "virtual": { "type": "boolean" },
           "courtRoomId": { "type": "integer" }
         },
-        "required": ["startTime", "duration", "courtCentreId", "roomId", "courtScheduleId"],
+        "required": ["startTime", "duration", "courtCentreId", "roomId"],
         "additionalProperties": false
       }
     }

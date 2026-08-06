@@ -385,6 +385,64 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
                         )));
     }
 
+    /**
+     * SPRDT-1225 regression report (ccm34): the deployed UI omits courtScheduleId - and the
+     * 'virtual' flag - on a real day when no bookable slot exists for the room/date (e.g. the
+     * day's own session is fully consumed), and sends the legacy integer courtRoomId alongside
+     * the uuid roomId. That exact shape used to be a schema 400 ("required key [courtScheduleId]
+     * not found"); it must be ACCEPTED: persisted as a nonDefaultDay, moved to the requested room,
+     * keeping the stored day's existing schedule and draft state, and never sent to courtscheduler.
+     */
+    @Test
+    void shouldAcceptRealDayWithoutCourtScheduleIdMovingRoomWithoutBooking() {
+        final ThreeDayCrownHearing hearing = givenAllocatedThreeDayCrownHearing();
+        final UUID newRoom = UUID.randomUUID();
+
+        // Exact FE shape from the live repro: no courtScheduleId, no virtual, legacy int courtRoomId,
+        // custom 11:00 start time (the non-default day's whole point).
+        final String payload = "{\"sendNotificationToParties\":false,\"nonDefaultDays\":[{"
+                + "\"roomId\":\"" + newRoom + "\","
+                + "\"duration\":" + DAY_DURATION_MINUTES + ","
+                + "\"startTime\":\"" + hearing.day2 + "T11:00:00Z\","
+                + "\"courtRoomId\":235,"
+                + "\"courtCentreId\":\"" + hearing.courtCentreId + "\"}]}";
+
+        final Response response = postChangeCourtRoom(hearing.hearingId, payload);
+
+        assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
+        // No courtScheduleId -> nothing to (re)book: courtscheduler is never called.
+        verifyChangeCourtRoomForMultidayHearingNeverCalled(hearing.hearingId.toString());
+
+        pollWithDefaults(requestParams(searchHearingUrl(hearing.hearingId), MEDIA_TYPE_SEARCH_HEARING)
+                .withHeader(USER_ID, getLoggedInUser()).build())
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.id", is(hearing.hearingId.toString())),
+                                withJsonPath("$.hearingDays", hasSize(3)),
+                                // d2 moved to the requested room WITHOUT a booking...
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].courtRoomId",
+                                        hasItem(newRoom.toString())),
+                                // ...keeping the stored day's existing schedule and draft state (no
+                                // courtScheduleId was supplied, so the merge preserves them).
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].courtScheduleId",
+                                        hasItem(hearing.scheduleD2.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].isDraft",
+                                        hasItem(false)),
+                                // ...and the custom 11:00 start time survives (prefix match - the blob's
+                                // timestamp format carries millis).
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].startTime",
+                                        hasItem(startsWith(hearing.day2 + "T11:00"))),
+                                // Persisted as a nonDefaultDay carrying the requested room.
+                                withJsonPath("$.nonDefaultDays[*].roomId", hasItem(newRoom.toString())),
+                                // Untouched days keep room + schedule.
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtRoomId",
+                                        hasItem(hearing.courtRoomId.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day3 + "')].courtScheduleId",
+                                        hasItem(hearing.scheduleD3.toString()))
+                        )));
+    }
+
     @Test
     void shouldReturn400WhenDurationExceedsMaximum() {
         final ThreeDayCrownHearing hearing = givenAllocatedThreeDayCrownHearing();
@@ -403,8 +461,17 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
         verifyChangeCourtRoomForMultidayHearingNeverCalled(hearing.hearingId.toString());
     }
 
+    // ---------------------------------------------------------------------------------------
+    // Group 3: business 422s — synchronous rejection from ListingCommandApi, no side effects.
+    // ---------------------------------------------------------------------------------------
+
+    /**
+     * courtScheduleId is optional at the schema layer (real days may legitimately omit it -
+     * SPRDT-1225 regression report), so a VIRTUAL day without one is now a business 422
+     * (booking is its whole purpose), no longer a schema 400.
+     */
     @Test
-    void shouldReturn400WhenCourtScheduleIdMissing() {
+    void shouldReturn422WhenVirtualDayHasNoCourtScheduleId() {
         final ThreeDayCrownHearing hearing = givenAllocatedThreeDayCrownHearing();
 
         final String payload = "{\"nonDefaultDays\":[{"
@@ -416,13 +483,10 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
 
         final Response response = postChangeCourtRoom(hearing.hearingId, payload);
 
-        assertThat(response.getStatus(), is(400));
+        assertThat(response.getStatus(), is(422));
+        assertThat(response.readEntity(String.class), containsString("MISSING_COURT_SCHEDULE_ID"));
         verifyChangeCourtRoomForMultidayHearingNeverCalled(hearing.hearingId.toString());
     }
-
-    // ---------------------------------------------------------------------------------------
-    // Group 3: business 422s — synchronous rejection from ListingCommandApi, no side effects.
-    // ---------------------------------------------------------------------------------------
 
     @Test
     void shouldReturn422OnDuplicateDayDates() {
