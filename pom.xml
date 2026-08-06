@@ -4,7 +4,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.common</groupId>
         <artifactId>service-parent-pom</artifactId>
-        <version>25.104.0-M7</version>
+        <version>25.104.0-M10</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -29,15 +29,15 @@
         <sonar.report.export.path>sonar-report.json</sonar.report.export.path>
         <sonar.scm.provider>git</sonar.scm.provider>
         <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
-        <coredomain.version>25.104.0-M7</coredomain.version>
+        <coredomain.version>25.104.0-M11</coredomain.version>
         <!-- JUnit Platform launcher: aligned with junit-platform-engine/commons 1.14.3 (transitive from junit-jupiter
              ${junit.version}=5.14.3). Not managed by the BOM; the old hardcoded 1.9.2 clashed with 1.14.3 and broke
              failsafe test discovery ("OutputDirectoryCreator not available"). -->
         <junit.platform.version>1.14.3</junit.platform.version>
-        <referencedata.version>17.103.133</referencedata.version>
+        <referencedata.version>17.104.138</referencedata.version>
         <documentgenerator-client.version>1.0.4</documentgenerator-client.version>
         <sardine.version>5.7</sardine.version>
-        <progression.version>17.0.269</progression.version>
+        <progression.version>17.0.283</progression.version>
 
         <org.xmlunit.version>2.6.3</org.xmlunit.version>    <!-- Version property added to common-bom:2.2.1. Replace with org.xmlunit.version after upgrade to Framework 6 -->
 
@@ -50,8 +50,8 @@
         <postgresql.version>42.1.4</postgresql.version>
         <mssql.jdbc.version>7.0.0.jre8</mssql.jdbc.version>
         <commons-csv.version>1.4</commons-csv.version>
-        <defence.version>17.0.94</defence.version>
-        <usersgroups.version>17.104.49</usersgroups.version>
+        <defence.version>17.104.102</defence.version>
+        <usersgroups.version>17.104.50</usersgroups.version>
 
         <sonar.coverage.exclusions>
             **/uk/gov/justice/api/mapper/**/*,
