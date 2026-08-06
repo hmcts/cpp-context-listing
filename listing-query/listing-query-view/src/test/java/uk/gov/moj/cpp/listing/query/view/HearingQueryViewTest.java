@@ -683,6 +683,9 @@ public class HearingQueryViewTest {
         final Set<String> MASTER_DEFENDANT_IDS = new HashSet<>();
         MASTER_DEFENDANT_IDS.add("d676f354-ba50-462e-bd55-4e8842d29ebd");
 
+        final Set<UUID> MASTER_DEFENDANT_UUIDS = new HashSet<>();
+        MASTER_DEFENDANT_UUIDS.add(UUID.fromString("d676f354-ba50-462e-bd55-4e8842d29ebd"));
+
         final Set<String> CASE_URN_SET = new HashSet<>();
         CASE_URN_SET.add("CCC333");
         CASE_URN_SET.add("DDD444");
@@ -703,7 +706,7 @@ public class HearingQueryViewTest {
                     jurisdictionTypeSet,
                     ID.toString(),
                     CASE_URN_SET,
-                    MASTER_DEFENDANT_IDS,
+                    MASTER_DEFENDANT_UUIDS,
                     LINKED_CASE_SET,
                     null, LocalDate.now()))
                     .thenReturn(hearingsJson);
@@ -759,7 +762,7 @@ public class HearingQueryViewTest {
         verify(hearingRepository).findBy(eq(ID));
         if(returnAllHearings){
             verify(hearingRepository).findHearings(eq(jurisdictionTypeSet),
-                    eq(ID.toString()), eq(CASE_URN_SET), eq(MASTER_DEFENDANT_IDS), eq(LINKED_CASE_SET), eq(null), eq(LocalDate.now()));
+                    eq(ID.toString()), eq(CASE_URN_SET), eq(MASTER_DEFENDANT_UUIDS), eq(LINKED_CASE_SET), eq(null), eq(LocalDate.now()));
         }else {
             verify(hearingRepository).findHearings(eq(ALLOCATED), eq(jurisdictionTypeSet),
                     eq(ID.toString()), eq(CASE_URN_SET), eq(MASTER_DEFENDANT_IDS), eq(LINKED_CASE_SET), eq(null), eq(LocalDate.now()));
