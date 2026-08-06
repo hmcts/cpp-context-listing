@@ -17,6 +17,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.6-SNAPSHOT</version>
@@ -57,6 +58,9 @@
 =======
         <version>17.104.13-cct-1981-SNAPSHOT</version>
 >>>>>>> 1549e13a6c (New 17.104.13-cct-1981-SNAPSHOT)
+=======
+        <version>17.104.9-SQL-SNAPSHOT</version>
+>>>>>>> 3c3e55bd81 (updated for team snapshots)
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
