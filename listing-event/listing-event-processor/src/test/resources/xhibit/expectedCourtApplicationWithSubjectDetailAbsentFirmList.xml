@@ -91,6 +91,17 @@
                                     </cs:PersonalDetails>
                                     <cs:URN>XG11689619</cs:URN>
                                 </cs:Defendant>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameForename>Anabelle</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>Reichert</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Anabelle Reichert</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:URN>XG11689619</cs:URN>
+                                </cs:Defendant>
                             </cs:Defendants>
                         </cs:Hearing>
                     </cs:Hearings>

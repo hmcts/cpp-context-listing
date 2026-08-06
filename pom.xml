@@ -4,14 +4,14 @@
     <parent>
         <groupId>uk.gov.moj.cpp.common</groupId>
         <artifactId>service-parent-pom</artifactId>
-        <version>17.104.1</version>
+        <version>17.104.4</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
 
     <groupId>uk.gov.moj.cpp.listing</groupId>
     <artifactId>listing-parent</artifactId>
-    <version>17.104.7-PAST-SNAPSHOT</version>
+    <version>17.104.9-SQL-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Listing Context Microservice Parent</name>
@@ -30,7 +30,7 @@
         <sonar.scm.provider>git</sonar.scm.provider>
         <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
         <coredomain.version>17.104.3</coredomain.version>
-        <referencedata.version>17.103.133</referencedata.version>
+        <referencedata.version>17.104.137</referencedata.version>
         <documentgenerator-client.version>1.0.4</documentgenerator-client.version>
         <sardine.version>5.7</sardine.version>
         <progression.version>17.0.269</progression.version>
@@ -112,12 +112,12 @@
               the counter (correct depth accounting) while keeping the guard. 2.5.2 verified against
               the failing payload and compatible with json-path 2.9.0.
               https://github.com/aws-solutions/distributed-load-testing-on-aws/issues/146
-            -->
+
             <dependency>
                 <groupId>net.minidev</groupId>
                 <artifactId>json-smart</artifactId>
                 <version>2.5.2</version>
-            </dependency>
+            </dependency> -->
             <dependency>
                 <groupId>uk.gov.justice.services</groupId>
                 <artifactId>domain-test-dsl</artifactId>

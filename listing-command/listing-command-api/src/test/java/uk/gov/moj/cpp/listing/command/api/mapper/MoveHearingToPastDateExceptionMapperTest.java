@@ -28,7 +28,7 @@ class MoveHearingToPastDateExceptionMapperTest {
     void futureDate_returns422_withErrorCodeAndMessage() {
         final JsonObject body = createObjectBuilder()
                 .add("errorCode", "FUTURE_DATE_NOT_ALLOWED")
-                .add("message", "Hearings can only be moved to today or an earlier date")
+                .add("message", "Hearings can only be moved to an earlier date")
                 .build();
 
         final Response response = mapper.toResponse(new MoveHearingToPastDateException(422, body, "rejected"));
@@ -36,20 +36,20 @@ class MoveHearingToPastDateExceptionMapperTest {
         assertThat(response.getStatus(), is(422));
         final String entity = response.getEntity().toString();
         assertThat(entity, containsString("\"errorCode\":\"FUTURE_DATE_NOT_ALLOWED\""));
-        assertThat(entity, containsString("\"message\":\"Hearings can only be moved to today or an earlier date\""));
+        assertThat(entity, containsString("\"message\":\"Hearings can only be moved to an earlier date\""));
     }
 
     @Test
-    void unknownHearing_returns422_withHearingIdNotFound() {
+    void multiDayMove_returns422_withMultiDayNotAllowed() {
         final JsonObject body = createObjectBuilder()
-                .add("errorCode", "HEARING_ID_NOT_FOUND")
-                .add("message", "No hearing found")
+                .add("errorCode", "MULTI_DAY_NOT_ALLOWED")
+                .add("message", "Hearings can only be moved to a single date")
                 .build();
 
         final Response response = mapper.toResponse(new MoveHearingToPastDateException(422, body, "rejected"));
 
         assertThat(response.getStatus(), is(422));
-        assertThat(response.getEntity().toString(), containsString("\"errorCode\":\"HEARING_ID_NOT_FOUND\""));
+        assertThat(response.getEntity().toString(), containsString("\"errorCode\":\"MULTI_DAY_NOT_ALLOWED\""));
     }
 
     @Test

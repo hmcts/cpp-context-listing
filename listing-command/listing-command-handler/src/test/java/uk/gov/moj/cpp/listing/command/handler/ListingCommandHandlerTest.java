@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.command.handler;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.time.ZonedDateTime.parse;
+import static java.lang.Boolean.FALSE;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.empty;
@@ -17,6 +18,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -29,6 +31,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -250,6 +253,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -2559,13 +2563,17 @@ class ListingCommandHandlerTest {
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearing.changeStartDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.changeEndDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
         when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()))).thenReturn(Stream.empty());
+        when(hearing.applyAllocationRules(anyList(), any(Boolean.class), any(Boolean.class))).thenReturn(Stream.empty());
+        when(hearing.applyRescheduledCheck(anyList())).thenReturn(Stream.empty());
 
         listingCommandHandler.moveHearingToPastDate(commandEnvelope);
 
         final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.HearingDay>> captor = ArgumentCaptor.forClass(List.class);
         verify(hearing, times(1)).changeStartDate(LocalDate.parse("2026-05-01"), HEARING_ID_1);
+        verify(hearing, times(1)).changeEndDate(LocalDate.parse("2026-05-01"), HEARING_ID_1);
         verify(hearing, times(1)).assignHearingDaysV2(eq(HEARING_ID_1), captor.capture(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()));
         verify(hearing, never()).raiseHearingDayCourtSchedulesUpdated(any(), any());
@@ -2583,13 +2591,17 @@ class ListingCommandHandlerTest {
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearing.changeStartDate(eq(LocalDate.parse(startDate)), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.changeEndDate(eq(LocalDate.parse(startDate)), eq(HEARING_ID_1))).thenReturn(Stream.empty());
         when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.CROWN), eq(emptyList()))).thenReturn(Stream.empty());
+        when(hearing.applyAllocationRules(anyList(), any(Boolean.class), any(Boolean.class))).thenReturn(Stream.empty());
+        when(hearing.applyRescheduledCheck(anyList())).thenReturn(Stream.empty());
 
         listingCommandHandler.moveHearingToPastDate(commandEnvelope);
 
         final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.HearingDay>> captor = ArgumentCaptor.forClass(List.class);
         verify(hearing, times(1)).changeStartDate(LocalDate.parse(startDate), HEARING_ID_1);
+        verify(hearing, times(1)).changeEndDate(LocalDate.parse(startDate), HEARING_ID_1);
         verify(hearing, times(1)).assignHearingDaysV2(eq(HEARING_ID_1), captor.capture(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.CROWN), eq(emptyList()));
         verify(hearing, never()).raiseHearingDayCourtSchedulesUpdated(any(), any());
@@ -2606,18 +2618,51 @@ class ListingCommandHandlerTest {
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearing.changeStartDate(eq(LocalDate.parse("2026-07-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.changeEndDate(eq(LocalDate.parse("2026-07-02")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
         when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()))).thenReturn(Stream.empty());
+        when(hearing.applyAllocationRules(anyList(), any(Boolean.class), any(Boolean.class))).thenReturn(Stream.empty());
+        when(hearing.applyRescheduledCheck(anyList())).thenReturn(Stream.empty());
 
         listingCommandHandler.moveHearingToPastDate(commandEnvelope);
 
         final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.HearingDay>> captor = ArgumentCaptor.forClass(List.class);
         verify(hearing, times(1)).changeStartDate(LocalDate.parse("2026-07-01"), HEARING_ID_1);
+        verify(hearing, times(1)).changeEndDate(LocalDate.parse("2026-07-02"), HEARING_ID_1);
         verify(hearing, times(1)).assignHearingDaysV2(eq(HEARING_ID_1), captor.capture(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()));
         assertThat(captor.getValue().size(), is(2));
         assertThat(captor.getValue().get(0).getHearingDate(), is(LocalDate.parse("2026-07-01")));
         assertThat(captor.getValue().get(1).getHearingDate(), is(LocalDate.parse("2026-07-02")));
+    }
+
+    @Test
+    public void moveHearingToPastDateShouldApplyAllocationRulesWithNotificationsSuppressedAndRescheduledCheck() throws Exception {
+        final UUID courtScheduleId = randomUUID();
+        final JsonEnvelope commandEnvelope = getEnvelopeForMoveHearingToPastDate(courtScheduleId, "2026-05-01");
+
+        final Object startDateChangedEvent = new Object();
+
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.changeStartDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.of(startDateChangedEvent));
+        when(hearing.changeEndDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
+                eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()))).thenReturn(Stream.empty());
+        when(hearing.applyAllocationRules(anyList(), any(Boolean.class), any(Boolean.class))).thenReturn(Stream.empty());
+        when(hearing.applyRescheduledCheck(anyList())).thenReturn(Stream.empty());
+
+        listingCommandHandler.moveHearingToPastDate(commandEnvelope);
+
+        // allocation rules must run AFTER the day events so the private event snapshots the moved days
+        final InOrder inOrder = inOrder(hearing);
+        inOrder.verify(hearing).assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
+                eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()));
+        inOrder.verify(hearing).applyAllocationRules(eq(emptyList()), eq(FALSE), eq(FALSE));
+
+        final ArgumentCaptor<List<Object>> rescheduledCaptor = ArgumentCaptor.forClass(List.class);
+        verify(hearing).applyRescheduledCheck(rescheduledCaptor.capture());
+        assertThat(rescheduledCaptor.getValue(), contains(startDateChangedEvent));
     }
 
     @Test
@@ -4090,24 +4135,6 @@ class ListingCommandHandlerTest {
     }
 
     @Test
-    public void shouldHandleCorrectHearingDaysWithoutCourtCentreCommand() throws EventStreamException, IOException {
-        final String hearingId = randomUUID().toString();
-        final String hearingDaysUpdatedJson = "[{\"durationMinutes\":15,\"endTime\":\"2020-09-24T13:15:00.000Z\",\"hearingDate\":\"2020-09-24\",\"sequence\":0,\"startTime\":\"2020-09-24T13:00:00.000Z\",\"courtRoomId\":\"b4562684-9209-3ec4-a544-7f80dabd94d8\",\"courtCentreId\":\"f8254db1-1683-483e-afb3-b87fde5a0a26\"}]";
-
-        final JsonObject payloadToBeCorrected = createObjectBuilder()
-                .add("id", hearingId)
-                .add("hearingDays", objectMapper.readValue(hearingDaysUpdatedJson, JsonArray.class)).build();
-
-        final JsonEnvelope commandEnvelope = envelopeFrom(metadataWithRandomUUID("listing.command.correct-hearing-days-without-court-centre"), payloadToBeCorrected);
-        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
-
-        listingCommandHandler.correctHearingDaysWithoutCourtCentre(commandEnvelope);
-
-        verify(hearing).raiseHearingDaysWithoutCourtCentreCorrected(any(), any());
-
-    }
-
-    @Test
     public void shouldHandleUpdateHearingDaysWithoutCourtSchedule() throws EventStreamException, IOException {
         final String hearingId = randomUUID().toString();
         final String hearingDaysUpdatedJson = "[{\"durationMinutes\":15,\"endTime\":\"2020-09-24T13:15:00.000Z\",\"hearingDate\":\"2020-09-24\",\"sequence\":0,\"startTime\":\"2020-09-24T13:00:00.000Z\",\"courtRoomId\":\"b4562684-9209-3ec4-a544-7f80dabd94d8\",\"courtCentreId\":\"f8254db1-1683-483e-afb3-b87fde5a0a26\"}]";
@@ -4122,6 +4149,34 @@ class ListingCommandHandlerTest {
         listingCommandHandler.updateHearingDayCourtSchedule(commandEnvelope);
 
         verify(hearing).raiseHearingDayCourtSchedulesUpdated(any(), any());
+    }
+
+    @Test
+    public void shouldMigrateCrownHearingsToCourtSchedulesForEachHearing() throws EventStreamException, IOException {
+        final UUID hearingId1 = randomUUID();
+        final UUID hearingId2 = randomUUID();
+        final String daysJson1 = "[{\"hearingDate\":\"2026-06-22\",\"courtScheduleId\":\"df44e775-d809-4836-a14d-5a9f7c2078c1\"}]";
+        final String daysJson2 = "[{\"hearingDate\":\"2026-07-14\",\"courtScheduleId\":\"1b9a4f02-77c1-4e0a-8d3b-2c5e9f10a644\"},{\"hearingDate\":\"2026-07-15\",\"courtScheduleId\":\"2c0b5103-88d2-4f1b-9e4c-3d6fa021b755\"}]";
+
+        final JsonArray hearings = createArrayBuilder()
+                .add(createObjectBuilder()
+                        .add("hearingId", hearingId1.toString())
+                        .add("hearingDayCourtSchedules", objectMapper.readValue(daysJson1, JsonArray.class)))
+                .add(createObjectBuilder()
+                        .add("hearingId", hearingId2.toString())
+                        .add("hearingDayCourtSchedules", objectMapper.readValue(daysJson2, JsonArray.class)))
+                .build();
+        final JsonObject payload = createObjectBuilder().add("hearings", hearings).build();
+
+        final JsonEnvelope commandEnvelope = envelopeFrom(metadataWithRandomUUID("listing.command.migrate-crown-hearings-to-courtschedules"), payload);
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+
+        listingCommandHandler.migrateCrownHearingsToCourtSchedules(commandEnvelope);
+
+        verify(eventSource).getStreamById(hearingId1);
+        verify(eventSource).getStreamById(hearingId2);
+        verify(hearing, times(2)).raiseCrownHearingMigratedToCourtSchedule(any(), any());
+        verify(eventStream, times(2)).append(any());
     }
 
     private void shouldRequestPublicationOfACourtListForAllCrownCourtsAsExpected(final LocalDate dayOfRequest, final LocalDate expectedListingDate) {
