@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.command.api.service;
 
+import static java.time.DayOfWeek.SATURDAY;
+import static java.time.DayOfWeek.SUNDAY;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
@@ -306,20 +308,40 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     ? hearing.getCourtCentreId().toString()
                     : fallbackCourtCentreId;
 
-            final List<CourtSchedule> sessions = multiDaySearchAndBook(
+            // courtscheduler books consecutive business days and knows nothing about non-sitting days,
+            // so a block whose span straddles one comes back a sitting day short: the non-sitting date
+            // is booked, then filtered out downstream and its minutes are lost. Ask for the extra
+            // business days the block has to step over so the surviving sitting days still add up.
+            final List<LocalDate> nonSittingDays = isEmpty(hearing.getNonSittingDays())
+                    ? Collections.<LocalDate>emptyList()
+                    : hearing.getNonSittingDays();
+            final int nonSittingDaysInBlock = nonSittingDaysInsideBlock(anchorDate, totalDuration, nonSittingDays);
+            final int requestedDuration = totalDuration
+                    + nonSittingDaysInBlock * HearingDurationEnrichmentService.MINUTES_IN_DAY;
+            if (nonSittingDaysInBlock > 0) {
+                LOGGER.info("CROWN multi-day update: block for hearingId {} steps over {} non-sitting day(s); requesting {} minutes instead of {} so the sitting days keep the full duration.",
+                        hearing.getHearingId(), nonSittingDaysInBlock, requestedDuration, totalDuration);
+            }
+
+            final List<CourtSchedule> bookedSessions = multiDaySearchAndBook(
                     anchorCourtScheduleId,
-                    totalDuration,
+                    requestedDuration,
                     hearing.getHearingId().toString(),
                     courtCentreId,
                     anchorDate != null ? anchorDate.toString() : LocalDate.now().toString());
 
-            if (isEmpty(sessions)) {
+            if (isEmpty(bookedSessions)) {
                 LOGGER.warn("CROWN multi-day update: no sessions found for hearingId {} — marking days draft so allocation stays closed.", hearing.getHearingId());
                 return markDaysDraftWhenSessionsUnresolved(hearing);
             }
 
+            // Sessions booked on a non-sitting date are dropped here rather than downstream, so the
+            // per-day duration below is divided across sitting days only. Those bookings stay on
+            // courtscheduler: a non-sitting day never pays its slots back.
+            final List<CourtSchedule> sessions = sittingSessions(bookedSessions, nonSittingDays, hearing.getHearingId());
+
             final LocalDate requestedStartDate = hearing.getStartDate();
-            final LocalDate bookedBlockStartDate = sessions.stream()
+            final LocalDate bookedBlockStartDate = bookedSessions.stream()
                     .map(CourtSchedule::getSessionDate)
                     .filter(d -> nonNull(d))
                     .min(LocalDate::compareTo)
@@ -516,6 +538,76 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         return hearing.getNonDefaultDays().stream()
                 .filter(CrownNonDefaultDaysValidator::isBlockDescriptor)
                 .findFirst();
+    }
+
+    /**
+     * How many business days the block has to step over to collect the sitting days it needs.
+     * courtscheduler sizes a block as {@code duration / MINUTES_IN_DAY} CONSECUTIVE business days from
+     * the anchor and has no notion of non-sitting days, so each non-sitting date inside that span costs
+     * the hearing a sitting day unless the request is lengthened by one day per date stepped over.
+     *
+     * <p>The walk skips weekends the way courtscheduler does, and stops at the last non-sitting date:
+     * past it no iteration can change the answer, only tick off sitting days. That keeps the work
+     * proportional to the non-sitting dates supplied rather than to the requested duration, which the
+     * payload schema does not bound — a block claiming millions of minutes must not buy itself millions
+     * of iterations.</p>
+     */
+    private static int nonSittingDaysInsideBlock(final LocalDate anchorDate,
+                                                 final int totalDuration,
+                                                 final List<LocalDate> nonSittingDays) {
+        if (isNull(anchorDate) || isEmpty(nonSittingDays)) {
+            return 0;
+        }
+        final Optional<LocalDate> lastNonSittingDay = nonSittingDays.stream()
+                .filter(day -> nonNull(day) && !day.isBefore(anchorDate))
+                .max(LocalDate::compareTo);
+        if (lastNonSittingDay.isEmpty()) {
+            return 0;
+        }
+        final int sittingDaysNeeded = totalDuration / HearingDurationEnrichmentService.MINUTES_IN_DAY;
+        int sittingDaysFound = 0;
+        int nonSittingDaysStepped = 0;
+        for (LocalDate date = anchorDate;
+             sittingDaysFound < sittingDaysNeeded && !date.isAfter(lastNonSittingDay.get());
+             date = date.plusDays(1)) {
+            if (date.getDayOfWeek() == SATURDAY || date.getDayOfWeek() == SUNDAY) {
+                continue;
+            }
+            if (nonSittingDays.contains(date)) {
+                nonSittingDaysStepped++;
+            } else {
+                sittingDaysFound++;
+            }
+        }
+        return nonSittingDaysStepped;
+    }
+
+    /**
+     * The booked sessions the hearing actually sits on. A session courtscheduler booked on a
+     * non-sitting date is dropped from the hearing but deliberately left booked: non-sitting days do
+     * not pay their slots back. Returns the full list when filtering would leave nothing, so a payload
+     * whose every booked date is non-sitting degrades to the previous behaviour instead of dividing by
+     * zero.
+     */
+    private static List<CourtSchedule> sittingSessions(final List<CourtSchedule> bookedSessions,
+                                                       final List<LocalDate> nonSittingDays,
+                                                       final UUID hearingId) {
+        if (isEmpty(nonSittingDays)) {
+            return bookedSessions;
+        }
+        final List<CourtSchedule> sitting = bookedSessions.stream()
+                .filter(session -> isNull(session.getSessionDate())
+                        || !nonSittingDays.contains(session.getSessionDate()))
+                .toList();
+        if (isEmpty(sitting)) {
+            LOGGER.warn("CROWN multi-day update: every booked session for hearingId {} falls on a non-sitting day — keeping the booked block as-is.", hearingId);
+            return bookedSessions;
+        }
+        if (sitting.size() < bookedSessions.size()) {
+            LOGGER.info("CROWN multi-day update: dropped {} session(s) booked on non-sitting days for hearingId {}; those slots stay booked on courtscheduler.",
+                    bookedSessions.size() - sitting.size(), hearingId);
+        }
+        return sitting;
     }
 
     /**
