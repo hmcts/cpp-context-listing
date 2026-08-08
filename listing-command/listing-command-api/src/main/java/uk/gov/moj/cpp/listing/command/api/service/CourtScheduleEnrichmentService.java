@@ -546,9 +546,11 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
      * the anchor and has no notion of non-sitting days, so each non-sitting date inside that span costs
      * the hearing a sitting day unless the request is lengthened by one day per date stepped over.
      *
-     * <p>The walk skips weekends the way courtscheduler does. It terminates on any input:
-     * {@code nonSittingDays} is finite, so every iteration either finds a sitting day or consumes one
-     * of its dates.</p>
+     * <p>The walk skips weekends the way courtscheduler does, and stops at the last non-sitting date:
+     * past it no iteration can change the answer, only tick off sitting days. That keeps the work
+     * proportional to the non-sitting dates supplied rather than to the requested duration, which the
+     * payload schema does not bound — a block claiming millions of minutes must not buy itself millions
+     * of iterations.</p>
      */
     private static int nonSittingDaysInsideBlock(final LocalDate anchorDate,
                                                  final int totalDuration,
@@ -556,10 +558,18 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         if (isNull(anchorDate) || isEmpty(nonSittingDays)) {
             return 0;
         }
+        final Optional<LocalDate> lastNonSittingDay = nonSittingDays.stream()
+                .filter(day -> nonNull(day) && !day.isBefore(anchorDate))
+                .max(LocalDate::compareTo);
+        if (lastNonSittingDay.isEmpty()) {
+            return 0;
+        }
         final int sittingDaysNeeded = totalDuration / HearingDurationEnrichmentService.MINUTES_IN_DAY;
         int sittingDaysFound = 0;
         int nonSittingDaysStepped = 0;
-        for (LocalDate date = anchorDate; sittingDaysFound < sittingDaysNeeded; date = date.plusDays(1)) {
+        for (LocalDate date = anchorDate;
+             sittingDaysFound < sittingDaysNeeded && !date.isAfter(lastNonSittingDay.get());
+             date = date.plusDays(1)) {
             if (date.getDayOfWeek() == SATURDAY || date.getDayOfWeek() == SUNDAY) {
                 continue;
             }
