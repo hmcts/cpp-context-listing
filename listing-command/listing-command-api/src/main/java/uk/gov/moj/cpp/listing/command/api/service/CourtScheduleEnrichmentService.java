@@ -87,9 +87,6 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CourtScheduleEnrichmentService.class);
 
-    /** Upper bound on the business days a multi-day block may span while stepping over non-sitting days. */
-    private static final int MAX_BLOCK_BUSINESS_DAYS = 260;
-
     public static final String HEARING_DATE = "hearingDate";
     public static final String HEARING_SESSION_DATE_CUT_OFF = "hearingSessionDateSearchCutOff";
     public static final String HEARING_START_TIME = "hearingStartTime";
@@ -549,10 +546,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
      * the anchor and has no notion of non-sitting days, so each non-sitting date inside that span costs
      * the hearing a sitting day unless the request is lengthened by one day per date stepped over.
      *
-     * <p>Counting walks business days (courtscheduler skips weekends the same way) and stops once
-     * enough sitting days are collected. The walk is bounded: a run of non-sitting days longer than
-     * {@code MAX_BLOCK_BUSINESS_DAYS} means an implausible payload, and returning 0 leaves the previous
-     * behaviour untouched rather than requesting an unbounded block.</p>
+     * <p>The walk skips weekends the way courtscheduler does. It terminates on any input:
+     * {@code nonSittingDays} is finite, so every iteration either finds a sitting day or consumes one
+     * of its dates.</p>
      */
     private static int nonSittingDaysInsideBlock(final LocalDate anchorDate,
                                                  final int totalDuration,
@@ -563,21 +559,17 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         final int sittingDaysNeeded = totalDuration / HearingDurationEnrichmentService.MINUTES_IN_DAY;
         int sittingDaysFound = 0;
         int nonSittingDaysStepped = 0;
-        LocalDate date = anchorDate;
-        for (int businessDaysWalked = 0;
-             sittingDaysFound < sittingDaysNeeded && businessDaysWalked < MAX_BLOCK_BUSINESS_DAYS;
-             date = date.plusDays(1)) {
+        for (LocalDate date = anchorDate; sittingDaysFound < sittingDaysNeeded; date = date.plusDays(1)) {
             if (date.getDayOfWeek() == SATURDAY || date.getDayOfWeek() == SUNDAY) {
                 continue;
             }
-            businessDaysWalked++;
             if (nonSittingDays.contains(date)) {
                 nonSittingDaysStepped++;
             } else {
                 sittingDaysFound++;
             }
         }
-        return sittingDaysFound < sittingDaysNeeded ? 0 : nonSittingDaysStepped;
+        return nonSittingDaysStepped;
     }
 
     /**
