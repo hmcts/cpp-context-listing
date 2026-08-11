@@ -319,19 +319,27 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
         if (isNull(properties)) {
             return exParteCaseIds;
         }
-        for (final JsonNode listedCasesNode : properties.findValues(LISTED_CASES)) {
-            if (listedCasesNode.isArray()) {
-                for (final JsonNode listedCase : listedCasesNode) {
-                    if (isExparteOffenceCase(listedCase)) {
-                        final JsonNode idNode = listedCase.path(ID);
-                        if (!idNode.isMissingNode()) {
-                            exParteCaseIds.add(idNode.asText());
-                        }
-                    }
-                }
-            }
-        }
+        properties.findValues(LISTED_CASES).forEach(listedCasesNode -> addExParteCaseIds(listedCasesNode, exParteCaseIds));
         return exParteCaseIds;
+    }
+
+    private void addExParteCaseIds(final JsonNode listedCasesNode, final Set<String> exParteCaseIds) {
+        if (!listedCasesNode.isArray()) {
+            return;
+        }
+        for (final JsonNode listedCase : listedCasesNode) {
+            addExParteCaseIdIfApplicable(listedCase, exParteCaseIds);
+        }
+    }
+
+    private void addExParteCaseIdIfApplicable(final JsonNode listedCase, final Set<String> exParteCaseIds) {
+        if (!isExparteOffenceCase(listedCase)) {
+            return;
+        }
+        final JsonNode idNode = listedCase.path(ID);
+        if (!idNode.isMissingNode()) {
+            exParteCaseIds.add(idNode.asText());
+        }
     }
 
     private JsonNode removeCourtApplicationsLinkedToExParteCases(final JsonNode properties, final Set<String> exParteCaseIds) {
