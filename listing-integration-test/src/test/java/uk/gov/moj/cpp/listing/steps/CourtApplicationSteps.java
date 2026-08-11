@@ -126,6 +126,19 @@ public class CourtApplicationSteps extends AbstractIT {
         request = courtApplicationUpdateDataObject.toString();
     }
 
+    public void whenCourtApplicationIsAddedToHearing(final UUID hearingId, final UUID linkedCaseId) {
+        final CourtApplicationData courtApplicationData = hearingsData.getHearingData().get(0).getCourtApplications().get(0);
+        final CourtApplication courtApplication = getCourtApplication(courtApplicationData, linkedCaseId);
+        final AddCourtApplicationData addCourtApplicationData = new AddCourtApplicationData(hearingId, courtApplication);
+        final JsonObject courtApplicationUpdateDataObject = (JsonObject) objectToJsonValueConverter.convert(addCourtApplicationData);
+        sendMessage(
+                publicEventCourtApplicationAdded,
+                PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED,
+                courtApplicationUpdateDataObject,
+                metadataOf(randomUUID(), PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED).withUserId(randomUUID().toString()).build());
+        request = courtApplicationUpdateDataObject.toString();
+    }
+
     public void whenCaseCourtApplicationUpdatedPublicEventIsPublished() {
         CourtApplicationUpdateData courtApplicationUpdateData = getUpdateCourtApplicationForHearingsData(hearingsData);
         final JsonObject courtApplicationUpdateDataObject = (JsonObject) objectToJsonValueConverter.convert(courtApplicationUpdateData);
@@ -274,6 +287,10 @@ public class CourtApplicationSteps extends AbstractIT {
     }
 
     private CourtApplication getCourtApplication(final CourtApplicationData courtApplicationData) {
+        return getCourtApplication(courtApplicationData, LINKED_CASE_ID);
+    }
+
+    private CourtApplication getCourtApplication(final CourtApplicationData courtApplicationData, final UUID linkedCaseId) {
         return CourtApplication.courtApplication()
                 .withApplicant(CourtApplicationParty.courtApplicationParty()
                         .withPersonDetails(Person.person()
@@ -309,7 +326,7 @@ public class CourtApplicationSteps extends AbstractIT {
                         .withNotificationRequired(false)
                         .build()))
                 .withId(courtApplicationData.getId())
-                .withCourtApplicationCases(singletonList(CourtApplicationCase.courtApplicationCase().withProsecutionCaseId(LINKED_CASE_ID)
+                .withCourtApplicationCases(singletonList(CourtApplicationCase.courtApplicationCase().withProsecutionCaseId(linkedCaseId)
                         .withProsecutionCaseIdentifier(ProsecutionCaseIdentifier.prosecutionCaseIdentifier()
                                 .withCaseURN(STRING.next())
                                 .withProsecutionAuthorityId(randomUUID())

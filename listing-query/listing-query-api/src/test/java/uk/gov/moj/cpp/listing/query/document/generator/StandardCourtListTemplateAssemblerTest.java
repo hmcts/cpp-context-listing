@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.query.document.generator;
 
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.time.ZoneOffset.UTC;
@@ -12,7 +14,9 @@ import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.commons.lang3.StringUtils.SPACE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.nullValue;
@@ -50,6 +54,7 @@ import uk.gov.moj.cpp.listing.query.document.generator.courtlist.HearingDate;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Offence;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.StandardCourtList;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Timeslot;
+import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 
 import java.io.StringReader;
 import java.time.LocalDate;
@@ -71,6 +76,7 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.collections.MapUtils;
 import org.hamcrest.CoreMatchers;
@@ -540,6 +546,112 @@ public class StandardCourtListTemplateAssemblerTest {
         StandardCourtList courtList = jsonObjectToObjectConverter.convert(result.get(), StandardCourtList.class);
         assertThat(courtList.getHearingDates().get(0).getCourtRooms().get(0).getTimeslots().get(0).getHearings().size(), is(1));
         assertThat(courtList.getHearingDates().get(0).getCourtRooms().get(0).getTimeslots().get(0).getHearings().get(0).getCourtApplicationId(), is(nullValue()));
+    }
+
+    @Test
+    public void shouldExcludeCourtApplicationFromPublicListWhenApplicationSharesHearingWithExParteCase() {
+        final UUID courtCentreId = fromString("f8254db1-1683-483e-afb3-b87fde5a0a26");
+        final UUID courtRoomId = fromString("9e4932f7-97b2-3010-b942-ddd2624e4dd8");
+
+        when(courtCentreFactory.getCourtCentre(eq(courtCentreId), any(JsonEnvelope.class)))
+                .thenReturn(buildCourtCentreDetailsForBailVariationPayload(courtCentreId, courtRoomId));
+        when(referenceDataService.getHearingTypesIdWelshDescriptionMap(any(JsonEnvelope.class)))
+                .thenReturn(ImmutableMap.of("3b5fdf13-7033-4ce0-857d-b7ea463da91d", "Bail Variation Application"));
+
+
+        final uk.gov.moj.cpp.listing.persistence.entity.Hearing persistedHearing =
+                loadHearingFixture("stubbed.hearingRepository.exParteCaseWithLinkedCourtApplication.json");
+
+
+        final JsonArray filteredHearingData = new HearingJsonListConverterFilterEjectCases()
+                .convertHearingResultForPublicList(persistedHearing);
+
+        assertThat(filteredHearingData.toString(), isJson(allOf(
+                withJsonPath("$[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.listedCases", hasSize(0)),
+                withJsonPath("$[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.courtApplications", hasSize(0))
+        )));
+
+
+        final Optional<JsonObject> result = assembler.assemble(buildRequestEnvelope(filteredHearingData), courtCentreId.toString(), null, STANDARD, false, false);
+
+        assertThat(result.isPresent(), is(true));
+        final StandardCourtList courtList = jsonObjectToObjectConverter.convert(result.get(), StandardCourtList.class);
+
+        final long hearingsShown = countHearingsShown(courtList);
+
+        assertThat("application linked to an ex-parte case must not appear on the public list", hearingsShown, is(0L));
+    }
+
+    @Test
+    public void shouldExcludeCourtApplicationFromPublicListWhenApplicationListedOnSeparateHearingFromLinkedExParteCase() {
+        final UUID courtCentreId = fromString("f8254db1-1683-483e-afb3-b87fde5a0a26");
+        final UUID courtRoomId = fromString("9e4932f7-97b2-3010-b942-ddd2624e4dd8");
+
+        when(courtCentreFactory.getCourtCentre(eq(courtCentreId), any(JsonEnvelope.class)))
+                .thenReturn(buildCourtCentreDetailsForBailVariationPayload(courtCentreId, courtRoomId));
+
+        final uk.gov.moj.cpp.listing.persistence.entity.Hearing persistedHearing =
+                loadHearingFixture("stubbed.hearingRepository.exParteLinkedApplicationListedSeparately.json");
+
+        final JsonArray filteredHearingData = new HearingJsonListConverterFilterEjectCases()
+                .convertHearingResultForPublicList(persistedHearing);
+
+        final Optional<JsonObject> result = assembler.assemble(buildRequestEnvelope(filteredHearingData), courtCentreId.toString(), null, STANDARD, false, false);
+
+        assertThat(result.isPresent(), is(true));
+        final StandardCourtList courtList = jsonObjectToObjectConverter.convert(result.get(), StandardCourtList.class);
+
+        final long hearingsShown = countHearingsShown(courtList);
+
+        assertThat("application linked to an ex-parte case must not appear when listed separately on its own hearing", hearingsShown, is(0L));
+    }
+
+    @Test
+    public void shouldExcludeCourtApplicationFromPublicListWhenApplicationListedOnUnrelatedNonExParteCaseHearing() {
+        final UUID courtCentreId = fromString("f8254db1-1683-483e-afb3-b87fde5a0a26");
+        final UUID courtRoomId = fromString("9e4932f7-97b2-3010-b942-ddd2624e4dd8");
+
+        when(courtCentreFactory.getCourtCentre(eq(courtCentreId), any(JsonEnvelope.class)))
+                .thenReturn(buildCourtCentreDetailsForBailVariationPayload(courtCentreId, courtRoomId));
+
+        final uk.gov.moj.cpp.listing.persistence.entity.Hearing persistedHearing =
+                loadHearingFixture("stubbed.hearingRepository.exParteLinkedApplicationOnUnrelatedCaseHearing.json");
+
+        final JsonArray filteredHearingData = new HearingJsonListConverterFilterEjectCases()
+                .convertHearingResultForPublicList(persistedHearing);
+
+        final Optional<JsonObject> result = assembler.assemble(buildRequestEnvelope(filteredHearingData), courtCentreId.toString(), null, STANDARD, false, true);
+
+        assertThat(result.isPresent(), is(true));
+        final StandardCourtList courtList = jsonObjectToObjectConverter.convert(result.get(), StandardCourtList.class);
+
+        final List<Hearing> hearingsShown = courtList.getHearingDates().stream()
+                .flatMap(hearingDate -> hearingDate.getCourtRooms().stream())
+                .flatMap(courtRoom -> courtRoom.getTimeslots().stream())
+                .flatMap(timeslot -> timeslot.getHearings().stream())
+                .collect(Collectors.toList());
+
+        assertThat(hearingsShown.stream().anyMatch(hearing -> "99XX1234567".equals(hearing.getCaseNumber())), is(true));
+
+        assertThat("application linked to an ex-parte case must not appear even on an unrelated case's hearing",
+                hearingsShown.stream().anyMatch(hearing -> hearing.getCourtApplicationId() != null), is(false));
+    }
+
+    private uk.gov.moj.cpp.listing.persistence.entity.Hearing loadHearingFixture(final String fileName) {
+        final String json = FileUtil.getPayload(fileName);
+        try {
+            return new uk.gov.moj.cpp.listing.persistence.entity.Hearing(randomUUID(), new ObjectMapper().readTree(json));
+        } catch (final Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private long countHearingsShown(final StandardCourtList courtList) {
+        return courtList.getHearingDates().stream()
+                .flatMap(hearingDate -> hearingDate.getCourtRooms().stream())
+                .flatMap(courtRoom -> courtRoom.getTimeslots().stream())
+                .flatMap(timeslot -> timeslot.getHearings().stream())
+                .count();
     }
 
     @Test
