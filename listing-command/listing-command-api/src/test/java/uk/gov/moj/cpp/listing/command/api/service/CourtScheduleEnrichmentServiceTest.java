@@ -41,9 +41,12 @@ import uk.gov.moj.cpp.listing.domain.CourtSchedule;
 import uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse;
 import uk.gov.moj.cpp.listing.domain.ListUpdateHearing;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Collections;
@@ -1367,6 +1370,231 @@ class CourtScheduleEnrichmentServiceTest {
         verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
         assertThat(result.getHearingDays().size(), is(2));
         result.getHearingDays().forEach(day -> assertThat(day.getCourtRoomId(), is(courtRoomId)));
+    }
+
+    /**
+     * SPRDT-1267 — the block courtscheduler books is exactly the one requested (startDate + duration over
+     * consecutive business days). A session booked on a non-sitting date does not become a hearing day, and
+     * the requested total is divided across the days the hearing actually sits on, so dropping a day costs
+     * the hearing no minutes. The booking on the dropped date stays with courtscheduler.
+     */
+    @Test
+    void shouldKeepTotalDurationWhenCrownUpdateMultiDayBlockSpansANonSittingDay() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID nonSittingCourtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        // Anchored on a Monday so the three booked dates are consecutive business days.
+        final LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+        final LocalDate nonSittingDay = monday.plusDays(2);
+
+        // The Tuesday is a genuine non-default day: it keeps its session but starts at 11:30.
+        final ZonedDateTime nonDefaultDayStart =
+                ZonedDateTime.of(monday.plusDays(1), LocalTime.of(11, 30), ZoneOffset.UTC);
+
+        // 1080 minutes requested from the Monday; the Wednesday inside that block is not sat on.
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(monday)
+                .withNonSittingDays(Collections.singletonList(nonSittingDay))
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withStartTime(nonDefaultDayStart)
+                                .withDuration(360)
+                                .withVirtual(false)
+                                .build()))
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(monday)
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId2)
+                                .withHearingDate(monday.plusDays(1))
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(nonSittingCourtScheduleId)
+                                .withHearingDate(nonSittingDay)
+                                .withDurationMinutes(360)
+                                .build()))
+                .build();
+
+        // courtscheduler lays 1080 minutes over three consecutive business days, the non-sitting
+        // Wednesday among them — it has no notion of non-sitting days.
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, courtRoomId, courtHouseId, monday, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, monday.plusDays(1), false);
+        final CourtSchedule csNonSitting =
+                buildCourtSchedule(nonSittingCourtScheduleId, courtRoomId, courtHouseId, nonSittingDay, false);
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2))
+                        .add(buildCsJson(csNonSitting)))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(cs1, cs2, csNonSitting);
+
+        // Covers the non-sitting session too, so that without the fix this test still reaches its
+        // assertions (the unfixed path carries that session through) instead of erroring on the mock.
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId1, monday + "T10:00:00Z", 540))
+                        .add(buildListHearingJson(courtScheduleId2, monday.plusDays(1) + "T10:00:00Z", 540))
+                        .add(buildListHearingJson(nonSittingCourtScheduleId, nonSittingDay + "T10:00:00Z", 540)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId1.toString())
+                        .add(courtScheduleId2.toString())
+                        .build());
+
+        final UpdateHearingForListing result =
+                courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, String>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(paramsCaptor.capture());
+        assertThat("the request is the duration that was asked for — non-sitting days do not change it",
+                paramsCaptor.getValue().get("durationInMinutes"), is("1080"));
+
+        assertThat("the non-sitting day does not become a hearing day",
+                result.getHearingDays().size(), is(2));
+        assertThat("the non-sitting day does not become a hearing day",
+                result.getHearingDays().stream().anyMatch(day -> nonSittingDay.equals(day.getHearingDate())), is(false));
+        assertThat("the hearing keeps the duration that was requested",
+                result.getHearingDays().stream().mapToInt(HearingDay::getDurationMinutes).sum(), is(1080));
+        assertThat("the non-default day keeps its own start time, not the session's",
+                result.getHearingDays().stream()
+                        .filter(day -> monday.plusDays(1).equals(day.getHearingDate()))
+                        .map(HearingDay::getStartTime)
+                        .findFirst().orElseThrow(),
+                is(nonDefaultDayStart));
+    }
+
+    /**
+     * A non-sitting day that matches none of the booked dates must leave the block untouched — no day
+     * dropped and no minutes redistributed.
+     */
+    @Test
+    void shouldLeaveTheBlockUntouchedWhenNoBookedDayIsNonSitting() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID courtScheduleId3 = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+        // Three sitting days run Mon-Wed; the non-sitting Friday sits outside them.
+        final LocalDate nonSittingDay = monday.plusDays(4);
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(monday)
+                .withNonSittingDays(Collections.singletonList(nonSittingDay))
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(monday)
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId2)
+                                .withHearingDate(monday.plusDays(1))
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId3)
+                                .withHearingDate(monday.plusDays(2))
+                                .withDurationMinutes(360)
+                                .build()))
+                .build();
+
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, courtRoomId, courtHouseId, monday, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, monday.plusDays(1), false);
+        final CourtSchedule cs3 = buildCourtSchedule(courtScheduleId3, courtRoomId, courtHouseId, monday.plusDays(2), false);
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2))
+                        .add(buildCsJson(cs3)))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(cs1, cs2, cs3);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId1, monday + "T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId2, monday.plusDays(1) + "T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId3, monday.plusDays(2) + "T10:00:00Z", 360)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId1.toString())
+                        .add(courtScheduleId2.toString())
+                        .add(courtScheduleId3.toString())
+                        .build());
+
+        final UpdateHearingForListing result =
+                courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, String>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(paramsCaptor.capture());
+        assertThat(paramsCaptor.getValue().get("durationInMinutes"), is("1080"));
+        assertThat(result.getHearingDays().size(), is(3));
+        assertThat(result.getHearingDays().stream().mapToInt(HearingDay::getDurationMinutes).sum(), is(1080));
     }
 
     @Test

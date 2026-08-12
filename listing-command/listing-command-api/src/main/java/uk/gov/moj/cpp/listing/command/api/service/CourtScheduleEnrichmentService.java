@@ -306,20 +306,33 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     ? hearing.getCourtCentreId().toString()
                     : fallbackCourtCentreId;
 
-            final List<CourtSchedule> sessions = multiDaySearchAndBook(
+            // The block courtscheduler books is the one that was asked for: startDate + duration, laid
+            // out over consecutive business days. Non-sitting days are a listing concept and are applied
+            // to the RESULT, not to the request.
+            final List<CourtSchedule> bookedSessions = multiDaySearchAndBook(
                     anchorCourtScheduleId,
                     totalDuration,
                     hearing.getHearingId().toString(),
                     courtCentreId,
                     anchorDate != null ? anchorDate.toString() : LocalDate.now().toString());
 
-            if (isEmpty(sessions)) {
+            if (isEmpty(bookedSessions)) {
                 LOGGER.warn("CROWN multi-day update: no sessions found for hearingId {} — marking days draft so allocation stays closed.", hearing.getHearingId());
                 return markDaysDraftWhenSessionsUnresolved(hearing);
             }
 
+            // A session booked on a non-sitting date does not become a hearing day. Dropping it HERE
+            // rather than downstream is what preserves the hearing's duration: the requested total is
+            // then divided across the days the hearing actually sits on, instead of being divided across
+            // every booked day and losing the dropped day's share. The booking itself stays on
+            // courtscheduler — a non-sitting day never pays its slots back.
+            final List<LocalDate> nonSittingDays = isEmpty(hearing.getNonSittingDays())
+                    ? Collections.<LocalDate>emptyList()
+                    : hearing.getNonSittingDays();
+            final List<CourtSchedule> sessions = sittingSessions(bookedSessions, nonSittingDays, hearing.getHearingId());
+
             final LocalDate requestedStartDate = hearing.getStartDate();
-            final LocalDate bookedBlockStartDate = sessions.stream()
+            final LocalDate bookedBlockStartDate = bookedSessions.stream()
                     .map(CourtSchedule::getSessionDate)
                     .filter(d -> nonNull(d))
                     .min(LocalDate::compareTo)
@@ -516,6 +529,34 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         return hearing.getNonDefaultDays().stream()
                 .filter(CrownNonDefaultDaysValidator::isBlockDescriptor)
                 .findFirst();
+    }
+
+    /**
+     * The booked sessions the hearing actually sits on. A session courtscheduler booked on a
+     * non-sitting date is dropped from the hearing but deliberately left booked: non-sitting days do
+     * not pay their slots back. Returns the full list when filtering would leave nothing, so a payload
+     * whose every booked date is non-sitting degrades to the previous behaviour instead of dividing by
+     * zero.
+     */
+    private static List<CourtSchedule> sittingSessions(final List<CourtSchedule> bookedSessions,
+                                                       final List<LocalDate> nonSittingDays,
+                                                       final UUID hearingId) {
+        if (isEmpty(nonSittingDays)) {
+            return bookedSessions;
+        }
+        final List<CourtSchedule> sitting = bookedSessions.stream()
+                .filter(session -> isNull(session.getSessionDate())
+                        || !nonSittingDays.contains(session.getSessionDate()))
+                .toList();
+        if (isEmpty(sitting)) {
+            LOGGER.warn("CROWN multi-day update: every booked session for hearingId {} falls on a non-sitting day — keeping the booked block as-is.", hearingId);
+            return bookedSessions;
+        }
+        if (sitting.size() < bookedSessions.size()) {
+            LOGGER.info("CROWN multi-day update: dropped {} session(s) booked on non-sitting days for hearingId {}; those slots stay booked on courtscheduler.",
+                    bookedSessions.size() - sitting.size(), hearingId);
+        }
+        return sitting;
     }
 
     /**
