@@ -56,10 +56,12 @@ public class CourtListIT extends AbstractIT {
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final String ALPHABETICAL = "Alphabetical";
     private static final String PUBLIC = "Public";
+    private static final String ONLINE_PUBLIC = "Online_Public";
     public static final String STANDARD = "Standard";
     public static final String PRISON = "Prison";
     public static final String JUDGE = "Judge";
     public static final String BENCH = "Bench";
+    private static final String[] PUBLISH_LIST_TYPES_SHARING_EX_PARTE_FILTERING = {PUBLIC, ONLINE_PUBLIC, STANDARD, BENCH};
     private static final UUID COURT_CENTRE_ID = getRandomCourtCenterId();
     private static final UUID HEARING_TYPE_ID = fromString("52edf232-3c09-4c74-a6ad-737985c2e662");
 
@@ -192,6 +194,43 @@ public class CourtListIT extends AbstractIT {
     }
 
     @Test
+    public void generateAllCourtListTypesExcludeApplicationSharingHearingWithExParteCaseEvenWhenLinkedToDifferentCase() {
+
+        final UUID unrelatedLinkedCaseId = UUID.randomUUID();
+        final HearingsData hearingsData = HearingsData.hearingsDataWithSingleExParteOffenceAndApplicationLinkedToDifferentCase(unrelatedLinkedCaseId);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(AbstractIT.ALLOCATED);
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final UUID exParteCaseId = hearingData.getListedCases().get(0).getCaseId();
+        final UUID applicationId = hearingData.getCourtApplications().get(0).getId();
+
+        final Matcher[] matchers = {
+                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[?(@.caseId=='" + exParteCaseId + "')]", hasSize(0)),
+                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[?(@.courtApplicationId=='" + applicationId + "')]", hasSize(0))
+        };
+
+        for (final String listId : PUBLISH_LIST_TYPES_SHARING_EX_PARTE_FILTERING) {
+            courtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithExParte(listId, matchers,
+                    hearingData.getCourtCentreId(), hearingData.getCourtRoomId(),
+                    hearingData.getHearingStartDate().format(DATE_TIME_FORMATTER), hearingData.getHearingEndDate().format(DATE_TIME_FORMATTER));
+        }
+
+        // ALPHABETICAL renders a flat "defendants" array with no application field at all
+        // (see generateAlphabeticalCourtListExcludesApplicationLinkedToExParteCase), and its query
+        // scopes only by courtCentreId+date (no courtRoomId) - so other tests' unrelated hearings
+        // at the same court centre/date can appear too. Assert the ex-parte case's own reference
+        // is absent rather than asserting the whole list is empty.
+        final String exParteCaseReference = hearingData.getListedCases().get(0).getCaseReference();
+        final Matcher[] alphabeticalMatchers = {
+                withJsonPath("$.defendants[?(@.caseReference=='" + exParteCaseReference + "')]", hasSize(0))
+        };
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithExParte(ALPHABETICAL, alphabeticalMatchers,
+                hearingData.getCourtCentreId(), hearingData.getCourtRoomId(),
+                hearingData.getHearingStartDate().format(DATE_TIME_FORMATTER), hearingData.getHearingEndDate().format(DATE_TIME_FORMATTER));
+    }
+
+    @Test
     public void generatePublicCourtExcludesApplicationLinkedToExParteCaseListedOnSeparateHearing() {
 
         final UUID crownCourtCentreId = getRandomCourtCenterId();
@@ -284,11 +323,33 @@ public class CourtListIT extends AbstractIT {
         };
 
         final CourtListSteps unrelatedCourtListSteps = new CourtListSteps(unrelatedHearingAllocation);
-        unrelatedCourtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithExParte(PUBLIC, matchers,
-                sharedCourtCentreId, unrelatedHearingAllocation.getCourtRoomId(),
-                unrelatedHearingAllocation.getStartDate(), unrelatedHearingAllocation.getEndDate(), true);
+
+        for (final String listId : PUBLISH_LIST_TYPES_SHARING_EX_PARTE_FILTERING) {
+            unrelatedCourtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithExParte(listId, matchers,
+                    sharedCourtCentreId, unrelatedHearingAllocation.getCourtRoomId(),
+                    unrelatedHearingAllocation.getStartDate(), unrelatedHearingAllocation.getEndDate(), true);
+        }
     }
 
+    @Test
+    public void generateAlphabeticalCourtListExcludesApplicationLinkedToExParteCase() {
+
+        final HearingsData hearingsData = HearingsData.hearingsDataWithSingleExParteOffence();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(AbstractIT.ALLOCATED);
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+
+        final String exParteCaseReference = hearingData.getListedCases().get(0).getCaseReference();
+
+        final Matcher[] matchers = {
+                withJsonPath("$.defendants[?(@.caseReference=='" + exParteCaseReference + "')]", hasSize(0))
+        };
+
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithExParte(ALPHABETICAL, matchers,
+                hearingData.getCourtCentreId(), hearingData.getCourtRoomId(),
+                hearingData.getHearingStartDate().format(DATE_TIME_FORMATTER), hearingData.getHearingEndDate().format(DATE_TIME_FORMATTER));
+    }
 
     private void setStandaloneHearingScheduling(final HearingData hearing, final UUID courtCentreId, final UUID courtRoomId,
                                                 final LocalDate hearingDate, final ZonedDateTime hearingStartTime) {

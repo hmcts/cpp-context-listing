@@ -288,6 +288,10 @@ public class HearingsDataFactory {
         return singletonList(randomHearingWithSingleExParteCase(courtCentreId, ItClock.today(), courtRoomId, null));
     }
 
+    public static List<HearingData> hearingsDataForSingleExParteCaseWithApplicationLinkedToDifferentCase(final UUID linkedCaseId) {
+        return singletonList(randomHearingWithSingleExParteCaseAndApplicationLinkedToDifferentCase(linkedCaseId));
+    }
+
     public static List<HearingData> hearingsDataForWeekCommencing(final UUID hearingId, final LocalDate hearingEndDate,
                                                                   final UUID courtRoomId, final LocalDate weekCommencingStartDate,
                                                                   final LocalDate weekCommencingEndDate, final LocalDate startDate) {
@@ -1172,6 +1176,18 @@ public class HearingsDataFactory {
                 judicialRoles, CROWN_JURISDICTION,
                 STRING.next(),
                 singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
+                singletonList(randomCourtApplicationPartyNeed()), "Carmarthen Magistrates Court");
+    }
+
+    private static HearingData randomHearingWithSingleExParteCaseAndApplicationLinkedToDifferentCase(final UUID linkedCaseId) {
+
+        final List<ListedCaseData> listedCaseData = singletonList(randomListedCaseWithExParteOffenceListedCase());
+        return new HearingData(randomUUID(), getRandomCourtCenterId(), PTP_HEARING_TYPE, ItClock.today(),
+                ItClock.today(), HEARING_ESTIMATE_MINUTES, ESTIMATED_DURATION,
+                getRandomCourtRoomId(), ItClock.nowUtc(), listedCaseData,
+                null, CROWN_JURISDICTION,
+                STRING.next(),
+                singletonList(randomCourtApplicationData(linkedCaseId)),
                 singletonList(randomCourtApplicationPartyNeed()), "Carmarthen Magistrates Court");
     }
 

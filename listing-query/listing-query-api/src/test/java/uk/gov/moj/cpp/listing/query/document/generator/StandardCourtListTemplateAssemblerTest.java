@@ -637,6 +637,39 @@ public class StandardCourtListTemplateAssemblerTest {
                 hearingsShown.stream().anyMatch(hearing -> hearing.getCourtApplicationId() != null), is(false));
     }
 
+    @Test
+    public void shouldExcludeCourtApplicationFromPublicListWhenApplicationLinkedToDifferentCaseSharesHearingWithExParteCase() {
+
+        final UUID courtCentreId = fromString("f8254db1-1683-483e-afb3-b87fde5a0a26");
+        final UUID courtRoomId = fromString("9e4932f7-97b2-3010-b942-ddd2624e4dd8");
+
+        when(courtCentreFactory.getCourtCentre(eq(courtCentreId), any(JsonEnvelope.class)))
+                .thenReturn(buildCourtCentreDetailsForBailVariationPayload(courtCentreId, courtRoomId));
+        when(referenceDataService.getHearingTypesIdWelshDescriptionMap(any(JsonEnvelope.class)))
+                .thenReturn(ImmutableMap.of("3b5fdf13-7033-4ce0-857d-b7ea463da91d", "Bail Variation Application"));
+
+        final uk.gov.moj.cpp.listing.persistence.entity.Hearing persistedHearing =
+                loadHearingFixture("stubbed.hearingRepository.exParteHearingWithApplicationLinkedToDifferentCase.json");
+
+        final JsonArray filteredHearingData = new HearingJsonListConverterFilterEjectCases()
+                .convertHearingResultForPublicList(persistedHearing);
+
+        assertThat(filteredHearingData.toString(), isJson(allOf(
+                withJsonPath("$[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.listedCases", hasSize(0)),
+                withJsonPath("$[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.courtApplications", hasSize(0))
+        )));
+
+        final Optional<JsonObject> result = assembler.assemble(buildRequestEnvelope(filteredHearingData), courtCentreId.toString(), null, STANDARD, false, false);
+
+        assertThat(result.isPresent(), is(true));
+        final StandardCourtList courtList = jsonObjectToObjectConverter.convert(result.get(), StandardCourtList.class);
+
+        final long hearingsShown = countHearingsShown(courtList);
+
+        assertThat("an application listed within an ex-parte case's hearing must not appear, even when linked to a different, non-ex-parte case",
+                hearingsShown, is(0L));
+    }
+
     private uk.gov.moj.cpp.listing.persistence.entity.Hearing loadHearingFixture(final String fileName) {
         final String json = FileUtil.getPayload(fileName);
         try {

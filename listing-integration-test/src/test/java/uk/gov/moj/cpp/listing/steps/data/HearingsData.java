@@ -50,6 +50,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataForSingleExParteCase(courtCentreId, courtRoomId));
     }
 
+    public static HearingsData hearingsDataWithSingleExParteOffenceAndApplicationLinkedToDifferentCase(final UUID linkedCaseId) {
+        return new HearingsData(HearingsDataFactory.hearingsDataForSingleExParteCaseWithApplicationLinkedToDifferentCase(linkedCaseId));
+    }
+
     public static HearingsData trialHearingsData() {
         return new HearingsData(HearingsDataFactory.trialHearingsData());
     }
