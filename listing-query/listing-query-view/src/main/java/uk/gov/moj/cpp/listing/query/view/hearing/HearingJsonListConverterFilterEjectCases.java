@@ -310,8 +310,55 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
             return null;
         }
         final Set<String> exParteCaseIds = collectExParteCaseIds(properties);
+
+        removeCourtApplicationsSharingHearingWithExParteCase(properties);
         properties.findValues(LISTED_CASES).forEach(this::removeNodeForExParteFlag);
         return removeCourtApplicationsLinkedToExParteCases(properties, exParteCaseIds);
+    }
+
+    private void removeCourtApplicationsSharingHearingWithExParteCase(final JsonNode properties) {
+        collectHearingScopeNodes(properties).forEach(hearingScopeNode -> {
+            final JsonNode listedCasesNode = hearingScopeNode.get(LISTED_CASES);
+            if (listedCasesNode != null && listedCasesNode.isArray()
+                    && anyMatchExparteOffenceCase(listedCasesNode)) {
+                removeAllCourtApplications(hearingScopeNode.get(COURT_APPLICATIONS));
+            }
+        });
+    }
+
+    private boolean anyMatchExparteOffenceCase(final JsonNode listedCasesNode) {
+        for (final JsonNode listedCase : listedCasesNode) {
+            if (isExparteOffenceCase(listedCase)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void removeAllCourtApplications(final JsonNode courtApplicationsNode) {
+        if (courtApplicationsNode != null && courtApplicationsNode.isArray()) {
+            ((ArrayNode) courtApplicationsNode).removeAll();
+        }
+    }
+
+    private List<JsonNode> collectHearingScopeNodes(final JsonNode node) {
+        final List<JsonNode> hearingScopeNodes = new ArrayList<>();
+        collectHearingScopeNodes(node, hearingScopeNodes);
+        return hearingScopeNodes;
+    }
+
+    private void collectHearingScopeNodes(final JsonNode node, final List<JsonNode> hearingScopeNodes) {
+        if (node == null || node.isMissingNode()) {
+            return;
+        }
+        if (node.isObject()) {
+            if (node.has(LISTED_CASES) && node.has(COURT_APPLICATIONS)) {
+                hearingScopeNodes.add(node);
+            }
+            node.elements().forEachRemaining(child -> collectHearingScopeNodes(child, hearingScopeNodes));
+        } else if (node.isArray()) {
+            node.forEach(child -> collectHearingScopeNodes(child, hearingScopeNodes));
+        }
     }
 
     private Set<String> collectExParteCaseIds(final JsonNode properties) {
