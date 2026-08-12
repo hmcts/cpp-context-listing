@@ -12,6 +12,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.6</version>
@@ -40,6 +41,9 @@
 =======
         <version>17.104.9-SNAPSHOT</version>
 >>>>>>> 992bcb946a (Updating develop poms back to pre merge state)
+=======
+        <version>17.104.9-cct-1981-SNAPSHOT</version>
+>>>>>>> 0f6df5e00d (new team branch)
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
