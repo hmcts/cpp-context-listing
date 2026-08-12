@@ -43,6 +43,7 @@ import uk.gov.moj.cpp.listing.domain.ListUpdateHearing;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAdjusters;
@@ -1389,12 +1390,22 @@ class CourtScheduleEnrichmentServiceTest {
         final LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
         final LocalDate nonSittingDay = monday.plusDays(1);
 
+        // The Thursday is a genuine non-default day: it keeps its session but starts at 11:30.
+        final ZonedDateTime nonDefaultDayStart =
+                ZonedDateTime.of(monday.plusDays(3), LocalTime.of(11, 30), ZoneOffset.UTC);
+
         // Three sitting days of 360 = 1080 requested, with the Tuesday inside the span not sat on.
         final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
                 .withHearingId(hearingId)
                 .withJurisdictionType(JurisdictionType.CROWN)
                 .withStartDate(monday)
                 .withNonSittingDays(Collections.singletonList(nonSittingDay))
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withStartTime(nonDefaultDayStart)
+                                .withDuration(360)
+                                .withVirtual(false)
+                                .build()))
                 .withHearingDays(Arrays.asList(
                         HearingDay.hearingDay()
                                 .withCourtScheduleId(courtScheduleId1)
@@ -1483,6 +1494,12 @@ class CourtScheduleEnrichmentServiceTest {
                 result.getHearingDays().stream().anyMatch(day -> nonSittingDay.equals(day.getHearingDate())), is(false));
         assertThat("the sitting days keep the full requested duration",
                 result.getHearingDays().stream().mapToInt(HearingDay::getDurationMinutes).sum(), is(1080));
+        assertThat("the non-default day keeps its own start time, not the session's",
+                result.getHearingDays().stream()
+                        .filter(day -> monday.plusDays(3).equals(day.getHearingDate()))
+                        .map(HearingDay::getStartTime)
+                        .findFirst().orElseThrow(),
+                is(nonDefaultDayStart));
     }
 
     /**
