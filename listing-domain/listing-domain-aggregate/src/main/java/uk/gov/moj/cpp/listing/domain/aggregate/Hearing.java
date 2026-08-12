@@ -536,9 +536,26 @@ public class Hearing implements Aggregate {
                         .mapToInt(slot -> slot.getDuration() != null ? slot.getDuration() : 0)
                         .sum()
                 : 0;
-        final Integer splitEstimatedMinutes = bookedSlotsTotalDuration > 0
-                ? coerceToValidDuration(bookedSlotsTotalDuration)
-                : coerceToValidDuration(hearingTypeDuration);
+        // MAGS splits carry NO bookedSlots since split enrichment became read-only (SPRDT-1227):
+        // no slot is booked during the original hearing's update, so no courtScheduleIds reach the
+        // command's hearingDays. The selected days' durations still ride on nonDefaultDays - when
+        // their sum spans more than one court day it is the authoritative estimate that keeps a
+        // multi-day MAGS split on the multi-day path (pre-SPRDT-1227 the same total arrived via
+        // the eagerly-booked slots' durations). Single-day totals keep the legacy behaviour of
+        // estimating from hearingTypeDuration.
+        final int nonDefaultDaysTotalDuration = isNotEmpty(nonDefaultDays)
+                ? nonDefaultDays.stream()
+                        .mapToInt(nonDefaultDay -> nonDefaultDay.getDuration().orElse(0))
+                        .sum()
+                : 0;
+        final Integer splitEstimatedMinutes;
+        if (bookedSlotsTotalDuration > 0) {
+            splitEstimatedMinutes = coerceToValidDuration(bookedSlotsTotalDuration);
+        } else if (nonDefaultDaysTotalDuration > MINUTES_IN_COURT_DAY) {
+            splitEstimatedMinutes = coerceToValidDuration(nonDefaultDaysTotalDuration);
+        } else {
+            splitEstimatedMinutes = coerceToValidDuration(hearingTypeDuration);
+        }
 
         final CourtHearingRequest.Builder builder = CourtHearingRequest.courtHearingRequest();
         builder.withCourtCentre(defaultCourtCentre)
@@ -3998,6 +4015,9 @@ public class Hearing implements Aggregate {
     }
 
     private static final int DEFAULT_MIN_MINUTES = 20;
+
+    /** One court sitting day; a split whose day durations sum beyond this is a multi-day split. */
+    private static final int MINUTES_IN_COURT_DAY = 360;
 
     private void updateCurrentHearingEventStateWithHearingDays() {
         if (nonNull(this.currentHearingEventState)) {

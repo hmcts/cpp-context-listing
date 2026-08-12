@@ -5377,6 +5377,188 @@ class CourtScheduleEnrichmentServiceTest {
      * Mocks the single-day CROWN update chain: GET court-schedules-by-id returning the given
      * session, plus the listHearingInCourtSessions slot-deduction call.
      */
+    // ─── SPLIT read-only enrichment: the update command's sessions belong to the split's NEW hearing ───
+
+    @Test
+    void enrichCrownUpdateHearing_split_singleDay_shouldResolveSessionReadOnly_withoutListingOriginalHearing() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withSplitHearing("allocated")
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        final CourtSchedule finalSession = buildCourtSchedule(courtScheduleId, sessionCourtRoomId, courtHouseId, hearingDate, false);
+        mockReadOnlySessionFetch(courtScheduleId, finalSession);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // Days are enriched from the fetched session (room / isDraft) so the split's new hearing
+        // can carry them as bookedSlots on its CourtHearingRequest...
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(false));
+        assertThat(result.getHearingDays().get(0).getCourtRoomId(), is(sessionCourtRoomId));
+        // ...but the ORIGINAL hearing must never be listed/booked into the split's new session —
+        // that write is what made the existing hearing "move" to the new session.
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_split_multiDayVirtualAnchor_shouldCollapseToAnchorDay_withoutBookingUnderOriginalId() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID anchorCourtScheduleId = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate startDate = LocalDate.now().plusDays(5);
+        final ZonedDateTime startTime = startDate.atStartOfDay(ZoneOffset.UTC);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withSplitHearing("allocated")
+                .withStartDate(startDate)
+                .withEndDate(startDate.plusDays(1))
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withVirtual(Boolean.TRUE)
+                                .withCourtScheduleId(anchorCourtScheduleId.toString())
+                                .withStartTime(startTime)
+                                .withDuration(720)
+                                .build()))
+                .build();
+
+        final CourtSchedule anchorSession = buildCourtSchedule(anchorCourtScheduleId, sessionCourtRoomId, courtHouseId, startDate, false);
+        mockReadOnlySessionFetch(anchorCourtScheduleId, anchorSession);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // The block-descriptor anchor collapses to a single day carrying anchor courtScheduleId +
+        // TOTAL duration: exactly what the handler needs for splitBookedSlots, so the returning
+        // list-court-hearing flow books the multi-day block under the NEW hearing's own id.
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(anchorCourtScheduleId));
+        assertThat(result.getHearingDays().get(0).getDurationMinutes(), is(720));
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_split_noSessionIds_shouldSkipSearchAndBook_evenWhenAllocationCandidate() {
+        final UUID hearingId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+
+        // Allocation-candidate shape (startDate + courtRoomId + jurisdiction) but no session ids:
+        // a non-split update would search-and-book under this hearing's id — a split must not.
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withSplitHearing("unallocated")
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withCourtRoomId(UUID.randomUUID())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(nullValue()));
+        verify(hearingSlotsService, never()).searchBookSlots(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+    }
+
+    @Test
+    void enrichMagsUpdateHearing_split_shouldSkipSlotSearchAndListing_forOriginalHearing() {
+        final UUID hearingId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withHearingId(hearingId)
+                .withSplitHearing("unallocated")
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withCourtRoomId(UUID.randomUUID())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(hearingDate)
+                                .withStartTime(hearingDate.atStartOfDay(ZoneOffset.UTC))
+                                .withCourtRoomId(UUID.randomUUID())
+                                .withDurationMinutes(60)
+                                .build()))
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // Same defect class as CROWN: the submitted day describes the split's NEW hearing, so no
+        // slot search and no listHearingInCourtSessions under the ORIGINAL hearingId.
+        assertThat(result, is(hearing));
+        verify(hearingSlotsService, never()).search(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+    }
+
+    @Test
+    void handleCrownMultiDayExtension_split_shouldReturnUnchanged_withoutExtendingOriginalHearingBooking() {
+        final UUID hearingId = UUID.randomUUID();
+        final LocalDate startDate = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withSplitHearing("allocated")
+                .withStartDate(startDate)
+                .withEndDate(startDate.plusDays(2))
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(startDate)
+                                .withDurationMinutes(1080)
+                                .build()))
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.handleCrownMultiDayExtension(hearing);
+
+        // Extending here would grow the ORIGINAL hearing's courtscheduler booking with the
+        // duration meant for the split's new hearing.
+        assertThat(result, is(hearing));
+        verify(courtSchedulerServiceAdapter, never()).extendMultiDayHearing(any());
+    }
+
+    /**
+     * Mocks only the read-only fetch chain (getCourtSchedulesById). Deliberately does NOT stub
+     * listHearingInCourtSessions / multiDaySearchAndBook — split enrichment must never call them.
+     */
+    private void mockReadOnlySessionFetch(final UUID courtScheduleId, final CourtSchedule session) {
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())))
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(session);
+    }
+
     private void mockSingleDaySessionLookup(final UUID courtScheduleId, final CourtSchedule session) {
         final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
                 .add("courtSchedules", JsonObjects.createArrayBuilder()
