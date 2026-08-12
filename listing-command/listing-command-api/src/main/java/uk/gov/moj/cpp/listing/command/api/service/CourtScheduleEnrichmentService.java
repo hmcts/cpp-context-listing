@@ -1,7 +1,5 @@
 package uk.gov.moj.cpp.listing.command.api.service;
 
-import static java.time.DayOfWeek.SATURDAY;
-import static java.time.DayOfWeek.SUNDAY;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
@@ -308,24 +306,12 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     ? hearing.getCourtCentreId().toString()
                     : fallbackCourtCentreId;
 
-            // courtscheduler books consecutive business days and knows nothing about non-sitting days,
-            // so a block whose span straddles one comes back a sitting day short: the non-sitting date
-            // is booked, then filtered out downstream and its minutes are lost. Ask for the extra
-            // business days the block has to step over so the surviving sitting days still add up.
-            final List<LocalDate> nonSittingDays = isEmpty(hearing.getNonSittingDays())
-                    ? Collections.<LocalDate>emptyList()
-                    : hearing.getNonSittingDays();
-            final int nonSittingDaysInBlock = nonSittingDaysInsideBlock(anchorDate, totalDuration, nonSittingDays);
-            final int requestedDuration = totalDuration
-                    + nonSittingDaysInBlock * HearingDurationEnrichmentService.MINUTES_IN_DAY;
-            if (nonSittingDaysInBlock > 0) {
-                LOGGER.info("CROWN multi-day update: block for hearingId {} steps over {} non-sitting day(s); requesting {} minutes instead of {} so the sitting days keep the full duration.",
-                        hearing.getHearingId(), nonSittingDaysInBlock, requestedDuration, totalDuration);
-            }
-
+            // The block courtscheduler books is the one that was asked for: startDate + duration, laid
+            // out over consecutive business days. Non-sitting days are a listing concept and are applied
+            // to the RESULT, not to the request.
             final List<CourtSchedule> bookedSessions = multiDaySearchAndBook(
                     anchorCourtScheduleId,
-                    requestedDuration,
+                    totalDuration,
                     hearing.getHearingId().toString(),
                     courtCentreId,
                     anchorDate != null ? anchorDate.toString() : LocalDate.now().toString());
@@ -335,9 +321,14 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 return markDaysDraftWhenSessionsUnresolved(hearing);
             }
 
-            // Sessions booked on a non-sitting date are dropped here rather than downstream, so the
-            // per-day duration below is divided across sitting days only. Those bookings stay on
-            // courtscheduler: a non-sitting day never pays its slots back.
+            // A session booked on a non-sitting date does not become a hearing day. Dropping it HERE
+            // rather than downstream is what preserves the hearing's duration: the requested total is
+            // then divided across the days the hearing actually sits on, instead of being divided across
+            // every booked day and losing the dropped day's share. The booking itself stays on
+            // courtscheduler — a non-sitting day never pays its slots back.
+            final List<LocalDate> nonSittingDays = isEmpty(hearing.getNonSittingDays())
+                    ? Collections.<LocalDate>emptyList()
+                    : hearing.getNonSittingDays();
             final List<CourtSchedule> sessions = sittingSessions(bookedSessions, nonSittingDays, hearing.getHearingId());
 
             final LocalDate requestedStartDate = hearing.getStartDate();
@@ -538,48 +529,6 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         return hearing.getNonDefaultDays().stream()
                 .filter(CrownNonDefaultDaysValidator::isBlockDescriptor)
                 .findFirst();
-    }
-
-    /**
-     * How many business days the block has to step over to collect the sitting days it needs.
-     * courtscheduler sizes a block as {@code duration / MINUTES_IN_DAY} CONSECUTIVE business days from
-     * the anchor and has no notion of non-sitting days, so each non-sitting date inside that span costs
-     * the hearing a sitting day unless the request is lengthened by one day per date stepped over.
-     *
-     * <p>The walk skips weekends the way courtscheduler does, and stops at the last non-sitting date:
-     * past it no iteration can change the answer, only tick off sitting days. That keeps the work
-     * proportional to the non-sitting dates supplied rather than to the requested duration, which the
-     * payload schema does not bound — a block claiming millions of minutes must not buy itself millions
-     * of iterations.</p>
-     */
-    private static int nonSittingDaysInsideBlock(final LocalDate anchorDate,
-                                                 final int totalDuration,
-                                                 final List<LocalDate> nonSittingDays) {
-        if (isNull(anchorDate) || isEmpty(nonSittingDays)) {
-            return 0;
-        }
-        final Optional<LocalDate> lastNonSittingDay = nonSittingDays.stream()
-                .filter(day -> nonNull(day) && !day.isBefore(anchorDate))
-                .max(LocalDate::compareTo);
-        if (lastNonSittingDay.isEmpty()) {
-            return 0;
-        }
-        final int sittingDaysNeeded = totalDuration / HearingDurationEnrichmentService.MINUTES_IN_DAY;
-        int sittingDaysFound = 0;
-        int nonSittingDaysStepped = 0;
-        for (LocalDate date = anchorDate;
-             sittingDaysFound < sittingDaysNeeded && !date.isAfter(lastNonSittingDay.get());
-             date = date.plusDays(1)) {
-            if (date.getDayOfWeek() == SATURDAY || date.getDayOfWeek() == SUNDAY) {
-                continue;
-            }
-            if (nonSittingDays.contains(date)) {
-                nonSittingDaysStepped++;
-            } else {
-                sittingDaysFound++;
-            }
-        }
-        return nonSittingDaysStepped;
     }
 
     /**

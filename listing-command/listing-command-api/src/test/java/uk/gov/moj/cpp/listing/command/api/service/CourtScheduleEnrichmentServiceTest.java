@@ -1373,28 +1373,28 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     /**
-     * SPRDT-1267 — courtscheduler books consecutive business days and cannot see non-sitting days, so a
-     * block spanning one must ask for an extra day and drop the session booked on that date. Without
-     * this the non-sitting day is filtered out downstream and its minutes disappear from the hearing.
+     * SPRDT-1267 — the block courtscheduler books is exactly the one requested (startDate + duration over
+     * consecutive business days). A session booked on a non-sitting date does not become a hearing day, and
+     * the requested total is divided across the days the hearing actually sits on, so dropping a day costs
+     * the hearing no minutes. The booking on the dropped date stays with courtscheduler.
      */
     @Test
     void shouldKeepTotalDurationWhenCrownUpdateMultiDayBlockSpansANonSittingDay() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
         final UUID nonSittingCourtScheduleId = UUID.randomUUID();
-        final UUID courtScheduleId3 = UUID.randomUUID();
-        final UUID courtScheduleId4 = UUID.randomUUID();
         final UUID courtRoomId = UUID.randomUUID();
         final UUID courtHouseId = UUID.randomUUID();
-        // Anchored on a Monday so the four booked dates are consecutive business days.
+        // Anchored on a Monday so the three booked dates are consecutive business days.
         final LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
-        final LocalDate nonSittingDay = monday.plusDays(1);
+        final LocalDate nonSittingDay = monday.plusDays(2);
 
-        // The Thursday is a genuine non-default day: it keeps its session but starts at 11:30.
+        // The Tuesday is a genuine non-default day: it keeps its session but starts at 11:30.
         final ZonedDateTime nonDefaultDayStart =
-                ZonedDateTime.of(monday.plusDays(3), LocalTime.of(11, 30), ZoneOffset.UTC);
+                ZonedDateTime.of(monday.plusDays(1), LocalTime.of(11, 30), ZoneOffset.UTC);
 
-        // Three sitting days of 360 = 1080 requested, with the Tuesday inside the span not sat on.
+        // 1080 minutes requested from the Monday; the Wednesday inside that block is not sat on.
         final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
                 .withHearingId(hearingId)
                 .withJurisdictionType(JurisdictionType.CROWN)
@@ -1413,31 +1413,29 @@ class CourtScheduleEnrichmentServiceTest {
                                 .withDurationMinutes(360)
                                 .build(),
                         HearingDay.hearingDay()
-                                .withCourtScheduleId(courtScheduleId3)
-                                .withHearingDate(monday.plusDays(2))
+                                .withCourtScheduleId(courtScheduleId2)
+                                .withHearingDate(monday.plusDays(1))
                                 .withDurationMinutes(360)
                                 .build(),
                         HearingDay.hearingDay()
-                                .withCourtScheduleId(courtScheduleId4)
-                                .withHearingDate(monday.plusDays(3))
+                                .withCourtScheduleId(nonSittingCourtScheduleId)
+                                .withHearingDate(nonSittingDay)
                                 .withDurationMinutes(360)
                                 .build()))
                 .build();
 
-        // courtscheduler books the four consecutive business days the longer request buys, the
-        // non-sitting Tuesday among them.
+        // courtscheduler lays 1080 minutes over three consecutive business days, the non-sitting
+        // Wednesday among them — it has no notion of non-sitting days.
         final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, courtRoomId, courtHouseId, monday, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, monday.plusDays(1), false);
         final CourtSchedule csNonSitting =
                 buildCourtSchedule(nonSittingCourtScheduleId, courtRoomId, courtHouseId, nonSittingDay, false);
-        final CourtSchedule cs3 = buildCourtSchedule(courtScheduleId3, courtRoomId, courtHouseId, monday.plusDays(2), false);
-        final CourtSchedule cs4 = buildCourtSchedule(courtScheduleId4, courtRoomId, courtHouseId, monday.plusDays(3), false);
 
         final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
                 .add("sessions", JsonObjects.createArrayBuilder()
                         .add(buildCsJson(cs1))
-                        .add(buildCsJson(csNonSitting))
-                        .add(buildCsJson(cs3))
-                        .add(buildCsJson(cs4)))
+                        .add(buildCsJson(cs2))
+                        .add(buildCsJson(csNonSitting)))
                 .build();
 
         final Response multiDayResponse = mock(Response.class);
@@ -1445,16 +1443,15 @@ class CourtScheduleEnrichmentServiceTest {
         when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
         when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
         when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
-                .thenReturn(cs1, csNonSitting, cs3, cs4);
+                .thenReturn(cs1, cs2, csNonSitting);
 
         // Covers the non-sitting session too, so that without the fix this test still reaches its
         // assertions (the unfixed path carries that session through) instead of erroring on the mock.
         final JsonObject listJson = JsonObjects.createObjectBuilder()
                 .add("hearings", JsonObjects.createArrayBuilder()
-                        .add(buildListHearingJson(courtScheduleId1, monday + "T10:00:00Z", 360))
-                        .add(buildListHearingJson(nonSittingCourtScheduleId, nonSittingDay + "T10:00:00Z", 360))
-                        .add(buildListHearingJson(courtScheduleId3, monday.plusDays(2) + "T10:00:00Z", 360))
-                        .add(buildListHearingJson(courtScheduleId4, monday.plusDays(3) + "T10:00:00Z", 360)))
+                        .add(buildListHearingJson(courtScheduleId1, monday + "T10:00:00Z", 540))
+                        .add(buildListHearingJson(courtScheduleId2, monday.plusDays(1) + "T10:00:00Z", 540))
+                        .add(buildListHearingJson(nonSittingCourtScheduleId, nonSittingDay + "T10:00:00Z", 540)))
                 .build();
 
         final Response listResponse = mock(Response.class);
@@ -1476,8 +1473,7 @@ class CourtScheduleEnrichmentServiceTest {
         when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
                 .thenReturn(JsonObjects.createArrayBuilder()
                         .add(courtScheduleId1.toString())
-                        .add(courtScheduleId3.toString())
-                        .add(courtScheduleId4.toString())
+                        .add(courtScheduleId2.toString())
                         .build());
 
         final UpdateHearingForListing result =
@@ -1486,28 +1482,29 @@ class CourtScheduleEnrichmentServiceTest {
         @SuppressWarnings("unchecked")
         final ArgumentCaptor<Map<String, String>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
         verify(hearingSlotsService).multiDaySearchAndBook(paramsCaptor.capture());
-        assertThat("the block must buy one extra day for the non-sitting day it steps over",
-                paramsCaptor.getValue().get("durationInMinutes"), is("1440"));
+        assertThat("the request is the duration that was asked for — non-sitting days do not change it",
+                paramsCaptor.getValue().get("durationInMinutes"), is("1080"));
 
-        assertThat(result.getHearingDays().size(), is(3));
-        assertThat("the non-sitting day must not become a hearing day",
+        assertThat("the non-sitting day does not become a hearing day",
+                result.getHearingDays().size(), is(2));
+        assertThat("the non-sitting day does not become a hearing day",
                 result.getHearingDays().stream().anyMatch(day -> nonSittingDay.equals(day.getHearingDate())), is(false));
-        assertThat("the sitting days keep the full requested duration",
+        assertThat("the hearing keeps the duration that was requested",
                 result.getHearingDays().stream().mapToInt(HearingDay::getDurationMinutes).sum(), is(1080));
         assertThat("the non-default day keeps its own start time, not the session's",
                 result.getHearingDays().stream()
-                        .filter(day -> monday.plusDays(3).equals(day.getHearingDate()))
+                        .filter(day -> monday.plusDays(1).equals(day.getHearingDate()))
                         .map(HearingDay::getStartTime)
                         .findFirst().orElseThrow(),
                 is(nonDefaultDayStart));
     }
 
     /**
-     * A non-sitting day beyond the block's own span must not lengthen the request — the hearing would
-     * be over-booked by a day it never sits. This is also the boundary the block walk stops at.
+     * A non-sitting day that matches none of the booked dates must leave the block untouched — no day
+     * dropped and no minutes redistributed.
      */
     @Test
-    void shouldNotLengthenTheBlockForANonSittingDayOutsideItsSpan() {
+    void shouldLeaveTheBlockUntouchedWhenNoBookedDayIsNonSitting() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtScheduleId1 = UUID.randomUUID();
         final UUID courtScheduleId2 = UUID.randomUUID();
@@ -1595,9 +1592,9 @@ class CourtScheduleEnrichmentServiceTest {
         @SuppressWarnings("unchecked")
         final ArgumentCaptor<Map<String, String>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
         verify(hearingSlotsService).multiDaySearchAndBook(paramsCaptor.capture());
-        assertThat("a non-sitting day outside the block must leave the request unchanged",
-                paramsCaptor.getValue().get("durationInMinutes"), is("1080"));
+        assertThat(paramsCaptor.getValue().get("durationInMinutes"), is("1080"));
         assertThat(result.getHearingDays().size(), is(3));
+        assertThat(result.getHearingDays().stream().mapToInt(HearingDay::getDurationMinutes).sum(), is(1080));
     }
 
     @Test
