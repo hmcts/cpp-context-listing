@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory.createEnvelope;
 import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
+import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.listUnscheduledNextHearingCommandEnvelopeFor;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.COURT_CENTRE_ID;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.COURT_ROOM_ID;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.DEFAULT_DURATION;
@@ -44,6 +45,9 @@ import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
+import uk.gov.moj.cpp.listing.domain.PtphDetail;
+
+import javax.json.JsonArray;
 import uk.gov.justice.listing.courts.ListUnscheduledNextHearingsEnriched;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.UnscheduledNextHearingRequested;
@@ -284,6 +288,102 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
                 eq(of(WEEK_COMMENCING_DURATION)),
                 eq(TYPE_OF_LIST), eq(null));
+    }
+
+    /**
+     * LPT-2405 — the unscheduled command carries tier / list type as a sibling list keyed by
+     * hearing id, because the hearing carrier itself is owned by coredomain. The handler must
+     * resolve this hearing's entry and hand the aggregate the same value object the scheduled
+     * path uses.
+     */
+    @Test
+    public void shouldInheritPtphDetailOntoTheMatchingUnscheduledHearing() throws EventStreamException {
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+
+        final JsonEnvelope commandEnvelope = listUnscheduledNextHearingCommandEnvelopeFor(
+                "/test-data/listing.command.list-unscheduled-next-hearing-with-ptph-detail.json");
+
+        unscheduledListingCommandHandler.handleListUnscheduledNextHearing(commandEnvelope);
+
+        verify(hearing).listUnscheduled(
+                eq(HEARING_ID_1), eq(HEARING_TYPE), anyList(), eq(COURT_CENTRE_ID), anyList(),
+                eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS), eq(parse(EARLIEST_START_TIME)),
+                eq(null), any(CourtCentreDefaults.class), anyList(), anyList(), eq(30),
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_DURATION)), eq(TYPE_OF_LIST),
+                eq(new PtphDetail("TIER_3", "TYPE_1_FIXED", "Vulnerable witness")));
+    }
+
+    /**
+     * An entry for a different hearing must not leak onto this one — the calendar would then
+     * show a tier the court never set for it.
+     */
+    @Test
+    public void shouldNotInheritPtphDetailWhenTheListHasNoEntryForThisHearing() throws EventStreamException {
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+
+        final JsonEnvelope commandEnvelope = listUnscheduledNextHearingCommandEnvelopeFor(
+                "/test-data/listing.command.list-unscheduled-next-hearing-with-other-ptph-detail.json");
+
+        unscheduledListingCommandHandler.handleListUnscheduledNextHearing(commandEnvelope);
+
+        verify(hearing).listUnscheduled(
+                eq(HEARING_ID_1), eq(HEARING_TYPE), anyList(), eq(COURT_CENTRE_ID), anyList(),
+                eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS), eq(parse(EARLIEST_START_TIME)),
+                eq(null), any(CourtCentreDefaults.class), anyList(), anyList(), eq(30),
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_DURATION)), eq(TYPE_OF_LIST), eq(null));
+    }
+
+    /**
+     * The seed aggregate fans the inherited values out on the requested event, so they survive
+     * the hop to the per-hearing command.
+     */
+    @Test
+    public void shouldCarryPtphDetailsOntoTheUnscheduledNextHearingRequestedEvent() throws EventStreamException {
+        when(eventSource.getStreamById(any())).thenReturn(eventStream);
+        when(aggregateService.get(any(), eq(SeedHearingAggregate.class))).thenReturn(seedHearingAggregate);
+
+        final ListUnscheduledNextHearingsEnriched payload = ListUnscheduledNextHearingsEnriched.listUnscheduledNextHearingsEnriched()
+                .withHearings(List.of(HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds()
+                        .withId(HEARING_ID_1).build()))
+                .withCourtCentresDetails(List.of(CourtCentreDetails.courtCentreDetails()
+                        .withId(COURT_CENTRE_ID)
+                        .withDefaultDuration(6)
+                        .withDefaultStartTime(LocalTime.parse(DEFAULT_START_TIME))
+                        .build()))
+                .withSeedingHearing(SeedingHearing.seedingHearing()
+                        .withSeedingHearingId(SEED_HEARING_ID_1)
+                        .withSittingDay(SITTING_DAY)
+                        .withJurisdictionType(JurisdictionType.CROWN)
+                        .build())
+                .withPtphDetails(List.of(uk.gov.justice.listing.courts.PtphDetails.ptphDetails()
+                        .withHearingId(HEARING_ID_1)
+                        .withTier("TIER_3")
+                        .withListType("TYPE_1_FIXED")
+                        .withKeyReason("Vulnerable witness")
+                        .build()))
+                .build();
+
+        final JsonObject commandPayload = createObjectBuilder().build();
+        when(jsonObjectConverter.convert(commandPayload, ListUnscheduledNextHearingsEnriched.class)).thenReturn(payload);
+
+        unscheduledListingCommandHandler.handleListUnscheduledNextHearings(
+                createEnvelope("listing.command.list-unscheduled-next-hearings-enriched", commandPayload));
+
+        final List<JsonEnvelope> events = verifyAppendAndGetArgumentFrom(eventStream).toList();
+        assertThat(events.size(), is(1));
+        final JsonArray emitted = events.get(0).payloadAsJsonObject().getJsonArray("ptphDetails");
+        assertThat(emitted.size(), is(1));
+        assertThat(emitted.getJsonObject(0).getString("hearingId"), is(HEARING_ID_1.toString()));
+        assertThat(emitted.getJsonObject(0).getString("tier"), is("TIER_3"));
+        assertThat(emitted.getJsonObject(0).getString("listType"), is("TYPE_1_FIXED"));
     }
 
     @Test
