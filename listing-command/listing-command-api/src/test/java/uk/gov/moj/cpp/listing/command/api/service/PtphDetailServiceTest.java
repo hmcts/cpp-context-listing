@@ -4,6 +4,7 @@ import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -105,5 +106,45 @@ class PtphDetailServiceTest {
 
         assertThrows(RuntimeException.class,
                 () -> ptphDetailService.getFinalisedPtphDetail(SEEDING_HEARING_ID, incoming()));
+    }
+
+    /**
+     * A finalised record needs both a tier and a list type, so this shape should not occur —
+     * but the reader must not blow up on a field the hearing context omitted, because that
+     * would fail the whole listing command over a missing optional value.
+     */
+    @Test
+    void shouldReadAbsentFieldsAsNullRatherThanFailing() {
+        when(requester.requestAsAdmin(any(JsonEnvelope.class))).thenReturn(response(createObjectBuilder()
+                .add("finalised", true)
+                .build()));
+
+        final Optional<PtphDetail> result = ptphDetailService.getFinalisedPtphDetail(SEEDING_HEARING_ID, incoming());
+
+        assertTrue(result.isPresent());
+        assertNull(result.get().getTier());
+        assertNull(result.get().getListType());
+        assertNull(result.get().getKeyReason());
+    }
+
+    /**
+     * `keyReason` is only ever set for a fixed-date list type, and the hearing context sends it
+     * as an explicit JSON null for a flexible one — which is distinct from omitting the key.
+     */
+    @Test
+    void shouldReadExplicitJsonNullFieldsAsNull() {
+        when(requester.requestAsAdmin(any(JsonEnvelope.class))).thenReturn(response(createObjectBuilder()
+                .add("tier", "TIER_4")
+                .add("listType", "TYPE_2_FLEXIBLE")
+                .addNull("keyReason")
+                .add("finalised", true)
+                .build()));
+
+        final Optional<PtphDetail> result = ptphDetailService.getFinalisedPtphDetail(SEEDING_HEARING_ID, incoming());
+
+        assertTrue(result.isPresent());
+        assertEquals("TIER_4", result.get().getTier());
+        assertEquals("TYPE_2_FLEXIBLE", result.get().getListType());
+        assertNull(result.get().getKeyReason());
     }
 }

@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.api.service;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
@@ -251,5 +252,86 @@ class PtphDetailEnrichmentServiceTest {
         assertTrue(result.isEmpty());
         verifyNoInteractions(ptphDetailService);
         verify(hearingTypeFactory, never()).getTrialHearingTypeIds(any(JsonEnvelope.class));
+    }
+
+    /**
+     * Guard cases. A command with nothing to enrich must cost nothing — no reference-data
+     * lookup and no hearing-context call — and must hand back exactly what it was given.
+     */
+    @Test
+    void shouldReturnUnchangedWhenThereAreNoHearingsToEnrich() {
+        assertNull(ptphDetailEnrichmentService.enrichWithPtphDetail(null, seedingHearing(), envelope()));
+        assertTrue(ptphDetailEnrichmentService.enrichWithPtphDetail(emptyList(), seedingHearing(), envelope()).isEmpty());
+
+        verifyNoInteractions(ptphDetailService);
+        verify(hearingTypeFactory, never()).getTrialHearingTypeIds(any(JsonEnvelope.class));
+    }
+
+    @Test
+    void shouldReturnNoEntriesForUnscheduledWhenThereAreNoHearings() {
+        assertTrue(ptphDetailEnrichmentService.resolvePtphDetails(null, seedingHearing(), envelope()).isEmpty());
+        assertTrue(ptphDetailEnrichmentService.resolvePtphDetails(emptyList(), seedingHearing(), envelope()).isEmpty());
+
+        verifyNoInteractions(ptphDetailService);
+        verify(hearingTypeFactory, never()).getTrialHearingTypeIds(any(JsonEnvelope.class));
+    }
+
+    /**
+     * A hearing listed outside the seeding-hearing flow carries no seeding hearing at all,
+     * which is not an error — there is simply nothing to inherit from.
+     */
+    @Test
+    void shouldReturnUnchangedWhenThereIsNoSeedingHearingAtAll() {
+        final List<HearingListingNeeds> hearings = singletonList(hearingOfType(TRIAL_TYPE_ID));
+
+        final List<HearingListingNeeds> result = ptphDetailEnrichmentService.enrichWithPtphDetail(
+                hearings, null, envelope());
+
+        assertEquals(hearings, result);
+        verifyNoInteractions(ptphDetailService);
+    }
+
+    @Test
+    void shouldReturnNoEntriesForUnscheduledWhenThereIsNoSeedingHearingAtAll() {
+        final List<PtphDetails> result = ptphDetailEnrichmentService.resolvePtphDetails(
+                singletonList(unscheduledHearingOfType(randomUUID(), TRIAL_TYPE_ID)), null, envelope());
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(ptphDetailService);
+    }
+
+    /**
+     * The trial gate compares hearing type ids, so a hearing with no type — or a type with no
+     * id — must simply not be a trial rather than blowing up mid-command.
+     */
+    @Test
+    void shouldTreatAHearingWithNoTypeAsNotATrial() {
+        when(hearingTypeFactory.getTrialHearingTypeIds(any(JsonEnvelope.class)))
+                .thenReturn(Set.of(TRIAL_TYPE_ID.toString()));
+
+        final HearingListingNeeds noType = hearingListingNeeds().withId(randomUUID()).build();
+
+        final List<HearingListingNeeds> result = ptphDetailEnrichmentService.enrichWithPtphDetail(
+                singletonList(noType), seedingHearing(), envelope());
+
+        assertNull(result.get(0).getTier());
+        verifyNoInteractions(ptphDetailService);
+    }
+
+    @Test
+    void shouldTreatAHearingWhoseTypeHasNoIdAsNotATrial() {
+        when(hearingTypeFactory.getTrialHearingTypeIds(any(JsonEnvelope.class)))
+                .thenReturn(Set.of(TRIAL_TYPE_ID.toString()));
+
+        final HearingListingNeeds typeWithoutId = hearingListingNeeds()
+                .withId(randomUUID())
+                .withType(HearingType.hearingType().withDescription("no id").build())
+                .build();
+
+        final List<HearingListingNeeds> result = ptphDetailEnrichmentService.enrichWithPtphDetail(
+                singletonList(typeWithoutId), seedingHearing(), envelope());
+
+        assertNull(result.get(0).getTier());
+        verifyNoInteractions(ptphDetailService);
     }
 }
