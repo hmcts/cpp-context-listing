@@ -268,6 +268,10 @@ public class NextHearingProcessor {
         }
         addJsonValueToJsonObjectNullSafe(jsonObjectBuilder, "hearing", objectToJsonValueConverter.convert(event.getHearing()));
 
+        if (CollectionUtils.isNotEmpty(event.getPtphDetails())) {
+            addJsonValueToJsonObjectNullSafe(jsonObjectBuilder, "ptphDetails", listToJsonArrayConverter.convert(event.getPtphDetails()));
+        }
+
         return jsonObjectBuilder.build();
     }
 

@@ -278,7 +278,7 @@ class HearingAggregateTest {
         nonSittingDays = Stream.of(LocalDate.now().plusDays(3), LocalDate.now().plusDays(5)).collect(Collectors.toList());
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked,
-                "", "'", null, of(Boolean.FALSE),of(false),empty());
+                "", "'", null, of(Boolean.FALSE),of(false),empty(), null);
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -311,7 +311,7 @@ class HearingAggregateTest {
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked,
-                "", "'", null, of(Boolean.FALSE), of(false), empty());
+                "", "'", null, of(Boolean.FALSE), of(false), empty(), null);
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -333,7 +333,7 @@ class HearingAggregateTest {
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked,
-                "", "'", null, of(Boolean.TRUE), of(false), empty());
+                "", "'", null, of(Boolean.TRUE), of(false), empty(), null);
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -351,7 +351,7 @@ class HearingAggregateTest {
                 .collect(Collectors.toList());
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
-                reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked, "", "'", null, Optional.empty(), of(false), empty());
+                reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked, "", "'", null, Optional.empty(), of(false), empty(), null);
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -379,7 +379,7 @@ class HearingAggregateTest {
         endDate = now().plusDays(2);
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
-                reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked, "", "", null, of(Boolean.FALSE), of(false), empty());
+                reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked, "", "", null, of(Boolean.FALSE), of(false), empty(), null);
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -7357,7 +7357,7 @@ class HearingAggregateTest {
                 courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate,
                 of(wcStartDate), of(wcEndDate), of(1),
                 emptyList(), emptyList(), emptyList(), isSlotsBooked, "", "", null, Optional.empty(), of(false), empty()
-        ).collect(Collectors.toList());
+        , null).collect(Collectors.toList());
 
         assertThat(events, hasSize(2));
         assertThat(events.get(0), is(CoreMatchers.instanceOf(HearingListed.class)));
@@ -7402,7 +7402,7 @@ class HearingAggregateTest {
                 courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate,
                 of(wcStartDate), of(wcEndDate), of(1),
                 emptyList(), emptyList(), emptyList(), isSlotsBooked, "", "", null, Optional.empty(), of(false), empty()
-        ).collect(Collectors.toList());
+        , null).collect(Collectors.toList());
 
         assertThat(events, hasSize(1));
         assertThat(events.get(0), is(CoreMatchers.instanceOf(HearingListed.class)));
@@ -7439,7 +7439,7 @@ class HearingAggregateTest {
                 LocalDate.now().plusDays(37), courtCentreDefaults, courtApplications,
                 courtApplicationPartyListingNeeds, estimateMinutes,
                 of(wcStartDate), of(wcEndDate), of(1), null
-        ).collect(Collectors.toList());
+        , null).collect(Collectors.toList());
 
         assertThat(events, hasSize(2));
         assertThat(events.get(0), is(CoreMatchers.instanceOf(HearingListed.class)));
@@ -7483,7 +7483,7 @@ class HearingAggregateTest {
                 LocalDate.now().plusDays(37), courtCentreDefaults, courtApplications,
                 courtApplicationPartyListingNeeds, estimateMinutes,
                 of(wcStartDate), of(wcEndDate), of(1), null
-        ).collect(Collectors.toList());
+        , null).collect(Collectors.toList());
 
         assertThat(events, hasSize(1));
         assertThat(events.get(0), is(CoreMatchers.instanceOf(HearingListed.class)));
@@ -7938,6 +7938,36 @@ class HearingAggregateTest {
         assertThat(event.getCourtApplicationApplicantIds(), hasItem(applicantId));
         assertThat(event.getCourtApplicationRespondentIds(), hasSize(1));
         assertThat(event.getCourtApplicationRespondentIds(), hasItem(respondentId));
+    }
+
+    @Test
+    void shouldCarryPtphDetailOntoHearingListedEvent() {
+        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
+                reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked,
+                "", "'", null, of(Boolean.FALSE), of(false), empty(),
+                new uk.gov.moj.cpp.listing.domain.PtphDetail("TIER_3", "TYPE_1_FIXED", "Vulnerable witness"));
+
+        final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
+        final uk.gov.justice.listing.events.Hearing listedEventHearing = hearingListed.getHearing();
+
+        assertThat(listedEventHearing.getTier(), is("TIER_3"));
+        assertThat(listedEventHearing.getListType(), is("TYPE_1_FIXED"));
+        assertThat(listedEventHearing.getKeyReason(), is("Vulnerable witness"));
+    }
+
+    @Test
+    void shouldLeavePtphDetailFieldsNullWhenNotSupplied() {
+        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
+                reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked,
+                "", "'", null, of(Boolean.FALSE), of(false), empty(),
+                null);
+
+        final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
+        final uk.gov.justice.listing.events.Hearing listedEventHearing = hearingListed.getHearing();
+
+        assertThat(listedEventHearing.getTier(), is(nullValue()));
+        assertThat(listedEventHearing.getListType(), is(nullValue()));
+        assertThat(listedEventHearing.getKeyReason(), is(nullValue()));
     }
 
 }

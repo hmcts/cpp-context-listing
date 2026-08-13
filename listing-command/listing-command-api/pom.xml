@@ -62,6 +62,20 @@
                             </exclusion>
                         </exclusions>
                     </dependency>
+                    <!-- LPT-2405: generates the remote client for hearing.get-ptph-detail,
+                         used by PtphDetailService to read the seeding hearing's tier/list type -->
+                    <dependency>
+                        <groupId>uk.gov.moj.cpp.hearing</groupId>
+                        <artifactId>hearing-query-api</artifactId>
+                        <version>${hearing.version}</version>
+                        <classifier>raml</classifier>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>*</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
                 </dependencies>
             </plugin>
             <plugin>

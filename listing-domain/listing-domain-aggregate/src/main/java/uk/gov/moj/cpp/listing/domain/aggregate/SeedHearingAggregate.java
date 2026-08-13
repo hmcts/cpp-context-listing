@@ -126,6 +126,11 @@ public class SeedHearingAggregate implements Aggregate {
     }
 
     public Stream<Object> requestNextUnscheduledHearings(final List<HearingUnscheduledListingNeeds> unscheduledListingNeeds, final String hearingDay, final List<CourtCentreDefaults> courtCentreDefaults) {
+        return requestNextUnscheduledHearings(unscheduledListingNeeds, hearingDay, courtCentreDefaults, emptyList());
+    }
+
+    public Stream<Object> requestNextUnscheduledHearings(final List<HearingUnscheduledListingNeeds> unscheduledListingNeeds, final String hearingDay, final List<CourtCentreDefaults> courtCentreDefaults,
+                                                        final List<uk.gov.justice.listing.events.PtphDetails> ptphDetails) {
 
         final List<CourtCentreDetails> courtCentreDetails = convertCourtCentreDetails(courtCentreDefaults);
 
@@ -136,6 +141,9 @@ public class SeedHearingAggregate implements Aggregate {
                     .withHearing(hearing)
                     .withHearingDay(hearingDay)
                     .withCourtCentreDetails(courtCentreDetails)
+                    .withPtphDetails(ptphDetails.stream()
+                            .filter(detail -> hearing.getId().equals(detail.getHearingId()))
+                            .collect(toList()))
                     .build());
         }
 

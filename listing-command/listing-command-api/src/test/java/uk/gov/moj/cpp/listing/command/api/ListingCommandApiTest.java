@@ -13,10 +13,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -69,6 +71,7 @@ import uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
 import uk.gov.moj.cpp.listing.command.api.service.HearingLookupService;
+import uk.gov.moj.cpp.listing.command.api.service.PtphDetailEnrichmentService;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
@@ -95,6 +98,7 @@ import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonValue;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -139,6 +143,18 @@ public class ListingCommandApiTest {
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
     @Mock
     private HearingLookupService hearingLookupService;
+    @Mock
+    private PtphDetailEnrichmentService ptphDetailEnrichmentService;
+
+    /**
+     * PTPH enrichment is exercised by {@link uk.gov.moj.cpp.listing.command.api.service.PtphDetailEnrichmentServiceTest};
+     * here it is a pass-through so the existing expectations on the enriched command still hold.
+     */
+    @BeforeEach
+    public void passThroughPtphDetailEnrichment() {
+        lenient().when(ptphDetailEnrichmentService.enrichWithPtphDetail(anyList(), any(), any(JsonEnvelope.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+    }
 
     private static final Type HEARING_TYPE = Type.type()
             .withId(fromString("6e1bef55-7e13-4615-b3ba-8663f4438e16"))
