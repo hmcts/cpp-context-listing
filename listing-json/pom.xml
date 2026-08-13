@@ -13,6 +13,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.6-SNAPSHOT</version>
@@ -41,6 +42,9 @@
 =======
         <version>17.104.9-cct-1981-SNAPSHOT</version>
 >>>>>>> 0f6df5e00d (new team branch)
+=======
+        <version>17.104.10-cct-1981-SNAPSHOT</version>
+>>>>>>> a9927a8020 (New 17.104.10-cct-1981-SNAPSHOT)
     </parent>
 
     <artifactId>listing-json</artifactId>
