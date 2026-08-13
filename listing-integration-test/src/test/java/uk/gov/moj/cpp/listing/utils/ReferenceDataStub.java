@@ -405,6 +405,34 @@ public class ReferenceDataStub {
                         .withBody(payload)));
     }
 
+    /**
+     * Serves the given hearing type with {@code trialTypeFlag: true}, so
+     * {@code HearingTypeFactory.getTrialHearingTypeIds} classifies it as a trial and the
+     * LPT-2405 enrichment gate opens.
+     * <p>
+     * Registered at a higher precedence than the default, because the steps classes register
+     * their own hearing-types stub for the same URL <em>inside</em> their {@code when...}
+     * methods — after the test has run its setup. WireMock resolves equal-priority matches by
+     * taking the most recently registered, so ordering alone cannot win; an explicit priority
+     * can.
+     * <p>
+     * Deliberately a separate stub file rather than a flag on the shared one: adding
+     * {@code trialTypeFlag} there would make every other IT's hearing type a trial and start
+     * calling the hearing context from tests that do not expect it.
+     */
+    public static void stubGetReferenceDataTrialHearingTypes(final UUID hearingTypeId) {
+        stubPingForReferenceDataService();
+        String payload = getPayload("stub-data/referencedata.query.trial-hearing-types.json")
+                .replace("HEARING_TYPE_ID", hearingTypeId.toString());
+
+        stubFor(get(urlPathMatching(REFERENCE_DATA_HEARING_TYPES_URL))
+                .atPriority(1)
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", UUID.randomUUID().toString())
+                        .withHeader("Content-Type", REFERENCE_DATA_HEARING_TYPES_MEDIA_TYPE)
+                        .withBody(payload)));
+    }
+
     public static void stubGetReferenceDataCourtRoom(final UUID courtCentreIdOne, final LocalTime defaultStartTime, final String defaultDurationHoursMins, final UUID courtRoomId) {
         stubPingForReferenceDataService();
         String payload = getPayload("stub-data/referencedata.query.courtroom.json")

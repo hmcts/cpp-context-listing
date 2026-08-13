@@ -350,7 +350,8 @@ public class ListingCommandHandler {
                         commandHearing.getSpecialRequirements(),
                         domainHearing.getIsPossibleDisqualification(),
                         domainHearing.getGroupProceedings(),
-                        domainHearing.getNumberOfGroupCases()
+                        domainHearing.getNumberOfGroupCases(),
+                        domainHearing.getPtphDetail()
                 );
                 final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds = buildFromProsecutionCases(commandHearing.getProsecutionCases());
                 final Stream<Object> allocationEvents = hearing.applyAllocationRules(finalBookingReference, false, false, prosecutionCaseDefendantOffenceIds, empty(), commandHearing.getIsGroupProceedings());

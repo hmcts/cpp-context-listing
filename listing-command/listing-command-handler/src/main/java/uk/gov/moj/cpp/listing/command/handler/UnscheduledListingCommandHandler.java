@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
 import static java.util.Objects.nonNull;
+import static java.util.Collections.emptyList;
+import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toList;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
 import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
@@ -23,6 +25,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
+import uk.gov.moj.cpp.listing.domain.PtphDetail;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate;
 
@@ -99,7 +102,9 @@ public class UnscheduledListingCommandHandler {
         final UUID seedingHearingId = seedingHearing.getSeedingHearingId();
         final String hearingDay = seedingHearing.getSittingDay();
 
-        updateSeedHearingEventStream(command, seedingHearingId, (SeedHearingAggregate seedHearingAggregate) -> seedHearingAggregate.requestNextUnscheduledHearings(unscheduledListingNeeds, hearingDay, courtCentresDetails));
+        final List<uk.gov.justice.listing.events.PtphDetails> ptphDetails = toEventPtphDetails(listUnscheduledNextHearingsEnriched.getPtphDetails());
+
+        updateSeedHearingEventStream(command, seedingHearingId, (SeedHearingAggregate seedHearingAggregate) -> seedHearingAggregate.requestNextUnscheduledHearings(unscheduledListingNeeds, hearingDay, courtCentresDetails, ptphDetails));
     }
 
     @Handles("listing.command.list-unscheduled-next-hearing")
@@ -113,11 +118,46 @@ public class UnscheduledListingCommandHandler {
         final Map<UUID, CourtCentreDetails> courtCentres = listUnscheduledNextHearing.getCourtCentresDetails().stream()
                 .collect(Collectors.toMap(CourtCentreDetails::getId, cc -> cc));
 
-        listUnscheduledHearing(command, hearingTypesIdDurationMap, commandHearing, courtCentres);
+        listUnscheduledHearing(command, hearingTypesIdDurationMap, commandHearing, courtCentres,
+                ptphDetailFor(listUnscheduledNextHearing.getPtphDetails(), commandHearing.getId()));
+    }
+
+    /**
+     * The command carries a sibling list keyed by hearing id, because the hearing carrier is
+     * owned by coredomain; the aggregate takes the same single value object as the scheduled path.
+     */
+    private PtphDetail ptphDetailFor(final List<uk.gov.justice.listing.courts.PtphDetails> ptphDetails, final UUID hearingId) {
+        if (isNull(ptphDetails)) {
+            return null;
+        }
+        return ptphDetails.stream()
+                .filter(detail -> hearingId.equals(detail.getHearingId()))
+                .findFirst()
+                .map(detail -> new PtphDetail(detail.getTier(), detail.getListType(), detail.getKeyReason()))
+                .orElse(null);
+    }
+
+    private List<uk.gov.justice.listing.events.PtphDetails> toEventPtphDetails(final List<uk.gov.justice.listing.courts.PtphDetails> ptphDetails) {
+        if (isNull(ptphDetails)) {
+            return emptyList();
+        }
+        return ptphDetails.stream()
+                .map(detail -> uk.gov.justice.listing.events.PtphDetails.ptphDetails()
+                        .withHearingId(detail.getHearingId())
+                        .withTier(detail.getTier())
+                        .withListType(detail.getListType())
+                        .withKeyReason(detail.getKeyReason())
+                        .build())
+                .collect(toList());
     }
 
     @SuppressWarnings({"squid:S3655", "squid:S1188"})
     private void listUnscheduledHearing(final JsonEnvelope command, final Map<String, Integer> hearingTypesIdDurationMap, final HearingUnscheduledListingNeeds commandHearing, final Map<UUID, CourtCentreDetails> courtCentres) throws EventStreamException {
+        listUnscheduledHearing(command, hearingTypesIdDurationMap, commandHearing, courtCentres, null);
+    }
+
+    @SuppressWarnings({"squid:S3655", "squid:S1188"})
+    private void listUnscheduledHearing(final JsonEnvelope command, final Map<String, Integer> hearingTypesIdDurationMap, final HearingUnscheduledListingNeeds commandHearing, final Map<UUID, CourtCentreDetails> courtCentres, final PtphDetail ptphDetail) throws EventStreamException {
         final Optional<LocalDate> weekCommencingStartDate = commandToDomainConverter.getWeekCommencingStartDate(commandHearing);
         final Optional<Integer> weekCommencingDurationInWeeks = commandToDomainConverter.getWeekCommencingDurationInWeeks(commandHearing);
         final Optional<LocalDate> weekCommencingEndDate = commandToDomainConverter.getWeekCommencingEndDate(weekCommencingStartDate, weekCommencingDurationInWeeks);
@@ -142,7 +182,8 @@ public class UnscheduledListingCommandHandler {
                 weekCommencingStartDate,
                 weekCommencingEndDate,
                 weekCommencingDurationInWeeks,
-                commandToDomainConverter.convertTypeOfList(commandHearing.getTypeOfList())));
+                commandToDomainConverter.convertTypeOfList(commandHearing.getTypeOfList()),
+                ptphDetail));
     }
 
     private void updateHearingEventStream(final JsonEnvelope command, final UUID hearingId,

@@ -15,6 +15,32 @@
     },
     "hearingDay": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
+    "ptphDetails": {
+      "description": "Tier / list type inherited from the seeding hearing, per next hearing. Sibling of hearings[] because the hearing carrier is owned by coredomain.",
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "properties": {
+          "hearingId": {
+            "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+          },
+          "tier": {
+            "type": "string"
+          },
+          "listType": {
+            "type": "string"
+          },
+          "keyReason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "hearingId"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [
@@ -105,7 +131,7 @@
         "estimatedMinutes": {
           "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/positiveInteger"
         },
-        "estimatedDuration" :{
+        "estimatedDuration": {
           "description": "Estimated duration",
           "type": "string"
         },
@@ -194,5 +220,3 @@
   },
   "additionalProperties": false
 }
-
-

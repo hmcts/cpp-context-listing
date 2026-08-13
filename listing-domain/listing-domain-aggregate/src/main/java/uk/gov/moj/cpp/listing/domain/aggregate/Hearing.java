@@ -153,6 +153,7 @@ import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.Defendant;
+import uk.gov.moj.cpp.listing.domain.PtphDetail;
 import uk.gov.moj.cpp.listing.domain.DefendantOffenceIds;
 import uk.gov.moj.cpp.listing.domain.HearingLanguage;
 import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
@@ -422,7 +423,8 @@ public class Hearing implements Aggregate {
                                final List<String> specialRequirements,
                                final Optional<Boolean> isPossibleDisqualification,
                                final Optional<Boolean> isGroupProceedings,
-                               final Optional<Integer> numberOfGroupCases) {
+                               final Optional<Integer> numberOfGroupCases,
+                               final PtphDetail ptphDetail) {
 
         if (this.duplicate || this.deleted) {
             return Stream.empty();
@@ -465,6 +467,13 @@ public class Hearing implements Aggregate {
                             .withId(courtCentreDefaults.getCourtCentreId())
                             .withDefaultStartTime(courtCentreDefaults.getDefaultStartTime())
                             .build() : null);
+
+            if (nonNull(ptphDetail)) {
+                builder.withTier(ptphDetail.getTier())
+                        .withListType(ptphDetail.getListType())
+                        .withKeyReason(ptphDetail.getKeyReason());
+            }
+
             builder.withCourtApplications(courtApplications.stream()
                     .map(NewDomainToEventConverter::buildCourtApplications)
                     .collect((toList())));
@@ -584,7 +593,8 @@ public class Hearing implements Aggregate {
                                           final Optional<LocalDate> weekCommencingStartDate,
                                           final Optional<LocalDate> weekCommencingEndDate,
                                           final Optional<Integer> weekCommencingDurationInWeeks,
-                                          final TypeOfList typeOfList) {
+                                          final TypeOfList typeOfList,
+                                          final PtphDetail ptphDetail) {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
@@ -639,6 +649,9 @@ public class Hearing implements Aggregate {
                         .withWeekCommencingDurationInWeeks(weekCommencingDurationInWeeks.orElse(null))
                         .withWeekCommencingStartDate(weekCommencingStartDate.orElse(null))
                         .withWeekCommencingEndDate(weekCommencingEndDate.orElse(null))
+                        .withTier(nonNull(ptphDetail) ? ptphDetail.getTier() : null)
+                        .withListType(nonNull(ptphDetail) ? ptphDetail.getListType() : null)
+                        .withKeyReason(nonNull(ptphDetail) ? ptphDetail.getKeyReason() : null)
                         .build())
                 .build()));
         if (isNull(startDate) && weekCommencingStartDate.isPresent()) {

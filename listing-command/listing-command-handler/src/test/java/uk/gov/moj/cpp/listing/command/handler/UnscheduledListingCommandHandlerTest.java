@@ -180,7 +180,7 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_START_DATE)),
                 eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
                 eq(of(WEEK_COMMENCING_DURATION)),
-                eq(TYPE_OF_LIST));
+                eq(TYPE_OF_LIST), eq(null));
     }
 
     @Test
@@ -226,7 +226,7 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_START_DATE)),
                 eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
                 eq(of(WEEK_COMMENCING_DURATION)),
-                eq(TYPE_OF_LIST));
+                eq(TYPE_OF_LIST), eq(null));
     }
 
     @Test
@@ -283,7 +283,7 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_START_DATE)),
                 eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
                 eq(of(WEEK_COMMENCING_DURATION)),
-                eq(TYPE_OF_LIST));
+                eq(TYPE_OF_LIST), eq(null));
     }
 
     @Test
@@ -320,7 +320,7 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_START_DATE)),
                 eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
                 eq(of(WEEK_COMMENCING_DURATION)),
-                eq(TYPE_OF_LIST));
+                eq(TYPE_OF_LIST), eq(null));
     }
 
     private JsonEnvelope buildListUnscheduledNextHearingsEnvelope() {

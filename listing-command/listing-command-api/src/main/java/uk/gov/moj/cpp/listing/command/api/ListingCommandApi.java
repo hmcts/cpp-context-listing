@@ -40,6 +40,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
 import uk.gov.moj.cpp.listing.command.api.service.HearingLookupService;
+import uk.gov.moj.cpp.listing.command.api.service.PtphDetailEnrichmentService;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
@@ -144,6 +145,8 @@ public class ListingCommandApi {
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
     @Inject
     private HearingLookupService hearingLookupService;
+    @Inject
+    private PtphDetailEnrichmentService ptphDetailEnrichmentService;
 
     @Handles("listing.command.list-court-hearing")
     public void handleListCourtHearing(final JsonEnvelope envelope) {
@@ -181,7 +184,10 @@ public class ListingCommandApi {
 
         final JsonObject payload = envelope.payloadAsJsonObject();
         final ListNextHearingsV2 listNextHearings = jsonObjectConverter.convert(payload, ListNextHearingsV2.class);
-        final List<HearingListingNeeds> enrichedHearings = hearingEnrichmentOrchestrator.enrichListCourtHearing(listNextHearings.getHearings(), envelope);
+        final List<HearingListingNeeds> enrichedHearings = ptphDetailEnrichmentService.enrichWithPtphDetail(
+                hearingEnrichmentOrchestrator.enrichListCourtHearing(listNextHearings.getHearings(), envelope),
+                listNextHearings.getSeedingHearing(),
+                envelope);
         final Set<CourtCentreDetails> courtCentres = getCourtCentreDetails(envelope, enrichedHearings);
 
         final ListNextHearingsEnrichedV2 listNextHearingsEnriched = ListNextHearingsEnrichedV2.listNextHearingsEnrichedV2()
@@ -260,6 +266,10 @@ public class ListingCommandApi {
         final ListUnscheduledNextHearingsEnriched listCourtHearingEnriched = ListUnscheduledNextHearingsEnriched.listUnscheduledNextHearingsEnriched()
                 .withCourtCentresDetails(new ArrayList<>(courtCentres))
                 .withHearings(unscheduledNextHearings.getHearings())
+                .withPtphDetails(ptphDetailEnrichmentService.resolvePtphDetails(
+                        unscheduledNextHearings.getHearings(),
+                        unscheduledNextHearings.getSeedingHearing(),
+                        envelope))
                 .withSeedingHearing(unscheduledNextHearings.getSeedingHearing())
                 .build();
 

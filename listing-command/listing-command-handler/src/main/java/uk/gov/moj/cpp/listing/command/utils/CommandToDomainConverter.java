@@ -40,6 +40,7 @@ import uk.gov.moj.cpp.listing.domain.CourtHouseType;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.Hearing;
+import uk.gov.moj.cpp.listing.domain.PtphDetail;
 import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
@@ -186,7 +187,19 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withIsPossibleDisqualification(isPossibleDisqualification(commandHearing))
                 .withIsGroupProceedings(nonNull(commandHearing.getIsGroupProceedings()) ? of(commandHearing.getIsGroupProceedings()) : empty())
                 .withNumberOfGroupCases(nonNull(commandHearing.getNumberOfGroupCases()) ? of(commandHearing.getNumberOfGroupCases()) : empty())
+                .withPtphDetail(buildPtphDetail(commandHearing.getTier(), commandHearing.getListType(), commandHearing.getKeyReason()))
                 .build();
+    }
+
+    /**
+     * Null rather than an empty value object when nothing was inherited, so the aggregate
+     * can skip the event fields entirely.
+     */
+    private PtphDetail buildPtphDetail(final String tier, final String listType, final String keyReason) {
+        if (isNull(tier) && isNull(listType) && isNull(keyReason)) {
+            return null;
+        }
+        return new PtphDetail(tier, listType, keyReason);
     }
 
     private ZonedDateTime getHearingStartDateTime(final HearingListingNeeds commandHearing) {

@@ -614,7 +614,7 @@ class ListingCommandHandlerTest {
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
                 eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY),
-                eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(of(2)))).thenReturn(events);
+                eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(of(2)), eq(null))).thenReturn(events);
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(createObjectBuilder().add("oucode", "B06AN00").build());
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
@@ -622,7 +622,7 @@ class ListingCommandHandlerTest {
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES),eq(ESTIMATED_DURATION), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
-                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(of(2)));
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(of(2)), eq(null));
 
     }
 
@@ -668,14 +668,14 @@ class ListingCommandHandlerTest {
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
                 eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(true), eq(BOOKING_TYPE), eq(PRIORITY),
-                eq(SPECIAL_REQUIREMENTS), eq(of(Boolean.FALSE)), eq(empty()), eq(empty()))).thenReturn(events);
+                eq(SPECIAL_REQUIREMENTS), eq(of(Boolean.FALSE)), eq(empty()), eq(empty()), eq(null))).thenReturn(events);
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
 
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(ESTIMATED_DURATION), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
-                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(true), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()));
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(true), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()), eq(null));
 
     }
 
@@ -712,14 +712,14 @@ class ListingCommandHandlerTest {
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
                 eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(hearingDays), eq(NON_DEFAULT_DAYS), eq(nonSittingDays), eq(true), eq(BOOKING_TYPE), eq(PRIORITY),
-                eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()))).thenReturn(events);
+                eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()), eq(null))).thenReturn(events);
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
 
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES),eq(ESTIMATED_DURATION), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(parse(LISTED_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
-                eq(empty()), eq(empty()), eq(empty()), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()));
+                eq(empty()), eq(empty()), eq(empty()), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()), eq(null));
 
     }
 
@@ -753,7 +753,7 @@ class ListingCommandHandlerTest {
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
                 eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY),
-                eq(SPECIAL_REQUIREMENTS), eq(empty()),eq(empty()), eq(empty()))).thenReturn(events);
+                eq(SPECIAL_REQUIREMENTS), eq(empty()),eq(empty()), eq(empty()), eq(null))).thenReturn(events);
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(createObjectBuilder().add("oucode", "B06AN00").build());
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
@@ -761,7 +761,7 @@ class ListingCommandHandlerTest {
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES),eq(ESTIMATED_DURATION), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
-                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(convertNonDefaultDaysCommandToDomain(nonDefaultDaysList)), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()));
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(convertNonDefaultDaysCommandToDomain(nonDefaultDaysList)), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()), eq(null));
 
 
     }
