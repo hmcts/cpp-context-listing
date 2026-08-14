@@ -19,6 +19,7 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
 
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.justice.listing.courts.PtphDetails;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
@@ -64,8 +65,13 @@ class PtphDetailEnrichmentServiceTest {
     }
 
     private HearingListingNeeds hearingOfType(final UUID typeId) {
+        return hearingOfType(typeId, JurisdictionType.CROWN);
+    }
+
+    private HearingListingNeeds hearingOfType(final UUID typeId, final JurisdictionType jurisdictionType) {
         return hearingListingNeeds()
                 .withId(randomUUID())
+                .withJurisdictionType(jurisdictionType)
                 .withType(HearingType.hearingType().withId(typeId).withDescription("desc").build())
                 .build();
     }
@@ -149,6 +155,7 @@ class PtphDetailEnrichmentServiceTest {
 
         final HearingListingNeeds spoofed = hearingListingNeeds()
                 .withId(randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
                 .withType(HearingType.hearingType().withId(TRIAL_TYPE_ID).withDescription("desc").build())
                 .withTier("TIER_1")
                 .withListType("TYPE_1_FIXED")
@@ -176,8 +183,14 @@ class PtphDetailEnrichmentServiceTest {
     }
 
     private HearingUnscheduledListingNeeds unscheduledHearingOfType(final UUID hearingId, final UUID typeId) {
+        return unscheduledHearingOfType(hearingId, typeId, JurisdictionType.CROWN);
+    }
+
+    private HearingUnscheduledListingNeeds unscheduledHearingOfType(final UUID hearingId, final UUID typeId,
+                                                                    final JurisdictionType jurisdictionType) {
         return HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds()
                 .withId(hearingId)
+                .withJurisdictionType(jurisdictionType)
                 .withType(HearingType.hearingType().withId(typeId).withDescription("desc").build())
                 .build();
     }
@@ -309,7 +322,10 @@ class PtphDetailEnrichmentServiceTest {
         when(hearingTypeFactory.getTrialHearingTypeIds(any(JsonEnvelope.class)))
                 .thenReturn(Set.of(TRIAL_TYPE_ID.toString()));
 
-        final HearingListingNeeds noType = hearingListingNeeds().withId(randomUUID()).build();
+        final HearingListingNeeds noType = hearingListingNeeds()
+                .withId(randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .build();
 
         final List<HearingListingNeeds> result = ptphDetailEnrichmentService.enrichWithPtphDetail(
                 singletonList(noType), seedingHearing(), envelope());
@@ -325,6 +341,7 @@ class PtphDetailEnrichmentServiceTest {
 
         final HearingListingNeeds typeWithoutId = hearingListingNeeds()
                 .withId(randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
                 .withType(HearingType.hearingType().withDescription("no id").build())
                 .build();
 
@@ -333,5 +350,53 @@ class PtphDetailEnrichmentServiceTest {
 
         assertNull(result.get(0).getTier());
         verifyNoInteractions(ptphDetailService);
+    }
+
+    /**
+     * LPT-2405 — tier and list type are a Crown Court PTPH concept, but reference data flags
+     * magistrates trial types with `trialTypeFlag` too. Without the jurisdiction check a
+     * magistrates trial would query the hearing context and inherit a tier that no Crown PTPH
+     * ever set for it.
+     */
+    @Test
+    void shouldNotCallHearingContextForAMagistratesTrial() {
+        when(hearingTypeFactory.getTrialHearingTypeIds(any(JsonEnvelope.class)))
+                .thenReturn(Set.of(TRIAL_TYPE_ID.toString()));
+
+        final List<HearingListingNeeds> result = ptphDetailEnrichmentService.enrichWithPtphDetail(
+                singletonList(hearingOfType(TRIAL_TYPE_ID, JurisdictionType.MAGISTRATES)), seedingHearing(), envelope());
+
+        verifyNoInteractions(ptphDetailService);
+        assertNull(result.get(0).getTier());
+        assertNull(result.get(0).getListType());
+    }
+
+    @Test
+    void shouldStampOnlyTheCrownTrialWhenACommandMixesJurisdictions() {
+        when(hearingTypeFactory.getTrialHearingTypeIds(any(JsonEnvelope.class)))
+                .thenReturn(Set.of(TRIAL_TYPE_ID.toString()));
+        when(ptphDetailService.getFinalisedPtphDetail(eq(SEEDING_HEARING_ID), any(JsonEnvelope.class)))
+                .thenReturn(Optional.of(new PtphDetail("TIER_3", "TYPE_1_FIXED", null)));
+
+        final List<HearingListingNeeds> result = ptphDetailEnrichmentService.enrichWithPtphDetail(
+                Arrays.asList(hearingOfType(TRIAL_TYPE_ID, JurisdictionType.MAGISTRATES),
+                        hearingOfType(TRIAL_TYPE_ID, JurisdictionType.CROWN)),
+                seedingHearing(), envelope());
+
+        assertNull(result.get(0).getTier());
+        assertEquals("TIER_3", result.get(1).getTier());
+    }
+
+    @Test
+    void shouldReturnNoEntriesForAMagistratesUnscheduledTrial() {
+        when(hearingTypeFactory.getTrialHearingTypeIds(any(JsonEnvelope.class)))
+                .thenReturn(Set.of(TRIAL_TYPE_ID.toString()));
+
+        final List<PtphDetails> result = ptphDetailEnrichmentService.resolvePtphDetails(
+                singletonList(unscheduledHearingOfType(randomUUID(), TRIAL_TYPE_ID, JurisdictionType.MAGISTRATES)),
+                seedingHearing(), envelope());
+
+        verifyNoInteractions(ptphDetailService);
+        assertTrue(result.isEmpty());
     }
 }
