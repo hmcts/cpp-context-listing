@@ -19,6 +19,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.6-SNAPSHOT</version>
@@ -65,6 +66,9 @@
 =======
         <version>17.104.10-SQL-SNAPSHOT</version>
 >>>>>>> 539edc7e25 (New 17.104.10-SQL-SNAPSHOT)
+=======
+        <version>17.104.11-SQL-SNAPSHOT</version>
+>>>>>>> 5aeb25f507 (New 17.104.11-SQL-SNAPSHOT)
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
