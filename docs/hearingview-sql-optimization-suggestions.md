@@ -9,12 +9,18 @@ DBA-facing index suggestions.
 
 ## 1. Code-level SQL fixes (no DBA involvement needed)
 
-### 1a. Untuned sibling overload still on the old pattern
+### 1a. Untuned sibling overload — deliberately left on the main version
 `HearingRepository.java` lines 740-792 — the overload **with** an `allocated` param — has the
 exact same subquery structure the tuned query replaced (nested `OR` branches, redundant
-`hearing`/`listed_cases` re-joins, `distinct`). This overload is on the **default, hot path**:
-`HearingQueryView.java:439` calls it whenever `returnAllHearings` is `false`. It should get the
-same `UNION`-based rewrite applied to the already-tuned overload.
+`hearing`/`listed_cases` re-joins, `distinct`). `HearingQueryView.java:440` calls it whenever
+`returnAllHearings` is `false`, which is the default (`getBoolean(RETURN_ALL_HEARINGS, false)`
+at line 379).
+
+A `UNION`-based rewrite was applied here and then **rolled back**: there are no active callers
+from the UI that omit `returnAllHearings`, so this overload is not on a hot path and does not
+warrant the churn. It stays identical to `main`. Revisit only if a live caller for the
+`returnAllHearings = false` path appears — at which point apply both the `UNION ALL` rewrite
+(1b/1c) and the `Set<UUID>` binding (1d) together.
 
 ### 1b. `UNION` → `UNION ALL` — ✅ done
 
@@ -37,8 +43,9 @@ which prevented Postgres from using a plain index on the column even if one exis
 tuned 7-param overload (no `allocated` param): `masterDefendantIdSet` is bound as `Set<UUID>` and
 compared directly (`d.master_defendant_id IN (:masterDefendantIdSet)`). `HearingQueryView`
 converts via `toMasterDefendantUuidSet`, mapping the `''` no-op placeholder to the nil UUID
-(`00000000-0000-0000-0000-000000000000`). The 8-param `allocated` overload was deliberately left
-unchanged — apply the same treatment when it gets its UNION rewrite (see 1a).
+(`00000000-0000-0000-0000-000000000000`). The 8-param `allocated` overload deliberately keeps the
+`varchar` cast and its `Set<String>` binding — it has no active callers, so it is left matching
+`main` (see 1a).
 Note: the param-side `cast(cast(:hearingId as varchar) as uuid)` pattern is intentionally kept —
 it is applied to the parameter (evaluated once, no index impact) and is required for null-safe
 binding of the nullable `hearingId`.
