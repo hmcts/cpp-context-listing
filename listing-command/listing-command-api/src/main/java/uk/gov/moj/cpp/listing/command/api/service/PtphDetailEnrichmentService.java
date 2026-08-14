@@ -3,10 +3,12 @@ package uk.gov.moj.cpp.listing.command.api.service;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
 import static uk.gov.justice.listing.commands.HearingListingNeeds.hearingListingNeeds;
 
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.courts.PtphDetails;
@@ -20,7 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
+import java.util.function.BiPredicate;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -30,8 +32,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Copies the seeding hearing's finalised tier / list type / key reason onto the next
- * hearings being listed from it. The hearing context is queried only when at least one
- * of those next hearings is a trial type.
+ * hearings being listed from it. Tier and list type are a Crown Court PTPH concern, so the
+ * hearing context is queried only when at least one of those next hearings is a Crown Court
+ * trial. Reference data flags magistrates trial types too, which is why jurisdiction is
+ * checked alongside {@code trialTypeFlag} rather than relying on the flag alone.
  */
 @ApplicationScoped
 public class PtphDetailEnrichmentService {
@@ -57,13 +61,15 @@ public class PtphDetailEnrichmentService {
 
         final Set<String> trialHearingTypeIds = new HashSet<>();
         final Optional<PtphDetail> ptphDetail = resolveForTrials(
-                hearings, hearing -> typeIdOf(hearing.getType()), seedingHearing, envelope, trialHearingTypeIds);
+                hearings,
+                (hearing, ids) -> isCrownTrial(hearing.getJurisdictionType(), hearing.getType(), ids),
+                seedingHearing, envelope, trialHearingTypeIds);
         if (ptphDetail.isEmpty()) {
             return hearings;
         }
 
         final List<HearingListingNeeds> enriched = new ArrayList<>();
-        hearings.forEach(hearing -> enriched.add(isTrial(typeIdOf(hearing.getType()), trialHearingTypeIds)
+        hearings.forEach(hearing -> enriched.add(isCrownTrial(hearing.getJurisdictionType(), hearing.getType(), trialHearingTypeIds)
                 ? stamp(hearing, ptphDetail.get())
                 : hearing));
         return enriched;
@@ -83,14 +89,16 @@ public class PtphDetailEnrichmentService {
 
         final Set<String> trialHearingTypeIds = new HashSet<>();
         final Optional<PtphDetail> ptphDetail = resolveForTrials(
-                hearings, hearing -> typeIdOf(hearing.getType()), seedingHearing, envelope, trialHearingTypeIds);
+                hearings,
+                (hearing, ids) -> isCrownTrial(hearing.getJurisdictionType(), hearing.getType(), ids),
+                seedingHearing, envelope, trialHearingTypeIds);
         if (ptphDetail.isEmpty()) {
             return emptyList();
         }
 
         final List<PtphDetails> resolved = new ArrayList<>();
         hearings.stream()
-                .filter(hearing -> isTrial(typeIdOf(hearing.getType()), trialHearingTypeIds))
+                .filter(hearing -> isCrownTrial(hearing.getJurisdictionType(), hearing.getType(), trialHearingTypeIds))
                 .forEach(hearing -> {
                     LOGGER.info("Inheriting tier {} and list type {} onto unscheduled trial hearing {}",
                             ptphDetail.get().getTier(), ptphDetail.get().getListType(), hearing.getId());
@@ -106,7 +114,7 @@ public class PtphDetailEnrichmentService {
 
     /**
      * The shared rule for both flows: a seeding hearing id must be present, at least one of
-     * the next hearings must be a trial type — otherwise the hearing context is never
+     * the next hearings must be a Crown Court trial — otherwise the hearing context is never
      * called — and the seeding record must be finalised.
      *
      * @param trialHearingTypeIds populated with the trial type ids when they are looked up,
@@ -114,7 +122,7 @@ public class PtphDetailEnrichmentService {
      *                            reference-data call
      */
     private <T> Optional<PtphDetail> resolveForTrials(final List<T> hearings,
-                                                      final Function<T, String> typeIdExtractor,
+                                                      final BiPredicate<T, Set<String>> isCrownTrial,
                                                       final SeedingHearing seedingHearing,
                                                       final JsonEnvelope envelope,
                                                       final Set<String> trialHearingTypeIds) {
@@ -124,8 +132,8 @@ public class PtphDetailEnrichmentService {
         }
 
         trialHearingTypeIds.addAll(hearingTypeFactory.getTrialHearingTypeIds(envelope));
-        if (hearings.stream().noneMatch(hearing -> isTrial(typeIdExtractor.apply(hearing), trialHearingTypeIds))) {
-            LOGGER.info("No trial hearing listed from seeding hearing {}; not querying the hearing context", seedingHearingId);
+        if (hearings.stream().noneMatch(hearing -> isCrownTrial.test(hearing, trialHearingTypeIds))) {
+            LOGGER.info("No Crown Court trial listed from seeding hearing {}; not querying the hearing context", seedingHearingId);
             return Optional.empty();
         }
 
@@ -136,8 +144,18 @@ public class PtphDetailEnrichmentService {
         return nonNull(type) && nonNull(type.getId()) ? type.getId().toString() : null;
     }
 
-    private boolean isTrial(final String hearingTypeId, final Set<String> trialHearingTypeIds) {
-        return nonNull(hearingTypeId) && trialHearingTypeIds.contains(hearingTypeId);
+    /**
+     * Tier and list type are Crown Court PTPH concepts. Reference data's {@code trialTypeFlag}
+     * is set on magistrates trial types as well, so the flag alone would inherit a tier onto a
+     * magistrates trial — hence the jurisdiction check.
+     */
+    private boolean isCrownTrial(final JurisdictionType jurisdictionType,
+                                 final HearingType type,
+                                 final Set<String> trialHearingTypeIds) {
+        final String hearingTypeId = typeIdOf(type);
+        return CROWN.equals(jurisdictionType)
+                && nonNull(hearingTypeId)
+                && trialHearingTypeIds.contains(hearingTypeId);
     }
 
     /**
