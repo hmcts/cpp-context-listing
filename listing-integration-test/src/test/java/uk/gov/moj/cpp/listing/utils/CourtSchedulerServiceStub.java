@@ -259,7 +259,7 @@ public class CourtSchedulerServiceStub {
         final String startTime = sessionDate + "T09:00:00Z";
         final String endTime = sessionDate + "T17:00:00Z";
         final String body = format(
-                "{\"hearingId\":\"%s\",\"courtScheduleId\":\"%s\",\"courtRoomId\":731816," +
+                "{\"hearingId\":\"%s\",\"courtScheduleId\":\"%s\",\"courtRoomId\":\"731816c1-5ee4-373a-9bda-840e13a5bcb0\"," +
                         "\"sessionDate\":\"%s\",\"sessionStartTime\":\"%s\",\"sessionEndTime\":\"%s\"," +
                         "\"durationInMinutes\":10,\"isDraft\":%s,\"businessType\":\"CR\"," +
                         "\"source\":\"%s\",\"overbooked\":false,\"sessions\":[]}",

@@ -361,6 +361,41 @@ class CourtSchedulerServiceAdapterTest {
     }
 
     @Test
+    void crownFallbackSearchAndBook_shouldTolerateLegacyIntegerCourtRoomId_on200() {
+        // Legacy courtscheduler builds sent the Integer room NUMBER in courtRoomId; the parser
+        // must yield a null room (not a ClassCastException that 500s the whole command).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 4, 21);
+        final UUID bookedScheduleId = UUID.randomUUID();
+
+        final JsonObject body = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .add("courtScheduleId", bookedScheduleId.toString())
+                .add("courtRoomId", 731816)
+                .add("sessionDate", hearingDate.toString())
+                .add("durationInMinutes", 10)
+                .add("isDraft", false)
+                .add("businessType", "CR")
+                .add("source", "CROWN_FB_LIST")
+                .add("overbooked", false)
+                .build();
+
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        final uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult result =
+                courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                        hearingId, courtCentreId, hearingDate, 10,
+                        Optional.empty(), Optional.empty(),
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING);
+
+        assertThat(result.courtScheduleId(), is(bookedScheduleId));
+        assertThat(result.courtRoomId(), is((UUID) null));
+    }
+
+    @Test
     void crownFallbackSearchAndBook_shouldThrowNoSession_on404() {
         final UUID hearingId = UUID.randomUUID();
         when(response.getStatus()).thenReturn(HttpStatus.SC_NOT_FOUND);
