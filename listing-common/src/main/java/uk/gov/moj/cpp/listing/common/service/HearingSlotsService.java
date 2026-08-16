@@ -29,7 +29,6 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
@@ -63,8 +62,6 @@ public class HearingSlotsService {
     private static final String COURTSCHEDULER_CROWN_SEARCH_BOOK = "application/vnd.courtscheduler.crown.search.and.book+json";
     private static final String COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE = "application/vnd.courtscheduler.validate.session.availability+json";
 
-    private static final String COURTSCHEDULER_EXTEND_MULTIDAY = "application/vnd.courtscheduler.extend.multiday.hearing+json";
-
     private static final String COURTSCHEDULER_MOVE_TO_PAST_DATE = "application/vnd.courtscheduler.move-hearing-to-past-date+json";
 
     public static final String COURTSCHEDULER_CHANGE_COURT_ROOM_MULTIDAY = "application/vnd.courtscheduler.change-court-room-for-multiday-hearing+json";
@@ -86,14 +83,6 @@ public class HearingSlotsService {
 
     public Response validateSessionAvailability(final JsonObject payload) {
         return post(VALIDATE_SESSION_AVAILABILITY_RESOURCE, COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE, payload, true);
-    }
-
-    public Response extendMultiDayHearing(final JsonObject payload) {
-        if (payload == null || payload.isEmpty()) {
-            throw new DataValidationException("Payload for %s is null or empty ....".formatted(COURTSCHEDULER_EXTEND_MULTIDAY));
-        }
-        final String hearingId = payload.getString(HEARING_ID);
-        return patch(HEARINGS_RESOURCE + "/" + hearingId, COURTSCHEDULER_EXTEND_MULTIDAY, payload);
     }
 
     public Response searchBookSlots(final Map<String, String> params) {
@@ -340,27 +329,6 @@ public class HearingSlotsService {
         }
     }
 
-    private Response patch(final String urlPath, final String contentTypeHeader, final JsonObject payload) {
-        if (LOGGER.isInfoEnabled() && Objects.nonNull(payload)) {
-            LOGGER.info("{} PATCH in CourtScheduler S & L with payload '{}'", contentTypeHeader, payload);
-        }
-        if (payload == null || payload.isEmpty()) {
-            throw new DataValidationException("Payload for PATCH %s is null or empty ....".formatted(contentTypeHeader));
-        }
-        try {
-            final HttpPatch httpPatch = new HttpPatch(new URIBuilder(baseUri + urlPath).build());
-            httpPatch.addHeader(CONTENT_TYPE, contentTypeHeader);
-            httpPatch.addHeader(CJS_CPP_UID, getUserId().toString());
-            httpPatch.setEntity(new StringEntity(payload.toString()));
-            return executeAndBuildResponse(httpPatch, contentTypeHeader, "PATCH");
-        } catch (URISyntaxException | IOException ex) {
-            LOGGER.error("Exception thrown on trying to PATCH %s".formatted(contentTypeHeader), ex);
-            return Response
-                    .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-                    .entity(ex.getMessage())
-                    .build();
-        }
-    }
 
     /**
      * Posts a search-and-book request to /hearings/{hearingId} with a typed JSON body.

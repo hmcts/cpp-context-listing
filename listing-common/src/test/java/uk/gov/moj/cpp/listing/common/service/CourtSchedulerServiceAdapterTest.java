@@ -315,46 +315,7 @@ class CourtSchedulerServiceAdapterTest {
         assertThat(result.getStatus(), is(HttpStatus.SC_BAD_REQUEST));
     }
 
-    @Test
-    void shouldDelegateExtendMultiDayHearingTo200() {
-        final JsonObject body = javax.json.Json.createObjectBuilder()
-                .add("courtSchedules", javax.json.Json.createArrayBuilder()).build();
-        final JsonObject payload = javax.json.Json.createObjectBuilder()
-                .add("hearingId", "11111111-1111-1111-1111-111111111111")
-                .add("startDate", "2026-03-02")
-                .add("endDate", "2026-03-05")
-                .add("durationInMinutes", 1440)
-                .build();
 
-        when(hearingSlotsService.extendMultiDayHearing(any(JsonObject.class))).thenReturn(response);
-        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
-        when(response.getEntity()).thenReturn(body);
-
-        final Response result = courtSchedulerServiceAdapter.extendMultiDayHearing(payload);
-
-        assertThat(result.getStatus(), is(HttpStatus.SC_OK));
-        assertThat(result.getEntity(), is(body));
-    }
-
-    @Test
-    void shouldReturnErrorResponseWhenExtendMultiDayHearingFails() {
-        final JsonObject payload = javax.json.Json.createObjectBuilder()
-                .add("hearingId", "11111111-1111-1111-1111-111111111111")
-                .add("startDate", "2026-03-02")
-                .add("endDate", "2026-03-05")
-                .add("durationInMinutes", 1440)
-                .build();
-
-        when(hearingSlotsService.extendMultiDayHearing(any(JsonObject.class))).thenReturn(response);
-        when(response.getStatus()).thenReturn(422);
-        when(response.hasEntity()).thenReturn(true);
-        when(response.getEntity()).thenReturn(javax.json.Json.createObjectBuilder()
-                .add("errorCode", "NO_AVAILABILITY").build());
-
-        final Response result = courtSchedulerServiceAdapter.extendMultiDayHearing(payload);
-
-        assertThat(result.getStatus(), is(422));
-    }
 
     // ─── Crown fallback search-and-book (Option C: courtCentreId-only) ───
 
@@ -369,7 +330,7 @@ class CourtSchedulerServiceAdapterTest {
         final JsonObject body = javax.json.Json.createObjectBuilder()
                 .add("hearingId", hearingId.toString())
                 .add("courtScheduleId", bookedScheduleId.toString())
-                .add("courtRoomId", 731816)
+                .add("courtRoomId", courtRoomUuid.toString())
                 .add("sessionDate", hearingDate.toString())
                 .add("sessionStartTime", "2026-04-21T09:00:00Z")
                 .add("sessionEndTime", "2026-04-21T17:00:00Z")
@@ -392,9 +353,46 @@ class CourtSchedulerServiceAdapterTest {
 
         assertThat(result.hearingId(), is(hearingId));
         assertThat(result.courtScheduleId(), is(bookedScheduleId));
+        // SPRDT-1274: courtRoomId is the session's room UUID, parsed for hearing-day injection.
+        assertThat(result.courtRoomId(), is(courtRoomUuid));
         assertThat(result.isDraft(), is(false));
         assertThat(result.businessType(), is("CR"));
         assertThat(result.source(), is("CROWN_FB_LIST"));
+    }
+
+    @Test
+    void crownFallbackSearchAndBook_shouldTolerateLegacyIntegerCourtRoomId_on200() {
+        // Legacy courtscheduler builds sent the Integer room NUMBER in courtRoomId; the parser
+        // must yield a null room (not a ClassCastException that 500s the whole command).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 4, 21);
+        final UUID bookedScheduleId = UUID.randomUUID();
+
+        final JsonObject body = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .add("courtScheduleId", bookedScheduleId.toString())
+                .add("courtRoomId", 731816)
+                .add("sessionDate", hearingDate.toString())
+                .add("durationInMinutes", 10)
+                .add("isDraft", false)
+                .add("businessType", "CR")
+                .add("source", "CROWN_FB_LIST")
+                .add("overbooked", false)
+                .build();
+
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        final uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult result =
+                courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                        hearingId, courtCentreId, hearingDate, 10,
+                        Optional.empty(), Optional.empty(),
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING);
+
+        assertThat(result.courtScheduleId(), is(bookedScheduleId));
+        assertThat(result.courtRoomId(), is((UUID) null));
     }
 
     @Test

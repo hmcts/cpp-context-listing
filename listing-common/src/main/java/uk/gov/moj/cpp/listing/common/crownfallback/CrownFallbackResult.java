@@ -10,7 +10,7 @@ import java.util.UUID;
  */
 public record CrownFallbackResult(UUID hearingId,
                                   UUID courtScheduleId,
-                                  Integer courtRoomId,
+                                  UUID courtRoomId,
                                   LocalDate sessionDate,
                                   ZonedDateTime sessionStartTime,
                                   ZonedDateTime sessionEndTime,

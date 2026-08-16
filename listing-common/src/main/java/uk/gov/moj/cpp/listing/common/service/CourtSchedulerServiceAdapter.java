@@ -272,7 +272,7 @@ public class CourtSchedulerServiceAdapter {
         return new CrownFallbackResult(
                 uuidOrNull(body, HEARING_ID),
                 uuidOrNull(body, COURT_SCHEDULE_ID),
-                intOrNull(body, COURT_ROOM_ID),
+                roomUuidOrNull(body, COURT_ROOM_ID),
                 localDateOrNull(body, SESSION_DATE),
                 zonedDateTimeOrNull(body, SESSION_START_TIME),
                 zonedDateTimeOrNull(body, SESSION_END_TIME),
@@ -294,6 +294,26 @@ public class CourtSchedulerServiceAdapter {
 
     private static UUID uuidOrNull(final JsonObject body, final String key) {
         return hasValue(body, key) ? UUID.fromString(body.getString(key)) : null;
+    }
+
+    /**
+     * SPRDT-1274: the room arrives as the session's UUID from current courtscheduler builds, but
+     * legacy builds (and legacy stubs) sent the Integer room NUMBER in the same field. A number is
+     * useless as a room id — tolerate it as "no room" instead of blowing up the whole command.
+     */
+    private static UUID roomUuidOrNull(final JsonObject body, final String key) {
+        if (!hasValue(body, key)) {
+            return null;
+        }
+        final javax.json.JsonValue value = body.get(key);
+        if (value.getValueType() != javax.json.JsonValue.ValueType.STRING) {
+            return null;
+        }
+        try {
+            return UUID.fromString(((javax.json.JsonString) value).getString());
+        } catch (final IllegalArgumentException e) {
+            return null;
+        }
     }
 
     private static Integer intOrNull(final JsonObject body, final String key) {
@@ -327,20 +347,6 @@ public class CourtSchedulerServiceAdapter {
         return response;
     }
 
-    public Response extendMultiDayHearing(final JsonObject requestPayload) {
-        final Response response = hearingSlotsService.extendMultiDayHearing(requestPayload);
-
-        if (HttpStatus.SC_OK == response.getStatus()) {
-            return response;
-        }
-
-        String responsePayload = "";
-        if (response.hasEntity()) {
-            responsePayload = response.getEntity().toString();
-        }
-        LOGGER.error("extendMultiDayHearing from courtscheduler returned an error : {} with status {}", responsePayload, response.getStatus());
-        return response;
-    }
 
     /**
      * Reports whether any of the supplied courtScheduleIds resolves to a DRAFT

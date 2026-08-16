@@ -4,9 +4,9 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubExtendMultiDayHearing;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubExtendMultiDayHearingFailure;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyExtendMultiDayHearingCalled;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMultiDaySearchAndBookFailure;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMultiDaySearchAndBookForHearing;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyMultiDaySearchAndBookCalledForHearing;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
@@ -33,17 +33,14 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
- * Integration coverage for the CROWN update-hearing-for-listing multi-day extension routing (SPRDT-901).
+ * Integration coverage for the CROWN update-hearing-for-listing multi-day routing (SPRDT-1273).
  *
- * <p>A raw multi-day Crown update with NO courtScheduleId submitted (hearingDays empty, single
- * nonDefaultDay with duration > MINUTES_IN_DAY and no courtScheduleId) must hit courtscheduler's
- * {@code PATCH /hearings/{hearingId}} (extend.multiday.hearing) endpoint with the full requested
- * duration — the listing officer has not yet picked sessions, so courtscheduler is asked to
- * extend/book them. When a courtScheduleId IS submitted the update reverts to
- * {@code enrichCrownCourtScheduleFirst} (multiDaySearchAndBook via POST /hearings/{id},
- * crown.search.and.book) — the pre-d62d3446 behaviour — and extend-multiday is NOT called; that
- * courtScheduleId-wins routing is locked by HearingEnrichmentOrchestratorTest. The single-day CROWN
- * path (duration ≤ MINUTES_IN_DAY) and fresh allocations via list-court-hearing are likewise unchanged.
+ * <p>Every multi-day Crown update — with or without a courtScheduleId anchor — goes through
+ * courtscheduler's {@code POST /hearings/{hearingId}} (crown.search.and.book) with the full
+ * requested duration, the requested endDate and the main courtroom; courtscheduler resolves
+ * fresh-book / extend / shrink / move from the hearing's own allocation state. The PATCH
+ * extend.multiday.hearing endpoint is retired. A 422 resize rejection (errorCode +
+ * unavailableDates) propagates through the command API to the caller.
  *
  * <p>Assertion scope: we verify the WireMock call to courtscheduler was made with the correct
  * hearingId and duration. The success-path tests seed a REAL hearing first (see
@@ -63,7 +60,7 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
     private static final int MULTI_DAY_TOTAL_DURATION_MINUTES = 1080;
 
     @Test
-    void shouldCallExtendMultiDayHearingOnListingCourtScheduler_whenCrownMultiDayUpdateHasNoCourtScheduleIdOnNonDefaultDay() throws Exception {
+    void shouldCallCrownSearchAndBook_whenCrownMultiDayUpdateHasNoCourtScheduleIdOnNonDefaultDay() throws Exception {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtCentreId = UUID.randomUUID();
         final UUID courtRoomId = UUID.randomUUID();
@@ -80,7 +77,9 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         sessionScheduleIds.add(UUID.randomUUID().toString());
         sessionScheduleIds.add(UUID.randomUUID().toString());
 
-        stubExtendMultiDayHearing(hearingId.toString(), sessionScheduleIds, courtHouseId, courtRoomId, startDate, false);
+        stubMultiDaySearchAndBookForHearing(hearingId.toString(), sessionScheduleIds, courtHouseId, courtRoomId, startDate, false);
+        uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForSchedules(
+                hearingId.toString(), sessionScheduleIds, sessionStart, 360);
         givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
         final uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps seedSteps = givenARealHearingExists(hearingId);
         givenReferenceDataStubsForUpdateHearing(courtCentreId, courtRoomId);
@@ -95,9 +94,9 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
                 payload,
                 getLoggedInHeader());
 
-        // Core assertion: the CROWN update was routed through handleCrownMultiDayExtension and hit
-        // PATCH /hearings/{hearingId} (extend.multiday.hearing) with hearingId + full 1080-minute duration.
-        verifyExtendMultiDayHearingCalled(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
+        // Core assertion: the CROWN update hit POST /hearings/{hearingId} (crown.search.and.book)
+        // with the full 1080-minute duration — no anchor needed.
+        verifyMultiDaySearchAndBookCalledForHearing(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
         // Drain our own async aftermath before the test ends: viewstore projection (event listener)
         // AND the public hearing-changes-saved (event processor) — otherwise the next test's cleanup
         // races our in-flight events into JsonValue.NULL redelivery storms.
@@ -106,7 +105,7 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
     }
 
     @Test
-    void shouldCallExtendMultiDayHearingForFullDuration_whenNonSittingDaysAreSubmitted() throws Exception {
+    void shouldCallCrownSearchAndBookForFullDuration_whenNonSittingDaysAreSubmitted() throws Exception {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtCentreId = UUID.randomUUID();
         final UUID courtRoomId = UUID.randomUUID();
@@ -122,7 +121,9 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         sessionScheduleIds.add(UUID.randomUUID().toString());
         sessionScheduleIds.add(UUID.randomUUID().toString());
 
-        stubExtendMultiDayHearing(hearingId.toString(), sessionScheduleIds, courtHouseId, courtRoomId, startDate, false);
+        stubMultiDaySearchAndBookForHearing(hearingId.toString(), sessionScheduleIds, courtHouseId, courtRoomId, startDate, false);
+        uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForSchedules(
+                hearingId.toString(), sessionScheduleIds, sessionStart, 360);
         givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
         final uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps seedSteps = givenARealHearingExists(hearingId);
         givenReferenceDataStubsForUpdateHearing(courtCentreId, courtRoomId);
@@ -142,15 +143,15 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
 
         // NonSittingDays must NOT reduce the duration sent to courtscheduler — slot accounting requires
         // all N sessions be deducted. Filtering of nonSittingDays happens post-enrichment on hearingDays.
-        verifyExtendMultiDayHearingCalled(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
+        verifyMultiDaySearchAndBookCalledForHearing(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
         // Drain our own async aftermath — see shouldCallExtendMultiDayHearingOnListingCourtScheduler test.
         awaitUpdateProjection(hearingId, startDate);
         seedSteps.verifyPublicEVentHearingChangesSaved(hearingId);
     }
 
     @Test
-    @ExpectedServerErrors("courtscheduler extend stub returns 422 -> ERROR 'Retrieve ...extend.multiday.hearing+json failed with status code:422' + ERROR 'extendMultiDayHearing from courtscheduler returned an error: NO_AVAILABILITY'")
-    void shouldReturn422WithErrorCodeAndUnavailableDates_whenCourtschedulerRejectsExtendMultiDay() throws Exception {
+    @ExpectedServerErrors("courtscheduler crown.search.and.book stub returns 422 -> resize rejection surfaced as CrownMultiDayExtensionException (NO_AVAILABILITY)")
+    void shouldReturn422WithErrorCodeAndUnavailableDates_whenCourtschedulerRejectsResize() throws Exception {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtCentreId = UUID.randomUUID();
         final UUID courtRoomId = UUID.randomUUID();
@@ -159,7 +160,7 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         final LocalDate endDate = startDate.plusDays(57);
         final ZonedDateTime sessionStart = startDate.atTime(9, 0).atZone(ZoneOffset.UTC);
 
-        stubExtendMultiDayHearingFailure(
+        stubMultiDaySearchAndBookFailure(
                 hearingId.toString(), 422, "NO_AVAILABILITY",
                 asList(startDate.plusDays(1).toString(), startDate.plusDays(2).toString()));
         givenReferenceDataStubsForUpdateHearing(courtCentreId, courtRoomId);
@@ -179,7 +180,7 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         final String body = response.readEntity(String.class);
         assertThat(body, containsString("\"errorCode\":\"NO_AVAILABILITY\""));
         assertThat(body, containsString("\"unavailableDates\""));
-        verifyExtendMultiDayHearingCalled(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
+        verifyMultiDaySearchAndBookCalledForHearing(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
     }
 
     /**
