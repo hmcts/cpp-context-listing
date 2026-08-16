@@ -45,6 +45,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -564,16 +565,18 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     }
 
     /**
-     * Per-day durations for the booked block (SPRDT-1267 family): a date named by a genuine
-     * (non-virtual) nonDefaultDay keeps ITS duration; the remaining total is split evenly across the
-     * other days. The old uniform {@code total / daysNeeded} flattened genuine non-default durations
-     * back to the average. When the genuine durations don't leave a sane remainder (&le; 0 for a day
-     * that still needs booking) the uniform split is kept as the fail-safe.
+     * Per-day durations for the booked block: a date named by a genuine (non-virtual) nonDefaultDay
+     * keeps ITS duration; every other day takes at most one court day (MINUTES_IN_DAY) from what is
+     * left of the requested total, in date order. The block total only sizes the BOOKING — it is not
+     * preserved onto the hearing days, so a day dropped for a non-sitting date takes its minutes
+     * with it instead of inflating the surviving days past a court day (a 1800-minute block whose
+     * fifth day is non-sitting yields four 360-minute days, not three 480s; supersedes the
+     * SPRDT-1267 even redistribution). A sub-day remainder lands on the last plain day; a day left
+     * with no budget still gets a full court day as the fail-safe — never a zero-minute hearing day.
      */
     private static Map<LocalDate, Integer> resolvePerDayDurations(final List<CourtSchedule> sessions,
                                                                   final List<NonDefaultDay> nonDefaultDays,
                                                                   final int totalDuration) {
-        final int uniform = totalDuration / sessions.size();
         final Map<LocalDate, Integer> genuineByDate = isEmpty(nonDefaultDays)
                 ? Map.of()
                 : nonDefaultDays.stream()
@@ -587,23 +590,24 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                         .collect(Collectors.toMap(nd -> nd.getStartTime().toLocalDate(), NonDefaultDay::getDuration, (a, b) -> a));
 
         final Map<LocalDate, Integer> result = new HashMap<>();
-        int genuineTotal = 0;
-        int daysWithoutOverride = 0;
+        int remaining = totalDuration;
         for (final CourtSchedule session : sessions) {
             final Integer override = genuineByDate.get(session.getSessionDate());
             if (override != null) {
-                genuineTotal += override;
-            } else {
-                daysWithoutOverride++;
+                result.put(session.getSessionDate(), override);
+                remaining -= override;
             }
         }
-        final int remainderShare = daysWithoutOverride > 0
-                ? (totalDuration - genuineTotal) / daysWithoutOverride
-                : 0;
-        final int fallbackShare = remainderShare > 0 ? remainderShare : uniform;
-        for (final CourtSchedule session : sessions) {
-            result.put(session.getSessionDate(),
-                    genuineByDate.getOrDefault(session.getSessionDate(), fallbackShare));
+        final List<CourtSchedule> plainDays = sessions.stream()
+                .filter(session -> !genuineByDate.containsKey(session.getSessionDate()))
+                .sorted(Comparator.comparing(CourtSchedule::getSessionDate,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+        for (final CourtSchedule session : plainDays) {
+            final int capped = Math.min(HearingDurationEnrichmentService.MINUTES_IN_DAY, remaining);
+            final int share = capped > 0 ? capped : HearingDurationEnrichmentService.MINUTES_IN_DAY;
+            result.put(session.getSessionDate(), share);
+            remaining -= share;
         }
         return result;
     }
