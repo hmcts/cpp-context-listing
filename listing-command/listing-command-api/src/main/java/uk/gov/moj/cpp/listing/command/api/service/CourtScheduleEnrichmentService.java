@@ -273,11 +273,18 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         final boolean isMultiDay = totalDuration > HearingDurationEnrichmentService.MINUTES_IN_DAY
                 && isNull(hearing.getWeekCommencingStartDate());
 
-        // SPRDT-1273: a multi-day update no longer needs a courtScheduleId anchor — crown.search.and.book
-        // decides fresh-book / extend / shrink / move from the hearing's own allocation state, so the
-        // no-anchor raw multiday booking flows through the same call. Only the single-day and per-day
-        // update flows still require ids here.
-        if (!anyHearingDayHasCourtScheduleId && !isMultiDay) {
+        // SPRDT-1273: a BLOCK-shaped multi-day update no longer needs a courtScheduleId anchor —
+        // crown.search.and.book decides fresh-book / extend / shrink / move from the hearing's own
+        // allocation state. Block-shaped means a virtual block descriptor or a single day entry
+        // spanning more than one court day (the isCrownRawMultiDayBooking shape). N per-day entries
+        // each ≤ MINUTES_IN_DAY (the legacy per-day room-change shape) are NOT a block — their sum
+        // exceeding a day must not push them into the block search, which would draft-mark and
+        // unallocate the hearing when no block can be found.
+        final boolean blockShaped = virtualAnchor.isPresent()
+                || (!isEmpty(hearing.getHearingDays()) && hearing.getHearingDays().stream()
+                        .anyMatch(d -> d.getDurationMinutes() != null
+                                && d.getDurationMinutes() > HearingDurationEnrichmentService.MINUTES_IN_DAY));
+        if (!anyHearingDayHasCourtScheduleId && !(isMultiDay && blockShaped)) {
             if (isCandidateForAllocation(hearing)) {
                 LOGGER.info("CROWN update: no courtScheduleIds but allocation candidate for hearingId {}. Searching and booking.", hearing.getHearingId());
                 return handleCrownUpdateSearchAndBook(hearing);

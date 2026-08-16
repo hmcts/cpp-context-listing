@@ -5493,9 +5493,8 @@ class CourtScheduleEnrichmentServiceTest {
                 .withCourtRoomId(mainRoomId)
                 .withStartDate(startDate)
                 .withEndDate(endDate)
-                .withHearingDays(Arrays.asList(
-                        HearingDay.hearingDay().withHearingDate(startDate).withDurationMinutes(360).build(),
-                        HearingDay.hearingDay().withHearingDate(endDate).withDurationMinutes(360).build()))
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay().withHearingDate(startDate).withDurationMinutes(720).build()))
                 .build();
 
         final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, mainRoomId, courtHouseId, startDate, false);
@@ -5628,15 +5627,17 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     private static UpdateHearingForListing rawMultiDayUpdate() {
+        // The raw multiday BOOKING shape: one day entry spanning more than a court day (no csId).
+        // N per-day entries each <= 360 are the per-day room-change shape and deliberately do NOT
+        // route to the block search.
         return UpdateHearingForListing.updateHearingForListing()
                 .withHearingId(UUID.randomUUID())
                 .withJurisdictionType(JurisdictionType.CROWN)
                 .withCourtCentreId(UUID.randomUUID())
                 .withStartDate(LocalDate.of(2026, 3, 2))
                 .withEndDate(LocalDate.of(2026, 3, 5))
-                .withHearingDays(Arrays.asList(
-                        HearingDay.hearingDay().withHearingDate(LocalDate.of(2026, 3, 2)).withDurationMinutes(360).build(),
-                        HearingDay.hearingDay().withHearingDate(LocalDate.of(2026, 3, 3)).withDurationMinutes(360).build()))
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay().withHearingDate(LocalDate.of(2026, 3, 2)).withDurationMinutes(720).build()))
                 .build();
     }
 
