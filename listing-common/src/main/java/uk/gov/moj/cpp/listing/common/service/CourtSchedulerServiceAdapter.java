@@ -272,7 +272,7 @@ public class CourtSchedulerServiceAdapter {
         return new CrownFallbackResult(
                 uuidOrNull(body, HEARING_ID),
                 uuidOrNull(body, COURT_SCHEDULE_ID),
-                intOrNull(body, COURT_ROOM_ID),
+                uuidOrNull(body, COURT_ROOM_ID),
                 localDateOrNull(body, SESSION_DATE),
                 zonedDateTimeOrNull(body, SESSION_START_TIME),
                 zonedDateTimeOrNull(body, SESSION_END_TIME),
@@ -327,20 +327,6 @@ public class CourtSchedulerServiceAdapter {
         return response;
     }
 
-    public Response extendMultiDayHearing(final JsonObject requestPayload) {
-        final Response response = hearingSlotsService.extendMultiDayHearing(requestPayload);
-
-        if (HttpStatus.SC_OK == response.getStatus()) {
-            return response;
-        }
-
-        String responsePayload = "";
-        if (response.hasEntity()) {
-            responsePayload = response.getEntity().toString();
-        }
-        LOGGER.error("extendMultiDayHearing from courtscheduler returned an error : {} with status {}", responsePayload, response.getStatus());
-        return response;
-    }
 
     /**
      * Reports whether any of the supplied courtScheduleIds resolves to a DRAFT

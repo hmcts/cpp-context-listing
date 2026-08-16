@@ -315,46 +315,7 @@ class CourtSchedulerServiceAdapterTest {
         assertThat(result.getStatus(), is(HttpStatus.SC_BAD_REQUEST));
     }
 
-    @Test
-    void shouldDelegateExtendMultiDayHearingTo200() {
-        final JsonObject body = javax.json.Json.createObjectBuilder()
-                .add("courtSchedules", javax.json.Json.createArrayBuilder()).build();
-        final JsonObject payload = javax.json.Json.createObjectBuilder()
-                .add("hearingId", "11111111-1111-1111-1111-111111111111")
-                .add("startDate", "2026-03-02")
-                .add("endDate", "2026-03-05")
-                .add("durationInMinutes", 1440)
-                .build();
 
-        when(hearingSlotsService.extendMultiDayHearing(any(JsonObject.class))).thenReturn(response);
-        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
-        when(response.getEntity()).thenReturn(body);
-
-        final Response result = courtSchedulerServiceAdapter.extendMultiDayHearing(payload);
-
-        assertThat(result.getStatus(), is(HttpStatus.SC_OK));
-        assertThat(result.getEntity(), is(body));
-    }
-
-    @Test
-    void shouldReturnErrorResponseWhenExtendMultiDayHearingFails() {
-        final JsonObject payload = javax.json.Json.createObjectBuilder()
-                .add("hearingId", "11111111-1111-1111-1111-111111111111")
-                .add("startDate", "2026-03-02")
-                .add("endDate", "2026-03-05")
-                .add("durationInMinutes", 1440)
-                .build();
-
-        when(hearingSlotsService.extendMultiDayHearing(any(JsonObject.class))).thenReturn(response);
-        when(response.getStatus()).thenReturn(422);
-        when(response.hasEntity()).thenReturn(true);
-        when(response.getEntity()).thenReturn(javax.json.Json.createObjectBuilder()
-                .add("errorCode", "NO_AVAILABILITY").build());
-
-        final Response result = courtSchedulerServiceAdapter.extendMultiDayHearing(payload);
-
-        assertThat(result.getStatus(), is(422));
-    }
 
     // ─── Crown fallback search-and-book (Option C: courtCentreId-only) ───
 
@@ -369,7 +330,7 @@ class CourtSchedulerServiceAdapterTest {
         final JsonObject body = javax.json.Json.createObjectBuilder()
                 .add("hearingId", hearingId.toString())
                 .add("courtScheduleId", bookedScheduleId.toString())
-                .add("courtRoomId", 731816)
+                .add("courtRoomId", courtRoomUuid.toString())
                 .add("sessionDate", hearingDate.toString())
                 .add("sessionStartTime", "2026-04-21T09:00:00Z")
                 .add("sessionEndTime", "2026-04-21T17:00:00Z")
@@ -392,6 +353,8 @@ class CourtSchedulerServiceAdapterTest {
 
         assertThat(result.hearingId(), is(hearingId));
         assertThat(result.courtScheduleId(), is(bookedScheduleId));
+        // SPRDT-1274: courtRoomId is the session's room UUID, parsed for hearing-day injection.
+        assertThat(result.courtRoomId(), is(courtRoomUuid));
         assertThat(result.isDraft(), is(false));
         assertThat(result.businessType(), is("CR"));
         assertThat(result.source(), is("CROWN_FB_LIST"));

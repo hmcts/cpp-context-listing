@@ -400,72 +400,59 @@ public class CourtSchedulerServiceStub {
                 .withRequestBody(matchingJsonPath("$.durationInMinutes", matching("3[6-9][1-9]|[4-9][0-9]{2}|[1-9][0-9]{3,}"))));
     }
 
-    // --- Extend multi-day hearing stubs (SPRDT-901: CROWN update-hearing-for-listing multi-day path) ---
-    // Endpoint reshaped: was POST /extendmultidayhearing/hearingslots, now PATCH /hearings/{hearingId}.
-
-    private static final String EXTEND_MULTIDAY = "/extendmultidayhearing/hearingslots";
-    private static final String COURTSCHEDULER_EXTEND_MULTIDAY_TYPE =
-            "application/vnd.courtscheduler.extend.multiday.hearing+json";
+    // --- SPRDT-1273: the CROWN multi-day update (with or without an anchor courtScheduleId) goes
+    // through POST /hearings/{id} (crown.search.and.book); courtscheduler resolves fresh-book /
+    // extend / shrink / move from the hearing's own allocation state. The PATCH
+    // extend.multiday.hearing endpoint is retired. ---
 
     /**
-     * Stub a successful PATCH to /hearings/{hearingId} (extend.multiday.hearing) returning the supplied
-     * court schedule sessions under key {@code "courtSchedules"}, scoped to the supplied hearingId.
-     * SPRDT-901 routes CROWN multi-day updates here instead of the old GET-based endpoint.
-     * Courtscheduler receives the full duration and returns N sessions to use as the rebuilt hearingDays.
-     *
-     * <p><b>Scoping:</b> WireMock stubs persist across IT classes in the same suite. Without a body
-     * matcher, this stub would intercept every other IT that extends a CROWN hearing into multi-day
-     * (e.g. HearingCsvReportIT) and return these synthetic courtSchedules — corrupting their hearingDays.
-     * The hearingId in the path makes the stub apply only to the test's own hearing.
+     * Stub a successful crown.search.and.book response for ONE specific hearingId (path-scoped so
+     * suite-wide WireMock state can't leak into other ITs), returning the supplied sessions.
      */
-    public static void stubExtendMultiDayHearing(final String hearingId,
-                                                  final List<String> courtScheduleIds,
-                                                  final UUID courtHouseId,
-                                                  final UUID courtRoomId,
-                                                  final LocalDate firstSessionDate,
-                                                  final boolean isDraft) {
+    public static void stubMultiDaySearchAndBookForHearing(final String hearingId,
+                                                            final List<String> courtScheduleIds,
+                                                            final UUID courtHouseId,
+                                                            final UUID courtRoomId,
+                                                            final LocalDate firstSessionDate,
+                                                            final boolean isDraft) {
         final StringBuilder body = new StringBuilder();
-        body.append("{\"courtSchedules\":[");
+        body.append("{\"sessions\":[");
         for (int i = 0; i < courtScheduleIds.size(); i++) {
             if (i > 0) {
                 body.append(",");
             }
             final LocalDate sessionDate = firstSessionDate.plusDays(i);
-            // Wire-shape note: the courtscheduler endpoint serialises the domain CourtSchedule, which
-            // only has "sessionStartTime". Listing's buildHearingDaysFromMultiDaySessions reads
-            // getSessionStartTime() — emitting "hearingStartTime" leaves HearingDay.startTime null.
-            // Match the wire, not the old RAML example. Response key stays "courtSchedules" (unchanged).
             body.append("{")
                     .append("\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\",")
-                    .append("\"courtHouseId\":\"").append(courtHouseId).append("\",")
-                    .append("\"courtRoomId\":\"").append(courtRoomId).append("\",")
-                    .append("\"sessionDate\":\"").append(sessionDate).append("\",")
-                    .append("\"sessionStartTime\":\"").append(sessionDate).append("T09:00:00.000Z\",")
+                    .append("\"courtHouseId\":\"").append(courtHouseId).append("\",");
+            if (!isDraft && courtRoomId != null) {
+                body.append("\"courtRoomId\":\"").append(courtRoomId).append("\",");
+            }
+            body.append("\"sessionDate\":\"").append(sessionDate).append("\",")
+                    .append("\"hearingStartTime\":\"").append(sessionDate).append("T09:00:00Z\",")
                     .append("\"isDraft\":").append(isDraft)
                     .append("}");
         }
         body.append("]}");
 
-        stubFor(patch(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
-                .withHeader(CONTENT_TYPE, containing(COURTSCHEDULER_EXTEND_MULTIDAY_TYPE))
-                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId)))
+                .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                .atPriority(1)
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(body.toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
     }
 
     /**
-     * Verify that PATCH /hearings/{id} (extend.multiday.hearing) was called with a body containing the
-     * supplied hearingId and durationInMinutes. Proves SPRDT-901 routing: the CROWN multi-day update
-     * was sent to courtscheduler's reshape endpoint with the full requested duration.
+     * Verify POST /hearings/{hearingId} (crown.search.and.book) was called with the given total
+     * duration — the multi-day CROWN update reached courtscheduler with the full requested minutes.
      */
-    public static void verifyExtendMultiDayHearingCalled(final String hearingId, final int durationInMinutes) {
+    public static void verifyMultiDaySearchAndBookCalledForHearing(final String hearingId, final int durationInMinutes) {
         Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
             try {
-                WireMock.verify(WireMock.patchRequestedFor(urlPathMatching(
-                        COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+"))
-                        .withHeader(CONTENT_TYPE, containing(COURTSCHEDULER_EXTEND_MULTIDAY_TYPE))
-                        .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
+                WireMock.verify(WireMock.postRequestedFor(urlPathMatching(
+                        COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId))
+                        .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
                         .withRequestBody(containing("\"durationInMinutes\":" + durationInMinutes)));
                 return true;
             } catch (VerificationException e) {
@@ -474,18 +461,13 @@ public class CourtSchedulerServiceStub {
         });
     }
 
-    /** Regression guard: single-day CROWN updates / non-CROWN updates must NOT call PATCH /hearings/{id}
-     * (extend.multiday.hearing). */
-    public static void verifyExtendMultiDayHearingNeverCalled() {
-        WireMock.verify(0, WireMock.patchRequestedFor(urlPathMatching(
-                COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")));
-    }
-
     /**
-     * SPRDT-902: stub a 422 typed-failure response from PATCH /hearings/{hearingId} (extend.multiday.hearing),
-     * scoped to a specific hearingId. Body shape mirrors the courtscheduler RAML error contract.
+     * SPRDT-1273: stub a 422 resize rejection from crown.search.and.book for ONE hearingId. Body
+     * shape mirrors the courtscheduler error contract ({@code errorCode} + optional
+     * {@code unavailableDates}) that listing propagates to the UI via
+     * CrownMultiDayExtensionExceptionMapper.
      */
-    public static void stubExtendMultiDayHearingFailure(final String hearingId,
+    public static void stubMultiDaySearchAndBookFailure(final String hearingId,
                                                          final int statusCode,
                                                          final String errorCode,
                                                          final List<String> unavailableDates) {
@@ -502,9 +484,9 @@ public class CourtSchedulerServiceStub {
         }
         body.append("}");
 
-        stubFor(patch(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+")))
-                .withHeader(CONTENT_TYPE, containing(COURTSCHEDULER_EXTEND_MULTIDAY_TYPE))
-                .withRequestBody(containing("\"hearingId\":\"" + hearingId + "\""))
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId)))
+                .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                .atPriority(1)
                 .willReturn(aResponse().withStatus(statusCode)
                         .withBody(body.toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
@@ -1017,6 +999,39 @@ public class CourtSchedulerServiceStub {
                 .withRequestBody(containing("courtScheduleId"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload.toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    /**
+     * List-based variant: one hearings[] entry per courtScheduleId, each on its own consecutive
+     * calendar day starting at {@code firstDayStart}. Pairs with
+     * {@link #stubMultiDaySearchAndBookForHearing} for the SPRDT-1273 multi-day update flow, whose
+     * enrichment always follows the search-and-book with a list.hearings-in-sessions call.
+     */
+    public static void stubListHearingInCourtSessionsForSchedules(final String hearingId,
+                                                                   final List<String> courtScheduleIds,
+                                                                   final ZonedDateTime firstDayStart,
+                                                                   final Integer duration) {
+        final StringBuilder hearingsJson = new StringBuilder();
+        for (int i = 0; i < courtScheduleIds.size(); i++) {
+            if (i > 0) {
+                hearingsJson.append(",\n");
+            }
+            hearingsJson.append("    {\n")
+                    .append("      \"hearingId\": \"").append(hearingId).append("\",\n")
+                    .append("      \"courtScheduleId\": \"").append(courtScheduleIds.get(i)).append("\",\n")
+                    .append("      \"hearingStartTime\": \"").append(firstDayStart.plusDays(i)).append("\",\n")
+                    .append("      \"duration\": ").append(duration).append("\n")
+                    .append("    }");
+        }
+        final String payload = "{\n  \"hearings\": [\n" + hearingsJson + "\n  ]\n}";
+
+        stubFor(WireMock.post(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH)))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
+                .withRequestBody(containing(hearingId))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }

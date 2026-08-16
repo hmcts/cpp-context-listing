@@ -22,12 +22,12 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMat
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubChangeCourtRoomForMultidayHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubChangeCourtRoomForMultidayHearingFailure;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubExtendMultiDayHearing;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMultiDaySearchAndBookForHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyChangeCourtRoomForMultidayHearingCalled;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyChangeCourtRoomForMultidayHearingNeverCalled;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyExtendMultiDayHearingCalled;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyMultiDaySearchAndBookCalledForHearing;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
@@ -612,7 +612,9 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
         sessionScheduleIds.add(scheduleD2.toString());
         sessionScheduleIds.add(scheduleD3.toString());
 
-        stubExtendMultiDayHearing(hearingId.toString(), sessionScheduleIds, courtHouseId, courtRoomId, day1, false);
+        stubMultiDaySearchAndBookForHearing(hearingId.toString(), sessionScheduleIds, courtHouseId, courtRoomId, day1, false);
+        uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForSchedules(
+                hearingId.toString(), sessionScheduleIds, day1.atTime(9, 0).atZone(java.time.ZoneOffset.UTC), 360);
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
 
         final ListCourtHearingSteps seedSteps = new ListCourtHearingSteps(HearingsData.hearingsData(hearingId));
@@ -625,7 +627,7 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
         restClient.postCommand(buildUrl(UPDATE_HEARING_FOR_LISTING_ENDPOINT_KEY, hearingId), MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
                 updatePayload, getLoggedInHeader());
 
-        verifyExtendMultiDayHearingCalled(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
+        verifyMultiDaySearchAndBookCalledForHearing(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
 
         final ResponseData allocatedResponse = pollWithDefaults(requestParams(searchHearingUrl(hearingId), MEDIA_TYPE_SEARCH_HEARING)
                 .withHeader(USER_ID, getLoggedInUser()).build())
