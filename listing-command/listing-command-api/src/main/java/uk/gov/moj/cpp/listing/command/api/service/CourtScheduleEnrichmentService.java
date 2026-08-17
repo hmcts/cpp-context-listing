@@ -1322,7 +1322,10 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
      * at the user's chosen time — existing per-day allocations (and their rooms) stay untouched. A
      * 422 with an errorCode (NO_AVAILABILITY listing the unavailable dates, INVALID_DATE_RANGE) is
      * a rejected extension and is surfaced to the caller as {@link CrownMultiDayExtensionException},
-     * which the command API maps back to the UI.
+     * which the command API maps back to the UI. The rejection throw applies only to this resize
+     * context (endDate present): callers of the short overload (create, unallocation) treat a 422
+     * like any other non-success and fall through to their mark-days-draft handling instead of
+     * aborting the whole command with an extension-shaped error.
      */
     @SuppressWarnings("java:S107")
     private List<CourtSchedule> multiDaySearchAndBook(final String courtScheduleId, final Integer durationInMinutes,
@@ -1346,7 +1349,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         }
         final Response response = hearingSlotsService.multiDaySearchAndBook(params);
 
-        if (response.getStatus() == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
+        if (nonNull(endDate) && response.getStatus() == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
             final JsonObject errorBody = (response.hasEntity() && response.getEntity() instanceof JsonObject jsonBody)
                     ? jsonBody
                     : objectToJsonObjectConverter.convert(response.getEntity());

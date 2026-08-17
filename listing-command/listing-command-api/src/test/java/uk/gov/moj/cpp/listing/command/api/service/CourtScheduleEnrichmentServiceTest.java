@@ -879,6 +879,43 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
+    void shouldMarkDaysDraftNotThrowWhenCreatePathMultiDaySearchReturns422WithErrorCode() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(1080)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(1080)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withRoomId(courtRoomId.toString())
+                                .build()))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(422);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(Boolean.TRUE));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+    }
+
+    @Test
     void shouldNotCallListHearingWhenMultiDaySessionsHaveDraft() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtScheduleId1 = UUID.randomUUID();
