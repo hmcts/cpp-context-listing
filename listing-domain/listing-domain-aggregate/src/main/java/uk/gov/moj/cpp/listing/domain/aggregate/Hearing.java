@@ -1709,34 +1709,38 @@ public class Hearing implements Aggregate {
             // We need to remove Offences which are belongs only this seeded hearings and leave other offences in this hearing, if This hearing seeded or extended from another hearings.
             return getOffencesRemovedFromHearingStream(seedingHearingId, hearingId);
         } else {
-            final List<UUID> caseIds = prosecutionCaseDefendants.keySet().stream().collect(toList());
-
-            final Stream.Builder<Object> eventStreamBuilder = Stream.builder();
-
-            if (isAllocated()) {
-                eventStreamBuilder.add(AllocatedHearingDeleted.allocatedHearingDeleted()
-                        .withHearingId(hearingId)
-                        .withCaseIds(caseIds)
-                        .build());
-
-                if (MAGISTRATES == jurisdictionType || JurisdictionType.CROWN == jurisdictionType) {
-                    eventStreamBuilder.add(availableSlotsForHearingFreed()
-                            .withHearingId(hearingId).build());
-                }
-            } else {
-                eventStreamBuilder.add(UnallocatedHearingDeleted.unallocatedHearingDeleted()
-                        .withHearingId(hearingId)
-                        .withCaseIds(caseIds)
-                        .build());
-
-                if (JurisdictionType.CROWN == jurisdictionType && hasCourtScheduleIds(this.hearingDays)) {
-                    eventStreamBuilder.add(availableSlotsForHearingFreed()
-                            .withHearingId(hearingId).build());
-                }
-            }
-
-            return apply(eventStreamBuilder.build());
+            return apply(hearingDeletionEvents(hearingId));
         }
+    }
+
+    private Stream<Object> hearingDeletionEvents(final UUID hearingId) {
+        final List<UUID> caseIds = prosecutionCaseDefendants.keySet().stream().collect(toList());
+
+        final Stream.Builder<Object> eventStreamBuilder = Stream.builder();
+
+        if (isAllocated()) {
+            eventStreamBuilder.add(AllocatedHearingDeleted.allocatedHearingDeleted()
+                    .withHearingId(hearingId)
+                    .withCaseIds(caseIds)
+                    .build());
+
+            if (MAGISTRATES == jurisdictionType || JurisdictionType.CROWN == jurisdictionType) {
+                eventStreamBuilder.add(availableSlotsForHearingFreed()
+                        .withHearingId(hearingId).build());
+            }
+        } else {
+            eventStreamBuilder.add(UnallocatedHearingDeleted.unallocatedHearingDeleted()
+                    .withHearingId(hearingId)
+                    .withCaseIds(caseIds)
+                    .build());
+
+            if (JurisdictionType.CROWN == jurisdictionType && hasCourtScheduleIds(this.hearingDays)) {
+                eventStreamBuilder.add(availableSlotsForHearingFreed()
+                        .withHearingId(hearingId).build());
+            }
+        }
+
+        return eventStreamBuilder.build();
     }
 
     public Stream<Object> removeOffencesFromExistingHearing(final UUID seedingHearingId, final UUID hearingId) {
