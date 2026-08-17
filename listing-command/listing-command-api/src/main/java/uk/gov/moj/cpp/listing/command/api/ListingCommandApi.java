@@ -657,7 +657,9 @@ public class ListingCommandApi {
      * courtscheduler in ONE call and enriches the booked sessions into changedDays, joined by date.
      * Virtual days take the booked session's startTime (the session defines the day); a rebooked
      * real day keeps its REQUESTED startTime - a custom start time is the whole point of a
-     * non-default day, only its session (room/schedule/draft state) moves.
+     * non-default day, only its session (room/schedule/draft state) moves. A day booked onto a
+     * draft session carries no courtRoomId - a draft session has no confirmed room (SPRDT-858,
+     * same rule as stripRoomInfoIfAnyDraft).
      */
     private JsonArrayBuilder bookRequestedDaysIntoChangedDays(final UUID hearingId, final List<RequestedChangeDay> daysToBook,
             final Map<LocalDate, JsonObject> virtualRequestedByDate,
@@ -678,8 +680,8 @@ public class ListingCommandApi {
                     .add(DAY_START_TIME, startTime)
                     .add(DAY_DURATION_MINUTES, requested.getInt(NON_DEFAULT_DAY_DURATION))
                     .add(COURT_CENTRE_ID, requested.getString(COURT_CENTRE_ID))
-                    .add(COURT_ROOM_ID, session.courtRoomId() != null ? session.courtRoomId() : requested.getString(ROOM_ID))
-                    .add(COURT_SCHEDULE_ID, session.courtScheduleId().toString());
+                    .add(COURT_SCHEDULE_ID, session.courtScheduleId().toString())
+                    .add(COURT_ROOM_ID, session.courtRoomId() != null ? session.courtRoomId() : requested.getString(ROOM_ID));
             // The booked session's draft state travels with the day so the aggregate can stamp it
             // onto the hearing day (isDraft would otherwise be lost on the room change).
             if (session.isDraft() != null) {

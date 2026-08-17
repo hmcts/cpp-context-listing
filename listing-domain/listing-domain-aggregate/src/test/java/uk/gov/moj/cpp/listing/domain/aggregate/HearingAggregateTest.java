@@ -78,6 +78,7 @@ import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.SequencesResetOnHearingDays;
 import uk.gov.justice.listing.events.StartDateChangedForHearing;
 import uk.gov.justice.listing.events.StatementOfOffence;
+import uk.gov.justice.listing.events.HearingDaysWithoutCourtCentreCorrected;
 import uk.gov.justice.listing.events.UnallocatedHearingDeleted;
 import uk.gov.justice.listing.events.WeekCommencingDateChangedForHearing;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
@@ -821,6 +822,89 @@ class HearingAggregateTest {
         assertThat(unallocatedHearingDeleted.getCaseIds().size(), is(2));
         assertThat(unallocatedHearingDeleted.getCaseIds(), hasItems(case1Id, case2Id));
         assertTrue(eventsList.get(1) instanceof AvailableSlotsForHearingFreed);
+    }
+
+    @Test
+    void shouldFreeSlotsWhenUnallocatedCrownHearingWithCourtSchedulesIsDeleted() {
+        final UUID caseId = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(asList(HearingDay.hearingDay()
+                                .withCourtScheduleId(randomUUID())
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withIsDraft(true)
+                                .build()))
+                        .withListedCases(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(caseId)
+                                .withDefendants(asList(Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withOffences(asList(Offence.offence()
+                                                .withId(randomUUID())
+                                                .withSeedingHearing(SeedingHearing.seedingHearing()
+                                                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                                                        .withSeedingHearingId(seedingHearingId)
+                                                        .build())
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final Stream<Object> events = hearing.deleteHearing(seedingHearingId, hearingId);
+        final List<Object> eventsList = events.collect(Collectors.toList());
+
+        assertThat(eventsList.size(), is(2));
+        assertTrue(eventsList.get(0) instanceof UnallocatedHearingDeleted);
+        assertTrue(eventsList.get(1) instanceof AvailableSlotsForHearingFreed);
+        assertThat(((AvailableSlotsForHearingFreed) eventsList.get(1)).getHearingId(), is(hearingId));
+    }
+
+    @Test
+    void shouldPreserveDraftStatusWhenHearingDaysWithoutCourtCentreCorrected() {
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(asList(HearingDay.hearingDay()
+                                .withCourtScheduleId(randomUUID())
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withIsDraft(true)
+                                .build()))
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(240)
+                        .withListedCases(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(randomUUID())
+                                .withDefendants(asList(Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withOffences(asList(Offence.offence()
+                                                .withId(randomUUID())
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        hearing.apply(HearingDaysWithoutCourtCentreCorrected.hearingDaysWithoutCourtCentreCorrected()
+                .withId(hearingId)
+                .withHearingDays(asList(HearingDay.hearingDay()
+                        .withCourtCentreId(randomUUID())
+                        .withCourtRoomId(randomUUID())
+                        .build()))
+                .build());
+
+        final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
+        final List<Object> allocationEvents = allocationStream.toList();
+
+        assertThat(allocationEvents.size(), is(0));
     }
 
     @Test
@@ -5101,13 +5185,13 @@ class HearingAggregateTest {
         assertThat(offencesRemovedFromHearing.getUnallocated(), is(false));
     }
 
-    // Unit tests for magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected method
+    // Unit tests for hearingIsInTheFutureAndAllCaseAndApplicationAreEjected method
 
     @Test
     void shouldReturnFalse_WhenCurrentHearingEventStateIsNull() {
         final UUID ejectedItemId = randomUUID();
 
-        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        boolean result = hearing.hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
         assertThat(result, is(false));
     }
@@ -5133,7 +5217,7 @@ class HearingAggregateTest {
                 .build()
         );
 
-        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        boolean result = hearing.hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
         assertThat(result, is(true));
     }
@@ -5159,7 +5243,7 @@ class HearingAggregateTest {
                 .build()
         );
 
-        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        boolean result = hearing.hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
         assertThat(result, is(false));
     }
@@ -5185,7 +5269,7 @@ class HearingAggregateTest {
                 .build()
         );
 
-        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        boolean result = hearing.hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
         assertThat(result, is(false));
     }
@@ -5211,7 +5295,7 @@ class HearingAggregateTest {
                 .build()
         );
 
-        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        boolean result = hearing.hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
         assertThat(result, is(true));
     }
@@ -5239,7 +5323,7 @@ class HearingAggregateTest {
                 .build()
         );
 
-        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        boolean result = hearing.hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
         assertThat(result, is(true));
     }
@@ -5280,7 +5364,7 @@ class HearingAggregateTest {
                 .build()
         );
 
-        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        boolean result = hearing.hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
         assertThat(result, is(true));
     }
@@ -5321,7 +5405,7 @@ class HearingAggregateTest {
                 .build()
         );
 
-        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        boolean result = hearing.hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
         assertThat(result, is(false));
     }
@@ -5362,7 +5446,7 @@ class HearingAggregateTest {
                 .build()
         );
 
-        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        boolean result = hearing.hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
         assertThat(result, is(true));
     }
@@ -5403,7 +5487,7 @@ class HearingAggregateTest {
                 .build()
         );
 
-        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        boolean result = hearing.hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
         assertThat(result, is(true));
     }
@@ -5449,7 +5533,7 @@ class HearingAggregateTest {
                 withHearingId(hearingId).build());
 
 
-        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        boolean result = hearing.hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
         assertThat(result, is(false));
     }
@@ -5490,7 +5574,7 @@ class HearingAggregateTest {
                 .build()
         );
 
-        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        boolean result = hearing.hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
         assertThat(result, is(false));
     }
@@ -5531,7 +5615,7 @@ class HearingAggregateTest {
                 .build()
         );
 
-        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        boolean result = hearing.hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
         assertThat(result, is(true));
     }
@@ -5572,7 +5656,7 @@ class HearingAggregateTest {
                 .build()
         );
 
-        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        boolean result = hearing.hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
         assertThat(result, is(true));
     }
@@ -5614,7 +5698,7 @@ class HearingAggregateTest {
                 .build()
         );
 
-        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        boolean result = hearing.hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
         assertThat(result, is(true));
     }
@@ -5670,7 +5754,7 @@ class HearingAggregateTest {
                 .build()
         );
 
-        boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
+        boolean result = hearing.hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
         assertThat(result, CoreMatchers.is(expectedResult));
     }
@@ -8636,7 +8720,7 @@ class HearingAggregateTest {
                 new HearingDayCourtSchedule(randomUUID(), d2Date),
                 new HearingDayCourtSchedule(randomUUID(), d3Date));
 
-        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, emptyList(), true)
                 .collect(Collectors.toList());
 
         final HearingDaysChangedForHearing daysChanged = events.stream()
@@ -8682,7 +8766,7 @@ class HearingAggregateTest {
                 changedDomainDay(d2Date, room2, courtCentre1, newStart2));
         final List<HearingDayCourtSchedule> schedules = List.of(new HearingDayCourtSchedule(randomUUID(), d2Date));
 
-        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, emptyList(), true)
                 .collect(Collectors.toList());
 
         final AllocatedHearingUpdatedForListingV2 allocation = events.stream()
@@ -8713,7 +8797,7 @@ class HearingAggregateTest {
                 new HearingDayCourtSchedule(sched2, d2Date),
                 new HearingDayCourtSchedule(sched3, d3Date));
 
-        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, emptyList(), true)
                 .collect(Collectors.toList());
 
         final HearingDayCourtScheduleUpdated scheduleUpdated = events.stream()
@@ -8742,7 +8826,7 @@ class HearingAggregateTest {
                 changedDomainDay(d2Date, room2, courtCentre1, ZonedDateTime.of(d2Date, LocalTime.parse("11:00"), UTC)));
         final List<HearingDayCourtSchedule> schedules = List.of(new HearingDayCourtSchedule(randomUUID(), d2Date));
 
-        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, emptyList(), true)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(0));
@@ -8763,7 +8847,7 @@ class HearingAggregateTest {
                 changedDomainDay(d2Date, room2, courtCentre1, ZonedDateTime.of(d2Date, LocalTime.parse("11:00"), UTC)));
         final List<HearingDayCourtSchedule> schedules = List.of(new HearingDayCourtSchedule(randomUUID(), d2Date));
 
-        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, emptyList(), true)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(0));
@@ -8816,7 +8900,7 @@ class HearingAggregateTest {
                 changedDomainDay(d2Date, room2, courtCentre1, newStart2));
         final List<HearingDayCourtSchedule> schedules = List.of(new HearingDayCourtSchedule(randomUUID(), d2Date));
 
-        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, emptyList(), true)
                 .collect(Collectors.toList());
 
         final HearingDaysChangedForHearing daysChanged = events.stream()

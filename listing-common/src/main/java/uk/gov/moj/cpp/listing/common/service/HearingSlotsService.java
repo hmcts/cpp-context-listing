@@ -90,8 +90,8 @@ public class HearingSlotsService {
     }
 
     public Response listHearingInCourtSessions(final Object payload) {
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("HearingSlots slots list update in CourtScheduler S & L with slot details '{}'", payload);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("HearingSlots slots list update in CourtScheduler S & L with slot details '{}'", payload);
         }
 
         try {
@@ -305,8 +305,8 @@ public class HearingSlotsService {
     }
 
     private Response post(final String urlPath, final String contentTypeHeader, final JsonObject payload, final boolean addAcceptJson) {
-        if (LOGGER.isInfoEnabled() && Objects.nonNull(payload)) {
-            LOGGER.info("{} in CourtScheduler S & L with payload '{}'", contentTypeHeader, payload);
+        if (LOGGER.isDebugEnabled() && Objects.nonNull(payload)) {
+            LOGGER.debug("{} in CourtScheduler S & L with payload '{}'", contentTypeHeader, payload);
         }
         if (payload == null || payload.isEmpty()) {
             throw new DataValidationException("Payload for %s is null or empty ....".formatted(contentTypeHeader));
@@ -354,8 +354,8 @@ public class HearingSlotsService {
         bodyParams.remove(HEARING_ID);
         final JsonObject payload = buildTypedJsonBody(bodyParams);
 
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("{} POST /hearings/{} in CourtScheduler S & L with payload '{}'", contentTypeHeader, hearingId, payload);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("{} POST /hearings/{} in CourtScheduler S & L with payload '{}'", contentTypeHeader, hearingId, payload);
         }
 
         try {
