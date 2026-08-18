@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static java.time.DayOfWeek.MONDAY;
+import static java.time.temporal.TemporalAdjusters.nextOrSame;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -111,7 +113,10 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         final UUID courtRoomId = UUID.randomUUID();
         final UUID courtHouseId = UUID.randomUUID();
         final UUID startingCourtScheduleId = UUID.randomUUID();
-        final LocalDate startDate = ItClock.today().plusDays(30);
+        // Monday anchor: the non-sitting day (start+1) must deterministically be a BUSINESS day —
+        // a weekend-dated non-sitting day does not cost the block a booked day, so an unanchored
+        // date would make the expected booking ask flip with the day the suite runs on (Rule 12).
+        final LocalDate startDate = ItClock.today().plusDays(30).with(nextOrSame(MONDAY));
         final LocalDate endDate = startDate.plusDays(57);
         final LocalDate nonSittingDay = startDate.plusDays(1);
         final ZonedDateTime sessionStart = startDate.atTime(9, 0).atZone(ZoneOffset.UTC);
@@ -141,9 +146,13 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
                 payload,
                 getLoggedInHeader());
 
-        // NonSittingDays must NOT reduce the duration sent to courtscheduler — slot accounting requires
-        // all N sessions be deducted. Filtering of nonSittingDays happens post-enrichment on hearingDays.
-        verifyMultiDaySearchAndBookCalledForHearing(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
+        // NonSittingDays must never REDUCE the duration sent to courtscheduler — and since the
+        // SPRDT-1267 rework each non-sitting business day inside the requested window GROWS the ask
+        // by one court day (1080 -> 1440): the booked block must still reach endDate after the
+        // non-sitting date is dropped from hearingDays post-enrichment, whichever dialect the
+        // caller's descriptor used (window total or sitting total).
+        verifyMultiDaySearchAndBookCalledForHearing(hearingId.toString(),
+                MULTI_DAY_TOTAL_DURATION_MINUTES + 360);
         // Drain our own async aftermath — see shouldCallExtendMultiDayHearingOnListingCourtScheduler test.
         awaitUpdateProjection(hearingId, startDate);
         seedSteps.verifyPublicEVentHearingChangesSaved(hearingId);
