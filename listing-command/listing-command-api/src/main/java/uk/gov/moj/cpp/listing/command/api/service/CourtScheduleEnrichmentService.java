@@ -40,6 +40,7 @@ import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -83,6 +84,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     private JsonObjectToObjectConverter jsonObjectConverter;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CourtScheduleEnrichmentService.class);
+
+    /** Upper bound on the business days a multi-day booking ask may span (one business year). */
+    private static final int MAX_BLOCK_BUSINESS_DAYS = 260;
 
     public static final String HEARING_DATE = "hearingDate";
     public static final String HEARING_SESSION_DATE_CUT_OFF = "hearingSessionDateSearchCutOff";
@@ -328,11 +332,16 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     ? hearing.getCourtCentreId().toString()
                     : fallbackCourtCentreId;
 
-            // The block courtscheduler books is the one that was asked for: startDate + duration, laid
-            // out over consecutive business days. Non-sitting days are a listing concept and are applied
-            // to the RESULT, not to the request. The main courtroom and the user's start time ride along
-            // so a same-start EXTEND books its tail days into the submitted room at the submitted time
-            // (SPRDT-1273/1274).
+            // The block courtscheduler books is laid out over consecutive business days sized from the
+            // request's DURATION alone (crownDaysNeeded deliberately ignores endDate whenever a duration
+            // is present), so when non-sitting days sit inside the requested window the ask must grow to
+            // still reach endDate: a caller sending only its SITTING total (the reallocate screen) would
+            // otherwise book ON the non-sitting date and stop short, silently losing the last day
+            // (SPRDT-1267 rework). Dropping the booked non-sitting days from the RESULT is unchanged. The
+            // main courtroom and the user's start time ride along so a same-start EXTEND books its tail
+            // days into the submitted room at the submitted time (SPRDT-1273/1274).
+            final int bookingMinutes = bookingWindowMinutes(
+                    hearing.getStartDate(), hearing.getEndDate(), hearing.getNonSittingDays(), totalDuration);
             final String mainCourtRoomId = resolveCommandCourtRoomId(hearing);
             final String userStartTimeIso = virtualAnchor
                     .map(NonDefaultDay::getStartTime)
@@ -341,7 +350,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     .orElse(null);
             final List<CourtSchedule> bookedSessions = multiDaySearchAndBook(
                     anchorCourtScheduleId,
-                    totalDuration,
+                    bookingMinutes,
                     hearing.getHearingId().toString(),
                     courtCentreId,
                     anchorDate != null ? anchorDate.toString() : LocalDate.now().toString(),
@@ -607,6 +616,64 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             remaining -= share;
         }
         return result;
+    }
+
+    /**
+     * Minutes the BOOKING must cover so the block still reaches the requested window's endDate when
+     * non-sitting days sit inside it. The two frontend screens describe the same block in different
+     * dialects: the edit screen's virtual descriptor carries the window total (non-sitting days
+     * included), the reallocate screen's carries only the SITTING total — and courtscheduler sizes
+     * the block from the duration alone, so a sitting-total ask books ON the non-sitting date and
+     * stops short of endDate, silently losing the last day (SPRDT-1267 rework).
+     *
+     * <p>Each non-sitting BUSINESS day inside the window costs the block one booked day, so the ask
+     * grows by exactly one court day per such date — but never beyond the window's own business-day
+     * total, which is what keeps the window-total dialect unchanged (its descriptor already paid for
+     * the non-sitting days; adding again would over-book) and never below the caller's total. With
+     * no non-sitting day in the window the ask stays duration-derived whatever the endDate says:
+     * courtscheduler, not a startDate→endDate expansion, is the authority on session count, and a
+     * deliberately wide window must not buy itself a bigger block. All counts are plain arithmetic
+     * over the dates — no walk — and the window is capped at {@code MAX_BLOCK_BUSINESS_DAYS}.</p>
+     */
+    private static int bookingWindowMinutes(final LocalDate startDate, final LocalDate endDate,
+                                            final List<LocalDate> nonSittingDays, final int totalDuration) {
+        if (isNull(startDate) || isNull(endDate) || !endDate.isAfter(startDate) || isEmpty(nonSittingDays)) {
+            return totalDuration;
+        }
+        final long nonSittingBusinessDaysInWindow = nonSittingDays.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .filter(day -> !day.isBefore(startDate) && !day.isAfter(endDate))
+                .filter(day -> day.getDayOfWeek().getValue() <= 5)
+                .count();
+        if (nonSittingBusinessDaysInWindow == 0) {
+            return totalDuration;
+        }
+        final int windowBusinessDays = Math.min(businessDaysInclusive(startDate, endDate), MAX_BLOCK_BUSINESS_DAYS);
+        final long inflated = totalDuration
+                + nonSittingBusinessDaysInWindow * HearingDurationEnrichmentService.MINUTES_IN_DAY;
+        final long windowCap = (long) windowBusinessDays * HearingDurationEnrichmentService.MINUTES_IN_DAY;
+        return (int) Math.max(totalDuration, Math.min(inflated, windowCap));
+    }
+
+    /**
+     * Business (Mon–Fri) days from start to end inclusive, counted arithmetically: full weeks
+     * contribute five days each, the remainder is walked day-of-week-wise (at most six steps).
+     * Weekends are excluded exactly as courtscheduler's consecutive-business-day walk excludes them;
+     * non-sitting days are NOT excluded — the booking deliberately covers them (they are dropped
+     * from the hearing afterwards and never pay their slots back).
+     */
+    private static int businessDaysInclusive(final LocalDate start, final LocalDate end) {
+        final long totalDays = ChronoUnit.DAYS.between(start, end) + 1;
+        long businessDays = (totalDays / 7) * 5;
+        final int remainder = (int) (totalDays % 7);
+        final int startDow = start.getDayOfWeek().getValue();
+        for (int i = 0; i < remainder; i++) {
+            if (((startDow - 1 + i) % 7) + 1 <= 5) {
+                businessDays++;
+            }
+        }
+        return (int) Math.min(businessDays, Integer.MAX_VALUE);
     }
 
     /**
