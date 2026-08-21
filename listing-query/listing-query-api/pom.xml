@@ -23,6 +23,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.6-SNAPSHOT</version>
@@ -81,6 +82,9 @@
 =======
         <version>17.104.9</version>
 >>>>>>> 06946db41c (updating poms for branch'dev/release-17.104.9' with non-snapshot versions)
+=======
+        <version>17.104.10-SNAPSHOT</version>
+>>>>>>> bc0ca0f4bf (Updating develop poms back to pre merge state)
     </parent>
 
     <artifactId>listing-query-api</artifactId>
