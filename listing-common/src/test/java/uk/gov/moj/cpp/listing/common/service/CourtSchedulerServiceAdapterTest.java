@@ -320,6 +320,43 @@ class CourtSchedulerServiceAdapterTest {
     // ─── Crown fallback search-and-book (Option C: courtCentreId-only) ───
 
     @Test
+    void crownFallbackSearchAndBook_shouldSendCentreMetadataParams_whenSupplied() {
+        // SPRDT-1283: ouCode/courtCentreName/courtRoomName travel on the wire so courtscheduler can
+        // auto-create a session at a centre with no existing session to copy metadata from.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 4, 21);
+
+        final JsonObject body = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .add("courtScheduleId", UUID.randomUUID().toString())
+                .add("sessionDate", hearingDate.toString())
+                .add("durationInMinutes", 10)
+                .add("isDraft", true)
+                .add("source", "CROWN_FB_LIST")
+                .add("overbooked", false)
+                .build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                hearingId, courtCentreId, hearingDate, 10,
+                Optional.empty(), Optional.empty(),
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING,
+                Optional.of("C99XX00"), Optional.of("Never Seeded Crown Court"), Optional.of("  "));
+
+        final org.mockito.ArgumentCaptor<java.util.Map<String, String>> paramsCaptor =
+                org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        verify(hearingSlotsService).crownFallbackSearchAndBook(paramsCaptor.capture());
+        final java.util.Map<String, String> params = paramsCaptor.getValue();
+        assertThat(params.get("ouCode"), is("C99XX00"));
+        assertThat(params.get("courtCentreName"), is("Never Seeded Crown Court"));
+        // blank values are dropped, not sent
+        assertThat(params.containsKey("courtRoomName"), is(false));
+    }
+
+    @Test
     void crownFallbackSearchAndBook_shouldReturnParsedResult_on200() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtCentreId = UUID.randomUUID();
@@ -349,7 +386,7 @@ class CourtSchedulerServiceAdapterTest {
                 courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
                         hearingId, courtCentreId, hearingDate, 10,
                         Optional.of(courtRoomUuid), Optional.of("2026-04-21T09:00:00Z"),
-                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING);
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING, Optional.empty(), Optional.empty(), Optional.empty());
 
         assertThat(result.hearingId(), is(hearingId));
         assertThat(result.courtScheduleId(), is(bookedScheduleId));
@@ -389,7 +426,7 @@ class CourtSchedulerServiceAdapterTest {
                 courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
                         hearingId, courtCentreId, hearingDate, 10,
                         Optional.empty(), Optional.empty(),
-                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING);
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING, Optional.empty(), Optional.empty(), Optional.empty());
 
         assertThat(result.courtScheduleId(), is(bookedScheduleId));
         assertThat(result.courtRoomId(), is((UUID) null));
@@ -406,7 +443,7 @@ class CourtSchedulerServiceAdapterTest {
                 () -> courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
                         hearingId, UUID.randomUUID(), LocalDate.of(2026, 4, 21), 10,
                         Optional.empty(), Optional.empty(),
-                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING));
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING, Optional.empty(), Optional.empty(), Optional.empty()));
     }
 
     @Test
@@ -420,7 +457,7 @@ class CourtSchedulerServiceAdapterTest {
                 () -> courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
                         UUID.randomUUID(), UUID.randomUUID(), LocalDate.of(2026, 4, 21), 400,
                         Optional.empty(), Optional.empty(),
-                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING));
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING, Optional.empty(), Optional.empty(), Optional.empty()));
     }
 
     @Test
@@ -439,7 +476,7 @@ class CourtSchedulerServiceAdapterTest {
                 () -> courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
                         UUID.randomUUID(), UUID.randomUUID(), LocalDate.of(2026, 4, 21), 10,
                         Optional.empty(), Optional.empty(),
-                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING));
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING, Optional.empty(), Optional.empty(), Optional.empty()));
     }
 
     // ─── getCourtScheduleDraftStatus ─────────────────────────────────────────

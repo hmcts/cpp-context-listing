@@ -2185,7 +2185,12 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     durationInMinutes,
                     courtRoomId,
                     earliestHearingTime,
-                    fallbackSource);
+                    fallbackSource,
+                    // SPRDT-1283: centre metadata from the payload lets courtscheduler auto-create a
+                    // session even at a centre with no existing session to copy metadata from.
+                    Optional.ofNullable(courtCentre.getCode()),
+                    Optional.ofNullable(courtCentre.getName()),
+                    Optional.ofNullable(courtCentre.getRoomName()));
         } catch (final CrownFallbackNoSessionException e) {
             // Fail open for list flows: an unbookable session must not reject the command — the hearing
             // proceeds unallocated (legacy list-court-hearing semantics) and can be allocated later.
@@ -2255,7 +2260,12 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 durationInMinutes,
                 courtRoomId,
                 earliestHearingTime,
-                fallbackSource);
+                fallbackSource,
+                // SPRDT-1283: the update payload carries no centre names; selectedCourtCentre's
+                // ouCode (when present) still lets a never-seeded centre auto-create.
+                Optional.ofNullable(hearing.getSelectedCourtCentre()).map(SelectedCourtCentre::getOuCode),
+                Optional.empty(),
+                Optional.empty());
 
         LOGGER.info("[CROWN-FB] update hearingId={} booked courtScheduleId={} isDraft={} overbooked={} source={}",
                 hearing.getHearingId(), result.courtScheduleId(), result.isDraft(), result.overbooked(), result.source());
