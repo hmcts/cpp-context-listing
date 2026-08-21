@@ -21,6 +21,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.6-SNAPSHOT</version>
@@ -73,6 +74,9 @@
 =======
         <version>17.104.10-SNAPSHOT</version>
 >>>>>>> 9590d7710d (updating poms for 17.104.10-SNAPSHOT development)
+=======
+        <version>17.104.9</version>
+>>>>>>> f52bd8d2ca (updating develop poms to master versions to avoid merge conflicts)
     </parent>
 
     <artifactId>listing-json</artifactId>
