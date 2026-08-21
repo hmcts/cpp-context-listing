@@ -27,6 +27,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
     <version>17.104.6-SNAPSHOT</version>
@@ -76,6 +77,9 @@
 =======
     <version>17.104.11-SQL-SNAPSHOT</version>
 >>>>>>> 5aeb25f507 (New 17.104.11-SQL-SNAPSHOT)
+=======
+    <version>17.104.10-SNAPSHOT</version>
+>>>>>>> 9590d7710d (updating poms for 17.104.10-SNAPSHOT development)
     <packaging>pom</packaging>
 
     <name>Listing Context Microservice Parent</name>
