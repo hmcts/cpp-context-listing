@@ -2764,7 +2764,9 @@ class ListingCommandHandlerTest {
 
         listingCommandHandler.handleAddCasesToHearing(commandEnvelope);
 
-        verify(hearing, times(1)).addCasesToHearing(any(List.class), any(), any());
+        // LPT-2405 added a trailing PtphDetail: null here, because this command carries no
+        // inherited tier or list type
+        verify(hearing, times(1)).addCasesToHearing(any(List.class), any(), any(), isNull());
     }
 
     @Test

@@ -8,6 +8,7 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.hamcrest.Matchers.nullValue;
 import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
 
 import uk.gov.justice.core.courts.Hearing;
@@ -574,5 +575,67 @@ public class SeedHearingAggregateTest {
                 .withId(prosecutionCaseId)
                 .build();
     }
-}
 
+    // ---------------------------------------------------------------------------------
+    // LPT-2405: an already-existing next hearing has no hearing-listed event to carry the
+    // inherited tier / list type, so they ride the update-existing-hearing request instead.
+    // ---------------------------------------------------------------------------------
+
+    @Test
+    public void shouldCarryInheritedPtphDetailOntoUpdateExistingHearingRequested() {
+        final UUID hearingId = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+        final String hearingDay = "2021-01-26";
+        final List<ProsecutionCase> prosecutionCases = Arrays.asList(buildProsecutionCase(randomUUID()));
+
+        final Stream<Object> stream = seedHearingAggregate.requestUpdateExistingHearing(
+                seedingHearingId, hearingId, hearingDay, prosecutionCases, Arrays.asList(randomUUID()),
+                new uk.gov.moj.cpp.listing.domain.PtphDetail("TIER_3", "TYPE_1_FIXED", "Vulnerable witness"));
+
+        final List<Object> events = stream.collect(java.util.stream.Collectors.toList());
+        assertThat(events.size(), is(1));
+        final UpdateExistingHearingRequested requested = (UpdateExistingHearingRequested) events.get(0);
+
+        assertThat(requested.getHearingId(), is(hearingId));
+        assertThat(requested.getSeedingHearingId(), is(seedingHearingId));
+        assertThat(requested.getTier(), is("TIER_3"));
+        assertThat(requested.getListType(), is("TYPE_1_FIXED"));
+        assertThat(requested.getKeyReason(), is("Vulnerable witness"));
+    }
+
+    /**
+     * Nothing inherited — the target is not a Crown trial, or the seeding record is not
+     * finalised. The event must still be raised, just without the values.
+     */
+    @Test
+    public void shouldRaiseUpdateExistingHearingRequestedWithoutPtphDetailWhenNothingInherited() {
+        final UUID hearingId = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+        final List<ProsecutionCase> prosecutionCases = Arrays.asList(buildProsecutionCase(randomUUID()));
+
+        final Stream<Object> stream = seedHearingAggregate.requestUpdateExistingHearing(
+                seedingHearingId, hearingId, "2021-01-26", prosecutionCases, Arrays.asList(randomUUID()), null);
+
+        final List<Object> events = stream.collect(java.util.stream.Collectors.toList());
+        assertThat(events.size(), is(1));
+        final UpdateExistingHearingRequested requested = (UpdateExistingHearingRequested) events.get(0);
+
+        assertThat(requested.getHearingId(), is(hearingId));
+        assertThat(requested.getTier(), is(nullValue()));
+        assertThat(requested.getListType(), is(nullValue()));
+        assertThat(requested.getKeyReason(), is(nullValue()));
+    }
+
+    /** The 5-arg overload still exists for callers that inherit nothing. */
+    @Test
+    public void shouldRaiseUpdateExistingHearingRequestedFromTheLegacyOverload() {
+        final UUID hearingId = randomUUID();
+        final Stream<Object> stream = seedHearingAggregate.requestUpdateExistingHearing(
+                randomUUID(), hearingId, "2021-01-26",
+                Arrays.asList(buildProsecutionCase(randomUUID())), Arrays.asList(randomUUID()));
+
+        final List<Object> events = stream.collect(java.util.stream.Collectors.toList());
+        assertThat(events.size(), is(1));
+        assertThat(((UpdateExistingHearingRequested) events.get(0)).getTier(), is(nullValue()));
+    }
+}
