@@ -213,6 +213,7 @@ import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 import uk.gov.moj.cpp.listing.domain.Type;
 import uk.gov.moj.cpp.listing.domain.aggregate.Application;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
+import uk.gov.moj.cpp.listing.domain.PtphDetail;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate;
 import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
@@ -2767,6 +2768,33 @@ class ListingCommandHandlerTest {
         // LPT-2405 added a trailing PtphDetail: null here, because this command carries no
         // inherited tier or list type
         verify(hearing, times(1)).addCasesToHearing(any(List.class), any(), any(), isNull());
+    }
+
+
+    /**
+     * LPT-2405: when the add-cases command carries inherited values they must reach the
+     * aggregate as a PtphDetail. The test above covers the null case, so both sides of the
+     * guard are pinned.
+     */
+    @Test
+    public void handleAddCasesForHearingWithInheritedPtphDetail() throws Exception {
+        final String jsonString = givenPayload("/test-data/listing.command.add-cases-to-hearing.json").toString();
+        final JsonObject withPtphDetail = JsonObjects.createObjectBuilder(
+                        JsonObjects.createReader(new StringReader(jsonString)).readObject())
+                .add("tier", "TIER_3")
+                .add("listType", "TYPE_1_FIXED")
+                .add("keyReason", "Vulnerable witness")
+                .build();
+
+        listingCommandHandler.handleAddCasesToHearing(
+                createEnvelope("listing.command.add-cases-to-hearing", withPtphDetail));
+
+        final ArgumentCaptor<PtphDetail> captor = ArgumentCaptor.forClass(PtphDetail.class);
+        verify(hearing).addCasesToHearing(any(List.class), any(), any(), captor.capture());
+
+        assertThat(captor.getValue().getTier(), is("TIER_3"));
+        assertThat(captor.getValue().getListType(), is("TYPE_1_FIXED"));
+        assertThat(captor.getValue().getKeyReason(), is("Vulnerable witness"));
     }
 
     @Test
