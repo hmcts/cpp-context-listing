@@ -52,6 +52,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Map;
 import java.util.UUID;
 
@@ -3901,7 +3902,7 @@ class CourtScheduleEnrichmentServiceTest {
                 eq(hearingId), eq(courtCentreId), eq(hearingDate),
                 org.mockito.ArgumentMatchers.anyInt(),
                 any(), any(),
-                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING)))
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING), any(), any(), any()))
                 .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
                         hearingId, bookedScheduleId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"), hearingDate,
                         listedStart, listedStart.plusHours(8),
@@ -3933,7 +3934,7 @@ class CourtScheduleEnrichmentServiceTest {
 
         assertThat(result, is(hearing));
         verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(
-                any(), any(), any(), org.mockito.ArgumentMatchers.anyInt(), any(), any(), any());
+                any(), any(), any(), org.mockito.ArgumentMatchers.anyInt(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -3962,7 +3963,7 @@ class CourtScheduleEnrichmentServiceTest {
                 eq(hearingId), eq(courtCentreId), eq(hearingDate),
                 org.mockito.ArgumentMatchers.anyInt(),
                 any(), any(),
-                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING)))
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING), any(), any(), any()))
                 .thenThrow(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException("no session"));
 
         final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
@@ -4015,7 +4016,7 @@ class CourtScheduleEnrichmentServiceTest {
 
         when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
                 any(), any(), any(), org.mockito.ArgumentMatchers.anyInt(), any(), any(),
-                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_NEXT_HEARINGS_V2)))
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_NEXT_HEARINGS_V2), any(), any(), any()))
                 .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
                         hearingId, UUID.randomUUID(), UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"), hearingDate,
                         hearingDate.atStartOfDay(java.time.ZoneOffset.UTC),
@@ -4027,7 +4028,7 @@ class CourtScheduleEnrichmentServiceTest {
 
         verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
                 any(), any(), any(), org.mockito.ArgumentMatchers.anyInt(), any(), any(),
-                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_NEXT_HEARINGS_V2));
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_NEXT_HEARINGS_V2), any(), any(), any());
     }
 
     @Test
@@ -4693,7 +4694,7 @@ class CourtScheduleEnrichmentServiceTest {
                 eq(120),
                 any(),
                 any(),
-                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.UPDATE_HEARING_FOR_LISTING)))
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.UPDATE_HEARING_FOR_LISTING), any(), any(), any()))
                 .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
                         hearingId, bookedCourtScheduleId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"), hearingDate,
                         hearingDate.atStartOfDay(java.time.ZoneOffset.UTC),
@@ -5095,8 +5096,8 @@ class CourtScheduleEnrichmentServiceTest {
 
         final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
 
-        // Unresolved session ⇒ days marked draft so the aggregate cannot allocate on them;
-        // everything else (id, courtScheduleId) is preserved.
+        // An unresolved session means the days are marked draft so the aggregate cannot allocate
+        // on them, while the hearing id and courtScheduleId are preserved untouched.
         assertThat(result.getHearingId(), is(hearingId));
         assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
         assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
@@ -6334,7 +6335,7 @@ class CourtScheduleEnrichmentServiceTest {
         final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
 
         assertThat(result.getHearingId(), is(hearingId));
-        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(any(), any(), any(), anyInt(), any(), any(), any());
+        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any());
         verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
     }
 
@@ -6354,7 +6355,7 @@ class CourtScheduleEnrichmentServiceTest {
         final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
 
         assertThat(result.getHearingId(), is(hearingId));
-        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(any(), any(), any(), anyInt(), any(), any(), any());
+        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -6609,7 +6610,7 @@ class CourtScheduleEnrichmentServiceTest {
         when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
                 eq(hearingId), eq(courtCentreId), eq(hearingDate),
                 anyInt(), any(), any(),
-                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING)))
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING), any(), any(), any()))
                 .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
                         hearingId, bookedScheduleId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"), hearingDate,
                         listedStart, listedStart.plusHours(8),
@@ -6645,7 +6646,7 @@ class CourtScheduleEnrichmentServiceTest {
 
         assertThat(result, is(hearing));
         verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(
-                any(), any(), any(), anyInt(), any(), any(), any());
+                any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -6676,7 +6677,7 @@ class CourtScheduleEnrichmentServiceTest {
         when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
                 eq(hearingId), eq(courtCentreId), eq(hearingDate),
                 anyInt(), any(), any(),
-                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING)))
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING), any(), any(), any()))
                 .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
                         hearingId, bookedScheduleId, null, hearingDate,
                         hearingDate.atStartOfDay(ZoneOffset.UTC),
@@ -6687,7 +6688,53 @@ class CourtScheduleEnrichmentServiceTest {
 
         assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedScheduleId));
         verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
-                eq(hearingId), eq(courtCentreId), eq(hearingDate), anyInt(), any(), any(), any());
+                eq(hearingId), eq(courtCentreId), eq(hearingDate), anyInt(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void shouldPassCentreMetadataToCrownFallbackForNeverSeededCentreAutoCreate() {
+        // SPRDT-1283: the payload's ouCode/name/roomName ride the fallback call so courtscheduler
+        // can auto-create a session at a centre that has no session to copy metadata from.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 6, 15);
+
+        final CourtCentre courtCentre = CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .withCode("C99XX00")
+                .withName("Never Seeded Crown Court")
+                .withRoomName("Courtroom 7")
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withEstimatedMinutes(60)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(60)
+                                .build()))
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate),
+                anyInt(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, UUID.randomUUID(), null, hearingDate,
+                        hearingDate.atStartOfDay(ZoneOffset.UTC),
+                        hearingDate.atStartOfDay(ZoneOffset.UTC).plusHours(8),
+                        60, true, null, "CROWN_FB_LIST", false));
+
+        courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate), anyInt(), any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING),
+                eq(Optional.of("C99XX00")),
+                eq(Optional.of("Never Seeded Crown Court")),
+                eq(Optional.of("Courtroom 7")));
     }
 
     @Test
@@ -6720,7 +6767,7 @@ class CourtScheduleEnrichmentServiceTest {
         when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
                 eq(hearingId), eq(courtCentreId), eq(expectedDate),
                 anyInt(), any(), any(),
-                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING)))
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING), any(), any(), any()))
                 .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
                         hearingId, bookedScheduleId, null, expectedDate,
                         startTime, startTime.plusHours(8),
@@ -6730,7 +6777,7 @@ class CourtScheduleEnrichmentServiceTest {
 
         assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedScheduleId));
         verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
-                eq(hearingId), eq(courtCentreId), eq(expectedDate), anyInt(), any(), any(), any());
+                eq(hearingId), eq(courtCentreId), eq(expectedDate), anyInt(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -6756,7 +6803,7 @@ class CourtScheduleEnrichmentServiceTest {
         when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
                 eq(hearingId), eq(courtCentreId), eq(hearingDate),
                 anyInt(), any(), any(),
-                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.UPDATE_HEARING_FOR_LISTING)))
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.UPDATE_HEARING_FOR_LISTING), any(), any(), any()))
                 .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
                         hearingId, bookedScheduleId, null, hearingDate,
                         hearingDate.atStartOfDay(ZoneOffset.UTC),
@@ -6767,7 +6814,7 @@ class CourtScheduleEnrichmentServiceTest {
 
         assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedScheduleId));
         verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
-                eq(hearingId), eq(courtCentreId), eq(hearingDate), anyInt(), any(), any(), any());
+                eq(hearingId), eq(courtCentreId), eq(hearingDate), anyInt(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -6795,7 +6842,7 @@ class CourtScheduleEnrichmentServiceTest {
         when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
                 eq(hearingId), eq(courtCentreId), eq(expectedDate),
                 anyInt(), any(), any(),
-                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.UPDATE_HEARING_FOR_LISTING)))
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.UPDATE_HEARING_FOR_LISTING), any(), any(), any()))
                 .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
                         hearingId, bookedScheduleId, null, expectedDate,
                         startTime, startTime.plusHours(8),
@@ -6805,7 +6852,7 @@ class CourtScheduleEnrichmentServiceTest {
 
         assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedScheduleId));
         verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
-                eq(hearingId), eq(courtCentreId), eq(expectedDate), anyInt(), any(), any(), any());
+                eq(hearingId), eq(courtCentreId), eq(expectedDate), anyInt(), any(), any(), any(), any(), any(), any());
     }
 
     @Test

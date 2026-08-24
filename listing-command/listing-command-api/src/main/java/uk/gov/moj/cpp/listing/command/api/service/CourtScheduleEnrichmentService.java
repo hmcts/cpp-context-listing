@@ -269,9 +269,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         // window, so summing every day would double-count and over-book the block.
         final Optional<NonDefaultDay> virtualAnchor = virtualAnchorNonDefaultDay(hearing);
         final int totalDuration = virtualAnchor.map(NonDefaultDay::getDuration)
-                .orElseGet(() -> isEmpty(hearing.getHearingDays()) ? 0 : hearing.getHearingDays().stream()
-                        .mapToInt(d -> d.getDurationMinutes() != null ? d.getDurationMinutes() : 0)
-                        .sum());
+                .orElseGet(() -> sumHearingDayMinutes(hearing.getHearingDays()));
         // WeekCommencing payloads never reach the courtscheduler booking calls — they model a weekly
         // window, not discrete days (the orchestrator routes them separately; this guard keeps the
         // invariant for direct callers too).
@@ -694,6 +692,15 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         return hearing.getNonDefaultDays().stream()
                 .filter(CrownNonDefaultDaysValidator::isBlockDescriptor)
                 .findFirst();
+    }
+
+    private static int sumHearingDayMinutes(final List<HearingDay> hearingDays) {
+        if (isEmpty(hearingDays)) {
+            return 0;
+        }
+        return hearingDays.stream()
+                .mapToInt(d -> d.getDurationMinutes() != null ? d.getDurationMinutes() : 0)
+                .sum();
     }
 
     /**
@@ -1386,7 +1393,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             params.put("endDate", endDate);
         }
         if (nonNull(courtRoomId)) {
-            params.put("courtRoomId", courtRoomId);
+            params.put(COURT_ROOM_ID, courtRoomId);
         }
         if (nonNull(earliestHearingTime)) {
             params.put("earliestHearingTime", earliestHearingTime);
@@ -2185,7 +2192,12 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     durationInMinutes,
                     courtRoomId,
                     earliestHearingTime,
-                    fallbackSource);
+                    fallbackSource,
+                    // SPRDT-1283: centre metadata from the payload lets courtscheduler auto-create a
+                    // session even at a centre with no existing session to copy metadata from.
+                    Optional.ofNullable(courtCentre.getCode()),
+                    Optional.ofNullable(courtCentre.getName()),
+                    Optional.ofNullable(courtCentre.getRoomName()));
         } catch (final CrownFallbackNoSessionException e) {
             // Fail open for list flows: an unbookable session must not reject the command — the hearing
             // proceeds unallocated (legacy list-court-hearing semantics) and can be allocated later.
@@ -2255,7 +2267,12 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 durationInMinutes,
                 courtRoomId,
                 earliestHearingTime,
-                fallbackSource);
+                fallbackSource,
+                // SPRDT-1283: the update payload carries no centre names; selectedCourtCentre's
+                // ouCode (when present) still lets a never-seeded centre auto-create.
+                Optional.ofNullable(hearing.getSelectedCourtCentre()).map(SelectedCourtCentre::getOuCode),
+                Optional.empty(),
+                Optional.empty());
 
         LOGGER.info("[CROWN-FB] update hearingId={} booked courtScheduleId={} isDraft={} overbooked={} source={}",
                 hearing.getHearingId(), result.courtScheduleId(), result.isDraft(), result.overbooked(), result.source());
@@ -2314,9 +2331,10 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                                                                        final int durationInMinutes) {
         // SPRDT-1274: same viewstore rule as the update overload — the user-supplied time
         // (listedStartDateTime, also sent as earliestHearingTime) wins over the session's time.
-        final ZonedDateTime userStartTime = hearing.getListedStartDateTime() != null
-                ? hearing.getListedStartDateTime()
-                : (!isEmpty(hearing.getHearingDays()) ? hearing.getHearingDays().get(0).getStartTime() : null);
+        ZonedDateTime userStartTime = hearing.getListedStartDateTime();
+        if (userStartTime == null && !isEmpty(hearing.getHearingDays())) {
+            userStartTime = hearing.getHearingDays().get(0).getStartTime();
+        }
         final HearingDay.Builder dayBuilder = HearingDay.hearingDay()
                 .withCourtScheduleId(result.courtScheduleId())
                 .withHearingDate(result.sessionDate())

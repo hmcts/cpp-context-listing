@@ -68,6 +68,11 @@ public class CourtSchedulerServiceAdapter {
     private static final String DURATION_IN_MINUTES = "durationInMinutes";
     private static final String SOURCE = "source";
     private static final String EARLIEST_HEARING_TIME = "earliestHearingTime";
+    // SPRDT-1283: optional centre metadata so courtscheduler can auto-create a session at a centre
+    // that has no session at all to copy metadata from (never-seeded centre). ouCode reuses the
+    // OU_CODE constant declared above.
+    private static final String COURT_CENTRE_NAME = "courtCentreName";
+    private static final String COURT_ROOM_NAME = "courtRoomName";
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
     private static final String ALLOCATED_SCHEDULES = "allocatedSchedules";
     private static final String SESSION_DATE = "sessionDate";
@@ -220,14 +225,22 @@ public class CourtSchedulerServiceAdapter {
      * @param courtRoomId         optional court room UUID; if supplied, courtscheduler prefers non-draft at that room
      * @param earliestHearingTime optional earliest start time (ISO-8601); courtscheduler honors it if provided
      * @param source              which listing flow initiated this call
+     * @param ouCode              optional centre ouCode (SPRDT-1283) — lets courtscheduler auto-create a
+     *                            session at a centre with no existing session to copy metadata from
+     * @param courtCentreName     optional centre display name for the auto-created session
+     * @param courtRoomName       optional room display name for the auto-created session
      */
+    @SuppressWarnings("squid:S107") // wire-call parameter object mirrors the endpoint's optional fields
     public CrownFallbackResult crownFallbackSearchAndBook(final UUID hearingId,
                                                            final UUID courtCentreId,
                                                            final LocalDate hearingDate,
                                                            final int durationInMinutes,
                                                            final Optional<UUID> courtRoomId,
                                                            final Optional<String> earliestHearingTime,
-                                                           final CrownFallbackSource source) {
+                                                           final CrownFallbackSource source,
+                                                           final Optional<String> ouCode,
+                                                           final Optional<String> courtCentreName,
+                                                           final Optional<String> courtRoomName) {
         final Map<String, String> params = new HashMap<>();
         params.put(HEARING_ID, hearingId.toString());
         params.put(COURT_CENTRE_ID, courtCentreId.toString());
@@ -236,6 +249,9 @@ public class CourtSchedulerServiceAdapter {
         params.put(SOURCE, source.label());
         courtRoomId.ifPresent(id -> params.put(COURT_ROOM_ID, id.toString()));
         earliestHearingTime.ifPresent(t -> params.put(EARLIEST_HEARING_TIME, t));
+        ouCode.filter(v -> !v.isBlank()).ifPresent(v -> params.put(OU_CODE, v));
+        courtCentreName.filter(v -> !v.isBlank()).ifPresent(v -> params.put(COURT_CENTRE_NAME, v));
+        courtRoomName.filter(v -> !v.isBlank()).ifPresent(v -> params.put(COURT_ROOM_NAME, v));
 
         final Response response = hearingSlotsService.crownFallbackSearchAndBook(params);
         final int status = response.getStatus();
@@ -415,8 +431,8 @@ public class CourtSchedulerServiceAdapter {
         if (responseJson == null || responseJson.isEmpty() || !responseJson.containsKey("courtSchedules")) {
             return false;
         }
-        // The /courtschedule/search.court-schedules-by-id wire response is FLAT:
-        //   { "courtSchedules": [ {...one CourtSchedule (a session) per element...}, ... ] }
+        // The /courtschedule/search.court-schedules-by-id wire response is FLAT: a top-level
+        // courtSchedules array whose every element is one CourtSchedule (a session).
         // Each array element is a single CourtSchedule. The schema/example file in
         // courtscheduler-api shows a misleading nested "sessions" array copied from a
         // different endpoint. The actual implementation serialises List<CourtSchedule> flat
@@ -531,8 +547,8 @@ public class CourtSchedulerServiceAdapter {
 
         final Response response = hearingSlotsService.moveHearingToPastDate(hearingId, requestBuilder.build());
         final int status = response.getStatus();
-        final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject)
-                ? (JsonObject) response.getEntity()
+        final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject jsonBody)
+                ? jsonBody
                 : Json.createObjectBuilder().build();
 
         if (HttpStatus.SC_OK == status) {
@@ -586,8 +602,8 @@ public class CourtSchedulerServiceAdapter {
 
         final Response response = hearingSlotsService.changeCourtRoomForMultidayHearing(hearingId, payload);
         final int status = response.getStatus();
-        final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject)
-                ? (JsonObject) response.getEntity()
+        final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject jsonBody)
+                ? jsonBody
                 : Json.createObjectBuilder().build();
 
         if (HttpStatus.SC_OK == status) {
