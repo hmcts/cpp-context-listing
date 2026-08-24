@@ -16,6 +16,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.6-SNAPSHOT</version>
@@ -50,6 +51,9 @@
 =======
         <version>17.104.11-cct-1981-SNAPSHOT</version>
 >>>>>>> 2899382503 (New 17.104.11-cct-1981-SNAPSHOT)
+=======
+        <version>17.104.12-cct-1981-SNAPSHOT</version>
+>>>>>>> bef0c427dc (New 17.104.12-cct-1981-SNAPSHOT)
     </parent>
 
     <artifactId>listing-performance-test</artifactId>
