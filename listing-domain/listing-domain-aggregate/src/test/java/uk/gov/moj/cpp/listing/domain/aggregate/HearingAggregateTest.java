@@ -7970,4 +7970,70 @@ class HearingAggregateTest {
         assertThat(listedEventHearing.getKeyReason(), is(nullValue()));
     }
 
+    // ---------------------------------------------------------------------------------
+    // LPT-2405: the next hearing already existed, so the inherited tier / list type ride
+    // the cases-added event rather than hearing-listed.
+    // ---------------------------------------------------------------------------------
+
+    @Test
+    public void shouldCarryInheritedPtphDetailOntoCasesAddedToHearing() {
+        final uk.gov.moj.cpp.listing.domain.aggregate.Hearing hearing = new uk.gov.moj.cpp.listing.domain.aggregate.Hearing();
+        final UUID hearingId = randomUUID();
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(prepareHearing(hearingId, true, Map.of()))
+                .build());
+
+        final List<Object> events = hearing.addCasesToHearing(
+                asList(ProsecutionCase.prosecutionCase()
+                        .withId(randomUUID())
+                        .withDefendants(asList())
+                        .withProsecutionCaseIdentifier(prosecutionCaseIdentifier()
+                                .withProsecutionAuthorityCode(STRING.next())
+                                .withProsecutionAuthorityId(randomUUID())
+                                .withProsecutionAuthorityReference(STRING.next())
+                                .build())
+                        .build()),
+                asList(),
+                Optional.of(randomUUID()),
+                new uk.gov.moj.cpp.listing.domain.PtphDetail("TIER_3", "TYPE_1_FIXED", "Vulnerable witness"))
+                .collect(java.util.stream.Collectors.toList());
+
+        final CasesAddedToHearing casesAdded = (CasesAddedToHearing) events.stream()
+                .filter(CasesAddedToHearing.class::isInstance).findFirst().get();
+
+        assertThat(casesAdded.getTier(), is("TIER_3"));
+        assertThat(casesAdded.getListType(), is("TYPE_1_FIXED"));
+        assertThat(casesAdded.getKeyReason(), is("Vulnerable witness"));
+    }
+
+    @Test
+    public void shouldRaiseCasesAddedToHearingWithoutPtphDetailWhenNothingInherited() {
+        final uk.gov.moj.cpp.listing.domain.aggregate.Hearing hearing = new uk.gov.moj.cpp.listing.domain.aggregate.Hearing();
+        final UUID hearingId = randomUUID();
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(prepareHearing(hearingId, true, Map.of()))
+                .build());
+
+        final List<Object> events = hearing.addCasesToHearing(
+                asList(ProsecutionCase.prosecutionCase()
+                        .withId(randomUUID())
+                        .withDefendants(asList())
+                        .withProsecutionCaseIdentifier(prosecutionCaseIdentifier()
+                                .withProsecutionAuthorityCode(STRING.next())
+                                .withProsecutionAuthorityId(randomUUID())
+                                .withProsecutionAuthorityReference(STRING.next())
+                                .build())
+                        .build()),
+                asList(),
+                Optional.of(randomUUID()),
+                null)
+                .collect(java.util.stream.Collectors.toList());
+
+        final CasesAddedToHearing casesAdded = (CasesAddedToHearing) events.stream()
+                .filter(CasesAddedToHearing.class::isInstance).findFirst().get();
+
+        assertThat(casesAdded.getTier(), is(nullValue()));
+        assertThat(casesAdded.getListType(), is(nullValue()));
+        assertThat(casesAdded.getKeyReason(), is(nullValue()));
+    }
 }
