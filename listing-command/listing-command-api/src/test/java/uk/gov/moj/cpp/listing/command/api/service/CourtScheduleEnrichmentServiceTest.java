@@ -5096,8 +5096,8 @@ class CourtScheduleEnrichmentServiceTest {
 
         final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
 
-        // Unresolved session ⇒ days marked draft so the aggregate cannot allocate on them;
-        // everything else (id, courtScheduleId) is preserved.
+        // An unresolved session means the days are marked draft so the aggregate cannot allocate
+        // on them, while the hearing id and courtScheduleId are preserved untouched.
         assertThat(result.getHearingId(), is(hearingId));
         assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
         assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));

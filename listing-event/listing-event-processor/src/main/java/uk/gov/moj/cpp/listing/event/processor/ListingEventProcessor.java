@@ -850,7 +850,7 @@ public class ListingEventProcessor {
     private JsonArray getHearingDays(JsonArray hearingDays) {
         final JsonArrayBuilder builder = createArrayBuilder();
         hearingDays.stream()
-                .map(hearingDay -> (JsonObject) hearingDay)
+                .map(JsonObject.class::cast)
                 .map(hearingDay -> createObjectBuilder().add(COURT_CENTRE_ID_FIELD, hearingDay.getString(COURT_CENTRE_ID_FIELD, null))
                         .add("courtRoomId", hearingDay.getString("courtRoomId", null))
                         .add("listedDurationMinutes", hearingDay.getInt("durationMinutes"))

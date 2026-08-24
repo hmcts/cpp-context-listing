@@ -431,8 +431,8 @@ public class CourtSchedulerServiceAdapter {
         if (responseJson == null || responseJson.isEmpty() || !responseJson.containsKey("courtSchedules")) {
             return false;
         }
-        // The /courtschedule/search.court-schedules-by-id wire response is FLAT:
-        //   { "courtSchedules": [ {...one CourtSchedule (a session) per element...}, ... ] }
+        // The /courtschedule/search.court-schedules-by-id wire response is FLAT: a top-level
+        // courtSchedules array whose every element is one CourtSchedule (a session).
         // Each array element is a single CourtSchedule. The schema/example file in
         // courtscheduler-api shows a misleading nested "sessions" array copied from a
         // different endpoint. The actual implementation serialises List<CourtSchedule> flat
@@ -547,8 +547,8 @@ public class CourtSchedulerServiceAdapter {
 
         final Response response = hearingSlotsService.moveHearingToPastDate(hearingId, requestBuilder.build());
         final int status = response.getStatus();
-        final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject)
-                ? (JsonObject) response.getEntity()
+        final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject jsonBody)
+                ? jsonBody
                 : Json.createObjectBuilder().build();
 
         if (HttpStatus.SC_OK == status) {
@@ -602,8 +602,8 @@ public class CourtSchedulerServiceAdapter {
 
         final Response response = hearingSlotsService.changeCourtRoomForMultidayHearing(hearingId, payload);
         final int status = response.getStatus();
-        final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject)
-                ? (JsonObject) response.getEntity()
+        final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject jsonBody)
+                ? jsonBody
                 : Json.createObjectBuilder().build();
 
         if (HttpStatus.SC_OK == status) {
