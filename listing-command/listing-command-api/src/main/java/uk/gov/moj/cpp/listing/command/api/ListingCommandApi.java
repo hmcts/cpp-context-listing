@@ -39,6 +39,10 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
+import uk.gov.justice.core.courts.HearingType;
+import uk.gov.justice.core.courts.JurisdictionType;
+import uk.gov.justice.core.courts.SeedingHearing;
+import uk.gov.moj.cpp.listing.domain.PtphDetail;
 import uk.gov.moj.cpp.listing.command.api.service.HearingLookupService;
 import uk.gov.moj.cpp.listing.command.api.service.PtphDetailEnrichmentService;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
@@ -58,6 +62,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -214,14 +219,56 @@ public class ListingCommandApi {
         final UpdateRelatedHearing updateRelatedHearing = jsonObjectConverter.convert(payload, UpdateRelatedHearing.class);
         final UUID hearingId = fromString(payload.getString(HEARING_ID));
 
+        // LPT-2405: the next hearing already exists, so nothing is created and this command
+        // carries no hearing type. Enrich it from the stored hearing before applying the same
+        // gates as the create flows — an absent hearing simply inherits nothing.
+        final Optional<PtphDetail> ptphDetail = resolvePtphDetailForExistingHearing(
+                hearingId, updateRelatedHearing.getSeedingHearing(), envelope);
+
         final UpdateExistingHearing updateExistingHearing = UpdateExistingHearing.updateExistingHearing()
                 .withHearingId(hearingId)
                 .withSeedingHearing(updateRelatedHearing.getSeedingHearing())
                 .withProsecutionCases(updateRelatedHearing.getProsecutionCases())
                 .withShadowListedOffences(updateRelatedHearing.getShadowListedOffences())
+                .withTier(ptphDetail.map(PtphDetail::getTier).orElse(null))
+                .withListType(ptphDetail.map(PtphDetail::getListType).orElse(null))
+                .withKeyReason(ptphDetail.map(PtphDetail::getKeyReason).orElse(null))
                 .build();
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_UPDATE_EXISTING_HEARING), objectToJsonValueConverter.convert(updateExistingHearing)));
+    }
+
+    /**
+     * Reads the jurisdiction and hearing type of an already-existing hearing from the listing
+     * view store, so the PTPH gates can be applied to a command that carries neither.
+     * Returns empty when the hearing is not found — the id came from a result prompt, so it is
+     * not guaranteed to exist here.
+     */
+    private Optional<PtphDetail> resolvePtphDetailForExistingHearing(final UUID hearingId,
+                                                                     final SeedingHearing seedingHearing,
+                                                                     final JsonEnvelope envelope) {
+        final Optional<JsonObject> storedHearing = hearingLookupService.findHearing(hearingId, envelope);
+        if (storedHearing.isEmpty()) {
+            LOGGER.info("Existing hearing {} not found in listing; nothing inherited", hearingId);
+            return Optional.empty();
+        }
+
+        final JsonObject hearing = storedHearing.get();
+        final JsonObject storedType = hearing.getJsonObject("type");
+        if (isNull(storedType) || !storedType.containsKey("id")) {
+            LOGGER.info("Existing hearing {} has no hearing type stored; nothing inherited", hearingId);
+            return Optional.empty();
+        }
+
+        final HearingType hearingType = HearingType.hearingType()
+                .withId(fromString(storedType.getString("id")))
+                .withDescription(storedType.getString("description", null))
+                .build();
+        final JurisdictionType jurisdictionType = hearing.containsKey("jurisdictionType")
+                ? JurisdictionType.valueOf(hearing.getString("jurisdictionType"))
+                : null;
+
+        return ptphDetailEnrichmentService.resolveForExistingHearing(jurisdictionType, hearingType, seedingHearing, envelope);
     }
 
     @Handles("listing.command.list-unscheduled-court-hearing")

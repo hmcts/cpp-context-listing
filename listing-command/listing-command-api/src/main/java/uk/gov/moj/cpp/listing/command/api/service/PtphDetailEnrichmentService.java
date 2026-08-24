@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.command.api.service;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
@@ -110,6 +111,30 @@ public class PtphDetailEnrichmentService {
                             .build());
                 });
         return resolved;
+    }
+
+    /**
+     * Existing-hearing flow — the next hearing already exists, so there is nothing to create
+     * and no {@code HearingListingNeeds} to stamp. The caller supplies the stored hearing's
+     * jurisdiction and type (see {@code HearingLookupService}), which makes this path uniform
+     * with the others: the same seeding, Crown-trial and finalised gates apply, and the hearing
+     * context is still queried only when the target really is a Crown Court trial.
+     *
+     * @return the values to apply to the existing hearing, or empty when nothing should change
+     */
+    public Optional<PtphDetail> resolveForExistingHearing(final JurisdictionType jurisdictionType,
+                                                          final HearingType type,
+                                                          final SeedingHearing seedingHearing,
+                                                          final JsonEnvelope envelope) {
+        final Optional<PtphDetail> ptphDetail = resolveForTrials(
+                singletonList(type),
+                (hearingType, trialIds) -> isCrownTrial(jurisdictionType, hearingType, trialIds),
+                seedingHearing, envelope, new HashSet<>());
+
+        ptphDetail.ifPresent(detail -> LOGGER.info("Inheriting tier {} and list type {} onto the existing trial hearing",
+                detail.getTier(), detail.getListType()));
+
+        return ptphDetail;
     }
 
     /**
