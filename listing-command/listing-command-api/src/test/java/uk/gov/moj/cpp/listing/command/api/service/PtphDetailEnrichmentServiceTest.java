@@ -399,4 +399,97 @@ class PtphDetailEnrichmentServiceTest {
         verifyNoInteractions(ptphDetailService);
         assertTrue(result.isEmpty());
     }
+
+    // ---------------------------------------------------------------------------------
+    // Existing-hearing flow (LPT-2405): the next hearing already exists, so the caller
+    // supplies the stored hearing's jurisdiction and type instead of a HearingListingNeeds.
+    // The gates must behave identically to the create flows.
+    // ---------------------------------------------------------------------------------
+
+    private HearingType typeOf(final UUID typeId) {
+        return HearingType.hearingType().withId(typeId).withDescription("desc").build();
+    }
+
+    @Test
+    void shouldResolveForAnExistingCrownTrialWhenSeedingRecordFinalised() {
+        when(hearingTypeFactory.getTrialHearingTypeIds(any(JsonEnvelope.class)))
+                .thenReturn(Set.of(TRIAL_TYPE_ID.toString()));
+        when(ptphDetailService.getFinalisedPtphDetail(eq(SEEDING_HEARING_ID), any(JsonEnvelope.class)))
+                .thenReturn(Optional.of(new PtphDetail("TIER_3", "TYPE_1_FIXED", "Vulnerable witness")));
+
+        final Optional<PtphDetail> result = ptphDetailEnrichmentService.resolveForExistingHearing(
+                JurisdictionType.CROWN, typeOf(TRIAL_TYPE_ID), seedingHearing(), envelope());
+
+        assertTrue(result.isPresent());
+        assertEquals("TIER_3", result.get().getTier());
+        assertEquals("TYPE_1_FIXED", result.get().getListType());
+        assertEquals("Vulnerable witness", result.get().getKeyReason());
+    }
+
+    @Test
+    void shouldNotCallHearingContextWhenExistingHearingIsNotATrial() {
+        when(hearingTypeFactory.getTrialHearingTypeIds(any(JsonEnvelope.class)))
+                .thenReturn(Set.of(TRIAL_TYPE_ID.toString()));
+
+        final Optional<PtphDetail> result = ptphDetailEnrichmentService.resolveForExistingHearing(
+                JurisdictionType.CROWN, typeOf(PTPH_TYPE_ID), seedingHearing(), envelope());
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(ptphDetailService);
+    }
+
+    /**
+     * Reference data flags magistrates trial types too, so jurisdiction is checked alongside
+     * the flag — a magistrates trial must not inherit a Crown PTPH decision.
+     */
+    @Test
+    void shouldNotCallHearingContextWhenExistingHearingIsAMagistratesTrial() {
+        when(hearingTypeFactory.getTrialHearingTypeIds(any(JsonEnvelope.class)))
+                .thenReturn(Set.of(TRIAL_TYPE_ID.toString()));
+
+        final Optional<PtphDetail> result = ptphDetailEnrichmentService.resolveForExistingHearing(
+                JurisdictionType.MAGISTRATES, typeOf(TRIAL_TYPE_ID), seedingHearing(), envelope());
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(ptphDetailService);
+    }
+
+    @Test
+    void shouldResolveNothingForAnExistingTrialWhenSeedingRecordNotFinalised() {
+        when(hearingTypeFactory.getTrialHearingTypeIds(any(JsonEnvelope.class)))
+                .thenReturn(Set.of(TRIAL_TYPE_ID.toString()));
+        when(ptphDetailService.getFinalisedPtphDetail(eq(SEEDING_HEARING_ID), any(JsonEnvelope.class)))
+                .thenReturn(Optional.empty());
+
+        final Optional<PtphDetail> result = ptphDetailEnrichmentService.resolveForExistingHearing(
+                JurisdictionType.CROWN, typeOf(TRIAL_TYPE_ID), seedingHearing(), envelope());
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void shouldResolveNothingForAnExistingHearingWithoutASeedingHearingId() {
+        final Optional<PtphDetail> result = ptphDetailEnrichmentService.resolveForExistingHearing(
+                JurisdictionType.CROWN, typeOf(TRIAL_TYPE_ID), SeedingHearing.seedingHearing().build(), envelope());
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(ptphDetailService);
+        verify(hearingTypeFactory, never()).getTrialHearingTypeIds(any(JsonEnvelope.class));
+    }
+
+    /**
+     * The stored hearing may have no type recorded; that must not blow up, and must not be
+     * treated as a trial.
+     */
+    @Test
+    void shouldResolveNothingWhenTheExistingHearingHasNoType() {
+        when(hearingTypeFactory.getTrialHearingTypeIds(any(JsonEnvelope.class)))
+                .thenReturn(Set.of(TRIAL_TYPE_ID.toString()));
+
+        final Optional<PtphDetail> result = ptphDetailEnrichmentService.resolveForExistingHearing(
+                JurisdictionType.CROWN, null, seedingHearing(), envelope());
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(ptphDetailService);
+    }
 }
