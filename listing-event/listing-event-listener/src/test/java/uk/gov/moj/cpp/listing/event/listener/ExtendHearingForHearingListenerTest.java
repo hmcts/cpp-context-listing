@@ -747,4 +747,26 @@ public class ExtendHearingForHearingListenerTest {
         verify(properties).put("listType", "TYPE_2_FLEXIBLE");
         verify(properties).remove("keyReason");
     }
+
+    /**
+     * The hearing id came from a result prompt, so the row may genuinely be absent. That must
+     * warn rather than blow up the listener, which would otherwise DLQ the event.
+     */
+    @Test
+    public void shouldWarnRatherThanFailWhenTheHearingIsMissingFromTheViewStore() {
+        final UUID hearingId = randomUUID();
+        final Envelope<CasesAddedToHearing> envelope = (Envelope<CasesAddedToHearing>) mock(Envelope.class);
+
+        given(envelope.payload()).willReturn(CasesAddedToHearing.casesAddedToHearing()
+                .withHearingId(hearingId)
+                .withUnAllocatedListedCases(List.of())
+                .withTier("TIER_3")
+                .withListType("TYPE_1_FIXED")
+                .build());
+        given(hearingRepository.findBy(hearingId)).willReturn(null);
+
+        extendHearingForHearingListener.handleCasesAddedToHearingEvent(envelope);
+
+        verify(hearingRepository, never()).save(any(uk.gov.moj.cpp.listing.persistence.entity.Hearing.class));
+    }
 }
