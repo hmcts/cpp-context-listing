@@ -1332,6 +1332,16 @@ public class Hearing implements Aggregate {
 
 
     public Stream<Object> addCasesToHearing(final List<ProsecutionCase> prosecutionCases, final List<UUID> shadowListedOffences, final Optional<UUID> seedingHearingId) {
+        return addCasesToHearing(prosecutionCases, shadowListedOffences, seedingHearingId, null);
+    }
+
+    /**
+     * LPT-2405: {@code ptphDetail} is the tier / list type inherited from the seeding hearing
+     * when the next hearing already existed, so there was no hearing-listed event to carry it.
+     * Null when nothing is inherited.
+     */
+    public Stream<Object> addCasesToHearing(final List<ProsecutionCase> prosecutionCases, final List<UUID> shadowListedOffences, final Optional<UUID> seedingHearingId,
+                                            final PtphDetail ptphDetail) {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
@@ -1341,6 +1351,9 @@ public class Hearing implements Aggregate {
                         .collect(Collectors.toList()))
                 .withHearingId(hearingId)
                 .withSeedingHearingId(seedingHearingId.orElse(null))
+                .withTier(nonNull(ptphDetail) ? ptphDetail.getTier() : null)
+                .withListType(nonNull(ptphDetail) ? ptphDetail.getListType() : null)
+                .withKeyReason(nonNull(ptphDetail) ? ptphDetail.getKeyReason() : null)
                 .build()));
         return concat(casesAddedEvents, emitYouthCourtListRestrictions());
     }

@@ -142,6 +142,7 @@ import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 import uk.gov.moj.cpp.listing.domain.OffenceIds;
 import uk.gov.moj.cpp.listing.domain.ProsecutionCaseDefendantOffenceIds;
 import uk.gov.moj.cpp.listing.domain.Type;
+import uk.gov.moj.cpp.listing.domain.PtphDetail;
 import uk.gov.moj.cpp.listing.domain.aggregate.Application;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
@@ -836,7 +837,12 @@ public class ListingCommandHandler {
         final AddCasesToHearing addCasesToHearing = jsonObjectConverter.convert
                 (command.payloadAsJsonObject(), AddCasesToHearing.class);
 
-        updateHearingEventStream(command, addCasesToHearing.getHearingId(), (Hearing hearing) -> hearing.addCasesToHearing(addCasesToHearing.getProsecutionCases(), addCasesToHearing.getShadowListedOffences(), ofNullable(addCasesToHearing.getSeedingHearingId())));
+        // LPT-2405: inherited tier / list type for an already-existing next hearing
+        final PtphDetail ptphDetail = (isNull(addCasesToHearing.getTier()) && isNull(addCasesToHearing.getListType()) && isNull(addCasesToHearing.getKeyReason()))
+                ? null
+                : new PtphDetail(addCasesToHearing.getTier(), addCasesToHearing.getListType(), addCasesToHearing.getKeyReason());
+
+        updateHearingEventStream(command, addCasesToHearing.getHearingId(), (Hearing hearing) -> hearing.addCasesToHearing(addCasesToHearing.getProsecutionCases(), addCasesToHearing.getShadowListedOffences(), ofNullable(addCasesToHearing.getSeedingHearingId()), ptphDetail));
     }
 
     @Handles("listing.command.update-case-defendant-details")
