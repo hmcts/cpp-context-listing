@@ -8,7 +8,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.spi.JsonEnvelopeProvider;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
-import uk.gov.moj.cpp.listing.query.view.courtlist.HearingOffenceFilter;
+import uk.gov.moj.cpp.listing.query.view.courtlist.HearingOffenceFilterUtils;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -42,7 +42,7 @@ public class ListingService {
 
         endDate.ifPresent(pEndDate -> restRequestParametersBuilder.add("endDate", pEndDate));
         final JsonEnvelope response = hearingQueryView.retrieveCourtList(JsonEnvelopeProvider.provider().envelopeFrom(metadataFrom(envelope.metadata()).withName("listing.courtlist"), restRequestParametersBuilder.build()));
-        return HearingOffenceFilter.removeDefendantsAndHearingsMissingOffences(response.payloadAsJsonObject());
+        return HearingOffenceFilterUtils.removeDefendantsAndHearingsMissingOffences(response.payloadAsJsonObject());
     }
 
     public JsonObject getPublishedCourtListForCourtCentre(final JsonEnvelope envelope,
