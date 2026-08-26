@@ -20,9 +20,12 @@ class CourtMappingsListTest {
                       "crestCourtId": "448",
                       "crestCourtSiteId": "448",
                       "crestCourtSiteName": "PRESTON",
+                      "welshCrestCourtSiteName": "PRESTON WELSH",
                       "crestCourtName": "PRESTON",
+                      "welshCrestCourtName": "PRESTON WELSH NAME",
                       "crestCourtShortName": "PREST",
                       "crestCourtFullName": "PRESTON",
+                      "welshCrestCourtFullName": "PRESTON WELSH FULL",
                       "crestCourtSiteCode": "C",
                       "courtType": "CROWN_COURT"
                     }
@@ -36,5 +39,8 @@ class CourtMappingsListTest {
         assertNotNull(courtMappingsList);
         assertEquals(1, courtMappingsList.getCpXhibitCourtMappings().size());
         assertEquals("CROWN_COURT", courtMappingsList.getCpXhibitCourtMappings().get(0).getCourtType());
+        assertEquals("PRESTON WELSH", courtMappingsList.getCpXhibitCourtMappings().get(0).getWelshCrestCourtSiteName());
+        assertEquals("PRESTON WELSH FULL", courtMappingsList.getCpXhibitCourtMappings().get(0).getWelshCrestCourtFullName());
+        assertEquals("PRESTON WELSH NAME", courtMappingsList.getCpXhibitCourtMappings().get(0).getWelshCrestCourtName());
     }
 }
