@@ -5,7 +5,6 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
-import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static uk.gov.justice.listing.events.PublicListingNewDefendantAddedForCourtProceedings.publicListingNewDefendantAddedForCourtProceedings;
@@ -100,7 +99,6 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
@@ -115,7 +113,6 @@ public class ListingEventProcessor {
     static final String PUBLIC_EVENT_HEARING_UPDATED = "public.listing.hearing-updated";
     static final String PUBLIC_EVENT_VACATED_TRIAL_UPDATED = "public.listing.vacated-trial-updated";
     static final String PUBLIC_EVENT_HEARING_CHANGES_SAVED = "public.listing.hearing-changes-saved";
-    static final String PUBLIC_EVENT_LISTING_EVENTS_HEARING_DAYS_WITHOUT_COURT_CENTRE_CORRECTED = "public.events.listing.hearing-days-without-court-centre-corrected";
     static final String COMMAND_UPDATE_CASE_DEFENDANT_DETAILS = "listing.command.update-case-defendant-details"; //command back of public event
     static final String COMMAND_UPDATE_CASE_DEFENDANT_OFFENCES = "listing.command.update-case-defendant-offences";
     static final String COMMAND_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS = "listing.command.add-defendants-to-court-proceedings";
@@ -126,7 +123,6 @@ public class ListingEventProcessor {
     static final String COMMAND_APPLICATION_EJECTED = "listing.command.eject-application";
     static final String COMMAND_UPDATE_HEARING_TO_CASE = "listing.command.update-hearing-to-case";
     static final String PRIVATE_COMMAND_HEARING_VACATE_TRIAL = "listing.command.hearing-vacate-trial";
-    static final String COMMAND_UPDATE_HEARING_DAY_COURT_SCHEDULE = "listing.command.update-hearing-day-court-schedule";
 
     private static final String COMMAND_PAYLOAD_DEBUG_STRING = "Sending '{}' command with payload {}";
     private static final String EVENT_PAYLOAD_DEBUG_STRING = "Received '{}' event with payload {}";
@@ -171,7 +167,6 @@ public class ListingEventProcessor {
     private static final String PRIVATE_EVENT_HEARING_RESCHEDULED = "listing.events.hearing-rescheduled";
     private static final String PRIVATE_EVENT_HEARING_UNALLOCATED_FOR_LISTING = "listing.events.hearing-unallocated-for-listing";
     private static final String LISTING_EVENTS_CASE_RESULTED_DEFENDANT_PROCEEDINGS_UPDATED = "listing.events.case-resulted-defendant-proceedings-updated";
-    private static final String LISTING_EVENTS_HEARING_DAYS_WITHOUT_COURT_CENTRE_CORRECTED = "listing.events.hearing-days-without-court-centre-corrected";
     private static final String COMMAND_ADD_HEARING_TO_CASE = "listing.command.add-hearing-to-case";
     private static final String COMMAND_ADD_COURT_APPLICATION_TO_HEARING = "listing.command.add-court-application-to-hearing";
     private static final String COMMAND_UPDATE_DEFENDANTS_FOR_HEARING = "listing.command.update-defendants-for-hearing"; // command back of private event
@@ -218,9 +213,7 @@ public class ListingEventProcessor {
     private static final String PRIVATE_EVENT_HEARING_MARKED_AS_DELETED = "listing.events.hearing-marked-as-deleted";
     private static final String PRIVATE_EVENT_HEARING_MARKED_FOR_PARTIAL_UPDATE = "listing.events.hearing-marked-for-partial-update";
     private static final String PRIVATE_EVENTS_HEARING_ADDED_TO_CASE = "listing.events.hearing-added-to-case";
-    static final String COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS = "listing.command.change-judiciary-for-hearings";
     public static final String PUBLIC_HEARING_OFFENCES_REMOVED_FROM_EXISTING_HEARING = "public.hearing.selected-offences-removed-from-existing-hearing";
-    private static final String COURT_CENTRE_ID_FIELD = "courtCentreId";
     private static final String PRIVATE_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING = "listing.events.hearing-days-changed-for-hearing";
     private static final String PUBLIC_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING = "public.listing.hearing-days-changed-for-hearing";
 
@@ -830,37 +823,12 @@ public class ListingEventProcessor {
         }
     }
 
-    @Handles(LISTING_EVENTS_HEARING_DAYS_WITHOUT_COURT_CENTRE_CORRECTED)
-    public void hearingDaysWithoutCourtCentreCorrected(final JsonEnvelope envelope) {
-        final JsonObject publicEvent = Optional.of(envelope.payloadAsJsonObject())
-                .map(payload -> createObjectBuilder()
-                        .add("id", payload.get("id"))
-                        .add("hearingDays", getHearingDays(payload.getJsonArray("hearingDays")))
-                        .build()).orElse(createObjectBuilder().build());
-        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_LISTING_EVENTS_HEARING_DAYS_WITHOUT_COURT_CENTRE_CORRECTED), publicEvent));
-    }
-
     @Handles(PUBLIC_HEARING_OFFENCES_REMOVED_FROM_EXISTING_HEARING)
     public void offencesRemovedFromExistingHearing(final JsonEnvelope envelope) {
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName("listing.command.remove-selected-offences-from-existing-hearing"),
                 envelope.payloadAsJsonObject()));
     }
 
-
-    private JsonArray getHearingDays(JsonArray hearingDays) {
-        final JsonArrayBuilder builder = createArrayBuilder();
-        hearingDays.stream()
-                .map(hearingDay -> (JsonObject) hearingDay)
-                .map(hearingDay -> createObjectBuilder().add(COURT_CENTRE_ID_FIELD, hearingDay.getString(COURT_CENTRE_ID_FIELD, null))
-                        .add("courtRoomId", hearingDay.getString("courtRoomId", null))
-                        .add("listedDurationMinutes", hearingDay.getInt("durationMinutes"))
-                        .add("listingSequence", hearingDay.getInt("sequence"))
-                        .add("sittingDay", hearingDay.getString("startTime"))
-                        .build())
-                .forEach(builder::add);
-
-        return builder.build();
-    }
 
     @Handles(PRIVATE_EVENT_HEARING_MARKED_AS_DELETED)
     public void handleHearingMarkedAsDeleted(final JsonEnvelope envelope) {

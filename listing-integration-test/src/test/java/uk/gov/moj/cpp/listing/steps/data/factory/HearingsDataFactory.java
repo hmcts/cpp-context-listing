@@ -1492,7 +1492,8 @@ public class HearingsDataFactory {
         return new CourtApplicationData(randomUUID(), linkedCaseId, randomUUID(),
                 new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.FALSE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
                 new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
-                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
+                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), CourtApplicationPartyType.PERSON_DEFENDANT, null, randomAddress(),
+                        randomUUID(), ItClock.today().minusYears(30)),
                 STRING.next(), Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, STRING.next(), randomUUID());
     }
 

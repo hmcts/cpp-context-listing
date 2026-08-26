@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.command.handler;
 import static java.lang.String.format;
 import static java.time.LocalDate.parse;
 import static java.time.ZonedDateTime.now;
+import static java.lang.Boolean.FALSE;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -187,8 +188,22 @@ public class ListingCommandHandler {
 
     public static final String HEARING_ID = "hearingId";
     private static final String HEARING_DAY_COURT_SCHEDULES = "hearingDayCourtSchedules";
+    private static final String HEARINGS = "hearings";
     private static final String PROSECUTION_CASE = "prosecutionCase";
     public static final String OUCODE = "oucode";
+    private static final String JURISDICTION = "jurisdiction";
+    private static final String START_DATE = "startDate";
+    private static final String END_DATE = "endDate";
+    private static final String COURT_SCHEDULE_ID = "courtScheduleId";
+    private static final String SESSION_DATE = "sessionDate";
+    private static final String MOVE_COURT_CENTRE_ID = "courtCentreId";
+    private static final String MOVE_COURT_ROOM_ID = "courtRoomId";
+    private static final String SESSION_START_TIME = "sessionStartTime";
+    private static final String SESSION_END_TIME = "sessionEndTime";
+    private static final String DURATION_IN_MINUTES = "durationInMinutes";
+    private static final String CROWN_JURISDICTION = "CROWN";
+    private static final String HEARING_DAYS = "hearingDays";
+    private static final String SEQUENCE = "sequence";
 
     @Inject
     private EventSource eventSource;
@@ -404,6 +419,92 @@ public class ListingCommandHandler {
         final VacateTrialEnriched vacateTrialEnriched = jsonObjectConverter.convert(command.payloadAsJsonObject(), VacateTrialEnriched.class);
 
         updateHearingEventStream(command, vacateTrialEnriched.getHearingId(), (Hearing hearing) -> hearing.vacateTrial(vacateTrialEnriched.getHearingId(), vacateTrialEnriched.getVacatedTrialReasonId()));
+    }
+
+    @Handles("listing.command.move-hearing-to-past-date-enriched")
+    public void moveHearingToPastDate(final JsonEnvelope command) throws EventStreamException {
+
+        LOGGER.info("'listing.command.move-hearing-to-past-date-enriched' received with payload {}", command.toObfuscatedDebugString());
+
+        final JsonObject payload = command.payloadAsJsonObject();
+        final UUID hearingId = fromString(payload.getString(HEARING_ID));
+        final String jurisdiction = payload.getString(JURISDICTION);
+        // startDate/endDate are the earliest/latest hearing-day dates, derived in the command-api
+        // enrichment; only these two main-level fields (plus hearingDays) are changed by a move.
+        final LocalDate startDate = parse(payload.getString(START_DATE));
+        final LocalDate endDate = payload.containsKey(END_DATE) ? parse(payload.getString(END_DATE)) : startDate;
+        final Optional<UUID> courtCentreId = payload.containsKey(MOVE_COURT_CENTRE_ID)
+                ? Optional.of(fromString(payload.getString(MOVE_COURT_CENTRE_ID))) : Optional.empty();
+
+        // hearing-day-court-schedule-updated matches days BY DATE in the projection, so it cannot
+        // move a day to a new date. Both paths re-issue every sitting day on the new past date instead:
+        // MAGS carries the slot(s) booked by courtscheduler (one per working day), CROWN carries the
+        // hearing's own room + the requested hearingStartTime (enriched by command-api - courtscheduler
+        // is never called for CROWN before Phase 2, Baris decision D1).
+        final JsonArray days = payload.getJsonArray(HEARING_DAYS);
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> movedDays = new ArrayList<>();
+        for (int i = 0; i < days.size(); i++) {
+            movedDays.add(buildMovedHearingDay(days.getJsonObject(i), courtCentreId, i + 1));
+        }
+
+        final uk.gov.justice.core.courts.JurisdictionType jurisdictionType = CROWN_JURISDICTION.equals(jurisdiction)
+                ? uk.gov.justice.core.courts.JurisdictionType.CROWN
+                : uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
+
+        updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
+            // Collected (not streamed) because applyRescheduledCheck inspects the occurred events —
+            // a StartDateChangedForHearing among them raises hearing-rescheduled →
+            // public.listing.vacated-trial-updated, exactly as update-hearing-for-listing does.
+            final List<Object> startDateEvents = hearing.changeStartDate(startDate, hearingId).collect(toList());
+            final Stream<Object> endDateEvents = hearing.changeEndDate(endDate, hearingId);
+            // Allocation rules run AFTER the date/day events so the allocated-hearing-updated private
+            // event snapshots the moved days; on an allocated hearing it becomes
+            // public.listing.hearing-updated (progression → hearing) and feeds MI's listing listener.
+            // Both notification flags are hard-coded FALSE: a past-date move must never notify parties
+            // (progression's gate is sendNotificationToParties && isNotificationAllocationFieldUpdated).
+            final Stream<Object> hearingDayEvents = hearing.assignHearingDaysV2(hearingId, movedDays, null, null, jurisdictionType, emptyList());
+            final Stream<Object> allocationEvents = hearing.applyAllocationRules(emptyList(), FALSE, FALSE);
+            final Stream<Object> rescheduledEvents = hearing.applyRescheduledCheck(startDateEvents);
+            return Stream.of(startDateEvents.stream(), endDateEvents, hearingDayEvents, allocationEvents, rescheduledEvents)
+                    .flatMap(i -> i);
+        });
+    }
+
+    private static uk.gov.moj.cpp.listing.domain.HearingDay buildMovedHearingDay(final JsonObject day,
+                                                                                 final Optional<UUID> courtCentreId,
+                                                                                 final int defaultSequence) {
+        final LocalDate dayDate = parse(day.getString(SESSION_DATE));
+        final Optional<UUID> courtScheduleId = day.containsKey(COURT_SCHEDULE_ID)
+                ? Optional.of(fromString(day.getString(COURT_SCHEDULE_ID))) : Optional.empty();
+        final Optional<UUID> courtRoomId = day.containsKey(MOVE_COURT_ROOM_ID)
+                ? Optional.of(fromString(day.getString(MOVE_COURT_ROOM_ID))) : Optional.empty();
+        final ZonedDateTime dayStartTime = day.containsKey(SESSION_START_TIME)
+                ? ZonedDateTime.parse(day.getString(SESSION_START_TIME))
+                : dayDate.atStartOfDay(java.time.ZoneOffset.UTC);
+        final Integer durationInMinutes = day.containsKey(DURATION_IN_MINUTES)
+                ? day.getInt(DURATION_IN_MINUTES) : null;
+        // hearing-days-changed-for-hearing requires endTime on every day; the normal listing flows
+        // always compute it as startTime + duration, so mirror that when the day has no end time.
+        final ZonedDateTime dayEndTime;
+        if (day.containsKey(SESSION_END_TIME)) {
+            dayEndTime = ZonedDateTime.parse(day.getString(SESSION_END_TIME));
+        } else if (durationInMinutes != null) {
+            dayEndTime = dayStartTime.plusMinutes(durationInMinutes);
+        } else {
+            dayEndTime = dayStartTime;
+        }
+        final int sequence = day.containsKey(SEQUENCE) ? day.getInt(SEQUENCE) : defaultSequence;
+
+        return uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay()
+                .withHearingDate(dayDate)
+                .withStartTime(dayStartTime)
+                .withEndTime(dayEndTime)
+                .withDurationMinutes(durationInMinutes)
+                .withSequence(sequence)
+                .withCourtScheduleId(courtScheduleId)
+                .withCourtCentreId(courtCentreId)
+                .withCourtRoomId(courtRoomId)
+                .build();
     }
 
     @Handles("listing.command.hearing-vacate-trial")
@@ -1406,32 +1507,36 @@ public class ListingCommandHandler {
         appendEventsToStream(envelope, eventStream, events);
     }
 
-    @Handles("listing.command.correct-hearing-days-without-court-centre")
-    public void correctHearingDaysWithoutCourtCentre(final JsonEnvelope commandEnvelope) throws EventStreamException {
-        final JsonObject payload = commandEnvelope.payloadAsJsonObject();
-        final UUID hearingId = fromString(payload.getString("id"));
-
-        final List<uk.gov.justice.listing.events.HearingDay> hearingDays = new ArrayList<>();
-
-        payload.getJsonArray("hearingDays").getValuesAs(JsonObject.class).stream()
-                .forEach(hearingDay -> hearingDays.add(jsonObjectConverter.convert(hearingDay, uk.gov.justice.listing.events.HearingDay.class)));
-
-        updateHearingEventStream(commandEnvelope, hearingId, (Hearing hearing) ->  hearing.raiseHearingDaysWithoutCourtCentreCorrected(hearingId, hearingDays));
-    }
-
     @Handles("listing.command.update-hearing-day-court-schedule")
     public void updateHearingDayCourtSchedule(final JsonEnvelope commandEnvelope) throws EventStreamException {
         final JsonObject payload = commandEnvelope.payloadAsJsonObject();
         final UUID hearingId = fromString(payload.getString(HEARING_ID));
-        final List<HearingDayCourtSchedule> hearingDayCourtSchedules = new ArrayList<>();
-        payload.getJsonArray(HEARING_DAY_COURT_SCHEDULES)
-                .getValuesAs(JsonObject.class)
-                .stream()
-                .forEach(hearingDayCourtSchedule -> hearingDayCourtSchedules.add(
-                        jsonObjectConverter.convert(hearingDayCourtSchedule, HearingDayCourtSchedule.class)));
+        final List<HearingDayCourtSchedule> hearingDayCourtSchedules = toHearingDayCourtSchedules(payload);
         updateHearingEventStream(commandEnvelope,
                 hearingId,
                 hearing -> hearing.raiseHearingDayCourtSchedulesUpdated(hearingId, hearingDayCourtSchedules));
+    }
+
+    @Handles("listing.command.migrate-crown-hearings-to-courtschedules")
+    public void migrateCrownHearingsToCourtSchedules(final JsonEnvelope commandEnvelope) throws EventStreamException {
+        final JsonObject payload = commandEnvelope.payloadAsJsonObject();
+        for (final JsonObject hearing : payload.getJsonArray(HEARINGS).getValuesAs(JsonObject.class)) {
+            final UUID hearingId = fromString(hearing.getString(HEARING_ID));
+            final List<HearingDayCourtSchedule> hearingDayCourtSchedules = toHearingDayCourtSchedules(hearing);
+            final EventStream eventStream = eventSource.getStreamById(hearingId);
+            final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
+            appendEventsToStream(commandEnvelope, eventStream,
+                    hearingAggregate.raiseCrownHearingMigratedToCourtSchedule(hearingId, hearingDayCourtSchedules));
+        }
+    }
+
+    private List<HearingDayCourtSchedule> toHearingDayCourtSchedules(final JsonObject source) {
+        final List<HearingDayCourtSchedule> hearingDayCourtSchedules = new ArrayList<>();
+        source.getJsonArray(HEARING_DAY_COURT_SCHEDULES)
+                .getValuesAs(JsonObject.class)
+                .forEach(hearingDayCourtSchedule -> hearingDayCourtSchedules.add(
+                        jsonObjectConverter.convert(hearingDayCourtSchedule, HearingDayCourtSchedule.class)));
+        return hearingDayCourtSchedules;
     }
 
     @Handles("listing.command.update-cps-prosecutor-with-associated-hearings")
