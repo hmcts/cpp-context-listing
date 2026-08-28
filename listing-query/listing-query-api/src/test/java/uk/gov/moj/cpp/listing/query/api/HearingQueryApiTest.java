@@ -65,6 +65,7 @@ import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 import java.io.File;
 import java.io.StringReader;
 import java.lang.reflect.Method;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -105,6 +106,7 @@ public class HearingQueryApiTest {
     private static final String LISTING_SEARCH_BY_ORGANISATION_DEFENDANT = "listing.get.cases-by-organisation-defendant";
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String COURT_ROOM_ID = "courtRoomId";
+    private static final String SEARCH_DATE = "searchDate";
     private static final String LIST_ID = "listId";
 
     private static final List<String> METHODS_WHICH_ARE_NOT_MERELY_PASS_THROUGH = ImmutableList.of(
@@ -472,7 +474,7 @@ public class HearingQueryApiTest {
                         .add(COURT_ROOM_ID, randomUUID().toString())
                         .add(LIST_ID, "")
                         .build());
-        
+
         final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
 
         assertThat(returnedEnvelope.payloadAsJsonObject().size(), is(0));
@@ -1647,6 +1649,26 @@ public class HearingQueryApiTest {
                 .getJsonArray("hearings").getJsonObject(0)
                 .getJsonArray("courtApplications").getJsonObject(0);
         assertThat(resultApplication.containsKey("applicationTypeCode"), is(false));
+    }
+
+
+    @Test
+    void shouldSearchJudiciary() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(fromString(randomUUID().toString()))
+                        .withName("listing.search.judiciary"),
+                createObjectBuilder()
+                        .add(COURT_CENTRE_ID, randomUUID().toString())
+                        .add(COURT_ROOM_ID, randomUUID().toString())
+                        .add(SEARCH_DATE, LocalDate.now().toString())
+                        .build());
+        final JsonEnvelope response = mock(JsonEnvelope.class);
+
+        when(hearingQueryView.searchJudiciary(query)).thenReturn(response);
+        final JsonEnvelope returnedEnvelope = hearingQueryApi.searchJudiciary(query);
+
+        assertThat(returnedEnvelope, is(response));
     }
 
     private JsonObject returnAsJsonObject(final String expectedJsonPath) {

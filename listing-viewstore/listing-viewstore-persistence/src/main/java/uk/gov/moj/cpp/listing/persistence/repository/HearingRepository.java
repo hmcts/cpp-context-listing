@@ -1008,6 +1008,26 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
     @Query(value = "select h.*, 0 as totalCount , " + NULL_FLAT_HEARING_FIELDS + " FROM hearing h where h.id in (:hearingIds)", isNative = true)
     public abstract List<Hearing> findAllCourtSchedulerHearingByIds(@QueryParam("hearingIds") final List<UUID> hearingIds);
 
+
+    @Query(value = "SELECT DISTINCT judiciary->>'judicialId' " +
+            "FROM hearing h " +
+            "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id " +
+            "LEFT JOIN LATERAL jsonb_array_elements(" +
+            "  CASE " +
+            "    WHEN jsonb_typeof(h.properties->'judiciary') = 'array' THEN h.properties->'judiciary' " +
+            "    ELSE CAST('[]' AS jsonb) " +
+            "  END" +
+            ") AS judiciary ON true " +
+            "WHERE coalesce(hd.court_centre_id, h.court_centre_id) = :courtCentreId " +
+            "  AND coalesce(hd.court_room_id, h.court_room_id) = :courtRoomId " +
+            "  AND :searchDate BETWEEN h.start_date AND h.end_date " +
+            "  AND judiciary->>'judicialId' IS NOT NULL",
+            isNative = true)
+    public abstract List<String> findDistinctJudicialIdsByCourtCentreAndRoomAndSearchDate(
+            @QueryParam("courtCentreId") final UUID courtCentreId,
+            @QueryParam("courtRoomId") final UUID courtRoomId,
+            @QueryParam("searchDate") final LocalDate searchDate);
+
     public List<Hearing> findAllocatedHearingsForCourtCalendar(final UUID courtCentreId,
                                                                final UUID courtRoomId,
                                                                final UUID authorityCode,

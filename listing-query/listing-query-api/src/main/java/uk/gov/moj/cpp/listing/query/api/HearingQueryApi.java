@@ -296,6 +296,11 @@ public class HearingQueryApi {
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.daily.list.payload"), enrichedBuilder.build());
     }
 
+    @Handles("listing.search.judiciary")
+    public JsonEnvelope searchJudiciary(final JsonEnvelope query) {
+        return hearingQueryView.searchJudiciary(query);
+    }
+
     private JsonArray enrichCourtListsWithAddress(final JsonArray courtLists, final String address1, final String address2, final String welshAddress1, final String welshAddress2, final Map<String, JsonObject> judiciariesById, final Map<String, String> prosecutorOrganisationNamesById) {
         final JsonArrayBuilder enrichedCourtListsBuilder = createArrayBuilder();
         courtLists.getValuesAs(JsonObject.class).forEach(courtList -> {

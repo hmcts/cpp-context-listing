@@ -26,10 +26,10 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomI
  * Utility class for loading JSON test data files and replacing placeholders with dynamic values
  */
 public class PayloadGenerator {
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(PayloadGenerator.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    
+
     public static final String MAGS = "MAGS";
     public static final String CROWN = "CROWN";
 
@@ -70,13 +70,13 @@ public class PayloadGenerator {
             throw new RuntimeException("Failed to load test data file", e);
         }
     }
-    
+
     /**
      * Generates dynamic values for common placeholders
      */
     private static Map<String, String> generateDynamicValues(Map<String, String> exceptionValues) {
         Map<String, String> values = new HashMap<>();
-        
+
         // Generate UUIDs for common placeholders
         values.put("%%HEARING_ID%%", UUID.randomUUID().toString());
         values.put("%%HEARING_TYPE_ID%%", UUID.randomUUID().toString());
@@ -88,10 +88,10 @@ public class PayloadGenerator {
         }
 
         values.put("%%COURTSCHEDULE_ID%%", UUID.randomUUID().toString());
-        
+
         // Generate jurisdiction types
         values.put("%%JURISDICTION_TYPE%%", "MAGISTRATES"); // Can be parameterized later
-        
+
         // Generate dates and times
         LocalDateTime now = ItClock.nowLocalDateTime();
         LocalDateTime futureDateTime = now.plusDays(30);
@@ -106,7 +106,7 @@ public class PayloadGenerator {
         String utcFormatted = zonedDateTime
                 .withZoneSameInstant(ZoneOffset.UTC)
                 .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-        
+
 //        values.put("%%BOOKED_SLOT_START_TIME%%", futureDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "Z");
         values.put("%%BOOKED_SLOT_START_TIME%%", utcFormatted);
         values.put("%%HEARING_START_DATE%%", futureDate.toString());
@@ -121,7 +121,7 @@ public class PayloadGenerator {
         values.put("%%OUCODE%%", "B01LY00");
         return values;
     }
-    
+
     /**
      * Allows custom placeholder values to be provided. Defaults to MAGS court type.
      */
@@ -156,7 +156,7 @@ public class PayloadGenerator {
             throw new RuntimeException("Failed to load test data file", e);
         }
     }
-    
+
     /**
      * Recursively replaces placeholders in JSON nodes
      */
@@ -174,7 +174,7 @@ public class PayloadGenerator {
         }
         return node;
     }
-    
+
     private static JsonNode replaceInObject(JsonNode objectNode, Map<String, String> placeholderValues) {
         var objectBuilder = objectMapper.createObjectNode();
         objectNode.fields().forEachRemaining(entry -> {
@@ -184,7 +184,7 @@ public class PayloadGenerator {
         });
         return objectBuilder;
     }
-    
+
     private static JsonNode replaceInArray(JsonNode arrayNode, Map<String, String> placeholderValues) {
         var arrayBuilder = objectMapper.createArrayNode();
         arrayNode.forEach(element -> {
@@ -192,18 +192,18 @@ public class PayloadGenerator {
         });
         return arrayBuilder;
     }
-    
+
     /**
      * Extracts values from a processed payload for verification purposes
      */
     public static PayloadValues extractValues(JsonNode payload) {
         PayloadValues values = new PayloadValues();
-        
+
         // Extract hearing ID from the first hearing
         JsonNode hearings = payload.get("hearings");
         if (hearings != null && hearings.isArray() && hearings.size() > 0) {
             JsonNode firstHearing = hearings.get(0);
-            
+
             values.hearingId = getTextValue(firstHearing, "id");
             values.courtCentreId = getTextValue(firstHearing.get("courtCentre"), "id");
             values.courtRoomId = getTextValue(firstHearing.get("courtCentre"), "roomId");
@@ -212,7 +212,11 @@ public class PayloadGenerator {
             if (nonNull(bookedSlots)) {
                 values.courtScheduleId = getTextValue(bookedSlots.get(0), "courtScheduleId");
             }
-            
+            JsonNode judiciary = firstHearing.get("judiciary");
+            if (nonNull(judiciary) && judiciary.isArray() && !judiciary.isEmpty()) {
+                values.judicialId = getTextValue(judiciary.get(0), "judicialId");
+            }
+
             // Extract prosecution case information
             JsonNode prosecutionCases = firstHearing.get("prosecutionCases");
             if (prosecutionCases != null && prosecutionCases.isArray() && prosecutionCases.size() > 0) {
@@ -225,7 +229,7 @@ public class PayloadGenerator {
                 if (defendants != null && defendants.isArray() && defendants.size() > 0) {
                     JsonNode firstDefendant = defendants.get(0);
                     values.defendantId = getTextValue(firstDefendant, "id");
-                    
+
                     // Extract offence IDs
                     JsonNode offences = firstDefendant.get("offences");
                     if (offences != null && offences.isArray()) {
@@ -240,14 +244,14 @@ public class PayloadGenerator {
 
         return values;
     }
-    
+
     private static String getTextValue(JsonNode node, String fieldName) {
         if (node != null && node.has(fieldName)) {
             return node.get(fieldName).asText();
         }
         return null;
     }
-    
+
     /**
      * Container class for extracted values from payload for verification
      */
@@ -265,6 +269,7 @@ public class PayloadGenerator {
         public String[] offenceIds;
         public ZonedDateTime hearingStartTime;
         public ZonedDateTime hearingEndTime;
+        public String judicialId;
 
         @Override
         public String toString() {
@@ -272,4 +277,4 @@ public class PayloadGenerator {
                                hearingId, courtCentreId, caseId, defendantId, hearingStartTime, hearingEndTime);
         }
     }
-} 
+}
