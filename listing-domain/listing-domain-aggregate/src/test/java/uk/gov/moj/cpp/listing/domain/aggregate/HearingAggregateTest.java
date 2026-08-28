@@ -2148,6 +2148,52 @@ class HearingAggregateTest {
     }
 
     @Test
+    void shouldRecordCasesAddedToHearingWhenHearingListedWithoutListedCases() {
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(asList(HearingDay.hearingDay().withCourtScheduleId(randomUUID()).build()))
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEndDate(LocalDate.now().plusDays(2))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .build())
+                .build());
+
+        assertThat(hearing.getProsecutionCaseDefendantOffenceIds(), nullValue());
+
+        hearing.apply(CasesAddedToHearing.casesAddedToHearing()
+                .withHearingId(hearingId)
+                .withUnAllocatedListedCases(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                        .withId(caseId)
+                        .withDefendants(asList(Defendant.defendant()
+                                .withId(defendantId)
+                                .withOffences(asList(Offence.offence()
+                                        .withId(offenceId)
+                                        .build()))
+                                .build()))
+                        .build()))
+                .build());
+
+        final List<uk.gov.moj.cpp.listing.domain.ProsecutionCaseDefendantOffenceIds> caseDefendantOffenceIds = hearing.getProsecutionCaseDefendantOffenceIds();
+        assertThat(caseDefendantOffenceIds, notNullValue());
+        assertThat(caseDefendantOffenceIds.size(), is(1));
+        assertThat(caseDefendantOffenceIds.get(0).getId(), is(caseId));
+        assertThat(caseDefendantOffenceIds.get(0).getDefendants().size(), is(1));
+        assertThat(caseDefendantOffenceIds.get(0).getDefendants().get(0).getId(), is(defendantId));
+        assertThat(caseDefendantOffenceIds.get(0).getDefendants().get(0).getOffences().size(), is(1));
+        assertThat(caseDefendantOffenceIds.get(0).getDefendants().get(0).getOffences().get(0).getId(), is(offenceId));
+    }
+
+    @Test
     void shouldNotIncludeDefendantWhoseOffencesReRemovedFromHearing() {
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();

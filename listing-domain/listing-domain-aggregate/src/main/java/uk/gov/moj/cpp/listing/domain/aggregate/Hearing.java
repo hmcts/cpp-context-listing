@@ -3149,6 +3149,7 @@ public class Hearing implements Aggregate {
     }
 
     private void onCasesAddedToHearing(final CasesAddedToHearing casesAddedToHearing) {
+        this.prosecutionCaseDefendantOffenceIds = ofNullable(this.prosecutionCaseDefendantOffenceIds).orElseGet(ArrayList::new);
         casesAddedToHearing.getUnAllocatedListedCases().forEach(listedCase ->
         {
             final Optional<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceId =
