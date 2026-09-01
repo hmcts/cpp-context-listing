@@ -23,6 +23,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.6-SNAPSHOT</version>
@@ -84,6 +85,9 @@
 =======
         <version>17.104.10-SNAPSHOT</version>
 >>>>>>> bc0ca0f4bf (Updating develop poms back to pre merge state)
+=======
+        <version>17.104.14-cct-1981-SNAPSHOT</version>
+>>>>>>> a8072f8222 (New 17.104.14-cct-1981-SNAPSHOT)
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
