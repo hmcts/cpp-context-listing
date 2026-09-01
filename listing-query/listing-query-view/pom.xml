@@ -25,6 +25,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.6-SNAPSHOT</version>
@@ -89,6 +90,9 @@
 =======
         <version>17.104.14-cct-1981-SNAPSHOT</version>
 >>>>>>> a8072f8222 (New 17.104.14-cct-1981-SNAPSHOT)
+=======
+        <version>17.104.14-cct-1981-release-SNAPSHOT</version>
+>>>>>>> 8018a8a531 (Release cut)
     </parent>
 
     <artifactId>listing-query-view</artifactId>
