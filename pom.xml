@@ -33,6 +33,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
     <version>17.104.6-SNAPSHOT</version>
@@ -100,6 +101,9 @@
 =======
     <version>17.104.14-cct-1981-release-SNAPSHOT</version>
 >>>>>>> 8018a8a531 (Release cut)
+=======
+    <version>17.104.15-cct-1981-release-SNAPSHOT</version>
+>>>>>>> 7a3aebf319 (New 17.104.15-cct-1981-release-SNAPSHOT)
     <packaging>pom</packaging>
 
     <name>Listing Context Microservice Parent</name>
