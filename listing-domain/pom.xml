@@ -27,6 +27,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.6-SNAPSHOT</version>
@@ -97,6 +98,9 @@
 =======
         <version>17.104.15-cct-1981-release-SNAPSHOT</version>
 >>>>>>> 7a3aebf319 (New 17.104.15-cct-1981-release-SNAPSHOT)
+=======
+        <version>17.104.16-cct-1981-release-SNAPSHOT</version>
+>>>>>>> 8399c468e1 (New 17.104.16-cct-1981-release-SNAPSHOT)
     </parent>
 
     <artifactId>listing-domain</artifactId>
