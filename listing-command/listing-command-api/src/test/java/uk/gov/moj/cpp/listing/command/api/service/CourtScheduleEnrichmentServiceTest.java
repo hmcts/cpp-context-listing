@@ -835,7 +835,7 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
-    void shouldReturnUnchangedWhenMultiDaySearchReturnsEmpty() {
+    void shouldMarkDaysDraftWhenMultiDaySearchReturnsEmpty() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtScheduleId = UUID.randomUUID();
         final UUID courtRoomId = UUID.randomUUID();
@@ -873,8 +873,47 @@ class CourtScheduleEnrichmentServiceTest {
         final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
 
         verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
-        // Original hearingDays should be preserved
+        // Sessions are unresolved: days keep their courtScheduleId but are marked draft
         assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(Boolean.TRUE));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+    }
+
+    @Test
+    void shouldMarkDaysDraftNotThrowWhenCreatePathMultiDaySearchReturns422WithErrorCode() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(1080)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(1080)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withRoomId(courtRoomId.toString())
+                                .build()))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(422);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(Boolean.TRUE));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
     }
 
     @Test
@@ -2723,7 +2762,7 @@ class CourtScheduleEnrichmentServiceTest {
     // ─── fetchCourtSchedulesByIds error paths ────────────────────────────
 
     @Test
-    void shouldReturnEmptyWhenFetchCourtSchedulesByIdsFailsResponse() {
+    void shouldMarkDaysDraftWhenFetchCourtSchedulesByIdsFailsResponse() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtScheduleId = UUID.randomUUID();
 
@@ -2747,12 +2786,15 @@ class CourtScheduleEnrichmentServiceTest {
 
         final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
 
-        // Should return unchanged since sessions is empty
+        // Sessions are unresolved: days are marked draft so allocation stays closed
         assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(Boolean.TRUE));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
     }
 
     @Test
-    void shouldReturnEmptyWhenFetchCourtSchedulesByIdsReturnsNullResponse() {
+    void shouldMarkDaysDraftWhenFetchCourtSchedulesByIdsReturnsNullResponse() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtScheduleId = UUID.randomUUID();
 
@@ -2778,12 +2820,14 @@ class CourtScheduleEnrichmentServiceTest {
         final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
 
         assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(Boolean.TRUE));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
     }
 
     // ─── multiDaySearchAndBook error paths ───────────────────────────────
 
     @Test
-    void shouldReturnUnchangedWhenMultiDaySearchAndBookFailsResponse() {
+    void shouldMarkDaysDraftWhenMultiDaySearchAndBookFailsResponse() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtScheduleId = UUID.randomUUID();
 
@@ -2813,10 +2857,11 @@ class CourtScheduleEnrichmentServiceTest {
 
         verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
         assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(Boolean.TRUE));
     }
 
     @Test
-    void shouldReturnUnchangedWhenMultiDaySearchAndBookReturnsNullJson() {
+    void shouldMarkDaysDraftWhenMultiDaySearchAndBookReturnsNullJson() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtScheduleId = UUID.randomUUID();
 
@@ -2847,6 +2892,7 @@ class CourtScheduleEnrichmentServiceTest {
 
         verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
         assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(Boolean.TRUE));
     }
 
     // ─── needsCourtScheduleEnrichment static tests ───────────────────────
@@ -3641,9 +3687,10 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
-    void shouldReturnHearingUnchanged_whenNoDraftAnchorExistsEvenAfterRelease() {
-        // Both anchor searches come back empty: the hearing is returned unchanged (seeded day only)
-        // and no booking is attempted. The release fallback ran exactly once.
+    void shouldMarkDaysDraft_whenNoDraftAnchorExistsEvenAfterRelease() {
+        // Both anchor searches come back empty: the hearing's own slots have already been released,
+        // so the seeded day must come back marked draft (courtScheduleId preserved) rather than
+        // keeping an allocatable day pointing at a released session. No booking is attempted.
         final UUID hearingId = UUID.randomUUID();
         final UUID anchorCsId = UUID.randomUUID();
         final UUID courtCentreId = UUID.randomUUID();
@@ -3668,6 +3715,40 @@ class CourtScheduleEnrichmentServiceTest {
         verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
         assertThat(result.getHearingDays().size(), is(1));
         assertThat(result.getHearingDays().get(0).getHearingDate(), is(day1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(Boolean.TRUE));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(anchorCsId));
+    }
+
+    @Test
+    void shouldMarkDaysDraft_whenDraftBookingReturnsNoSessions() {
+        // A draft anchor is found but the subsequent multiday booking comes back empty: the exit
+        // must mark the days draft so they never keep courtScheduleIds with allocation open.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID anchorCsId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.of(2026, 7, 21);
+
+        final UpdateHearingForListing hearing = buildUnallocationHearing(hearingId, anchorCsId, courtCentreId, day1);
+
+        stubDraftAnchorSearch(anchorCsId.toString());
+
+        final JsonObject emptyBookingJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder())
+                .build();
+        final Response emptyBookingResponse = mock(Response.class);
+        when(emptyBookingResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(emptyBookingResponse.getEntity()).thenReturn(emptyBookingJson);
+        when(objectToJsonObjectConverter.convert(emptyBookingJson)).thenReturn(emptyBookingJson);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(emptyBookingResponse);
+
+        final UpdateHearingForListing result =
+                courtScheduleEnrichmentService.enrichUnallocationWithDraftSlots(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService).multiDaySearchAndBook(anyMap());
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getHearingDate(), is(day1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(Boolean.TRUE));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(anchorCsId));
     }
 
     /** Court-calendar CROWN unallocation shape: ONE virtual block descriptor (720 = 2 court days). */
@@ -5268,23 +5349,6 @@ class CourtScheduleEnrichmentServiceTest {
         assertThat(CourtScheduleEnrichmentService.isCandidateForAllocation(hearing), is(true));
     }
 
-    @Test
-    void hasCourtScheduleIdOnInput_shouldReturnFalse_whenNoHearingDaysOrBookedSlots() {
-        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds().build();
-        assertThat(CourtScheduleEnrichmentService.hasCourtScheduleIdOnInput(hearing), is(false));
-    }
-
-    @Test
-    void hasCourtScheduleIdOnInput_shouldReturnTrue_whenBookedSlotsHaveCourtScheduleId() {
-        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
-                .withBookedSlots(Collections.singletonList(
-                        RotaSlot.rotaSlot()
-                                .withCourtScheduleId(UUID.randomUUID().toString())
-                                .build()))
-                .build();
-        assertThat(CourtScheduleEnrichmentService.hasCourtScheduleIdOnInput(hearing), is(true));
-    }
-
     // --- populateBookedSlots tests ---
 
     @Test
@@ -6248,6 +6312,25 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
+    void promoteCrownBookingReferenceToBookedSlot_throwsRetryableWhenCourtSchedulerIsUnavailable() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withBookingReference(UUID.randomUUID())
+                .withEstimatedMinutes(60)
+                .build();
+
+        // A courtscheduler outage (non-2xx) must not be reported as an invalid bookingReference
+        final Response errorResponse = mock(Response.class);
+        when(errorResponse.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(errorResponse);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                CourtScheduleUnavailableException.class,
+                () -> courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing));
+    }
+
+    @Test
     void promoteCrownBookingReferenceToBookedSlot_noOpWhenNoBookingReference() {
         final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
                 .withId(UUID.randomUUID())
@@ -6359,9 +6442,9 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
-    void shouldReturnUnchangedForCrownUpdateSingleDayWhenFetchCourtSchedulesByIdsReturnsEmpty() {
+    void shouldMarkDaysDraftForCrownUpdateSingleDayWhenFetchCourtSchedulesByIdsFails() {
         // enrichCrownUpdateHearing single-day path: fetchCourtSchedulesByIds returns a non-200
-        // response → sessions is empty → log warning and return hearing unchanged.
+        // response → sessions unresolved → days marked draft, courtScheduleId preserved.
         final UUID hearingId = UUID.randomUUID();
         final UUID courtScheduleId = UUID.randomUUID();
         final UUID courtRoomId = UUID.randomUUID();
@@ -6388,6 +6471,7 @@ class CourtScheduleEnrichmentServiceTest {
 
         assertThat(result.getHearingId(), is(hearingId));
         assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(Boolean.TRUE));
         verify(hearingSlotsService).getCourtSchedulesById(anyMap());
         verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
     }

@@ -162,6 +162,56 @@ public class HearingDaysUpdateEventListenerTest {
     }
 
     @Test
+    public void testUpdateHearingDayCourtScheduleSkipsNonDefaultDayWithoutStartTime() throws JsonProcessingException {
+        UUID hearingId = randomUUID();
+        UUID courtScheduleId = randomUUID();
+        LocalDate hearingDate1 = LocalDate.now();
+
+        List<HearingDayCourtSchedule> hearingDayCourtSchedules =
+                of(new HearingDayCourtSchedule(courtScheduleId, hearingDate1));
+        HearingDayCourtScheduleUpdated event =
+                new HearingDayCourtScheduleUpdated(hearingDayCourtSchedules, hearingId);
+        Envelope<HearingDayCourtScheduleUpdated> listenerEnvelope = envelopeFrom(
+                metadataWithRandomUUID("listing.events.hearing-day-court-schedule-updated"),
+                event);
+
+        List<HearingDay> hearingDays =
+                of(HearingDay.hearingDay().withHearingDate(hearingDate1).build());
+        List<NonDefaultDay> nonDefaultDays =
+                of(NonDefaultDay.nonDefaultDay()
+                                .withStartTime(null)
+                                .withDuration(30)
+                                .withSession("MORNING")
+                                .build(),
+                   NonDefaultDay.nonDefaultDay()
+                                .withStartTime(hearingDate1.atStartOfDay(java.time.ZoneOffset.UTC).plusHours(9))
+                                .withDuration(30)
+                                .withSession("MORNING")
+                                .build());
+        Set<HearingDays> dbHearingDays = Set.of(HearingDays.builder().withHearingDate(hearingDate1).build());
+        uk.gov.justice.listing.events.Hearing dbHearingPayload =
+                uk.gov.justice.listing.events.Hearing.hearing().withId(hearingId)
+                        .withHearingDays(hearingDays).withNonDefaultDays(nonDefaultDays).build();
+
+        Hearing hearing = Hearing.builder()
+                .withId(hearingId)
+                .withProperties(objectMapper.valueToTree(dbHearingPayload))
+                .withHearingDays(dbHearingDays)
+                .build();
+        when(hearingRepository.findBy(hearingId)).thenReturn(hearing);
+
+        hearingDaysUpdateEventListener.hearingDayCourtScheduleUpdated(listenerEnvelope);
+
+        verify(hearingRepository, times(1)).save(hearing);
+        verify(hearingSearchSyncService, times(1)).sync(hearingId);
+        assertThat(hearing.getProperties().toString(), isJson(allOf(
+                withJsonPath("$.nonDefaultDays", hasSize(2)),
+                withoutJsonPath("$.nonDefaultDays[0].courtScheduleId"),
+                withJsonPath("$.nonDefaultDays[1].courtScheduleId", is(courtScheduleId.toString()))
+        )));
+    }
+
+    @Test
     public void testCrownHearingMigratedToCourtSchedule() throws JsonProcessingException {
         UUID hearingId = randomUUID();
         UUID courtScheduleId = randomUUID();

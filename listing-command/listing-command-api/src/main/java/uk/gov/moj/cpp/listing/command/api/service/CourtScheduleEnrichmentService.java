@@ -3,8 +3,6 @@ package uk.gov.moj.cpp.listing.command.api.service;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
-import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
-import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -13,7 +11,6 @@ import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.moj.cpp.listing.command.api.service.HearingDaysEnrichmentService.log;
 
 import uk.gov.justice.core.courts.CourtCentre;
-import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.commands.HearingDay;
@@ -417,7 +414,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     .map(d -> d.getCourtScheduleId().toString())
                     .toList();
 
-            final List<CourtSchedule> sessions = fetchCourtSchedulesByIds(courtScheduleIds);
+            final List<CourtSchedule> sessions = fetchCourtSchedulesByIds(courtScheduleIds).sessions();
 
             if (isEmpty(sessions)) {
                 LOGGER.warn("CROWN single-day update: failed to fetch court schedules for hearingId {} — marking days draft so allocation stays closed.", hearing.getHearingId());
@@ -825,13 +822,27 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         if (isEmpty(hearing.getHearingDays())) {
             return hearing;
         }
-        final List<HearingDay> guardedDays = hearing.getHearingDays().stream()
-                .map(day -> HearingDay.hearingDay().withValuesFrom(day).withIsDraft(Boolean.TRUE).build())
-                .toList();
         return UpdateHearingForListing.updateHearingForListing()
                 .withValuesFrom(hearing)
-                .withHearingDays(guardedDays)
+                .withHearingDays(markDaysDraftWhenSessionsUnresolved(hearing.getHearingDays()))
                 .build();
+    }
+
+    /**
+     * Sibling of {@link #markDaysDraftWhenSessionsUnresolved(UpdateHearingForListing)} for the
+     * list-path (HearingListingNeeds) shape, where the enrichment handlers pass hearing days
+     * around directly: every day is marked draft so {@code Hearing.canAllocateForCrown()} stays
+     * closed when courtscheduler could not resolve the requested sessions. courtScheduleIds are
+     * preserved for traceability; {@code stripRoomInfoIfAnyDraft} (ADR-005) strips the day-level
+     * rooms downstream.
+     */
+    private static List<HearingDay> markDaysDraftWhenSessionsUnresolved(final List<HearingDay> hearingDays) {
+        if (isEmpty(hearingDays)) {
+            return hearingDays;
+        }
+        return hearingDays.stream()
+                .map(day -> HearingDay.hearingDay().withValuesFrom(day).withIsDraft(Boolean.TRUE).build())
+                .toList();
     }
 
     private static boolean commandCarriesCourtRoom(final UpdateHearingForListing hearing) {
@@ -1136,11 +1147,11 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return new EnrichmentResult(hearing.getHearingDays(), new ArrayList<>());
         }
 
-        final List<CourtSchedule> sessions = fetchCourtSchedulesByIds(courtScheduleIds);
+        final List<CourtSchedule> sessions = fetchCourtSchedulesByIds(courtScheduleIds).sessions();
 
         if (isEmpty(sessions)) {
-            LOGGER.warn("CROWN single-day: failed to fetch court schedules for hearingId {}. Returning unchanged.", hearing.getId());
-            return new EnrichmentResult(hearing.getHearingDays(), new ArrayList<>());
+            LOGGER.warn("CROWN single-day: failed to fetch court schedules for hearingId {} — marking days draft so allocation stays closed.", hearing.getId());
+            return new EnrichmentResult(markDaysDraftWhenSessionsUnresolved(hearing.getHearingDays()), new ArrayList<>());
         }
 
         final boolean allNonDraft = sessions.stream().noneMatch(CourtSchedule::isDraft);
@@ -1250,8 +1261,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 anchorHearingDate);
 
         if (isEmpty(sessions)) {
-            LOGGER.warn("CROWN multi-day: no consecutive sessions found for hearingId {}. Unallocated.", hearing.getId());
-            return new EnrichmentResult(hearing.getHearingDays(), new ArrayList<>());
+            LOGGER.warn("CROWN multi-day: no consecutive sessions found for hearingId {} — marking days draft so allocation stays closed.", hearing.getId());
+            return new EnrichmentResult(markDaysDraftWhenSessionsUnresolved(hearing.getHearingDays()), new ArrayList<>());
         }
 
         // Defensive: courtscheduler returned fewer sessions than the duration requires. This typically means
@@ -1284,8 +1295,11 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
      * resolved session onto a bookedSlot (courtScheduleId + courtHouse/room/start) so the CourtSchedule-first
      * flow can list and allocate it.
      *
-     * <p>If the bookingReference does not resolve to a session we fail fast with
-     * {@link CrownFallbackInvalidRequestException} rather than silently listing the hearing unallocated.
+     * <p>If courtscheduler answers but the bookingReference does not resolve to a session we fail
+     * fast with {@link CrownFallbackInvalidRequestException} rather than silently listing the
+     * hearing unallocated. If courtscheduler itself is unavailable (non-2xx) we fail with
+     * {@link CourtScheduleUnavailableException} instead — a transient outage is retryable and must
+     * not be reported as an invalid request.
      *
      * <p>No-op when there is no bookingReference, or a courtScheduleId is already present on
      * hearingDays/bookedSlots.
@@ -1298,7 +1312,13 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         }
 
         final String courtScheduleId = hearing.getBookingReference().toString();
-        final List<CourtSchedule> sessions = fetchCourtSchedulesByIds(List.of(courtScheduleId));
+        final CourtScheduleFetchResult fetchResult = fetchCourtSchedulesByIds(List.of(courtScheduleId));
+        if (fetchResult.outageOccurred()) {
+            throw new CourtScheduleUnavailableException(
+                    "CROWN bookingReference " + courtScheduleId
+                            + " could not be resolved because courtscheduler returned an error for hearingId " + hearing.getId());
+        }
+        final List<CourtSchedule> sessions = fetchResult.sessions();
         if (isEmpty(sessions)) {
             throw new CrownFallbackInvalidRequestException(
                     "CROWN bookingReference " + courtScheduleId
@@ -1337,24 +1357,24 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 .build();
     }
 
-    private List<CourtSchedule> fetchCourtSchedulesByIds(final List<String> courtScheduleIds) {
+    private CourtScheduleFetchResult fetchCourtSchedulesByIds(final List<String> courtScheduleIds) {
         final Map<String, String> params = new HashMap<>();
         params.put(IDS_PARAM, String.join(",", courtScheduleIds));
         final Response response = hearingSlotsService.getCourtSchedulesById(params);
 
         if (!isSuccess(response)) {
             LOGGER.error("fetchCourtSchedulesByIds failed with status {}", response.getStatus());
-            return new ArrayList<>();
+            return new CourtScheduleFetchResult(new ArrayList<>(), true);
         }
 
         final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
         if (responseJson == null || responseJson.isEmpty()) {
-            return new ArrayList<>();
+            return new CourtScheduleFetchResult(new ArrayList<>(), false);
         }
 
         final JsonArray schedulesArray = responseJson.getJsonArray(COURT_SCHEDULES);
         if (schedulesArray == null || schedulesArray.isEmpty()) {
-            return new ArrayList<>();
+            return new CourtScheduleFetchResult(new ArrayList<>(), false);
         }
 
         final List<CourtSchedule> schedules = new ArrayList<>();
@@ -1362,7 +1382,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             final CourtSchedule cs = jsonObjectConverter.convert(schedulesArray.getJsonObject(i), CourtSchedule.class);
             schedules.add(cs);
         }
-        return schedules;
+        return new CourtScheduleFetchResult(schedules, false);
     }
 
     private List<CourtSchedule> multiDaySearchAndBook(final String courtScheduleId, final Integer durationInMinutes, final String hearingId, final String courtCentreId, final String hearingDate) {
@@ -1376,7 +1396,10 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
      * at the user's chosen time — existing per-day allocations (and their rooms) stay untouched. A
      * 422 with an errorCode (NO_AVAILABILITY listing the unavailable dates, INVALID_DATE_RANGE) is
      * a rejected extension and is surfaced to the caller as {@link CrownMultiDayExtensionException},
-     * which the command API maps back to the UI.
+     * which the command API maps back to the UI. The rejection throw applies only to this resize
+     * context (endDate present): callers of the short overload (create, unallocation) treat a 422
+     * like any other non-success and fall through to their mark-days-draft handling instead of
+     * aborting the whole command with an extension-shaped error.
      */
     @SuppressWarnings("java:S107")
     private List<CourtSchedule> multiDaySearchAndBook(final String courtScheduleId, final Integer durationInMinutes,
@@ -1400,7 +1423,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         }
         final Response response = hearingSlotsService.multiDaySearchAndBook(params);
 
-        if (response.getStatus() == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
+        if (nonNull(endDate) && response.getStatus() == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
             final JsonObject errorBody = (response.hasEntity() && response.getEntity() instanceof JsonObject jsonBody)
                     ? jsonBody
                     : objectToJsonObjectConverter.convert(response.getEntity());
@@ -1487,9 +1510,12 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
      *   <li>Return the hearing with rebuilt hearing days pointing at the draft sessions.</li>
      * </ol>
      *
-     * <p>On any failure the original hearing is returned unchanged so the aggregate can still
-     * process the unallocation (the null-startTime guard in {@code assignHearingDaysV2} covers
-     * the draft-day case).
+     * <p>On a failure before any court-scheduler slot is touched the original hearing is returned
+     * unchanged so the aggregate can still process the unallocation (the null-startTime guard in
+     * {@code assignHearingDaysV2} covers the draft-day case). Once the retry has released the
+     * hearing's existing bookings — or the draft booking itself comes back empty — the exit goes
+     * through {@link #markDaysDraftWhenSessionsUnresolved(UpdateHearingForListing)} so the days
+     * never keep courtScheduleIds pointing at released sessions with allocation open.
      */
     public UpdateHearingForListing enrichUnallocationWithDraftSlots(final UpdateHearingForListing rawHearing,
                                                                      final JsonEnvelope envelope) {
@@ -1556,9 +1582,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             anchorCourtScheduleId = findDraftAnchorSession(ouCode, startDate, totalDurationMinutes);
         }
         if (isBlank(anchorCourtScheduleId)) {
-            LOGGER.warn("[UNALLOC] No draft anchor found for hearingId={} (ouCode={}, start={}, duration={}) — returning unchanged",
+            LOGGER.warn("[UNALLOC] No draft anchor found for hearingId={} (ouCode={}, start={}, duration={}) — marking days draft so allocation stays closed",
                     hearingId, ouCode, startDate, totalDurationMinutes);
-            return hearing;
+            return markDaysDraftWhenSessionsUnresolved(hearing);
         }
 
         // Step 4: Atomically book N consecutive draft sessions via multiday search-and-book
@@ -1574,8 +1600,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         final List<CourtSchedule> draftSessions = multiDaySearchAndBook(
                 anchorCourtScheduleId, totalDurationMinutes, hearingId.toString(), courtCentreId, startDate.toString());
         if (isEmpty(draftSessions)) {
-            LOGGER.warn("[UNALLOC] multiDaySearchAndBook returned no sessions for hearingId={} — returning unchanged", hearingId);
-            return hearing;
+            LOGGER.warn("[UNALLOC] multiDaySearchAndBook returned no sessions for hearingId={} — marking days draft so allocation stays closed", hearingId);
+            return markDaysDraftWhenSessionsUnresolved(hearing);
         }
 
         // Step 6: Build one hearing day per draft session.
@@ -1706,18 +1732,6 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             }
         });
         return hearingDaysUpdatedByCourtSchedules;
-    }
-
-    /**
-     * Checks if the input hearing has courtScheduleId on hearingDays or bookedSlots.
-     * Used by the orchestrator to decide enrichment order for CROWN.
-     */
-    public static boolean hasCourtScheduleIdOnInput(final HearingListingNeeds hearing) {
-        final boolean onHearingDays = !isEmpty(hearing.getHearingDays())
-                && hearing.getHearingDays().stream().anyMatch(d -> nonNull(d.getCourtScheduleId()));
-        final boolean onBookedSlots = isNotEmpty(hearing.getBookedSlots())
-                && hearing.getBookedSlots().stream().anyMatch(s -> !isBlank(s.getCourtScheduleId()));
-        return onHearingDays || onBookedSlots;
     }
 
     static boolean needsCourtScheduleEnrichment(final HearingListingNeeds hearing) {
@@ -2145,6 +2159,17 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         public AllocationResult(List<HearingDay> hearingDays, List<JudicialRole> judiciaries) {
             super(hearingDays, judiciaries);
         }
+    }
+
+    /**
+     * Result of resolving court-schedule session ids against courtscheduler. Distinguishes a
+     * courtscheduler outage (non-2xx response, {@code outageOccurred=true}) from a genuine
+     * empty result (2xx with no sessions) so callers that must fail fast on an outage — e.g.
+     * {@code promoteCrownBookingReferenceToBookedSlot} — do not misreport a transient failure
+     * as an invalid request. Consumers whose contract is "sessions unresolved → mark days
+     * draft" treat both cases alike via {@link #sessions()}.
+     */
+    private record CourtScheduleFetchResult(List<CourtSchedule> sessions, boolean outageOccurred) {
     }
 
     // ─── CROWN fallback search-and-book ──────────────────────────────────────────

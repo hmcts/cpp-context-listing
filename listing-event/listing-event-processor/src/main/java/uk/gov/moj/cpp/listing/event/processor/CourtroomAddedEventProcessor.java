@@ -29,9 +29,12 @@ public class CourtroomAddedEventProcessor {
     @Handles(PUBLIC_REFERENCE_COURTROOM_ADDED)
     public void addReferenceDataCourtRoom(final JsonEnvelope jsonEnvelope) {
 
-        LOGGER.info("{} event received with payload {}",
-                PUBLIC_REFERENCE_COURTROOM_ADDED,
-                jsonEnvelope.payloadAsJsonObject());
+        LOGGER.info("{} event received", PUBLIC_REFERENCE_COURTROOM_ADDED);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("{} event received with payload {}",
+                    PUBLIC_REFERENCE_COURTROOM_ADDED,
+                    jsonEnvelope.payloadAsJsonObject());
+        }
 
         cacheRefDataCourtroomView.addRefDataCourtroom(envelopeFrom(metadataFrom(jsonEnvelope.metadata())
                         .withName(LISTING_UPDATE_ADD_COURTROOM),

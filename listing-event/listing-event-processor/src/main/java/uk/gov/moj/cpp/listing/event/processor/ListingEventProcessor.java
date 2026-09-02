@@ -126,7 +126,6 @@ public class ListingEventProcessor {
     static final String COMMAND_APPLICATION_EJECTED = "listing.command.eject-application";
     static final String COMMAND_UPDATE_HEARING_TO_CASE = "listing.command.update-hearing-to-case";
     static final String PRIVATE_COMMAND_HEARING_VACATE_TRIAL = "listing.command.hearing-vacate-trial";
-    static final String COMMAND_UPDATE_HEARING_DAY_COURT_SCHEDULE = "listing.command.update-hearing-day-court-schedule";
 
     private static final String COMMAND_PAYLOAD_DEBUG_STRING = "Sending '{}' command with payload {}";
     private static final String EVENT_PAYLOAD_DEBUG_STRING = "Received '{}' event with payload {}";
@@ -218,7 +217,6 @@ public class ListingEventProcessor {
     private static final String PRIVATE_EVENT_HEARING_MARKED_AS_DELETED = "listing.events.hearing-marked-as-deleted";
     private static final String PRIVATE_EVENT_HEARING_MARKED_FOR_PARTIAL_UPDATE = "listing.events.hearing-marked-for-partial-update";
     private static final String PRIVATE_EVENTS_HEARING_ADDED_TO_CASE = "listing.events.hearing-added-to-case";
-    static final String COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS = "listing.command.change-judiciary-for-hearings";
     public static final String PUBLIC_HEARING_OFFENCES_REMOVED_FROM_EXISTING_HEARING = "public.hearing.selected-offences-removed-from-existing-hearing";
     private static final String COURT_CENTRE_ID_FIELD = "courtCentreId";
     private static final String PRIVATE_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING = "listing.events.hearing-days-changed-for-hearing";

@@ -1179,19 +1179,6 @@ public class Hearing implements Aggregate {
     }
 
     /**
-     * Change the courtroom of SELECTED days of a multiday CROWN hearing. {@code changedDays} carries only the
-     * days being changed; every other day is preserved verbatim from aggregate state. Emits the same event set
-     * as today's update flow so downstream public events fire identically:
-     * hearing-days-changed-for-hearing (full merged day set), allocation events, hearing-day-court-schedule-updated.
-     */
-    public Stream<Object> changeCourtRoomForMultidayHearing(final UUID hearingId,
-            final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays,
-            final List<HearingDayCourtSchedule> changedSchedules,
-            final Boolean sendNotificationToParties) {
-        return changeCourtRoomForMultidayHearing(hearingId, changedDays, changedSchedules, emptyList(), sendNotificationToParties);
-    }
-
-    /**
      * CROWN multi-day courtroom change with mixed day types. {@code changedDays} are the days already
      * (re)booked in courtscheduler by COMMAND_API - every virtual day, plus any REAL day whose
      * courtScheduleId changed (SPRDT-1225) - merged into hearingDays with their court schedules
@@ -1722,29 +1709,38 @@ public class Hearing implements Aggregate {
             // We need to remove Offences which are belongs only this seeded hearings and leave other offences in this hearing, if This hearing seeded or extended from another hearings.
             return getOffencesRemovedFromHearingStream(seedingHearingId, hearingId);
         } else {
-            final List<UUID> caseIds = prosecutionCaseDefendants.keySet().stream().collect(toList());
-
-            final Stream.Builder<Object> eventStreamBuilder = Stream.builder();
-
-            if (isAllocated()) {
-                eventStreamBuilder.add(AllocatedHearingDeleted.allocatedHearingDeleted()
-                        .withHearingId(hearingId)
-                        .withCaseIds(caseIds)
-                        .build());
-
-                if (MAGISTRATES == jurisdictionType || JurisdictionType.CROWN == jurisdictionType) {
-                    eventStreamBuilder.add(availableSlotsForHearingFreed()
-                            .withHearingId(hearingId).build());
-                }
-            } else {
-                eventStreamBuilder.add(UnallocatedHearingDeleted.unallocatedHearingDeleted()
-                        .withHearingId(hearingId)
-                        .withCaseIds(caseIds)
-                        .build());
-            }
-
-            return apply(eventStreamBuilder.build());
+            return apply(hearingDeletionEvents(hearingId));
         }
+    }
+
+    private Stream<Object> hearingDeletionEvents(final UUID hearingId) {
+        final List<UUID> caseIds = prosecutionCaseDefendants.keySet().stream().collect(toList());
+
+        final Stream.Builder<Object> eventStreamBuilder = Stream.builder();
+
+        if (isAllocated()) {
+            eventStreamBuilder.add(AllocatedHearingDeleted.allocatedHearingDeleted()
+                    .withHearingId(hearingId)
+                    .withCaseIds(caseIds)
+                    .build());
+
+            if (MAGISTRATES == jurisdictionType || JurisdictionType.CROWN == jurisdictionType) {
+                eventStreamBuilder.add(availableSlotsForHearingFreed()
+                        .withHearingId(hearingId).build());
+            }
+        } else {
+            eventStreamBuilder.add(UnallocatedHearingDeleted.unallocatedHearingDeleted()
+                    .withHearingId(hearingId)
+                    .withCaseIds(caseIds)
+                    .build());
+
+            if (JurisdictionType.CROWN == jurisdictionType && hasCourtScheduleIds(this.hearingDays)) {
+                eventStreamBuilder.add(availableSlotsForHearingFreed()
+                        .withHearingId(hearingId).build());
+            }
+        }
+
+        return eventStreamBuilder.build();
     }
 
     public Stream<Object> removeOffencesFromExistingHearing(final UUID seedingHearingId, final UUID hearingId) {
@@ -2068,7 +2064,7 @@ public class Hearing implements Aggregate {
 
     }
 
-    boolean magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(final UUID ejectedItemId) {
+    boolean hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(final UUID ejectedItemId) {
 
         if (isNull(this.currentHearingEventState)) {
             return false;
@@ -2121,7 +2117,7 @@ public class Hearing implements Aggregate {
 
         final Stream.Builder<Object> eventStreamBuilder = Stream.builder();
 
-        if (magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(caseId)) {
+        if (hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(caseId)) {
             eventStreamBuilder.add(availableSlotsForHearingFreed().
                     withHearingId(hearingIdOfEjectCase).
                     build());
@@ -2146,7 +2142,7 @@ public class Hearing implements Aggregate {
 
         final Stream.Builder<Object> eventStreamBuilder = Stream.builder();
 
-        if (magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(applicationId)) {
+        if (hearingIsInTheFutureAndAllCaseAndApplicationAreEjected(applicationId)) {
             eventStreamBuilder.add(availableSlotsForHearingFreed().
                     withHearingId(hearingIdForApplicationToBeEjected).
                     build());
@@ -3515,15 +3511,9 @@ public class Hearing implements Aggregate {
 
     private void correctHearingDaysWithoutCourtCentre(final Optional<UUID> centreId, final Optional<UUID> roomId) {
         this.hearingDays.replaceAll(hearingDay -> HearingDay.hearingDay()
+                .withValuesFrom(hearingDay)
                 .withCourtCentreId(hearingDay.getCourtCentreId() == null ? centreId.orElse(null) : hearingDay.getCourtCentreId())
                 .withCourtRoomId(hearingDay.getCourtRoomId() == null ? roomId.orElse(null) : hearingDay.getCourtRoomId())
-                .withCourtScheduleId(hearingDay.getCourtScheduleId())
-                .withDurationMinutes(hearingDay.getDurationMinutes())
-                .withEndTime(hearingDay.getEndTime())
-                .withHearingDate(hearingDay.getHearingDate())
-                .withSequence(hearingDay.getSequence())
-                .withStartTime(hearingDay.getStartTime())
-                .withIsCancelled(hearingDay.isCancelled())
                 .build());
         updateCurrentHearingEventStateWithHearingDays();
     }

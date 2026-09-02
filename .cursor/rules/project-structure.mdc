@@ -1,0 +1,48 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Project Structure Guide
+
+This repository is a multi-module Maven project for the Listing context microservice, which processes CPP cases for hearings and emits events to downstream contexts.
+
+
+## Main Modules
+- [listing-command](mdc:listing-command): Command API and command handlers for listing operations
+- [listing-domain](mdc:listing-domain): Domain logic, aggregates, events, and common domain code
+- [listing-event](mdc:listing-event): Event listener and processor modules
+- [listing-query](mdc:listing-query): Query API and view for listing data
+- [listing-service](mdc:listing-service): Service orchestration and resource descriptors
+- [listing-common](mdc:listing-common): Shared utilities and resources
+- [listing-json](mdc:listing-json): JSON schemas and related resources
+- [listing-viewstore](mdc:listing-viewstore): Viewstore and persistence logic
+- [listing-event-sources](mdc:listing-event-sources): Event source configuration
+- [listing-healthchecks](mdc:listing-healthchecks): Healthcheck endpoints and beans
+- [listing-integration-test](mdc:listing-integration-test): Integration tests
+- [listing-integration-test-persistence](mdc:listing-integration-test-persistence): Persistence integration tests
+- [listing-performance-test](mdc:listing-performance-test): Performance and load tests
+- [listing-selective-catchup](mdc:listing-selective-catchup): Scripts for selective catchup
+
+## Key Files
+- [pom.xml](mdc:pom.xml): Maven parent POM, defines modules and dependencies
+- [README.md](mdc:README.md): Project overview and API usage examples
+- [azure-pipelines.yaml](mdc:azure-pipelines.yaml): CI/CD pipeline configuration
+- [listing-command-api.raml](mdc:listing-command/listing-command-api/src/raml/listing-command-api.raml): all command endpoints are defined here.
+- [listing-command-handler.messaging.raml](mdc:listing-command/listing-command-handler/src/raml/listing-command-handler.messaging.raml) all command handlers are defined here.
+- [listing-command-api.drl](mdc:listing-command/listing-command-api/src/main/resources/uk/gov/moj/cpp/listing/command/api/accesscontrol/listing-command-api.drl) all command endpoints authentication rules are defined here. each action name should have a match in [listing-command-api.drl](mdc:listing-command/listing-command-api/src/main/resources/uk/gov/moj/cpp/listing/command/api/accesscontrol/listing-command-api.drl)
+- [subscriptions-descriptor.yaml](mdc:listing-event/listing-event-processor/src/yaml/subscriptions-descriptor.yaml) all event names and their json schemas that this context listens for private and public event processors are described here. There are 2 types of events: public and private. public events start with "public." while priivate events start with "listing." for example "public.hearing.hearing-days-cancelled" is a public event, published by hearing context, "public.progression.hearing-resulted-case-updated" is a public event, published by progression context, and  "listing.events.case-ejected-for-hearings" is a private event that has been rased by an aggregate.
+- [subscriptions-descriptor.yaml](mdc:listing-event/listing-event-processor/src/yaml/subscriptions-descriptor.yaml) all event names and their json schemas that this contexts listens for  event listeners are described here. These events are private, and they're being used to update viewstore. 
+
+## JSON Schemas
+
+All command api JSON schemas are located in the [api schema directory](mdc:listing-command/listing-command-api/src/raml/json/schema).
+
+All command api example requests are located in the [api example directory](mdc:listing-command/listing-command-api/src/raml/json). Each file created in this folder must have the same name with the schema file created in api schema directory and should be valid against that schema. 
+
+Each module contains its own `pom.xml` and may have submodules for API, handler, processor, or view logic. See module directories for further details.
+
+## Interactions
+This project has a set of  interactions to other projects. 
+
+- @public events consumed - these are the public events consumed by this project, their names and 

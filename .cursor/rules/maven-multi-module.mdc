@@ -1,0 +1,195 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Maven Multi-Module Guide
+
+This project uses Maven's multi-module structure to organize a complex microservice into logical, loosely-coupled components.
+
+## Project Structure
+
+### Parent POM
+- **Location**: [pom.xml](mdc:pom.xml) (root level)
+- **Purpose**: Defines common dependencies, plugin configurations, and module declarations
+- **Packaging**: `pom`
+- **Modules**: All sub-modules are declared here
+
+### Module Organization
+
+#### Domain Layer
+- **[listing-domain](mdc:listing-domain)**: Core domain logic parent
+  - `listing-domain-aggregate`: Domain aggregates and entities
+  - `listing-domain-common`: Shared domain concepts
+  - `listing-domain-event`: Domain events
+  - `listing-domain-xhibit`: XHIBIT-specific domain logic
+
+#### Application Layer  
+- **[listing-command](mdc:listing-command)**: Command processing parent
+  - `listing-command-api`: REST API endpoints
+  - `listing-command-handler`: Command handlers and messaging
+- **[listing-query](mdc:listing-query)**: Query processing parent
+  - `listing-query-api`: Query REST endpoints
+  - `listing-query-view`: Query handlers and views
+- **[listing-event](mdc:listing-event)**: Event processing parent
+  - `listing-event-listener`: Internal event listeners
+  - `listing-event-processor`: External event processors
+
+#### Infrastructure Layer
+- **[listing-viewstore](mdc:listing-viewstore)**: Data persistence parent
+  - `listing-viewstore-persistence`: Repository implementations
+  - `listing-viewstore-liquibase`: Database migrations
+- **[listing-service](mdc:listing-service)**: Service orchestration and deployment descriptors
+- **[listing-common](mdc:listing-common)**: Shared utilities and cross-cutting concerns
+- **[listing-healthchecks](mdc:listing-healthchecks)**: Health monitoring endpoints
+
+#### Supporting Modules
+- **[listing-json](mdc:listing-json)**: JSON schemas and resources
+- **[listing-event-sources](mdc:listing-event-sources)**: Event source configurations
+- **[listing-integration-test](mdc:listing-integration-test)**: End-to-end integration tests
+- **[listing-integration-test-persistence](mdc:listing-integration-test-persistence)**: Persistence integration tests
+- **[listing-performance-test](mdc:listing-performance-test)**: Performance and load tests
+- **[listing-selective-catchup](mdc:listing-selective-catchup)**: Operational scripts
+
+## Dependency Management
+
+### Parent POM Responsibilities
+- **Dependency Versions**: Centralized version management
+- **Plugin Configuration**: Shared Maven plugin settings
+- **Module Declaration**: Lists all sub-modules
+- **Build Profiles**: Environment-specific configurations
+
+### Inter-Module Dependencies
+```xml
+<dependency>
+    <groupId>uk.gov.moj.cpp.listing</groupId>
+    <artifactId>listing-domain-common</artifactId>
+    <version>${project.version}</version>
+</dependency>
+```
+
+### Dependency Hierarchy Rules
+- **Domain modules**: Should not depend on application or infrastructure
+- **Application modules**: Can depend on domain modules
+- **Infrastructure modules**: Can depend on domain and application modules
+- **Test modules**: Can depend on any module for testing purposes
+
+## Build Commands
+
+### Building the Entire Project
+```bash
+# Build all modules
+mvn clean install
+
+# Build without tests (faster)
+mvn clean install -DskipTests
+
+# Build specific modules only
+mvn clean install -pl listing-domain,listing-command
+```
+
+### Module-Specific Operations
+```bash
+# Build single module and its dependencies
+mvn clean install -pl listing-command-api -am
+
+# Build dependents of a module
+mvn clean install -pl listing-domain-common -amd
+
+# Run tests for specific module
+mvn test -pl listing-integration-test
+```
+
+### Useful Build Options
+```bash
+# Resume build from specific module (after failure)
+mvn install -rf listing-event-processor
+
+# Build in parallel (faster)
+mvn clean install -T 4
+
+# Update snapshots
+mvn clean install -U
+```
+
+## Development Workflow
+
+### Adding New Modules
+1. **Create Module Directory**: Under appropriate parent module
+2. **Create Module POM**: Inherit from parent, set appropriate packaging
+3. **Update Parent POM**: Add module to `<modules>` section
+4. **Define Dependencies**: Add to modules that need to use it
+
+### Modifying Dependencies
+1. **Check Impact**: Use `mvn dependency:tree` to understand impact
+2. **Update Parent POM**: For version changes
+3. **Update Module POMs**: For new dependencies
+4. **Test Build**: Ensure all modules still compile
+
+### Managing Versions
+- **SNAPSHOT Development**: Use `-SNAPSHOT` for active development
+- **Release Versions**: Remove `-SNAPSHOT` for releases
+- **Version Updates**: Use `mvn versions:set -DnewVersion=1.2.3`
+
+## Module Interaction Patterns
+
+### Clean Architecture Dependencies
+```
+UI Layer (APIs) 
+    ↓
+Application Layer (Handlers)
+    ↓  
+Domain Layer (Aggregates, Events)
+    ↑
+Infrastructure Layer (Persistence, External Services)
+```
+
+### Module Communication
+- **Command Flow**: API → Handler → Domain → Event
+- **Query Flow**: API → View → Viewstore
+- **Event Flow**: Domain Event → Event Handler → Side Effects
+
+## Troubleshooting
+
+### Common Build Issues
+```bash
+# Clear all local module artifacts
+mvn clean
+
+# Force update snapshots
+mvn clean install -U
+
+# Skip problematic tests temporarily
+mvn install -DskipTests -Dmaven.test.skip=true
+
+# Debug dependency issues
+mvn dependency:tree -Dverbose
+```
+
+### Module Resolution Problems
+- **Check Module Declaration**: Ensure module is listed in parent POM
+- **Verify Packaging**: Use `jar` for libraries, `pom` for parent modules
+- **Check Artifact Names**: Ensure `artifactId` matches directory name
+
+### IDE Integration
+- **IntelliJ**: Import as Maven project, enable auto-import
+- **Eclipse**: Use M2Eclipse plugin, import as existing Maven projects
+- **Module Structure**: IDE should recognize multi-module structure automatically
+
+## Best Practices
+
+### Module Design
+- **Single Responsibility**: Each module should have a clear, focused purpose
+- **Minimal Dependencies**: Keep inter-module dependencies minimal
+- **Interface Segregation**: Use interfaces for module boundaries
+- **Dependency Direction**: Follow clean architecture dependency rules
+
+### Version Management
+- **Consistent Versions**: All modules should use same version
+- **Parent Version**: Always inherit version from parent POM
+- **SNAPSHOT Strategy**: Use snapshots during development, release versions for deployment
+
+### Build Optimization
+- **Parallel Builds**: Use `-T` flag for multi-core builds
+- **Selective Building**: Build only changed modules during development
+- **Test Execution**: Run fast tests first, integration tests separately

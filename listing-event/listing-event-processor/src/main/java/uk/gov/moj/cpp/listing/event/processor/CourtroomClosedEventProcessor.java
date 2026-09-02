@@ -28,9 +28,12 @@ public class CourtroomClosedEventProcessor {
 
     @Handles(PUBLIC_REFERENCE_COURTROOM_CLOSED)
     public void closeReferenceDataCourtRoom(final JsonEnvelope jsonEnvelope) {
-        LOGGER.info("{} event received with payload {}",
-                PUBLIC_REFERENCE_COURTROOM_CLOSED,
-                jsonEnvelope.payloadAsJsonObject());
+        LOGGER.info("{} event received", PUBLIC_REFERENCE_COURTROOM_CLOSED);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("{} event received with payload {}",
+                    PUBLIC_REFERENCE_COURTROOM_CLOSED,
+                    jsonEnvelope.payloadAsJsonObject());
+        }
 
         cacheRefDataCourtroomView.closeRefDataCourtroom(envelopeFrom(metadataFrom(jsonEnvelope.metadata())
                         .withName(LISTING_UPDATE_CLOSE_COURTROOM),

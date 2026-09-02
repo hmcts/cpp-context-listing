@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Collections.emptyList;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 import static utils.HearingDayUtil.getNotCancelledHearingDays;
@@ -36,9 +37,13 @@ import javax.json.JsonReader;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class HearingDaysUpdateEventListener {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HearingDaysUpdateEventListener.class);
 
     private static final String HEARING_DAYS = "hearingDays";
     private static final String NON_DEFAULT_DAYS = "nonDefaultDays";
@@ -104,7 +109,7 @@ public class HearingDaysUpdateEventListener {
                 hd -> scheduledHearingDateMap.put(hd.getHearingDate(), hd.getCourtScheduleId()));
 
         updateHearingDays(existingHearing, scheduledHearingDateMap);
-        updateNonDefaultDays(existingHearing, scheduledHearingDateMap);
+        updateNonDefaultDays(hearingId, existingHearing, scheduledHearingDateMap);
 
         using(hearingRepository)
                 .find(hearingId)
@@ -116,10 +121,15 @@ public class HearingDaysUpdateEventListener {
         hearingSearchSyncService.sync(hearingId);
     }
 
-    private void updateNonDefaultDays(uk.gov.justice.listing.events.Hearing existingHearing,
+    private void updateNonDefaultDays(UUID hearingId,
+                                      uk.gov.justice.listing.events.Hearing existingHearing,
                                       Map<LocalDate, UUID> scheduledHearingDateMap) {
         if (nonNull(existingHearing.getNonDefaultDays())) {
             existingHearing.getNonDefaultDays().replaceAll(nd -> {
+                if (isNull(nd.getStartTime())) {
+                    LOGGER.warn("Skipping nonDefaultDay without startTime while merging courtScheduleIds for hearingId {}", hearingId);
+                    return nd;
+                }
                 UUID scheduleIdFromCourtScheduler = scheduledHearingDateMap.get(nd.getStartTime().toLocalDate());
                 if (scheduleIdFromCourtScheduler != null && !scheduleIdFromCourtScheduler.toString().equals(nd.getCourtScheduleId())) {
                     return NonDefaultDay.nonDefaultDay()
