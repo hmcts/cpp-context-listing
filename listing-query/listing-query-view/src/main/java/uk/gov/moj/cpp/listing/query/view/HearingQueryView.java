@@ -179,9 +179,6 @@ public class HearingQueryView {
     private ListToJsonArrayConverter<Notes> listToJsonArrayConverter;
 
     @Inject
-    private ListToJsonArrayConverter<UUID> listUUIDyConverter;
-
-    @Inject
     private JsonObjectToObjectConverter jsonObjectToObjectConverter;
     @Inject
     private CaseByDefendantRepository caseByDefendantRepository;
