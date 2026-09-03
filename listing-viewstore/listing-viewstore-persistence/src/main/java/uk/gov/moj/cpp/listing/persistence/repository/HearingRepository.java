@@ -1018,9 +1018,9 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "    ELSE CAST('[]' AS jsonb) " +
             "  END" +
             ") AS judiciary ON true " +
-            "WHERE coalesce(hd.court_centre_id, h.court_centre_id) = :courtCentreId " +
-            "  AND coalesce(hd.court_room_id, h.court_room_id) = :courtRoomId " +
-            "  AND :searchDate BETWEEN h.start_date AND h.end_date " +
+            "WHERE hd.court_centre_id = :courtCentreId " +
+            "  AND hd.court_room_id = :courtRoomId " +
+            "  AND hd.hearing_date = :searchDate " +
             "  AND judiciary->>'judicialId' IS NOT NULL",
             isNative = true)
     public abstract List<String> findDistinctJudicialIdsByCourtCentreAndRoomAndSearchDate(
