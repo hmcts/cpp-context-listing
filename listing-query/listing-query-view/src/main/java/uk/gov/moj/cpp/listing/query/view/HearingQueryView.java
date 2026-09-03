@@ -86,6 +86,8 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 import uk.gov.justice.services.messaging.JsonObjects;
+
+import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -825,5 +827,21 @@ public class HearingQueryView {
         return hearingCsvReportService.generateCsvContent(csvData, query);
     }
 
+    @Handles("listing.search.judiciary")
+    public JsonEnvelope searchJudiciary(final JsonEnvelope query) {
+        final UUID courtCentreId = fromString(query.payloadAsJsonObject().getString(COURT_CENTRE_ID));
+        final UUID courtRoomId = fromString(query.payloadAsJsonObject().getString(COURT_ROOM_ID));
+        final String searchDate = query.payloadAsJsonObject().getString(SEARCH_DATE);
 
+        final List<String> judicialIds = repository.findDistinctJudicialIdsByCourtCentreAndRoomAndSearchDate(courtCentreId, courtRoomId,  LocalDate.parse(searchDate));
+
+        final JsonArray judicialIdArray = judicialIds.stream()
+                .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add)
+                .build();
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.judiciary"),
+                createObjectBuilder()
+                        .add("judicialIds", judicialIdArray)
+                        .build()
+        );
+    }
 }

@@ -6,6 +6,7 @@ import static java.time.LocalDate.parse;
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.now;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
@@ -1729,6 +1730,53 @@ public class HearingQueryViewTest {
                 () -> hearingsQueryView.generateHearingCsvReport(query));
 
         assertThat(exception.getMessage(), is("Invalid start date: " + invalidStartDate));
+    }
+
+    @Test
+    void shouldSearchJudiciaryWhenReturnRecords() {
+        final UUID judicialId1 = randomUUID();
+        final UUID judicialId2 = randomUUID();
+        final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.search.judiciary");
+
+        final JsonEnvelope query = envelopeFrom(metadataBuilder,
+                createObjectBuilder()
+
+                        .add("courtCentreId", COURT_CENTRE_ID.toString())
+                        .add("courtRoomId", COURT_ROOM_ID.toString())
+                        .add("searchDate", SEARCH_DATE.toString())
+                        .build()
+        );
+        when(hearingRepository.findDistinctJudicialIdsByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, SEARCH_DATE))
+                .thenReturn(List.of(judicialId1.toString(), judicialId2.toString()));
+
+        final JsonEnvelope result = hearingsQueryView.searchJudiciary(query);
+
+        final JsonArray judiciary = result.payloadAsJsonObject().getJsonArray("judicialIds");
+        assertThat(judiciary.size(), is(2));
+        assertThat(judiciary.getString(0), is(judicialId1.toString()));
+        assertThat(judiciary.getString(1), is(judicialId2.toString()));
+    }
+
+    @Test
+    void shouldSearchJudiciaryWhenReturnNoRecords() {
+
+        final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.search.judiciary");
+
+        final JsonEnvelope query = envelopeFrom(metadataBuilder,
+                createObjectBuilder()
+
+                        .add("courtCentreId", COURT_CENTRE_ID.toString())
+                        .add("courtRoomId", COURT_ROOM_ID.toString())
+                        .add("searchDate", SEARCH_DATE.toString())
+                        .build()
+        );
+        when(hearingRepository.findDistinctJudicialIdsByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, SEARCH_DATE))
+                .thenReturn(emptyList());
+
+        final JsonEnvelope result = hearingsQueryView.searchJudiciary(query);
+
+        final JsonArray judiciary = result.payloadAsJsonObject().getJsonArray("judicialIds");
+        assertThat(judiciary.size(), is(0));
     }
 
 }

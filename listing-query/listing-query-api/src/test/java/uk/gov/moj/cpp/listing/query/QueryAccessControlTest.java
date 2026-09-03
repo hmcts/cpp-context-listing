@@ -163,6 +163,12 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
         assertFailureOutcome(results);
     }
 
+    @Test
+    void shouldBeAsExpectedForListingSearchJudiciary() {
+        assertAccessAsExpected("listing.search.judiciary",
+                COURT_CLERKS, COURT_ADMINISTRATORS, CROWN_COURT_ADMIN, LISTING_OFFICERS, LEGAL_ADVISERS, COURT_ASSOCIATE);
+    }
+
     private void assertAccessAsExpected(String actionName, String... expectedGroups) {
         final Action action = createActionFor(actionName);
         given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, expectedGroups)).willReturn(true);

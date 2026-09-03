@@ -1756,6 +1756,21 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
     }
 
+    @Test
+    public void shouldFindDistinctJudicialIdsByCourtCentreAndRoomAndSearchDate() {
+        //given
+        givenHearingsExistWithPCPAndWOFD();
+
+        //when
+        final List<String> judicialIds = hearingRepository.findDistinctJudicialIdsByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, START_SEARCH_DATE);
+
+        //then
+        assertThat(judicialIds.size(), is(2));
+        assertThat(judicialIds.contains("0ab98bfb-fc34-44c4-a573-3801343cf123"), is(true));
+        assertThat(judicialIds.contains("d1a22d9e-088b-4af4-acb5-bc6e78aaf5ea"), is(true));
+
+    }
+
     private void assertFoundAsExpected(final PublishedCourtList expectedPublishedCourtList, final PublishedCourtListPrimaryKey primaryKey) {
         assertEquals(publishedCourtListRepository.findBy(primaryKey), publishedCourtListRepository.findBy(primaryKey));
     }

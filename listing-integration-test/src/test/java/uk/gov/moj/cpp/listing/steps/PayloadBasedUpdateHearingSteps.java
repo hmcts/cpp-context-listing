@@ -5,6 +5,7 @@ import static java.lang.String.format;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static javax.ws.rs.core.Response.Status.OK;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.is;
@@ -53,21 +54,22 @@ import org.slf4j.LoggerFactory;
  * Helper class for update hearing operations using JSON payload files from test-data folder
  */
 public class PayloadBasedUpdateHearingSteps extends AbstractIT {
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(PayloadBasedUpdateHearingSteps.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
     protected final StringToJsonObjectConverter stringToJsonObjectConverter = new StringToJsonObjectConverter();
 
     private static final String LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING = "listing.command.update-hearing-for-listing";
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
+    private static final String MEDIA_TYPE_SEARCH_JUDICIARY_JSON = "application/vnd.listing.search.judiciary+json";
     private static final String MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING = "application/vnd.listing.command.update-hearing-for-listing+json";
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
-    
+
     private PayloadGenerator.PayloadValues payloadValues;
     private String requestPayload;
     private String hearingIdToUpdate; // The hearing ID that will be updated
-    
+
     public PayloadBasedUpdateHearingSteps(String hearingIdToUpdate) {
         this.hearingIdToUpdate = hearingIdToUpdate;
         this.givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
@@ -84,42 +86,42 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
     public PayloadGenerator.PayloadValues whenUpdateHearingSubmittedWithAllocatedRoomUpdate() {
         return this.whenUpdateHearingSubmittedWithScenario("update-hearing-for-listing", "update-hearing-for-listing-allocated-room-update");
     }
-    
+
     /**
      * Submit update hearing request for assign judiciary scenario
      */
     public PayloadGenerator.PayloadValues whenUpdateHearingSubmittedWithAssignJudiciary() {
         return this.whenUpdateHearingSubmittedWithScenario("update-hearing-for-listing", "update-hearing-for-listing-assign-judiciary");
     }
-    
+
     /**
      * Submit update hearing request for change to multiday with non-default and non-sitting scenario
      */
     public PayloadGenerator.PayloadValues whenUpdateHearingSubmittedWithChangeToMultidayWithNonDefaultAndNonSitting() {
         return this.whenUpdateHearingSubmittedWithScenario("update-hearing-for-listing", "update-hearing-for-listing-change-to-multiday-with-nondefault-and-nonsitting");
     }
-    
+
     /**
      * Submit update hearing request for week commencing to multiday scenario
      */
     public PayloadGenerator.PayloadValues whenUpdateHearingSubmittedWithFromWeekCommencingToMultiday() {
         return this.whenUpdateHearingSubmittedWithScenario("update-hearing-for-listing", "update-hearing-for-listing-from-weekcommencing-to-multiday");
     }
-    
+
     /**
      * Submit update hearing request for unallocated to allocated scenario
      */
     public PayloadGenerator.PayloadValues whenUpdateHearingSubmittedWithUnallocatedToAllocated() {
         return this.whenUpdateHearingSubmittedWithScenario("update-hearing-for-listing", "update-hearing-for-listing-unallocated-to-allocated");
     }
-    
+
     /**
      * Generic method to submit update hearing request with custom scenario and test case
      */
     public PayloadGenerator.PayloadValues whenUpdateHearingSubmittedWithScenario(String scenario, String testCase) {
         return this.whenUpdateHearingSubmittedWithScenario(scenario, testCase, new HashMap<>());
     }
-    
+
     /**
      * Generic method to submit update hearing request with custom scenario, test case, and custom values
      */
@@ -137,15 +139,20 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
 
             // Load payload with dynamic values
             JsonNode payload = PayloadGenerator.loadPayloadWithCustomValues(scenario, testCase, customValues);
-            
+
             // Extract values for verification
             //only applicable for hearing payloads. so wrap it with the check
             if (payload.get("hearings") != null) {
                 this.payloadValues = PayloadGenerator.extractValues(payload);
             }
+            final JsonNode judiciary = payload.get("judiciary");
+            if (nonNull(judiciary) && !judiciary.isEmpty()) {
+                this.payloadValues.judicialId = judiciary.get(0).get("judicialId").asText();
+            }
+
             // Setup stubs with generated values
             this.setupStubsForUpdateHearing(this.payloadValues);
-            
+
             // Convert JsonNode to string for the REST call
             String payloadString = PayloadBasedUpdateHearingSteps.objectMapper.writeValueAsString(payload);
             this.requestPayload = payloadString;
@@ -154,22 +161,22 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
 
             // Make the API call
             String updateHearingUrl = String.format("%s/%s", PropertyUtil.getBaseUri(), format(path));
-            
+
             Response response = AbstractIT.restClient.postCommand(updateHearingUrl, PayloadBasedUpdateHearingSteps.MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
                     payloadString, this.getLoggedInHeader());
-            
+
             MatcherAssert.assertThat("Expected HTTP 202 (Accepted) response", response.getStatus(), IsEqual.equalTo(HttpStatus.SC_ACCEPTED));
-            
+
             PayloadBasedUpdateHearingSteps.LOGGER.info("Successfully submitted update hearing request for scenario: {}/{}", scenario, testCase);
             PayloadBasedUpdateHearingSteps.LOGGER.info("Generated values: {}", this.payloadValues);
-            
+
             return this.payloadValues;
-            
+
         } catch (Exception e) {
             throw new RuntimeException("Failed to submit update hearing request", e);
         }
     }
-    
+
     /**
      * Sets up required reference data stubs based on the payload values
      */
@@ -220,7 +227,7 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
                     values.hearingStartTime);
         }
     }
-    
+
     /**
      * Verify that the hearing was updated successfully from the API
      */
@@ -228,10 +235,10 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
         if (this.payloadValues == null) {
             throw new IllegalStateException("No payload values available. Call a 'when' method first.");
         }
-        
+
         this.verifyHearingUpdatedFromAPI(this.payloadValues, isAllocated);
     }
-    
+
     /**
      * Verify hearing updated with specific payload values
      */
@@ -249,7 +256,7 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
 
         PayloadBasedUpdateHearingSteps.LOGGER.info("Verified updated hearing ID: {} with new court centre: {}", this.hearingIdToUpdate, values.courtCentreId);
     }
-    
+
     /**
      * Verify that judiciary was assigned to the hearing
      */
@@ -257,7 +264,7 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
         if (this.payloadValues == null) {
             throw new IllegalStateException("No payload values available. Call a 'when' method first.");
         }
-        
+
         PayloadBasedUpdateHearingSteps.LOGGER.info("Verifying judiciary assigned to hearing: {}", this.hearingIdToUpdate);
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
@@ -269,6 +276,23 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
                         payload().isJson(allOf(
                                 withJsonPath("$.hearings[0].id", is(this.hearingIdToUpdate)),
                                 withJsonPath("$.hearings[0].judiciary")
+                        ))
+                );
+    }
+
+    public void verifyJudiciarySearch(final PayloadGenerator.PayloadValues payloadValues) {
+        if (this.payloadValues == null) {
+            throw new IllegalStateException("No payload values available. Call a 'when' method first.");
+        }
+
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                MessageFormat.format(readConfig().getProperty("listing.search.judiciary"), payloadValues.courtCentreId, payloadValues.courtRoomId, payloadValues.hearingDate));
+
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_JUDICIARY_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.judicialIds", hasItem(payloadValues.judicialId))
                         ))
                 );
     }
@@ -296,7 +320,7 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
         assertNotEquals(originalCourtRoomId, updatedCourtRoomId);
 
     }
-    
+
     /**
      * Verify that the hearing allocation status changed
      */
@@ -304,7 +328,7 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
         if (this.payloadValues == null) {
             throw new IllegalStateException("No payload values available. Call a 'when' method first.");
         }
-        
+
         PayloadBasedUpdateHearingSteps.LOGGER.info("Verifying hearing allocation status changed to: {} for hearing: {}", expectedAllocated, this.hearingIdToUpdate);
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
@@ -316,25 +340,25 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
                         payload().isJson(withJsonPath("$.hearings[0].id", is(this.payloadValues.hearingId)))
                 );
     }
-    
+
     /**
      * Get the payload values for verification in tests
      */
     public PayloadGenerator.PayloadValues getPayloadValues() {
         return this.payloadValues;
     }
-    
+
     /**
      * Get the request payload that was sent
      */
     public String getRequestPayload() {
         return this.requestPayload;
     }
-    
+
     /**
      * Get the hearing ID that was updated
      */
     public String getHearingIdToUpdate() {
         return this.hearingIdToUpdate;
     }
-} 
+}

@@ -683,3 +683,32 @@ protocols: [ HTTP, HTTPS ]
         body:
            text/csv:
 
+/judiciary:
+  get:
+    description: |
+      ...
+      (mapping):
+          responseType: application/vnd.listing.search.judiciary+json
+          name: listing.search.judiciary
+      ...
+    queryParameters:
+      courtCentreId:
+        description: reference data id for the court centre
+        type: string
+        required: true
+      courtRoomId:
+        description: reference data id for the court room
+        type: string
+        required: true
+      searchDate:
+        description: Search for hearings where the searchDate parameter is between the start and end date of the hearing.
+        type: date
+        required: true
+    responses:
+      200:
+        description: OK
+        body:
+          application/vnd.listing.search.judiciary+json:
+            example:  !include json/listing.search.judiciary.json
+            schema:  !include  json/schema/listing.search.judiciary.json
+
