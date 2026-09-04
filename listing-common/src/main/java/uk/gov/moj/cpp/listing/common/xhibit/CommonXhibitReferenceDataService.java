@@ -179,6 +179,24 @@ public class CommonXhibitReferenceDataService {
                 .orElse(new CourtRoomMapping(UNMAPPED_COURT_ROOM_NAME));
     }
 
+    public Optional<String> getCourtRoomDisplayName(final UUID courtCentreId, final UUID courtRoomUUID) {
+        try {
+            return Optional.ofNullable(getCpCourtRoom(courtCentreId, courtRoomUUID).getString("courtroomName", null));
+        } catch (final Exception e) {
+            LOGGER.warn("Cannot find court room display name for courtCentreId={}, courtRoomUUID={}", courtCentreId, courtRoomUUID);
+            return Optional.empty();
+        }
+    }
+
+    public Optional<String> getWelshCourtRoomDisplayName(final UUID courtCentreId, final UUID courtRoomUUID) {
+        try {
+            return Optional.ofNullable(getCpCourtRoom(courtCentreId, courtRoomUUID).getString("welshCourtroomName", null));
+        } catch (final Exception e) {
+            LOGGER.warn("Cannot find Welsh court room display name for courtCentreId={}, courtRoomUUID={}", courtCentreId, courtRoomUUID);
+            return Optional.empty();
+        }
+    }
+
     private UUID getOrganisationUnitIdByOuCode(final String ouCode) {
         final OrganisationUnit organisationUnit = referenceDataCache.getOrganisationUnitMapCache(ouCode)
                 .orElseThrow(() -> new InvalidReferenceDataException(format("Cannot find organisation unit with code %s", ouCode)));

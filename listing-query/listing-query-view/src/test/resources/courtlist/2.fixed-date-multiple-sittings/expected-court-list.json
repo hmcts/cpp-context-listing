@@ -39,6 +39,7 @@
               "defendants": [
                 {
                   "id": "6e4c5278-f63f-4760-bd20-77b96f955db5",
+                  "prosecutionCaseId": "68befe4a-e14f-4480-801d-9414654e4c7f",
                   "lastName": "LAZZERI",
                   "offences": [
                     {
@@ -92,6 +93,18 @@
                   "courtApplicationPartyType": "PERSON"
                 }
               ],
+              "defendants": [
+                {
+                  "id": "cb9ee4d4-369f-422e-8a5f-fa2af408247b",
+                  "lastName": "BENINI",
+                  "firstName": "Olga",
+                  "isRespondent": false,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON_DEFENDANT",
+                  "offences": [],
+                  "courtProceedingsInitiated": "2019-12-16T09:21:11Z"
+                }
+              ],
               "hasVideoLink": false
             }
           ]
@@ -136,6 +149,7 @@
               "defendants": [
                 {
                   "id": "2819baf4-940d-4b4c-b2f4-96330a5bb8f2",
+                  "prosecutionCaseId": "a0bf4542-1ec5-4515-be47-329c141a44c2",
                   "lastName": "BERTINI",
                   "offences": [
                     {
@@ -160,6 +174,7 @@
                 },
                 {
                   "id": "4bf39b43-dad8-4e02-a63c-b6a5d3fd89b8",
+                  "prosecutionCaseId": "a0bf4542-1ec5-4515-be47-329c141a44c2",
                   "lastName": "NEWMAN",
                   "offences": [
                     {
@@ -211,6 +226,18 @@
                   "isRespondent": true,
                   "restrictFromCourtList": false,
                   "courtApplicationPartyType": "PERSON"
+                }
+              ],
+              "defendants": [
+                {
+                  "id": "8d41b127-ad50-4175-b590-3d253356f1de",
+                  "lastName": "LUCAS",
+                  "firstName": "Vernon",
+                  "isRespondent": false,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON_DEFENDANT",
+                  "offences": [],
+                  "courtProceedingsInitiated": "2019-12-16T09:21:00Z"
                 }
               ],
               "hasVideoLink": false
