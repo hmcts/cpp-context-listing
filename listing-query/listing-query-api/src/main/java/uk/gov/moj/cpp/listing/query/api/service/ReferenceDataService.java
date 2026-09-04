@@ -36,6 +36,7 @@ public class ReferenceDataService {
     private static final String HEARING_TYPE_ID = "id";
     private static final String REFERENCEDATA_QUERY_HEARING_TYPES = "referencedata.query.hearing-types";
     private static final String WELSH_HEARING_DESCRIPTION = "welshHearingDescription";
+    private static final String REFERENCEDATA_QUERY_PROSECUTOR = "referencedata.query.prosecutor";
 
     @Inject
     private Enveloper enveloper;
@@ -61,6 +62,17 @@ public class ReferenceDataService {
 
         final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(payload)
                 .withName(REFERENCEDATA_QUERY_JUDICIARIES)
+                .withMetadataFrom(event);
+
+        return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()));
+    }
+
+    public JsonEnvelope getProsecutorById(final String prosecutorId, final JsonEnvelope event) {
+        final JsonObject payload = createObjectBuilder().add("id", prosecutorId).build();
+        LOGGER.info("'referencedata.query.prosecutor' request with payload {}", payload);
+
+        final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(payload)
+                .withName(REFERENCEDATA_QUERY_PROSECUTOR)
                 .withMetadataFrom(event);
 
         return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()));

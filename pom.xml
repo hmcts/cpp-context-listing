@@ -118,12 +118,12 @@
               the counter (correct depth accounting) while keeping the guard. 2.5.2 verified against
               the failing payload and compatible with json-path 2.9.0.
               https://github.com/aws-solutions/distributed-load-testing-on-aws/issues/146
-            -->
+
             <dependency>
                 <groupId>net.minidev</groupId>
                 <artifactId>json-smart</artifactId>
                 <version>2.5.2</version>
-            </dependency>
+            </dependency> -->
             <dependency>
                 <groupId>uk.gov.justice.services</groupId>
                 <artifactId>domain-test-dsl</artifactId>

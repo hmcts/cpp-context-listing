@@ -95,6 +95,22 @@
       "crestCourtFullName": "NEWCASTLE UPON TYNE",
       "crestCourtSiteCode": "C",
       "courtType": "CROWN_COURT"
+    },
+    {
+      "id": "9c6f6b2b-2f1a-3f36-9d3c-6e6a2f2b5c4a",
+      "oucode": "CDF",
+      "crestCourtId": "100",
+      "crestCourtSiteId": "100",
+      "crestCourtSiteName": "Cardiff Crown Court",
+      "welshCrestCourtSiteName": "Llys y Goron Caerdydd",
+      "crestCourtName": "Cardiff",
+      "welshCrestCourtName": "Caerdydd",
+      "crestCourtShortName": "Cardiff",
+      "welshCrestCourtShortName": "Caerdydd",
+      "crestCourtFullName": "Cardiff Crown Court",
+      "welshCrestCourtFullName": "Llys y Goron Caerdydd",
+      "crestCourtSiteCode": "CDF01",
+      "courtType": "CROWN_COURT"
     }
   ]
 }
