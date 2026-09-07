@@ -204,6 +204,21 @@ public class ReferenceDataStub {
         return payload.replace("\"courtrooms\": [", injectedRoom);
     }
 
+    /**
+     * Same endpoint as {@link #stubGetReferenceDataCpCourtRooms()} but returns three courtrooms (not four).
+     * Uses higher WireMock priority so this mapping wins once registered, for mismatch / full-refresh scenarios.
+     */
+    public static void stubGetReferenceDataCpCourtRoomsThreeCourtroomsOnly() {
+        InternalEndpointMockUtils.stubPingFor("referencedata-service");
+        String payload = getPayload("stub-data/referencedata.ou-courtrooms-three.json");
+
+        stubFor(get(urlPathMatching(REFERENCE_DATA_OU_COURTROOM_URL))
+                .atPriority(1)
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader("Content-Type", REFERENCE_DATA_OU_COURTROOMS_MEDIA_TYPE)
+                        .withBody(payload)));
+    }
     public static void stubGetReferenceDataCourtCentre(final CourtCentreData courtReferenceData) {
         stubPingForReferenceDataService();
         String payload = withCourtRoom(getPayload("stub-data/referencedata.query.courtroom.json")
@@ -264,6 +279,27 @@ public class ReferenceDataStub {
                 courtReferenceData.getCourtRoomId());
 
         stubFor(get(urlPathMatching(urlPath))
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader("Content-Type", REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE)
+                        .withBody(payload)));
+    }
+
+    /**
+     * Stubs a specific court centre id as a CROWN court centre (oucodeL1Name "Crown Courts") so the
+     * move-hearing-to-past-date jurisdiction lookup (which reads oucodeL1Name) resolves CROWN. Registered
+     * at high WireMock priority so it overrides the generic Magistrates court-centre stub for this id.
+     */
+    public static void stubGetReferenceDataCrownCourtCentreById(final UUID courtCentreId, final UUID courtRoomId) {
+        stubPingForReferenceDataService();
+        final String urlPath = String.format(REFERENCE_DATA_COURT_ROOM_QUERY_URL, courtCentreId);
+        final String payload = withCourtRoom(getPayload("stub-data/referencedata.query.courtroom.json")
+                .replace("COURT_CENTRE_ID", courtCentreId.toString())
+                .replace("DEFAULT_START_TIME", "10:30")
+                .replace("DEFAULT_DURATION_HOURS_MINS", "6:30")
+                .replace("Magistrates' Courts", "Crown Courts"), courtRoomId);
+
+        stubFor(get(urlPathMatching(urlPath)).atPriority(1)
                 .willReturn(aResponse().withStatus(SC_OK)
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE)

@@ -133,6 +133,7 @@ public class HearingQueryView {
     private static final String SEARCH_CRITERIA = "searchCriteria";
     private static final String NAME_LISTING_SEARCH_HEARING = "listing.search.hearing";
     private static final String EMPTY_STRING = "";  // It is needed as jsonb query cannot handle null as per our query condition
+    private static final UUID NO_MATCH_MASTER_DEFENDANT_ID = new UUID(0, 0);  // nil UUID no-op placeholder: keeps the IN clause valid while matching no rows
     private static final String MATCHED_DEFENDANT_IDS = "matchedDefendantIds";
     private static final String CASE_URN_FOR_LINKED_CASES = "caseUrnForLinkedCases";
     private static final String RETURN_ALL_HEARINGS = "returnAllHearings";
@@ -741,6 +742,17 @@ public class HearingQueryView {
         if (masterDefendants.isEmpty()) {
             masterDefendants.add(EMPTY_STRING);
         }
+    }
+
+    /**
+     * Converts the string master defendant id set to UUIDs for the tuned
+     * {@code findHearings} overload, which compares against the uuid column directly
+     * (no varchar cast). The empty-string no-op placeholder maps to the nil UUID.
+     */
+    private Set<UUID> toMasterDefendantUuidSet(final Set<String> masterDefendantSet) {
+        return masterDefendantSet.stream()
+                .map(id -> EMPTY_STRING.equals(id) ? NO_MATCH_MASTER_DEFENDANT_ID : fromString(id))
+                .collect(toSet());
     }
 
     private void extractCaseUrn(String searchCriteria, List<ListedCase> listedCases, Set<String> caseUrns) {

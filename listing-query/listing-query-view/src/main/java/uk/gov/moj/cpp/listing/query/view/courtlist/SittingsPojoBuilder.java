@@ -1,8 +1,10 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist;
 
+import static java.util.Objects.isNull;
 import static java.util.Optional.empty;
 import static uk.gov.moj.cpp.listing.query.view.courtlist.JsonPropertyUtils.getOptionalUUID;
 
+import uk.gov.justice.services.messaging.JsonObjects;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.CaseDetails;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.CourtApplicationDetails;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.FlatHearing;
@@ -20,6 +22,7 @@ import java.util.UUID;
 
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonArrayBuilder;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -184,6 +187,8 @@ public class SittingsPojoBuilder {
                 final Hearing hearing = getHearingFromFlatHearing(flatHearing, startDate, caseHearingsJson);
                 hearing.setRestrictFromCourtList(((JsonObject) courtApplication).getBoolean("restrictFromCourtList", false));
                 hearing.setCourtApplicationDetails(buildCourtApplicationDetails((JsonObject) courtApplication));
+                hearing.setCourtApplicationOffences(((JsonObject) courtApplication).getJsonArray("offences"));
+                hearing.setCourtApplicationLinkedCaseIds(((JsonObject) courtApplication).getJsonArray("linkedCaseIds"));
                 hearing.setCaseDetails(empty());
                 convertedHearings.add(hearing);
 
@@ -248,9 +253,23 @@ public class SittingsPojoBuilder {
 
         caseDetails.setCaseIdentifier(caseDetailsJson.getJsonObject("caseIdentifier"));
         caseDetails.setProsecutor(caseDetailsJson.getJsonObject("prosecutor"));
-        caseDetails.setDefendants(caseDetailsJson.getJsonArray("defendants"));
+        caseDetails.setDefendants(withProsecutionCaseId(caseDetailsJson.getJsonArray("defendants"), caseDetailsJson.getString("id", null)));
 
         return Optional.of(caseDetails);
+    }
+
+    private static JsonArray withProsecutionCaseId(final JsonArray defendants, final String prosecutionCaseId) {
+        if (isNull(defendants) || isNull(prosecutionCaseId)) {
+            return defendants;
+        }
+
+        final JsonArrayBuilder defendantsBuilder = JsonObjects.createArrayBuilder();
+        defendants.getValuesAs(JsonObject.class).forEach(defendant -> defendantsBuilder.add(
+                defendant.containsKey("prosecutionCaseId")
+                        ? defendant
+                        : JsonObjects.createObjectBuilder(defendant).add("prosecutionCaseId", prosecutionCaseId).build()));
+
+        return defendantsBuilder.build();
     }
 
     private static Optional<CourtApplicationDetails> buildCourtApplicationDetails(final JsonObject courtApplicationJson) {

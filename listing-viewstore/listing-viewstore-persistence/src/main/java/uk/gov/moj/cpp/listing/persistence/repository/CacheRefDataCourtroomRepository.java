@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.persistence.repository;
 
 import uk.gov.moj.cpp.listing.persistence.entity.CacheRefDataCourtroom;
 
+import java.util.List;
 import java.util.UUID;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -18,6 +19,12 @@ public class CacheRefDataCourtroomRepository {
         return entityManager.find(CacheRefDataCourtroom.class, id);
     }
 
+    public List<CacheRefDataCourtroom> findAll() {
+        return entityManager.createQuery(
+                        "SELECT cacheRefDataCourtroom FROM CacheRefDataCourtroom cacheRefDataCourtroom", CacheRefDataCourtroom.class)
+                .getResultList();
+    }
+
     public CacheRefDataCourtroom save(final CacheRefDataCourtroom entity) {
         return entityManager.merge(entity);
     }
@@ -28,5 +35,13 @@ public class CacheRefDataCourtroomRepository {
 
     public int deleteAll() {
         return entityManager.createQuery("delete from CacheRefDataCourtroom").executeUpdate();
+    }
+
+    public void flush() {
+        entityManager.flush();
+    }
+
+    public void clear() {
+        entityManager.clear();
     }
 }

@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.scenario;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.it.util.ItClock;

@@ -282,6 +282,47 @@ protocols: [ HTTP, HTTPS ]
         body:
           application/vnd.listing.search.court.list+json:
 
+/dailylistpayload:
+  description: get exhibit daily list as JSON payload
+  get:
+    description: |
+      ...
+      (mapping):
+          responseType: application/vnd.listing.search.daily.list.payload+json
+          name: listing.search.daily.list.payload
+      ...
+    queryParameters:
+        courtCentreId:
+          description: reference data id for the court centre
+          type: string
+          required: true
+        startDate:
+          description: hearing start date in format 'YYYY-MM-DD'. Used for daily list (DRAFT/FINAL) requests.
+          type: date
+          required: false
+        publishCourtListType:
+          description: type of court list to retrieve (DRAFT or FINAL for daily list; WARN or FIRM for week commencing list)
+          type: string
+          required: true
+        endDate:
+          description: hearing end date in format 'YYYY-MM-DD'. Used for daily list (DRAFT/FINAL) multi-day requests.
+          type: date
+          required: false
+        weekCommencingStartDate:
+          description: week commencing start date in format 'YYYY-MM-DD'. Required for week commencing (WARN/FIRM) requests.
+          type: date
+          required: false
+        weekCommencingEndDate:
+          description: week commencing end date in format 'YYYY-MM-DD'. Required for week commencing (WARN/FIRM) requests.
+          type: date
+          required: false
+    responses:
+      200:
+        body:
+          application/vnd.listing.search.daily.list.payload+json:
+            example: !include json/listing.search.daily.list.payload.json
+            schema: !include json/schema/listing.search.daily.list.payload.json
+
 /courtlistpayload:
   description: get court list payload
   get:
@@ -612,38 +653,6 @@ protocols: [ HTTP, HTTPS ]
           application/vnd.listing.get.cache-refdata-courtrooms-refresh+json:
             schema:  !include json/schema/listing.get.cache-refdata-courtrooms-refresh.json
 
-
-/cache-refdata-courtrooms/add:
-  post:
-    description: |
-      Handle courtroom added in Reference data
-      ...
-      (mapping):
-          requestType: application/vnd.listing.update.add-courtroom+json
-          name: listing.update.add-courtroom
-      ...
-    body:
-      application/vnd.listing.update.add-courtroom+json:
-        schema: !include json/schema/listing.update.add-courtroom.json
-    responses:
-      202:
-        description: Request accepted
-
-/cache-refdata-courtrooms/close:
-  post:
-    description: |
-      Handle courtroom closed in Reference data
-      ...
-      (mapping):
-          requestType: application/vnd.listing.update.close-courtroom+json
-          name: listing.update.close-courtroom
-      ...
-    body:
-      application/vnd.listing.update.close-courtroom+json:
-        schema: !include json/schema/listing.update.close-courtroom.json
-    responses:
-      202:
-        description: Request accepted
 
 /hearings/download-hearing-csv-report:
   get:
