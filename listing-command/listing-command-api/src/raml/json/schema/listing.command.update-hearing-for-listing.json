@@ -52,6 +52,9 @@
         "$ref": "#/definitions/nonDefaultDay"
       }
     },
+    "johSource": {
+      "type": "string"
+    },
     "judiciary": {
       "type": "array",
       "items": {

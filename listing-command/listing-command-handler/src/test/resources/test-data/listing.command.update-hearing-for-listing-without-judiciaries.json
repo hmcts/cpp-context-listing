@@ -11,6 +11,7 @@
     "hearingLanguage": "HEARING_LANGUAGE",
     "courtCentreId": "COURT_CENTRE_ID",
     "jurisdictionType": "JURISDICTION_TYPE",
+    "johSource": "MANUAL",
     "judiciary": [
       {
         "judicialId": "0fd0233e-a8f9-3dc8-8bef-4f6b1d4799f3",

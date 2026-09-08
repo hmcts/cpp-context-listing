@@ -26,59 +26,11 @@ import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
-import uk.gov.justice.listing.events.AddedCasesForHearing;
-import uk.gov.justice.listing.events.AllocatedHearingDeleted;
-import uk.gov.justice.listing.events.AllocatedHearingExtendedForListingV2;
-import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListingV2;
-import uk.gov.justice.listing.events.ApplicantRespondent;
-import uk.gov.justice.listing.events.ApplicationEjected;
-import uk.gov.justice.listing.events.AvailableSlotsForHearingFreed;
-import uk.gov.justice.listing.events.CaseEjected;
-import uk.gov.justice.listing.events.CaseIdentifier;
-import uk.gov.justice.listing.events.CaseIdentifierUpdated;
-import uk.gov.justice.listing.events.CasesAddedToHearing;
-import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
-import uk.gov.justice.listing.events.CourtListRestricted;
-import uk.gov.justice.listing.events.CrownHearingMigratedToCourtschedule;
-import uk.gov.justice.listing.events.HearingDayCourtSchedule;
-import uk.gov.justice.listing.events.CourtRoomRemovedFromHearing;
+import uk.gov.justice.listing.events.*;
 import uk.gov.justice.listing.events.Defendant;
-import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdatedV2;
-import uk.gov.justice.listing.events.DefendantLegalaidStatusUpdatedForHearing;
-import uk.gov.justice.listing.events.DefendantOffenceIds;
-import uk.gov.justice.listing.events.DefendantOffenceIdsV2;
-import uk.gov.justice.listing.events.HearingAllocatedForListing;
-import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
 import uk.gov.justice.listing.events.HearingDay;
-import uk.gov.justice.listing.events.HearingDaysChangedForHearing;
-import uk.gov.justice.listing.events.HearingDeleted;
-import uk.gov.justice.listing.events.HearingListed;
-import uk.gov.justice.listing.events.HearingListedCaseUpdated;
-import uk.gov.justice.listing.events.HearingMarkedAsDeleted;
-import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
-import uk.gov.justice.listing.events.HearingRequestedForListing;
-import uk.gov.justice.listing.events.HearingResultStatusUpdated;
-import uk.gov.justice.listing.events.HearingUnallocatedCourtroomRemoved;
-import uk.gov.justice.listing.events.JudiciaryChangedForHearingsStatus;
-import uk.gov.justice.listing.events.Marker;
-import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
-import uk.gov.justice.listing.events.NewDefendantDetailsUpdated;
-import uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing;
 import uk.gov.justice.listing.events.Offence;
-import uk.gov.justice.listing.events.OffenceAdded;
-import uk.gov.justice.listing.events.OffenceDeleted;
-import uk.gov.justice.listing.events.OffenceIds;
-import uk.gov.justice.listing.events.OffencesRemovedFromExistingAllocatedHearing;
-import uk.gov.justice.listing.events.OffencesRemovedFromExistingUnallocatedHearing;
-import uk.gov.justice.listing.events.OffencesRemovedFromHearing;
-import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIds;
-import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIdsV2;
-import uk.gov.justice.listing.events.SeedingHearing;
-import uk.gov.justice.listing.events.SequencesResetOnHearingDays;
-import uk.gov.justice.listing.events.StartDateChangedForHearing;
 import uk.gov.justice.listing.events.StatementOfOffence;
-import uk.gov.justice.listing.events.UnallocatedHearingDeleted;
-import uk.gov.justice.listing.events.WeekCommencingDateChangedForHearing;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
@@ -7938,6 +7890,104 @@ class HearingAggregateTest {
         assertThat(event.getCourtApplicationApplicantIds(), hasItem(applicantId));
         assertThat(event.getCourtApplicationRespondentIds(), hasSize(1));
         assertThat(event.getCourtApplicationRespondentIds(), hasItem(respondentId));
+    }
+
+
+
+    @Test
+    public void shouldSetJohSourceWhenJudiciaryAssignedToHearingProvidesJohSource() {
+        final List<Object> events = hearing.apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
+                .withHearingId(hearingId)
+                .withJohSource("MANUAL")
+                .withJudiciary(singletonList(buildJudicialRoleEvent()))
+                .build())).collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(hearing.getJohSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldNotSetJohSourceWhenJudiciaryAssignedToHearingHasNoJohSource() {
+        final List<Object> events = hearing.apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
+                .withHearingId(hearingId)
+                .withJudiciary(singletonList(buildJudicialRoleEvent()))
+                .build())).collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(hearing.getJohSource(), nullValue());
+    }
+
+    @Test
+    public void shouldUpdateJohSourceWhenJudiciaryChangedForHearingProvidesJohSource() {
+        hearing.apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
+                .withHearingId(hearingId)
+                .withJohSource("MANUAL")
+                .withJudiciary(singletonList(buildJudicialRoleEvent()))
+                .build())).collect(Collectors.toList());
+
+        final List<Object> events = hearing.apply(Stream.of(JudiciaryChangedForHearing.judiciaryChangedForHearing()
+                .withHearingId(hearingId)
+                .withJohSource("MANUAL")
+                .withJudiciary(singletonList(buildJudicialRoleEvent()))
+                .build())).collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(hearing.getJohSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldClearJohSourceWhenJudiciaryChangedForHearingHasEmptyJudiciary() {
+        hearing.apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
+                .withHearingId(hearingId)
+                .withJohSource("MANUAL")
+                .withJudiciary(singletonList(buildJudicialRoleEvent()))
+                .build())).collect(Collectors.toList());
+
+        final List<Object> events = hearing.apply(Stream.of(JudiciaryChangedForHearing.judiciaryChangedForHearing()
+                .withHearingId(hearingId)
+                .withJudiciary(emptyList())
+                .build())).collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(hearing.getJohSource(), nullValue());
+    }
+
+    @Test
+    public void shouldRetainExistingJohSourceWhenJudiciaryChangedForHearingHasNoJohSourceAndNonEmptyJudiciary() {
+        hearing.apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
+                .withHearingId(hearingId)
+                .withJohSource("MANUAL")
+                .withJudiciary(singletonList(buildJudicialRoleEvent()))
+                .build())).collect(Collectors.toList());
+
+        final List<Object> events = hearing.apply(Stream.of(JudiciaryChangedForHearing.judiciaryChangedForHearing()
+                .withHearingId(hearingId)
+                .withJudiciary(singletonList(buildJudicialRoleEvent()))
+                .build())).collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(hearing.getJohSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void testing() {
+        final List<Object> events = hearing.apply(Stream.of(JudiciaryRemovedFromHearing.judiciaryRemovedFromHearing()
+                .withHearingId(hearingId)
+                .build())).collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(hearing.getJohSource(), nullValue());
+    }
+
+
+    private uk.gov.justice.listing.events.JudicialRole buildJudicialRoleEvent() {
+        return uk.gov.justice.listing.events.JudicialRole.judicialRole()
+                .withJudicialId(randomUUID())
+                .withJudicialRoleType(uk.gov.justice.listing.events.JudicialRoleType.judicialRoleType()
+                        .withJudiciaryType("JUDGE")
+                        .withJudicialRoleTypeId(randomUUID())
+                        .build())
+                .build();
     }
 
 }

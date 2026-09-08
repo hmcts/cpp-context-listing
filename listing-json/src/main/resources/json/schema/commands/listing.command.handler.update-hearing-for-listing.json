@@ -57,6 +57,9 @@
         "$ref": "http://justice.gov.uk/core/courts/judicialRole.json"
       }
     },
+    "johSource": {
+      "type": "string"
+    },
     "hearingLanguage": {
       "$ref": "http://justice.gov.uk/core/courts/hearingLanguage.json"
     },

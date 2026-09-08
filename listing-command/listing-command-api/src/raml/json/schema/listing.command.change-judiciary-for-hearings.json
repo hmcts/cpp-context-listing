@@ -21,6 +21,9 @@
       "items": {
         "$ref": "http://justice.gov.uk/core/courts/judicialRole.json"
       }
+    },
+    "johSource": {
+      "type": "string"
     }
   },
   "required": [

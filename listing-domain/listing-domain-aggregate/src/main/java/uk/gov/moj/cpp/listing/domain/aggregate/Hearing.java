@@ -174,16 +174,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -241,6 +232,7 @@ public class Hearing implements Aggregate {
     private uk.gov.justice.listing.events.Hearing currentHearingEventState;
 
     private boolean isSummonsApprovedExists = false;
+    private String johSource;
 
     @Override
     public Object apply(final Object event) {
@@ -967,7 +959,7 @@ public class Hearing implements Aggregate {
         }
     }
 
-    public Stream<Object> assignJudiciary(final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciary, final UUID hearingId) {
+    public Stream<Object> assignJudiciary(final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciary, final UUID hearingId, final String johSource) {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
@@ -977,11 +969,13 @@ public class Hearing implements Aggregate {
             return apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
                     .withJudiciary(convertToEvents(judiciary))
                     .withHearingId(hearingId)
+                    .withJohSource(johSource)
                     .build()));
         } else if (hasChanged(this.judiciary, judiciary)) {
             return apply(Stream.of(JudiciaryChangedForHearing.judiciaryChangedForHearing()
                     .withJudiciary(convertToEvents(judiciary))
                     .withHearingId(hearingId)
+                    .withJohSource(johSource)
                     .build()));
         } else {
             LOGGER.info("Incoming judiciary {} is the same as current judiciary {} for hearing with id {} - Ignore", judiciary, this.judiciary, hearingId);
@@ -989,6 +983,11 @@ public class Hearing implements Aggregate {
         }
     }
 
+   private boolean isManualJohAssignment(){
+
+
+        return false;
+    }
 
     public Stream<Object> removeJudiciary(final UUID hearingId) {
         if (this.duplicate || this.deleted) {
@@ -2664,7 +2663,9 @@ public class Hearing implements Aggregate {
 
     private void onJudiciaryAssignedToHearing(final JudiciaryAssignedToHearing event) {
         withJudiary(event.getJudiciary());
-
+        if (nonNull(event.getJohSource())) {
+            this.johSource = event.getJohSource();
+        }
     }
 
     private void onJurisdictionChangedForHearing(final JurisdictionChangedForHearing event) {
@@ -2679,11 +2680,18 @@ public class Hearing implements Aggregate {
 
     private void onJudiciaryChangedForHearing(final JudiciaryChangedForHearing event) {
         withJudiary(event.getJudiciary());
+        List<uk.gov.justice.listing.events.JudicialRole> judiciary = event.getJudiciary();
+        if (nonNull(judiciary) && judiciary.isEmpty()) {
+            this.johSource = null;
+        } else if (nonNull(event.getJohSource())) {
+            this.johSource = event.getJohSource();
+        }
     }
 
     @SuppressWarnings({"squid:S1172"})
     private void onJudiciaryRemovedFromHearing(final JudiciaryRemovedFromHearing event) {
         this.judiciary = emptyList();
+        this.johSource = null;
     }
 
     private void onCourtRoomAssignedToHearing(final CourtRoomAssignedToHearing event) {
@@ -3802,6 +3810,10 @@ public class Hearing implements Aggregate {
 
     public boolean getIsSummonsApprovedExists() {
         return isSummonsApprovedExists;
+    }
+
+    public String getJohSource() {
+        return johSource;
     }
 
     public Boolean isNotificationRelatedAllocatedFieldsUpdated(final List<uk.gov.justice.listing.commands.HearingDay> updatedHearingDays) {
