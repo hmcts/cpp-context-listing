@@ -3,7 +3,11 @@
     <parent>
         <artifactId>listing-parent</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
+=======
+        <version>17.104.10-cct-1981-r-SNAPSHOT</version>
+>>>>>>> 7e2061ed05 (Release cut for practice direction)
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
