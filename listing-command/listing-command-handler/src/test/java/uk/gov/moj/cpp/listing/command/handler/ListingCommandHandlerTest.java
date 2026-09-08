@@ -2561,6 +2561,7 @@ class ListingCommandHandlerTest {
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearing.changeStartDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.changeEndDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
         when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()))).thenReturn(Stream.empty());
 
@@ -2568,6 +2569,7 @@ class ListingCommandHandlerTest {
 
         final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.HearingDay>> captor = ArgumentCaptor.forClass(List.class);
         verify(hearing, times(1)).changeStartDate(LocalDate.parse("2026-05-01"), HEARING_ID_1);
+        verify(hearing, times(1)).changeEndDate(LocalDate.parse("2026-05-01"), HEARING_ID_1);
         verify(hearing, times(1)).assignHearingDaysV2(eq(HEARING_ID_1), captor.capture(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()));
         verify(hearing, never()).raiseHearingDayCourtSchedulesUpdated(any(), any());
@@ -2577,14 +2579,17 @@ class ListingCommandHandlerTest {
     }
 
     @Test
-    public void listingCommandHandlerShouldMoveCrownHearingToPastDateListingSideOnly() throws Exception {
+    public void listingCommandHandlerShouldMoveCrownHearingToPastDateWithBookedCourtSchedule() throws Exception {
         final String startDate = "2026-05-01";
         final UUID crownRoomId = randomUUID();
-        final JsonEnvelope commandEnvelope = getEnvelopeForMoveCrownHearingToPastDate(startDate, crownRoomId);
+        final UUID courtScheduleId = randomUUID();
+        final JsonEnvelope commandEnvelope = getEnvelopeForMoveCrownHearingToPastDate(startDate, crownRoomId, courtScheduleId);
 
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearing.changeStartDate(eq(LocalDate.parse(startDate)), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.changeEndDate(eq(LocalDate.parse("2026-05-03")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.assignCourtRoom(eq(crownRoomId), eq(HEARING_ID_1), eq(Optional.empty()))).thenReturn(Stream.empty());
         when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.CROWN), eq(emptyList()))).thenReturn(Stream.empty());
 
@@ -2592,13 +2597,96 @@ class ListingCommandHandlerTest {
 
         final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.HearingDay>> captor = ArgumentCaptor.forClass(List.class);
         verify(hearing, times(1)).changeStartDate(LocalDate.parse(startDate), HEARING_ID_1);
+        // multi-day: end date follows the LAST booked past session, not the start date
+        verify(hearing, times(1)).changeEndDate(LocalDate.parse("2026-05-03"), HEARING_ID_1);
         verify(hearing, times(1)).assignHearingDaysV2(eq(HEARING_ID_1), captor.capture(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.CROWN), eq(emptyList()));
         verify(hearing, never()).raiseHearingDayCourtSchedulesUpdated(any(), any());
         final uk.gov.moj.cpp.listing.domain.HearingDay movedDay = captor.getValue().get(0);
         assertThat(movedDay.getHearingDate(), is(LocalDate.parse(startDate)));
-        assertThat(movedDay.getCourtScheduleId().isPresent(), is(false));
+        assertThat(movedDay.getCourtScheduleId().orElse(null), is(courtScheduleId));
         assertThat(movedDay.getCourtRoomId().orElse(null), is(crownRoomId));
+        verify(hearing, times(1)).assignCourtRoom(crownRoomId, HEARING_ID_1, Optional.empty());
+    }
+
+    /** Multi-day: one hearing day per booked session (sequence 1..N), each with its own schedule/date,
+     *  per-day duration and session times; flat single-slot fields are ignored when sessions[] is present. */
+    @Test
+    public void listingCommandHandlerShouldMoveMultiDayCrownHearingToPastDateReissuingOneDayPerBookedSession() throws Exception {
+        final UUID schedule1 = randomUUID();
+        final UUID schedule2 = randomUUID();
+        final UUID schedule3 = randomUUID();
+        final UUID roomId = randomUUID();
+        final UUID centreId = randomUUID();
+        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"jurisdiction\":\"CROWN\",\"startDate\":\"2026-05-04\","
+                + "\"endDate\":\"2026-05-06\",\"courtCentreId\":\"" + centreId + "\","
+                + "\"courtScheduleId\":\"" + schedule1 + "\",\"sessionDate\":\"2026-05-04\",\"durationInMinutes\":360,"
+                + "\"sessions\":["
+                + "{\"courtScheduleId\":\"" + schedule1 + "\",\"courtRoomId\":\"" + roomId + "\",\"sessionDate\":\"2026-05-04\",\"sessionStartTime\":\"2026-05-04T09:00:00Z\",\"sessionEndTime\":\"2026-05-04T17:00:00Z\",\"durationInMinutes\":360,\"isDraft\":false},"
+                + "{\"courtScheduleId\":\"" + schedule2 + "\",\"courtRoomId\":\"" + roomId + "\",\"sessionDate\":\"2026-05-05\",\"sessionStartTime\":\"2026-05-05T09:00:00Z\",\"sessionEndTime\":\"2026-05-05T17:00:00Z\",\"durationInMinutes\":360},"
+                + "{\"courtScheduleId\":\"" + schedule3 + "\",\"courtRoomId\":\"" + roomId + "\",\"sessionDate\":\"2026-05-06\",\"sessionStartTime\":\"2026-05-06T09:00:00Z\",\"durationInMinutes\":360}"
+                + "]}";
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.move-hearing-to-past-date-enriched",
+                JsonObjects.createReader(new StringReader(requestBody)).readObject());
+
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.changeStartDate(eq(LocalDate.parse("2026-05-04")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.changeEndDate(eq(LocalDate.parse("2026-05-06")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.assignCourtRoom(eq(roomId), eq(HEARING_ID_1), eq(Optional.empty()))).thenReturn(Stream.empty());
+        when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
+                eq(uk.gov.justice.core.courts.JurisdictionType.CROWN), eq(emptyList()))).thenReturn(Stream.empty());
+
+        listingCommandHandler.moveHearingToPastDate(commandEnvelope);
+
+        final ArgumentCaptor<List<uk.gov.moj.cpp.listing.domain.HearingDay>> captor = ArgumentCaptor.forClass(List.class);
+        verify(hearing, times(1)).changeStartDate(LocalDate.parse("2026-05-04"), HEARING_ID_1);
+        verify(hearing, times(1)).changeEndDate(LocalDate.parse("2026-05-06"), HEARING_ID_1);
+        // every booked day is in the same room -> the hearing-level room follows, panel untouched
+        verify(hearing, times(1)).assignCourtRoom(roomId, HEARING_ID_1, Optional.empty());
+        verify(hearing, times(1)).assignHearingDaysV2(eq(HEARING_ID_1), captor.capture(), isNull(), isNull(),
+                eq(uk.gov.justice.core.courts.JurisdictionType.CROWN), eq(emptyList()));
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> days = captor.getValue();
+        assertThat(days.size(), is(3));
+        assertThat(days.get(0).getCourtScheduleId().orElse(null), is(schedule1));
+        assertThat(days.get(1).getCourtScheduleId().orElse(null), is(schedule2));
+        assertThat(days.get(2).getCourtScheduleId().orElse(null), is(schedule3));
+        assertThat(days.get(0).getHearingDate(), is(LocalDate.parse("2026-05-04")));
+        assertThat(days.get(1).getHearingDate(), is(LocalDate.parse("2026-05-05")));
+        assertThat(days.get(2).getHearingDate(), is(LocalDate.parse("2026-05-06")));
+        assertThat(days.get(0).getSequence(), is(1));
+        assertThat(days.get(2).getSequence(), is(3));
+        assertThat(days.get(1).getDurationMinutes(), is(360));
+        assertThat(days.get(1).getCourtRoomId().orElse(null), is(roomId));
+        // session carries no courtCentreId -> falls back to the command's
+        assertThat(days.get(1).getCourtCentreId().orElse(null), is(centreId));
+        assertThat(days.get(1).getStartTime(), is(ZonedDateTime.parse("2026-05-05T09:00:00Z")));
+        // endTime = startTime + the day's duration (NOT the session's 17:00 closing time)
+        assertThat(days.get(1).getEndTime(), is(ZonedDateTime.parse("2026-05-05T15:00:00Z")));
+        assertThat(days.get(2).getEndTime(), is(ZonedDateTime.parse("2026-05-06T15:00:00Z")));
+        assertThat(days.get(0).getIsDraft(), is(Optional.of(false)));
+        assertThat(days.get(2).getIsDraft(), is(Optional.empty()));
+    }
+
+    @Test
+    public void listingCommandHandlerShouldLeaveEndDateUntouchedWhenMoveEnrichmentCarriesNone() throws Exception {
+        final UUID courtScheduleId = randomUUID();
+        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"jurisdiction\":\"MAGISTRATES\",\"startDate\":\"2026-05-01\","
+                + "\"courtCentreId\":\"" + randomUUID() + "\",\"courtScheduleId\":\"" + courtScheduleId + "\",\"sessionDate\":\"2026-05-01\"}";
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.move-hearing-to-past-date-enriched",
+                JsonObjects.createReader(new StringReader(requestBody)).readObject());
+
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.changeStartDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
+                eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()))).thenReturn(Stream.empty());
+
+        listingCommandHandler.moveHearingToPastDate(commandEnvelope);
+
+        verify(hearing, never()).changeEndDate(any(), any());
+        verify(hearing, never()).removeEndDate(any());
+        verify(hearing, never()).assignCourtRoom(any(), any(), any());
     }
 
     @Test
@@ -2931,15 +3019,15 @@ class ListingCommandHandlerTest {
     private JsonEnvelope getEnvelopeForMoveHearingToPastDate(final UUID courtScheduleId, final String sessionDate) {
         final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"jurisdiction\":\"MAGISTRATES\",\"startDate\":\""
                 + sessionDate + "\",\"courtCentreId\":\"" + randomUUID() + "\",\"courtScheduleId\":\"" + courtScheduleId
-                + "\",\"sessionDate\":\"" + sessionDate + "\"}";
+                + "\",\"sessionDate\":\"" + sessionDate + "\",\"endDate\":\"" + sessionDate + "\"}";
         final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
         return createEnvelope("listing.command.move-hearing-to-past-date-enriched", jsonReader.readObject());
     }
 
-    private JsonEnvelope getEnvelopeForMoveCrownHearingToPastDate(final String startDate, final UUID courtRoomId) {
+    private JsonEnvelope getEnvelopeForMoveCrownHearingToPastDate(final String startDate, final UUID courtRoomId, final UUID courtScheduleId) {
         final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"jurisdiction\":\"CROWN\",\"startDate\":\"" + startDate
                 + "\",\"courtCentreId\":\"" + randomUUID() + "\",\"courtRoomId\":\"" + courtRoomId
-                + "\",\"sessionDate\":\"" + startDate + "\",\"sessionStartTime\":\"" + startDate + "T10:00:00Z\",\"durationInMinutes\":25}";
+                + "\",\"courtScheduleId\":\"" + courtScheduleId + "\",\"sessionDate\":\"" + startDate + "\",\"endDate\":\"2026-05-03\",\"sessionStartTime\":\"" + startDate + "T10:00:00Z\",\"durationInMinutes\":25}";
         final JsonReader jsonReader = JsonObjects.createReader(new StringReader(requestBody));
         return createEnvelope("listing.command.move-hearing-to-past-date-enriched", jsonReader.readObject());
     }

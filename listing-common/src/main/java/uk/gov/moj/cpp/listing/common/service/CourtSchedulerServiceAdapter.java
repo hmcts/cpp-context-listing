@@ -84,6 +84,8 @@ public class CourtSchedulerServiceAdapter {
     private static final String ANY_DRAFT = "anyDraft";
     // move-hearing-to-past-date (MAGS) wire-field constants; JURISDICTION reuses the field declared above
     private static final String START_DATE = "startDate";
+    private static final String SESSIONS = "sessions";
+    private static final String COURT_HOUSE_ID = "courtHouseId";
     private static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
     // no-session normalisation (422 NO_SESSION_FOUND) constants
     public static final String NO_SESSION_FOUND = "NO_SESSION_FOUND";
@@ -527,19 +529,27 @@ public class CourtSchedulerServiceAdapter {
     }
 
     /**
-     * MAGISTRATES-only. Calls courtscheduler's {@code move-hearing-to-past-date} action
-     * synchronously. CROWN moves are handled entirely listing-side and never reach this method
-     * (Baris decision D1). On any non-200 response the upstream errorCode/status is surfaced via
+     * Calls courtscheduler's {@code move-hearing-to-past-date} action synchronously for both
+     * MAGISTRATES and CROWN moves (CROWN is additionally restricted to today-or-earlier by the
+     * command API). On any non-200 response the upstream errorCode/status is surfaced via
      * {@link MoveHearingToPastDateException} so the caller sends no event.
      */
     public MoveHearingToPastDateResult moveHearingToPastDate(final UUID hearingId,
                                                               final UUID courtCentreId,
                                                               final LocalDate startDate,
                                                               final Integer durationInMinutes) {
+        return moveHearingToPastDate(hearingId, courtCentreId, startDate, durationInMinutes, MAGISTRATES_JURISDICTION);
+    }
+
+    public MoveHearingToPastDateResult moveHearingToPastDate(final UUID hearingId,
+                                                              final UUID courtCentreId,
+                                                              final LocalDate startDate,
+                                                              final Integer durationInMinutes,
+                                                              final String jurisdiction) {
         // hearingId travels only in the URL path; courtscheduler's REST adapter injects it
         final JsonObjectBuilder requestBuilder = Json.createObjectBuilder()
                 .add(COURT_CENTRE_ID, courtCentreId.toString())
-                .add(JURISDICTION, MAGISTRATES_JURISDICTION)
+                .add(JURISDICTION, jurisdiction == null || jurisdiction.isBlank() ? MAGISTRATES_JURISDICTION : jurisdiction)
                 .add(START_DATE, startDate.toString());
         if (durationInMinutes != null) {
             requestBuilder.add(DURATION_IN_MINUTES, durationInMinutes);
@@ -574,14 +584,40 @@ public class CourtSchedulerServiceAdapter {
                 "moveHearingToPastDate returned " + status + " for hearingId " + hearingId);
     }
 
+    /**
+     * courtscheduler's wire response is {@code {hearingId, source, sessions:[CourtSchedule...]}} — EVERY
+     * booked past day, nested and ordered by date (first = the day the hearing now starts on). All of
+     * them are returned so the caller can re-issue one hearing day per booked session. A flat body
+     * (slot fields at the top level) is still accepted as a single session so older stubs/releases
+     * keep working.
+     */
     private static MoveHearingToPastDateResult parseMoveHearingToPastDateResult(final JsonObject body) {
-        return new MoveHearingToPastDateResult(
-                body.containsKey(COURT_SCHEDULE_ID) ? UUID.fromString(body.getString(COURT_SCHEDULE_ID)) : null,
-                body.getString(COURT_ROOM_ID, null),
-                body.containsKey(SESSION_DATE) ? LocalDate.parse(body.getString(SESSION_DATE)) : null,
-                body.getString(SESSION_START_TIME, null),
-                body.getString(SESSION_END_TIME, null),
-                body.containsKey(DURATION_IN_MINUTES) ? body.getInt(DURATION_IN_MINUTES) : null);
+        if (body.containsKey(SESSIONS) && !body.isNull(SESSIONS)) {
+            final JsonArray sessions = body.getJsonArray(SESSIONS);
+            if (!sessions.isEmpty()) {
+                final List<MoveHearingToPastDateResult.BookedSession> booked = new ArrayList<>();
+                for (int i = 0; i < sessions.size(); i++) {
+                    booked.add(parseBookedSession(sessions.getJsonObject(i)));
+                }
+                return new MoveHearingToPastDateResult(booked);
+            }
+        }
+        return new MoveHearingToPastDateResult(List.of(parseBookedSession(body)));
+    }
+
+    private static MoveHearingToPastDateResult.BookedSession parseBookedSession(final JsonObject session) {
+        return new MoveHearingToPastDateResult.BookedSession(
+                uuidOrNull(session, COURT_SCHEDULE_ID),
+                session.getString(COURT_ROOM_ID, null),
+                uuidOrNull(session, COURT_HOUSE_ID),
+                session.containsKey(SESSION_DATE) && !session.isNull(SESSION_DATE)
+                        ? LocalDate.parse(session.getString(SESSION_DATE)) : null,
+                session.getString(SESSION_START_TIME, null),
+                session.getString(SESSION_END_TIME, null),
+                session.containsKey(DURATION_IN_MINUTES) && !session.isNull(DURATION_IN_MINUTES)
+                        ? session.getInt(DURATION_IN_MINUTES) : null,
+                // Jackson may name the flag "isDraft" (setter) or "draft" (boolean getter) - accept both
+                session.containsKey(IS_DRAFT) ? booleanOrNull(session, IS_DRAFT) : booleanOrNull(session, DRAFT));
     }
 
     /**
