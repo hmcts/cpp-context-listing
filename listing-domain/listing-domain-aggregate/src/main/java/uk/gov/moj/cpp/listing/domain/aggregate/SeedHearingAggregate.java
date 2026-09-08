@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
@@ -140,11 +142,17 @@ public class SeedHearingAggregate implements Aggregate {
     }
 
     public Stream<Object> requestNextUnscheduledHearings(final List<HearingUnscheduledListingNeeds> unscheduledListingNeeds, final String hearingDay, final List<CourtCentreDefaults> courtCentreDefaults) {
-        return requestNextUnscheduledHearings(unscheduledListingNeeds, hearingDay, courtCentreDefaults, emptyList());
+        return requestNextUnscheduledHearings(unscheduledListingNeeds, hearingDay, courtCentreDefaults, emptyMap());
     }
 
+    /**
+     * LPT-2405: {@code ptphDetailsByHearingId} holds the tier / list type inherited from the
+     * seeding hearing, keyed by next-hearing id — only the Crown Court trials among
+     * {@code unscheduledListingNeeds} have an entry. One event is raised per requested hearing,
+     * so each event carries that hearing's own detail, or none.
+     */
     public Stream<Object> requestNextUnscheduledHearings(final List<HearingUnscheduledListingNeeds> unscheduledListingNeeds, final String hearingDay, final List<CourtCentreDefaults> courtCentreDefaults,
-                                                        final List<uk.gov.justice.listing.events.PtphDetails> ptphDetails) {
+                                                        final Map<UUID, PtphDetail> ptphDetailsByHearingId) {
 
         final List<CourtCentreDetails> courtCentreDetails = convertCourtCentreDetails(courtCentreDefaults);
 
@@ -155,9 +163,7 @@ public class SeedHearingAggregate implements Aggregate {
                     .withHearing(hearing)
                     .withHearingDay(hearingDay)
                     .withCourtCentreDetails(courtCentreDetails)
-                    .withPtphDetails(ptphDetails.stream()
-                            .filter(detail -> hearing.getId().equals(detail.getHearingId()))
-                            .collect(toList()))
+                    .withPtphDetail(eventPtphDetail(ptphDetailsByHearingId.get(hearing.getId())))
                     .build());
         }
 
@@ -172,6 +178,17 @@ public class SeedHearingAggregate implements Aggregate {
         }
 
         return apply(eventStreamBuilder.build());
+    }
+
+    private uk.gov.justice.listing.events.PtphDetail eventPtphDetail(final PtphDetail ptphDetail) {
+        if (isNull(ptphDetail)) {
+            return null;
+        }
+        return uk.gov.justice.listing.events.PtphDetail.ptphDetail()
+                .withTier(ptphDetail.getTier())
+                .withListType(ptphDetail.getListType())
+                .withKeyReason(ptphDetail.getKeyReason())
+                .build();
     }
 
     public Stream<Object> deleteNextHearings(final UUID seedingHearingId, final String hearingDay) {

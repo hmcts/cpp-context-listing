@@ -242,12 +242,9 @@
       "defaultStartTime": "DEFAULT_START_TIME"
     }
   ],
-  "ptphDetails": [
-    {
-      "hearingId": "HEARING_ID",
-      "tier": "TIER_3",
-      "listType": "TYPE_1_FIXED",
-      "keyReason": "Vulnerable witness"
-    }
-  ]
+  "ptphDetail": {
+    "tier": "TIER_3",
+    "listType": "TYPE_1_FIXED",
+    "keyReason": "Vulnerable witness"
+  }
 }

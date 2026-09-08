@@ -12,7 +12,7 @@ import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
-import uk.gov.justice.listing.courts.PtphDetails;
+import uk.gov.justice.listing.commands.HearingPtphDetail;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.domain.PtphDetail;
@@ -50,8 +50,13 @@ public class PtphDetailEnrichmentService {
     private PtphDetailService ptphDetailService;
 
     /**
-     * Scheduled flow — the hearing carrier is in-repo, so the values are stamped onto each
-     * trial hearing itself.
+     * Scheduled flow — the hearing carrier is in-repo, so the values are set directly on each
+     * trial hearing.
+     *
+     * @return the hearings to list, every Crown Court trial among them carrying the inherited
+     *         values. This is a transform of its input, not a lookup, so having nothing to
+     *         inherit returns the hearings unchanged — never an empty list, which would drop
+     *         every hearing from the command.
      */
     public List<HearingListingNeeds> enrichWithPtphDetail(final List<HearingListingNeeds> hearings,
                                                           final SeedingHearing seedingHearing,
@@ -71,7 +76,7 @@ public class PtphDetailEnrichmentService {
 
         final List<HearingListingNeeds> enriched = new ArrayList<>();
         hearings.forEach(hearing -> enriched.add(isCrownTrial(hearing.getJurisdictionType(), hearing.getType(), trialHearingTypeIds)
-                ? stamp(hearing, ptphDetail.get())
+                ? withPtphDetail(hearing, ptphDetail.get())
                 : hearing));
         return enriched;
     }
@@ -79,9 +84,14 @@ public class PtphDetailEnrichmentService {
     /**
      * Unscheduled flow — the hearing carrier is the coredomain
      * {@code HearingUnscheduledListingNeeds}, which cannot be extended here, so the values
-     * travel as a sibling list keyed by hearing id. Empty when nothing applies.
+     * travel as a sibling list keyed by hearing id.
+     *
+     * @return one entry per Crown Court trial being listed, or empty when nothing is inherited.
+     *         Unlike {@link #enrichWithPtphDetail}, this builds a new list rather than
+     *         transforming the hearings, so empty is the correct "nothing to apply" answer —
+     *         the hearings themselves travel separately and are unaffected.
      */
-    public List<PtphDetails> resolvePtphDetails(final List<HearingUnscheduledListingNeeds> hearings,
+    public List<HearingPtphDetail> resolvePtphDetails(final List<HearingUnscheduledListingNeeds> hearings,
                                                 final SeedingHearing seedingHearing,
                                                 final JsonEnvelope envelope) {
         if (isNull(hearings) || hearings.isEmpty()) {
@@ -97,13 +107,13 @@ public class PtphDetailEnrichmentService {
             return emptyList();
         }
 
-        final List<PtphDetails> resolved = new ArrayList<>();
+        final List<HearingPtphDetail> resolved = new ArrayList<>();
         hearings.stream()
                 .filter(hearing -> isCrownTrial(hearing.getJurisdictionType(), hearing.getType(), trialHearingTypeIds))
                 .forEach(hearing -> {
                     LOGGER.info("Inheriting tier {} and list type {} onto unscheduled trial hearing {}",
                             ptphDetail.get().getTier(), ptphDetail.get().getListType(), hearing.getId());
-                    resolved.add(PtphDetails.ptphDetails()
+                    resolved.add(HearingPtphDetail.hearingPtphDetail()
                             .withHearingId(hearing.getId())
                             .withTier(ptphDetail.get().getTier())
                             .withListType(ptphDetail.get().getListType())
@@ -115,7 +125,7 @@ public class PtphDetailEnrichmentService {
 
     /**
      * Existing-hearing flow — the next hearing already exists, so there is nothing to create
-     * and no {@code HearingListingNeeds} to stamp. The caller supplies the stored hearing's
+     * and no {@code HearingListingNeeds} to set the values on. The caller supplies the stored hearing's
      * jurisdiction and type (see {@code HearingLookupService}), which makes this path uniform
      * with the others: the same seeding, Crown-trial and finalised gates apply, and the hearing
      * context is still queried only when the target really is a Crown Court trial.
@@ -184,10 +194,12 @@ public class PtphDetailEnrichmentService {
     }
 
     /**
-     * Always overwrites all three fields, so values already present on the inbound
-     * command cannot masquerade as hearing-context data.
+     * Returns a copy of the hearing carrying the inherited tier, list type and key reason.
+     *
+     * <p>All three are overwritten unconditionally, never merged: whatever the inbound command
+     * happened to carry must not survive and masquerade as hearing-context data.
      */
-    private HearingListingNeeds stamp(final HearingListingNeeds hearing, final PtphDetail ptphDetail) {
+    private HearingListingNeeds withPtphDetail(final HearingListingNeeds hearing, final PtphDetail ptphDetail) {
         LOGGER.info("Inheriting tier {} and list type {} onto trial hearing {}",
                 ptphDetail.getTier(), ptphDetail.getListType(), hearing.getId());
         return hearingListingNeeds()
