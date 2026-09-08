@@ -438,64 +438,55 @@ public class ListingCommandApi {
         final MoveHearingToPastDateResult slot =
                 courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, startDate, durationInMinutes, jurisdictionType);
 
-        if (slot.courtScheduleId() != null) {
-            enrichedBuilder.add(COURT_SCHEDULE_ID, slot.courtScheduleId().toString());
-        }
-        if (slot.courtRoomId() != null) {
-            enrichedBuilder.add(COURT_ROOM_ID, slot.courtRoomId());
-        }
-        if (slot.sessionDate() != null) {
-            enrichedBuilder.add(SESSION_DATE, slot.sessionDate().toString());
-        }
-        if (slot.sessionStartTime() != null) {
-            enrichedBuilder.add(SESSION_START_TIME, slot.sessionStartTime());
-        }
-        if (slot.sessionEndTime() != null) {
-            enrichedBuilder.add(SESSION_END_TIME, slot.sessionEndTime());
-        }
         // courtscheduler's CourtSchedule carries no per-hearing duration: the moved day(s) keep the
         // hearing's own estimate, spread evenly across the booked sessions (mirrors
         // CourtScheduleEnrichmentService.buildHearingDaysFromMultiDaySessions for the update flow).
         final Integer perDayMinutes = perDayMinutes(durationInMinutes, slot);
-        if (perDayMinutes != null) {
-            enrichedBuilder.add(DURATION_IN_MINUTES, perDayMinutes);
+
+        // Flat single-slot fields mirror the FIRST booked session (the day the hearing now starts on).
+        if (!slot.sessions().isEmpty()) {
+            addBookedSessionFields(enrichedBuilder, slot.sessions().get(0), perDayMinutes);
         }
         // The hearing's new end date is the last day courtscheduler booked (== sessionDate for single-day).
-        if (slot.lastSessionDate() != null) {
-            enrichedBuilder.add(MOVE_END_DATE, slot.lastSessionDate().toString());
-        }
+        addIfPresent(enrichedBuilder, MOVE_END_DATE, slot.lastSessionDate());
+
         // Every booked session, in date order - the handler re-issues one hearing day per entry so a
         // multi-day hearing keeps N days matching courtscheduler's N allocations.
         final JsonArrayBuilder sessions = createArrayBuilder();
         for (final MoveHearingToPastDateResult.BookedSession session : slot.sessions()) {
             final JsonObjectBuilder day = createObjectBuilder();
-            if (session.courtScheduleId() != null) {
-                day.add(COURT_SCHEDULE_ID, session.courtScheduleId().toString());
-            }
-            if (session.courtRoomId() != null) {
-                day.add(COURT_ROOM_ID, session.courtRoomId());
-            }
-            if (session.courtCentreId() != null) {
-                day.add(COURT_CENTRE_ID, session.courtCentreId().toString());
-            }
-            if (session.sessionDate() != null) {
-                day.add(SESSION_DATE, session.sessionDate().toString());
-            }
-            if (session.sessionStartTime() != null) {
-                day.add(SESSION_START_TIME, session.sessionStartTime());
-            }
-            if (session.sessionEndTime() != null) {
-                day.add(SESSION_END_TIME, session.sessionEndTime());
-            }
-            if (perDayMinutes != null) {
-                day.add(DURATION_IN_MINUTES, perDayMinutes);
-            }
-            if (session.isDraft() != null) {
-                day.add(MOVE_IS_DRAFT, session.isDraft());
-            }
+            addBookedSessionFields(day, session, perDayMinutes);
+            addIfPresent(day, COURT_CENTRE_ID, session.courtCentreId());
+            addIfPresent(day, MOVE_IS_DRAFT, session.isDraft());
             sessions.add(day);
         }
         enrichedBuilder.add(MOVE_SESSIONS, sessions);
+    }
+
+    /** courtScheduleId / courtRoomId / sessionDate / session times / per-day duration of one booked session. */
+    private static void addBookedSessionFields(final JsonObjectBuilder target,
+                                               final MoveHearingToPastDateResult.BookedSession session,
+                                               final Integer perDayMinutes) {
+        addIfPresent(target, COURT_SCHEDULE_ID, session.courtScheduleId());
+        addIfPresent(target, COURT_ROOM_ID, session.courtRoomId());
+        addIfPresent(target, SESSION_DATE, session.sessionDate());
+        addIfPresent(target, SESSION_START_TIME, session.sessionStartTime());
+        addIfPresent(target, SESSION_END_TIME, session.sessionEndTime());
+        addIfPresent(target, DURATION_IN_MINUTES, perDayMinutes);
+    }
+
+    /** Adds {@code value} under {@code key} unless null: Integers and Booleans natively, anything else via toString(). */
+    private static void addIfPresent(final JsonObjectBuilder target, final String key, final Object value) {
+        if (value == null) {
+            return;
+        }
+        if (value instanceof Integer integer) {
+            target.add(key, integer);
+        } else if (value instanceof Boolean bool) {
+            target.add(key, bool);
+        } else {
+            target.add(key, value.toString());
+        }
     }
 
     /**
