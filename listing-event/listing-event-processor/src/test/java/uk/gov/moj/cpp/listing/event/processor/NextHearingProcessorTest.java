@@ -360,12 +360,12 @@ public class NextHearingProcessorTest {
     }
 
     /**
-     * LPT-2405 — the inherited tier / list type ride the event as a sibling list keyed by
-     * hearing id. If this processor drops them, the per-hearing command has nothing to
-     * resolve and the trial silently loses its tier.
+     * LPT-2405 — the inherited tier / list type ride the event as a sibling of the hearing. If
+     * this processor drops them, the per-hearing command has nothing to apply and the trial
+     * silently loses its tier.
      */
     @Test
-    public void shouldForwardPtphDetailsOntoTheUnscheduledNextHearingCommand() {
+    public void shouldForwardPtphDetailOntoTheUnscheduledNextHearingCommand() {
         final UUID courtCentreId = randomUUID();
         final UUID hearingId = randomUUID();
 
@@ -378,12 +378,11 @@ public class NextHearingProcessorTest {
                         .withDefaultStartTime(LocalTime.of(10, 0))
                         .withId(courtCentreId)
                         .build()))
-                .withPtphDetails(asList(uk.gov.justice.listing.events.PtphDetails.ptphDetails()
-                        .withHearingId(hearingId)
+                .withPtphDetail(uk.gov.justice.listing.events.PtphDetail.ptphDetail()
                         .withTier("TIER_3")
                         .withListType("TYPE_1_FIXED")
                         .withKeyReason("Vulnerable witness")
-                        .build()))
+                        .build())
                 .build();
 
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.unscheduled-next-hearing-requested"),
@@ -394,19 +393,18 @@ public class NextHearingProcessorTest {
         verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
 
         final JsonObject jsonObject = this.senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject();
-        final JsonObject forwarded = jsonObject.getJsonArray("ptphDetails").getJsonObject(0);
-        assertThat(forwarded.getString("hearingId"), is(hearingId.toString()));
+        final JsonObject forwarded = jsonObject.getJsonObject("ptphDetail");
         assertThat(forwarded.getString("tier"), is("TIER_3"));
         assertThat(forwarded.getString("listType"), is("TYPE_1_FIXED"));
         assertThat(forwarded.getString("keyReason"), is("Vulnerable witness"));
     }
 
     /**
-     * Nothing inherited means no `ptphDetails` key at all, rather than an empty array the
+     * Nothing inherited means no `ptphDetail` key at all, rather than an empty object the
      * downstream schema would have to tolerate.
      */
     @Test
-    public void shouldOmitPtphDetailsWhenNoneWereInherited() {
+    public void shouldOmitPtphDetailWhenNoneWasInherited() {
         final UnscheduledNextHearingRequested nextHearingRequested = UnscheduledNextHearingRequested.unscheduledNextHearingRequested()
                 .withHearing(HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds()
                         .withId(randomUUID())
@@ -425,7 +423,7 @@ public class NextHearingProcessorTest {
 
         verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
 
-        assertThat(this.senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject().containsKey("ptphDetails"), is(false));
+        assertThat(this.senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject().containsKey("ptphDetail"), is(false));
     }
 
     public void shouldHandleSeedHearingEarliestNextHearingDateUpdated() {

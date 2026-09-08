@@ -21,7 +21,7 @@ import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.SeedingHearing;
-import uk.gov.justice.listing.courts.PtphDetails;
+import uk.gov.justice.listing.commands.HearingPtphDetail;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.HearingTypeFactory;
@@ -200,7 +200,7 @@ class PtphDetailEnrichmentServiceTest {
         when(hearingTypeFactory.getTrialHearingTypeIds(any(JsonEnvelope.class)))
                 .thenReturn(Set.of(TRIAL_TYPE_ID.toString()));
 
-        final List<PtphDetails> result = ptphDetailEnrichmentService.resolvePtphDetails(
+        final List<HearingPtphDetail> result = ptphDetailEnrichmentService.resolvePtphDetails(
                 singletonList(unscheduledHearingOfType(randomUUID(), PTPH_TYPE_ID)), seedingHearing(), envelope());
 
         verifyNoInteractions(ptphDetailService);
@@ -215,7 +215,7 @@ class PtphDetailEnrichmentServiceTest {
         when(ptphDetailService.getFinalisedPtphDetail(eq(SEEDING_HEARING_ID), any(JsonEnvelope.class)))
                 .thenReturn(Optional.of(new PtphDetail("TIER_3", "TYPE_1_FIXED", "Vulnerable witness")));
 
-        final List<PtphDetails> result = ptphDetailEnrichmentService.resolvePtphDetails(
+        final List<HearingPtphDetail> result = ptphDetailEnrichmentService.resolvePtphDetails(
                 singletonList(unscheduledHearingOfType(trialHearingId, TRIAL_TYPE_ID)), seedingHearing(), envelope());
 
         assertEquals(1, result.size());
@@ -232,7 +232,7 @@ class PtphDetailEnrichmentServiceTest {
         when(ptphDetailService.getFinalisedPtphDetail(eq(SEEDING_HEARING_ID), any(JsonEnvelope.class)))
                 .thenReturn(Optional.empty());
 
-        final List<PtphDetails> result = ptphDetailEnrichmentService.resolvePtphDetails(
+        final List<HearingPtphDetail> result = ptphDetailEnrichmentService.resolvePtphDetails(
                 singletonList(unscheduledHearingOfType(randomUUID(), TRIAL_TYPE_ID)), seedingHearing(), envelope());
 
         assertTrue(result.isEmpty());
@@ -246,7 +246,7 @@ class PtphDetailEnrichmentServiceTest {
         when(ptphDetailService.getFinalisedPtphDetail(eq(SEEDING_HEARING_ID), any(JsonEnvelope.class)))
                 .thenReturn(Optional.of(new PtphDetail("TIER_1", "TYPE_2_FLEXIBLE", null)));
 
-        final List<PtphDetails> result = ptphDetailEnrichmentService.resolvePtphDetails(
+        final List<HearingPtphDetail> result = ptphDetailEnrichmentService.resolvePtphDetails(
                 Arrays.asList(unscheduledHearingOfType(randomUUID(), PTPH_TYPE_ID),
                         unscheduledHearingOfType(trialHearingId, TRIAL_TYPE_ID)),
                 seedingHearing(), envelope());
@@ -258,7 +258,7 @@ class PtphDetailEnrichmentServiceTest {
 
     @Test
     void shouldReturnNoEntriesForUnscheduledWhenNoSeedingHearingId() {
-        final List<PtphDetails> result = ptphDetailEnrichmentService.resolvePtphDetails(
+        final List<HearingPtphDetail> result = ptphDetailEnrichmentService.resolvePtphDetails(
                 singletonList(unscheduledHearingOfType(randomUUID(), TRIAL_TYPE_ID)),
                 SeedingHearing.seedingHearing().build(), envelope());
 
@@ -306,7 +306,7 @@ class PtphDetailEnrichmentServiceTest {
 
     @Test
     void shouldReturnNoEntriesForUnscheduledWhenThereIsNoSeedingHearingAtAll() {
-        final List<PtphDetails> result = ptphDetailEnrichmentService.resolvePtphDetails(
+        final List<HearingPtphDetail> result = ptphDetailEnrichmentService.resolvePtphDetails(
                 singletonList(unscheduledHearingOfType(randomUUID(), TRIAL_TYPE_ID)), null, envelope());
 
         assertTrue(result.isEmpty());
@@ -392,7 +392,7 @@ class PtphDetailEnrichmentServiceTest {
         when(hearingTypeFactory.getTrialHearingTypeIds(any(JsonEnvelope.class)))
                 .thenReturn(Set.of(TRIAL_TYPE_ID.toString()));
 
-        final List<PtphDetails> result = ptphDetailEnrichmentService.resolvePtphDetails(
+        final List<HearingPtphDetail> result = ptphDetailEnrichmentService.resolvePtphDetails(
                 singletonList(unscheduledHearingOfType(randomUUID(), TRIAL_TYPE_ID, JurisdictionType.MAGISTRATES)),
                 seedingHearing(), envelope());
 

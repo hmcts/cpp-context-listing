@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/ptph-detail.json",
+  "description": "Tier, list type and key reason inherited from the seeding hearing. Carried as a sibling of the hearing because the hearing carrier is owned by coredomain and cannot be extended here.",
+  "type": "object",
+  "properties": {
+    "tier": {
+      "type": "string"
+    },
+    "listType": {
+      "type": "string"
+    },
+    "keyReason": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
