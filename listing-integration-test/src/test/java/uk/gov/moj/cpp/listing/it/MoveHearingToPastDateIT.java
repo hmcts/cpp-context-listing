@@ -26,6 +26,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataOrganisationUnitById;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.time.DayOfWeek.MONDAY;
@@ -374,6 +375,11 @@ class MoveHearingToPastDateIT extends AbstractIT {
         // The event processor resolves the hearing's court centre via referencedata organisation-units/{id};
         // without this stub it rollback-redelivers the allocation events 10x into the DLQ.
         stubGetReferenceDataOrganisationUnitById(courtCentreId);
+        // The command API's CROWN nonDefaultDays enrichment (HearingDaysEnrichmentService.getCpCourtRoomNumber)
+        // touches the application-scoped xhibit ReferenceDataCache, whose @PostConstruct loads the
+        // organisation-units LIST. Stub it here so this test does not depend on an earlier test having
+        // warmed the cache (otherwise: WELD-000049 / 'Cannot find organisationunits' -> 500 on the update).
+        stubOrganisationUnit(courtCentreId);
     }
 
     private static String updateHearingForListingMultidayPayload(final UUID hearingId,

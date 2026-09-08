@@ -4,12 +4,14 @@ import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForCrownAllocation;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetCourtSchedulesByIdWithSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 
+import uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.CourtScheduleStubSession;
 import uk.gov.moj.cpp.listing.it.util.ItClock;
 import uk.gov.moj.cpp.listing.steps.DailyListPayloadSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -47,12 +49,20 @@ public class DailyListPayloadIT extends AbstractIT {
         // week-commencing list types on jurisdictionType = CROWN.
         updatedHearingData = updatedHearingDataForCrownAllocation(hearingsData.getHearingData().get(0).getId());
 
-        stubListHearingInCourtSessionsWithMultipleSchedules(
-                hearingsData.getHearingData().get(0).getId().toString(),
-                updatedHearingData.getNonDefaultDays().get(0).getCourtScheduleId().map(UUID::fromString).orElse(null).toString(),
-                updatedHearingData.getNonDefaultDays().get(1).getCourtScheduleId().map(UUID::fromString).orElse(null).toString(),
-                ZonedDateTime.parse(updatedHearingData.getNonDefaultDays().get(0).getStartTime()),
-                updatedHearingData.getNonDefaultDays().get(0).getDuration().orElse(20));
+        // ccsph2n CROWN update enrichment: each nonDefaultDay's courtScheduleId is resolved via courtscheduler
+        // search.court-schedules-by-id and the hearing day is re-derived from that session (date, centre, room),
+        // so stub ONE session per nonDefaultDay on its own date. The sessions listing then mirrors the same
+        // per-day start times (team overload) instead of one shared start time.
+        stubGetCourtSchedulesByIdWithSessions(updatedHearingData.getNonDefaultDays().stream()
+                .map(nonDefaultDay -> new CourtScheduleStubSession(
+                        nonDefaultDay.getCourtScheduleId().orElseThrow(),
+                        ZonedDateTime.parse(nonDefaultDay.getStartTime()).toLocalDate(),
+                        updatedHearingData.getCourtCentreId(),
+                        updatedHearingData.getCourtRoomId(),
+                        ZonedDateTime.parse(nonDefaultDay.getStartTime()),
+                        false))
+                .toList());
+        stubListHearingInCourtSessionsWithMultipleSchedules(updatedHearingData);
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingData);
         updateHearingSteps.whenHearingIsUpdatedForListing();
