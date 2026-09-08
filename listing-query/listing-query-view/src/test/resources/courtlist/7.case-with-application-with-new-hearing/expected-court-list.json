@@ -76,7 +76,37 @@
                 "isRespondent": false,
                 "id": "4464dc2a-8d59-4eed-b0c5-0d943cf19f92",
                 "restrictFromCourtList": false
-              }
+              },
+              "defendants": [
+                {
+                  "lastName": "Olaf",
+                  "firstName": "Rolando",
+                  "courtApplicationPartyType": "PERSON_DEFENDANT",
+                  "address": {
+                    "address1": "Cir3VJCL9d"
+                  },
+                  "isRespondent": true,
+                  "id": "edc625d0-4670-4863-b1bf-19dd7afdd4a6",
+                  "restrictFromCourtList": false,
+                  "prosecutionCaseId": "1cdcaabe-de61-4f5c-a7da-3efc59f5cdaa",
+                  "offences": [
+                    {
+                      "id": "2bcae532-c44e-48bb-8113-105a78329389",
+                      "count": 0,
+                      "startDate": "2019-06-11",
+                      "orderIndex": 1,
+                      "offenceCode": "TW01046",
+                      "offenceWording": "Test Prosecution charge wording",
+                      "statementOfOffence": {
+                        "title": "Occupy reserved seat / berth without a valid ticket on the Tyne and Wear Metro",
+                        "welshTitle": "Occupy reserved seat / berth without a valid ticket on the Tyne and Wear Metro",
+                        "legislation": "Contrary to byelaw 19 and 31(1) of the Tyne and Wear Metro Byelaws made under sections 58 and 62 of the Tyneside Metropolitan Railway Act 1973."
+                      }
+                    }
+                  ],
+                  "courtProceedingsInitiated": "2019-12-16T10:30:00Z"
+                }
+              ]
             }
           ],
           "courtRoomId": "3b800175-f1b8-30f0-b2a4-2fd86b3e3713",

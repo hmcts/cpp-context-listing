@@ -50,6 +50,7 @@
                   ],
                   "dateOfBirth": "1999-10-08",
                   "id": "0cee05b9-0273-40e7-a5f5-23752a45e2b3",
+                  "prosecutionCaseId": "1cdcaabe-de61-4f5c-a7da-3efc59f5cdaa",
                   "masterDefendantId": "0cee05b9-0273-40e7-a5f5-23752a45e2b3",
                   "restrictFromCourtList": false,
                   "bailStatus": {

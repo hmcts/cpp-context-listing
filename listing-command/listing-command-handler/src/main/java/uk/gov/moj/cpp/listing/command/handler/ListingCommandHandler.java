@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.command.handler;
 import static java.lang.String.format;
 import static java.time.LocalDate.parse;
 import static java.time.ZonedDateTime.now;
+import static java.lang.Boolean.FALSE;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -1632,19 +1633,6 @@ public class ListingCommandHandler {
         final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
         final Stream<Object> events = hearingAggregate.cancelHearingDays(payload.getHearingId(), hearingDaysCoreToDomainConverter.convert(payload.getHearingDays()));
         appendEventsToStream(envelope, eventStream, events);
-    }
-
-    @Handles("listing.command.correct-hearing-days-without-court-centre")
-    public void correctHearingDaysWithoutCourtCentre(final JsonEnvelope commandEnvelope) throws EventStreamException {
-        final JsonObject payload = commandEnvelope.payloadAsJsonObject();
-        final UUID hearingId = fromString(payload.getString("id"));
-
-        final List<uk.gov.justice.listing.events.HearingDay> hearingDays = new ArrayList<>();
-
-        payload.getJsonArray("hearingDays").getValuesAs(JsonObject.class).stream()
-                .forEach(hearingDay -> hearingDays.add(jsonObjectConverter.convert(hearingDay, uk.gov.justice.listing.events.HearingDay.class)));
-
-        updateHearingEventStream(commandEnvelope, hearingId, (Hearing hearing) ->  hearing.raiseHearingDaysWithoutCourtCentreCorrected(hearingId, hearingDays));
     }
 
     @Handles("listing.command.update-hearing-day-court-schedule")
