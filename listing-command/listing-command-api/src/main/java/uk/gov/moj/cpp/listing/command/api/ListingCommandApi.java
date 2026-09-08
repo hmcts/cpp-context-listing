@@ -105,6 +105,9 @@ public class ListingCommandApi {
     private static final String VIRTUAL = "virtual";
     private static final String IS_DRAFT = "isDraft";
     private static final String SESSION_DATE = "sessionDate";
+    private static final String MOVE_END_DATE = "endDate";
+    private static final String MOVE_SESSIONS = "sessions";
+    private static final String MOVE_IS_DRAFT = "isDraft";
     private static final String SESSION_START_TIME = "sessionStartTime";
     private static final String SESSION_END_TIME = "sessionEndTime";
     private static final String DURATION_IN_MINUTES = "durationInMinutes";
@@ -408,43 +411,15 @@ public class ListingCommandApi {
                 .add(COURT_CENTRE_ID, courtCentreId.toString());
 
         if (CROWN_JURISDICTION.equals(jurisdictionType)) {
-            // Baris decision D1: CROWN moves are listing-side only, courtscheduler is never called.
+            // CROWN moves may only target today or an earlier date; the slot is then booked in courtscheduler like MAGISTRATES.
             rejectCrownMoveToFutureDate(startDate);
-            enrichWithExistingDayDetails(enrichedBuilder, hearing, startDate);
-        } else {
-            enrichWithBookedPastDateSlot(enrichedBuilder, hearingId, courtCentreId, startDate, hearing);
         }
+        enrichWithBookedPastDateSlot(enrichedBuilder, hearingId, courtCentreId, startDate, hearing, jurisdictionType);
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_MOVE_HEARING_TO_PAST_DATE_ENRICHED),
                 enrichedBuilder.build()));
     }
 
-    /**
-     * CROWN moves never call courtscheduler, so the re-dated hearing day is rebuilt from the
-     * hearing's own current first sitting day — same room and time-of-day, on the new past date.
-     */
-    private static void enrichWithExistingDayDetails(final JsonObjectBuilder enrichedBuilder, final JsonObject hearing, final LocalDate startDate) {
-        final JsonArray hearingDays = hearing.containsKey(HEARING_DAYS) ? hearing.getJsonArray(HEARING_DAYS) : null;
-        if (hearingDays == null || hearingDays.isEmpty()) {
-            return;
-        }
-        final JsonObject day = hearingDays.getJsonObject(0);
-        enrichedBuilder.add(SESSION_DATE, startDate.toString());
-        if (day.containsKey(COURT_ROOM_ID) && !day.isNull(COURT_ROOM_ID)) {
-            enrichedBuilder.add(COURT_ROOM_ID, day.getString(COURT_ROOM_ID));
-        }
-        if (day.containsKey(DAY_START_TIME) && !day.isNull(DAY_START_TIME)) {
-            enrichedBuilder.add(SESSION_START_TIME,
-                    java.time.ZonedDateTime.parse(day.getString(DAY_START_TIME)).with(startDate).toString());
-        }
-        if (day.containsKey(DAY_END_TIME) && !day.isNull(DAY_END_TIME)) {
-            enrichedBuilder.add(SESSION_END_TIME,
-                    java.time.ZonedDateTime.parse(day.getString(DAY_END_TIME)).with(startDate).toString());
-        }
-        if (day.containsKey(DAY_DURATION_MINUTES) && !day.isNull(DAY_DURATION_MINUTES)) {
-            enrichedBuilder.add(DURATION_IN_MINUTES, day.getInt(DAY_DURATION_MINUTES));
-        }
-    }
 
     private static void rejectCrownMoveToFutureDate(final LocalDate startDate) {
         if (startDate.isAfter(LocalDate.now())) {
@@ -455,31 +430,76 @@ public class ListingCommandApi {
     }
 
     private void enrichWithBookedPastDateSlot(final JsonObjectBuilder enrichedBuilder, final UUID hearingId,
-                                              final UUID courtCentreId, final LocalDate startDate, final JsonObject hearing) {
+                                              final UUID courtCentreId, final LocalDate startDate, final JsonObject hearing,
+                                              final String jurisdictionType) {
         final Integer durationInMinutes = (hearing.containsKey(ESTIMATED_MINUTES) && !hearing.isNull(ESTIMATED_MINUTES))
                 ? hearing.getInt(ESTIMATED_MINUTES) : null;
 
         final MoveHearingToPastDateResult slot =
-                courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, startDate, durationInMinutes);
+                courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, startDate, durationInMinutes, jurisdictionType);
 
-        if (slot.courtScheduleId() != null) {
-            enrichedBuilder.add(COURT_SCHEDULE_ID, slot.courtScheduleId().toString());
+        // courtscheduler's CourtSchedule carries no per-hearing duration: the moved day(s) keep the
+        // hearing's own estimate, spread evenly across the booked sessions (mirrors
+        // CourtScheduleEnrichmentService.buildHearingDaysFromMultiDaySessions for the update flow).
+        final Integer perDayMinutes = perDayMinutes(durationInMinutes, slot);
+
+        // Flat single-slot fields mirror the FIRST booked session (the day the hearing now starts on).
+        if (!slot.sessions().isEmpty()) {
+            addBookedSessionFields(enrichedBuilder, slot.sessions().get(0), perDayMinutes);
         }
-        if (slot.courtRoomId() != null) {
-            enrichedBuilder.add(COURT_ROOM_ID, slot.courtRoomId());
+        // The hearing's new end date is the last day courtscheduler booked (== sessionDate for single-day).
+        addIfPresent(enrichedBuilder, MOVE_END_DATE, slot.lastSessionDate());
+
+        // Every booked session, in date order - the handler re-issues one hearing day per entry so a
+        // multi-day hearing keeps N days matching courtscheduler's N allocations.
+        final JsonArrayBuilder sessions = createArrayBuilder();
+        for (final MoveHearingToPastDateResult.BookedSession session : slot.sessions()) {
+            final JsonObjectBuilder day = createObjectBuilder();
+            addBookedSessionFields(day, session, perDayMinutes);
+            addIfPresent(day, COURT_CENTRE_ID, session.courtCentreId());
+            addIfPresent(day, MOVE_IS_DRAFT, session.isDraft());
+            sessions.add(day);
         }
-        if (slot.sessionDate() != null) {
-            enrichedBuilder.add(SESSION_DATE, slot.sessionDate().toString());
+        enrichedBuilder.add(MOVE_SESSIONS, sessions);
+    }
+
+    /** courtScheduleId / courtRoomId / sessionDate / session times / per-day duration of one booked session. */
+    private static void addBookedSessionFields(final JsonObjectBuilder target,
+                                               final MoveHearingToPastDateResult.BookedSession session,
+                                               final Integer perDayMinutes) {
+        addIfPresent(target, COURT_SCHEDULE_ID, session.courtScheduleId());
+        addIfPresent(target, COURT_ROOM_ID, session.courtRoomId());
+        addIfPresent(target, SESSION_DATE, session.sessionDate());
+        addIfPresent(target, SESSION_START_TIME, session.sessionStartTime());
+        addIfPresent(target, SESSION_END_TIME, session.sessionEndTime());
+        addIfPresent(target, DURATION_IN_MINUTES, perDayMinutes);
+    }
+
+    /** Adds {@code value} under {@code key} unless null: Integers and Booleans natively, anything else via toString(). */
+    private static void addIfPresent(final JsonObjectBuilder target, final String key, final Object value) {
+        if (value == null) {
+            return;
         }
-        if (slot.sessionStartTime() != null) {
-            enrichedBuilder.add(SESSION_START_TIME, slot.sessionStartTime());
+        if (value instanceof Integer integer) {
+            target.add(key, integer);
+        } else if (value instanceof Boolean bool) {
+            target.add(key, bool);
+        } else {
+            target.add(key, value.toString());
         }
-        if (slot.sessionEndTime() != null) {
-            enrichedBuilder.add(SESSION_END_TIME, slot.sessionEndTime());
+    }
+
+    /**
+     * Per-day duration for the moved hearing: the hearing's estimatedMinutes split evenly over the
+     * booked sessions; falls back to whatever courtscheduler reported on the first session when the
+     * hearing has no estimate.
+     */
+    private static Integer perDayMinutes(final Integer estimatedMinutes, final MoveHearingToPastDateResult slot) {
+        final int days = Math.max(1, slot.sessions().size());
+        if (estimatedMinutes != null && estimatedMinutes > 0) {
+            return Math.max(1, estimatedMinutes / days);
         }
-        if (slot.durationInMinutes() != null) {
-            enrichedBuilder.add(DURATION_IN_MINUTES, slot.durationInMinutes());
-        }
+        return slot.durationInMinutes();
     }
 
     private static JsonObject buildMoveHearingToPastDateErrorBody(final String errorCode, final String message) {

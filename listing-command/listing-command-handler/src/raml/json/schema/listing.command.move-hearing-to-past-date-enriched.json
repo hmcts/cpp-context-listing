@@ -8,7 +8,10 @@
     },
     "jurisdiction": {
       "type": "string",
-      "enum": ["CROWN", "MAGISTRATES"]
+      "enum": [
+        "CROWN",
+        "MAGISTRATES"
+      ]
     },
     "startDate": {
       "type": "string",
@@ -35,6 +38,50 @@
     },
     "durationInMinutes": {
       "type": "integer"
+    },
+    "endDate": {
+      "type": "string",
+      "format": "date",
+      "description": "New end date of the hearing - the last session booked by courtscheduler (equals sessionDate for a single-day move)"
+    },
+    "sessions": {
+      "type": "array",
+      "description": "Every past session courtscheduler booked, in date order - one hearing day is re-issued per entry (single-day hearings have exactly one)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "courtScheduleId": {
+            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          },
+          "courtRoomId": {
+            "type": "string"
+          },
+          "courtCentreId": {
+            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          },
+          "sessionDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "sessionStartTime": {
+            "type": "string"
+          },
+          "sessionEndTime": {
+            "type": "string"
+          },
+          "durationInMinutes": {
+            "type": "integer"
+          },
+          "isDraft": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "courtScheduleId",
+          "sessionDate"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [

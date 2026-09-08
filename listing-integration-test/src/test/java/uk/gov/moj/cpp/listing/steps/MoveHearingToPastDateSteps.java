@@ -93,6 +93,22 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
                         )));
     }
 
+    /** Start AND end date must both follow the move: end date = last booked past session. */
+    public void verifyStartAndEndDateUpdated(final LocalDate expectedStartDate, final LocalDate expectedEndDate) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty(LISTING_QUERY_HEARING), hearingId));
+
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARING).withHeader(USER_ID, getLoggedInUser()).build())
+                .until(
+                        status().is(OK),
+                        payload().isJson(org.hamcrest.CoreMatchers.allOf(
+                                withJsonPath("$.id", is(hearingId)),
+                                withJsonPath("$.startDate", is(expectedStartDate.toString())),
+                                withJsonPath("$.endDate", is(expectedEndDate.toString())),
+                                withJsonPath("$.hearingDays[0].hearingDate", is(expectedStartDate.toString()))
+                        )));
+    }
+
     public void verifyStartDateUpdated(final LocalDate expectedStartDate) {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty(LISTING_QUERY_HEARING), hearingId));

@@ -198,6 +198,9 @@ public class ListingCommandHandler {
     private static final String SESSION_DATE = "sessionDate";
     private static final String MOVE_COURT_CENTRE_ID = "courtCentreId";
     private static final String MOVE_COURT_ROOM_ID = "courtRoomId";
+    private static final String MOVE_END_DATE = "endDate";
+    private static final String MOVE_SESSIONS = "sessions";
+    private static final String MOVE_IS_DRAFT = "isDraft";
     private static final String IS_DRAFT = "isDraft";
     private static final String SESSION_START_TIME = "sessionStartTime";
     private static final String SESSION_END_TIME = "sessionEndTime";
@@ -434,60 +437,114 @@ public class ListingCommandHandler {
         final LocalDate startDate = parse(payload.getString(START_DATE));
 
         // hearing-day-court-schedule-updated matches days BY DATE in the projection, so it cannot
-        // move a day to a new date. Both paths re-issue the single day on the past date instead:
-        // MAGS carries the slot booked by courtscheduler, CROWN carries the hearing's own existing
-        // room/time (enriched by command-api from its current first day - courtscheduler is never
-        // called for CROWN before Phase 2, Baris decision D1).
-        if (CROWN_JURISDICTION.equals(jurisdiction)) {
-            final uk.gov.moj.cpp.listing.domain.HearingDay movedDay = buildMovedHearingDay(payload, startDate, Optional.empty());
-            updateHearingEventStream(command, hearingId, (Hearing hearing) -> Stream.concat(
-                    hearing.changeStartDate(startDate, hearingId),
-                    hearing.assignHearingDaysV2(hearingId, List.of(movedDay), null, null,
-                            uk.gov.justice.core.courts.JurisdictionType.CROWN, emptyList())));
-        } else {
-            final LocalDate sessionDate = parse(payload.getString(SESSION_DATE));
-            final UUID courtScheduleId = fromString(payload.getString(COURT_SCHEDULE_ID));
-            final uk.gov.moj.cpp.listing.domain.HearingDay movedDay = buildMovedHearingDay(payload, sessionDate, Optional.of(courtScheduleId));
-            updateHearingEventStream(command, hearingId, (Hearing hearing) -> Stream.concat(
-                    hearing.changeStartDate(startDate, hearingId),
-                    hearing.assignHearingDaysV2(hearingId, List.of(movedDay), null, null,
-                            uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES, emptyList())));
-        }
+        // move a day to a new date. Instead the hearing's days are re-issued on the past date(s)
+        // carrying the sessions booked by courtscheduler (command-api books them for both
+        // MAGISTRATES and CROWN): one hearing day per booked session, so a multi-day hearing keeps N
+        // days matching courtscheduler's N allocations. An enrichment without a sessions array (older
+        // producer) falls back to the single flat slot.
+        // New end date = last session courtscheduler booked; absent on older enrichments, in which case
+        // the hearing keeps its current end date (never silently removed).
+        final Optional<LocalDate> endDate = payload.containsKey(MOVE_END_DATE) && !payload.isNull(MOVE_END_DATE)
+                ? Optional.of(parse(payload.getString(MOVE_END_DATE))) : Optional.empty();
+        final uk.gov.justice.core.courts.JurisdictionType jurisdictionType = CROWN_JURISDICTION.equals(jurisdiction)
+                ? uk.gov.justice.core.courts.JurisdictionType.CROWN
+                : uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> movedDays = buildMovedHearingDays(payload);
+        // courtscheduler may have booked the past run in a different room from the hearing's current one;
+        // when every booked day shares one room, the hearing-level courtRoomId follows it (as the update
+        // flow's assignCourtRoom does), so hearing and days never disagree. Panel is left untouched.
+        final Optional<UUID> bookedRoom = singleBookedRoom(movedDays);
+        updateHearingEventStream(command, hearingId, (Hearing hearing) -> Stream.of(
+                        hearing.changeStartDate(startDate, hearingId),
+                        endDate.map(date -> hearing.changeEndDate(date, hearingId)).orElseGet(Stream::empty),
+                        bookedRoom.map(room -> hearing.assignCourtRoom(room, hearingId, Optional.empty())).orElseGet(Stream::empty),
+                        hearing.assignHearingDaysV2(hearingId, movedDays, null, null, jurisdictionType, emptyList()))
+                .flatMap(events -> events));
     }
 
-    private static uk.gov.moj.cpp.listing.domain.HearingDay buildMovedHearingDay(final JsonObject payload,
+    /** The one room every moved day is booked in, or empty when rooms differ / are unknown. */
+    private static Optional<UUID> singleBookedRoom(final List<uk.gov.moj.cpp.listing.domain.HearingDay> days) {
+        final java.util.Set<UUID> rooms = days.stream()
+                .map(uk.gov.moj.cpp.listing.domain.HearingDay::getCourtRoomId)
+                .flatMap(Optional::stream)
+                .collect(java.util.stream.Collectors.toSet());
+        return rooms.size() == 1 ? Optional.of(rooms.iterator().next()) : Optional.empty();
+    }
+
+    /**
+     * One hearing day per booked session in {@code sessions} (date order, sequence 1..N), each falling
+     * back to the enrichment's top-level values (courtCentreId of the command, per-day duration) for
+     * anything the session entry does not carry. Without a sessions array the single flat slot
+     * (courtScheduleId/sessionDate/...) is the one and only day.
+     */
+    private static List<uk.gov.moj.cpp.listing.domain.HearingDay> buildMovedHearingDays(final JsonObject payload) {
+        if (payload.containsKey(MOVE_SESSIONS) && !payload.isNull(MOVE_SESSIONS)
+                && !payload.getJsonArray(MOVE_SESSIONS).isEmpty()) {
+            final List<uk.gov.moj.cpp.listing.domain.HearingDay> days = new ArrayList<>();
+            int sequence = 1;
+            for (final JsonValue value : payload.getJsonArray(MOVE_SESSIONS)) {
+                final JsonObject session = (JsonObject) value;
+                days.add(buildMovedHearingDay(session, payload, parse(session.getString(SESSION_DATE)),
+                        Optional.of(fromString(session.getString(COURT_SCHEDULE_ID))), sequence++));
+            }
+            return days;
+        }
+        return List.of(buildMovedHearingDay(payload, payload, parse(payload.getString(SESSION_DATE)),
+                Optional.of(fromString(payload.getString(COURT_SCHEDULE_ID))), 1));
+    }
+
+    private static uk.gov.moj.cpp.listing.domain.HearingDay buildMovedHearingDay(final JsonObject day,
+                                                                                 final JsonObject defaults,
                                                                                  final LocalDate dayDate,
-                                                                                 final Optional<UUID> courtScheduleId) {
-        final Optional<UUID> courtCentreId = payload.containsKey(MOVE_COURT_CENTRE_ID)
-                ? Optional.of(fromString(payload.getString(MOVE_COURT_CENTRE_ID))) : Optional.empty();
-        final Optional<UUID> courtRoomId = payload.containsKey(MOVE_COURT_ROOM_ID)
-                ? Optional.of(fromString(payload.getString(MOVE_COURT_ROOM_ID))) : Optional.empty();
-        final ZonedDateTime dayStartTime = payload.containsKey(SESSION_START_TIME)
-                ? ZonedDateTime.parse(payload.getString(SESSION_START_TIME))
+                                                                                 final Optional<UUID> courtScheduleId,
+                                                                                 final int sequence) {
+        final Optional<UUID> courtCentreId = optionalUuid(day, MOVE_COURT_CENTRE_ID)
+                .or(() -> optionalUuid(defaults, MOVE_COURT_CENTRE_ID));
+        final Optional<UUID> courtRoomId = optionalUuid(day, MOVE_COURT_ROOM_ID);
+        final ZonedDateTime dayStartTime = day.containsKey(SESSION_START_TIME) && !day.isNull(SESSION_START_TIME)
+                ? ZonedDateTime.parse(day.getString(SESSION_START_TIME))
                 : dayDate.atStartOfDay(java.time.ZoneOffset.UTC);
-        final Integer durationInMinutes = payload.containsKey(DURATION_IN_MINUTES)
-                ? payload.getInt(DURATION_IN_MINUTES) : null;
-        // hearing-days-changed-for-hearing requires endTime on every day; the normal listing flows
-        // always compute it as startTime + duration, so mirror that when the payload has no end time.
+        final Integer durationInMinutes = optionalInt(day, DURATION_IN_MINUTES)
+                .or(() -> optionalInt(defaults, DURATION_IN_MINUTES))
+                .orElse(null);
+        // hearing-days-changed-for-hearing requires endTime on every day. The normal listing flows
+        // always derive it as startTime + the day's duration (the session's own end time is the
+        // courtroom's closing time, not the hearing's), so do the same; only without a duration does
+        // the session end time stand in.
         final ZonedDateTime dayEndTime;
-        if (payload.containsKey(SESSION_END_TIME)) {
-            dayEndTime = ZonedDateTime.parse(payload.getString(SESSION_END_TIME));
-        } else if (durationInMinutes != null) {
+        if (durationInMinutes != null) {
             dayEndTime = dayStartTime.plusMinutes(durationInMinutes);
+        } else if (day.containsKey(SESSION_END_TIME) && !day.isNull(SESSION_END_TIME)) {
+            dayEndTime = ZonedDateTime.parse(day.getString(SESSION_END_TIME));
         } else {
             dayEndTime = dayStartTime;
         }
+        final Optional<Boolean> isDraft = day.containsKey(MOVE_IS_DRAFT) && !day.isNull(MOVE_IS_DRAFT)
+                ? Optional.of(day.getBoolean(MOVE_IS_DRAFT)) : Optional.empty();
 
         return uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay()
                 .withHearingDate(dayDate)
                 .withStartTime(dayStartTime)
                 .withEndTime(dayEndTime)
                 .withDurationMinutes(durationInMinutes)
-                .withSequence(1)
+                .withSequence(sequence)
                 .withCourtScheduleId(courtScheduleId)
                 .withCourtCentreId(courtCentreId)
                 .withCourtRoomId(courtRoomId)
+                .withIsDraft(isDraft)
                 .build();
+    }
+
+    private static Optional<Integer> optionalInt(final JsonObject json, final String key) {
+        return json.containsKey(key) && !json.isNull(key) ? Optional.of(json.getInt(key)) : Optional.empty();
+    }
+
+    private static Optional<UUID> optionalUuid(final JsonObject json, final String key) {
+        if (!json.containsKey(key) || json.isNull(key)) {
+            return Optional.empty();
+        }
+        final String value = json.getString(key, null);
+        return value == null || value.isBlank() ? Optional.empty() : Optional.of(fromString(value));
     }
 
     @Handles("listing.command.change-court-room-for-multiday-hearing-enriched")
