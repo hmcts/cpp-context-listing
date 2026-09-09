@@ -10,6 +10,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.10-cct-1981-r-SNAPSHOT</version>
@@ -26,6 +27,9 @@
 =======
         <version>17.104.10</version>
 >>>>>>> b7ede06012 (updating poms for branch'dev/release-17.104.10' with non-snapshot versions)
+=======
+        <version>17.104.11-SNAPSHOT</version>
+>>>>>>> 5a73710533 (Updating develop poms back to pre merge state)
     </parent>
 
     <artifactId>listing-performance-test</artifactId>
