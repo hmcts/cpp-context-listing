@@ -174,7 +174,16 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -963,8 +972,10 @@ public class Hearing implements Aggregate {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
-
-
+        if (!isEligibleToAutoAssignJudiciary(johSource)) {
+            LOGGER.info("Judiciary for hearing with id {} was manually assigned - ignoring auto update", hearingId);
+            return Stream.empty();
+        }
         if (notCurrentlyAssigned(this.judiciary) || this.judiciary.isEmpty()) {
             return apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
                     .withJudiciary(convertToEvents(judiciary))
@@ -983,10 +994,8 @@ public class Hearing implements Aggregate {
         }
     }
 
-   private boolean isManualJohAssignment(){
-
-
-        return false;
+    private boolean isEligibleToAutoAssignJudiciary(final String johSource) {
+        return isNull(getJohSource()) || nonNull(johSource);
     }
 
     public Stream<Object> removeJudiciary(final UUID hearingId) {
