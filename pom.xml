@@ -15,6 +15,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
     <version>17.104.10-cct-1981-r-SNAPSHOT</version>
@@ -28,6 +29,9 @@
 =======
     <version>17.104.10</version>
 >>>>>>> 2541eba1b9 (updating develop poms to master versions to avoid merge conflicts)
+=======
+    <version>17.104.10</version>
+>>>>>>> b7ede06012 (updating poms for branch'dev/release-17.104.10' with non-snapshot versions)
     <packaging>pom</packaging>
 
     <name>Listing Context Microservice Parent</name>
