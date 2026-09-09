@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.command.handler;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.time.ZonedDateTime.parse;
+import static java.lang.Boolean.FALSE;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.empty;
@@ -18,6 +19,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -30,6 +32,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -252,6 +255,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -4294,24 +4298,6 @@ class ListingCommandHandlerTest {
         shouldRequestPublicationOfACourtListForAllCrownCourtsAsExpected(
                 SATURDAY_1ST_DECEMBER_2018,
                 MONDAY_3rd_DECEMBER_2018);
-    }
-
-    @Test
-    public void shouldHandleCorrectHearingDaysWithoutCourtCentreCommand() throws EventStreamException, IOException {
-        final String hearingId = randomUUID().toString();
-        final String hearingDaysUpdatedJson = "[{\"durationMinutes\":15,\"endTime\":\"2020-09-24T13:15:00.000Z\",\"hearingDate\":\"2020-09-24\",\"sequence\":0,\"startTime\":\"2020-09-24T13:00:00.000Z\",\"courtRoomId\":\"b4562684-9209-3ec4-a544-7f80dabd94d8\",\"courtCentreId\":\"f8254db1-1683-483e-afb3-b87fde5a0a26\"}]";
-
-        final JsonObject payloadToBeCorrected = createObjectBuilder()
-                .add("id", hearingId)
-                .add("hearingDays", objectMapper.readValue(hearingDaysUpdatedJson, JsonArray.class)).build();
-
-        final JsonEnvelope commandEnvelope = envelopeFrom(metadataWithRandomUUID("listing.command.correct-hearing-days-without-court-centre"), payloadToBeCorrected);
-        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
-
-        listingCommandHandler.correctHearingDaysWithoutCourtCentre(commandEnvelope);
-
-        verify(hearing).raiseHearingDaysWithoutCourtCentreCorrected(any(), any());
-
     }
 
     @Test

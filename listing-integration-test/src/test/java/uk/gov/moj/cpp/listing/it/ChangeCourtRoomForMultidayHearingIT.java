@@ -37,6 +37,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataOrganisationUnitById;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 
 import uk.gov.moj.cpp.listing.it.util.ItClock;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -674,6 +675,11 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
         // centre via referencedata organisation-units/{id}. Without this stub the requester
         // returns a NULL-payload envelope and the processor rollback-redelivers 10x into the DLQ.
         stubGetReferenceDataOrganisationUnitById(courtCentreId);
+        // The command API's CROWN nonDefaultDays enrichment (HearingDaysEnrichmentService.getCpCourtRoomNumber)
+        // touches the application-scoped xhibit ReferenceDataCache, whose @PostConstruct loads the
+        // organisation-units LIST. Stub it here so this test does not depend on an earlier test having
+        // warmed the cache (otherwise: WELD-000049 / 'Cannot find organisationunits' -> 500 on the update).
+        stubOrganisationUnit(courtCentreId);
     }
 
     private static String updateHearingForListingMultidayPayload(final UUID hearingId,

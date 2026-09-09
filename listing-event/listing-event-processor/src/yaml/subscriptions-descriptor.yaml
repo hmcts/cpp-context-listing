@@ -144,9 +144,6 @@ subscriptions_descriptor:
         - name: listing.event.cases-added-to-hearing
           schema_uri: http://justice.gov.uk/listing/events/listing.event.cases-added-to-hearing.json
 
-        - name: listing.events.hearing-days-without-court-centre-corrected
-          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-days-without-court-centre-corrected.json
-
         - name: listing.events.listing-number-updated
           schema_uri: http://justice.gov.uk/listing/event/listing.events.listing-number-updated.json
 
@@ -273,11 +270,5 @@ subscriptions_descriptor:
 
         - name : public.progression.related-hearing-updated-for-adhoc-hearing
           schema_uri: http://justice.gov.uk/listing/courts/public.progression.related-hearing-updated-for-adhoc-hearing.json
-
-        - name: public.referencedata.event.courtroom-added
-          schema_uri: http://cpp.moj.gov.uk/referencedata/event/public.referencedata.event.courtroom-added.json
-
-        - name: public.referencedata.event.courtroom-closed
-          schema_uri: http://cpp.moj.gov.uk/referencedata/event/public.referencedata.event.courtroom-closed.json
 
       event_source_name: public.event.source

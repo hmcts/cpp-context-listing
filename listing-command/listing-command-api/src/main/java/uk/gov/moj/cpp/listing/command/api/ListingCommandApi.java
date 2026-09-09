@@ -55,6 +55,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -120,7 +121,6 @@ public class ListingCommandApi {
     public static final String HEARING_ID_NOT_FOUND = "HEARING_ID_NOT_FOUND";
     public static final String FUTURE_DATE_NOT_ALLOWED = "FUTURE_DATE_NOT_ALLOWED";
     private static final String CROWN_JURISDICTION = "CROWN";
-    private static final String LISTING_COMMAND_CORRECT_HEARING_DAYS_WO_CC = "listing.command.correct-hearing-days-without-court-centre";
     private static final String LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING = "listing.command.mark-unallocated-hearing-as-duplicate";
     private static final String LISTING_COMMAND_UPDATE_EXISTING_HEARING = "listing.command.update-existing-hearing";
     private static final String LISTING_COMMAND_DELETE_NEXT_HEARINGS = "listing.command.delete-next-hearings";
@@ -796,12 +796,6 @@ public class ListingCommandApi {
         sender.send(JsonEnvelope.envelopeFrom(
                 JsonEnvelope.metadataFrom(jsonEnvelope.metadata()).withName("listing.command.handler.delete-listing-note"),
                 jsonEnvelope.payloadAsJsonObject()));
-    }
-
-    @Handles("listing.correct-hearing-days-without-court-centre")
-    public void handleCorrectHearingDaysWithoutCourtCentre(final JsonEnvelope envelope) {
-        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_CORRECT_HEARING_DAYS_WO_CC),
-                envelope.payload()));
     }
 
     @Handles("listing.update-hearing-day-court-schedule")

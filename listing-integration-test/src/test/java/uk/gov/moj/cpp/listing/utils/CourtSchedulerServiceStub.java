@@ -1515,19 +1515,41 @@ public class CourtSchedulerServiceStub {
                                                                 final UUID courtHouseId,
                                                                 final UUID courtRoomId,
                                                                 final ZonedDateTime hearingStartTime) {
+        stubGetCourtSchedulesByIdWithSessions(courtScheduleIds.stream()
+                .map(id -> new CourtScheduleStubSession(id, sessionDate, courtHouseId, courtRoomId, hearingStartTime, isDraft))
+                .toList());
+    }
+
+    /** One session in a search.court-schedules-by-id stub response (a courtscheduler CourtSchedule). */
+    public record CourtScheduleStubSession(String courtScheduleId,
+                                           LocalDate sessionDate,
+                                           UUID courtHouseId,
+                                           UUID courtRoomId,
+                                           ZonedDateTime hearingStartTime,
+                                           boolean isDraft) {
+    }
+
+    /**
+     * Per-session variant of the rich draft-status stub: each session carries its OWN sessionDate /
+     * start time, for UPDATE payloads whose nonDefaultDays fall on different dates (the single-day
+     * CROWN enrichment re-derives every hearing day's date from its session, so one shared date would
+     * shift the later days).
+     */
+    public static void stubGetCourtSchedulesByIdWithSessions(final List<CourtScheduleStubSession> sessions) {
         final StringBuilder schedulesJson = new StringBuilder();
-        for (int i = 0; i < courtScheduleIds.size(); i++) {
+        for (int i = 0; i < sessions.size(); i++) {
+            final CourtScheduleStubSession session = sessions.get(i);
             if (i > 0) {
                 schedulesJson.append(",");
             }
-            schedulesJson.append("{\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\"")
-                    .append(",\"courtHouseId\":\"").append(courtHouseId).append("\"");
-            if (courtRoomId != null) {
-                schedulesJson.append(",\"courtRoomId\":\"").append(courtRoomId).append("\"");
+            schedulesJson.append("{\"courtScheduleId\":\"").append(session.courtScheduleId()).append("\"")
+                    .append(",\"courtHouseId\":\"").append(session.courtHouseId()).append("\"");
+            if (session.courtRoomId() != null) {
+                schedulesJson.append(",\"courtRoomId\":\"").append(session.courtRoomId()).append("\"");
             }
-            schedulesJson.append(",\"sessionDate\":\"").append(sessionDate).append("\"")
-                    .append(",\"hearingStartTime\":\"").append(hearingStartTime).append("\"")
-                    .append(",\"isDraft\":").append(isDraft).append("}");
+            schedulesJson.append(",\"sessionDate\":\"").append(session.sessionDate()).append("\"")
+                    .append(",\"hearingStartTime\":\"").append(session.hearingStartTime()).append("\"")
+                    .append(",\"isDraft\":").append(session.isDraft()).append("}");
         }
         stubCourtSchedulesByIdResponse("{\"courtSchedules\":[" + schedulesJson + "]}");
     }
