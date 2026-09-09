@@ -436,7 +436,7 @@ public class HearingQueryView {
                     jurisdictionTypeSet,
                     hearingId,
                     caseUrnSet,
-                    masterDefendantSet,
+                    toMasterDefendantUuidSet(masterDefendantSet),
                     linkedCaseUrnSet,
                     caseUrnForLinkedCases,
                     now()

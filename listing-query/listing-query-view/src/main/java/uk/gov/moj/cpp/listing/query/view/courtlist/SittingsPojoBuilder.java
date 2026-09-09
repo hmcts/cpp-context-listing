@@ -23,6 +23,7 @@ import java.util.UUID;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonArrayBuilder;
+import uk.gov.justice.services.messaging.JsonObjects;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;

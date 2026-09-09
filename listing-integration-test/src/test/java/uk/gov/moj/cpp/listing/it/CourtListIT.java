@@ -144,8 +144,15 @@ public class CourtListIT extends AbstractIT {
         // The ExParte scenario can list more than one hearing in this timeslot, and the court-list JSON
         // does not order them deterministically, so a positional hearings[0] matcher intermittently matched
         // the wrong hearing (90s RestPoller ConditionTimeout). Anchor the assertions to THIS hearing by id.
+        //
+        // The same non-determinism applies one level up: this scenario lists two hearings, and which
+        // timeslot (and court room) each lands in depends on its start time relative to the hearings the
+        // other tests in this class have already listed at the same court centre. Anchoring the hearing by
+        // id but still indexing courtRooms[0]/timeslots[0] therefore failed whenever the hearing was
+        // grouped into a later timeslot. Scan every room and timeslot instead - the id filter is what
+        // identifies the hearing, so the indices carry no meaning here.
         final String exParteHearingPath =
-                "$.hearingDates[0].courtRooms[0].timeslots[0].hearings[?(@.id=='" + hearingData.getId().toString() + "')]";
+                "$.hearingDates[0].courtRooms[*].timeslots[*].hearings[?(@.id=='" + hearingData.getId().toString() + "')]";
         final Matcher[] allocatedMatchers = {
                 withJsonPath(exParteHearingPath + ".id", contains(hearingData.getId().toString())),
                 withJsonPath(exParteHearingPath + ".caseId", contains(listedCaseWithoutExParte.getCaseId().toString())),
