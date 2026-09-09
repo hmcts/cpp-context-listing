@@ -5,6 +5,7 @@
         <groupId>uk.gov.moj.cpp.listing</groupId>
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.10-cct-1981-r-SNAPSHOT</version>
@@ -12,6 +13,9 @@
 =======
         <version>17.104.10-SNAPSHOT</version>
 >>>>>>> 584e0a1c3d (Release cut for practice direction)
+=======
+        <version>17.104.11-SNAPSHOT</version>
+>>>>>>> 6770bec37b (updating poms for 17.104.11-SNAPSHOT development)
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
