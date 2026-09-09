@@ -1313,6 +1313,51 @@ public class UpdateHearingSteps extends AbstractIT {
         });
     }
 
+
+    public void verifyHearingAllocatedAndJudiciaryAssignedWithManualJohSourceWhenQueryingFromAPI() {
+
+        final String hearingId = updatedHearingData.getHearingId().toString();
+        final String hearingIdFilter = getHearingFilter(hearingId);
+        pollForHearing(updatedHearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(hearingIdFilter + ".judiciary[0].judicialId",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getJudicialId().toString())),
+                withJsonPath(hearingIdFilter + ".judiciary[0].judicialRoleType.judiciaryType",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType())),
+                withJsonPath(hearingIdFilter + ".judiciary[0].isBenchChairman",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getIsBenchChairman().get())),
+                withJsonPath(hearingIdFilter + ".judiciary[0].isDeputy",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getIsDeputy().get())),
+
+                withJsonPath(hearingIdFilter + ".johSource",
+                        hasItem(updatedHearingData.getJohSource())),
+
+                withJsonPath(hearingIdFilter + ".courtRoomId",
+                        hasItem(updatedHearingData.getCourtRoomId().toString())),
+                withJsonPath(hearingIdFilter + ".type.description",
+                        hasItem(updatedHearingData.getHearingTypData().getTypeDescription())),
+                withJsonPath(hearingIdFilter + ".jurisdictionType",
+                        hasItem(updatedHearingData.getJurisdictionType())),
+                withJsonPath(hearingIdFilter + ".hearingLanguage",
+                        hasItem(updatedHearingData.getHearingLanguage())),
+                withJsonPath(hearingIdFilter + ".endDate",
+                        hasItem(updatedHearingData.getEndDate())),
+                withJsonPath(hearingIdFilter + ".startDate",
+                        hasItem(updatedHearingData.getStartDate())),
+                withJsonPath(hearingIdFilter + ".hearingDays[0].startTime",
+                        hasItem(fromString(updatedHearingData.getNonDefaultDays().get(0).getStartTime()).format(ZONED_DATE_TIME_FORMAT))),
+                withJsonPath(hearingIdFilter + ".hearingDays[0].durationMinutes",
+                        hasItem(updatedHearingData.getNonDefaultDays().get(0).getDuration().get())),
+                withJsonPath(hearingIdFilter + ".hearingDays[0].endTime",
+                        hasItem(fromString(updatedHearingData.getNonDefaultDays().get(0).getStartTime())
+                                .plusMinutes(updatedHearingData.getNonDefaultDays().get(0).getDuration().get())
+                                .format(ZONED_DATE_TIME_FORMAT))),
+                withJsonPath(hearingIdFilter + ".nonSittingDays[0]",
+                        hasItem(updatedHearingData.getNonSittingDays().get(0))),
+                withJsonPath(hearingIdFilter + ".nonDefaultDays[0].startTime",
+                        hasItem(fromString(updatedHearingData.getNonDefaultDays().get(0).getStartTime()).format(ZONED_DATE_TIME_FORMAT)))
+        });
+    }
+
     /**
      * JMS-aware version of verifyHearingAllocatedWhenQueryingFromAPI for handling asynchronous message processing timing issues.
      */

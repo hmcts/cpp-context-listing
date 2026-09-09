@@ -315,7 +315,7 @@ class HearingIT extends AbstractIT {
         stubGetAvailableHearingSlotsWithQueryParams(updateHearingSteps.getUpdatedHearingData());
         stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
         updateHearingSteps.whenHearingUpdated();
-        updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
+        updateHearingSteps.verifyHearingAllocatedAndJudiciaryAssignedWithManualJohSourceWhenQueryingFromAPI();
         updateHearingSteps.verifyPublicEventHearingConfirmed();
     }
 

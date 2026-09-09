@@ -255,7 +255,7 @@ public class UpdatedHearingData {
 
         return new UpdatedHearingData(hearingId, courtCentreId, RandomGenerator.STRING.next(), roomId, SENTENCE_HEARING_TYPE,
                 startDate.toString(), endDate, nonDefaultDays,
-                nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null, hasVideoLink, publicListNote, false, null, null, null);
+                nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null, hasVideoLink, publicListNote, false, null, null, JOH_RESOURCE);
     }
 
     private static UpdatedHearingData updatedHearingDataForAllocationForDefendant(final UUID hearingId, final HearingsData hearingsData) {
