@@ -718,7 +718,7 @@ public class HearingRepository {
     public List<Hearing> findHearings(final Set<String> jurisdictionTypes,
                                       final String hearingId,
                                       final Set<String> caseUrnSet,
-                                      final Set<String> masterDefendantIdSet,
+                                      final Set<UUID> masterDefendantIdSet,
                                       final Set<String> linkedCaseUrn,
                                       final String caseUrnForLinkedCases,
                                       final LocalDate currentDate) {
@@ -758,7 +758,7 @@ public class HearingRepository {
                                 "  where lc4.case_id in ( " +
                                 "    select lc5.case_id from listed_cases lc5 " +
                                 "    inner join defendant d on d.listed_case_id = lc5.id " +
-                                "    where cast(d.master_defendant_id as varchar) in (:masterDefendantIdSet) " +
+                                "    where d.master_defendant_id in (:masterDefendantIdSet) " +
                                 "  ) " +
                                 "  UNION ALL " +
                                 "  select lc6.hearing_id from listed_cases lc6 " +

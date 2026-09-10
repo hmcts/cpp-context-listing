@@ -375,7 +375,7 @@ class HearingRepositoryIT {
         entityManager.persist(hearing);
 
         final List<Hearing> found = repository.findHearings(Set.of("CROWN"), null,
-                Set.of("URN-ANY-STATE"), Set.of(randomUUID().toString()), Set.of("NONE"), "NONE",
+                Set.of("URN-ANY-STATE"), Set.of(randomUUID()), Set.of("NONE"), "NONE",
                 LocalDate.of(2026, 6, 1));
 
         assertThat(found, hasSize(1));

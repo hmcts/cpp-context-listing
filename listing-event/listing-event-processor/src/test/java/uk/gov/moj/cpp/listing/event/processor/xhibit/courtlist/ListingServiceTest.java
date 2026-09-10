@@ -6,6 +6,7 @@ import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -21,6 +22,7 @@ import java.util.UUID;
 
 import uk.gov.justice.services.messaging.JsonObjects;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonArray;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,7 +65,7 @@ public class ListingServiceTest {
         inputEnvelope = envelopeFrom(metadataBuilder().withName("listing").withId(randomUUID()), createObjectBuilder());
 
         final JsonEnvelope responseEnvelope = envelopeFrom(metadataBuilder().withName("listing.courtlist").withId(randomUUID()), payload);
-        when(hearingQueryView.retrieveCourtList(any(JsonEnvelope.class))).thenReturn(responseEnvelope);
+        lenient().when(hearingQueryView.retrieveCourtList(any(JsonEnvelope.class))).thenReturn(responseEnvelope);
     }
 
     @Test
@@ -88,6 +90,52 @@ public class ListingServiceTest {
         verifyResponse(response);
 
         verifyQueryParameters(startDate, courtCentreId, publishCourtListType, false);
+    }
+
+    @Test
+    public void shouldRemoveHearingWhenADefendantHasNoOffencesFromUnpublishedCourtList() {
+
+        final JsonObject offence = createObjectBuilder().add("offenceCode", "TH68001").build();
+        final JsonObject defendantWithOffence = createObjectBuilder()
+                .add("defendantId", randomUUID().toString())
+                .add("offences", JsonObjects.createArrayBuilder().add(offence).build())
+                .build();
+        final JsonObject defendantWithoutOffence = createObjectBuilder()
+                .add("defendantId", randomUUID().toString())
+                .add("offences", JsonObjects.createArrayBuilder().build())
+                .build();
+
+        final JsonObject hearingWithoutOffence = createObjectBuilder()
+                .add("startTime", "2019-11-13T10:00:00")
+                .add("defendants", JsonObjects.createArrayBuilder().add(defendantWithoutOffence).build())
+                .build();
+        final JsonObject hearingWithOffence = createObjectBuilder()
+                .add("startTime", "2019-11-13T11:00:00")
+                .add("defendants", JsonObjects.createArrayBuilder().add(defendantWithOffence).build())
+                .build();
+
+        final JsonObject sitting = createObjectBuilder()
+                .add("sittingDate", "2019-11-13")
+                .add("hearings", JsonObjects.createArrayBuilder().add(hearingWithoutOffence).add(hearingWithOffence).build())
+                .build();
+
+        final JsonObject courtListPayload = createObjectBuilder()
+                .add("courtLists", JsonObjects.createArrayBuilder()
+                        .add(createObjectBuilder().add("sittings", JsonObjects.createArrayBuilder().add(sitting).build()).build())
+                        .build())
+                .build();
+
+        final JsonEnvelope responseEnvelope = envelopeFrom(metadataBuilder().withName("listing.courtlist").withId(randomUUID()), courtListPayload);
+        when(hearingQueryView.retrieveCourtList(any(JsonEnvelope.class))).thenReturn(responseEnvelope);
+
+        final JsonObject response = listingService.getUnpublishedCourtListForCourtCentre(inputEnvelope, parameters);
+
+        final JsonArray remainingHearings = response.getJsonArray("courtLists").getJsonObject(0)
+                .getJsonArray("sittings").getJsonObject(0)
+                .getJsonArray("hearings");
+
+        assertThat(remainingHearings.size(), is(1));
+        assertThat(remainingHearings.getJsonObject(0).getString("startTime"), is("2019-11-13T11:00:00"));
     }
 
     private void verifyResponse(final JsonObject response) {

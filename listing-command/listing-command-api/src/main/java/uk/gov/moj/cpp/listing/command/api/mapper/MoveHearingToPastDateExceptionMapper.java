@@ -1,8 +1,8 @@
 package uk.gov.moj.cpp.listing.command.api.mapper;
 
-import static jakarta.json.Json.createObjectBuilder;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.Response.status;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.getString;
 
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
