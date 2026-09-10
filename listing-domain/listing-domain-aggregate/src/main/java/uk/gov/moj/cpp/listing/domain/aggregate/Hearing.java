@@ -110,6 +110,7 @@ import uk.gov.justice.listing.events.HearingResultStatusUpdated;
 import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.HearingsUpdateCompleted;
+import uk.gov.justice.listing.events.JohSource;
 import uk.gov.justice.listing.events.JudicialRoleType;
 import uk.gov.justice.listing.events.JudiciaryAssignedToHearing;
 import uk.gov.justice.listing.events.JudiciaryChangedForHearing;
@@ -980,13 +981,13 @@ public class Hearing implements Aggregate {
             return apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
                     .withJudiciary(convertToEvents(judiciary))
                     .withHearingId(hearingId)
-                    .withJohSource(johSource)
+                    .withJohSource(JohSource.valueFor(johSource).orElse(null))
                     .build()));
         } else if (hasChanged(this.judiciary, judiciary)) {
             return apply(Stream.of(JudiciaryChangedForHearing.judiciaryChangedForHearing()
                     .withJudiciary(convertToEvents(judiciary))
                     .withHearingId(hearingId)
-                    .withJohSource(johSource)
+                    .withJohSource(JohSource.valueFor(johSource).orElse(null))
                     .build()));
         } else {
             LOGGER.info("Incoming judiciary {} is the same as current judiciary {} for hearing with id {} - Ignore", judiciary, this.judiciary, hearingId);
@@ -2673,7 +2674,7 @@ public class Hearing implements Aggregate {
     private void onJudiciaryAssignedToHearing(final JudiciaryAssignedToHearing event) {
         withJudiary(event.getJudiciary());
         if (nonNull(event.getJohSource())) {
-            this.johSource = event.getJohSource();
+            this.johSource = event.getJohSource().toString();
         }
     }
 
@@ -2693,7 +2694,7 @@ public class Hearing implements Aggregate {
         if (nonNull(judiciary) && judiciary.isEmpty()) {
             this.johSource = null;
         } else if (nonNull(event.getJohSource())) {
-            this.johSource = event.getJohSource();
+            this.johSource = event.getJohSource().toString();
         }
     }
 

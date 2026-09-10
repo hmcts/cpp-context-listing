@@ -31,7 +31,10 @@
       }
     },
     "johSource": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "MANUAL",
+        "AUTO"]
     },
     "reportingRestrictionReason": {
       "type": "string"

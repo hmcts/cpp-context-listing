@@ -573,7 +573,7 @@ public class ListingCommandHandler {
         final List<NonDefaultDay> nonDefaultDays = convertNonDefaultDaysCommandToDomain(isNotEmpty(updateHearingForListing.getNonDefaultDays()) ? updateHearingForListing.getNonDefaultDays() : emptyList());
         final List<LocalDate> nonSittingDays = isNotEmpty(updateHearingForListing.getNonSittingDays()) ? updateHearingForListing.getNonSittingDays() : emptyList();
         final List<JudicialRole> judiciary = convertJudicialRolesCoreToDomain(updateHearingForListing.getJudiciary());
-        final String johSource = updateHearingForListing.getJohSource();
+        final String johSource = nonNull(updateHearingForListing.getJohSource()) ? updateHearingForListing.getJohSource().toString() : null;
 
         // Fields that may not have a value
         final UUID courtRoomId = getCourtRoomId(updateHearingForListing);
@@ -972,7 +972,8 @@ public class ListingCommandHandler {
 
         for (final UUID hearingId : hearingIds) {
             updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
-                final Stream<Object> judicialEvents = hearing.assignJudiciary(judicialRoles, hearingId, changeJudiciaryForHearings.getJohSource());
+                final String johSource = nonNull(changeJudiciaryForHearings.getJohSource()) ? changeJudiciaryForHearings.getJohSource().toString() : null;
+                final Stream<Object> judicialEvents = hearing.assignJudiciary(judicialRoles, hearingId, johSource);
                 final Stream<Object> allocationEvents = hearing.applyAllocationRules(Collections.emptyList(), false, false);
                 return Stream.of(allocationEvents, judicialEvents).flatMap(i -> i);
             });

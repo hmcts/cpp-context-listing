@@ -23,7 +23,11 @@
       }
     },
     "johSource": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "MANUAL",
+        "AUTO"
+      ]
     }
   },
   "required": [

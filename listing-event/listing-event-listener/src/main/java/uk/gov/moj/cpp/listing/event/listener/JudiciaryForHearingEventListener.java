@@ -45,7 +45,7 @@ public class JudiciaryForHearingEventListener {
                     .putObjectList(JUDICIARY, judicialRoles);
 
             if (nonNull(judiciaryAssignedToHearing.getJohSource())) {
-                hearing.put(JOH_SOURCE, judiciaryAssignedToHearing.getJohSource());
+                hearing.put(JOH_SOURCE, judiciaryAssignedToHearing.getJohSource().toString());
             }
 
             hearing.save();
@@ -62,8 +62,12 @@ public class JudiciaryForHearingEventListener {
                 .find(hearingId)
                 .putObjectList(JUDICIARY, judicialRoles);
 
+        if (judicialRoles.isEmpty()) {
+            hearing.remove(JOH_SOURCE);
+        }
+
         if (nonNull(judiciaryChangedForHearing.getJohSource())) {
-            hearing.put(JOH_SOURCE, judiciaryChangedForHearing.getJohSource());
+            hearing.put(JOH_SOURCE, judiciaryChangedForHearing.getJohSource().toString());
         }
 
         hearing.save();

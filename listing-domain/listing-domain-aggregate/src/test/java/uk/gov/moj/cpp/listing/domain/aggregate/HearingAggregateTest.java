@@ -59,6 +59,7 @@ import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
 import uk.gov.justice.listing.events.HearingRequestedForListing;
 import uk.gov.justice.listing.events.HearingResultStatusUpdated;
 import uk.gov.justice.listing.events.HearingUnallocatedCourtroomRemoved;
+import uk.gov.justice.listing.events.JohSource;
 import uk.gov.justice.listing.events.JudiciaryChangedForHearingsStatus;
 import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
@@ -7994,7 +7995,7 @@ class HearingAggregateTest {
     public void shouldClearAggregateJohSourceWhenJudiciaryChangedWithEmtyJudiciary() {
         hearing.apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
                 .withHearingId(hearingId)
-                .withJohSource("MANUAL")
+                .withJohSource(JohSource.valueOf("MANUAL"))
                 .withJudiciary(singletonList(buildJudicialRoleEvent()))
                 .build())).collect(Collectors.toList());
 
@@ -8011,7 +8012,7 @@ class HearingAggregateTest {
     public void shouldRetainExistingAggregateJohSourceWhenJudiciaryChangedForHearingHasNoJohSourceAndNonEmptyJudiciary() {
         hearing.apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
                 .withHearingId(hearingId)
-                .withJohSource("MANUAL")
+                .withJohSource(JohSource.valueOf("MANUAL"))
                 .withJudiciary(singletonList(buildJudicialRoleEvent()))
                 .build())).collect(Collectors.toList());
 
@@ -8028,7 +8029,7 @@ class HearingAggregateTest {
     public void shouldClearJohSourceWhenJudiciaryRemovedFromHearing() {
         hearing.apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
                 .withHearingId(hearingId)
-                .withJohSource("MANUAL")
+                .withJohSource(JohSource.valueOf("MANUAL"))
                 .withJudiciary(singletonList(buildJudicialRoleEvent()))
                 .build())).collect(Collectors.toList());
 

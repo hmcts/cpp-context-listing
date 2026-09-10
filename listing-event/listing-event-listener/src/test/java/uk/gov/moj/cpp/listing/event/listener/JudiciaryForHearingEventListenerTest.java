@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
@@ -11,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static uk.gov.justice.listing.events.JudicialRole.judicialRole;
 import static uk.gov.justice.listing.events.JudiciaryRemovedFromHearing.judiciaryRemovedFromHearing;
 
+import uk.gov.justice.listing.events.JohSource;
 import uk.gov.justice.listing.events.JudicialRole;
 import uk.gov.justice.listing.events.JudicialRoleType;
 import uk.gov.justice.listing.events.JudiciaryAssignedToHearing;
@@ -110,7 +112,7 @@ public class JudiciaryForHearingEventListenerTest {
         JudiciaryAssignedToHearing hearingData = JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
                 .withJudiciary(singletonList(judicialRole))
                 .withHearingId(HEARING_ID)
-                .withJohSource(JOH_SOURCE_VALUE)
+                .withJohSource(JohSource.valueOf(JOH_SOURCE_VALUE))
                 .build();
 
         given(envelope.payload()).willReturn(hearingData);
@@ -171,7 +173,7 @@ public class JudiciaryForHearingEventListenerTest {
         JudiciaryChangedForHearing hearingData = JudiciaryChangedForHearing.judiciaryChangedForHearing()
                 .withJudiciary(singletonList(judicialRole))
                 .withHearingId(HEARING_ID)
-                .withJohSource(JOH_SOURCE_VALUE)
+                .withJohSource(JohSource.valueOf(JOH_SOURCE_VALUE))
                 .build();
 
         given(envelope.payload()).willReturn(hearingData);
@@ -182,6 +184,27 @@ public class JudiciaryForHearingEventListenerTest {
 
         verify(hearingRepository).save(hearing);
         assertEquals(JOH_SOURCE_VALUE, properties.get(JOH_SOURCE).asText());
+    }
+
+    @Test
+    public void shouldRemoveJohSourceWhenJudiciaryChangedToEmptyList() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode properties = (ObjectNode) objectMapper.readTree(TEST_JSON);
+        Envelope<JudiciaryChangedForHearing> envelope = (Envelope<JudiciaryChangedForHearing>) mock(Envelope.class);
+
+        JudiciaryChangedForHearing hearingData = JudiciaryChangedForHearing.judiciaryChangedForHearing()
+                .withJudiciary(emptyList())
+                .withHearingId(HEARING_ID)
+                .build();
+
+        given(envelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+
+        judiciaryForHearingEventListener.judiciaryChangedForHearing(envelope);
+
+        verify(hearingRepository).save(hearing);
+        assertFalse(properties.has(JOH_SOURCE));
     }
 
     @Test
