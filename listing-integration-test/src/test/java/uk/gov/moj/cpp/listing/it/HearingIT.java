@@ -301,6 +301,25 @@ class HearingIT extends AbstractIT {
     }
 
     @Test
+    void shouldUpdateHearingWithAllocationAndRaisesPublicEvent() throws IOException {
+        final HearingsData hearingsData = hearingsData();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        final UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
+
+        stubGetReferenceDataCourtRoom(updatedHearingDataForAllocation.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingDataForAllocation.getCourtRoomId());
+
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        stubGetAvailableHearingSlotsWithQueryParams(updateHearingSteps.getUpdatedHearingData());
+        stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
+        updateHearingSteps.whenHearingUpdated();
+        updateHearingSteps.verifyHearingAllocatedAndJudiciaryAssignedWithManualJohSourceWhenQueryingFromAPI();
+        updateHearingSteps.verifyPublicEventHearingConfirmed();
+    }
+
+    @Test
     void updateHearingResultsInUpdatedListingAndUpdateSlotDetails() throws IOException {
         final UUID courtCentreId = getRandomCourtCenterId();
 

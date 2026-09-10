@@ -10,6 +10,7 @@
     "hearingLanguage": "HEARING_LANGUAGE",
     "courtCentreId": "COURT_CENTRE_ID",
     "jurisdictionType": "JURISDICTION_TYPE",
+    "johSource": "JOH_SOURCE",
     "judiciary": [
       {
         "judicialId": "JUDICIAL_ID",

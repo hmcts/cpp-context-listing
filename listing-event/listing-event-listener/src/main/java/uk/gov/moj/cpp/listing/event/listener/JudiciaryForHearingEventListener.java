@@ -12,6 +12,7 @@ import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.JsonNodeUpdater;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,7 @@ import javax.inject.Inject;
 public class JudiciaryForHearingEventListener {
 
     private static final String JUDICIARY = "judiciary";
+    private static final String JOH_SOURCE = "johSource";
 
     private HearingRepository hearingRepository;
 
@@ -38,10 +40,15 @@ public class JudiciaryForHearingEventListener {
         final List<JudicialRole> judicialRoles = judiciaryAssignedToHearing.getJudiciary();
 
         if (nonNull(hearingRepository.findBy(hearingId))) {
-            using(hearingRepository)
+            final JsonNodeUpdater hearing = using(hearingRepository)
                     .find(hearingId)
-                    .putObjectList(JUDICIARY, judicialRoles)
-                    .save();
+                    .putObjectList(JUDICIARY, judicialRoles);
+
+            if (nonNull(judiciaryAssignedToHearing.getJohSource())) {
+                hearing.put(JOH_SOURCE, judiciaryAssignedToHearing.getJohSource().toString());
+            }
+
+            hearing.save();
         }
     }
 
@@ -51,10 +58,19 @@ public class JudiciaryForHearingEventListener {
         final UUID hearingId = judiciaryChangedForHearing.getHearingId();
         final List<JudicialRole> judicialRoles = judiciaryChangedForHearing.getJudiciary();
 
-        using(hearingRepository)
+        final JsonNodeUpdater hearing = using(hearingRepository)
                 .find(hearingId)
-                .putObjectList(JUDICIARY, judicialRoles)
-                .save();
+                .putObjectList(JUDICIARY, judicialRoles);
+
+        if (judicialRoles.isEmpty()) {
+            hearing.remove(JOH_SOURCE);
+        }
+
+        if (nonNull(judiciaryChangedForHearing.getJohSource())) {
+            hearing.put(JOH_SOURCE, judiciaryChangedForHearing.getJohSource().toString());
+        }
+
+        hearing.save();
     }
 
     @Handles("listing.events.judiciary-removed-from-hearing")
@@ -66,6 +82,7 @@ public class JudiciaryForHearingEventListener {
                 .find(hearingId)
                 .remove(JUDICIARY)
                 .putObjectList(JUDICIARY, new ArrayList<>())
+                .remove(JOH_SOURCE)
                 .save();
     }
 }

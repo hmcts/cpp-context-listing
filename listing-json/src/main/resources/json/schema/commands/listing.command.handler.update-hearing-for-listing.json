@@ -57,6 +57,13 @@
         "$ref": "http://justice.gov.uk/core/courts/judicialRole.json"
       }
     },
+    "johSource": {
+      "type": "string",
+      "enum": [
+        "MANUAL",
+        "AUTO"
+      ]
+    },
     "hearingLanguage": {
       "$ref": "http://justice.gov.uk/core/courts/hearingLanguage.json"
     },

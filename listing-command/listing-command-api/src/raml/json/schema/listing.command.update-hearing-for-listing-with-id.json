@@ -55,6 +55,13 @@
         "$ref": "#/definitions/nonDefaultDay"
       }
     },
+    "johSource": {
+      "type": "string",
+      "enum": [
+        "MANUAL",
+        "AUTO"
+      ]
+    },
     "judiciary": {
       "type": "array",
       "items": {

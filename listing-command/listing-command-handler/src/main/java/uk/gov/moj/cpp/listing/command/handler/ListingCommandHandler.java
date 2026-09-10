@@ -573,6 +573,7 @@ public class ListingCommandHandler {
         final List<NonDefaultDay> nonDefaultDays = convertNonDefaultDaysCommandToDomain(isNotEmpty(updateHearingForListing.getNonDefaultDays()) ? updateHearingForListing.getNonDefaultDays() : emptyList());
         final List<LocalDate> nonSittingDays = isNotEmpty(updateHearingForListing.getNonSittingDays()) ? updateHearingForListing.getNonSittingDays() : emptyList();
         final List<JudicialRole> judiciary = convertJudicialRolesCoreToDomain(updateHearingForListing.getJudiciary());
+        final String johSource = nonNull(updateHearingForListing.getJohSource()) ? updateHearingForListing.getJohSource().toString() : null;
 
         // Fields that may not have a value
         final UUID courtRoomId = getCourtRoomId(updateHearingForListing);
@@ -642,7 +643,7 @@ public class ListingCommandHandler {
             final JsonObject organisationUnitJsonObject = courtCentreFactory.getOrganisationUnit(courtCentreId, command);
             final String ouCode = organisationUnitJsonObject.getString(OUCODE);
 
-            final Stream<Object> judiciaryEvents = getJudiciaryEvents(hearingId, judiciary, hearing);
+            final Stream<Object> judiciaryEvents = getJudiciaryEvents(hearingId, judiciary, hearing, johSource);
 
             //Capture old courtRoomId before it is updated
             final UUID oldCourtRoomId = hearing.getCurrentHearingEventState() == null ? null: hearing.getCurrentHearingEventState().getCourtRoomId();
@@ -700,8 +701,8 @@ public class ListingCommandHandler {
         }
     }
 
-    private Stream<Object> getJudiciaryEvents(final UUID hearingId, final List<JudicialRole> judiciary, final Hearing hearing) {
-        return isNotEmpty(judiciary) ? hearing.assignJudiciary(judiciary, hearingId) : hearing.removeJudiciary(hearingId);
+    private Stream<Object> getJudiciaryEvents(final UUID hearingId, final List<JudicialRole> judiciary, final Hearing hearing, final String johSource) {
+        return isNotEmpty(judiciary) ? hearing.assignJudiciary(judiciary, hearingId, johSource) : hearing.removeJudiciary(hearingId);
     }
 
     private UUID getCourtRoomId(final UpdateHearingForListing updateHearingForListing) {
@@ -971,7 +972,8 @@ public class ListingCommandHandler {
 
         for (final UUID hearingId : hearingIds) {
             updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
-                final Stream<Object> judicialEvents = hearing.assignJudiciary(judicialRoles, hearingId);
+                final String johSource = nonNull(changeJudiciaryForHearings.getJohSource()) ? changeJudiciaryForHearings.getJohSource().toString() : null;
+                final Stream<Object> judicialEvents = hearing.assignJudiciary(judicialRoles, hearingId, johSource);
                 final Stream<Object> allocationEvents = hearing.applyAllocationRules(Collections.emptyList(), false, false);
                 return Stream.of(allocationEvents, judicialEvents).flatMap(i -> i);
             });

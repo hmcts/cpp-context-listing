@@ -110,6 +110,7 @@ import uk.gov.justice.listing.events.HearingResultStatusUpdated;
 import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.HearingsUpdateCompleted;
+import uk.gov.justice.listing.events.JohSource;
 import uk.gov.justice.listing.events.JudicialRoleType;
 import uk.gov.justice.listing.events.JudiciaryAssignedToHearing;
 import uk.gov.justice.listing.events.JudiciaryChangedForHearing;
@@ -241,6 +242,7 @@ public class Hearing implements Aggregate {
     private uk.gov.justice.listing.events.Hearing currentHearingEventState;
 
     private boolean isSummonsApprovedExists = false;
+    private String johSource;
 
     @Override
     public Object apply(final Object event) {
@@ -967,21 +969,25 @@ public class Hearing implements Aggregate {
         }
     }
 
-    public Stream<Object> assignJudiciary(final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciary, final UUID hearingId) {
+    public Stream<Object> assignJudiciary(final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciary, final UUID hearingId, final String johSource) {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
-
-
+        if (!isEligibleToAutoAssignJudiciary(johSource)) {
+            LOGGER.info("Judiciary for hearing with id {} was manually assigned - ignoring auto update", hearingId);
+            return Stream.empty();
+        }
         if (notCurrentlyAssigned(this.judiciary) || this.judiciary.isEmpty()) {
             return apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
                     .withJudiciary(convertToEvents(judiciary))
                     .withHearingId(hearingId)
+                    .withJohSource(JohSource.valueFor(johSource).orElse(null))
                     .build()));
         } else if (hasChanged(this.judiciary, judiciary)) {
             return apply(Stream.of(JudiciaryChangedForHearing.judiciaryChangedForHearing()
                     .withJudiciary(convertToEvents(judiciary))
                     .withHearingId(hearingId)
+                    .withJohSource(JohSource.valueFor(johSource).orElse(null))
                     .build()));
         } else {
             LOGGER.info("Incoming judiciary {} is the same as current judiciary {} for hearing with id {} - Ignore", judiciary, this.judiciary, hearingId);
@@ -989,6 +995,9 @@ public class Hearing implements Aggregate {
         }
     }
 
+    private boolean isEligibleToAutoAssignJudiciary(final String johSource) {
+        return isNull(getJohSource()) || nonNull(johSource);
+    }
 
     public Stream<Object> removeJudiciary(final UUID hearingId) {
         if (this.duplicate || this.deleted) {
@@ -2664,7 +2673,9 @@ public class Hearing implements Aggregate {
 
     private void onJudiciaryAssignedToHearing(final JudiciaryAssignedToHearing event) {
         withJudiary(event.getJudiciary());
-
+        if (nonNull(event.getJohSource())) {
+            this.johSource = event.getJohSource().toString();
+        }
     }
 
     private void onJurisdictionChangedForHearing(final JurisdictionChangedForHearing event) {
@@ -2679,11 +2690,18 @@ public class Hearing implements Aggregate {
 
     private void onJudiciaryChangedForHearing(final JudiciaryChangedForHearing event) {
         withJudiary(event.getJudiciary());
+        List<uk.gov.justice.listing.events.JudicialRole> judiciary = event.getJudiciary();
+        if (nonNull(judiciary) && judiciary.isEmpty()) {
+            this.johSource = null;
+        } else if (nonNull(event.getJohSource())) {
+            this.johSource = event.getJohSource().toString();
+        }
     }
 
     @SuppressWarnings({"squid:S1172"})
     private void onJudiciaryRemovedFromHearing(final JudiciaryRemovedFromHearing event) {
         this.judiciary = emptyList();
+        this.johSource = null;
     }
 
     private void onCourtRoomAssignedToHearing(final CourtRoomAssignedToHearing event) {
@@ -3802,6 +3820,10 @@ public class Hearing implements Aggregate {
 
     public boolean getIsSummonsApprovedExists() {
         return isSummonsApprovedExists;
+    }
+
+    public String getJohSource() {
+        return johSource;
     }
 
     public Boolean isNotificationRelatedAllocatedFieldsUpdated(final List<uk.gov.justice.listing.commands.HearingDay> updatedHearingDays) {
