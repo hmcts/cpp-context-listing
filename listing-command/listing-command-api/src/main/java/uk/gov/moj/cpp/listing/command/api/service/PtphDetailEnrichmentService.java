@@ -1,0 +1,212 @@
+package uk.gov.moj.cpp.listing.command.api.service;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
+import static uk.gov.justice.listing.commands.HearingListingNeeds.hearingListingNeeds;
+
+import uk.gov.justice.core.courts.HearingType;
+import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
+import uk.gov.justice.core.courts.JurisdictionType;
+import uk.gov.justice.core.courts.SeedingHearing;
+import uk.gov.justice.listing.commands.HearingListingNeeds;
+import uk.gov.justice.listing.commands.HearingPtphDetail;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.command.api.courtcentre.HearingTypeFactory;
+import uk.gov.moj.cpp.listing.domain.PtphDetail;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.BiPredicate;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Copies the seeding hearing's finalised tier / list type / key reason onto the next
+ * hearings being listed from it. Tier and list type are a Crown Court PTPH concern, so the
+ * hearing context is queried only when at least one of those next hearings is a Crown Court
+ * trial. Reference data flags magistrates trial types too, which is why jurisdiction is
+ * checked alongside {@code trialTypeFlag} rather than relying on the flag alone.
+ */
+@ApplicationScoped
+public class PtphDetailEnrichmentService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PtphDetailEnrichmentService.class);
+
+    @Inject
+    private HearingTypeFactory hearingTypeFactory;
+
+    @Inject
+    private PtphDetailService ptphDetailService;
+
+    /**
+     * Scheduled flow — the hearing carrier is in-repo, so the values are set directly on each
+     * trial hearing.
+     *
+     * @return the hearings to list, every Crown Court trial among them carrying the inherited
+     *         values. This is a transform of its input, not a lookup, so having nothing to
+     *         inherit returns the hearings unchanged — never an empty list, which would drop
+     *         every hearing from the command.
+     */
+    public List<HearingListingNeeds> enrichWithPtphDetail(final List<HearingListingNeeds> hearings,
+                                                          final SeedingHearing seedingHearing,
+                                                          final JsonEnvelope envelope) {
+        if (isNull(hearings) || hearings.isEmpty()) {
+            return hearings;
+        }
+
+        final Set<String> trialHearingTypeIds = new HashSet<>();
+        final Optional<PtphDetail> ptphDetail = resolveForTrials(
+                hearings,
+                (hearing, ids) -> isCrownTrial(hearing.getJurisdictionType(), hearing.getType(), ids),
+                seedingHearing, envelope, trialHearingTypeIds);
+        if (ptphDetail.isEmpty()) {
+            return hearings;
+        }
+
+        final List<HearingListingNeeds> enriched = new ArrayList<>();
+        hearings.forEach(hearing -> enriched.add(isCrownTrial(hearing.getJurisdictionType(), hearing.getType(), trialHearingTypeIds)
+                ? withPtphDetail(hearing, ptphDetail.get())
+                : hearing));
+        return enriched;
+    }
+
+    /**
+     * Unscheduled flow — the hearing carrier is the coredomain
+     * {@code HearingUnscheduledListingNeeds}, which cannot be extended here, so the values
+     * travel as a sibling list keyed by hearing id.
+     *
+     * @return one entry per Crown Court trial being listed, or empty when nothing is inherited.
+     *         Unlike {@link #enrichWithPtphDetail}, this builds a new list rather than
+     *         transforming the hearings, so empty is the correct "nothing to apply" answer —
+     *         the hearings themselves travel separately and are unaffected.
+     */
+    public List<HearingPtphDetail> resolvePtphDetails(final List<HearingUnscheduledListingNeeds> hearings,
+                                                final SeedingHearing seedingHearing,
+                                                final JsonEnvelope envelope) {
+        if (isNull(hearings) || hearings.isEmpty()) {
+            return emptyList();
+        }
+
+        final Set<String> trialHearingTypeIds = new HashSet<>();
+        final Optional<PtphDetail> ptphDetail = resolveForTrials(
+                hearings,
+                (hearing, ids) -> isCrownTrial(hearing.getJurisdictionType(), hearing.getType(), ids),
+                seedingHearing, envelope, trialHearingTypeIds);
+        if (ptphDetail.isEmpty()) {
+            return emptyList();
+        }
+
+        final List<HearingPtphDetail> resolved = new ArrayList<>();
+        hearings.stream()
+                .filter(hearing -> isCrownTrial(hearing.getJurisdictionType(), hearing.getType(), trialHearingTypeIds))
+                .forEach(hearing -> {
+                    LOGGER.info("Inheriting tier {} and list type {} onto unscheduled trial hearing {}",
+                            ptphDetail.get().getTier(), ptphDetail.get().getListType(), hearing.getId());
+                    resolved.add(HearingPtphDetail.hearingPtphDetail()
+                            .withHearingId(hearing.getId())
+                            .withTier(ptphDetail.get().getTier())
+                            .withListType(ptphDetail.get().getListType())
+                            .withKeyReason(ptphDetail.get().getKeyReason())
+                            .build());
+                });
+        return resolved;
+    }
+
+    /**
+     * Existing-hearing flow — the next hearing already exists, so there is nothing to create
+     * and no {@code HearingListingNeeds} to set the values on. The caller supplies the stored hearing's
+     * jurisdiction and type (see {@code HearingLookupService}), which makes this path uniform
+     * with the others: the same seeding, Crown-trial and finalised gates apply, and the hearing
+     * context is still queried only when the target really is a Crown Court trial.
+     *
+     * @return the values to apply to the existing hearing, or empty when nothing should change
+     */
+    public Optional<PtphDetail> resolveForExistingHearing(final JurisdictionType jurisdictionType,
+                                                          final HearingType type,
+                                                          final SeedingHearing seedingHearing,
+                                                          final JsonEnvelope envelope) {
+        final Optional<PtphDetail> ptphDetail = resolveForTrials(
+                singletonList(type),
+                (hearingType, trialIds) -> isCrownTrial(jurisdictionType, hearingType, trialIds),
+                seedingHearing, envelope, new HashSet<>());
+
+        ptphDetail.ifPresent(detail -> LOGGER.info("Inheriting tier {} and list type {} onto the existing trial hearing",
+                detail.getTier(), detail.getListType()));
+
+        return ptphDetail;
+    }
+
+    /**
+     * The shared rule for both flows: a seeding hearing id must be present, at least one of
+     * the next hearings must be a Crown Court trial — otherwise the hearing context is never
+     * called — and the seeding record must be finalised.
+     *
+     * @param trialHearingTypeIds populated with the trial type ids when they are looked up,
+     *                            so the caller can classify the hearings without a second
+     *                            reference-data call
+     */
+    private <T> Optional<PtphDetail> resolveForTrials(final List<T> hearings,
+                                                      final BiPredicate<T, Set<String>> isCrownTrial,
+                                                      final SeedingHearing seedingHearing,
+                                                      final JsonEnvelope envelope,
+                                                      final Set<String> trialHearingTypeIds) {
+        final UUID seedingHearingId = isNull(seedingHearing) ? null : seedingHearing.getSeedingHearingId();
+        if (isNull(seedingHearingId)) {
+            return Optional.empty();
+        }
+
+        trialHearingTypeIds.addAll(hearingTypeFactory.getTrialHearingTypeIds(envelope));
+        if (hearings.stream().noneMatch(hearing -> isCrownTrial.test(hearing, trialHearingTypeIds))) {
+            LOGGER.info("No Crown Court trial listed from seeding hearing {}; not querying the hearing context", seedingHearingId);
+            return Optional.empty();
+        }
+
+        return ptphDetailService.getFinalisedPtphDetail(seedingHearingId, envelope);
+    }
+
+    private String typeIdOf(final HearingType type) {
+        return nonNull(type) && nonNull(type.getId()) ? type.getId().toString() : null;
+    }
+
+    /**
+     * Tier and list type are Crown Court PTPH concepts. Reference data's {@code trialTypeFlag}
+     * is set on magistrates trial types as well, so the flag alone would inherit a tier onto a
+     * magistrates trial — hence the jurisdiction check.
+     */
+    private boolean isCrownTrial(final JurisdictionType jurisdictionType,
+                                 final HearingType type,
+                                 final Set<String> trialHearingTypeIds) {
+        final String hearingTypeId = typeIdOf(type);
+        return CROWN.equals(jurisdictionType)
+                && nonNull(hearingTypeId)
+                && trialHearingTypeIds.contains(hearingTypeId);
+    }
+
+    /**
+     * Returns a copy of the hearing carrying the inherited tier, list type and key reason.
+     *
+     * <p>All three are overwritten unconditionally, never merged: whatever the inbound command
+     * happened to carry must not survive and masquerade as hearing-context data.
+     */
+    private HearingListingNeeds withPtphDetail(final HearingListingNeeds hearing, final PtphDetail ptphDetail) {
+        LOGGER.info("Inheriting tier {} and list type {} onto trial hearing {}",
+                ptphDetail.getTier(), ptphDetail.getListType(), hearing.getId());
+        return hearingListingNeeds()
+                .withValuesFrom(hearing)
+                .withTier(ptphDetail.getTier())
+                .withListType(ptphDetail.getListType())
+                .withKeyReason(ptphDetail.getKeyReason())
+                .build();
+    }
+}

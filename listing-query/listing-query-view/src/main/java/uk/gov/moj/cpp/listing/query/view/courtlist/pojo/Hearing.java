@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import jakarta.json.JsonObject;
+import jakarta.json.JsonArray;
 
 public class Hearing {
 
@@ -21,6 +22,10 @@ public class Hearing {
     private Optional<CaseDetails> caseDetails;
 
     private Optional<CourtApplicationDetails> courtApplicationDetails;
+
+    private JsonArray courtApplicationOffences;
+
+    private JsonArray courtApplicationLinkedCaseIds;
 
     private boolean weekCommencing;
 
@@ -82,6 +87,22 @@ public class Hearing {
 
     public void setCourtApplicationDetails(final Optional<CourtApplicationDetails> courtApplicationDetails) {
         this.courtApplicationDetails = courtApplicationDetails;
+    }
+
+    public JsonArray getCourtApplicationOffences() {
+        return courtApplicationOffences;
+    }
+
+    public void setCourtApplicationOffences(final JsonArray courtApplicationOffences) {
+        this.courtApplicationOffences = courtApplicationOffences;
+    }
+
+    public JsonArray getCourtApplicationLinkedCaseIds() {
+        return courtApplicationLinkedCaseIds;
+    }
+
+    public void setCourtApplicationLinkedCaseIds(final JsonArray courtApplicationLinkedCaseIds) {
+        this.courtApplicationLinkedCaseIds = courtApplicationLinkedCaseIds;
     }
 
     public boolean isWeekCommencing() {

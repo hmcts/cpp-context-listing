@@ -141,11 +141,16 @@ public class CourtListIT extends AbstractIT {
         final DefendantData defendantWithoutExParte = listedCaseWithoutExParte.getDefendants().stream().reduce((first, second) -> second).get();
         final OffenceData offenceWithoutExParte = defendantWithoutExParte.getOffences().stream().reduce((first, second) -> second).get();
         final String templateName = "PublicCourtListEnglishWelsh";
-        // The ExParte scenario lists more than one hearing, and the court-list JSON places them
-        // deterministically in neither timeslot order nor hearing order - this hearing is routinely
-        // assembled into timeslots[1] rather than timeslots[0]. Positional matchers therefore evaluated
-        // to [] and timed out the 90s RestPoller. Wildcard the courtRoom/timeslot position and anchor
-        // the assertions to THIS hearing by id instead.
+        // The ExParte scenario can list more than one hearing in this timeslot, and the court-list JSON
+        // does not order them deterministically, so a positional hearings[0] matcher intermittently matched
+        // the wrong hearing (90s RestPoller ConditionTimeout). Anchor the assertions to THIS hearing by id.
+        //
+        // The same non-determinism applies one level up: this scenario lists two hearings, and which
+        // timeslot (and court room) each lands in depends on its start time relative to the hearings the
+        // other tests in this class have already listed at the same court centre. Anchoring the hearing by
+        // id but still indexing courtRooms[0]/timeslots[0] therefore failed whenever the hearing was
+        // grouped into a later timeslot. Scan every room and timeslot instead - the id filter is what
+        // identifies the hearing, so the indices carry no meaning here.
         final String exParteHearingPath =
                 "$.hearingDates[0].courtRooms[*].timeslots[*].hearings[?(@.id=='" + hearingData.getId().toString() + "')]";
         final Matcher[] allocatedMatchers = {
