@@ -141,11 +141,13 @@ public class CourtListIT extends AbstractIT {
         final DefendantData defendantWithoutExParte = listedCaseWithoutExParte.getDefendants().stream().reduce((first, second) -> second).get();
         final OffenceData offenceWithoutExParte = defendantWithoutExParte.getOffences().stream().reduce((first, second) -> second).get();
         final String templateName = "PublicCourtListEnglishWelsh";
-        // The ExParte scenario can list more than one hearing in this timeslot, and the court-list JSON
-        // does not order them deterministically, so a positional hearings[0] matcher intermittently matched
-        // the wrong hearing (90s RestPoller ConditionTimeout). Anchor the assertions to THIS hearing by id.
+        // The ExParte scenario lists more than one hearing, and the court-list JSON places them
+        // deterministically in neither timeslot order nor hearing order - this hearing is routinely
+        // assembled into timeslots[1] rather than timeslots[0]. Positional matchers therefore evaluated
+        // to [] and timed out the 90s RestPoller. Wildcard the courtRoom/timeslot position and anchor
+        // the assertions to THIS hearing by id instead.
         final String exParteHearingPath =
-                "$.hearingDates[0].courtRooms[0].timeslots[0].hearings[?(@.id=='" + hearingData.getId().toString() + "')]";
+                "$.hearingDates[0].courtRooms[*].timeslots[*].hearings[?(@.id=='" + hearingData.getId().toString() + "')]";
         final Matcher[] allocatedMatchers = {
                 withJsonPath(exParteHearingPath + ".id", contains(hearingData.getId().toString())),
                 withJsonPath(exParteHearingPath + ".caseId", contains(listedCaseWithoutExParte.getCaseId().toString())),
