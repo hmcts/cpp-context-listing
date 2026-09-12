@@ -216,4 +216,54 @@ public class UpdateExistingHearingEventProcessorTest {
         assertThat(command.metadata().name(), is ("listing.command.add-cases-to-hearing"));
         assertThat(command.payloadAsJsonObject().getString("hearingId"), is(hearingId));
     }
+
+    /**
+     * LPT-2405: the inherited tier / list type must survive the hop from the private event to
+     * the add-cases command, or they never reach the existing hearing's row.
+     */
+    @Test
+    public void shouldCarryInheritedPtphDetailOntoTheAddCasesCommand() {
+        final UUID hearingId = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+
+        final UpdateExistingHearingRequested requested = UpdateExistingHearingRequested.updateExistingHearingRequested()
+                .withHearingId(hearingId)
+                .withSeedingHearingId(seedingHearingId)
+                .withProsecutionCases(Arrays.asList(ProsecutionCase.prosecutionCase().withId(randomUUID()).build()))
+                .withTier("TIER_3")
+                .withListType("TYPE_1_FIXED")
+                .withKeyReason("Vulnerable witness")
+                .build();
+
+        processor.handleUpdateExistingHearingRequestedEvent(envelopeFrom(
+                metadataWithRandomUUID("listing.events.update-existing-hearing-requested"),
+                objectToJsonObjectConverter.convert(requested)));
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+        final JsonObject command = this.senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject();
+
+        assertThat(command.getString("tier"), is("TIER_3"));
+        assertThat(command.getString("listType"), is("TYPE_1_FIXED"));
+        assertThat(command.getString("keyReason"), is("Vulnerable witness"));
+        assertThat(command.getString("seedingHearingId"), is(seedingHearingId.toString()));
+    }
+
+    @Test
+    public void shouldEmitTheAddCasesCommandWithoutPtphDetailWhenNothingInherited() {
+        final UpdateExistingHearingRequested requested = UpdateExistingHearingRequested.updateExistingHearingRequested()
+                .withHearingId(randomUUID())
+                .withProsecutionCases(Arrays.asList(ProsecutionCase.prosecutionCase().withId(randomUUID()).build()))
+                .build();
+
+        processor.handleUpdateExistingHearingRequestedEvent(envelopeFrom(
+                metadataWithRandomUUID("listing.events.update-existing-hearing-requested"),
+                objectToJsonObjectConverter.convert(requested)));
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+        final JsonObject command = this.senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject();
+
+        assertThat(command.containsKey("tier"), is(false));
+        assertThat(command.containsKey("listType"), is(false));
+        assertThat(command.containsKey("keyReason"), is(false));
+    }
 }
