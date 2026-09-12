@@ -60,7 +60,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Optional;
@@ -120,7 +119,6 @@ public class ListingCommandApi {
     private static final String DURATION_IN_MINUTES = "durationInMinutes";
     private static final String HEARING_DAYS = "hearingDays";
     private static final String DAY_START_TIME = "startTime";
-    private static final String DAY_END_TIME = "endTime";
     private static final String DAY_DURATION_MINUTES = "durationMinutes";
     private static final String ERROR_CODE = "errorCode";
     private static final String MESSAGE = "message";
@@ -692,7 +690,9 @@ public class ListingCommandApi {
             }
             final LocalDate date = LocalDate.parse(rawDate.length() > 10 ? rawDate.substring(0, 10) : rawDate);
             final boolean cancelled = day.getBoolean("isCancelled", false);
-            if (!scheduleByDate.containsKey(date) || !cancelled) {
+            if (cancelled) {
+                scheduleByDate.putIfAbsent(date, scheduleId);
+            } else {
                 scheduleByDate.put(date, scheduleId);
             }
         }

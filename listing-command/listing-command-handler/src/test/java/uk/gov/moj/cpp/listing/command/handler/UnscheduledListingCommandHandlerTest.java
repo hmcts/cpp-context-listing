@@ -489,7 +489,7 @@ public class UnscheduledListingCommandHandlerTest {
     // falls back to DEFAULT_MIN=20. These tests lock in the guarantee for every path through
     // listUnscheduledHearing (both court-hearing and next-hearing enriched entry points converge here).
     @Test
-    public void shouldFallBackToDefaultMinWhenHearingTypeMissingFromDurationMap() throws EventStreamException {
+    void shouldFallBackToDefaultMinWhenHearingTypeMissingFromDurationMap() throws EventStreamException {
         when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         // Intentionally empty map — real reference data could fail to resolve a new hearing type (e.g. Crown Plea)
@@ -521,7 +521,7 @@ public class UnscheduledListingCommandHandlerTest {
     }
 
     @Test
-    public void shouldFallBackToDefaultMinWhenMappedDurationIsZero() throws EventStreamException {
+    void shouldFallBackToDefaultMinWhenMappedDurationIsZero() throws EventStreamException {
         when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class)))
@@ -540,7 +540,7 @@ public class UnscheduledListingCommandHandlerTest {
     }
 
     @Test
-    public void shouldPassThroughMappedDurationWhenValid() throws EventStreamException {
+    void shouldPassThroughMappedDurationWhenValid() throws EventStreamException {
         when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class)))
@@ -566,7 +566,7 @@ public class UnscheduledListingCommandHandlerTest {
     // guarantee.
 
     @Test
-    public void shouldUseUserEnteredEstimatedMinutesOverHearingTypeDurationOnCourtHearing() throws EventStreamException {
+    void shouldUseUserEnteredEstimatedMinutesOverHearingTypeDurationOnCourtHearing() throws EventStreamException {
         when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class)))
@@ -586,7 +586,7 @@ public class UnscheduledListingCommandHandlerTest {
     }
 
     @Test
-    public void shouldUseUserEnteredEstimatedMinutesEvenWhenHearingTypeMissingFromDurationMap() throws EventStreamException {
+    void shouldUseUserEnteredEstimatedMinutesEvenWhenHearingTypeMissingFromDurationMap() throws EventStreamException {
         when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class)))
@@ -606,7 +606,7 @@ public class UnscheduledListingCommandHandlerTest {
     }
 
     @Test
-    public void shouldFallBackToHearingTypeDurationWhenUserEnteredEstimatedMinutesIsOne() throws EventStreamException {
+    void shouldFallBackToHearingTypeDurationWhenUserEnteredEstimatedMinutesIsOne() throws EventStreamException {
         when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class)))
@@ -628,7 +628,7 @@ public class UnscheduledListingCommandHandlerTest {
     }
 
     @Test
-    public void shouldFallBackToHearingTypeDurationWhenUserEnteredEstimatedMinutesIsZero() throws EventStreamException {
+    void shouldFallBackToHearingTypeDurationWhenUserEnteredEstimatedMinutesIsZero() throws EventStreamException {
         when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class)))
@@ -648,7 +648,7 @@ public class UnscheduledListingCommandHandlerTest {
     }
 
     @Test
-    public void shouldUseUserEnteredEstimatedMinutesOnNextHearing() throws EventStreamException {
+    void shouldUseUserEnteredEstimatedMinutesOnNextHearing() throws EventStreamException {
         when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class)))

@@ -541,9 +541,7 @@ public class Hearing implements Aggregate {
         // list-court-hearing take the multi-day path (> MINUTES_IN_DAY) instead of defaulting to a
         // single-day hearing of hearingTypeDuration.
         final int bookedSlotsTotalDuration = isNotEmpty(bookedSlots)
-                ? bookedSlots.stream()
-                        .mapToInt(slot -> slot.getDuration() != null ? slot.getDuration() : 0)
-                        .sum()
+                ? bookedSlots.stream().mapToInt(Hearing::durationOrZero).sum()
                 : 0;
         final Integer splitEstimatedMinutes = bookedSlotsTotalDuration > 0
                 ? coerceToValidDuration(bookedSlotsTotalDuration)
@@ -1296,7 +1294,7 @@ public class Hearing implements Aggregate {
                 .map(existing -> existing == replacementTargetByDate.get(existing.getHearingDate())
                         ? mergeChangedOntoExisting(existing, changedByDate.get(existing.getHearingDate()))
                         : toDomainHearingDay(existing))
-                .collect(toList());
+                .toList();
 
         final UUID parentCourtRoom = getCurrentHearingEventState() == null
                 ? null : getCurrentHearingEventState().getCourtRoomId();
@@ -4240,4 +4238,7 @@ public class Hearing implements Aggregate {
         }
     }
 
+    private static int durationOrZero(final uk.gov.justice.core.courts.RotaSlot slot) {
+        return slot.getDuration() != null ? slot.getDuration() : 0;
+    }
 }

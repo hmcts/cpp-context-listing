@@ -454,8 +454,8 @@ public class ListingCommandHandler {
                 : uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
         final List<uk.gov.moj.cpp.listing.domain.HearingDay> movedDays = buildMovedHearingDays(payload);
         // courtscheduler may have booked the past run in a different room from the hearing's current one;
-        // when every booked day shares one room, the hearing-level courtRoomId follows it (as the update
-        // flow's assignCourtRoom does), so hearing and days never disagree. Panel is left untouched.
+        // when every booked day shares one room, the hearing-level courtRoomId follows it, mirroring what
+        // the update flow does when it assigns a court room, so hearing and days never disagree. Panel is left untouched.
         final Optional<UUID> bookedRoom = singleBookedRoom(movedDays);
         updateHearingEventStream(command, hearingId, (Hearing hearing) -> Stream.of(
                         hearing.changeStartDate(startDate, hearingId),

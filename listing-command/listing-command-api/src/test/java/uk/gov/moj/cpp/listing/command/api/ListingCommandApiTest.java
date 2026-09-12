@@ -621,7 +621,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldRejectMoveHearingToPastDateWhenHearingIdUnknown() {
+    void shouldRejectMoveHearingToPastDateWhenHearingIdUnknown() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
 
@@ -681,7 +681,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldNotSendWhenCourtschedulerRejectsMagistratesMove() {
+    void shouldNotSendWhenCourtschedulerRejectsMagistratesMove() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final LocalDate startDate = LocalDate.parse("2999-01-01");
@@ -743,7 +743,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldMoveCrownHearingToPastDateViaCourtScheduler() {
+    void shouldMoveCrownHearingToPastDateViaCourtScheduler() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID courtScheduleId = randomUUID();
@@ -788,7 +788,7 @@ public class ListingCommandApiTest {
      * flat single-day fields mirroring the first session - never the hearing's old day details.
      */
     @Test
-    public void shouldEnrichCrownMultiDayMoveWithEverySessionAndPerDayDuration() {
+    void shouldEnrichCrownMultiDayMoveWithEverySessionAndPerDayDuration() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID schedule1 = randomUUID();
@@ -853,7 +853,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldRejectCrownMoveToFutureDate() {
+    void shouldRejectCrownMoveToFutureDate() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final LocalDate startDate = LocalDate.now().plusDays(1);
@@ -879,7 +879,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldChangeCourtRoomForMultidayHearingBuildingChangedDaysFromAdapterResponseByDate() {
+    void shouldChangeCourtRoomForMultidayHearingBuildingChangedDaysFromAdapterResponseByDate() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID requestedCourtRoomId = randomUUID();
@@ -965,7 +965,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldPartitionVirtualDaysToCourtschedulerAndRealDaysToNonDefaultDays() {
+    void shouldPartitionVirtualDaysToCourtschedulerAndRealDaysToNonDefaultDays() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID realRoomId = randomUUID();
@@ -1046,7 +1046,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldNotCallCourtschedulerWhenAllDaysAreReal() {
+    void shouldNotCallCourtschedulerWhenAllDaysAreReal() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID realRoomId = randomUUID();
@@ -1098,7 +1098,7 @@ public class ListingCommandApiTest {
      * custom start time, while still being persisted in nonDefaultDays.
      */
     @Test
-    public void shouldRebookRealDayWhenCourtScheduleIdDiffersFromCurrentHearingDay() {
+    void shouldRebookRealDayWhenCourtScheduleIdDiffersFromCurrentHearingDay() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID newRoomId = randomUUID();
@@ -1169,7 +1169,7 @@ public class ListingCommandApiTest {
 
     /** A real day echoing the hearing day's current schedule keeps the legacy no-booking behaviour. */
     @Test
-    public void shouldNotRebookRealDayWhenCourtScheduleIdMatchesCurrentHearingDay() {
+    void shouldNotRebookRealDayWhenCourtScheduleIdMatchesCurrentHearingDay() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID newRoomId = randomUUID();
@@ -1220,7 +1220,7 @@ public class ListingCommandApiTest {
      * the stored day's existing schedule), and never sent to courtscheduler.
      */
     @Test
-    public void shouldAcceptRealDayWithoutCourtScheduleIdAndNeverBook() {
+    void shouldAcceptRealDayWithoutCourtScheduleIdAndNeverBook() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID roomId = randomUUID();
@@ -1274,7 +1274,7 @@ public class ListingCommandApiTest {
 
     /** A virtual day exists to be booked - without a courtScheduleId it is a 422 business error, not an NPE. */
     @Test
-    public void shouldRejectVirtualDayWithoutCourtScheduleId() {
+    void shouldRejectVirtualDayWithoutCourtScheduleId() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID roomId = randomUUID();
@@ -1312,7 +1312,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldRejectChangeCourtRoomForMultidayHearingWhenHearingIdUnknown() {
+    void shouldRejectChangeCourtRoomForMultidayHearingWhenHearingIdUnknown() {
         final UUID hearingId = randomUUID();
 
         given(envelope.payloadAsJsonObject()).willReturn(payload);
@@ -1329,7 +1329,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldRejectChangeCourtRoomForMultidayHearingWhenNotCrown() {
+    void shouldRejectChangeCourtRoomForMultidayHearingWhenNotCrown() {
         final UUID hearingId = randomUUID();
 
         given(envelope.payloadAsJsonObject()).willReturn(payload);
@@ -1354,7 +1354,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldRejectChangeCourtRoomForMultidayHearingWhenNotMultiday() {
+    void shouldRejectChangeCourtRoomForMultidayHearingWhenNotMultiday() {
         final UUID hearingId = randomUUID();
 
         given(envelope.payloadAsJsonObject()).willReturn(payload);
@@ -1378,7 +1378,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldRejectChangeCourtRoomForMultidayHearingWhenDuplicateDayDates() {
+    void shouldRejectChangeCourtRoomForMultidayHearingWhenDuplicateDayDates() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID courtRoomId = randomUUID();
@@ -1426,7 +1426,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldPropagateAdapterExceptionAndNotSendWhenCourtschedulerRejectsChangeCourtRoom() {
+    void shouldPropagateAdapterExceptionAndNotSendWhenCourtschedulerRejectsChangeCourtRoom() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID courtRoomId = randomUUID();
@@ -1722,7 +1722,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldPropagateCrownMultiDayExtensionException_andNotSendEvent_when422FromCourtscheduler() {
+    void shouldPropagateCrownMultiDayExtensionException_andNotSendEvent_when422FromCourtscheduler() {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
         given(updateHearingForListing.getHearingId()).willReturn(randomUUID());
