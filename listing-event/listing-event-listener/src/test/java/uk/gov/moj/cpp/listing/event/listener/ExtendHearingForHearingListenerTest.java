@@ -31,6 +31,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 import static uk.gov.moj.cpp.listing.event.listener.utils.HearingUtils.*;
@@ -664,5 +666,107 @@ public class ExtendHearingForHearingListenerTest {
                                 .build()))
                 .build());
         return listedCasesToAdd;
+    }
+
+    // ---------------------------------------------------------------------------------
+    // LPT-2405: the existing hearing's row already exists, so the inherited tier / list type
+    // are patched into properties here rather than arriving on a hearing-listed event.
+    // ---------------------------------------------------------------------------------
+
+    @Test
+    public void shouldPatchInheritedPtphDetailIntoHearingProperties() {
+        final UUID hearingId = randomUUID();
+        final Envelope<CasesAddedToHearing> envelope = (Envelope<CasesAddedToHearing>) mock(Envelope.class);
+
+        final CasesAddedToHearing casesAddedToHearing = CasesAddedToHearing.casesAddedToHearing()
+                .withHearingId(hearingId)
+                .withUnAllocatedListedCases(List.of())
+                .withTier("TIER_3")
+                .withListType("TYPE_1_FIXED")
+                .withKeyReason("Vulnerable witness")
+                .build();
+
+        given(envelope.payload()).willReturn(casesAddedToHearing);
+        given(hearingRepository.findBy(hearingId)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+
+        extendHearingForHearingListener.handleCasesAddedToHearingEvent(envelope);
+
+        verify(properties).put("tier", "TIER_3");
+        verify(properties).put("listType", "TYPE_1_FIXED");
+        verify(properties).put("keyReason", "Vulnerable witness");
+        verify(hearingRepository).save(any(uk.gov.moj.cpp.listing.persistence.entity.Hearing.class));
+    }
+
+    /**
+     * Nothing inherited — the row must not be touched at all, so an unrelated cases-added
+     * event cannot clear values that are already there.
+     */
+    @Test
+    public void shouldNotTouchPropertiesWhenNothingIsInherited() {
+        final UUID hearingId = randomUUID();
+        final Envelope<CasesAddedToHearing> envelope = (Envelope<CasesAddedToHearing>) mock(Envelope.class);
+
+        final CasesAddedToHearing casesAddedToHearing = CasesAddedToHearing.casesAddedToHearing()
+                .withHearingId(hearingId)
+                .withUnAllocatedListedCases(List.of())
+                .build();
+
+        given(envelope.payload()).willReturn(casesAddedToHearing);
+
+        extendHearingForHearingListener.handleCasesAddedToHearingEvent(envelope);
+
+        verify(properties, never()).put(eq("tier"), anyString());
+        verify(properties, never()).put(eq("listType"), anyString());
+        verify(properties, never()).remove(anyString());
+    }
+
+    /**
+     * A null value clears the field rather than leaving a stale one behind: the three values
+     * are replaced as a set, exactly as on the create path.
+     */
+    @Test
+    public void shouldClearAKeyReasonThatNoLongerApplies() {
+        final UUID hearingId = randomUUID();
+        final Envelope<CasesAddedToHearing> envelope = (Envelope<CasesAddedToHearing>) mock(Envelope.class);
+
+        final CasesAddedToHearing casesAddedToHearing = CasesAddedToHearing.casesAddedToHearing()
+                .withHearingId(hearingId)
+                .withUnAllocatedListedCases(List.of())
+                .withTier("TIER_5")
+                .withListType("TYPE_2_FLEXIBLE")
+                .build();
+
+        given(envelope.payload()).willReturn(casesAddedToHearing);
+        given(hearingRepository.findBy(hearingId)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+
+        extendHearingForHearingListener.handleCasesAddedToHearingEvent(envelope);
+
+        verify(properties).put("tier", "TIER_5");
+        verify(properties).put("listType", "TYPE_2_FLEXIBLE");
+        verify(properties).remove("keyReason");
+    }
+
+    /**
+     * The hearing id came from a result prompt, so the row may genuinely be absent. That must
+     * warn rather than blow up the listener, which would otherwise DLQ the event.
+     */
+    @Test
+    public void shouldWarnRatherThanFailWhenTheHearingIsMissingFromTheViewStore() {
+        final UUID hearingId = randomUUID();
+        final Envelope<CasesAddedToHearing> envelope = (Envelope<CasesAddedToHearing>) mock(Envelope.class);
+
+        given(envelope.payload()).willReturn(CasesAddedToHearing.casesAddedToHearing()
+                .withHearingId(hearingId)
+                .withUnAllocatedListedCases(List.of())
+                .withTier("TIER_3")
+                .withListType("TYPE_1_FIXED")
+                .build());
+        given(hearingRepository.findBy(hearingId)).willReturn(null);
+
+        extendHearingForHearingListener.handleCasesAddedToHearingEvent(envelope);
+
+        verify(hearingRepository, never()).save(any(uk.gov.moj.cpp.listing.persistence.entity.Hearing.class));
     }
 }

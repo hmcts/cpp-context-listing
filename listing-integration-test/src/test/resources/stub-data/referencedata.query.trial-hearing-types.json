@@ -1,0 +1,17 @@
+{
+  "hearingTypes": [
+    {
+      "id": "HEARING_TYPE_ID",
+      "seqId": 1,
+      "hearingCode": "TRL",
+      "exhibitHearingCode": "TRL",
+      "hearingDescription": "Trial",
+      "exhibitHearingDescription": "Trial",
+      "welshHearingDescription": "Treial",
+      "defaultDurationMin": 390,
+      "trialTypeFlag": true,
+      "validFrom": null,
+      "validTo": null
+    }
+  ]
+}
