@@ -277,8 +277,8 @@ public class ListingCommandApi {
                 .withId(fromString(storedType.getString("id")))
                 .withDescription(storedType.getString("description", null))
                 .build();
-        final JurisdictionType jurisdictionType = hearing.containsKey("jurisdictionType")
-                ? JurisdictionType.valueOf(hearing.getString("jurisdictionType"))
+        final JurisdictionType jurisdictionType = hearing.containsKey(JURISDICTION_TYPE)
+                ? JurisdictionType.valueOf(hearing.getString(JURISDICTION_TYPE))
                 : null;
 
         return ptphDetailEnrichmentService.resolveForExistingHearing(jurisdictionType, hearingType, seedingHearing, envelope);
