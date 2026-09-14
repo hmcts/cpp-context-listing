@@ -1216,7 +1216,14 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                             .orElse(sessionStartFallback)
                     : sessionStartFallback;
             return HearingDay.hearingDay()
-                    .withCourtCentreId(fromString(session.getCourtHouseId()))
+                    // A session resolved through the provisional-booking endpoint does not always
+                    // carry courtHouseId - unlike the search-by-id response, which always does. Fall
+                    // back to the hearing's own court centre, which is where it is being listed
+                    // anyway. Previously this was an unguarded fromString(null) -> NPE -> 500 on the
+                    // whole listing request, while the courtRoomId line below was already guarded.
+                    .withCourtCentreId(nonNull(session.getCourtHouseId())
+                            ? fromString(session.getCourtHouseId())
+                            : (nonNull(hearing.getCourtCentre()) ? hearing.getCourtCentre().getId() : null))
                     .withCourtScheduleId(fromString(session.getCourtScheduleId()))
                     .withCourtRoomId(session.isDraft() || isBlank(session.getCourtRoomId()) ? null : fromString(session.getCourtRoomId()))
                     .withStartTime(startTime)
@@ -1316,23 +1323,32 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         // bookingReference is the bookingId courtscheduler minted when the clerk picked the slot —
         // the same identity magistrates has always carried — so it resolves through the provisional
         // booking endpoint.
-        final String bookingId = hearing.getBookingReference().toString();
-        List<CourtSchedule> sessions = courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingId);
+        final String bookingReference = hearing.getBookingReference().toString();
+
+        // bookingReference is the bookingId courtscheduler minted when the clerk picked the slot, so it
+        // resolves through the provisional booking endpoint - but only answers that actually belong to
+        // THIS booking are trusted. A bookingIds query matching nothing of ours can still come back
+        // carrying somebody else's booking; promoting that session would put an unrelated courtScheduleId
+        // on the bookedSlot and fail later with "Missing courtScheduleIds", which is far harder to trace
+        // than an empty result. A session that does not name its booking is trusted as-is, since older
+        // responses omit the field.
+        List<CourtSchedule> sessions = courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingReference)
+                .stream()
+                .filter(session -> isBlank(session.getBookingId()) || bookingReference.equals(session.getBookingId()))
+                .toList();
 
         if (isEmpty(sessions)) {
-            // Legacy shape, and NOT a temporary one. Before the results UI began writing the minted
-            // bookingId into bookingReference, a CROWN hearing carried the courtScheduleId there
-            // directly. listing deploys independently of cpp-ui-hearing, so during the window between
-            // those two releases — and for any hearing listed before it — bookingReference is still a
-            // courtScheduleId. Without this fallback every such listing fails with a 500.
-            // Mirrors the permanent legacy fallback courtscheduler keeps for magistrates booking ids.
-            sessions = fetchCourtSchedulesByIds(List.of(bookingId));
+            // bookingReference only becomes the minted bookingId once cpp-ui-hearing ships its side.
+            // Until then - and for every hearing listed before it - a CROWN bookingReference IS a
+            // courtScheduleId, and listing deploys independently of the UI. Permanent fallback, not a
+            // migration shim; mirrors the legacy fallback courtscheduler keeps for magistrates.
+            sessions = fetchCourtSchedulesByIds(List.of(bookingReference));
         }
 
         if (isEmpty(sessions)) {
             throw new CrownFallbackInvalidRequestException(
-                    "CROWN bookingReference " + bookingId
-                            + " resolved neither as a provisional booking nor as a court schedule id,"
+                    "CROWN bookingReference " + bookingReference
+                            + " resolved neither as a court schedule id nor as a provisional booking,"
                             + " for hearingId " + hearing.getId());
         }
 
