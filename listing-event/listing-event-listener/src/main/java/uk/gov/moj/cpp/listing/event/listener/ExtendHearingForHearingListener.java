@@ -21,6 +21,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.persistence.repository.JsonNodeUpdater;
 import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
@@ -55,6 +56,9 @@ public class ExtendHearingForHearingListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExtendHearingForHearingListener.class);
     private final HearingRepository hearingRepository;
     private static final String LISTED_CASES_FIELD = "listedCases";
+    private static final String TIER_FIELD = "tier";
+    private static final String LIST_TYPE_FIELD = "listType";
+    private static final String KEY_REASON_FIELD = "keyReason";
     private static final String DEFENCE_COUNSELS_FIELD = "defenceCounsels";
     private final JsonObjectToObjectConverter jsonObjectConverter;
     private final ObjectMapper objectMapper;
@@ -176,6 +180,50 @@ public class ExtendHearingForHearingListener {
     public void handleCasesAddedToHearingEvent(final Envelope<CasesAddedToHearing> event) {
         final CasesAddedToHearing casesAddedToHearing = event.payload();
         updateHearingWithCases(casesAddedToHearing.getHearingId(), casesAddedToHearing.getUnAllocatedListedCases());
+        inheritPtphDetail(casesAddedToHearing);
+    }
+
+    /**
+     * LPT-2405: the next hearing already existed, so there was no hearing-listed event to
+     * serialise these values into {@code properties}. Patch them in place instead, the same way
+     * listed cases are updated above.
+     */
+    private void inheritPtphDetail(final CasesAddedToHearing casesAddedToHearing) {
+        final String tier = casesAddedToHearing.getTier();
+        final String listType = casesAddedToHearing.getListType();
+        final String keyReason = casesAddedToHearing.getKeyReason();
+
+        if (isNull(tier) && isNull(listType) && isNull(keyReason)) {
+            return;
+        }
+
+        final UUID hearingId = casesAddedToHearing.getHearingId();
+        final Hearing hearing = hearingRepository.findBy(hearingId);
+        if (hearing == null || hearing.getProperties() == null) {
+            LOGGER.warn("Cannot inherit tier/list type: hearing {} not found in the view store", hearingId);
+            return;
+        }
+
+        final JsonNodeUpdater updater = using(hearingRepository).find(hearingId);
+        putOrRemove(updater, TIER_FIELD, tier);
+        putOrRemove(updater, LIST_TYPE_FIELD, listType);
+        putOrRemove(updater, KEY_REASON_FIELD, keyReason);
+        updater.save();
+
+        LOGGER.info("Hearing {} inherited tier {} and list type {} from its seeding hearing", hearingId, tier, listType);
+        hearingSearchSyncService.sync(hearingId);
+    }
+
+    /**
+     * A null value clears the field rather than leaving a stale one behind — the values are
+     * replaced as a set, exactly as on the create path.
+     */
+    private void putOrRemove(final JsonNodeUpdater updater, final String field, final String value) {
+        if (isNull(value)) {
+            updater.remove(field);
+        } else {
+            updater.put(field, value);
+        }
     }
 
     private void updateHearingWithCases(final UUID hearingId, final List<ListedCase> listedCasesToAdd) {

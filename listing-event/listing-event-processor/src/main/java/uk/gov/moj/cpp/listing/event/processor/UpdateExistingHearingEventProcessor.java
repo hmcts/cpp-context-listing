@@ -75,6 +75,9 @@ public class UpdateExistingHearingEventProcessor {
                  .withProsecutionCases(event.getProsecutionCases())
                  .withShadowListedOffences(event.getShadowListedOffences())
                  .withSeedingHearingId(event.getSeedingHearingId())
+                 .withTier(event.getTier())
+                 .withListType(event.getListType())
+                 .withKeyReason(event.getKeyReason())
                  .build();
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_ADD_CASES_TO_HEARING), objectToJsonObjectConverter.convert(addCasesForHearing)));
