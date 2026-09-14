@@ -127,13 +127,30 @@ public class CourtSchedulerService {
         final Map<String, String> paramsMap = new HashMap<>();
         paramsMap.put("bookingIds", bookingId);
         final Response slotsResponse = provisionalBookingService.getSlots(paramsMap);
-        final JsonObject resultJson = objectToJsonObjectConverter.convert(slotsResponse.getEntity());
-
         final List<CourtSchedule> courtScheduleList = new ArrayList<>();
 
-        final JsonArray provisionalSlots = resultJson.getJsonArray("provisionalSlots");
-        for (int i = 0; i < provisionalSlots.size(); i++) {
+        // "Not a provisional booking" is an ordinary answer here, not an error: a CROWN
+        // bookingReference may still be a courtScheduleId (the shape used before the results UI
+        // began writing the minted bookingId), and the caller falls back to resolving it that way.
+        // Returning an empty list lets that fallback run; throwing - which an unchecked status or a
+        // missing provisionalSlots array previously did, via NPE - makes the whole listing 500.
+        if (slotsResponse == null || HttpStatus.SC_OK != slotsResponse.getStatus()) {
+            LOGGER.info("getCourtSchedulesByProvisionalBookingId: no provisional booking for {} (status {})",
+                    bookingId, slotsResponse == null ? "no response" : slotsResponse.getStatus());
+            return courtScheduleList;
+        }
 
+        final JsonObject resultJson = objectToJsonObjectConverter.convert(slotsResponse.getEntity());
+        if (resultJson == null) {
+            return courtScheduleList;
+        }
+
+        final JsonArray provisionalSlots = resultJson.getJsonArray("provisionalSlots");
+        if (provisionalSlots == null) {
+            return courtScheduleList;
+        }
+
+        for (int i = 0; i < provisionalSlots.size(); i++) {
             courtScheduleList.add(jsonObjectConverter.convert(provisionalSlots.getJsonObject(i), CourtSchedule.class));
         }
         return courtScheduleList;
