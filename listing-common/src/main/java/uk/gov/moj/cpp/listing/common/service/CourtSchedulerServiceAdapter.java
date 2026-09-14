@@ -82,6 +82,7 @@ public class CourtSchedulerServiceAdapter {
     private static final String DRAFT = "draft";
     private static final String OVERBOOKED = "overbooked";
     private static final String ANY_DRAFT = "anyDraft";
+    private static final String BOOKINGS = "bookings";
     // move-hearing-to-past-date (MAGS) wire-field constants; JURISDICTION reuses the field declared above
     private static final String START_DATE = "startDate";
     private static final String SESSIONS = "sessions";
@@ -348,6 +349,72 @@ public class CourtSchedulerServiceAdapter {
 
     private static ZonedDateTime zonedDateTimeOrNull(final JsonObject body, final String key) {
         return hasValue(body, key) ? ZonedDateTime.parse(body.getString(key)) : null;
+    }
+
+    /**
+     * Reports, for each booking id, whether the draft carrying it is still safe to share, and why.
+     * A pure pass-through of courtscheduler's answer: {@code RESERVED} (a reservation still holds
+     * capacity), {@code SHARED} (already shared — the confirmed row carries this booking id),
+     * {@code LEGACY} (a draft saved before reserve-a-slot shipped), {@code NONE} (the hold expired
+     * and was purged). Listing never re-maps or collapses these.
+     *
+     * <p><b>Fails open</b>, deliberately the opposite of {@link #getCourtScheduleDraftStatus}.
+     * This gates a clerk's share, so a courtscheduler outage must not block every share in the
+     * building for what is an advisory check. On failure each requested id is reported
+     * {@code UNKNOWN} with {@code safeToShare=true} — reported rather than silently claiming a
+     * live hold, so the UI can say "could not check" rather than implying it checked.
+     * {@code UNKNOWN} is listing's alone; courtscheduler never emits it.
+     *
+     * @param requestPayload JSON object with a bookingIds array
+     * @return {"bookings":[{"bookingId":…,"safeToShare":…,"status":…}]}
+     */
+    public JsonObject getBookingStatus(final JsonObject requestPayload) {
+        final List<String> bookingIds = extractBookingIds(requestPayload);
+        if (bookingIds.isEmpty()) {
+            return javax.json.Json.createObjectBuilder()
+                    .add(BOOKINGS, javax.json.Json.createArrayBuilder())
+                    .build();
+        }
+
+        final Map<String, String> params = new HashMap<>();
+        params.put("bookingIds", String.join(",", bookingIds));
+
+        final Response response;
+        try {
+            response = hearingSlotsService.getBookingStatus(params);
+        } catch (Exception ex) {
+            LOGGER.warn("courtscheduler getBookingStatus threw {} for {} ids - failing open with UNKNOWN",
+                    ex.getClass().getSimpleName(), bookingIds.size());
+            return unknownFor(bookingIds);
+        }
+
+        if (response == null || HttpStatus.SC_OK != response.getStatus()) {
+            LOGGER.warn("courtscheduler getBookingStatus returned status {} for {} ids - failing open with UNKNOWN",
+                    response == null ? "null" : response.getStatus(), bookingIds.size());
+            return unknownFor(bookingIds);
+        }
+
+        return objectToJsonObjectConverter.convert(response.getEntity());
+    }
+
+    private static JsonObject unknownFor(final List<String> bookingIds) {
+        final javax.json.JsonArrayBuilder bookings = javax.json.Json.createArrayBuilder();
+        bookingIds.forEach(bookingId -> bookings.add(javax.json.Json.createObjectBuilder()
+                .add("bookingId", bookingId)
+                .add("safeToShare", true)
+                .add("status", "UNKNOWN")));
+        return javax.json.Json.createObjectBuilder().add(BOOKINGS, bookings).build();
+    }
+
+    private static List<String> extractBookingIds(final JsonObject requestPayload) {
+        if (requestPayload == null || !requestPayload.containsKey("bookingIds")) {
+            return Collections.emptyList();
+        }
+        return requestPayload.getJsonArray("bookingIds").getValuesAs(javax.json.JsonString.class)
+                .stream()
+                .map(javax.json.JsonString::getString)
+                .filter(org.apache.commons.lang3.StringUtils::isNotBlank)
+                .toList();
     }
 
     public Response validateSessionAvailability(final JsonObject requestPayload) {

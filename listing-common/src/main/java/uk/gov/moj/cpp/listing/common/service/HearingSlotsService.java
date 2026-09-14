@@ -61,6 +61,8 @@ public class HearingSlotsService {
     private static final String COURTSCHEDULER_MAGS_SEARCH_BOOK = "application/vnd.courtscheduler.mags.search.and.book+json";
     private static final String COURTSCHEDULER_CROWN_SEARCH_BOOK = "application/vnd.courtscheduler.crown.search.and.book+json";
     private static final String COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE = "application/vnd.courtscheduler.validate.session.availability+json";
+    private static final String PROVISIONAL_BOOKING_STATUS_RESOURCE = "/provisionalBooking/status";
+    private static final String COURTSCHEDULER_GET_BOOKING_STATUS_TYPE = "application/vnd.courtscheduler.get.booking-status+json";
 
     private static final String COURTSCHEDULER_MOVE_TO_PAST_DATE = "application/vnd.courtscheduler.move-hearing-to-past-date+json";
 
@@ -83,6 +85,15 @@ public class HearingSlotsService {
 
     public Response validateSessionAvailability(final JsonObject payload) {
         return post(VALIDATE_SESSION_AVAILABILITY_RESOURCE, COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE, payload, true);
+    }
+
+    /**
+     * Asks courtscheduler whether each booking id is still safe to share. Params carry a single
+     * {@code bookingIds} entry holding a comma-separated list, which is courtscheduler's wire
+     * shape for this endpoint.
+     */
+    public Response getBookingStatus(final Map<String, String> params) {
+        return query(PROVISIONAL_BOOKING_STATUS_RESOURCE, COURTSCHEDULER_GET_BOOKING_STATUS_TYPE, params);
     }
 
     public Response searchBookSlots(final Map<String, String> params) {

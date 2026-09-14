@@ -6,6 +6,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -19,6 +20,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.command.api.util.FileUtil.givenPayload;
 
@@ -84,6 +86,8 @@ class CourtScheduleEnrichmentServiceTest {
     private SlotsToJsonStringConverter slotsToJsonStringConverter;
     @Mock
     private uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
+    @Mock
+    private CourtSchedulerService courtSchedulerService;
 
     @Test
     void searchAndBookShouldReturnBookedHearingSlots() {
@@ -6116,9 +6120,14 @@ class CourtScheduleEnrichmentServiceTest {
 
     @Test
     void promoteCrownBookingReferenceToBookedSlot_resolvesSessionAndBuildsAllocatedBookedSlot() {
+        // bookingReference is now the bookingId courtscheduler minted at slot-pick time (the same
+        // identity magistrates has always carried), resolved via getCourtSchedulesByProvisionalBookingId
+        // — not a court schedule id itself. The bookedSlot must carry the RESOLVED session's
+        // courtScheduleId, which is intentionally a different UUID from the bookingReference here.
         final UUID bookingReference = UUID.randomUUID();
         final UUID courtHouseId = UUID.randomUUID();
         final UUID courtRoomId = UUID.randomUUID();
+        final String resolvedCourtScheduleId = UUID.randomUUID().toString();
         final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
                 .withId(UUID.randomUUID())
                 .withJurisdictionType(JurisdictionType.CROWN)
@@ -6128,7 +6137,7 @@ class CourtScheduleEnrichmentServiceTest {
                 .build();
 
         final CourtSchedule cs = new CourtSchedule();
-        cs.setCourtScheduleId(bookingReference.toString());
+        cs.setCourtScheduleId(resolvedCourtScheduleId);
         cs.setCourtHouseId(courtHouseId.toString());
         cs.setCourtRoomId(courtRoomId.toString());
         cs.setSessionDate(LocalDate.parse("2026-03-16"));
@@ -6136,31 +6145,27 @@ class CourtScheduleEnrichmentServiceTest {
         cs.setOuCode("OU1");
         cs.setDraft(false);
 
-        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
-                .add("courtSchedules", JsonObjects.createArrayBuilder()
-                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", bookingReference.toString())))
-                .build();
-        final Response csResponse = mock(Response.class);
-        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
-        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
-        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
-        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+        when(courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingReference.toString()))
+                .thenReturn(List.of(cs));
 
         final HearingListingNeeds result = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing);
 
         assertThat(result.getBookedSlots().size(), is(1));
         final RotaSlot slot = result.getBookedSlots().get(0);
-        assertThat(slot.getCourtScheduleId(), is(bookingReference.toString()));
+        assertThat(slot.getCourtScheduleId(), is(resolvedCourtScheduleId));
+        assertThat(slot.getCourtScheduleId(), is(not(bookingReference.toString())));
         assertThat(slot.getCourtCentreId(), is(courtHouseId.toString()));
         assertThat(slot.getRoomId(), is(courtRoomId.toString()));
         assertThat(slot.getDuration(), is(120));
-        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(courtSchedulerService).getCourtSchedulesByProvisionalBookingId(bookingReference.toString());
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
     }
 
     @Test
     void promoteCrownBookingReferenceToBookedSlot_draftSessionOmitsRoom() {
         final UUID bookingReference = UUID.randomUUID();
         final UUID courtHouseId = UUID.randomUUID();
+        final String resolvedCourtScheduleId = UUID.randomUUID().toString();
         final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
                 .withId(UUID.randomUUID())
                 .withJurisdictionType(JurisdictionType.CROWN)
@@ -6169,26 +6174,19 @@ class CourtScheduleEnrichmentServiceTest {
                 .build();
 
         final CourtSchedule cs = new CourtSchedule();
-        cs.setCourtScheduleId(bookingReference.toString());
+        cs.setCourtScheduleId(resolvedCourtScheduleId);
         cs.setCourtHouseId(courtHouseId.toString());
         cs.setCourtRoomId(UUID.randomUUID().toString());
         cs.setHearingStartTime("2026-03-16T10:00:00Z");
         cs.setDraft(true);
 
-        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
-                .add("courtSchedules", JsonObjects.createArrayBuilder()
-                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", bookingReference.toString())))
-                .build();
-        final Response csResponse = mock(Response.class);
-        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
-        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
-        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
-        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+        when(courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingReference.toString()))
+                .thenReturn(List.of(cs));
 
         final HearingListingNeeds result = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing);
 
         final RotaSlot slot = result.getBookedSlots().get(0);
-        assertThat(slot.getCourtScheduleId(), is(bookingReference.toString()));
+        assertThat(slot.getCourtScheduleId(), is(resolvedCourtScheduleId));
         assertThat(slot.getCourtCentreId(), is(courtHouseId.toString()));
         assertNull(slot.getRoomId());
     }
@@ -6204,18 +6202,11 @@ class CourtScheduleEnrichmentServiceTest {
                 .build();
 
         final CourtSchedule cs = new CourtSchedule();
-        cs.setCourtScheduleId(bookingReference.toString());
+        cs.setCourtScheduleId(UUID.randomUUID().toString());
         cs.setDraft(true);
 
-        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
-                .add("courtSchedules", JsonObjects.createArrayBuilder()
-                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", bookingReference.toString())))
-                .build();
-        final Response csResponse = mock(Response.class);
-        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
-        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
-        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
-        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+        when(courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingReference.toString()))
+                .thenReturn(List.of(cs));
 
         // No hearingStartTime on the session and no listedStartDateTime on the hearing:
         // the promotion must be skipped rather than emitting a bookedSlot without startTime,
@@ -6227,20 +6218,16 @@ class CourtScheduleEnrichmentServiceTest {
 
     @Test
     void promoteCrownBookingReferenceToBookedSlot_throwsWhenBookingReferenceDoesNotResolve() {
+        final UUID bookingReference = UUID.randomUUID();
         final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
                 .withId(UUID.randomUUID())
                 .withJurisdictionType(JurisdictionType.CROWN)
-                .withBookingReference(UUID.randomUUID())
+                .withBookingReference(bookingReference)
                 .withEstimatedMinutes(60)
                 .build();
 
-        final JsonObject emptyJson = JsonObjects.createObjectBuilder()
-                .add("courtSchedules", JsonObjects.createArrayBuilder())
-                .build();
-        final Response csResponse = mock(Response.class);
-        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
-        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
-        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(emptyJson);
+        when(courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingReference.toString()))
+                .thenReturn(List.of());
 
         org.junit.jupiter.api.Assertions.assertThrows(
                 uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException.class,
@@ -6275,6 +6262,64 @@ class CourtScheduleEnrichmentServiceTest {
 
         assertThat(result, is(hearing));
         verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+    }
+
+    @Test
+    public void shouldResolveCrownBookingReferenceAsABookingIdNotASessionId() {
+        final UUID bookingId = UUID.randomUUID();
+        final String resolvedCourtScheduleId = UUID.randomUUID().toString();
+
+        final CourtSchedule reservedSession = new CourtSchedule();
+        reservedSession.setCourtScheduleId(resolvedCourtScheduleId);
+        reservedSession.setHearingStartTime("2026-10-14T10:00:00Z");
+        reservedSession.setCourtHouseId(UUID.randomUUID().toString());
+        reservedSession.setOuCode("B01LY");
+
+        when(courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingId.toString()))
+                .thenReturn(List.of(reservedSession));
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withBookingReference(bookingId)
+                .withEstimatedMinutes(60)
+                .build();
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing);
+
+        // The bookedSlot must carry the RESOLVED session's id, never the bookingReference.
+        assertThat(result.getBookedSlots().get(0).getCourtScheduleId(), is(resolvedCourtScheduleId));
+        assertThat(result.getBookedSlots().get(0).getCourtScheduleId(), is(not(bookingId.toString())));
+        verify(courtSchedulerService).getCourtSchedulesByProvisionalBookingId(bookingId.toString());
+    }
+
+    @Test
+    public void shouldFailFastWhenTheBookingResolvesToNothing() {
+        final UUID bookingId = UUID.randomUUID();
+        when(courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingId.toString()))
+                .thenReturn(List.of());
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withBookingReference(bookingId)
+                .withEstimatedMinutes(60)
+                .build();
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException.class,
+                () -> courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing));
+    }
+
+    @Test
+    public void shouldNotResolveAnythingWhenThereIsNoBookingReference() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withEstimatedMinutes(60)
+                .build();
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing);
+
+        assertThat(result, is(sameInstance(hearing)));
+        verifyNoInteractions(courtSchedulerService);
     }
 
     // ─── enrichCrownUpdateHearing / applyCrownFallback guard-path tests ──────
@@ -7184,6 +7229,116 @@ class CourtScheduleEnrichmentServiceTest {
         final JsonObject slot0 = hearingSlots.getJsonObject(0);
         assertTrue(slot0.containsKey("courtScheduleIds"),
                 "hearingSlots[0] must use key 'courtScheduleIds' not 'ids'");
+    }
+
+    // ─── bookingId on hearingSlots[] payload (BUG-3 Task 2 — release the hold on list) ──────
+
+    @Test
+    void shouldSendTheBookingReferenceOnTheListPayloadSoTheHoldIsReleased() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID bookingId = UUID.randomUUID();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withId(hearingId)
+                .withBookingReference(bookingId)
+                .withListedStartDateTime(ZonedDateTime.now().plusDays(3))
+                .withCourtCentre(CourtCentre.courtCentre().withId(UUID.randomUUID()).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(LocalDate.now().plusDays(3))
+                                .withDurationMinutes(30)
+                                .build()))
+                .build();
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", "2026-01-01T09:00:00Z")
+                                .add("duration", 30)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        final ArgumentCaptor<JsonObject> payload = ArgumentCaptor.forClass(JsonObject.class);
+        verify(hearingSlotsService).listHearingInCourtSessions(payload.capture());
+
+        final JsonObject hearingSlot = payload.getValue().getJsonArray("hearingSlots").getJsonObject(0);
+        assertThat(hearingSlot.getString("bookingId"), is(bookingId.toString()));
+    }
+
+    @Test
+    void shouldOmitBookingIdWhenTheHearingHasNoBookingReference() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withId(hearingId)
+                .withListedStartDateTime(ZonedDateTime.now().plusDays(3))
+                .withCourtCentre(CourtCentre.courtCentre().withId(UUID.randomUUID()).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(LocalDate.now().plusDays(3))
+                                .withDurationMinutes(30)
+                                .build()))
+                .build();
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", "2026-01-01T09:00:00Z")
+                                .add("duration", 30)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        final ArgumentCaptor<JsonObject> payload = ArgumentCaptor.forClass(JsonObject.class);
+        verify(hearingSlotsService).listHearingInCourtSessions(payload.capture());
+
+        final JsonObject hearingSlot = payload.getValue().getJsonArray("hearingSlots").getJsonObject(0);
+        assertThat(hearingSlot.containsKey("bookingId"), is(false));
     }
 
     // ─── multiDaySearchAndBook courtCentreId + hearingDate guard ────────────

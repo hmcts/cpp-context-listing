@@ -543,6 +543,35 @@ protocols: [ HTTP, HTTPS ]
                   example:  !include json/listing.query.court.schedule.draft.status.response.json
                   schema:  !include  json/schema/listing.query.court.schedule.draft.status.response.json
 
+/bookingStatus:
+  description: |
+    Reports, for each supplied bookingId, whether the draft carrying it is still safe
+    to share, and why. The results UI calls this before sending a share, which is
+    asynchronous and so cannot report this failure back in time.
+  post:
+    description: |
+      Returns { "bookings": [ { "bookingId", "safeToShare", "status" } ] }.
+      status is RESERVED (a reservation still holds capacity), SHARED (already shared),
+      LEGACY (a draft saved before reserve-a-slot shipped), NONE (the hold expired and
+      was purged), or UNKNOWN (courtscheduler could not be reached - the check failed
+      open, so safeToShare is true).
+      ...
+      (mapping):
+          requestType: application/vnd.listing.query.booking.status+json
+          name: listing.query.booking.status
+      ...
+    body:
+        application/vnd.listing.query.booking.status+json:
+          example:  !include json/listing.query.booking.status.json
+          schema:  !include  json/schema/listing.query.booking.status.json
+    responses:
+        200:
+            description: OK
+            body:
+                application/vnd.listing.query.booking.status.response+json:
+                  example:  !include json/listing.query.booking.status.response.json
+                  schema:  !include  json/schema/listing.query.booking.status.response.json
+
 /hearings/unscheduled:
    get:
       description: |
