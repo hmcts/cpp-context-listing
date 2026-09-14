@@ -56,6 +56,7 @@ import uk.gov.moj.cpp.listing.domain.VacateTrialEnriched;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -102,6 +103,8 @@ public class ListingCommandApi {
     public static final String MISSING_COURT_SCHEDULE_ID = "MISSING_COURT_SCHEDULE_ID";
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String START_DATE = "startDate";
+    private static final String START_DATE_TIME = "startDateTime";
+    private static final String END_DATE_TIME = "endDateTime";
     private static final String JURISDICTION = "jurisdiction";
     private static final String JURISDICTION_TYPE = "jurisdictionType";
     private static final String ESTIMATED_MINUTES = "estimatedMinutes";
@@ -124,6 +127,10 @@ public class ListingCommandApi {
     private static final String MESSAGE = "message";
     public static final String HEARING_ID_NOT_FOUND = "HEARING_ID_NOT_FOUND";
     public static final String FUTURE_DATE_NOT_ALLOWED = "FUTURE_DATE_NOT_ALLOWED";
+    public static final String INVALID_DATE = "INVALID_DATE";
+    public static final String INVALID_DATE_RANGE = "INVALID_DATE_RANGE";
+    public static final String START_DATE_TOO_OLD = "START_DATE_TOO_OLD";
+    private static final int MAX_PAST_MONTHS = 6;
     private static final String CROWN_JURISDICTION = "CROWN";
     private static final String LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING = "listing.command.mark-unallocated-hearing-as-duplicate";
     private static final String LISTING_COMMAND_UPDATE_EXISTING_HEARING = "listing.command.update-existing-hearing";
@@ -440,6 +447,15 @@ public class ListingCommandApi {
                 envelope.payload()));
     }
 
+    /**
+     * courtRoomId/startDateTime/endDateTime mirror main's contract (the review artifact this
+     * reconciles); jurisdiction is still resolved from the hearing's own {@code jurisdictionType} in
+     * the listing viewstore (NOT main's court-centre reference-data lookup — that lookup is
+     * deliberately not ported, see the plan's Part B.2 note 4 / decisions). Date validation
+     * ({@link #validateMoveDates}) mirrors main's rules for BOTH jurisdictions, EXCLUDING main's
+     * single-day-only (MULTI_DAY_NOT_ALLOWED) check, which would regress SPRDT-1333's multi-day CROWN
+     * payback capability — deliberately not ported.
+     */
     @Handles("listing.command.move-hearing-to-past-date")
     public void handleMoveHearingToPastDate(final JsonEnvelope envelope) {
         final JsonObject payload = envelope.payloadAsJsonObject();
@@ -450,7 +466,10 @@ public class ListingCommandApi {
 
         final UUID hearingId = fromString(payload.getString(HEARING_ID));
         final UUID courtCentreId = fromString(payload.getString(COURT_CENTRE_ID));
-        final LocalDate startDate = LocalDate.parse(payload.getString(START_DATE));
+        final UUID courtRoomId = fromString(payload.getString(COURT_ROOM_ID));
+        final ZonedDateTime startInstant = parseInstant(payload.getString(START_DATE_TIME), START_DATE_TIME);
+        final ZonedDateTime endInstant = parseInstant(payload.getString(END_DATE_TIME), END_DATE_TIME);
+        final LocalDate startDate = startInstant.toLocalDate();
 
         final JsonObject hearing = hearingLookupService.findHearing(hearingId, envelope)
                 .orElseThrow(() -> new MoveHearingToPastDateException(422,
@@ -465,33 +484,61 @@ public class ListingCommandApi {
                 .add(START_DATE, startDate.toString())
                 .add(COURT_CENTRE_ID, courtCentreId.toString());
 
-        if (CROWN_JURISDICTION.equals(jurisdictionType)) {
-            // CROWN moves may only target today or an earlier date; the slot is then booked in courtscheduler like MAGISTRATES.
-            rejectCrownMoveToFutureDate(startDate);
-        }
-        enrichWithBookedPastDateSlot(enrichedBuilder, hearingId, courtCentreId, startDate, hearing, jurisdictionType);
+        // Ported from main, applied uniformly to BOTH jurisdictions (main runs this before any
+        // CROWN/MAGISTRATES branching too) — closes the gap where MAGS previously had no listing-side
+        // date validation at all, and CROWN only had a future-date check that still allowed today.
+        validateMoveDates(startInstant, endInstant);
+
+        enrichWithBookedPastDateSlot(enrichedBuilder, hearingId, courtCentreId, courtRoomId,
+                startInstant, endInstant, hearing, jurisdictionType);
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_MOVE_HEARING_TO_PAST_DATE_ENRICHED),
                 enrichedBuilder.build()));
     }
 
+    /** Mirrors main's {@code parseInstant}: malformed startDateTime/endDateTime => 422 INVALID_DATE. */
+    private static ZonedDateTime parseInstant(final String value, final String field) {
+        try {
+            return ZonedDateTime.parse(value);
+        } catch (final DateTimeParseException e) {
+            final String message = field + " is not a valid date";
+            throw new MoveHearingToPastDateException(422, buildMoveHearingToPastDateErrorBody(INVALID_DATE, message), message);
+        }
+    }
 
-    private static void rejectCrownMoveToFutureDate(final LocalDate startDate) {
-        if (startDate.isAfter(LocalDate.now())) {
-            throw new MoveHearingToPastDateException(422,
-                    buildMoveHearingToPastDateErrorBody(FUTURE_DATE_NOT_ALLOWED, "Hearings can only be moved to today or an earlier date"),
-                    "Hearings can only be moved to today or an earlier date");
+    /**
+     * Ported from main's {@code validateMoveDates}, minus the single-day-only (MULTI_DAY_NOT_ALLOWED)
+     * check — SPRDT-1333's multi-day CROWN payback must keep working, so a multi-day span
+     * (endDateTime's date after startDateTime's date) is deliberately NOT rejected here.
+     */
+    private static void validateMoveDates(final ZonedDateTime startInstant, final ZonedDateTime endInstant) {
+        final LocalDate startDate = startInstant.toLocalDate();
+        final LocalDate endDate = endInstant.toLocalDate();
+        final LocalDate today = LocalDate.now();
+        // today itself and any future date are rejected (isBefore is exclusive of today) - SPRDT-1185.
+        if (!startDate.isBefore(today) || !endDate.isBefore(today)) {
+            final String message = "Hearings can only be moved to an earlier date";
+            throw new MoveHearingToPastDateException(422, buildMoveHearingToPastDateErrorBody(FUTURE_DATE_NOT_ALLOWED, message), message);
+        }
+        if (endInstant.isBefore(startInstant)) {
+            final String message = "endDateTime must not be earlier than startDateTime";
+            throw new MoveHearingToPastDateException(422, buildMoveHearingToPastDateErrorBody(INVALID_DATE_RANGE, message), message);
+        }
+        if (startDate.isBefore(today.minusMonths(MAX_PAST_MONTHS))) {
+            final String message = "startDate cannot be earlier than " + MAX_PAST_MONTHS + " months before today";
+            throw new MoveHearingToPastDateException(422, buildMoveHearingToPastDateErrorBody(START_DATE_TOO_OLD, message), message);
         }
     }
 
     private void enrichWithBookedPastDateSlot(final JsonObjectBuilder enrichedBuilder, final UUID hearingId,
-                                              final UUID courtCentreId, final LocalDate startDate, final JsonObject hearing,
-                                              final String jurisdictionType) {
+                                              final UUID courtCentreId, final UUID courtRoomId,
+                                              final ZonedDateTime startInstant, final ZonedDateTime endInstant,
+                                              final JsonObject hearing, final String jurisdictionType) {
         final Integer durationInMinutes = (hearing.containsKey(ESTIMATED_MINUTES) && !hearing.isNull(ESTIMATED_MINUTES))
                 ? hearing.getInt(ESTIMATED_MINUTES) : null;
 
-        final MoveHearingToPastDateResult slot =
-                courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, startDate, durationInMinutes, jurisdictionType);
+        final MoveHearingToPastDateResult slot = courtSchedulerServiceAdapter.moveHearingToPastDate(
+                hearingId, courtCentreId, courtRoomId, startInstant, endInstant, durationInMinutes, jurisdictionType);
 
         // courtscheduler's CourtSchedule carries no per-hearing duration: the moved day(s) keep the
         // hearing's own estimate, spread evenly across the booked sessions (mirrors
