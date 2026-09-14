@@ -1066,21 +1066,21 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
-    void shouldIgnoreWeekendsWhenSizingTheRequestedWindow() {
+    void shouldNotClampBlockDuration_whenAMultiDayWindowIsShorterThanTheBlock() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtScheduleId = UUID.randomUUID();
         final UUID courtCentreId = UUID.randomUUID();
-        final LocalDate friday = LocalDate.now().plusDays(5).with(TemporalAdjusters.next(DayOfWeek.FRIDAY));
+        final LocalDate monday = LocalDate.now().plusDays(5).with(TemporalAdjusters.next(DayOfWeek.MONDAY));
 
-        givenSingleBookedSession(courtScheduleId, courtCentreId, friday);
+        givenSingleBookedSession(courtScheduleId, courtCentreId, monday);
 
         courtScheduleEnrichmentService.enrichWithCourtSchedules(
-                crownBlockResize(hearingId, courtScheduleId, courtCentreId, friday, friday.plusDays(3), 1440),
+                crownBlockResize(hearingId, courtScheduleId, courtCentreId, monday, monday.plusDays(1), 1440),
                 mock(JsonEnvelope.class));
 
         final ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
         verify(hearingSlotsService).multiDaySearchAndBook(params.capture());
-        assertThat(params.getValue().get(CourtScheduleEnrichmentService.DURATION_MINUTES), is("720"));
+        assertThat(params.getValue().get(CourtScheduleEnrichmentService.DURATION_MINUTES), is("1440"));
     }
 
     // ─── CROWN update hearing enrichment tests ───────────────────────────

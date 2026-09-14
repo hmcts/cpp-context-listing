@@ -639,14 +639,10 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
      * over the dates — no walk — and the window is capped at {@code MAX_BLOCK_BUSINESS_DAYS}.</p>
      */
     private static int clampToRequestedWindow(final int totalDuration, final LocalDate startDate, final LocalDate endDate) {
-        if (isNull(startDate) || isNull(endDate) || endDate.isBefore(startDate)) {
+        if (isNull(startDate) || isNull(endDate) || !endDate.equals(startDate)) {
             return totalDuration;
         }
-        final int windowBusinessDays = Math.min(businessDaysInclusive(startDate, endDate), MAX_BLOCK_BUSINESS_DAYS);
-        if (windowBusinessDays == 0) {
-            return totalDuration;
-        }
-        return Math.min(totalDuration, windowBusinessDays * HearingDurationEnrichmentService.MINUTES_IN_DAY);
+        return Math.min(totalDuration, HearingDurationEnrichmentService.MINUTES_IN_DAY);
     }
 
     private static int bookingWindowMinutes(final LocalDate startDate, final LocalDate endDate,
