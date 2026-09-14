@@ -603,4 +603,89 @@ class CourtSchedulerServiceAdapterTest {
                 .add("courtScheduleIdList", list)
                 .build();
     }
+
+    // ─── getBookingStatus ────────────────────────────────────────────────────
+
+    @Test
+    public void shouldForwardBookingIdsAndReturnCourtschedulerAnswersVerbatim() {
+        final JsonObject downstream = javax.json.Json.createReader(new java.io.StringReader(
+                "{\"bookings\":[" +
+                "{\"bookingId\":\"bk-1\",\"safeToShare\":true,\"status\":\"RESERVED\"}," +
+                "{\"bookingId\":\"bk-2\",\"safeToShare\":true,\"status\":\"SHARED\"}," +
+                "{\"bookingId\":\"bk-3\",\"safeToShare\":false,\"status\":\"NONE\"}]}")).readObject();
+        givenCourtschedulerReturns(HttpStatus.SC_OK, downstream);
+
+        final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(request("bk-1", "bk-2", "bk-3"));
+
+        final ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).getBookingStatus(params.capture());
+        assertThat(params.getValue().get("bookingIds"), is("bk-1,bk-2,bk-3"));
+
+        assertThat(result.getJsonArray("bookings").size(), is(3));
+        assertThat(result.getJsonArray("bookings").getJsonObject(1).getString("status"), is("SHARED"));
+        assertThat(result.getJsonArray("bookings").getJsonObject(2).getBoolean("safeToShare"), is(false));
+    }
+
+    @Test
+    public void shouldReportUnknownAndSafeWhenCourtschedulerThrows() {
+        when(hearingSlotsService.getBookingStatus(any())).thenThrow(new RuntimeException("connection refused"));
+
+        final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(request("bk-1", "bk-2"));
+
+        assertThat(result.getJsonArray("bookings").size(), is(2));
+        for (int i = 0; i < 2; i++) {
+            assertThat(result.getJsonArray("bookings").getJsonObject(i).getString("status"), is("UNKNOWN"));
+            assertThat(result.getJsonArray("bookings").getJsonObject(i).getBoolean("safeToShare"), is(true));
+        }
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getString("bookingId"), is("bk-1"));
+    }
+
+    @Test
+    public void shouldReportUnknownAndSafeWhenCourtschedulerReturnsNonOk() {
+        givenCourtschedulerReturns(HttpStatus.SC_INTERNAL_SERVER_ERROR, javax.json.Json.createObjectBuilder().build());
+
+        final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(request("bk-1"));
+
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getString("status"), is("UNKNOWN"));
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getBoolean("safeToShare"), is(true));
+    }
+
+    @Test
+    public void shouldReturnAnEmptyListAndNotCallCourtschedulerWhenNoIdsAreSupplied() {
+        final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(
+                javax.json.Json.createObjectBuilder().add("bookingIds", javax.json.Json.createArrayBuilder()).build());
+
+        assertThat(result.getJsonArray("bookings").size(), is(0));
+        org.mockito.Mockito.verifyNoInteractions(hearingSlotsService);
+    }
+
+    @Test
+    public void shouldNotReinterpretALegacyStatus() {
+        final JsonObject downstream = javax.json.Json.createReader(new java.io.StringReader(
+                "{\"bookings\":[{\"bookingId\":\"legacy-1\",\"safeToShare\":true,\"status\":\"LEGACY\"}]}")).readObject();
+        givenCourtschedulerReturns(HttpStatus.SC_OK, downstream);
+
+        final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(request("legacy-1"));
+
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getString("status"), is("LEGACY"));
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getBoolean("safeToShare"), is(true));
+    }
+
+    private static JsonObject request(final String... bookingIds) {
+        final javax.json.JsonArrayBuilder list = javax.json.Json.createArrayBuilder();
+        for (final String id : bookingIds) {
+            list.add(id);
+        }
+        return javax.json.Json.createObjectBuilder()
+                .add("bookingIds", list)
+                .build();
+    }
+
+    private void givenCourtschedulerReturns(final int status, final JsonObject body) {
+        when(response.getStatus()).thenReturn(status);
+        if (HttpStatus.SC_OK == status) {
+            when(response.getEntity()).thenReturn(body);
+        }
+        when(hearingSlotsService.getBookingStatus(anyMap())).thenReturn(response);
+    }
 }

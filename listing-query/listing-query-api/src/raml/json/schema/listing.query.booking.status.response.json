@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/query/listing.query.booking.status.response.json",
+  "type": "object",
+  "properties": {
+    "bookings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "bookingId": { "type": "string" },
+          "safeToShare": {
+            "type": "boolean",
+            "description": "False only when the hold expired and was purged. True for a live reservation, an already-shared booking, a legacy draft, and an unreachable courtscheduler."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["RESERVED", "SHARED", "LEGACY", "NONE", "UNKNOWN"],
+            "description": "UNKNOWN means courtscheduler could not be reached and the check failed open; courtscheduler itself never emits it."
+          }
+        },
+        "required": ["bookingId", "safeToShare", "status"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["bookings"],
+  "additionalProperties": false
+}

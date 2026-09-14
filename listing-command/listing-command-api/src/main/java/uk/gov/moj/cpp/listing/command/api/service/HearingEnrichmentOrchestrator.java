@@ -64,9 +64,10 @@ public class HearingEnrichmentOrchestrator {
                 enrichedHearings.add(withCourtSchedules);
             } else if (JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
                 LOGGER.info("Enrich list court hearing for CROWN hearingid: {} fallbackSource: {}", hearing.getId(), crownFallbackSource);
-                // CROWN list paths carry the chosen courtScheduleId in the bookingReference (Crown has no
-                // provisional-booking concept). Resolve it against courtscheduler and promote the resolved
-                // session onto a bookedSlot so the CourtSchedule-first flow below lists/allocates it.
+                // CROWN list paths carry the bookingId courtscheduler minted at slot-pick time in
+                // bookingReference — the same identity magistrates has always carried. Resolve it against
+                // courtscheduler's provisional booking endpoint and promote the resolved session onto a
+                // bookedSlot so the CourtSchedule-first flow below lists/allocates it.
                 final HearingListingNeeds crownHearing = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing);
                 if (hasCourtScheduleId(crownHearing) || isCrownFallbackCandidate(crownHearing)) {
                     // CROWN with courtScheduleId (bookedSlots or hearingDays): CourtSchedule-first flow
