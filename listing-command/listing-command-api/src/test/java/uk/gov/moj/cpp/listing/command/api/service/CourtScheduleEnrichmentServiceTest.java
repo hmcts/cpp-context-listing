@@ -965,6 +965,125 @@ class CourtScheduleEnrichmentServiceTest {
         assertThat(result.getHearingDays().size(), is(3));
     }
 
+    // ─── SPRDT-1220: resizing a multi-day block down ─────────────────────
+
+    private UpdateHearingForListing crownBlockResize(final UUID hearingId,
+                                                     final UUID courtScheduleId,
+                                                     final UUID courtCentreId,
+                                                     final LocalDate start,
+                                                     final LocalDate end,
+                                                     final int blockMinutes) {
+        return UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .withStartDate(start)
+                .withEndDate(end)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(start)
+                                .withDurationMinutes(blockMinutes)
+                                .build()))
+                .build();
+    }
+
+    private void givenSingleBookedSession(final UUID courtScheduleId, final UUID courtCentreId, final LocalDate day) {
+        final CourtSchedule session = new CourtSchedule();
+        session.setCourtScheduleId(courtScheduleId.toString());
+        session.setCourtHouseId(courtCentreId.toString());
+        session.setSessionDate(day);
+        session.setSessionStartTime(Date.from(day.atTime(10, 0).toInstant(ZoneOffset.UTC)));
+
+        final JsonObject responseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId.toString()).build()))
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", day.atTime(10, 0).atZone(ZoneOffset.UTC).toString())
+                                .add("duration", HearingDurationEnrichmentService.MINUTES_IN_DAY)
+                                .build()))
+                .build();
+
+        final Response okResponse = mock(Response.class);
+        when(okResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(okResponse);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(okResponse);
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(responseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(session);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(invocation -> {
+                    final JsonObject jo = invocation.getArgument(0);
+                    final ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+    }
+
+    @Test
+    void shouldClampBlockDurationToTheRequestedWindow_whenMultiDayHearingIsConvertedToSingleDay() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate monday = LocalDate.now().plusDays(5).with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+
+        givenSingleBookedSession(courtScheduleId, courtCentreId, monday);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(
+                crownBlockResize(hearingId, courtScheduleId, courtCentreId, monday, monday, 1440),
+                mock(JsonEnvelope.class));
+
+        final ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(params.capture());
+        assertThat(params.getValue().get(CourtScheduleEnrichmentService.DURATION_MINUTES),
+                is(String.valueOf(HearingDurationEnrichmentService.MINUTES_IN_DAY)));
+
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getDurationMinutes(),
+                is(HearingDurationEnrichmentService.MINUTES_IN_DAY));
+    }
+
+    @Test
+    void shouldNotClampBlockDuration_whenTheRequestedWindowStillSpansTheWholeBlock() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate monday = LocalDate.now().plusDays(5).with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+
+        givenSingleBookedSession(courtScheduleId, courtCentreId, monday);
+
+        courtScheduleEnrichmentService.enrichWithCourtSchedules(
+                crownBlockResize(hearingId, courtScheduleId, courtCentreId, monday, monday.plusDays(2), 1080),
+                mock(JsonEnvelope.class));
+
+        final ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(params.capture());
+        assertThat(params.getValue().get(CourtScheduleEnrichmentService.DURATION_MINUTES), is("1080"));
+    }
+
+    @Test
+    void shouldIgnoreWeekendsWhenSizingTheRequestedWindow() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate friday = LocalDate.now().plusDays(5).with(TemporalAdjusters.next(DayOfWeek.FRIDAY));
+
+        givenSingleBookedSession(courtScheduleId, courtCentreId, friday);
+
+        courtScheduleEnrichmentService.enrichWithCourtSchedules(
+                crownBlockResize(hearingId, courtScheduleId, courtCentreId, friday, friday.plusDays(3), 1440),
+                mock(JsonEnvelope.class));
+
+        final ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(params.capture());
+        assertThat(params.getValue().get(CourtScheduleEnrichmentService.DURATION_MINUTES), is("720"));
+    }
+
     // ─── CROWN update hearing enrichment tests ───────────────────────────
 
     @Test
