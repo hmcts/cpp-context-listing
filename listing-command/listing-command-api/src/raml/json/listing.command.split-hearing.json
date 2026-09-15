@@ -17,7 +17,10 @@
       "duration": 1080,
       "courtScheduleId": "c585703f-1b0e-4a5c-8f2c-6b4d9a1e3f77",
       "session": "AD",
-      "oucode": "C01CY00"
+      "oucode": "C01CY00",
+      "courtRoomId": 772,
+      "courtCentreId": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+      "roomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0"
     }
   ],
   "nonSittingDays": [],

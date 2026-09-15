@@ -109,6 +109,55 @@ class SplitHearingPayloadConverterTest {
         assertThat(slot.getString("startTime"), is("2026-09-10T09:00:00.000Z"));
     }
 
+    // The exact nonDefaultDay the FE sends (TL's payload, 2026-09-15): every field must survive,
+    // and the two room identifiers must stay distinct — courtRoomId is the integer room NUMBER,
+    // roomId is the room UUID. Coercing either way silently books the wrong room.
+    @Test
+    void shouldCarryEveryFieldTheFrontEndSendsOnAVirtualDay() {
+        final JsonObject fePayload = json("""
+                {
+                  "courtCentreId": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+                  "courtRoomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0",
+                  "startDate": "2026-09-10", "endDate": "2026-09-10",
+                  "jurisdictionType": "CROWN", "hearingLanguage": "ENGLISH",
+                  "type": { "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776", "description": "First hearing" },
+                  "nonDefaultDays": [{
+                    "virtual": true, "duration": 1080,
+                    "courtScheduleId": "c585703f-1b0e-4a5c-8f2c-6b4d9a1e3f77",
+                    "session": "AD", "oucode": "C01CY00",
+                    "startTime": "2026-09-10T09:00:00.000Z",
+                    "courtRoomId": 772,
+                    "courtCentreId": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+                    "roomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0"
+                  }],
+                  "nonSittingDays": [], "judiciary": [],
+                  "prosecutionCases": [{
+                    "caseId": "b14ba162-3f21-4c8e-9a77-1d2e5c8b4a90",
+                    "defendants": [{
+                      "defendantId": "7ba20d5f-5c44-4a1b-8e33-9f6d2c7a5b18",
+                      "offences": [{"offenceId": "79d8699d-2a31-4c55-b7e8-3f1a9d6c2e44"},
+                                   {"offenceId": "6dffce40-8b12-4d67-a9c3-5e2f8a1b7d90"}]
+                    }]
+                  }],
+                  "sendNotificationToParties": false
+                }
+                """);
+
+        final JsonObject slot = listNewHearing(
+                toProgressionSplitRequest(fePayload, COURT_CENTRE_NAME, COURT_ROOM_NAME, null))
+                .getJsonArray("bookedSlots").getJsonObject(0);
+
+        assertThat(slot.getString("startTime"), is("2026-09-10T09:00:00.000Z"));
+        assertThat(slot.getInt("duration"), is(1080));
+        assertThat(slot.getString("courtScheduleId"), is("c585703f-1b0e-4a5c-8f2c-6b4d9a1e3f77"));
+        assertThat(slot.getString("session"), is("AD"));
+        assertThat(slot.getString("oucode"), is("C01CY00"));
+        assertThat("room NUMBER must stay an integer", slot.getInt("courtRoomId"), is(772));
+        assertThat(slot.getString("courtCentreId"), is("07e45c88-9e5d-3e44-b664-d5345bb13be2"));
+        assertThat("room UUID must stay a string", slot.getString("roomId"), is("731816c1-5ee4-373a-9bda-840e13a5bcb0"));
+        assertThat(slot.containsKey("virtual"), is(false));
+    }
+
     @Test
     void shouldSumBookedSlotDurationsIntoEstimatedMinutes() {
         assertThat(listNewHearing(toProgressionSplitRequest(crownSplitPayload(), COURT_CENTRE_NAME, COURT_ROOM_NAME, null))
