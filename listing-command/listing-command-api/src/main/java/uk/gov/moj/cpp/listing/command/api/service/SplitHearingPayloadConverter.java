@@ -63,7 +63,7 @@ public final class SplitHearingPayloadConverter {
         }
         listNewHearing.add("estimatedMinutes", estimatedMinutes(bookedSlots, hearingTypeDefaultMinutes));
 
-        earliestStartDateTime(splitHearing, bookedSlots)
+        earliestStartDateTime(bookedSlots)
                 .ifPresent(value -> listNewHearing.add("earliestStartDateTime", value));
         copyIfPresent(splitHearing, "endDate", listNewHearing, "endDate");
 
@@ -131,8 +131,7 @@ public final class SplitHearingPayloadConverter {
 
     // The hearing starts when its first booked session starts; the date alone is not enough for
     // progression, which wants a full timestamp.
-    private static java.util.Optional<JsonValue> earliestStartDateTime(final JsonObject splitHearing,
-                                                                      final JsonArray bookedSlots) {
+    private static java.util.Optional<JsonValue> earliestStartDateTime(final JsonArray bookedSlots) {
         return bookedSlots.getValuesAs(JsonObject.class).stream()
                 .filter(slot -> slot.containsKey(START_TIME) && !slot.isNull(START_TIME))
                 .map(slot -> slot.get(START_TIME))
