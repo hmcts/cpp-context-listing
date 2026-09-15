@@ -14,7 +14,7 @@ import javax.json.JsonObject;
 public class SplitHearingRejectedException extends RuntimeException {
 
     private final int httpStatus;
-    private final JsonObject responseBody;
+    private final transient JsonObject responseBody;
 
     public SplitHearingRejectedException(final int httpStatus, final JsonObject responseBody, final String message) {
         super(message);

@@ -35,6 +35,12 @@ public final class SplitHearingPayloadConverter {
     private static final String BOOKED_SLOTS = "bookedSlots";
     private static final String SEND_NOTIFICATION_TO_PARTIES = "sendNotificationToParties";
     private static final String LIST_NEW_HEARING = "listNewHearing";
+    private static final String WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
+    private static final String WEEK_COMMENCING_DURATION_IN_WEEKS = "weekCommencingDurationInWeeks";
+    private static final String PROSECUTION_CASES = "prosecutionCases";
+    private static final String DEFENDANTS = "defendants";
+    private static final String OFFENCES = "offences";
+    private static final String OFFENCE_ID = "offenceId";
 
     // Copied field-for-field from a virtual nonDefaultDay onto a bookedSlot; `virtual` is dropped.
     private static final List<String> BOOKED_SLOT_FIELDS = List.of(
@@ -139,14 +145,14 @@ public final class SplitHearingPayloadConverter {
     }
 
     private static java.util.Optional<JsonValue> weekCommencingDate(final JsonObject splitHearing) {
-        if (!splitHearing.containsKey("weekCommencingStartDate") || splitHearing.isNull("weekCommencingStartDate")) {
+        if (!splitHearing.containsKey(WEEK_COMMENCING_START_DATE) || splitHearing.isNull(WEEK_COMMENCING_START_DATE)) {
             return java.util.Optional.empty();
         }
         final JsonObjectBuilder weekCommencing = createObjectBuilder()
-                .add("startDate", splitHearing.get("weekCommencingStartDate"));
-        if (splitHearing.containsKey("weekCommencingDurationInWeeks")
-                && !splitHearing.isNull("weekCommencingDurationInWeeks")) {
-            weekCommencing.add(DURATION, splitHearing.get("weekCommencingDurationInWeeks"));
+                .add("startDate", splitHearing.get(WEEK_COMMENCING_START_DATE));
+        if (splitHearing.containsKey(WEEK_COMMENCING_DURATION_IN_WEEKS)
+                && !splitHearing.isNull(WEEK_COMMENCING_DURATION_IN_WEEKS)) {
+            weekCommencing.add(DURATION, splitHearing.get(WEEK_COMMENCING_DURATION_IN_WEEKS));
         }
         return java.util.Optional.of(weekCommencing.build());
     }
@@ -170,14 +176,14 @@ public final class SplitHearingPayloadConverter {
     // offence ids that move.
     private static JsonArray listDefendantRequests(final JsonObject splitHearing) {
         final JsonArrayBuilder requests = createArrayBuilder();
-        if (!splitHearing.containsKey("prosecutionCases") || splitHearing.isNull("prosecutionCases")) {
+        if (!splitHearing.containsKey(PROSECUTION_CASES) || splitHearing.isNull(PROSECUTION_CASES)) {
             return requests.build();
         }
-        for (final JsonObject prosecutionCase : splitHearing.getJsonArray("prosecutionCases").getValuesAs(JsonObject.class)) {
-            if (!prosecutionCase.containsKey("defendants") || prosecutionCase.isNull("defendants")) {
+        for (final JsonObject prosecutionCase : splitHearing.getJsonArray(PROSECUTION_CASES).getValuesAs(JsonObject.class)) {
+            if (!prosecutionCase.containsKey(DEFENDANTS) || prosecutionCase.isNull(DEFENDANTS)) {
                 continue;
             }
-            for (final JsonObject defendant : prosecutionCase.getJsonArray("defendants").getValuesAs(JsonObject.class)) {
+            for (final JsonObject defendant : prosecutionCase.getJsonArray(DEFENDANTS).getValuesAs(JsonObject.class)) {
                 final JsonObjectBuilder request = createObjectBuilder();
                 copyIfPresent(prosecutionCase, "caseId", request, "prosecutionCaseId");
                 copyIfPresent(defendant, "defendantId", request, "defendantId");
@@ -190,10 +196,10 @@ public final class SplitHearingPayloadConverter {
 
     private static JsonArray defendantOffences(final JsonObject defendant) {
         final JsonArrayBuilder offenceIds = createArrayBuilder();
-        if (defendant.containsKey("offences") && !defendant.isNull("offences")) {
-            defendant.getJsonArray("offences").getValuesAs(JsonObject.class).stream()
-                    .filter(offence -> offence.containsKey("offenceId") && !offence.isNull("offenceId"))
-                    .forEach(offence -> offenceIds.add(offence.get("offenceId")));
+        if (defendant.containsKey(OFFENCES) && !defendant.isNull(OFFENCES)) {
+            defendant.getJsonArray(OFFENCES).getValuesAs(JsonObject.class).stream()
+                    .filter(offence -> offence.containsKey(OFFENCE_ID) && !offence.isNull(OFFENCE_ID))
+                    .forEach(offence -> offenceIds.add(offence.get(OFFENCE_ID)));
         }
         return offenceIds.build();
     }
