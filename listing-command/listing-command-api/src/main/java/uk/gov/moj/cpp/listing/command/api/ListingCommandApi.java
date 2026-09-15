@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.command.api;
 
 import static java.util.Objects.isNull;
+import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
@@ -13,7 +14,11 @@ import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
+import uk.gov.moj.cpp.listing.command.api.service.SplitHearingPayloadConverter;
+import uk.gov.moj.cpp.listing.common.service.ProgressionSplitHearingService;
+import uk.gov.moj.cpp.listing.common.split.SplitHearingRejectedException;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
+import uk.gov.justice.listing.courts.Courtrooms;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.commands.ListCourtHearing;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
@@ -70,6 +75,7 @@ import javax.inject.Inject;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
+import javax.ws.rs.core.Response;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 
@@ -146,6 +152,9 @@ public class ListingCommandApi {
 
     @Inject
     private CourtCentreFactory courtCentreFactory;
+
+    @Inject
+    private ProgressionSplitHearingService progressionSplitHearingService;
     @Inject
     private JsonObjectToObjectConverter jsonObjectConverter;
 
@@ -388,6 +397,53 @@ public class ListingCommandApi {
                 updateHearingForListingEnriched(updateHearingForListing, courtCentre, payload);
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED), objectToJsonValueConverter.convert(updateHearingForListingEnriched)));
+    }
+
+    @Handles("listing.command.split-hearing")
+    public void handleSplitHearing(final JsonEnvelope envelope) {
+        final JsonObject payload = envelope.payloadAsJsonObject();
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.split-hearing' received with payload {}", envelope.toObfuscatedDebugString());
+        }
+
+        final String hearingId = payload.getString(HEARING_ID);
+        final UUID courtCentreId = payload.containsKey(COURT_CENTRE_ID) && !payload.isNull(COURT_CENTRE_ID)
+                ? fromString(payload.getString(COURT_CENTRE_ID))
+                : null;
+        final CourtCentreDetails courtCentre = isNull(courtCentreId)
+                ? null
+                : courtCentreFactory.getCourtCentre(courtCentreId, envelope);
+
+        final JsonObject progressionRequest = SplitHearingPayloadConverter.toProgressionSplitRequest(
+                payload,
+                isNull(courtCentre) ? null : courtCentre.getName(),
+                courtRoomName(courtCentre, payload),
+                null);
+
+        LOGGER.info("Proxying split-hearing for hearing {} to progression", hearingId);
+        final Response progressionResponse = progressionSplitHearingService.split(hearingId, progressionRequest);
+
+        if (progressionResponse.getStatus() >= SC_BAD_REQUEST) {
+            final Object entity = progressionResponse.getEntity();
+            throw new SplitHearingRejectedException(
+                    progressionResponse.getStatus(),
+                    entity instanceof JsonObject jsonBody ? jsonBody : null,
+                    "progression rejected split-hearing for hearingId %s with status %d"
+                            .formatted(hearingId, progressionResponse.getStatus()));
+        }
+    }
+
+    private static String courtRoomName(final CourtCentreDetails courtCentre, final JsonObject payload) {
+        if (isNull(courtCentre) || isNull(courtCentre.getCourtrooms())
+                || !payload.containsKey(COURT_ROOM_ID) || payload.isNull(COURT_ROOM_ID)) {
+            return null;
+        }
+        final UUID courtRoomId = fromString(payload.getString(COURT_ROOM_ID));
+        return courtCentre.getCourtrooms().stream()
+                .filter(room -> courtRoomId.equals(room.getId()))
+                .map(Courtrooms::getCourtroomName)
+                .findFirst()
+                .orElse(null);
     }
 
     @Handles("listing.command.update-hearings-for-listing")

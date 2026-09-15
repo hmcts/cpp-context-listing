@@ -1,0 +1,43 @@
+{
+  "type": {
+    "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+    "description": "First hearing"
+  },
+  "startDate": "2026-09-10",
+  "endDate": "2026-09-10",
+  "jurisdictionType": "CROWN",
+  "hearingLanguage": "ENGLISH",
+  "courtCentreId": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+  "courtRoomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0",
+  "judiciary": [],
+  "nonDefaultDays": [
+    {
+      "virtual": true,
+      "startTime": "2026-09-10T09:00:00.000Z",
+      "duration": 1080,
+      "courtScheduleId": "c585703f-1b0e-4a5c-8f2c-6b4d9a1e3f77",
+      "session": "AD",
+      "oucode": "C01CY00"
+    }
+  ],
+  "nonSittingDays": [],
+  "prosecutionCases": [
+    {
+      "caseId": "b14ba162-3f21-4c8e-9a77-1d2e5c8b4a90",
+      "defendants": [
+        {
+          "defendantId": "7ba20d5f-5c44-4a1b-8e33-9f6d2c7a5b18",
+          "offences": [
+            {
+              "offenceId": "79d8699d-2a31-4c55-b7e8-3f1a9d6c2e44"
+            },
+            {
+              "offenceId": "6dffce40-8b12-4d67-a9c3-5e2f8a1b7d90"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sendNotificationToParties": false
+}
