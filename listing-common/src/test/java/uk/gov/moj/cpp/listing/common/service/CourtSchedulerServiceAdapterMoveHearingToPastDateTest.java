@@ -136,6 +136,35 @@ class CourtSchedulerServiceAdapterMoveHearingToPastDateTest {
         assertThat("absent on the wire -> unknown, not false", result.sessions().get(0).isDraft(), is(nullValue()));
     }
 
+    /**
+     * Regression test: a PRESENT-but-empty sessions[] (courtscheduler's "exploratory, genuine
+     * date-range found nothing" 200 response) must parse to an EMPTY result, not fall back to
+     * treating the top-level {hearingId, source, sessions:[]} envelope as a single flat session -
+     * that fallback fabricated a session with every field null, which then broke
+     * listing.command.move-hearing-to-past-date-enriched's schema validation downstream
+     * (courtScheduleId/sessionDate are required on each session entry).
+     */
+    @Test
+    void shouldReturnEmptyResultWhenSessionsArrayIsPresentButEmpty() {
+        final UUID hearingId = UUID.randomUUID();
+        final JsonObject body = createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .add("source", "MOVE_TO_PAST_DATE")
+                .add("sessions", createArrayBuilder())
+                .build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.hasEntity()).thenReturn(true);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.moveHearingToPastDate(eq(hearingId), any())).thenReturn(response);
+
+        final MoveHearingToPastDateResult result = adapter.moveHearingToPastDate(
+                hearingId, UUID.randomUUID(), UUID.randomUUID(), START_INSTANT, ZonedDateTime.parse("2026-05-04T17:00:00Z"), 720, "CROWN");
+
+        assertThat(result.sessions(), is(java.util.List.of()));
+        assertThat(result.courtScheduleId(), is(nullValue()));
+        assertThat(result.lastSessionDate(), is(nullValue()));
+    }
+
     @Test
     void shouldSendSuppliedJurisdictionInRequest() {
         final UUID hearingId = UUID.randomUUID();

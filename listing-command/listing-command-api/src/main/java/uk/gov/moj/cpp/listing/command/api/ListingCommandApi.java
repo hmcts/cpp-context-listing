@@ -540,6 +540,18 @@ public class ListingCommandApi {
         final MoveHearingToPastDateResult slot = courtSchedulerServiceAdapter.moveHearingToPastDate(
                 hearingId, courtCentreId, courtRoomId, startInstant, endInstant, durationInMinutes, jurisdictionType);
 
+        if (slot.sessions().isEmpty()) {
+            // courtscheduler can return 200 with an empty sessions[] for a genuine multi-day-range
+            // search that matched nothing (exploratory - it deliberately leaves the prior allocation
+            // intact rather than erroring). Nothing to enrich/move in that case - surface it as the
+            // same NO_SESSION_FOUND failure a single-date miss gets, rather than sending a broken
+            // enriched command downstream.
+            throw new MoveHearingToPastDateException(422,
+                    buildMoveHearingToPastDateErrorBody(CourtSchedulerServiceAdapter.NO_SESSION_FOUND,
+                            CourtSchedulerServiceAdapter.NO_SESSION_FOUND_MESSAGE),
+                    CourtSchedulerServiceAdapter.NO_SESSION_FOUND_MESSAGE);
+        }
+
         // courtscheduler's CourtSchedule carries no per-hearing duration: the moved day(s) keep the
         // hearing's own estimate, spread evenly across the booked sessions (mirrors
         // CourtScheduleEnrichmentService.buildHearingDaysFromMultiDaySessions for the update flow).

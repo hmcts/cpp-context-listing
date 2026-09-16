@@ -95,7 +95,7 @@ public class CourtSchedulerServiceAdapter {
     public static final String NO_SESSION_FOUND = "NO_SESSION_FOUND";
     // Fixed user-facing copy (ported from main) replacing whatever diagnostic message courtscheduler
     // itself supplies, on both the legacy-404 normalisation and a genuine 422 NO_SESSION_FOUND passthrough.
-    private static final String NO_SESSION_FOUND_MESSAGE =
+    public static final String NO_SESSION_FOUND_MESSAGE =
             "No suitable sessions are available for the selected date. Please select another date.";
     private static final String ERROR_CODE = "errorCode";
     private static final String MESSAGE = "message";
@@ -612,15 +612,19 @@ public class CourtSchedulerServiceAdapter {
      * keep working.
      */
     private static MoveHearingToPastDateResult parseMoveHearingToPastDateResult(final JsonObject body) {
+        // A PRESENT sessions key is authoritative, even when empty (e.g. a genuine multi-day-range
+        // search that matched nothing - courtscheduler's own "exploratory, leave allocation intact"
+        // 200 response). Falling through to the flat-body fallback in that case would misparse the
+        // top-level {hearingId, source, sessions:[]} envelope as a single session with every field
+        // null, producing an enriched command with a broken sessions[0] entry. Only fall back to the
+        // legacy flat-body shape when the sessions key is absent entirely (older courtscheduler releases).
         if (body.containsKey(SESSIONS) && !body.isNull(SESSIONS)) {
             final JsonArray sessions = body.getJsonArray(SESSIONS);
-            if (!sessions.isEmpty()) {
-                final List<MoveHearingToPastDateResult.BookedSession> booked = new ArrayList<>();
-                for (int i = 0; i < sessions.size(); i++) {
-                    booked.add(parseBookedSession(sessions.getJsonObject(i)));
-                }
-                return new MoveHearingToPastDateResult(booked);
+            final List<MoveHearingToPastDateResult.BookedSession> booked = new ArrayList<>();
+            for (int i = 0; i < sessions.size(); i++) {
+                booked.add(parseBookedSession(sessions.getJsonObject(i)));
             }
+            return new MoveHearingToPastDateResult(booked);
         }
         return new MoveHearingToPastDateResult(List.of(parseBookedSession(body)));
     }

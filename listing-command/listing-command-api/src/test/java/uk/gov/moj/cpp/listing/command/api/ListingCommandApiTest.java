@@ -865,6 +865,42 @@ public class ListingCommandApiTest {
         verify(sender, never()).send(any());
     }
 
+    /**
+     * Regression test: courtscheduler can return 200 OK with an empty sessions[] (a genuine
+     * multi-day-range search that matched nothing - exploratory, prior allocation left intact,
+     * NOT an error at the adapter layer). Before this fix, command-api would still try to enrich
+     * and send a command built from zero sessions, producing a broken
+     * listing.command.move-hearing-to-past-date-enriched (missing courtScheduleId/sessionDate on
+     * sessions[0], since the adapter's legacy flat-body fallback fabricated one null session from
+     * the empty envelope) that failed schema validation on the handler side. Nothing to enrich must
+     * surface as the same NO_SESSION_FOUND failure a single-date miss gets.
+     */
+    @Test
+    void shouldRejectMoveWithNoSessionFoundWhenAdapterReturnsEmptySessions() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
+        final LocalDate startDate = LocalDate.parse("2026-05-01");
+        final ZonedDateTime startInstant = ZonedDateTime.parse(startDate + "T10:00:00Z");
+        final ZonedDateTime endInstant = ZonedDateTime.parse(startDate.plusDays(3) + "T17:00:00Z");
+
+        givenMovePayload(hearingId, courtCentreId, courtRoomId, startInstant.toString(), endInstant.toString());
+
+        final JsonObject hearing = Json.createObjectBuilder()
+                .add("id", hearingId.toString())
+                .add("jurisdictionType", "CROWN")
+                .build();
+        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, null, "CROWN"))
+                .willReturn(new MoveHearingToPastDateResult(java.util.List.of()));
+
+        final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
+                () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getErrorCode(), is("NO_SESSION_FOUND"));
+        verify(sender, never()).send(any());
+    }
+
     @Test
     void shouldMoveCrownHearingToPastDateViaCourtScheduler() {
         final UUID hearingId = randomUUID();
