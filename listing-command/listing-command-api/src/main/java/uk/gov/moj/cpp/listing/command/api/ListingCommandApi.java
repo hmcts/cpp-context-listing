@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.command.api;
 
 import static java.util.Objects.isNull;
-import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
@@ -15,8 +14,6 @@ import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.moj.cpp.listing.command.api.service.SplitHearingPayloadConverter;
-import uk.gov.moj.cpp.listing.common.service.ProgressionSplitHearingService;
-import uk.gov.moj.cpp.listing.common.split.SplitHearingRejectedException;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.courts.Courtrooms;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
@@ -75,7 +72,6 @@ import javax.inject.Inject;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
-import javax.ws.rs.core.Response;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 
@@ -153,8 +149,6 @@ public class ListingCommandApi {
     @Inject
     private CourtCentreFactory courtCentreFactory;
 
-    @Inject
-    private ProgressionSplitHearingService progressionSplitHearingService;
     @Inject
     private JsonObjectToObjectConverter jsonObjectConverter;
 
@@ -399,6 +393,13 @@ public class ListingCommandApi {
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED), objectToJsonValueConverter.convert(updateHearingForListingEnriched)));
     }
 
+    /**
+     * Validates the front-end's split payload and converts it to progression's list-new-hearing
+     * shape, then accepts. The call to progression is deliberately absent: listing wires to other
+     * contexts through a generated client from their RAML, and progression's split endpoint
+     * (SPRDT-1362) is not released yet. This lets the UI integrate against the finished contract
+     * now; SPRDT-1363's follow-up adds the generated client once progression ships.
+     */
     @Handles("listing.command.split-hearing")
     public void handleSplitHearing(final JsonEnvelope envelope) {
         final JsonObject payload = envelope.payloadAsJsonObject();
@@ -420,17 +421,9 @@ public class ListingCommandApi {
                 courtRoomName(courtCentre, payload),
                 null);
 
-        LOGGER.info("Proxying split-hearing for hearing {} to progression", hearingId);
-        final Response progressionResponse = progressionSplitHearingService.split(hearingId, progressionRequest);
-
-        if (progressionResponse.getStatus() >= SC_BAD_REQUEST) {
-            final Object entity = progressionResponse.getEntity();
-            throw new SplitHearingRejectedException(
-                    progressionResponse.getStatus(),
-                    entity instanceof JsonObject jsonBody ? jsonBody : null,
-                    "progression rejected split-hearing for hearingId %s with status %d"
-                            .formatted(hearingId, progressionResponse.getStatus()));
-        }
+        LOGGER.info("split-hearing accepted for hearing {}; converted request holds {} defendant request(s)",
+                hearingId,
+                progressionRequest.getJsonObject("listNewHearing").getJsonArray("listDefendantRequests").size());
     }
 
     private static String courtRoomName(final CourtCentreDetails courtCentre, final JsonObject payload) {

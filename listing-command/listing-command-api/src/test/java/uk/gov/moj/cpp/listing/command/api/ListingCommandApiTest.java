@@ -152,8 +152,6 @@ public class ListingCommandApiTest {
     private HearingLookupService hearingLookupService;
     @Mock
     private PtphDetailEnrichmentService ptphDetailEnrichmentService;
-    @Mock
-    private uk.gov.moj.cpp.listing.common.service.ProgressionSplitHearingService progressionSplitHearingService;
 
     /**
      * PTPH enrichment is exercised by {@link uk.gov.moj.cpp.listing.command.api.service.PtphDetailEnrichmentServiceTest};
@@ -209,12 +207,14 @@ public class ListingCommandApiTest {
                 metadataWithRandomUUIDAndName().build(), splitPayload(withRoom));
     }
 
-    private static javax.ws.rs.core.Response progressionResponds(final int status, final JsonObject body) {
-        return javax.ws.rs.core.Response.status(status).entity(body).build();
-    }
-
+    /**
+     * Until progression's split endpoint ships (SPRDT-1362) the handler validates and converts, then
+     * accepts. What the conversion produces is asserted directly in {@link
+     * uk.gov.moj.cpp.listing.command.api.service.SplitHearingPayloadConverterTest}; here we only
+     * pin that the handler resolves the court centre it needs and accepts both request shapes.
+     */
     @Test
-    public void shouldForwardSplitHearingToProgressionWithResolvedCourtCentreAndRoomNames() {
+    public void shouldAcceptSplitHearingAndResolveTheCourtCentre() {
         final uk.gov.justice.listing.courts.Courtrooms room = uk.gov.justice.listing.courts.Courtrooms.courtrooms()
                 .withId(SPLIT_COURT_ROOM_ID)
                 .withCourtroomName("Courtroom 01")
@@ -225,81 +225,24 @@ public class ListingCommandApiTest {
                 .withCourtrooms(List.of(room))
                 .build();
         when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
-        when(progressionSplitHearingService.split(anyString(), any(JsonObject.class)))
-                .thenReturn(progressionResponds(202, javax.json.Json.createObjectBuilder().build()));
 
         listingCommandApi.handleSplitHearing(splitEnvelope(true));
 
-        final ArgumentCaptor<JsonObject> request = ArgumentCaptor.forClass(JsonObject.class);
-        verify(progressionSplitHearingService).split(eq(SPLIT_HEARING_ID.toString()), request.capture());
-
-        final JsonObject listNewHearing = request.getValue().getJsonObject("listNewHearing");
-        assertThat(listNewHearing.getJsonObject("courtCentre").getString("name"), is("Croydon Crown Court"));
-        assertThat(listNewHearing.getJsonObject("courtCentre").getString("roomName"), is("Courtroom 01"));
-        assertThat(listNewHearing.getInt("estimatedMinutes"), is(1080));
-        assertThat(listNewHearing.getJsonArray("bookedSlots").size(), is(1));
+        verify(courtCentreFactory).getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class));
     }
 
     @Test
-    public void shouldOmitRoomNameWhenTheSplitRequestNamesNoRoom() {
+    public void shouldAcceptASplitRequestThatNamesNoRoom() {
         final CourtCentreDetails courtCentre = CourtCentreDetails.courtCentreDetails()
                 .withId(SPLIT_COURT_CENTRE_ID)
                 .withName("Croydon Crown Court")
                 .withCourtrooms(List.of())
                 .build();
         when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
-        when(progressionSplitHearingService.split(anyString(), any(JsonObject.class)))
-                .thenReturn(progressionResponds(202, javax.json.Json.createObjectBuilder().build()));
 
         listingCommandApi.handleSplitHearing(splitEnvelope(false));
 
-        final ArgumentCaptor<JsonObject> request = ArgumentCaptor.forClass(JsonObject.class);
-        verify(progressionSplitHearingService).split(anyString(), request.capture());
-        final JsonObject courtCentreJson = request.getValue().getJsonObject("listNewHearing").getJsonObject("courtCentre");
-        assertThat(courtCentreJson.getString("name"), is("Croydon Crown Court"));
-        assertThat(courtCentreJson.containsKey("roomName"), is(false));
-    }
-
-    // Progression owns the decision, so its rejection must reach the caller rather than being
-    // swallowed into a 202. A @Handles method cannot return a Response, hence the exception.
-    @Test
-    public void shouldRaiseTheProgressionRejectionWithItsStatusAndBody() {
-        final CourtCentreDetails courtCentre = CourtCentreDetails.courtCentreDetails()
-                .withId(SPLIT_COURT_CENTRE_ID)
-                .withName("Croydon Crown Court")
-                .withCourtrooms(List.of())
-                .build();
-        when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
-        final JsonObject rejection = javax.json.Json.createObjectBuilder().add("error", "not a subset").build();
-        when(progressionSplitHearingService.split(anyString(), any(JsonObject.class)))
-                .thenReturn(progressionResponds(400, rejection));
-
-        final uk.gov.moj.cpp.listing.common.split.SplitHearingRejectedException thrown =
-                org.junit.jupiter.api.Assertions.assertThrows(
-                        uk.gov.moj.cpp.listing.common.split.SplitHearingRejectedException.class,
-                        () -> listingCommandApi.handleSplitHearing(splitEnvelope(true)));
-
-        assertThat(thrown.getHttpStatus(), is(400));
-        assertThat(thrown.getResponseBody(), is(rejection));
-    }
-
-    @Test
-    public void shouldRaiseA404FromProgressionUnchanged() {
-        final CourtCentreDetails courtCentre = CourtCentreDetails.courtCentreDetails()
-                .withId(SPLIT_COURT_CENTRE_ID)
-                .withName("Croydon Crown Court")
-                .withCourtrooms(List.of())
-                .build();
-        when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
-        when(progressionSplitHearingService.split(anyString(), any(JsonObject.class)))
-                .thenReturn(progressionResponds(404, javax.json.Json.createObjectBuilder().build()));
-
-        final uk.gov.moj.cpp.listing.common.split.SplitHearingRejectedException thrown =
-                org.junit.jupiter.api.Assertions.assertThrows(
-                        uk.gov.moj.cpp.listing.common.split.SplitHearingRejectedException.class,
-                        () -> listingCommandApi.handleSplitHearing(splitEnvelope(true)));
-
-        assertThat(thrown.getHttpStatus(), is(404));
+        verify(courtCentreFactory).getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class));
     }
 
     @Test

@@ -25,41 +25,11 @@ public class ProgressionServiceStub {
     private static final String PROGRESSION_QUERY_PROSECUTION_CASE_MEDIA_TYPE = "application/vnd.progression.query.prosecutioncase+json";
 
     // SPRDT-1363: listing proxies split-hearing to progression, which owns the split decision.
-    private static final String PROGRESSION_COMMAND_ENDPOINT = "/progression-command-api/command/api/rest/progression";
 
-    public static String splitHearingPath(final String hearingId) {
-        return "%s/hearing/%s/split".formatted(PROGRESSION_COMMAND_ENDPOINT, hearingId);
-    }
 
-    public static void stubSplitHearing(final String hearingId, final int status) {
-        stubSplitHearing(hearingId, status, "");
-    }
 
-    public static void stubSplitHearing(final String hearingId, final int status, final String body) {
-        stubFor(WireMock.post(urlEqualTo(splitHearingPath(hearingId)))
-                .willReturn(aResponse()
-                        .withStatus(status)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(body)));
-    }
 
-    /**
-     * The body progression actually received, so an IT can assert the conversion field by field
-     * rather than trusting the stub was merely hit.
-     */
-    public static JsonObject splitHearingRequestBody(final String hearingId) {
-        final List<LoggedRequest> requests = findAll(postRequestedFor(urlEqualTo(splitHearingPath(hearingId))));
-        if (requests.isEmpty()) {
-            throw new AssertionError("progression split-hearing was never called for hearing " + hearingId);
-        }
-        try (var reader = Json.createReader(new java.io.StringReader(requests.get(0).getBodyAsString()))) {
-            return reader.readObject();
-        }
-    }
 
-    public static int splitHearingCallCount(final String hearingId) {
-        return findAll(postRequestedFor(urlEqualTo(splitHearingPath(hearingId)))).size();
-    }
 
 
     public static void stubProgressionServiceCivilCase() {
