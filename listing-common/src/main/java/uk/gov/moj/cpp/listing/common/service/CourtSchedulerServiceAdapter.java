@@ -20,6 +20,7 @@ import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -557,8 +558,8 @@ public class CourtSchedulerServiceAdapter {
                 .add(COURT_CENTRE_ID, courtCentreId.toString())
                 .add(COURT_ROOM_ID, courtRoomId.toString())
                 .add(JURISDICTION, jurisdiction == null || jurisdiction.isBlank() ? MAGISTRATES_JURISDICTION : jurisdiction)
-                .add(START_TIME, startInstant.toString())
-                .add(END_TIME, endInstant.toString());
+                .add(START_TIME, formatInstant(startInstant))
+                .add(END_TIME, formatInstant(endInstant));
         if (durationInMinutes != null) {
             requestBuilder.add(DURATION_IN_MINUTES, durationInMinutes);
         }
@@ -590,6 +591,17 @@ public class CourtSchedulerServiceAdapter {
 
         throw new MoveHearingToPastDateException(status, body,
                 "moveHearingToPastDate returned " + status + " for hearingId " + hearingId);
+    }
+
+    /**
+     * ZonedDateTime.toString() (via LocalDateTime.toString()) OMITS the seconds field entirely when
+     * seconds and nanos are both zero - e.g. "2026-09-01T09:00Z" for an on-the-minute time - which
+     * fails courtscheduler's request schema (seconds are a MANDATORY group in its startTime/endTime
+     * pattern, not optional). DateTimeFormatter.ISO_INSTANT always emits seconds and only adds a
+     * fractional part when non-zero, matching that pattern exactly.
+     */
+    private static String formatInstant(final ZonedDateTime instant) {
+        return DateTimeFormatter.ISO_INSTANT.format(instant.toInstant());
     }
 
     /**

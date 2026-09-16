@@ -248,8 +248,38 @@ class CourtSchedulerServiceAdapterMoveHearingToPastDateTest {
         assertThat(request.getString("courtCentreId"), is(courtCentreId.toString()));
         assertThat(request.getString("courtRoomId"), is(courtRoomId.toString()));
         assertThat(request.getString("jurisdiction"), is("MAGISTRATES"));
-        assertThat(request.getString("startTime"), is(START_INSTANT.toString()));
-        assertThat(request.getString("endTime"), is(END_INSTANT.toString()));
+        // NOT START_INSTANT.toString()/END_INSTANT.toString(): ZonedDateTime.toString() omits the
+        // seconds field entirely when it's zero (see the regression test below) - the wire value must
+        // always include it, since courtscheduler's schema pattern requires seconds.
+        assertThat(request.getString("startTime"), is("2026-05-01T09:00:00Z"));
+        assertThat(request.getString("endTime"), is("2026-05-01T17:00:00Z"));
         assertThat(request.getInt("durationInMinutes"), is(30));
+    }
+
+    /**
+     * Regression test: production saw courtscheduler reject a move with 400 because listing sent
+     * "2026-09-01T09:00Z" (no seconds) for an on-the-minute startTime/endTime -
+     * ZonedDateTime.toString() drops the seconds token when it's zero, but courtscheduler's schema
+     * pattern requires it. Every on-the-minute instant must still be sent with explicit seconds.
+     */
+    @Test
+    void shouldAlwaysIncludeSecondsInStartTimeAndEndTimeEvenWhenExactlyOnTheMinute() {
+        final UUID hearingId = UUID.randomUUID();
+        final ZonedDateTime onTheMinuteStart = ZonedDateTime.parse("2026-09-01T09:00Z");
+        final ZonedDateTime onTheMinuteEnd = ZonedDateTime.parse("2026-09-01T09:20Z");
+        final JsonObject body = createObjectBuilder().add("courtScheduleId", UUID.randomUUID().toString())
+                .add("sessionDate", "2026-09-01").build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.hasEntity()).thenReturn(true);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.moveHearingToPastDate(eq(hearingId), any())).thenReturn(response);
+
+        adapter.moveHearingToPastDate(hearingId, UUID.randomUUID(), UUID.randomUUID(),
+                onTheMinuteStart, onTheMinuteEnd, 30, "MAGISTRATES");
+
+        final ArgumentCaptor<JsonObject> requestCaptor = ArgumentCaptor.forClass(JsonObject.class);
+        verify(hearingSlotsService).moveHearingToPastDate(eq(hearingId), requestCaptor.capture());
+        assertThat(requestCaptor.getValue().getString("startTime"), is("2026-09-01T09:00:00Z"));
+        assertThat(requestCaptor.getValue().getString("endTime"), is("2026-09-01T09:20:00Z"));
     }
 }
