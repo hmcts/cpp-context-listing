@@ -60,6 +60,7 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
     private static final String UPDATE_HEARING_FOR_LISTING_ENDPOINT_KEY =
             "listing.command.update-hearing-for-listing";
     private static final int MULTI_DAY_TOTAL_DURATION_MINUTES = 1080;
+    private static final int SINGLE_COURT_DAY_MINUTES = 360;
 
     @Test
     void shouldCallCrownSearchAndBook_whenCrownMultiDayUpdateHasNoCourtScheduleIdOnNonDefaultDay() throws Exception {
@@ -154,6 +155,54 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         verifyMultiDaySearchAndBookCalledForHearing(hearingId.toString(),
                 MULTI_DAY_TOTAL_DURATION_MINUTES + 360);
         // Drain our own async aftermath — see shouldCallExtendMultiDayHearingOnListingCourtScheduler test.
+        awaitUpdateProjection(hearingId, startDate);
+        seedSteps.verifyPublicEVentHearingChangesSaved(hearingId);
+    }
+
+    /**
+     * SPRDT-1220: converting a multi-day hearing back to a single day leaves the command carrying the
+     * block's original duration — a 3-day block still says 1080 minutes while startDate and endDate
+     * now describe one day. The ask sent to courtscheduler (and the per-day split applied afterwards)
+     * must follow the requested WINDOW, not that stale total: booking 1080 against a one-day window
+     * re-expands the hearing to three days, and the two days that can no longer resolve to a session
+     * are marked draft, which strips the courtroom from every day of the hearing (ADR-005) — the
+     * "undefined" courtroom and "3 days listed" the bug reports.
+     */
+    @Test
+    void shouldBookOneCourtDayOnly_whenMultiDayHearingIsConvertedToASingleDay() throws Exception {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final UUID startingCourtScheduleId = UUID.randomUUID();
+        // Monday anchor: a one-day window must land on a business day, or the window holds no court
+        // days at all and the clamp legitimately declines to shrink the ask (Rule 12).
+        final LocalDate startDate = ItClock.today().plusDays(30).with(nextOrSame(MONDAY));
+        final ZonedDateTime sessionStart = startDate.atTime(9, 0).atZone(ZoneOffset.UTC);
+
+        final List<String> sessionScheduleIds = new ArrayList<>();
+        sessionScheduleIds.add(startingCourtScheduleId.toString());
+
+        stubMultiDaySearchAndBookForHearing(hearingId.toString(), sessionScheduleIds, courtHouseId, courtRoomId, startDate, false);
+        uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForSchedules(
+                hearingId.toString(), sessionScheduleIds, sessionStart, 360);
+        givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+        final uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps seedSteps = givenARealHearingExists(hearingId);
+        givenReferenceDataStubsForUpdateHearing(courtCentreId, courtRoomId);
+
+        // endDate == startDate: the multi-day block is being collapsed onto its first day.
+        final String payload = loadAndSubstitute(
+                "test-data/CROWN/update-hearing-for-listing/update-hearing-for-listing-crown-multiday-no-courtscheduleid.json",
+                basePlaceholders(hearingId, courtCentreId, courtRoomId, startingCourtScheduleId, startDate, startDate, sessionStart));
+
+        AbstractIT.restClient.postCommand(
+                buildUpdateHearingUrl(hearingId),
+                MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
+                payload,
+                getLoggedInHeader());
+
+        // One court day in the window, so one court day of minutes — not the stale 1080.
+        verifyMultiDaySearchAndBookCalledForHearing(hearingId.toString(), SINGLE_COURT_DAY_MINUTES);
         awaitUpdateProjection(hearingId, startDate);
         seedSteps.verifyPublicEVentHearingChangesSaved(hearingId);
     }
