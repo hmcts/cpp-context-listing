@@ -1,12 +1,22 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataOrganisationUnitById;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
+
+import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 
 import java.text.MessageFormat;
+import java.time.LocalTime;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -16,6 +26,7 @@ import javax.json.JsonString;
 import javax.ws.rs.core.Response;
 
 import org.apache.http.HttpStatus;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -41,6 +52,26 @@ public class SplitHearingContractIT extends AbstractIT {
 
     private static final String COURT_CENTRE_ID = "07e45c88-9e5d-3e44-b664-d5345bb13be2";
     private static final String COURT_ROOM_ID = "731816c1-5ee4-373a-9bda-840e13a5bcb0";
+
+    /**
+     * The handler resolves the court centre through reference data before converting, so without
+     * these stubs the lookup returns a null-payload envelope and the request 500s.
+     */
+    @BeforeEach
+    public void givenReferenceDataForTheSplitCourtCentre() {
+        final CourtCentreData courtCentreData = new CourtCentreData(
+                fromString(COURT_CENTRE_ID),
+                LocalTime.of(10, 30),
+                "6:30",
+                fromString(COURT_ROOM_ID),
+                "Test Court Centre");
+        stubGetReferenceDataCourtCentre(courtCentreData);
+        stubGetReferenceDataCourtCentreById(courtCentreData);
+        stubGetReferenceDataCourtMappings(courtCentreData);
+        stubGetReferenceDataHearingTypes(randomUUID());
+        stubGetReferenceDataOrganisationUnitById(fromString(COURT_CENTRE_ID));
+        stubOrganisationUnit(fromString(COURT_CENTRE_ID));
+    }
 
     private String buildSplitHearingUrl(final UUID hearingId) {
         return String.format("%s/%s", uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri(),
