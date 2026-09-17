@@ -457,12 +457,25 @@ public class ListingCommandHandler {
         // when every booked day shares one room, the hearing-level courtRoomId follows it, mirroring what
         // the update flow does when it assigns a court room, so hearing and days never disagree. Panel is left untouched.
         final Optional<UUID> bookedRoom = singleBookedRoom(movedDays);
-        updateHearingEventStream(command, hearingId, (Hearing hearing) -> Stream.of(
-                        hearing.changeStartDate(startDate, hearingId),
-                        endDate.map(date -> hearing.changeEndDate(date, hearingId)).orElseGet(Stream::empty),
-                        bookedRoom.map(room -> hearing.assignCourtRoom(room, hearingId, Optional.empty())).orElseGet(Stream::empty),
-                        hearing.assignHearingDaysV2(hearingId, movedDays, null, null, jurisdictionType, emptyList()))
-                .flatMap(events -> events));
+        updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
+            // Materialised (not left as a lazy Stream) so applyRescheduledCheck below can inspect
+            // whether a StartDateChangedForHearing actually occurred - same pattern as
+            // updateHearingForListingEnriched.
+            final List<Object> startDateEventList = hearing.changeStartDate(startDate, hearingId).collect(toList());
+            final Stream<Object> endDateEvents = endDate.map(date -> hearing.changeEndDate(date, hearingId)).orElseGet(Stream::empty);
+            final Stream<Object> courtRoomEvents = bookedRoom.map(room -> hearing.assignCourtRoom(room, hearingId, Optional.empty())).orElseGet(Stream::empty);
+            final Stream<Object> hearingDayEvents = hearing.assignHearingDaysV2(hearingId, movedDays, null, null, jurisdictionType, emptyList());
+            // Ported from main and applied uniformly for BOTH jurisdictions (closes the SPRDT-1214 gap
+            // flagged in the review artifact: without these, public.listing.hearing-updated and
+            // public.listing.vacated-trial-updated never fired from this command). Sequenced after
+            // assignHearingDaysV2, mirroring updateHearingForListingEnriched's ordering, since
+            // canAllocate()/canUnallocate() depend on the day/room state just mutated. Both flags are
+            // hard-coded false: a past-date move must never notify parties.
+            final Stream<Object> allocationEvents = hearing.applyAllocationRules(emptyList(), false, false);
+            final Stream<Object> rescheduledEvents = hearing.applyRescheduledCheck(startDateEventList);
+            return Stream.of(startDateEventList.stream(), endDateEvents, courtRoomEvents, hearingDayEvents, allocationEvents, rescheduledEvents)
+                    .flatMap(events -> events);
+        });
     }
 
     /** The one room every moved day is booked in, or empty when rooms differ / are unknown. */
