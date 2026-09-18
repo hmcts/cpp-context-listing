@@ -259,6 +259,9 @@ subscriptions_descriptor:
         - name: public.hearing.selected-offences-removed-from-existing-hearing
           schema_uri: http://justice.gov.uk/hearing/courts/public.hearing.selected-offences-removed-from-existing-hearing.json
 
+        - name: public.progression.offences-removed-from-existing-allocated-hearing
+          schema_uri: http://justice.gov.uk/progression/courts/public.progression.offences-removed-from-existing-allocated-hearing.json
+
         - name: public.events.hearing.hearing-resulted
           schema_uri: http://justice.gov.uk/hearing/courts/public.events.hearing.hearing-resulted.json
 

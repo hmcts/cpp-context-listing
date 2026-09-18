@@ -127,6 +127,21 @@ public class CourtSchedulerServiceStub {
         });
     }
 
+    /**
+     * SPRDT-1227 regression guard: removing offences from a hearing must not re-enter court-schedule
+     * enrichment. Counts every courtscheduler POST /hearings call carrying this hearing id, whatever
+     * the media type, so both the list.hearings-in-sessions lookup and the crown.search.and.book
+     * multi-day path are covered by one number.
+     *
+     * Read this either side of the removal and compare, rather than resetting the request journal —
+     * resetting is shared WireMock state and would discard evidence from calls still in flight.
+     */
+    public static int countCourtSchedulerHearingCallsFor(final String hearingId) {
+        return WireMock.findAll(WireMock.postRequestedFor(
+                        urlPathMatching(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "(/.*)?"))
+                .withRequestBody(containing(hearingId))).size();
+    }
+
     public static void verifyHearingSlotsSearchCalledWithJurisdiction(final String jurisdiction) {
         Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
             final RequestPatternBuilder requestPatternBuilder = WireMock.getRequestedFor(urlPathMatching(COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS))
