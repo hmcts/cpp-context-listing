@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static uk.gov.justice.services.common.converter.ZonedDateTimes.fromString;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
@@ -84,6 +85,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -958,6 +960,16 @@ public class UpdateHearingSteps extends AbstractIT {
         // persisted (mirrors the virtual filter on the non-split update path).
         final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingRequestedForListing, VLD_LATENCY_RETRIEVE_TIMEOUT);
         assertThat(jsonResponse.getMap("listNewHearing").get("nonDefaultDays"), is(nullValue()));
+    }
+
+    /**
+     * SPRDT-1365: a split-shaped update-hearing-for-listing is rejected, so no new hearing is
+     * raised. Asserts the private hearing-requested-for-listing event never arrives — the split's
+     * only observable output under the old behaviour.
+     */
+    public void verifyNoHearingRequestedForListingEvent() {
+        assertThrows(NoSuchElementException.class,
+                () -> retrieveMessage(privateMessageConsumerHearingRequestedForListing));
     }
 
     public void verifyProsecutionCaseDefendantsOffenceIds(final int count) {
