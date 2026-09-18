@@ -55,7 +55,8 @@ public class HearingDaysIT extends AbstractIT {
 
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     @Test
-    void testHearingDaysWithCourtCentreForSplit() throws IOException {
+    @ExpectedServerErrors("SPRDT-1365: the split guard deliberately logs ERROR SPLIT_VIA_UPDATE_HEARING_REJECTED with the hearingId and correlation id -> that marker is the asserted behaviour, not a fault")
+    void testSplitViaUpdateHearingIsRejectedAndRaisesNoNewHearing() throws IOException {
         stubGetAvailableHearingSlots();
 
         startDate = ItClock.today();
@@ -95,11 +96,8 @@ public class HearingDaysIT extends AbstractIT {
 
         UpdateHearingSteps updateHearingStepsSplit = new UpdateHearingSteps();
 
-        // Anchor the split day span on working days. The split derives new hearing days from the base
-        // hearing date; built with raw plusDays(1)/plusDays(2) the span straddles a weekend whenever the
-        // suite runs Wed-Sat. Courts do not sit at weekends, so no hearing-requested-for-listing is emitted
-        // for the weekend day and verifyHearingRequestedForListingEvent(2) times out. plusWorkingDays keeps
-        // the span on Mon-Fri and is identical to plusDays on a weekday run with no weekend in range.
+        // Anchor the split day span on working days so the payload stays a realistic split request
+        // on any run day, rather than one the classifier might read differently across a weekend.
         final LocalDate splitStartDate = ItClock.plusWorkingDays(hearingData.getHearingStartDate(), 1);
         final LocalDate splitEndDate = ItClock.plusWorkingDays(splitStartDate, 2);
 
@@ -114,24 +112,22 @@ public class HearingDaysIT extends AbstractIT {
 
         final JsonNode jsonNode = populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateHearingJsonObjectSplit, courtScheduleId);
         updateHearingStepsSplit.updateHearingForListing(objectMapper.treeToValue(jsonNode, JsonObject.class), hearingData.getId());
-        updateHearingStepsSplit.verifyHearingRequestedForListingEvent(2);
-        updateHearingStepsSplit.verifyHearingRequestedForListingInPublicMQ();
 
+        // SPRDT-1365: splits are performed via progression, so this command raises no new hearing.
+        updateHearingStepsSplit.verifyNoHearingRequestedForListingEvent();
     }
 
     /**
-     * Same split journey as {@link #testHearingDaysWithCourtCentreForSplit}, but the payload's
+     * Same split journey as {@link #testSplitViaUpdateHearingIsRejectedAndRaisesNoNewHearing}, but the payload's
      * nonDefaultDays carry {@code virtual: true} — the shape sent when splitting an offence /
-     * defendant out of a hearing and allocating it as a multi-day hearing, where the virtual days
-     * are courtscheduler booking proxies rather than genuine non-default-day overrides.
+     * defendant out of a hearing and allocating it as a multi-day hearing.
      *
-     * <p>The new hearing raised for the split must NOT persist any nonDefaultDays derived from
-     * those proxies: the private hearing-requested-for-listing event (and its public republish)
-     * must carry no nonDefaultDays at all. The sibling test above locks the inverse guard — a
-     * split WITHOUT the virtual flag still derives its nonDefaultDays from the hearing days.
+     * <p>SPRDT-1365: both shapes are now rejected identically. This test exists to prove the
+     * virtual-nonDefaultDays variant does not slip past the guard on some other path.
      */
     @Test
-    void testSplitWithVirtualNonDefaultDaysDoesNotCreateNonDefaultDaysOnNewHearing() throws IOException {
+    @ExpectedServerErrors("SPRDT-1365: the split guard deliberately logs ERROR SPLIT_VIA_UPDATE_HEARING_REJECTED with the hearingId and correlation id -> that marker is the asserted behaviour, not a fault")
+    void testSplitWithVirtualNonDefaultDaysIsRejectedAndRaisesNoNewHearing() throws IOException {
         stubGetAvailableHearingSlots();
 
         startDate = ItClock.today();
@@ -184,8 +180,9 @@ public class HearingDaysIT extends AbstractIT {
 
         final JsonNode jsonNode = populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateHearingJsonObjectSplit, courtScheduleId, true);
         updateHearingStepsSplit.updateHearingForListing(objectMapper.treeToValue(jsonNode, JsonObject.class), hearingData.getId());
-        updateHearingStepsSplit.verifyHearingRequestedForListingEventWithoutNonDefaultDays();
-        updateHearingStepsSplit.verifyHearingRequestedForListingInPublicMQWithoutNonDefaultDays();
+
+        // SPRDT-1365: rejected the same way regardless of the virtual-nonDefaultDays shape.
+        updateHearingStepsSplit.verifyNoHearingRequestedForListingEvent();
     }
 
     private Map<String, String> getSplitPayloadValues(final String hearingId,

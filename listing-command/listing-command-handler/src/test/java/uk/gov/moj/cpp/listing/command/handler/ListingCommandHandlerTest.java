@@ -4618,117 +4618,43 @@ class ListingCommandHandlerTest {
         verify(hearing).assignNonDefaultDays(any(), any());
     }
 
+    // SPRDT-1365: splits are performed by progression via the listing proxy. A split-shaped
+    // update-hearing-for-listing must append nothing to the original hearing's stream — a partial
+    // update here would move the original's room/date, which is the SPRDT-1227 failure.
     @Test
-    void shouldNotCreateNonDefaultDaysForSplitHearingWhenPayloadNonDefaultDaysAreVirtual() throws Exception {
-        final JsonEnvelope commandEnvelope = updateHearingForListingCommandEnvelope(
-                "/test-data/listing.command.update-hearing-for-listing-split-with-virtual-non-default-days.json");
-
-        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime", "09:00").build());
-        when(hearing.updateUnallocatedHearingPartially(any(), any(), any())).thenReturn(Stream.of(new Object()));
-        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
-        doReturn(HearingUpdateOperationType.SPLIT).when(extendHearingUtils)
-                .getOperationType(any(), any(), any(), any(), any(), any(), any(), any());
-
-        @SuppressWarnings("unchecked")
-        final ArgumentCaptor<List<NonDefaultDay>> nonDefaultDaysCaptor = ArgumentCaptor.forClass(List.class);
-        @SuppressWarnings("unchecked")
-        final ArgumentCaptor<List<uk.gov.justice.core.courts.RotaSlot>> bookedSlotsCaptor = ArgumentCaptor.forClass(List.class);
-        when(hearing.listForSplit(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                nonDefaultDaysCaptor.capture(), any(), bookedSlotsCaptor.capture())).thenReturn(Stream.of());
-
-        listingCommandHandler.updateHearingForListing(commandEnvelope);
-
-        assertThat("virtual nonDefaultDays are courtscheduler booking proxies and must not be persisted "
-                        + "as nonDefaultDays on the new split hearing",
-                nonDefaultDaysCaptor.getValue(), hasSize(0));
-        assertThat("the booked courtscheduler sessions on the enriched hearingDays must ride on "
-                        + "bookedSlots so the new split hearing is listed allocated on them (multiday)",
-                bookedSlotsCaptor.getValue(), hasSize(1));
-        assertThat(bookedSlotsCaptor.getValue().get(0).getCourtScheduleId(), is(COURT_SCHEDULE_ID_1.toString()));
-        assertThat(bookedSlotsCaptor.getValue().get(0).getDuration(), is(360));
-        assertThat(bookedSlotsCaptor.getValue().get(0).getRoomId(), is(COURT_ROOM_ID.toString()));
-    }
-
-    @Test
-    void shouldCreateNonDefaultDaysFromHearingDaysForSplitHearingWhenPayloadNonDefaultDaysAreNotVirtual() throws Exception {
-        final JsonEnvelope commandEnvelope = updateHearingForListingCommandEnvelope(
-                "/test-data/listing.command.update-hearing-for-listing-split-with-real-non-default-days.json");
-
-        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime", "09:00").build());
-        when(hearing.updateUnallocatedHearingPartially(any(), any(), any())).thenReturn(Stream.of(new Object()));
-        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
-        doReturn(HearingUpdateOperationType.SPLIT).when(extendHearingUtils)
-                .getOperationType(any(), any(), any(), any(), any(), any(), any(), any());
-
-        @SuppressWarnings("unchecked")
-        final ArgumentCaptor<List<NonDefaultDay>> nonDefaultDaysCaptor = ArgumentCaptor.forClass(List.class);
-        @SuppressWarnings("unchecked")
-        final ArgumentCaptor<List<uk.gov.justice.core.courts.RotaSlot>> bookedSlotsCaptor = ArgumentCaptor.forClass(List.class);
-        when(hearing.listForSplit(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                nonDefaultDaysCaptor.capture(), any(), bookedSlotsCaptor.capture())).thenReturn(Stream.of());
-
-        listingCommandHandler.updateHearingForListing(commandEnvelope);
-
-        assertThat(nonDefaultDaysCaptor.getValue(), hasSize(1));
-        assertThat(nonDefaultDaysCaptor.getValue().get(0).getRoomId(), is(of(COURT_ROOM_ID.toString())));
-        // booked sessions on hearingDays are carried as bookedSlots on the non-virtual path too
-        assertThat(bookedSlotsCaptor.getValue(), hasSize(1));
-        assertThat(bookedSlotsCaptor.getValue().get(0).getCourtScheduleId(), is(COURT_SCHEDULE_ID_1.toString()));
-    }
-
-    @Test
-    void shouldCreateBookedSlotPerBookedHearingDayForMultidaySplit() throws Exception {
+    void shouldAppendNoEventsWhenUpdateHearingForListingIsClassifiedAsSplit() throws Exception {
         final JsonEnvelope commandEnvelope = updateHearingForListingCommandEnvelope(
                 "/test-data/listing.command.update-hearing-for-listing-split-with-multiday-booked-days.json");
 
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime", "09:00").build());
-        when(hearing.updateUnallocatedHearingPartially(any(), any(), any())).thenReturn(Stream.of(new Object()));
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
         doReturn(HearingUpdateOperationType.SPLIT).when(extendHearingUtils)
                 .getOperationType(any(), any(), any(), any(), any(), any(), any(), any());
 
-        @SuppressWarnings("unchecked")
-        final ArgumentCaptor<List<uk.gov.justice.core.courts.RotaSlot>> bookedSlotsCaptor = ArgumentCaptor.forClass(List.class);
-        when(hearing.listForSplit(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                any(), any(), bookedSlotsCaptor.capture())).thenReturn(Stream.of());
-
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
-        // One slot per booked session day, in hearingDay order, with per-day booking details —
-        // this is what lets the returning list-court-hearing take the CROWN multi-day
-        // CourtSchedule-first path and list the split's new hearing ALLOCATED across all days.
-        final List<uk.gov.justice.core.courts.RotaSlot> bookedSlots = bookedSlotsCaptor.getValue();
-        assertThat(bookedSlots, hasSize(2));
-        assertThat(bookedSlots.get(0).getCourtScheduleId(), is(COURT_SCHEDULE_ID_1.toString()));
-        assertThat(bookedSlots.get(1).getCourtScheduleId(), is(COURT_SCHEDULE_ID_2.toString()));
-        assertThat(bookedSlots.get(0).getDuration(), is(360));
-        assertThat(bookedSlots.get(1).getDuration(), is(360));
-        assertThat(bookedSlots.get(0).getRoomId(), is(COURT_ROOM_ID.toString()));
-        assertThat(bookedSlots.get(0).getCourtCentreId(), is(COURT_CENTRE_ID.toString()));
-        assertThat(bookedSlots.get(0).getStartTime(), is(notNullValue()));
+        final ArgumentCaptor<Stream<JsonEnvelope>> appendCaptor = ArgumentCaptor.forClass(Stream.class);
+        verify(eventStream).append(appendCaptor.capture());
+        assertThat("a SPLIT must append no events to the original hearing",
+                appendCaptor.getValue().collect(toList()), hasSize(0));
     }
 
+    // The partial-update stream must never be built for a SPLIT: the guard sits before it, so the
+    // remaining-cases event is not produced either.
     @Test
-    void shouldNotCreateBookedSlotsForSplitWhenHearingDaysCarryNoCourtScheduleId() throws Exception {
+    void shouldNotBuildThePartialAllocationStreamForASplit() throws Exception {
         final JsonEnvelope commandEnvelope = updateHearingForListingCommandEnvelope(
-                "/test-data/listing.command.update-hearing-for-listing-split-with-days-without-court-schedule-id.json");
+                "/test-data/listing.command.update-hearing-for-listing-split-with-multiday-booked-days.json");
 
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime", "09:00").build());
-        when(hearing.updateUnallocatedHearingPartially(any(), any(), any())).thenReturn(Stream.of(new Object()));
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
         doReturn(HearingUpdateOperationType.SPLIT).when(extendHearingUtils)
                 .getOperationType(any(), any(), any(), any(), any(), any(), any(), any());
 
-        @SuppressWarnings("unchecked")
-        final ArgumentCaptor<List<uk.gov.justice.core.courts.RotaSlot>> bookedSlotsCaptor = ArgumentCaptor.forClass(List.class);
-        when(hearing.listForSplit(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                any(), any(), bookedSlotsCaptor.capture())).thenReturn(Stream.of());
-
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
-        // No courtScheduleId on any hearingDay = no courtscheduler sessions were booked for the
-        // split, so the request must carry no bookedSlots and fall back to the legacy behaviour.
-        assertThat(bookedSlotsCaptor.getValue(), hasSize(0));
+        verify(extendHearingUtils, never()).createPartiallyAllocationEventForUpdateHearing(any(), any(), any(), any(), any(), any());
+        verify(hearing, never()).updateUnallocatedHearingPartially(any(), any(), any());
     }
 
     @Test

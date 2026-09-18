@@ -344,8 +344,14 @@ class HearingIT extends AbstractIT {
         updateHearingSteps.verifyHearingDaysWhenQueryingFromAPI();
     }
 
+    /**
+     * SPRDT-1365: a subset of offences with no court room selected classifies as SPLIT. Splits are
+     * performed via progression, so this command must raise no new hearing and leave the original
+     * untouched — previously it produced a partial update plus a second hearing.
+     */
     @Test
-    void updateHearingResultsWhenMultipleOffencesSplitToMultipleHearings() throws IOException {
+    @ExpectedServerErrors("SPRDT-1365: the split guard deliberately logs ERROR SPLIT_VIA_UPDATE_HEARING_REJECTED with the hearingId and correlation id -> that marker is the asserted behaviour, not a fault")
+    void updateHearingWithMultipleOffencesSplitIsRejectedAndLeavesOriginalUntouched() throws IOException {
         final HearingsData hearingsData = singleHearingDataSingleCaseMultipleOffences();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -357,8 +363,9 @@ class HearingIT extends AbstractIT {
         stubGetAvailableHearingSlotsWithQueryParams(updateHearingSteps.getUpdatedHearingData());
         stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
         updateHearingSteps.whenHearingIsUpdatedForListingHmiEnabledWithoutCourtRoomSelection();
-        updateHearingSteps.verifyPublicEventHearingDaysChangedForHearing();
 
+        updateHearingSteps.verifyNoHearingRequestedForListingEvent();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
     }
 
     @Test
