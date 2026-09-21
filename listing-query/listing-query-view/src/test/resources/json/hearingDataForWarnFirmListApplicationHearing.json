@@ -1,0 +1,42 @@
+{
+  "id": "HEARING_ID_PLACEHOLDER",
+  "type": {
+    "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+    "description": "Application hearing"
+  },
+  "endDate": "2026-06-02",
+  "allocated": true,
+  "judiciary": [],
+  "startDate": "2026-06-02",
+  "courtRoomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+  "hearingDays": [
+    {
+      "endTime": "2026-06-02T09:30:00.000Z",
+      "sequence": 0,
+      "startTime": "2026-06-02T09:00:00.000Z",
+      "hearingDate": "2026-06-02",
+      "durationMinutes": 30
+    }
+  ],
+  "listedCases": [],
+  "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+  "hearingLanguage": "ENGLISH",
+  "estimatedMinutes": 30,
+  "jurisdictionType": "CROWN",
+  "courtApplications": [
+    {
+      "id": "APPLICATION_ID_PLACEHOLDER",
+      "isEjected": false,
+      "applicant": {
+        "id": "9a000000-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+        "lastName": "Applicant",
+        "firstName": "Test",
+        "isRespondent": false
+      },
+      "respondents": [],
+      "linkedCaseIds": [LINKED_CASE_IDS_PLACEHOLDER],
+      "applicationType": "Application to vary conditions of bail",
+      "applicationReference": "APPLICATION_REFERENCE_PLACEHOLDER"
+    }
+  ]
+}
