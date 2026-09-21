@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 
 import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
@@ -90,6 +91,37 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
                 .filter(this::casesOrApplicationsExists)
                 .map(hearingJsonNode -> this.jsonFromString(hearingJsonNode.toString()))
                 .collect(toArrayNode());
+    }
+
+    public JsonArray filterExParteOffencesFromHearings(final JsonArray hearingsArray) {
+        if (isNull(hearingsArray) || hearingsArray.isEmpty()) {
+            return hearingsArray;
+        }
+
+        final JsonNode hearingsNode = toJsonNode(hearingsArray);
+
+        final Set<String> exParteCaseIds = new HashSet<>();
+        hearingsNode.forEach(hearing -> exParteCaseIds.addAll(collectExParteCaseIds(hearing)));
+
+        final JsonArrayBuilder builder = createArrayBuilder();
+        hearingsNode.forEach(hearing -> {
+            removeCourtApplicationsSharingHearingWithExParteCase(hearing);
+            hearing.findValues(LISTED_CASES).forEach(this::removeNodeForExParteFlag);
+            final JsonNode filteredHearing = removeCourtApplicationsLinkedToExParteCases(hearing, exParteCaseIds);
+            if (nonNull(filteredHearing)) {
+                builder.add(this.jsonFromString(filteredHearing.toString()));
+            }
+        });
+        return builder.build();
+    }
+
+    private JsonNode toJsonNode(final JsonArray jsonArray) {
+        try {
+            return mapper.readTree(jsonArray.toString());
+        } catch (final IOException e) {
+            LOGGER.error(format(ERROR_MESSAGE_FORMAT, jsonArray.toString(), e.getMessage()), e.getCause());
+            throw new IllegalStateException(format(ERROR_MESSAGE_FORMAT, jsonArray.toString(), e.getMessage()));
+        }
     }
 
     private static String generateIdRespKey(UUID hearingId, LocalDate hearingDate) {

@@ -12,6 +12,7 @@ import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -27,6 +28,7 @@ import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.POLL_INTERVAL;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithForPublishingCourtListsWithoutReportingRestriction;
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithSingleExParteOffence;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
@@ -148,6 +150,12 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     public static HearingsData loadHearingData(final UUID courtCentreId, final UUID courtRoomId) {
         final HearingsData hearingsData = hearingsDataWithForPublishingCourtListsWithoutReportingRestriction(courtCentreId, courtRoomId, "DISTRICT_JUDGE");
         createHearingForListing(hearingsData);
+        return hearingsData;
+    }
+
+    public static HearingsData loadHearingDataWithSingleExParteOffence(final UUID courtCentreId, final UUID courtRoomId) {
+        final HearingsData hearingsData = hearingsDataWithSingleExParteOffence(courtCentreId, courtRoomId);
+        createHearingListed(hearingsData);
         return hearingsData;
     }
 
@@ -368,6 +376,15 @@ public class PublishCourtListSteps extends CommonHearingSteps {
 
     public void verifySentPublishedCourtListHasNoHearings() throws Exception {
         verifySentPublishedCourtListFileIsExpected("expectations/FirmList-with-no-hearings.xml");
+    }
+
+    // when the only case on a hearing is filtered out (e.g. an ex-parte civil offence),
+    // the exported XHIBIT XML still gets sent (with an empty sitting), but the downstream
+    // public.listing.court-list-published event is never raised - PublishCourtListCommandSender
+    // skips it ("There are not sitting/hearing to be published"). So assert on the sent XML
+    // directly rather than waiting on a public event that will never arrive.
+    public void verifySentXmlDoesNotContainCaseReference(final String caseReference) {
+        assertThat(getSentXml(), not(containsString(caseReference)));
     }
 
     public void verifySentPublishedCourtListFileIsExpected(final String expectedXmlFile) throws Exception {

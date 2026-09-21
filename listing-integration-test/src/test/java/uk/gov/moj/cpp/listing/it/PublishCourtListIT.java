@@ -126,6 +126,49 @@ public class PublishCourtListIT extends AbstractIT {
     }
 
     @Test
+    public void shouldExcludeCivilCaseWithExParteOffenceFromPublishedFirmList() {
+        // CAD-1710
+        final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+        final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
+        final UUID courtListId = randomUUID();
+        final int courtRoomId = 231;
+        final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
+        final LocalDate startDate = ItClock.today();
+
+        final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
+                courtCentreId,
+                publishCourtListType,
+                startDate);
+
+        stubGetReferenceDataCourtCentreById(courtCentreId);
+
+        final HearingsData hearingsData = PublishCourtListSteps.loadHearingDataWithSingleExParteOffence(courtCentreId, courtRoomUUID);
+
+        stubIdMapperReturningExistingAssociation(courtListId);
+        stubOrganisationUnit(courtCentreId);
+        stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
+        stubGetReferenceDataCpCourtRooms(hearingsData.getHearingData().get(0).getCourtRoomId(), courtRoomId);
+        stubGetReferenceDataXhibitCourtRoomMappings(hearingsData.getHearingData().get(0).getCourtRoomId());
+
+        final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayload);
+        publishCourtListSteps.createMessageConsumer();
+        // Note: unlike shouldPublishCourtListWithHearings, this fixture has a single listed case
+        // (as AC1 requires), so the shared CommonHearingSteps.verifyHearingListedFromAPI() pre-check
+        // is skipped here - it unconditionally asserts on a second listedCases entry (index 1) that
+        // only exists in the two-case fixtures other tests in this class use.
+        publishCourtListSteps.acceptCourtListXmlFiles();
+        publishCourtListSteps.sendPublishCourtListCommand();
+        publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "true");
+        // the hearing exists and is listed, but its only case is ex-parte, so the resulting
+        // Firm list has no sitting/hearing left to publish at all - PublishCourtListCommandSender
+        // skips raising the public court-list-published event entirely in that case (see
+        // verifySentXmlDoesNotContainCaseReference), so assert on the exported XML instead of
+        // waiting on an event that will never arrive.
+        final String exParteCaseReference = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseReference();
+        publishCourtListSteps.verifySentXmlDoesNotContainCaseReference(exParteCaseReference);
+    }
+
+    @Test
     public void publishFinalCourtListsForAllCrownCourts() {
 
         final UUID courtCentreIdOne = getRandomCourtCenterId();

@@ -1,9 +1,13 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist;
 
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
@@ -14,12 +18,14 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.query.view.RangeSearchQuery;
+import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
@@ -48,6 +54,9 @@ public class CourtListServiceTest {
     @Mock
     private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
 
+    @Mock
+    private HearingJsonListConverterFilterEjectCases hearingJsonListConverterFilterEjectCases;
+
     @InjectMocks
     private CourtListService courtListService;
 
@@ -74,6 +83,83 @@ public class CourtListServiceTest {
         final JsonObject response = courtListService.retrieveUnPublishedCourtList(courtCentreId, publishCourtListType, startDate, endDate, queryEnvelope);
 
         assertThat(response, is(courtListResponse));
+    }
+
+    @Test
+    public void shouldApplyExParteFilterToHearingsWhenPublishCourtListTypeIsWarn() {
+        assertExParteFilterAppliedForListType(PublishCourtListType.WARN);
+    }
+
+    @Test
+    public void shouldApplyExParteFilterToHearingsWhenPublishCourtListTypeIsFirm() {
+        assertExParteFilterAppliedForListType(PublishCourtListType.FIRM);
+    }
+
+    private void assertExParteFilterAppliedForListType(final PublishCourtListType publishCourtListType) {
+        // CAD-1710
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate startDate = LocalDate.now();
+        final String endDate = LocalDate.now().toString();
+
+        final JsonEnvelope queryEnvelope = generateQuery(createObjectBuilder().build());
+
+        final JsonEnvelope rangeSearchQueryEnvelope = mock(JsonEnvelope.class);
+        final JsonEnvelope rangeSearchResponse = mock(JsonEnvelope.class);
+
+        final JsonArray unfilteredHearings = createArrayBuilder()
+                .add(createObjectBuilder().add("id", "unfiltered-hearing").build())
+                .build();
+        final JsonArray filteredHearings = createArrayBuilder()
+                .add(createObjectBuilder().add("id", "filtered-hearing").build())
+                .build();
+        final JsonObject rangeSearchResponsePayload = createObjectBuilder()
+                .add("hearings", unfilteredHearings)
+                .build();
+        final JsonObject courtListResponse = mock(JsonObject.class);
+
+        when(rangeSearchQueryRequestFactory.buildRangeSearchQueryEnvelope(courtCentreId, publishCourtListType, startDate, queryEnvelope)).thenReturn(rangeSearchQueryEnvelope);
+        when(rangeSearchQuery.rangeSearchHearings(rangeSearchQueryEnvelope)).thenReturn(rangeSearchResponse);
+        when(rangeSearchResponse.payloadAsJsonObject()).thenReturn(rangeSearchResponsePayload);
+        when(hearingJsonListConverterFilterEjectCases.filterExParteOffencesFromHearings(unfilteredHearings)).thenReturn(filteredHearings);
+        when(rangeSearchConverter.generateCourtListQueryPayload(any(), any(), any(), any())).thenReturn(courtListResponse);
+
+        final JsonObject response = courtListService.retrieveUnPublishedCourtList(courtCentreId, publishCourtListType, startDate, endDate, queryEnvelope);
+
+        assertThat(response, is(courtListResponse));
+        verify(rangeSearchConverter).generateCourtListQueryPayload(courtCentreId, createObjectBuilder().add("hearings", filteredHearings).build(), startDate, endDate);
+    }
+
+    @Test
+    public void shouldNotApplyExParteFilterToHearingsWhenPublishCourtListTypeIsDraft() {
+        assertExParteFilterNotAppliedForListType(PublishCourtListType.DRAFT);
+    }
+
+    @Test
+    public void shouldNotApplyExParteFilterToHearingsWhenPublishCourtListTypeIsFinal() {
+        assertExParteFilterNotAppliedForListType(PublishCourtListType.FINAL);
+    }
+
+    private void assertExParteFilterNotAppliedForListType(final PublishCourtListType publishCourtListType) {
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate startDate = LocalDate.now();
+        final String endDate = LocalDate.now().toString();
+
+        final JsonEnvelope queryEnvelope = generateQuery(createObjectBuilder().build());
+
+        final JsonEnvelope rangeSearchQueryEnvelope = mock(JsonEnvelope.class);
+        final JsonEnvelope rangeSearchResponse = mock(JsonEnvelope.class);
+        final JsonObject rangeSearchResponsePayload = mock(JsonObject.class);
+        final JsonObject courtListResponse = mock(JsonObject.class);
+
+        when(rangeSearchQueryRequestFactory.buildRangeSearchQueryEnvelope(courtCentreId, publishCourtListType, startDate, queryEnvelope)).thenReturn(rangeSearchQueryEnvelope);
+        when(rangeSearchQuery.rangeSearchHearings(rangeSearchQueryEnvelope)).thenReturn(rangeSearchResponse);
+        when(rangeSearchResponse.payloadAsJsonObject()).thenReturn(rangeSearchResponsePayload);
+        when(rangeSearchConverter.generateCourtListQueryPayload(courtCentreId, rangeSearchResponsePayload, startDate, endDate)).thenReturn(courtListResponse);
+
+        final JsonObject response = courtListService.retrieveUnPublishedCourtList(courtCentreId, publishCourtListType, startDate, endDate, queryEnvelope);
+
+        assertThat(response, is(courtListResponse));
+        verify(hearingJsonListConverterFilterEjectCases, never()).filterExParteOffencesFromHearings(any());
     }
 
     @Test
