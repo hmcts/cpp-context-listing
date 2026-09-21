@@ -152,18 +152,9 @@ public class PublishCourtListIT extends AbstractIT {
 
         final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayload);
         publishCourtListSteps.createMessageConsumer();
-        // Note: unlike shouldPublishCourtListWithHearings, this fixture has a single listed case
-        // (as AC1 requires), so the shared CommonHearingSteps.verifyHearingListedFromAPI() pre-check
-        // is skipped here - it unconditionally asserts on a second listedCases entry (index 1) that
-        // only exists in the two-case fixtures other tests in this class use.
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "true");
-        // the hearing exists and is listed, but its only case is ex-parte, so the resulting
-        // Firm list has no sitting/hearing left to publish at all - PublishCourtListCommandSender
-        // skips raising the public court-list-published event entirely in that case (see
-        // verifySentXmlDoesNotContainCaseReference), so assert on the exported XML instead of
-        // waiting on an event that will never arrive.
         final String exParteCaseReference = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseReference();
         publishCourtListSteps.verifySentXmlDoesNotContainCaseReference(exParteCaseReference);
     }
