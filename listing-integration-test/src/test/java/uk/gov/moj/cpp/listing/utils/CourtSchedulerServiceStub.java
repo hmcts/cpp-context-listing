@@ -129,17 +129,30 @@ public class CourtSchedulerServiceStub {
 
     /**
      * SPRDT-1227 regression guard: removing offences from a hearing must not re-enter court-schedule
-     * enrichment. Counts every courtscheduler POST /hearings call carrying this hearing id, whatever
-     * the media type, so both the list.hearings-in-sessions lookup and the crown.search.and.book
-     * multi-day path are covered by one number.
+     * enrichment. Counts BOTH courtscheduler entry points for one hearing:
      *
-     * Read this either side of the removal and compare, rather than resetting the request journal —
+     * <ul>
+     *   <li>list.hearings-in-sessions — POST /hearings, hearing id carried in the request BODY;</li>
+     *   <li>crown.search.and.book (single and multi-day) — POST /hearings/{hearingId}, hearing id
+     *       carried in the URL PATH and absent from the body.</li>
+     * </ul>
+     *
+     * The two are matched separately for exactly that reason: a single body-only matcher silently
+     * misses every search-and-book call, which would make this guard pass while the regression it
+     * exists to catch went through.
+     *
+     * Read either side of the removal and compare, rather than resetting the request journal —
      * resetting is shared WireMock state and would discard evidence from calls still in flight.
      */
     public static int countCourtSchedulerHearingCallsFor(final String hearingId) {
-        return WireMock.findAll(WireMock.postRequestedFor(
-                        urlPathMatching(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "(/.*)?"))
+        final int inSessionsLookups = WireMock.findAll(WireMock.postRequestedFor(
+                        urlPathEqualTo(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH))
                 .withRequestBody(containing(hearingId))).size();
+
+        final int searchAndBookCalls = WireMock.findAll(WireMock.postRequestedFor(
+                        urlPathEqualTo(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId))).size();
+
+        return inSessionsLookups + searchAndBookCalls;
     }
 
     public static void verifyHearingSlotsSearchCalledWithJurisdiction(final String jurisdiction) {
