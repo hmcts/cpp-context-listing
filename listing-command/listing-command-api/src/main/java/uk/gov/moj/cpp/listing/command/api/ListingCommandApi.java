@@ -13,7 +13,9 @@ import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
+import uk.gov.moj.cpp.listing.command.api.service.SplitHearingPayloadConverter;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
+import uk.gov.justice.listing.courts.Courtrooms;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.commands.ListCourtHearing;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
@@ -146,6 +148,7 @@ public class ListingCommandApi {
 
     @Inject
     private CourtCentreFactory courtCentreFactory;
+
     @Inject
     private JsonObjectToObjectConverter jsonObjectConverter;
 
@@ -388,6 +391,52 @@ public class ListingCommandApi {
                 updateHearingForListingEnriched(updateHearingForListing, courtCentre, payload);
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED), objectToJsonValueConverter.convert(updateHearingForListingEnriched)));
+    }
+
+    /**
+     * Validates the front-end's split payload and converts it to progression's list-new-hearing
+     * shape, then accepts. The call to progression is deliberately absent: listing wires to other
+     * contexts through a generated client from their RAML, and progression's split endpoint
+     * (SPRDT-1362) is not released yet. This lets the UI integrate against the finished contract
+     * now; SPRDT-1363's follow-up adds the generated client once progression ships.
+     */
+    @Handles("listing.command.split-hearing")
+    public void handleSplitHearing(final JsonEnvelope envelope) {
+        final JsonObject payload = envelope.payloadAsJsonObject();
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.split-hearing' received with payload {}", envelope.toObfuscatedDebugString());
+        }
+
+        final String hearingId = payload.getString(HEARING_ID);
+        final UUID courtCentreId = payload.containsKey(COURT_CENTRE_ID) && !payload.isNull(COURT_CENTRE_ID)
+                ? fromString(payload.getString(COURT_CENTRE_ID))
+                : null;
+        final CourtCentreDetails courtCentre = isNull(courtCentreId)
+                ? null
+                : courtCentreFactory.getCourtCentre(courtCentreId, envelope);
+
+        final JsonObject progressionRequest = SplitHearingPayloadConverter.toProgressionSplitRequest(
+                payload,
+                isNull(courtCentre) ? null : courtCentre.getName(),
+                courtRoomName(courtCentre, payload),
+                null);
+
+        LOGGER.info("split-hearing accepted for hearing {}; converted request holds {} defendant request(s)",
+                hearingId,
+                progressionRequest.getJsonObject("listNewHearing").getJsonArray("listDefendantRequests").size());
+    }
+
+    private static String courtRoomName(final CourtCentreDetails courtCentre, final JsonObject payload) {
+        if (isNull(courtCentre) || isNull(courtCentre.getCourtrooms())
+                || !payload.containsKey(COURT_ROOM_ID) || payload.isNull(COURT_ROOM_ID)) {
+            return null;
+        }
+        final UUID courtRoomId = fromString(payload.getString(COURT_ROOM_ID));
+        return courtCentre.getCourtrooms().stream()
+                .filter(room -> courtRoomId.equals(room.getId()))
+                .map(Courtrooms::getCourtroomName)
+                .findFirst()
+                .orElse(null);
     }
 
     @Handles("listing.command.update-hearings-for-listing")

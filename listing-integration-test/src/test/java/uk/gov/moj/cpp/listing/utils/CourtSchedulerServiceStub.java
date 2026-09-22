@@ -330,6 +330,20 @@ public class CourtSchedulerServiceStub {
 
     /** Verify POST /hearings/{id} (crown.search.and.book) was NEVER called
      * (regression guard for MAGS / already-allocated CROWN). */
+    /**
+     * Every courtscheduler call recorded for this hearing id, whatever the resource. SPRDT-1363's
+     * proxy must leave this at zero for the source hearing — a non-zero count is the SPRDT-1227
+     * leak returning.
+     */
+    public static int courtSchedulerCallCountForHearing(final String hearingId) {
+        return WireMock.findAll(WireMock.anyRequestedFor(urlPathMatching(COURT_SCHEDULER_ENDPOINT + ".*")))
+                .stream()
+                .filter(request -> request.getUrl().contains(hearingId)
+                        || (request.getBody() != null && request.getBodyAsString().contains(hearingId)))
+                .toList()
+                .size();
+    }
+
     public static void verifyCrownFallbackSearchAndBookNeverCalled() {
         WireMock.verify(0, WireMock.postRequestedFor(urlPathMatching(
                 COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+"))
