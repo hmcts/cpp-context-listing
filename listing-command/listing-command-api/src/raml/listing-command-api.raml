@@ -86,6 +86,9 @@ protocols: [ HTTP, HTTPS ]
       requestType: application/vnd.listing.command.update-hearing-for-listing+json
         name: listing.command.update-hearing-for-listing
       (mapping):
+        requestType: application/vnd.listing.command.split-hearing+json
+        name: listing.command.split-hearing
+      (mapping):
         requestType: application/vnd.listing.command.update-defendants-for-hearing+json
         name: listing.command.update-defendants-for-hearing
       (mapping):
@@ -132,6 +135,9 @@ protocols: [ HTTP, HTTPS ]
       application/vnd.listing.command.update-hearing-for-listing+json:
         example: !include json/listing.command.update-hearing-for-listing.json
         schema: !include json/schema/listing.command.update-hearing-for-listing.json
+      application/vnd.listing.command.split-hearing+json:
+        example: !include json/listing.command.split-hearing.json
+        schema: !include json/schema/listing.command.split-hearing.json
       application/vnd.listing.command.update-defendants-for-hearing+json:
         example: !include json/listing.command.update-defendants-for-hearing.json
         schema: !include json/schema/listing.command.update-defendants-for-hearing.json
