@@ -7,6 +7,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory.createEnvelope;
@@ -26,6 +27,7 @@ import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.domain.PtphDetail;
 import uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate;
 
 import java.time.LocalDate;
@@ -107,7 +109,9 @@ public class UpdateExistingHearingCommandHandlerTest {
 
         updateExistingHearingCommandHandler.updateExistingHearing(commandEnvelope);
 
-        verify(seedHearingAggregate).requestUpdateExistingHearing(eq(seedingHearingId), hearingIdCaptor.capture(), eq(sittingDay), prosecutionCasesCaptor.capture(), shadowOffencesCaptor.capture());
+        // LPT-2405 added a trailing PtphDetail: null here, because this command carries no
+        // inherited tier or list type
+        verify(seedHearingAggregate).requestUpdateExistingHearing(eq(seedingHearingId), hearingIdCaptor.capture(), eq(sittingDay), prosecutionCasesCaptor.capture(), shadowOffencesCaptor.capture(), isNull());
 
         assertThat(hearingIdCaptor.getValue(), is(hearingId));
         assertThat(prosecutionCasesCaptor.getValue().size(), is(1));
@@ -130,5 +134,44 @@ public class UpdateExistingHearingCommandHandlerTest {
 
     }
 
+    /**
+     * LPT-2405: when the command carries inherited values they must reach the aggregate as a
+     * PtphDetail. The other test covers the null case, so both sides of the guard are pinned.
+     */
+    @Test
+    public void shouldPassInheritedPtphDetailToTheAggregate() throws Exception {
+        final JsonObject commandPayload = createObjectBuilder().build();
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.update-existing-hearing", commandPayload);
+        final UUID seedingHearingId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final String sittingDay = LocalDate.now().toString();
 
+        final UpdateExistingHearing updateExistingHearing = UpdateExistingHearing.updateExistingHearing()
+                .withHearingId(hearingId)
+                .withSeedingHearing(SeedingHearing.seedingHearing()
+                        .withSittingDay(sittingDay)
+                        .withSeedingHearingId(seedingHearingId)
+                        .withJurisdictionType(JurisdictionType.CROWN)
+                        .build())
+                .withProsecutionCases(Arrays.asList(ProsecutionCase.prosecutionCase().withId(randomUUID()).build()))
+                .withShadowListedOffences(Arrays.asList(randomUUID()))
+                .withTier("TIER_3")
+                .withListType("TYPE_1_FIXED")
+                .withKeyReason("Vulnerable witness")
+                .build();
+
+        when(jsonObjectConverter.convert(commandPayload, UpdateExistingHearing.class)).thenReturn(updateExistingHearing);
+        when(aggregateService.get(eventStream, SeedHearingAggregate.class)).thenReturn(seedHearingAggregate);
+        when(eventSource.getStreamById(any())).thenReturn(eventStream);
+
+        updateExistingHearingCommandHandler.updateExistingHearing(commandEnvelope);
+
+        final ArgumentCaptor<PtphDetail> ptphCaptor = ArgumentCaptor.forClass(PtphDetail.class);
+        verify(seedHearingAggregate).requestUpdateExistingHearing(eq(seedingHearingId), any(UUID.class), eq(sittingDay),
+                any(List.class), any(List.class), ptphCaptor.capture());
+
+        assertThat(ptphCaptor.getValue().getTier(), is("TIER_3"));
+        assertThat(ptphCaptor.getValue().getListType(), is("TYPE_1_FIXED"));
+        assertThat(ptphCaptor.getValue().getKeyReason(), is("Vulnerable witness"));
+    }
 }

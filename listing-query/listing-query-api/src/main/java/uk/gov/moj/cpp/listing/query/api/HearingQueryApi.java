@@ -33,6 +33,7 @@ import uk.gov.moj.cpp.listing.query.document.generator.JudgeListTemplateAssemble
 import uk.gov.moj.cpp.listing.query.document.generator.JudiciaryNameMapper;
 import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
+import uk.gov.moj.cpp.listing.query.view.courtlist.HearingOffenceFilterUtils;
 import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
 import java.io.IOException;
@@ -264,7 +265,7 @@ public class HearingQueryApi {
         final String welshAddress1 = courtCentreJson.getString("welshAddress1", null);
         final String welshAddress2 = courtCentreJson.getString("welshAddress2", null);
 
-        final JsonObject responsePayload = response.payloadAsJsonObject();
+        final JsonObject responsePayload = HearingOffenceFilterUtils.removeDefendantsAndHearingsMissingOffences(response.payloadAsJsonObject());
         final Map<String, JsonObject> judiciariesById = resolveJudiciariesById(responsePayload, query);
         final Map<String, String> prosecutorOrganisationNamesById = resolveProsecutorOrganisationNames(responsePayload, query);
         final JsonObjectBuilder enrichedBuilder = JsonObjects.createObjectBuilder();

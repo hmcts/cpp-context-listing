@@ -213,6 +213,7 @@ import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 import uk.gov.moj.cpp.listing.domain.Type;
 import uk.gov.moj.cpp.listing.domain.aggregate.Application;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
+import uk.gov.moj.cpp.listing.domain.PtphDetail;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate;
 import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
@@ -614,7 +615,7 @@ class ListingCommandHandlerTest {
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
                 eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY),
-                eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(of(2)))).thenReturn(events);
+                eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(of(2)), eq(null))).thenReturn(events);
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(createObjectBuilder().add("oucode", "B06AN00").build());
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
@@ -622,7 +623,7 @@ class ListingCommandHandlerTest {
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES),eq(ESTIMATED_DURATION), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
-                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(of(2)));
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(of(2)), eq(null));
 
     }
 
@@ -668,14 +669,14 @@ class ListingCommandHandlerTest {
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
                 eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(true), eq(BOOKING_TYPE), eq(PRIORITY),
-                eq(SPECIAL_REQUIREMENTS), eq(of(Boolean.FALSE)), eq(empty()), eq(empty()))).thenReturn(events);
+                eq(SPECIAL_REQUIREMENTS), eq(of(Boolean.FALSE)), eq(empty()), eq(empty()), eq(null))).thenReturn(events);
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
 
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(ESTIMATED_DURATION), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
-                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(true), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()));
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(true), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()), eq(null));
 
     }
 
@@ -712,14 +713,14 @@ class ListingCommandHandlerTest {
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
                 eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(hearingDays), eq(NON_DEFAULT_DAYS), eq(nonSittingDays), eq(true), eq(BOOKING_TYPE), eq(PRIORITY),
-                eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()))).thenReturn(events);
+                eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()), eq(null))).thenReturn(events);
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
 
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES),eq(ESTIMATED_DURATION), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(parse(LISTED_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
-                eq(empty()), eq(empty()), eq(empty()), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()));
+                eq(empty()), eq(empty()), eq(empty()), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()), eq(null));
 
     }
 
@@ -753,7 +754,7 @@ class ListingCommandHandlerTest {
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
                 eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY),
-                eq(SPECIAL_REQUIREMENTS), eq(empty()),eq(empty()), eq(empty()))).thenReturn(events);
+                eq(SPECIAL_REQUIREMENTS), eq(empty()),eq(empty()), eq(empty()), eq(null))).thenReturn(events);
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(createObjectBuilder().add("oucode", "B06AN00").build());
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
@@ -761,7 +762,7 @@ class ListingCommandHandlerTest {
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES),eq(ESTIMATED_DURATION), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
-                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(convertNonDefaultDaysCommandToDomain(nonDefaultDaysList)), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()));
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(convertNonDefaultDaysCommandToDomain(nonDefaultDaysList)), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()), eq(null));
 
 
     }
@@ -2764,7 +2765,36 @@ class ListingCommandHandlerTest {
 
         listingCommandHandler.handleAddCasesToHearing(commandEnvelope);
 
-        verify(hearing, times(1)).addCasesToHearing(any(List.class), any(), any());
+        // LPT-2405 added a trailing PtphDetail: null here, because this command carries no
+        // inherited tier or list type
+        verify(hearing, times(1)).addCasesToHearing(any(List.class), any(), any(), isNull());
+    }
+
+
+    /**
+     * LPT-2405: when the add-cases command carries inherited values they must reach the
+     * aggregate as a PtphDetail. The test above covers the null case, so both sides of the
+     * guard are pinned.
+     */
+    @Test
+    public void handleAddCasesForHearingWithInheritedPtphDetail() throws Exception {
+        final String jsonString = givenPayload("/test-data/listing.command.add-cases-to-hearing.json").toString();
+        final JsonObject withPtphDetail = JsonObjects.createObjectBuilder(
+                        JsonObjects.createReader(new StringReader(jsonString)).readObject())
+                .add("tier", "TIER_3")
+                .add("listType", "TYPE_1_FIXED")
+                .add("keyReason", "Vulnerable witness")
+                .build();
+
+        listingCommandHandler.handleAddCasesToHearing(
+                createEnvelope("listing.command.add-cases-to-hearing", withPtphDetail));
+
+        final ArgumentCaptor<PtphDetail> captor = ArgumentCaptor.forClass(PtphDetail.class);
+        verify(hearing).addCasesToHearing(any(List.class), any(), any(), captor.capture());
+
+        assertThat(captor.getValue().getTier(), is("TIER_3"));
+        assertThat(captor.getValue().getListType(), is("TYPE_1_FIXED"));
+        assertThat(captor.getValue().getKeyReason(), is("Vulnerable witness"));
     }
 
     @Test

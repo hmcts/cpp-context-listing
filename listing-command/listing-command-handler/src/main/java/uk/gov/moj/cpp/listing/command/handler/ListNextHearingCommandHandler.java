@@ -154,7 +154,8 @@ public class ListNextHearingCommandHandler {
                     listNextHearing.getHearing().getSpecialRequirements(),
                     domainHearing.getIsPossibleDisqualification(),
                     domainHearing.getGroupProceedings(),
-                    domainHearing.getNumberOfGroupCases()
+                    domainHearing.getNumberOfGroupCases(),
+                    domainHearing.getPtphDetail()
             );
 
             final Stream<Object> allocationEvents = hearing.applyAllocationRules(ofNullable(finalBookingReference), false, false, Collections.emptyList(), empty(), commandHearing.getIsGroupProceedings());

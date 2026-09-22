@@ -7,16 +7,20 @@ import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -69,6 +73,9 @@ import uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
 import uk.gov.moj.cpp.listing.command.api.service.HearingLookupService;
+import uk.gov.moj.cpp.listing.command.api.service.PtphDetailEnrichmentService;
+import uk.gov.justice.listing.courts.UpdateExistingHearing;
+import uk.gov.moj.cpp.listing.domain.PtphDetail;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
@@ -95,6 +102,7 @@ import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonValue;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -139,6 +147,18 @@ public class ListingCommandApiTest {
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
     @Mock
     private HearingLookupService hearingLookupService;
+    @Mock
+    private PtphDetailEnrichmentService ptphDetailEnrichmentService;
+
+    /**
+     * PTPH enrichment is exercised by {@link uk.gov.moj.cpp.listing.command.api.service.PtphDetailEnrichmentServiceTest};
+     * here it is a pass-through so the existing expectations on the enriched command still hold.
+     */
+    @BeforeEach
+    public void passThroughPtphDetailEnrichment() {
+        lenient().when(ptphDetailEnrichmentService.enrichWithPtphDetail(anyList(), any(), any(JsonEnvelope.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+    }
 
     private static final Type HEARING_TYPE = Type.type()
             .withId(fromString("6e1bef55-7e13-4615-b3ba-8663f4438e16"))
@@ -1499,6 +1519,117 @@ public class ListingCommandApiTest {
                 CourtCentreDetails.courtCentreDetails().withDefaultDuration(20).build());
     }
 
+    // ---------------------------------------------------------------------------------
+    // LPT-2405 existing-hearing flow: the command carries no hearing type, so it is read
+    // from the stored hearing before the shared gates are applied.
+    // ---------------------------------------------------------------------------------
 
+    private UpdateRelatedHearing updateRelatedHearingCommand() {
+        return UpdateRelatedHearing.updateRelatedHearing()
+                .withSeedingHearing(SeedingHearing.seedingHearing().withSeedingHearingId(randomUUID()).build())
+                .withProsecutionCases(asList(ProsecutionCase.prosecutionCase().withId(randomUUID()).build()))
+                .build();
+    }
+
+    private void givenAnUpdateRelatedHearingCommand() {
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectConverter.convert(payload, UpdateRelatedHearing.class)).willReturn(updateRelatedHearingCommand());
+        when(envelope.metadata()).thenReturn(MetadataBuilderFactory.metadataWithRandomUUIDAndName().build());
+        when(payload.getString(anyString())).thenReturn(randomUUID().toString());
+    }
+
+    private UpdateExistingHearing captureSentCommand() {
+        final ArgumentCaptor<UpdateExistingHearing> captor = ArgumentCaptor.forClass(UpdateExistingHearing.class);
+        verify(objectToJsonValueConverter).convert(captor.capture());
+        return captor.getValue();
+    }
+
+    @Test
+    public void shouldInheritTierAndListTypeOntoAnExistingHearing() {
+        givenAnUpdateRelatedHearingCommand();
+
+        final JsonObject storedHearing = Json.createObjectBuilder()
+                .add("type", Json.createObjectBuilder()
+                        .add("id", randomUUID().toString())
+                        .add("description", "Trial"))
+                .add("jurisdictionType", "CROWN")
+                .build();
+        given(hearingLookupService.findHearing(any(), any())).willReturn(Optional.of(storedHearing));
+        given(ptphDetailEnrichmentService.resolveForExistingHearing(any(), any(), any(), any()))
+                .willReturn(Optional.of(new PtphDetail("TIER_3", "TYPE_1_FIXED", "Vulnerable witness")));
+
+        listingCommandApi.updateRelatedHearing(envelope);
+
+        final UpdateExistingHearing sent = captureSentCommand();
+        assertThat(sent.getTier(), is("TIER_3"));
+        assertThat(sent.getListType(), is("TYPE_1_FIXED"));
+        assertThat(sent.getKeyReason(), is("Vulnerable witness"));
+    }
+
+    @Test
+    public void shouldSendTheCommandWithoutPtphDetailWhenNothingIsInherited() {
+        givenAnUpdateRelatedHearingCommand();
+
+        final JsonObject storedHearing = Json.createObjectBuilder()
+                .add("type", Json.createObjectBuilder().add("id", randomUUID().toString()))
+                .add("jurisdictionType", "CROWN")
+                .build();
+        given(hearingLookupService.findHearing(any(), any())).willReturn(Optional.of(storedHearing));
+        given(ptphDetailEnrichmentService.resolveForExistingHearing(any(), any(), any(), any()))
+                .willReturn(Optional.empty());
+
+        listingCommandApi.updateRelatedHearing(envelope);
+
+        final UpdateExistingHearing sent = captureSentCommand();
+        assertThat(sent.getTier(), is(nullValue()));
+        assertThat(sent.getListType(), is(nullValue()));
+        assertThat(sent.getKeyReason(), is(nullValue()));
+    }
+
+    /**
+     * The hearing id comes from a result prompt, so it is not guaranteed to exist in listing.
+     * The command must still be sent; only the inheritance is skipped.
+     */
+    @Test
+    public void shouldNotAskForPtphDetailWhenTheExistingHearingIsNotFound() {
+        givenAnUpdateRelatedHearingCommand();
+        given(hearingLookupService.findHearing(any(), any())).willReturn(Optional.empty());
+
+        listingCommandApi.updateRelatedHearing(envelope);
+
+        verify(ptphDetailEnrichmentService, never()).resolveForExistingHearing(any(), any(), any(), any());
+        assertThat(captureSentCommand().getTier(), is(nullValue()));
+    }
+
+    @Test
+    public void shouldNotAskForPtphDetailWhenTheStoredHearingHasNoType() {
+        givenAnUpdateRelatedHearingCommand();
+        given(hearingLookupService.findHearing(any(), any()))
+                .willReturn(Optional.of(Json.createObjectBuilder().add("jurisdictionType", "CROWN").build()));
+
+        listingCommandApi.updateRelatedHearing(envelope);
+
+        verify(ptphDetailEnrichmentService, never()).resolveForExistingHearing(any(), any(), any(), any());
+        assertThat(captureSentCommand().getTier(), is(nullValue()));
+    }
+
+    /**
+     * A stored hearing with no jurisdiction recorded must not blow up — it is passed through as
+     * null and the Crown-trial gate rejects it.
+     */
+    @Test
+    public void shouldTolerateAStoredHearingWithoutAJurisdictionType() {
+        givenAnUpdateRelatedHearingCommand();
+        given(hearingLookupService.findHearing(any(), any()))
+                .willReturn(Optional.of(Json.createObjectBuilder()
+                        .add("type", Json.createObjectBuilder().add("id", randomUUID().toString()))
+                        .build()));
+        given(ptphDetailEnrichmentService.resolveForExistingHearing(isNull(), any(), any(), any()))
+                .willReturn(Optional.empty());
+
+        listingCommandApi.updateRelatedHearing(envelope);
+
+        verify(ptphDetailEnrichmentService).resolveForExistingHearing(isNull(), any(), any(), any());
+        assertThat(captureSentCommand().getTier(), is(nullValue()));
+    }
 }
-
