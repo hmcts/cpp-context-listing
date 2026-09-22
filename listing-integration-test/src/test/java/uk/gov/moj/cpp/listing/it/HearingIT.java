@@ -40,6 +40,7 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHea
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedulesWithJudiciaries;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
+import static uk.gov.moj.cpp.listing.it.util.HearingHelper.pollForHearingByIdWithJmsDelay;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrownDraft;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubUpdateAvailableHearingSlotsService;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
@@ -53,6 +54,7 @@ import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.VacatingTrialSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.steps.data.JudicialRoleData;
 import uk.gov.moj.cpp.listing.steps.data.JudicialRoleTypeData;
 import uk.gov.moj.cpp.listing.steps.data.SequenceHearingData;
@@ -366,6 +368,17 @@ class HearingIT extends AbstractIT {
 
         updateHearingSteps.verifyNoHearingRequestedForListingEvent();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        // The actual SPRDT-1227 regression is the ORIGINAL hearing being mutated by a split that was
+        // only ever meant to create a second hearing. "No new hearing" above does not prove that, so
+        // assert the original still holds every case, defendant and offence it started with.
+        final ListedCaseData originalCase = hearingsData.getHearingData().get(0).getListedCases().get(0);
+        final int originalOffenceCount = originalCase.getDefendants().get(0).getOffences().size();
+        pollForHearingByIdWithJmsDelay(USER_ID_VALUE, hearingId, allOf(
+                withJsonPath("$.listedCases.length()", equalTo(hearingsData.getHearingData().get(0).getListedCases().size())),
+                withJsonPath("$.listedCases[0].id", equalTo(originalCase.getCaseId().toString())),
+                withJsonPath("$.listedCases[0].defendants.length()", equalTo(originalCase.getDefendants().size())),
+                withJsonPath("$.listedCases[0].defendants[0].offences.length()", equalTo(originalOffenceCount))));
     }
 
     @Test

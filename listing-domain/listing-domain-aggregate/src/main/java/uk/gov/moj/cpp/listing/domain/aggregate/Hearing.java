@@ -633,10 +633,6 @@ public class Hearing implements Aggregate {
         return eventNonDefaults.stream().map(this::getDomainNonDefaultDay).collect(toList());
     }
 
-    private List<uk.gov.justice.core.courts.NonDefaultDay> convertDomainToCore(final List<NonDefaultDay> domainNonDefaults) {
-        return domainNonDefaults.stream().map(this::getCoreNonDefaultDay).collect(toList());
-    }
-
     private NonDefaultDay getDomainNonDefaultDay(final uk.gov.justice.listing.events.NonDefaultDay eventNonDefault) {
         final NonDefaultDay.Builder builder = NonDefaultDay.nonDefaultDay();
         if (nonNull(eventNonDefault.getStartTime())) {
@@ -659,21 +655,6 @@ public class Hearing implements Aggregate {
         }
         builder.withCourtCentreId(ofNullable(eventNonDefault.getCourtCentreId()));
         builder.withRoomId(ofNullable(eventNonDefault.getRoomId()));
-        return builder.build();
-    }
-
-    private uk.gov.justice.core.courts.NonDefaultDay getCoreNonDefaultDay(final NonDefaultDay nonDefaultDay) {
-        final uk.gov.justice.core.courts.NonDefaultDay.Builder builder = uk.gov.justice.core.courts.NonDefaultDay.nonDefaultDay();
-
-        builder.withStartTime(nonDefaultDay.getStartTime());
-        builder.withDuration(nonDefaultDay.getDuration().orElse(null));
-        builder.withSession(nonDefaultDay.getSession().orElse(null));
-        builder.withOucode(nonDefaultDay.getOucode().orElse(null));
-        builder.withCourtScheduleId(nonDefaultDay.getCourtScheduleId().orElse(null));
-        builder.withCourtRoomId(nonDefaultDay.getCourtRoomId().orElse(null));
-        builder.withCourtCentreId(nonDefaultDay.getCourtCentreId().orElse(null));
-        builder.withRoomId(nonDefaultDay.getRoomId().orElse(null));
-
         return builder.build();
     }
 
@@ -4147,9 +4128,5 @@ public class Hearing implements Aggregate {
                 existingApps.add(app);
             }
         }
-    }
-
-    private static int durationOrZero(final uk.gov.justice.core.courts.RotaSlot slot) {
-        return slot.getDuration() != null ? slot.getDuration() : 0;
     }
 }
