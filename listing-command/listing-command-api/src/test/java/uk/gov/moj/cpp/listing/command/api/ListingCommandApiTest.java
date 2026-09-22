@@ -168,6 +168,83 @@ public class ListingCommandApiTest {
             .withDescription("Trial")
             .build();
 
+    // ─── SPRDT-1363: split-hearing proxy ─────────────────────────────────
+
+    private static final java.util.UUID SPLIT_HEARING_ID = java.util.UUID.randomUUID();
+    private static final java.util.UUID SPLIT_COURT_CENTRE_ID = java.util.UUID.randomUUID();
+    private static final java.util.UUID SPLIT_COURT_ROOM_ID = java.util.UUID.randomUUID();
+
+    private JsonObject splitPayload(final boolean withRoom) {
+        final javax.json.JsonObjectBuilder builder = javax.json.Json.createObjectBuilder()
+                .add("hearingId", SPLIT_HEARING_ID.toString())
+                .add("courtCentreId", SPLIT_COURT_CENTRE_ID.toString())
+                .add("jurisdictionType", "CROWN")
+                .add("type", javax.json.Json.createObjectBuilder().add("id", java.util.UUID.randomUUID().toString()).add("description", "First hearing"))
+                .add("nonDefaultDays", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("virtual", true)
+                                .add("duration", 1080)
+                                .add("startTime", "2026-09-10T09:00:00.000Z")
+                                .add("courtScheduleId", java.util.UUID.randomUUID().toString())))
+                .add("prosecutionCases", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("caseId", java.util.UUID.randomUUID().toString())
+                                .add("defendants", javax.json.Json.createArrayBuilder()
+                                        .add(javax.json.Json.createObjectBuilder()
+                                                .add("defendantId", java.util.UUID.randomUUID().toString())
+                                                .add("offences", javax.json.Json.createArrayBuilder()
+                                                        .add(javax.json.Json.createObjectBuilder()
+                                                                .add("offenceId", java.util.UUID.randomUUID().toString())))))))
+                .add("sendNotificationToParties", false);
+        if (withRoom) {
+            builder.add("courtRoomId", SPLIT_COURT_ROOM_ID.toString());
+        }
+        return builder.build();
+    }
+
+    private JsonEnvelope splitEnvelope(final boolean withRoom) {
+        return uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom(
+                metadataWithRandomUUIDAndName().build(), splitPayload(withRoom));
+    }
+
+    /**
+     * Until progression's split endpoint ships (SPRDT-1362) the handler validates and converts, then
+     * accepts. What the conversion produces is asserted directly in {@link
+     * uk.gov.moj.cpp.listing.command.api.service.SplitHearingPayloadConverterTest}; here we only
+     * pin that the handler resolves the court centre it needs and accepts both request shapes.
+     */
+    @Test
+    public void shouldAcceptSplitHearingAndResolveTheCourtCentre() {
+        final uk.gov.justice.listing.courts.Courtrooms room = uk.gov.justice.listing.courts.Courtrooms.courtrooms()
+                .withId(SPLIT_COURT_ROOM_ID)
+                .withCourtroomName("Courtroom 01")
+                .build();
+        final CourtCentreDetails courtCentre = CourtCentreDetails.courtCentreDetails()
+                .withId(SPLIT_COURT_CENTRE_ID)
+                .withName("Croydon Crown Court")
+                .withCourtrooms(List.of(room))
+                .build();
+        when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
+
+        listingCommandApi.handleSplitHearing(splitEnvelope(true));
+
+        verify(courtCentreFactory).getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class));
+    }
+
+    @Test
+    public void shouldAcceptASplitRequestThatNamesNoRoom() {
+        final CourtCentreDetails courtCentre = CourtCentreDetails.courtCentreDetails()
+                .withId(SPLIT_COURT_CENTRE_ID)
+                .withName("Croydon Crown Court")
+                .withCourtrooms(List.of())
+                .build();
+        when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
+
+        listingCommandApi.handleSplitHearing(splitEnvelope(false));
+
+        verify(courtCentreFactory).getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class));
+    }
+
     @Test
     public void shouldEnrichOnlyNonDefaultDaysWithMissingOrZeroDurationAD() {
         final Metadata metadata = metadataWithRandomUUIDAndName().build();
