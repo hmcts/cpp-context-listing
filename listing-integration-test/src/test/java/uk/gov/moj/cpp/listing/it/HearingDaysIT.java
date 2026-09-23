@@ -17,7 +17,6 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCente
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.moj.cpp.listing.it.util.ArtemisQueuePurger;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -124,10 +123,12 @@ public class HearingDaysIT extends AbstractIT {
         // not. What the guard actually prevents is the partial-allocation event, which strips the
         // moved offence (index 1 above) off the original.
         //
-        // Quiesce FIRST. "Offence count unchanged" is already true the instant the command is
+        // Barrier FIRST. "Offence count unchanged" is already true the instant the command is
         // accepted, so polling for it without a happens-after barrier passes immediately and proves
-        // nothing — it would race the async removal rather than observe its absence.
-        ArtemisQueuePurger.quiesceListingEventProcessing();
+        // nothing — it would race the async removal rather than observe its absence. This waits on
+        // both the publish relay and the subscriber queues; the consume-side quiesce alone can
+        // return before the event has even been published.
+        awaitAsyncProcessingComplete();
         pollForHearingByIdWithJmsDelay(USER_ID_VALUE, hearingData.getId(),
                 withJsonPath("$.listedCases[0].defendants[0].offences.length()",
                         equalTo(hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().size())));
@@ -199,8 +200,8 @@ public class HearingDaysIT extends AbstractIT {
 
         // SPRDT-1365: rejected the same way regardless of the virtual-nonDefaultDays shape — the
         // moved offence stays on the original because the partial-allocation event never runs.
-        // Quiesced first for the same reason as the sibling test above.
-        ArtemisQueuePurger.quiesceListingEventProcessing();
+        // Same two-stage barrier as the sibling test above, for the same reason.
+        awaitAsyncProcessingComplete();
         pollForHearingByIdWithJmsDelay(USER_ID_VALUE, hearingData.getId(),
                 withJsonPath("$.listedCases[0].defendants[0].offences.length()",
                         equalTo(hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().size())));

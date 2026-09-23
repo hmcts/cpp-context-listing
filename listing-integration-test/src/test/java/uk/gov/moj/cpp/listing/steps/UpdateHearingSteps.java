@@ -24,7 +24,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static uk.gov.justice.services.common.converter.ZonedDateTimes.fromString;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
@@ -85,7 +84,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -932,20 +930,6 @@ public class UpdateHearingSteps extends AbstractIT {
         assertThat(jsonResponse.get("startDate"), is(updatedHearingData.getStartDate()));
     }
 
-
-    /**
-     * SPRDT-1365: a split-shaped update-hearing-for-listing is rejected, so no new hearing is
-     * raised. Asserts the private hearing-requested-for-listing event never arrives.
-     *
-     * Waits VLD_LATENCY_RETRIEVE_TIMEOUT, not the 60s default, and that is load-bearing. The
-     * positive assertions this replaced used the longer window precisely because the split's
-     * commit can land well past 60s; a negative assertion that gives up sooner than the event
-     * takes to arrive passes whether or not the guard exists, and proves nothing.
-     */
-    public void verifyNoHearingRequestedForListingEvent() {
-        assertThrows(NoSuchElementException.class,
-                () -> retrieveMessage(privateMessageConsumerHearingRequestedForListing, VLD_LATENCY_RETRIEVE_TIMEOUT));
-    }
 
     public void verifyProsecutionCaseDefendantsOffenceIds(final int count) {
         final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerAllocatedHearingUpdatedForListing);
