@@ -4618,11 +4618,25 @@ class ListingCommandHandlerTest {
         verify(hearing).assignNonDefaultDays(any(), any());
     }
 
-    // SPRDT-1365: splits are performed by progression via the listing proxy. A split-shaped
-    // update-hearing-for-listing must append nothing to the original hearing's stream — a partial
-    // update here would move the original's room/date, which is the SPRDT-1227 failure.
+    // The marker is an external contract: the production alert and the ITs' @ExpectedServerErrors
+    // annotations both key off this exact string, and neither can reference the constant. Renaming
+    // it would silently disable the alert, so pin the value here.
     @Test
-    void shouldAppendNoEventsWhenUpdateHearingForListingIsClassifiedAsSplit() throws Exception {
+    void theRejectionMarkerValueIsFixedBecauseAlertingDependsOnIt() {
+        assertThat(ListingCommandHandler.SPLIT_VIA_UPDATE_HEARING_REJECTED,
+                is("SPLIT_VIA_UPDATE_HEARING_REJECTED"));
+    }
+
+    // SPRDT-1365: splits are performed by progression via the listing proxy. A split-shaped
+    // update-hearing-for-listing must not touch the original hearing at all — a partial update
+    // here would move the original's room/date, which is the SPRDT-1227 failure.
+    //
+    // Asserting "no events appended" alone is NOT enough: the aggregate is a mock whose methods
+    // return empty streams by default, so an empty append is the default state and the assertion
+    // passes even with the guard removed. Verifying the aggregate is never asked to mutate is what
+    // actually fails when the guard is gone.
+    @Test
+    void shouldNotAskTheHearingAggregateToMutateAnythingForASplit() throws Exception {
         final JsonEnvelope commandEnvelope = updateHearingForListingCommandEnvelope(
                 "/test-data/listing.command.update-hearing-for-listing-split-with-multiday-booked-days.json");
 
@@ -4632,6 +4646,11 @@ class ListingCommandHandlerTest {
                 .getOperationType(any(), any(), any(), any(), any(), any(), any(), any());
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
+
+        verify(hearing, never()).changeType(any(), any());
+        verify(hearing, never()).isNotificationRelatedAllocatedFieldsUpdated(any());
+        verify(hearing, never()).changeCourtCentre(any(), any());
+        verify(hearing, never()).applyAllocationRules(any(), any(), any(), any(), any());
 
         final ArgumentCaptor<Stream<JsonEnvelope>> appendCaptor = ArgumentCaptor.forClass(Stream.class);
         verify(eventStream).append(appendCaptor.capture());

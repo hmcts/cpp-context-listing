@@ -857,18 +857,6 @@ public class UpdateHearingSteps extends AbstractIT {
         assertThat(jsonResponse.getString("failedHearingIds").split(",").length, is(2));
     }
 
-    public void verifyHearingRequestedForListingInPublicMQ() {
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingRequested);
-        assertNotNull(jsonResponse);
-        assertThat(((ArrayList) jsonResponse.get("listNewHearing.nonDefaultDays")).size(), is(2));
-    }
-
-    public void verifyHearingRequestedForListingInPublicMQWithoutNonDefaultDays() {
-        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingRequested);
-        assertNotNull(jsonResponse);
-        assertThat(jsonResponse.get("listNewHearing.nonDefaultDays"), is(nullValue()));
-    }
-
     public void verifyPublicEventVacatedTrialUpdated(final boolean allocated, final boolean isVacated) {
         final String expectedHearingId = updatedHearingData.getHearingId().toString();
         final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerVacatedTrialUpdated,
@@ -945,31 +933,18 @@ public class UpdateHearingSteps extends AbstractIT {
     }
 
 
-    public void verifyHearingRequestedForListingEvent(final int count) {
-        // vld: the split update routes through update-hearing-for-listing-enriched, whose read-after-write
-        // redelivery loop can hold the command's commit (and thus this private event's emission) well past
-        // the default 60s window. The event is retained on the private queue; wait the vld-sized budget.
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingRequestedForListing, VLD_LATENCY_RETRIEVE_TIMEOUT);
-        assertThat(jsonResponse.getMap("listNewHearing").get("nonDefaultDays"), is(notNullValue()));
-        assertThat(((ArrayList) jsonResponse.getMap("listNewHearing").get("nonDefaultDays")).size(), is(count));
-    }
-
-    public void verifyHearingRequestedForListingEventWithoutNonDefaultDays() {
-        // Split raised from a payload whose nonDefaultDays are virtual booking proxies: the new
-        // hearing's CourtHearingRequest must carry NO nonDefaultDays at all — they are never
-        // persisted (mirrors the virtual filter on the non-split update path).
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingRequestedForListing, VLD_LATENCY_RETRIEVE_TIMEOUT);
-        assertThat(jsonResponse.getMap("listNewHearing").get("nonDefaultDays"), is(nullValue()));
-    }
-
     /**
      * SPRDT-1365: a split-shaped update-hearing-for-listing is rejected, so no new hearing is
-     * raised. Asserts the private hearing-requested-for-listing event never arrives — the split's
-     * only observable output under the old behaviour.
+     * raised. Asserts the private hearing-requested-for-listing event never arrives.
+     *
+     * Waits VLD_LATENCY_RETRIEVE_TIMEOUT, not the 60s default, and that is load-bearing. The
+     * positive assertions this replaced used the longer window precisely because the split's
+     * commit can land well past 60s; a negative assertion that gives up sooner than the event
+     * takes to arrive passes whether or not the guard exists, and proves nothing.
      */
     public void verifyNoHearingRequestedForListingEvent() {
         assertThrows(NoSuchElementException.class,
-                () -> retrieveMessage(privateMessageConsumerHearingRequestedForListing));
+                () -> retrieveMessage(privateMessageConsumerHearingRequestedForListing, VLD_LATENCY_RETRIEVE_TIMEOUT));
     }
 
     public void verifyProsecutionCaseDefendantsOffenceIds(final int count) {

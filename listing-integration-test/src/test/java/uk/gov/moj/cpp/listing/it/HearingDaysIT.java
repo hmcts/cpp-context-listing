@@ -1,5 +1,8 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static uk.gov.moj.cpp.listing.it.util.HearingHelper.pollForHearingByIdWithJmsDelay;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static com.jayway.jsonpath.Criteria.where;
 import static java.text.MessageFormat.format;
 import static java.time.ZoneOffset.UTC;
@@ -14,6 +17,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCente
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.moj.cpp.listing.it.util.ArtemisQueuePurger;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -113,8 +117,20 @@ public class HearingDaysIT extends AbstractIT {
         final JsonNode jsonNode = populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateHearingJsonObjectSplit, courtScheduleId);
         updateHearingStepsSplit.updateHearingForListing(objectMapper.treeToValue(jsonNode, JsonObject.class), hearingData.getId());
 
-        // SPRDT-1365: splits are performed via progression, so this command raises no new hearing.
-        updateHearingStepsSplit.verifyNoHearingRequestedForListingEvent();
+        // SPRDT-1365: the guard must leave the ORIGINAL hearing completely alone.
+        //
+        // Asserting "no new hearing was raised" would prove nothing here — this ticket deleted the
+        // only code that could raise one, so that event is unproducible whether the guard exists or
+        // not. What the guard actually prevents is the partial-allocation event, which strips the
+        // moved offence (index 1 above) off the original.
+        //
+        // Quiesce FIRST. "Offence count unchanged" is already true the instant the command is
+        // accepted, so polling for it without a happens-after barrier passes immediately and proves
+        // nothing — it would race the async removal rather than observe its absence.
+        ArtemisQueuePurger.quiesceListingEventProcessing();
+        pollForHearingByIdWithJmsDelay(USER_ID_VALUE, hearingData.getId(),
+                withJsonPath("$.listedCases[0].defendants[0].offences.length()",
+                        equalTo(hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().size())));
     }
 
     /**
@@ -181,8 +197,13 @@ public class HearingDaysIT extends AbstractIT {
         final JsonNode jsonNode = populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateHearingJsonObjectSplit, courtScheduleId, true);
         updateHearingStepsSplit.updateHearingForListing(objectMapper.treeToValue(jsonNode, JsonObject.class), hearingData.getId());
 
-        // SPRDT-1365: rejected the same way regardless of the virtual-nonDefaultDays shape.
-        updateHearingStepsSplit.verifyNoHearingRequestedForListingEvent();
+        // SPRDT-1365: rejected the same way regardless of the virtual-nonDefaultDays shape — the
+        // moved offence stays on the original because the partial-allocation event never runs.
+        // Quiesced first for the same reason as the sibling test above.
+        ArtemisQueuePurger.quiesceListingEventProcessing();
+        pollForHearingByIdWithJmsDelay(USER_ID_VALUE, hearingData.getId(),
+                withJsonPath("$.listedCases[0].defendants[0].offences.length()",
+                        equalTo(hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().size())));
     }
 
     private Map<String, String> getSplitPayloadValues(final String hearingId,
