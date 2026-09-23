@@ -57,7 +57,7 @@
         "$ref": "http://justice.gov.uk/core/courts/judicialRole.json"
       }
     },
-    "johSource": {
+    "judiciaryAssignmentSource": {
       "type": "string",
       "enum": [
         "MANUAL",
