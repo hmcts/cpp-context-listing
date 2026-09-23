@@ -150,4 +150,22 @@ public class AbstractIT {
     protected static String getStringFromResource(final String path) throws IOException {
         return Resources.toString(getResource(path), defaultCharset());
     }
+
+    /**
+     * Full happens-after barrier for a command whose expected effect is that NOTHING happens.
+     *
+     * Waits for the publish relay to drain (event-store side) and then for every subscriber queue
+     * to finish delivering (consume side) — the same two stages {@code setUp} performs, in the same
+     * order and for the same reasons.
+     *
+     * Needed whenever a test asserts state is UNCHANGED: that condition is already true the instant
+     * the command is accepted, so polling for it without this barrier races the async work instead
+     * of observing its absence, and the test passes whether or not the behaviour under test exists.
+     * The consume-side quiesce alone is not sufficient — it can return before the relay has even
+     * published the event.
+     */
+    protected void awaitAsyncProcessingComplete() {
+        databaseCleaner.awaitPublishQueuesEmpty(CONTEXT_NAME, PUBLISH_DRAIN_MAX_WAIT_MILLIS);
+        ArtemisQueuePurger.quiesceListingEventProcessing();
+    }
 }

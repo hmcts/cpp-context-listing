@@ -335,6 +335,14 @@ public class ListingEventProcessor {
                 vacatedTrialUpdatedPayload));
     }
 
+    /**
+     * No longer produced: the only emitter was the SPLIT path in update-hearing-for-listing, now
+     * torn down. Kept so historic streams still replay and because progression consumes the public
+     * contract; remove only once no stream carries the private event.
+     *
+     * @deprecated splits are performed via progression, not through update-hearing-for-listing.
+     */
+    @Deprecated
     @Handles(PRIVATE_EVENT_HEARING_REQUESTED_FOR_LISTING)
     public void handleHearingRequestedForListing(final JsonEnvelope envelope) {
         if (logger.isDebugEnabled()) {

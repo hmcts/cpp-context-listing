@@ -55,11 +55,7 @@ import static uk.gov.moj.cpp.listing.domain.event.CourtToEventConverter.buildLis
 import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
 
 import uk.gov.justice.core.courts.CourtCentre;
-import uk.gov.justice.core.courts.CourtHearingRequest;
-import uk.gov.justice.core.courts.HearingType;
-import uk.gov.justice.core.courts.ListDefendantRequest;
 import uk.gov.justice.core.courts.ProsecutionCase;
-import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.justice.listing.event.CourtApplicationHearingDeleted;
 import uk.gov.justice.listing.events.AddedCasesForHearing;
@@ -105,7 +101,6 @@ import uk.gov.justice.listing.events.HearingMarkedAsDeleted;
 import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
 import uk.gov.justice.listing.events.HearingMarkedForPartialUpdate;
 import uk.gov.justice.listing.events.HearingPartiallyUpdated;
-import uk.gov.justice.listing.events.HearingRequestedForListing;
 import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingResultStatusUpdated;
 import uk.gov.justice.listing.events.HearingTrialVacated;
@@ -513,90 +508,6 @@ public class Hearing implements Aggregate {
         }
     }
 
-    @SuppressWarnings({"squid:S00107", "squid:S3776"})
-    public Stream<Object> listForSplit(final Type type,
-                                       final List<uk.gov.justice.listing.events.ListedCase> listedCases,
-                                       final UUID courtCentreId,
-                                       final String courtCenterName,
-                                       final UUID courtRoomId,
-                                       final JurisdictionType jurisdictionType,
-                                       final ZonedDateTime startDate,
-                                       final LocalDate weekCommencingStartDate,
-                                       final Integer weekCommencingDurationInWeeks,
-                                       final List<uk.gov.justice.core.courts.JudicialRole> judiciary,
-                                       final List<NonDefaultDay> nonDefaultDays,
-                                       final Integer hearingTypeDuration,
-                                       final List<uk.gov.justice.core.courts.RotaSlot> bookedSlots) {
-
-        if (this.duplicate || this.deleted) {
-            return Stream.empty();
-        }
-        final CourtCentre defaultCourtCentre = CourtCentre.courtCentre()
-                .withId(courtCentreId)
-                .withRoomId(courtRoomId)
-                .withName(courtCenterName).build();
-
-        // When the split carries booked courtscheduler sessions (court-calendar CROWN flow), the
-        // sessions' total duration is the authoritative estimate: it is what makes the returning
-        // list-court-hearing take the multi-day path (> MINUTES_IN_DAY) instead of defaulting to a
-        // single-day hearing of hearingTypeDuration.
-        final int bookedSlotsTotalDuration = isNotEmpty(bookedSlots)
-                ? bookedSlots.stream().mapToInt(Hearing::durationOrZero).sum()
-                : 0;
-        final Integer splitEstimatedMinutes = bookedSlotsTotalDuration > 0
-                ? coerceToValidDuration(bookedSlotsTotalDuration)
-                : coerceToValidDuration(hearingTypeDuration);
-
-        final CourtHearingRequest.Builder builder = CourtHearingRequest.courtHearingRequest();
-        builder.withCourtCentre(defaultCourtCentre)
-                .withEstimatedMinutes(splitEstimatedMinutes)
-                .withHearingType(HearingType.hearingType()
-                        .withId(type.getId())
-                        .withDescription(type.getDescription())
-                        .withWelshDescription(type.getWelshDescription())
-                        .build())
-                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueOf(jurisdictionType.name()))
-                .withEarliestStartDateTime(startDate);
-
-        if (isNotEmpty(judiciary)) {
-            builder.withJudiciary(judiciary);
-        }
-
-        if (isNotEmpty(nonDefaultDays)) {
-            builder.withNonDefaultDays(convertDomainToCore(nonDefaultDays));
-        }
-
-        // Carry the already-booked courtscheduler sessions on bookedSlots so the CROWN
-        // CourtSchedule-first flow (progression round-trip -> list-court-hearing) can anchor
-        // multiDaySearchAndBook / listHearingInCourtSessions off their courtScheduleIds and list the
-        // new hearing ALLOCATED on the selected room and days, rather than falling back to a draft
-        // single-day search. Virtual nonDefaultDay proxies are still never persisted (SPRDT-1169).
-        if (isNotEmpty(bookedSlots)) {
-            builder.withBookedSlots(bookedSlots);
-        }
-
-        if (nonNull(weekCommencingStartDate)) {
-            builder.withWeekCommencingDate(WeekCommencingDate.weekCommencingDate()
-                    .withStartDate(weekCommencingStartDate.toString())
-                    .withDuration(weekCommencingDurationInWeeks)
-                    .build());
-        }
-        builder.withListDefendantRequests(listedCases.stream().flatMap(listedCase ->
-                listedCase.getDefendants().stream().map(defendant -> ListDefendantRequest.listDefendantRequest()
-                        .withDefendantId(defendant.getId())
-                        .withProsecutionCaseId(listedCase.getId())
-                        .withDefendantOffences(defendant.getOffences().stream().map(Offence::getId).collect(toList()))
-                        .withHearingLanguageNeeds(HearingLanguageRule.applyForEvent(listedCases, new ArrayList<>()))
-                        .build()
-                )
-        ).collect(toList()));
-
-        return apply(Stream.of(HearingRequestedForListing.hearingRequestedForListing()
-                .withListNewHearing(builder.build())
-                .build()));
-    }
-
-
     @SuppressWarnings({"squid:S00107"})
     public Stream<Object> listUnscheduled(final UUID hearingId,
                                           final Type type,
@@ -722,10 +633,6 @@ public class Hearing implements Aggregate {
         return eventNonDefaults.stream().map(this::getDomainNonDefaultDay).collect(toList());
     }
 
-    private List<uk.gov.justice.core.courts.NonDefaultDay> convertDomainToCore(final List<NonDefaultDay> domainNonDefaults) {
-        return domainNonDefaults.stream().map(this::getCoreNonDefaultDay).collect(toList());
-    }
-
     private NonDefaultDay getDomainNonDefaultDay(final uk.gov.justice.listing.events.NonDefaultDay eventNonDefault) {
         final NonDefaultDay.Builder builder = NonDefaultDay.nonDefaultDay();
         if (nonNull(eventNonDefault.getStartTime())) {
@@ -748,21 +655,6 @@ public class Hearing implements Aggregate {
         }
         builder.withCourtCentreId(ofNullable(eventNonDefault.getCourtCentreId()));
         builder.withRoomId(ofNullable(eventNonDefault.getRoomId()));
-        return builder.build();
-    }
-
-    private uk.gov.justice.core.courts.NonDefaultDay getCoreNonDefaultDay(final NonDefaultDay nonDefaultDay) {
-        final uk.gov.justice.core.courts.NonDefaultDay.Builder builder = uk.gov.justice.core.courts.NonDefaultDay.nonDefaultDay();
-
-        builder.withStartTime(nonDefaultDay.getStartTime());
-        builder.withDuration(nonDefaultDay.getDuration().orElse(null));
-        builder.withSession(nonDefaultDay.getSession().orElse(null));
-        builder.withOucode(nonDefaultDay.getOucode().orElse(null));
-        builder.withCourtScheduleId(nonDefaultDay.getCourtScheduleId().orElse(null));
-        builder.withCourtRoomId(nonDefaultDay.getCourtRoomId().orElse(null));
-        builder.withCourtCentreId(nonDefaultDay.getCourtCentreId().orElse(null));
-        builder.withRoomId(nonDefaultDay.getRoomId().orElse(null));
-
         return builder.build();
     }
 
@@ -4236,9 +4128,5 @@ public class Hearing implements Aggregate {
                 existingApps.add(app);
             }
         }
-    }
-
-    private static int durationOrZero(final uk.gov.justice.core.courts.RotaSlot slot) {
-        return slot.getDuration() != null ? slot.getDuration() : 0;
     }
 }
