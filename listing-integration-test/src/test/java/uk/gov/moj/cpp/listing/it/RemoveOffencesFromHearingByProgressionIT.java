@@ -12,7 +12,7 @@ import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.countCourtSchedulerHearingCallsFor;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.courtSchedulerCallCountForHearing;
 
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.RemoveOffencesFromHearingSteps;
@@ -54,7 +54,7 @@ class RemoveOffencesFromHearingByProgressionIT extends AbstractIT {
         // Listing an ALLOCATED crown hearing consults courtscheduler, so the baseline must be > 0.
         // Asserting that first is what stops the guard below degenerating into 0 == 0, which would
         // pass even if the counter matched nothing at all.
-        final int courtSchedulerCallsBeforeRemoval = countCourtSchedulerHearingCallsFor(hearingId);
+        final int courtSchedulerCallsBeforeRemoval = courtSchedulerCallCountForHearing(hearingId);
         assertThat("the SPRDT-1227 guard can only prove anything if it can see courtscheduler calls "
                         + "for this hearing in the first place",
                 courtSchedulerCallsBeforeRemoval, greaterThan(0));
@@ -68,7 +68,7 @@ class RemoveOffencesFromHearingByProgressionIT extends AbstractIT {
 
         // SPRDT-1227 regression guard: the hearing keeps its allocation and courtscheduler is not
         // re-consulted for it.
-        assertThat(countCourtSchedulerHearingCallsFor(hearingId), is(courtSchedulerCallsBeforeRemoval));
+        assertThat(courtSchedulerCallCountForHearing(hearingId), is(courtSchedulerCallsBeforeRemoval));
         // Still allocated. The room is the one court-schedule enrichment assigned, not the one the
         // listing request asked for, so assert it is still set rather than which room it is.
         pollForHearingByIdWithJmsDelay(USER_ID_VALUE, UUID.fromString(hearingId),
@@ -88,7 +88,7 @@ class RemoveOffencesFromHearingByProgressionIT extends AbstractIT {
         // Unlike the allocated case, listing an UNALLOCATED hearing never consults courtscheduler, so
         // this baseline is legitimately 0 and the assertion below reads "still zero". The counter
         // itself is proven live by the allocated test, which asserts a non-zero baseline.
-        final int courtSchedulerCallsBeforeRemoval = countCourtSchedulerHearingCallsFor(hearingId);
+        final int courtSchedulerCallsBeforeRemoval = courtSchedulerCallCountForHearing(hearingId);
 
         final RemoveOffencesFromHearingSteps steps =
                 new RemoveOffencesFromHearingSteps(PUBLIC_EVENTS_LISTING_OFFENCES_REMOVED_FROM_EXISTING_UNALLOCATED_HEARING);
@@ -98,7 +98,7 @@ class RemoveOffencesFromHearingByProgressionIT extends AbstractIT {
         pollForHearingByIdWithJmsDelay(USER_ID_VALUE, UUID.fromString(hearingId),
                 withJsonPath("$.listedCases[0].defendants[0].offences.length()", equalTo(initialOffenceCount - 1)));
 
-        assertThat(countCourtSchedulerHearingCallsFor(hearingId), is(courtSchedulerCallsBeforeRemoval));
+        assertThat(courtSchedulerCallCountForHearing(hearingId), is(courtSchedulerCallsBeforeRemoval));
     }
 
     /**
