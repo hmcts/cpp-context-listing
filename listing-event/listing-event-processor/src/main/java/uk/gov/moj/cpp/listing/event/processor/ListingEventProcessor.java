@@ -214,6 +214,8 @@ public class ListingEventProcessor {
     private static final String PRIVATE_EVENT_HEARING_MARKED_FOR_PARTIAL_UPDATE = "listing.events.hearing-marked-for-partial-update";
     private static final String PRIVATE_EVENTS_HEARING_ADDED_TO_CASE = "listing.events.hearing-added-to-case";
     public static final String PUBLIC_HEARING_OFFENCES_REMOVED_FROM_EXISTING_HEARING = "public.hearing.selected-offences-removed-from-existing-hearing";
+    public static final String PUBLIC_PROGRESSION_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING = "public.progression.offences-removed-from-existing-allocated-hearing";
+    private static final String COMMAND_REMOVE_SELECTED_OFFENCES_FROM_EXISTING_HEARING = "listing.command.remove-selected-offences-from-existing-hearing";
     private static final String PRIVATE_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING = "listing.events.hearing-days-changed-for-hearing";
     private static final String PUBLIC_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING = "public.listing.hearing-days-changed-for-hearing";
 
@@ -833,7 +835,15 @@ public class ListingEventProcessor {
 
     @Handles(PUBLIC_HEARING_OFFENCES_REMOVED_FROM_EXISTING_HEARING)
     public void offencesRemovedFromExistingHearing(final JsonEnvelope envelope) {
-        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName("listing.command.remove-selected-offences-from-existing-hearing"),
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_REMOVE_SELECTED_OFFENCES_FROM_EXISTING_HEARING),
+                envelope.payloadAsJsonObject()));
+    }
+
+    // Progression publishes the same {hearingId, offenceIds} payload when a split moves offences off
+    // the original hearing, so it routes to the same command as the hearing-context sibling above.
+    @Handles(PUBLIC_PROGRESSION_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING)
+    public void offencesRemovedFromExistingAllocatedHearingByProgression(final JsonEnvelope envelope) {
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_REMOVE_SELECTED_OFFENCES_FROM_EXISTING_HEARING),
                 envelope.payloadAsJsonObject()));
     }
 
