@@ -20,5 +20,6 @@
   "required": [
     "hearingId",
     "offenceIds"
-  ]
+  ],
+  "additionalProperties": false
 }
