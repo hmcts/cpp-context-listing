@@ -96,7 +96,10 @@ public class HearingEventListener {
         final HearingListed hearingListed = event.payload();
         removeDuplicateOffences(hearingListed);
         final JsonNode hearingJsonNode = convertToObject(dedupAllReportingRestrictions(hearingListed.getHearing()));
+
+        //revisit this while moving to modern by default
         ((ObjectNode) hearingJsonNode).put(FIELD_JUDICIARY_ASSIGNMENT_SOURCE, JudiciaryAssignmentSource.AUTO.toString());
+
         final UUID hearingId = hearingListed.getHearing().getId();
         LOGGER.info("'listing.events.hearing-listed' received hearingId {}", hearingId);
         final Hearing hearing = new Hearing(hearingId, hearingJsonNode);
