@@ -110,7 +110,7 @@ import uk.gov.justice.listing.events.HearingResultStatusUpdated;
 import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.HearingsUpdateCompleted;
-import uk.gov.justice.listing.events.JohSource;
+import uk.gov.justice.listing.events.JudiciaryAssignmentSource;
 import uk.gov.justice.listing.events.JudicialRoleType;
 import uk.gov.justice.listing.events.JudiciaryAssignedToHearing;
 import uk.gov.justice.listing.events.JudiciaryChangedForHearing;
@@ -242,7 +242,7 @@ public class Hearing implements Aggregate {
     private uk.gov.justice.listing.events.Hearing currentHearingEventState;
 
     private boolean isSummonsApprovedExists = false;
-    private String johSource;
+    private String judiciaryAssignmentSource = JudiciaryAssignmentSource.AUTO.toString();
 
     @Override
     public Object apply(final Object event) {
@@ -969,11 +969,11 @@ public class Hearing implements Aggregate {
         }
     }
 
-    public Stream<Object> assignJudiciary(final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciary, final UUID hearingId, final String johSource) {
+    public Stream<Object> assignJudiciary(final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciary, final UUID hearingId, final String judiciaryAssignmentSource) {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
-        if (!isEligibleToAutoAssignJudiciary(johSource)) {
+        if (!isEligibleToAutoAssignJudiciary(judiciaryAssignmentSource)) {
             LOGGER.info("Judiciary for hearing with id {} was manually assigned - ignoring auto update", hearingId);
             return Stream.empty();
         }
@@ -981,13 +981,13 @@ public class Hearing implements Aggregate {
             return apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
                     .withJudiciary(convertToEvents(judiciary))
                     .withHearingId(hearingId)
-                    .withJohSource(JohSource.valueFor(johSource).orElse(null))
+                    .withJudiciaryAssignmentSource(JudiciaryAssignmentSource.valueFor(judiciaryAssignmentSource).orElse(null))
                     .build()));
         } else if (hasChanged(this.judiciary, judiciary)) {
             return apply(Stream.of(JudiciaryChangedForHearing.judiciaryChangedForHearing()
                     .withJudiciary(convertToEvents(judiciary))
                     .withHearingId(hearingId)
-                    .withJohSource(JohSource.valueFor(johSource).orElse(null))
+                    .withJudiciaryAssignmentSource(JudiciaryAssignmentSource.valueFor(judiciaryAssignmentSource).orElse(null))
                     .build()));
         } else {
             LOGGER.info("Incoming judiciary {} is the same as current judiciary {} for hearing with id {} - Ignore", judiciary, this.judiciary, hearingId);
@@ -995,8 +995,12 @@ public class Hearing implements Aggregate {
         }
     }
 
-    private boolean isEligibleToAutoAssignJudiciary(final String johSource) {
-        return isNull(getJohSource()) || nonNull(johSource);
+    private boolean isEligibleToAutoAssignJudiciary(final String judiciaryAssignmentSource) {
+        return !isManuallyAssigned(getJudiciaryAssignmentSource()) || isManuallyAssigned(judiciaryAssignmentSource);
+    }
+
+    private boolean isManuallyAssigned(final String judiciaryAssignmentSource) {
+        return JudiciaryAssignmentSource.MANUAL.toString().equals(judiciaryAssignmentSource);
     }
 
     public Stream<Object> removeJudiciary(final UUID hearingId) {
@@ -2673,8 +2677,8 @@ public class Hearing implements Aggregate {
 
     private void onJudiciaryAssignedToHearing(final JudiciaryAssignedToHearing event) {
         withJudiary(event.getJudiciary());
-        if (nonNull(event.getJohSource())) {
-            this.johSource = event.getJohSource().toString();
+        if (nonNull(event.getJudiciaryAssignmentSource())) {
+            this.judiciaryAssignmentSource = event.getJudiciaryAssignmentSource().toString();
         }
     }
 
@@ -2692,16 +2696,16 @@ public class Hearing implements Aggregate {
         withJudiary(event.getJudiciary());
         List<uk.gov.justice.listing.events.JudicialRole> judiciary = event.getJudiciary();
         if (nonNull(judiciary) && judiciary.isEmpty()) {
-            this.johSource = null;
-        } else if (nonNull(event.getJohSource())) {
-            this.johSource = event.getJohSource().toString();
+            this.judiciaryAssignmentSource = JudiciaryAssignmentSource.AUTO.toString();
+        } else if (nonNull(event.getJudiciaryAssignmentSource())) {
+            this.judiciaryAssignmentSource = event.getJudiciaryAssignmentSource().toString();
         }
     }
 
     @SuppressWarnings({"squid:S1172"})
     private void onJudiciaryRemovedFromHearing(final JudiciaryRemovedFromHearing event) {
         this.judiciary = emptyList();
-        this.johSource = null;
+        this.judiciaryAssignmentSource = JudiciaryAssignmentSource.AUTO.toString();
     }
 
     private void onCourtRoomAssignedToHearing(final CourtRoomAssignedToHearing event) {
@@ -3822,8 +3826,8 @@ public class Hearing implements Aggregate {
         return isSummonsApprovedExists;
     }
 
-    public String getJohSource() {
-        return johSource;
+    public String getJudiciaryAssignmentSource() {
+        return judiciaryAssignmentSource;
     }
 
     public Boolean isNotificationRelatedAllocatedFieldsUpdated(final List<uk.gov.justice.listing.commands.HearingDay> updatedHearingDays) {

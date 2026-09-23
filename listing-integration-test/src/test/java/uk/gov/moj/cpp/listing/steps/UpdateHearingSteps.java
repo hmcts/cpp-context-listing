@@ -141,7 +141,7 @@ public class UpdateHearingSteps extends AbstractIT {
     private static final String FIELD_PUBLIC_LIST_NOTE = "publicListNote";
     private static final String FIELD_USER_ID = "userId";
     public static final String PANEL = "panel";
-    private static final String FIELD_JOH_SOURCE = "johSource";
+    private static final String FIELD_JUDICIARY_ASSIGNMENT_SOURCE = "judiciaryAssignmentSource";
 
     public static final String FIELD_HEARING_TYPE_ID = "id";
     public static final String FIELD_HEARING_TYPE_DESCRIPTION = "description";
@@ -265,7 +265,7 @@ public class UpdateHearingSteps extends AbstractIT {
                 .add(FIELD_HEARING_LANGUAGE, updatedHearingData.getHearingLanguage())
                 .add(FIELD_COURT_CENTRE_ID, updatedHearingData.getCourtCentreId().toString())
                 .add(FIELD_JUDICIARY, prepareJsonJudiciary(updatedHearingData.getJudiciary()))
-                .add(FIELD_JOH_SOURCE, "MANUAL")
+                .add(FIELD_JUDICIARY_ASSIGNMENT_SOURCE, "MANUAL")
                 .add(FIELD_NON_DEFAULT_DAYS, prepareJsonNonDefaultDays(updatedHearingData.getNonDefaultDays()))
                 .add(FIELD_SEND_NOTIFICATION_TO_PARTIES, updatedHearingData.isSendNotificationToParties())
                 .add(FIELD_NON_SITTING_DAYS, prepareJsonStringArray(updatedHearingData.getNonSittingDays()));
@@ -418,8 +418,8 @@ public class UpdateHearingSteps extends AbstractIT {
         builder.add(FIELD_HEARINGS, prepareJsonHearingIdArray(updatedHearingData.getHearingId()))
                 .add(FIELD_JUDICIARY, prepareJsonJudiciary(updatedHearingData.getJudiciary()));
 
-        if (nonNull(updatedHearingData.getJohSource())){
-            builder.add(FIELD_JOH_SOURCE, updatedHearingData.getJohSource());
+        if (nonNull(updatedHearingData.getJudiciaryAssignmentSource())){
+            builder.add(FIELD_JUDICIARY_ASSIGNMENT_SOURCE, updatedHearingData.getJudiciaryAssignmentSource());
         }
 
         return builder.build().toString();
@@ -1314,7 +1314,7 @@ public class UpdateHearingSteps extends AbstractIT {
     }
 
 
-    public void verifyHearingAllocatedAndJudiciaryAssignedWithManualJohSourceWhenQueryingFromAPI() {
+    public void verifyHearingAllocatedAndJudiciaryAssignedWithManualSourceWhenQueryingFromAPI() {
 
         final String hearingId = updatedHearingData.getHearingId().toString();
         final String hearingIdFilter = getHearingFilter(hearingId);
@@ -1328,8 +1328,8 @@ public class UpdateHearingSteps extends AbstractIT {
                 withJsonPath(hearingIdFilter + ".judiciary[0].isDeputy",
                         hasItem(updatedHearingData.getJudiciary().get(0).getIsDeputy().get())),
 
-                withJsonPath(hearingIdFilter + ".johSource",
-                        hasItem(updatedHearingData.getJohSource())),
+                withJsonPath(hearingIdFilter + ".judiciaryAssignmentSource",
+                        hasItem(updatedHearingData.getJudiciaryAssignmentSource())),
 
                 withJsonPath(hearingIdFilter + ".courtRoomId",
                         hasItem(updatedHearingData.getCourtRoomId().toString())),

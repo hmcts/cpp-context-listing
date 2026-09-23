@@ -5,6 +5,7 @@ import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.usi
 
 import uk.gov.justice.listing.events.JudicialRole;
 import uk.gov.justice.listing.events.JudiciaryAssignedToHearing;
+import uk.gov.justice.listing.events.JudiciaryAssignmentSource;
 import uk.gov.justice.listing.events.JudiciaryChangedForHearing;
 import uk.gov.justice.listing.events.JudiciaryRemovedFromHearing;
 import uk.gov.justice.services.core.annotation.Component;
@@ -24,7 +25,7 @@ import javax.inject.Inject;
 public class JudiciaryForHearingEventListener {
 
     private static final String JUDICIARY = "judiciary";
-    private static final String JOH_SOURCE = "johSource";
+    private static final String JUDICIARY_ASSIGNMENT_SOURCE = "judiciaryAssignmentSource";
 
     private HearingRepository hearingRepository;
 
@@ -44,8 +45,8 @@ public class JudiciaryForHearingEventListener {
                     .find(hearingId)
                     .putObjectList(JUDICIARY, judicialRoles);
 
-            if (nonNull(judiciaryAssignedToHearing.getJohSource())) {
-                hearing.put(JOH_SOURCE, judiciaryAssignedToHearing.getJohSource().toString());
+            if (nonNull(judiciaryAssignedToHearing.getJudiciaryAssignmentSource())) {
+                hearing.put(JUDICIARY_ASSIGNMENT_SOURCE, judiciaryAssignedToHearing.getJudiciaryAssignmentSource().toString());
             }
 
             hearing.save();
@@ -63,11 +64,9 @@ public class JudiciaryForHearingEventListener {
                 .putObjectList(JUDICIARY, judicialRoles);
 
         if (judicialRoles.isEmpty()) {
-            hearing.remove(JOH_SOURCE);
-        }
-
-        if (nonNull(judiciaryChangedForHearing.getJohSource())) {
-            hearing.put(JOH_SOURCE, judiciaryChangedForHearing.getJohSource().toString());
+            hearing.put(JUDICIARY_ASSIGNMENT_SOURCE, JudiciaryAssignmentSource.AUTO.toString());
+        } else if (nonNull(judiciaryChangedForHearing.getJudiciaryAssignmentSource())) {
+            hearing.put(JUDICIARY_ASSIGNMENT_SOURCE, judiciaryChangedForHearing.getJudiciaryAssignmentSource().toString());
         }
 
         hearing.save();
@@ -82,7 +81,7 @@ public class JudiciaryForHearingEventListener {
                 .find(hearingId)
                 .remove(JUDICIARY)
                 .putObjectList(JUDICIARY, new ArrayList<>())
-                .remove(JOH_SOURCE)
+                .put(JUDICIARY_ASSIGNMENT_SOURCE, JudiciaryAssignmentSource.AUTO.toString())
                 .save();
     }
 }

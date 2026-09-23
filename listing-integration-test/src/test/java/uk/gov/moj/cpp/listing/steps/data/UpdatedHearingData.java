@@ -67,7 +67,7 @@ public class UpdatedHearingData {
     private List<Defendants> defendants;
     private List<Offences> offences;
     private String splitHearing;
-    private String johSource;
+    private String judiciaryAssignmentSource;
 
 
     public UpdatedHearingData(final UUID hearingId,
@@ -132,7 +132,7 @@ public class UpdatedHearingData {
                               final Boolean sendNotificationToParties,
                               final List<ProsecutionCases> prosecutionCases,
                               final String splitHearing,
-                              final String johSource) {
+                              final String judiciaryAssignmentSource) {
         this.hearingId = hearingId;
         this.courtCentreId = courtCentreId;
         this.name = name;
@@ -153,7 +153,7 @@ public class UpdatedHearingData {
         this.sendNotificationToParties = sendNotificationToParties;
         this.prosecutionCases = prosecutionCases;
         this.splitHearing = splitHearing;
-        this.johSource = johSource;
+        this.judiciaryAssignmentSource = judiciaryAssignmentSource;
 
     }
 
@@ -586,7 +586,7 @@ public class UpdatedHearingData {
         return splitHearing;
     }
 
-    public String getJohSource() {
-        return johSource;
+    public String getJudiciaryAssignmentSource() {
+        return judiciaryAssignmentSource;
     }
 }

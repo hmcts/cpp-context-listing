@@ -55,7 +55,7 @@
         "$ref": "#/definitions/nonDefaultDay"
       }
     },
-    "johSource": {
+    "judiciaryAssignmentSource": {
       "type": "string",
       "enum": [
         "MANUAL",

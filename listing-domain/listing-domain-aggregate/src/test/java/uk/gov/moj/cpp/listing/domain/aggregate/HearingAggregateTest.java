@@ -59,7 +59,7 @@ import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
 import uk.gov.justice.listing.events.HearingRequestedForListing;
 import uk.gov.justice.listing.events.HearingResultStatusUpdated;
 import uk.gov.justice.listing.events.HearingUnallocatedCourtroomRemoved;
-import uk.gov.justice.listing.events.JohSource;
+import uk.gov.justice.listing.events.JudiciaryAssignmentSource;
 import uk.gov.justice.listing.events.JudiciaryChangedForHearingsStatus;
 import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
@@ -7946,27 +7946,27 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldAssignJudiciaryWhenAggregateJohSourceIsNullAndRequestHasNoJohSource() {
+    public void shouldAssignJudiciaryWhenAggregateJudiciaryAssignmentSourceIsAutoByDefaultAndRequestHasNoJudiciaryAssignmentSource() {
         final List<Object> events = hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(1));
         assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryAssignedToHearing.class));
-        assertThat(hearing.getJohSource(), nullValue());
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
     }
 
     @Test
-    public void shouldAssignJudiciaryWhenAggregateJohSourceIsNullAndRequestJohSourceIsManual() {
+    public void shouldAssignJudiciaryWhenAggregateJudiciaryAssignmentSourceIsNullAndRequestJudiciaryAssignmentSourceIsManual() {
         final List<Object> events = hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL")
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(1));
         assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryAssignedToHearing.class));
-        assertThat(hearing.getJohSource(), is("MANUAL"));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
     }
 
     @Test
-    public void shouldUpdateJudiciaryWhenAggregateJohSourceIsManualAndRequestJohSourceIsManual() {
+    public void shouldUpdateJudiciaryWhenAggregateJudiciaryAssignmentSourceIsManualAndRequestJudiciaryAssignmentSourceIsManual() {
         hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL")
                 .collect(Collectors.toList());
 
@@ -7975,11 +7975,11 @@ class HearingAggregateTest {
 
         assertThat(events, hasSize(1));
         assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryChangedForHearing.class));
-        assertThat(hearing.getJohSource(), is("MANUAL"));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
     }
 
     @Test
-    public void shouldNotChangeJudiciaryWhenAggregateJohSourceIsManualAndRequestHasNoJohSource() {
+    public void shouldNotChangeJudiciaryWhenAggregateJudiciaryAssignmentSourceIsManualAndRequestHasNoJudiciaryAssignmentSource() {
         hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL")
                 .collect(Collectors.toList());
 
@@ -7987,15 +7987,74 @@ class HearingAggregateTest {
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(0));
-        assertThat(hearing.getJohSource(), is("MANUAL"));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldNotChangeJudiciaryWhenAggregateJudiciaryAssignmentSourceIsManualAndRequestJudiciaryAssignmentSourceIsAuto() {
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL")
+                .collect(Collectors.toList());
+
+        final List<Object> events = hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO")
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldUpdateJudiciaryWhenAggregateJudiciaryAssignmentSourceIsAutoAndRequestHasNoJudiciaryAssignmentSource() {
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO")
+                .collect(Collectors.toList());
+
+        final List<Object> events = hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryChangedForHearing.class));
+    }
+
+    @Test
+    public void shouldUpdateJudiciaryWhenAggregateJudiciaryAssignmentSourceIsAutoAndRequestJudiciaryAssignmentSourceIsAuto() {
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO")
+                .collect(Collectors.toList());
+
+        final List<Object> events = hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO")
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryChangedForHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldUpdateJudiciaryWhenAggregateJudiciaryAssignmentSourceIsAutoAndRequestJudiciaryAssignmentSourceIsManual() {
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO")
+                .collect(Collectors.toList());
+
+        final List<Object> events = hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL")
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryChangedForHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldAssignJudiciaryWhenAggregateJudiciaryAssignmentSourceIsNullAndRequestJudiciaryAssignmentSourceIsAuto() {
+        final List<Object> events = hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO")
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryAssignedToHearing.class));
     }
 
 
     @Test
-    public void shouldClearAggregateJohSourceWhenJudiciaryChangedWithEmtyJudiciary() {
+    public void shouldSetAggregateJudiciaryAssignmentSourceToAutoWhenJudiciaryChangedWithEmptyJudiciary() {
         hearing.apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
                 .withHearingId(hearingId)
-                .withJohSource(JohSource.valueOf("MANUAL"))
+                .withJudiciaryAssignmentSource(JudiciaryAssignmentSource.valueOf("MANUAL"))
                 .withJudiciary(singletonList(buildJudicialRoleEvent()))
                 .build())).collect(Collectors.toList());
 
@@ -8005,14 +8064,14 @@ class HearingAggregateTest {
                 .build())).collect(Collectors.toList());
 
         assertThat(events, hasSize(1));
-        assertThat(hearing.getJohSource(), nullValue());
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
     }
 
     @Test
-    public void shouldRetainExistingAggregateJohSourceWhenJudiciaryChangedForHearingHasNoJohSourceAndNonEmptyJudiciary() {
+    public void shouldRetainExistingAggregateJudiciaryAssignmentSourceWhenJudiciaryChangedForHearingHasNoJudiciaryAssignmentSourceAndNonEmptyJudiciary() {
         hearing.apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
                 .withHearingId(hearingId)
-                .withJohSource(JohSource.valueOf("MANUAL"))
+                .withJudiciaryAssignmentSource(JudiciaryAssignmentSource.valueOf("MANUAL"))
                 .withJudiciary(singletonList(buildJudicialRoleEvent()))
                 .build())).collect(Collectors.toList());
 
@@ -8022,14 +8081,14 @@ class HearingAggregateTest {
                 .build())).collect(Collectors.toList());
 
         assertThat(events, hasSize(1));
-        assertThat(hearing.getJohSource(), is("MANUAL"));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
     }
 
     @Test
-    public void shouldClearJohSourceWhenJudiciaryRemovedFromHearing() {
+    public void shouldSetJudiciaryAssignmentSourceToAutoWhenJudiciaryRemovedFromHearing() {
         hearing.apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
                 .withHearingId(hearingId)
-                .withJohSource(JohSource.valueOf("MANUAL"))
+                .withJudiciaryAssignmentSource(JudiciaryAssignmentSource.valueOf("MANUAL"))
                 .withJudiciary(singletonList(buildJudicialRoleEvent()))
                 .build())).collect(Collectors.toList());
 
@@ -8038,7 +8097,7 @@ class HearingAggregateTest {
                 .build())).collect(Collectors.toList());
 
         assertThat(events, hasSize(1));
-        assertThat(hearing.getJohSource(), nullValue());
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
     }
 
 
