@@ -71,4 +71,45 @@ class MoveHearingToPastDateExceptionMapperTest {
         assertThat(response.getStatus(), is(500));
         assertThat(response.getEntity().toString(), containsString("\"message\":\"unexpected failure\""));
     }
+
+    // --- validations ported from main (rule 3): INVALID_DATE / INVALID_DATE_RANGE / START_DATE_TOO_OLD ---
+
+    @Test
+    void invalidDate_returns422_withErrorCodeAndMessage() {
+        final JsonObject body = createObjectBuilder()
+                .add("errorCode", "INVALID_DATE")
+                .add("message", "startDateTime is not a valid date")
+                .build();
+
+        final Response response = mapper.toResponse(new MoveHearingToPastDateException(422, body, "rejected"));
+
+        assertThat(response.getStatus(), is(422));
+        assertThat(response.getEntity().toString(), containsString("\"errorCode\":\"INVALID_DATE\""));
+    }
+
+    @Test
+    void invalidDateRange_returns422_withErrorCodeAndMessage() {
+        final JsonObject body = createObjectBuilder()
+                .add("errorCode", "INVALID_DATE_RANGE")
+                .add("message", "endDateTime must not be earlier than startDateTime")
+                .build();
+
+        final Response response = mapper.toResponse(new MoveHearingToPastDateException(422, body, "rejected"));
+
+        assertThat(response.getStatus(), is(422));
+        assertThat(response.getEntity().toString(), containsString("\"errorCode\":\"INVALID_DATE_RANGE\""));
+    }
+
+    @Test
+    void startDateTooOld_returns422_withErrorCodeAndMessage() {
+        final JsonObject body = createObjectBuilder()
+                .add("errorCode", "START_DATE_TOO_OLD")
+                .add("message", "startDate cannot be earlier than 6 months before today")
+                .build();
+
+        final Response response = mapper.toResponse(new MoveHearingToPastDateException(422, body, "rejected"));
+
+        assertThat(response.getStatus(), is(422));
+        assertThat(response.getEntity().toString(), containsString("\"errorCode\":\"START_DATE_TOO_OLD\""));
+    }
 }
