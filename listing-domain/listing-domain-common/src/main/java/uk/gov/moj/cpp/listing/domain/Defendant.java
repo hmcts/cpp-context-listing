@@ -9,6 +9,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 @SuppressWarnings({"squid:S00107", "squid:S00121", "squid:S1067", "squid:S2065", "PMD.BeanMembersShouldSerialize"})
 public class Defendant {
     private Optional<BailStatus> bailStatus;
@@ -49,7 +54,25 @@ public class Defendant {
     private final transient Optional<Address> address;
 
     @SuppressWarnings({"squid:S00107", "squid:S1067"})
-    public Defendant(final Optional<BailStatus> bailStatus, final Optional<String> custodyTimeLimit, final Optional<String> dateOfBirth, final Optional<String> datesToAvoid, final Optional<String> defenceOrganisation, final Optional<String> firstName, final Optional<HearingLanguageNeeds> hearingLanguageNeeds, final UUID id, final Optional<UUID> masterDefendantId, final Optional<ZonedDateTime> courtProceedingsInitiated, final Optional<String> lastName, final UUID prosecutionCaseId, final List<Offence> offences, final Optional<String> organisationName, final Optional<String> specificRequirements, final Optional<Boolean> isYouth, final Optional<String> nationalityDescription, final Optional<Address> address) {
+    @JsonCreator
+    public Defendant(@JsonProperty("bailStatus") final Optional<BailStatus> bailStatus,
+                     @JsonProperty("custodyTimeLimit") final Optional<String> custodyTimeLimit,
+                     @JsonProperty("dateOfBirth") final Optional<String> dateOfBirth,
+                     @JsonProperty("datesToAvoid") final Optional<String> datesToAvoid,
+                     @JsonProperty("defenceOrganisation") final Optional<String> defenceOrganisation,
+                     @JsonProperty("firstName") final Optional<String> firstName,
+                     @JsonProperty("hearingLanguageNeeds") final Optional<HearingLanguageNeeds> hearingLanguageNeeds,
+                     @JsonProperty("id") final UUID id,
+                     @JsonProperty("masterDefendantId") final Optional<UUID> masterDefendantId,
+                     @JsonProperty("courtProceedingsInitiated") final Optional<ZonedDateTime> courtProceedingsInitiated,
+                     @JsonProperty("lastName") final Optional<String> lastName,
+                     @JsonProperty("prosecutionCaseId") final UUID prosecutionCaseId,
+                     @JsonProperty("offences") final List<Offence> offences,
+                     @JsonProperty("organisationName") final Optional<String> organisationName,
+                     @JsonProperty("specificRequirements") final Optional<String> specificRequirements,
+                     @JsonProperty("isYouth") final Optional<Boolean> isYouth,
+                     @JsonProperty("nationalityDescription") final Optional<String> nationalityDescription,
+                     @JsonProperty("address") final Optional<Address> address) {
         this.bailStatus = bailStatus;
         this.custodyTimeLimit = custodyTimeLimit;
         this.dateOfBirth = dateOfBirth;

@@ -183,4 +183,4 @@ class NonDefaultDayConverterTest {
         assertThat(result.get(0).getCourtRoomId(), is((UUID) null));
         assertThat(result.get(0).getDurationMinutes(), is(20));
     }
-} 
+}

@@ -8,6 +8,12 @@ import uk.gov.moj.cpp.listing.common.NoteUUIDService;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import javax.inject.Inject;
 import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
@@ -28,6 +34,7 @@ import static uk.gov.justice.services.common.converter.LocalDates.from;
 @Adapter(Component.QUERY_API)
 public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlotsResource {
 
+    private static final String SESSION_DATE = "sessionDate";
     @Inject
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
 
@@ -126,7 +133,9 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
 
     private  JsonArray convertToNotes(JsonArray hearings){
         final List<NoteUUIDService.ListingNotesCollection> notes = hearings.stream().map(h -> (JsonObject) h).
-                map( h -> new NoteUUIDService.ListingNotesCollection(fromString(h.getString("courtRoomId")), from(h.getString("sessionDate"))))
+                filter(h -> h.containsKey(COURT_ROOM_ID) && !h.isNull(COURT_ROOM_ID)
+                        && h.containsKey(SESSION_DATE) && !h.isNull(SESSION_DATE)).
+                map( h -> new NoteUUIDService.ListingNotesCollection(fromString(h.getString(COURT_ROOM_ID)), from(h.getString(SESSION_DATE))))
                 .toList();
         return listToJsonArrayConverter.convert(notesService.findNotes(notes));
     }

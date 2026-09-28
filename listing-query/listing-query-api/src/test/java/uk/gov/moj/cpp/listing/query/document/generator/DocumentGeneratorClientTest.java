@@ -19,6 +19,7 @@ import javax.json.JsonObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -36,9 +37,11 @@ public class DocumentGeneratorClientTest {
     @Mock
     private JsonObject documentPayload;
 
+    @InjectMocks
+    private DocumentGeneratorClient client;
+
     @Test
     public void shouldGenerateDocument() throws IOException {
-        final DocumentGeneratorClient client = new DocumentGeneratorClient(documentGeneratorClientProducer, systemUserProvider);
         when(documentGeneratorClientProducer.documentGeneratorClient()).thenReturn(documentGeneratorClient);
         when(documentGeneratorClient.generatePdfDocument(any(JsonObject.class), any(String.class), any(UUID.class))).thenReturn(new byte[10]);
         when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(randomUUID()));
@@ -48,7 +51,6 @@ public class DocumentGeneratorClientTest {
 
     @Test
     public void shouldGenerateDocumentThrowException() throws IOException {
-        final DocumentGeneratorClient client = new DocumentGeneratorClient(documentGeneratorClientProducer, systemUserProvider);
         when(documentGeneratorClientProducer.documentGeneratorClient()).thenReturn(documentGeneratorClient);
         when(documentGeneratorClient.generatePdfDocument(any(JsonObject.class), any(String.class), any(UUID.class))).thenThrow(new IOException());
         when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(randomUUID()));

@@ -9,7 +9,9 @@ import static java.time.ZoneOffset.UTC;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.common.converter.ZonedDateTimes.fromString;
@@ -105,7 +107,9 @@ public class SequenceHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicEventHearingUpdated() {
-        JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingUpdated);
+        final String expectedHearingId = sequenceHearingData.getHearingId().toString();
+        JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingUpdated, containsString(expectedHearingId));
+        assertNotNull(jsonResponse, "No public hearing-updated event found for hearingId=" + expectedHearingId);
         String startDate = sequenceHearingData.getUpdatedHearingData().getStartDate();
         String endDate = sequenceHearingData.getUpdatedHearingData().getEndDate();
         Integer sequence = sequenceHearingData.getSequencedDays().get(parse(startDate));
@@ -171,7 +175,9 @@ public class SequenceHearingSteps extends AbstractIT {
     }
 
     public void verifyHearingDaySequencedPublicEvent() {
-        JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingSequenced);
+        final String expectedHearingId = sequenceHearingData.getHearingId().toString();
+        JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingSequenced, containsString(expectedHearingId));
+        assertNotNull(jsonResponse, "No public hearing-sequenced event found for hearingId=" + expectedHearingId);
         LOGGER.info("jsonResponse from privateMessageConsumerHearingDaysSequenced: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("hearingId"), is(sequenceHearingData.getHearingId().toString()));

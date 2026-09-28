@@ -1,0 +1,44 @@
+{
+  "courtCentreId": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+  "courtLists": [
+    {
+      "sittings": [
+        {
+          "sittingDate": "2023-02-20",
+          "weekCommencing": false,
+          "courtRoomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0",
+          "judiciary": [],
+          "hearings": [
+            {
+              "startTime": "2023-02-20T10:00",
+              "hearingType": {
+                "id": "7dfff260-6f83-496b-a68e-f32f5e8aef10",
+                "description": "Application to Break Fixture"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": false,
+              "hasVideoLink": false,
+              "endTime": "2023-02-20T10:20",
+              "applicationReference": "20NX6839878",
+              "defendants": [
+                {
+                  "id": "9f58b3e5-7c19-4edb-b604-6fcaed22f22d",
+                  "address": {
+                    "address1": "9999A9999AAAA"
+                  },
+                  "lastName": "Shaun",
+                  "firstName": "Abel",
+                  "dateOfBirth": "1978-10-07",
+                  "masterDefendantId": "9f58b3e5-7c19-4edb-b604-6fcaed22f22d",
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-02-15T14:50:08.189Z",
+                  "prosecutionCaseId": "72b9df0f-4c81-4b17-ad3e-cea90833a882"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

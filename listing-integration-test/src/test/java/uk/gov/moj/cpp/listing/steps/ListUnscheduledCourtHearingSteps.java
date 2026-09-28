@@ -53,6 +53,7 @@ import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -99,6 +100,23 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
 
         return restClient.postCommand(listCaseForHearingUrl, MEDIA_TYPE_LIST_UNSCHEDULED_COURT_HEARING,
                 request, getLoggedInHeader());
+    }
+
+    /**
+     * Verifies the user-entered estimatedMinutes survives the listing-command-handler path
+     * for an unscheduled hearing. Without the fix in {@code UnscheduledListingCommandHandler},
+     * the hearing-type's reference-data default (390 minutes for PTP via the stub) would
+     * overwrite the user value (30 minutes from {@code HEARING_ESTIMATE_MINUTES}).
+     */
+    public void verifyHearingUnscheduledEstimatedMinutesPersisted() {
+        final HearingData hearingData = getHearingsData().getHearingData().get(0);
+        final UUID courtCentreId = hearingData.getCourtCentreId();
+
+        final Matcher<? super ReadContext> estimatedMinutesPersistedMatcher = withJsonPath(
+                "$.hearings[0].estimatedMinutes",
+                equalTo(hearingData.getHearingEstimateMinutes()));
+
+        pollForUnscheduledHearings(getLoggedInUser(), courtCentreId, estimatedMinutesPersistedMatcher);
     }
 
     public void verifyHearingUnscheduledListedFromAPI() {
@@ -222,7 +240,7 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                         .withDefendants(lc.getDefendants().stream().map(d -> Defendant.defendant()
                                         .withId(d.getDefendantId())
                                         .withMasterDefendantId(d.getMasterDefendantId())
-                                        .withCourtProceedingsInitiated(ZonedDateTime.now())
+                                        .withCourtProceedingsInitiated(ItClock.nowUtc())
                                         .withIsYouth(d.getIsYouth())
                                         .withPersonDefendant(PersonDefendant.personDefendant()
                                                 .withBailStatus(new BailStatus.Builder().withCode(d.getBailStatus().getCode()).withDescription(d.getBailStatus().getDescription()).withId(d.getBailStatus().getId()).build())
@@ -246,7 +264,7 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                                                                 .withObservedEthnicityId(randomUUID())
                                                                 .withObservedEthnicityDescription(STRING.next())
                                                                 .build())
-                                                        .withDateOfBirth(LocalDate.now().minusYears(21).toString())
+                                                        .withDateOfBirth(ItClock.today().minusYears(21).toString())
                                                         .build())
                                                 .build())
                                         .withAssociatedPersons(asList(AssociatedPerson.associatedPerson()
@@ -270,14 +288,14 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                                                         .withOffenceCode(STRING.next())
                                                         .withOffenceDefinitionId(randomUUID())
                                                         .withWording(STRING.next())
-                                                        .withStartDate(LocalDate.now().toString())
+                                                        .withStartDate(ItClock.today().toString())
                                                         .withOrderIndex(INTEGER.next())
                                                         .withOffenceTitle(o.getStatementOfOffenceTitle())
                                                         .withLaaApplnReference(
                                                                 LaaReference.laaReference()
                                                                         .withApplicationReference(STRING.next())
                                                                         .withStatusCode(STRING.next())
-                                                                        .withStatusDate((format(LocalDate.now().toString())))
+                                                                        .withStatusDate((format(ItClock.today().toString())))
                                                                         .withStatusDescription(STRING.next())
                                                                         .withStatusId(randomUUID()).build())
                                                         .build())
@@ -346,7 +364,7 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                         .withSpiOutApplicableFlag(false)
                         .withOffenceActiveOrder(OffenceActiveOrder.COURT_ORDER)
                         .build())
-                .withApplicationReceivedDate(LocalDate.now().toString())
+                .withApplicationReceivedDate(ItClock.today().toString())
                 .withApplicationReference(STRING.next())
                 .withApplicationStatus(ApplicationStatus.LISTED)
                 .withApplicant(applicant)
@@ -391,7 +409,7 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                                         .withLinkType(LinkType.STANDALONE)
                                         .withJurisdiction(Jurisdiction.MAGISTRATES)
                                         .build())
-                                .withApplicationReceivedDate(LocalDate.now().toString())
+                                .withApplicationReceivedDate(ItClock.today().toString())
                                 .withApplicationReference(STRING.next())
                                 .withApplicationStatus(ApplicationStatus.DRAFT)
                                 .withApplicant(CourtApplicationParty.courtApplicationParty()

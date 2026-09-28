@@ -9,6 +9,7 @@ import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
@@ -25,6 +26,7 @@ import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 
 @SuppressWarnings({"squid:CallToDeprecatedMethod"})
+@ApplicationScoped
 public class ReferenceDataService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReferenceDataService.class);
     private static final String REFERENCEDATA_QUERY_COURTROOM = "referencedata.query.courtroom";
@@ -34,6 +36,7 @@ public class ReferenceDataService {
     private static final String HEARING_TYPE_ID = "id";
     private static final String REFERENCEDATA_QUERY_HEARING_TYPES = "referencedata.query.hearing-types";
     private static final String WELSH_HEARING_DESCRIPTION = "welshHearingDescription";
+    private static final String REFERENCEDATA_QUERY_PROSECUTOR = "referencedata.query.prosecutor";
 
     @Inject
     private Enveloper enveloper;
@@ -59,6 +62,17 @@ public class ReferenceDataService {
 
         final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(payload)
                 .withName(REFERENCEDATA_QUERY_JUDICIARIES)
+                .withMetadataFrom(event);
+
+        return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()));
+    }
+
+    public JsonEnvelope getProsecutorById(final String prosecutorId, final JsonEnvelope event) {
+        final JsonObject payload = createObjectBuilder().add("id", prosecutorId).build();
+        LOGGER.info("'referencedata.query.prosecutor' request with payload {}", payload);
+
+        final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(payload)
+                .withName(REFERENCEDATA_QUERY_PROSECUTOR)
                 .withMetadataFrom(event);
 
         return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()));

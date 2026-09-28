@@ -125,6 +125,40 @@ public class Hearing implements JsonEntity {
 
     }
 
+    /**
+     * Copy constructor. Produces an independent {@link Hearing} carrying the same data as
+     * {@code source}, with a DEEP COPY of {@code properties}. This matters for the court-calendar
+     * courtscheduler path: a multi-day hearing is returned once per hearing-day and each day must
+     * render as its own row. Per-row flattening mutates the {@code properties} JsonNode in place, so
+     * sharing one node across the day-copies would let one row corrupt the others. Collections are
+     * defensively copied; the remaining fields are immutable value types safe to share.
+     */
+    public Hearing(final Hearing source) {
+        this.id = source.id;
+        this.courtCentreId = source.courtCentreId;
+        this.courtRoomId = source.courtRoomId;
+        this.isVacatedTrial = source.isVacatedTrial;
+        this.unscheduled = source.unscheduled;
+        this.typeId = source.typeId;
+        this.jurisdictionType = source.jurisdictionType;
+        this.weekCommencingStartDate = source.weekCommencingStartDate;
+        this.weekCommencingEndDate = source.weekCommencingEndDate;
+        this.startDate = source.startDate;
+        this.endDate = source.endDate;
+        this.hearingDays = source.hearingDays == null ? new HashSet<>() : new HashSet<>(source.hearingDays);
+        this.listedCases = source.listedCases == null ? new HashSet<>() : new HashSet<>(source.listedCases);
+        this.allocated = source.allocated;
+        this.courtApplications = source.courtApplications == null ? new HashSet<>() : new HashSet<>(source.courtApplications);
+        this.typeOfListId = source.typeOfListId;
+        this.properties = source.properties == null ? null : source.properties.deepCopy();
+        this.estimatedMinutes = source.estimatedMinutes;
+        this.totalCount = source.totalCount;
+        this.isPossibleDisqualification = source.isPossibleDisqualification;
+        this.hearingDayCount = source.hearingDayCount;
+        this.hearingDayPosition = source.hearingDayPosition;
+        this.hearingDate = source.hearingDate;
+    }
+
     public Hearing(final UUID id,
                    final UUID courtCentreId,
                    final UUID courtRoomId,

@@ -113,6 +113,7 @@ curl -X POST \
 'http://localhost:8080/listing-service/command/api/rest/listing/publishCourtListsForCrownCourts'
 ```
 
+
 ``` 
 HTTP/1.1 202 Accepted
 X-Powered-By: Undertow/1
@@ -120,3 +121,4 @@ Server: WildFly/10
 Content-Length: 0
 Date: Tue, 03 Dec 2019 16:14:28 GMT
 ```
+

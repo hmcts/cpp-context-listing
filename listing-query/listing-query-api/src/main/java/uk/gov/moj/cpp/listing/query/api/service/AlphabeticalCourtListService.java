@@ -79,6 +79,7 @@ public class AlphabeticalCourtListService {
     private static final String RESPONDENTS = "respondents";
     private static final String COURT_APPLICATION_PARTY_TYPE = "courtApplicationPartyType";
     private static final String APPLICANT = "applicant";
+    private static final String SUBJECT = "subject";
 
     @Inject
     private CourtCentreFactory courtCentreFactory;
@@ -150,6 +151,13 @@ public class AlphabeticalCourtListService {
     private Stream<AlphabeticalListDefendant> getAlphabeticalListDefendantFromCourtApplication(final JsonObject courtApplication, final CourtRoomDetails courtRoomDetails,
                                                                                                final String hearingStartTime, final boolean welsh) {
         final String applicationReference = courtApplication.getString(APPLICATION_REFERENCE);
+        if (courtApplication.containsKey(SUBJECT)) {
+            final JsonObject subject = courtApplication.getJsonObject(SUBJECT);
+            if (!subject.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE)) {
+                return Stream.of(getAlphabeticalListDefendantFromDefendantEquivalent(subject, hearingStartTime, applicationReference, courtRoomDetails, welsh));
+            }
+            return Stream.empty();
+        }
         if (courtApplication.containsKey(RESPONDENTS) && !courtApplication.getJsonArray(RESPONDENTS).isEmpty() &&
                 courtApplication.getJsonArray(RESPONDENTS).getValuesAs(JsonObject.class).stream()
                         .anyMatch(respondent -> CourtApplicationPartyType.valueOf(respondent.getString(COURT_APPLICATION_PARTY_TYPE)) == PERSON)) {

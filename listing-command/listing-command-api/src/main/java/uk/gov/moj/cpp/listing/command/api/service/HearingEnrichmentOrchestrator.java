@@ -1,17 +1,21 @@
 package uk.gov.moj.cpp.listing.command.api.service;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static uk.gov.moj.cpp.listing.command.api.service.HearingDaysEnrichmentService.isWeekCommencingHearing;
 import static uk.gov.moj.cpp.listing.command.api.service.HearingDurationEnrichmentService.DEFAULT_MIN;
 
+import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
+import uk.gov.justice.listing.commands.NonDefaultDay;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -43,6 +47,12 @@ public class HearingEnrichmentOrchestrator {
 
 
     public List<HearingListingNeeds> enrichListCourtHearing(List<HearingListingNeeds> hearings, JsonEnvelope envelope) {
+        return enrichListCourtHearing(hearings, envelope, CrownFallbackSource.LIST_COURT_HEARING);
+    }
+
+    public List<HearingListingNeeds> enrichListCourtHearing(List<HearingListingNeeds> hearings,
+                                                             JsonEnvelope envelope,
+                                                             CrownFallbackSource crownFallbackSource) {
         final List<HearingListingNeeds> enrichedHearings = new ArrayList<>();
         hearings.forEach(hearing -> {
             if (JurisdictionType.MAGISTRATES.equals(hearing.getJurisdictionType())) {
@@ -53,22 +63,32 @@ public class HearingEnrichmentOrchestrator {
                 HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDurations, envelope);
                 enrichedHearings.add(withCourtSchedules);
             } else if (JurisdictionType.CROWN.equals(hearing.getJurisdictionType())) {
-                LOGGER.info("Enrich list court hearing for CROWN hearingid: {}", hearing.getId());
-                if (hasCourtScheduleId(hearing)) {
+                LOGGER.info("Enrich list court hearing for CROWN hearingid: {} fallbackSource: {}", hearing.getId(), crownFallbackSource);
+                // CROWN list paths carry the chosen courtScheduleId in the bookingReference (Crown has no
+                // provisional-booking concept). Resolve it against courtscheduler and promote the resolved
+                // session onto a bookedSlot so the CourtSchedule-first flow below lists/allocates it.
+                final HearingListingNeeds crownHearing = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing);
+                if (hasCourtScheduleId(crownHearing) || isCrownFallbackCandidate(crownHearing)) {
                     // CROWN with courtScheduleId (bookedSlots or hearingDays): CourtSchedule-first flow
                     // expands multi-day into N hearingDays, then HearingDays computes start/end,
                     // then Duration runs.
-                    HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+                    // CROWN single-day without any courtScheduleId (COEW review meetings, DLRM — flows
+                    // whose prompts carry only courthouse/courtroom/date) takes the same flow: its no-id
+                    // branch applies the Crown fallback search-and-book (SPRDT-1159), which pins the
+                    // booking to the requested courtroom and date.
+                    HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(
+                            crownHearing, crownFallbackSource);
                     HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(withCourtSchedules, envelope);
                     HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
-                    enrichedHearings.add(withDurations);
+                    enrichedHearings.add(stripRoomInfoIfAnyDraft(withDurations));
                 } else {
-                    // CROWN allocation candidate (no courtScheduleId anywhere): legacy HearingDays ->
-                    // Duration -> CourtSchedule order so handleAllocationCandidate can search-and-book.
-                    HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(hearing, envelope);
+                    // CROWN week-commencing (excluded from court schedule integration) and multi-day
+                    // without courtScheduleId (fallback is single-day only — upstream must supply session
+                    // ids for multi-day): legacy HearingDays -> Duration -> CourtSchedule order.
+                    HearingListingNeeds withHearingDays = hearingDaysEnrichmentService.enrichHearings(crownHearing, envelope);
                     HearingListingNeeds withDurations = hearingDurationEnrichmentService.enrichWithDurations(withHearingDays, envelope);
                     HearingListingNeeds withCourtSchedules = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDurations, envelope);
-                    enrichedHearings.add(withCourtSchedules);
+                    enrichedHearings.add(stripRoomInfoIfAnyDraft(withCourtSchedules));
                 }
             } else {
                 throw new IllegalArgumentException(UNSUPPORTED_JURISDICTION_TYPE + hearing.getJurisdictionType());
@@ -90,10 +110,37 @@ public class HearingEnrichmentOrchestrator {
             enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration,envelope);
         } else if (JurisdictionType.CROWN.equals(jurisdictionType)) {
             LOGGER.info("Enrich update hearing for CROWN hearingid: {}", hearing.getHearingId());
-            // For crown: Hearing Days -> Duration -> Court Schedule
-            UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(hearing, envelope);
-            UpdateHearingForListing withDuration = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
-            enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration, envelope);
+            CrownNonDefaultDaysValidator.validateForCrownUpdate(hearing);
+            if (!isWeekCommencingHearing(hearing) && isCrownUnallocation(hearing)) {
+                // All days already carry a courtScheduleId but at least one has lost its courtRoomId:
+                // treat as unallocation and re-book against draft sessions rather than re-resolving the
+                // (now stale) courtScheduleId via enrichCrownCourtScheduleFirst.
+                UpdateHearingForListing withDraftSlots = courtScheduleEnrichmentService.enrichUnallocationWithDraftSlots(hearing, envelope);
+                UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(withDraftSlots, envelope);
+                enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
+            } else if (!isWeekCommencingHearing(hearing) && hasCourtScheduleId(hearing)) {
+                // CROWN with courtScheduleId submitted (hearingDays or nonDefaultDays): CourtSchedule-first
+                // flow, mirroring enrichListCourtHearing. The submitted ids ARE the chosen sessions, so we
+                // resolve them via enrichCrownCourtScheduleFirst — the pre-d62d3446 behaviour — rather than
+                // asking courtscheduler to find/extend slots via extend-multiday-hearing.
+                // WeekCommencing payloads skip this branch — they have their own enrichment rules.
+                UpdateHearingForListing withCourtSchedules = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+                UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(withCourtSchedules, envelope);
+                enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
+            } else if (!isWeekCommencingHearing(hearing) && isCrownRawMultiDayBooking(hearing)) {
+                // No courtScheduleId submitted + multi-day (> MINUTES_IN_DAY): the listing officer has not
+                // picked sessions, so ask courtscheduler to extend/book the multi-day sessions via
+                // extend-multiday-hearing. The authoritative session count wins over startDate→endDate
+                // expansion that would otherwise produce N calendar days.
+                UpdateHearingForListing withCourtSchedules = courtScheduleEnrichmentService.handleCrownMultiDayExtension(hearing);
+                UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(withCourtSchedules, envelope);
+                enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
+            } else {
+                UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(hearing, envelope);
+                UpdateHearingForListing withDuration = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
+                enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration, envelope);
+            }
+            enrichedHearing = stripRoomInfoIfAnyDraft(enrichedHearing);
         } else {
             throw new IllegalArgumentException(UNSUPPORTED_JURISDICTION_TYPE + jurisdictionType);
         }
@@ -113,10 +160,29 @@ public class HearingEnrichmentOrchestrator {
             enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration,envelope);
         } else if (JurisdictionType.CROWN.equals(jurisdictionType)) {
             LOGGER.info("Enrich update hearing for CROWN hearingid: {}", hearing.getHearingId());
-            // For crown: Hearing Days -> Duration -> Court Schedule
-            UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(hearing, envelope, courtCentreDetails);
-            UpdateHearingForListing withDuration = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
-            enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration, envelope);
+            CrownNonDefaultDaysValidator.validateForCrownUpdate(hearing);
+            if (!isWeekCommencingHearing(hearing) && isCrownUnallocation(hearing)) {
+                // Unallocation: see enrichUpdateHearingForListing(hearing, envelope) for rationale.
+                UpdateHearingForListing withDraftSlots = courtScheduleEnrichmentService.enrichUnallocationWithDraftSlots(hearing, envelope);
+                UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(withDraftSlots, envelope, courtCentreDetails);
+                enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
+            } else if (!isWeekCommencingHearing(hearing) && hasCourtScheduleId(hearing)) {
+                // courtScheduleId submitted → CourtSchedule-first flow (pre-d62d3446 behaviour).
+                // See enrichUpdateHearingForListing(hearing, envelope) for rationale.
+                UpdateHearingForListing withCourtSchedules = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+                UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(withCourtSchedules, envelope, courtCentreDetails);
+                enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
+            } else if (!isWeekCommencingHearing(hearing) && isCrownRawMultiDayBooking(hearing)) {
+                // No courtScheduleId submitted + multi-day → extend-multiday-hearing.
+                UpdateHearingForListing withCourtSchedules = courtScheduleEnrichmentService.handleCrownMultiDayExtension(hearing);
+                UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(withCourtSchedules, envelope, courtCentreDetails);
+                enrichedHearing = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
+            } else {
+                UpdateHearingForListing withHearingDays = hearingDaysEnrichmentService.enrichHearing(hearing, envelope, courtCentreDetails);
+                UpdateHearingForListing withDuration = hearingDurationEnrichmentService.enrichWithDurationForUpdate(withHearingDays, envelope);
+                enrichedHearing = courtScheduleEnrichmentService.enrichWithCourtSchedules(withDuration, envelope);
+            }
+            enrichedHearing = stripRoomInfoIfAnyDraft(enrichedHearing);
         } else {
             throw new IllegalArgumentException(UNSUPPORTED_JURISDICTION_TYPE + jurisdictionType);
         }
@@ -291,5 +357,141 @@ public class HearingEnrichmentOrchestrator {
         return hearing.getBookedSlots() != null
                 && hearing.getBookedSlots().stream()
                 .anyMatch(s -> s.getCourtScheduleId() != null && !s.getCourtScheduleId().isBlank());
+    }
+
+    /**
+     * Returns true when a CROWN list payload without any courtScheduleId should be booked via the
+     * Crown fallback search-and-book (SPRDT-1159) instead of the legacy allocation-candidate flow:
+     * not week-commencing (excluded from court schedule integration), single-day (the fallback
+     * rejects multi-day — upstream must supply session ids for multi-day Crown bookings), and with
+     * a derivable hearing date (the fallback books by courtCentre + date; payloads whose days are
+     * only constructed later by HearingDays enrichment must keep the legacy order).
+     */
+    private static boolean isCrownFallbackCandidate(final HearingListingNeeds hearing) {
+        return isNull(hearing.getWeekCommencingDate())
+                && CourtScheduleEnrichmentService.calculateAggregatedDuration(hearing)
+                        <= HearingDurationEnrichmentService.MINUTES_IN_DAY
+                && CourtScheduleEnrichmentService.canDeriveCrownFallbackHearingDate(hearing);
+    }
+
+    /**
+     * Returns true if the update payload carries a courtScheduleId on any hearingDay or on any
+     * nonDefaultDay. Drives the CROWN update CourtSchedule-first branch — keeping symmetry with
+     * enrichListCourtHearing's list-side check.
+     */
+    private static boolean hasCourtScheduleId(final UpdateHearingForListing hearing) {
+        if (!isEmpty(hearing.getHearingDays())
+                && hearing.getHearingDays().stream().anyMatch(d -> nonNull(d.getCourtScheduleId()))) {
+            return true;
+        }
+        return !isEmpty(hearing.getNonDefaultDays())
+                && hearing.getNonDefaultDays().stream()
+                .anyMatch(nd -> nonNull(nd.getCourtScheduleId()) && !nd.getCourtScheduleId().isBlank());
+    }
+
+    /**
+     * Returns true when the payload signals a multiday CROWN unallocation: every session day already
+     * carries a {@code courtScheduleId} (previously fully allocated via courtscheduler) but the room
+     * assignment is now a MIX — some days still have a room, at least one has had its room removed.
+     *
+     * <p>Two payload shapes are supported:
+     * <ul>
+     *   <li><b>hearingDays</b> shape: some callers / tests pass days directly in {@code hearingDays}.
+     *       Detection uses {@code courtRoomId} (UUID field on HearingDay).</li>
+     *   <li><b>nonDefaultDays</b> shape: the court-calendar CROWN update sends session days in
+     *       {@code nonDefaultDays} with {@code roomId} (String UUID) for the room. hearingDays will
+     *       be empty in this case. Detection mirrors the hearingDays MIX logic using {@code roomId}.</li>
+     * </ul>
+     *
+     * <p>A brand-new allocation where all days lack a room (all rooms still to be assigned) does NOT
+     * match — the MIX requires at least one day with a room AND at least one without. Checked before
+     * {@link #hasCourtScheduleId} so an in-flight unallocation routes to
+     * {@code enrichUnallocationWithDraftSlots} instead of the stale-id path.
+     */
+    private static boolean isCrownUnallocation(final UpdateHearingForListing hearing) {
+        // hearingDays shape
+        final List<HearingDay> days = hearing.getHearingDays();
+        if (!isEmpty(days)) {
+            return days.stream().allMatch(d -> nonNull(d.getCourtScheduleId()))
+                    && days.stream().anyMatch(d -> nonNull(d.getCourtRoomId()))
+                    && days.stream().anyMatch(d -> isNull(d.getCourtRoomId()));
+        }
+        // nonDefaultDays shape — court-calendar CROWN update (roomId is the UUID room field here)
+        final List<NonDefaultDay> ndDays = hearing.getNonDefaultDays();
+        if (isEmpty(ndDays)) {
+            return false;
+        }
+        return ndDays.stream().allMatch(nd -> nonNull(nd.getCourtScheduleId()) && !nd.getCourtScheduleId().isBlank())
+                && ndDays.stream().anyMatch(nd -> nonNull(nd.getRoomId()))
+                && ndDays.stream().anyMatch(nd -> isNull(nd.getRoomId()));
+    }
+
+    /**
+     * A raw multi-day booking is expressed as a SINGLE day entry whose own duration spans more than one
+     * court day (> MINUTES_IN_DAY); courtscheduler must extend/book the block via extend-multiday-hearing.
+     * Per-day updates such as court-room changes submit one entry per day (each ≤ MINUTES_IN_DAY) — their
+     * aggregate may exceed a day, but they are NOT multi-day bookings and must take the plain enrichment
+     * path (which is why this checks the max single-day duration, not calculateAggregatedDuration's sum).
+     */
+    private static boolean isCrownRawMultiDayBooking(final UpdateHearingForListing hearing) {
+        final int minutesInDay = HearingDurationEnrichmentService.MINUTES_IN_DAY;
+        if (!isEmpty(hearing.getHearingDays())
+                && hearing.getHearingDays().stream()
+                .anyMatch(d -> nonNull(d.getDurationMinutes()) && d.getDurationMinutes() > minutesInDay)) {
+            return true;
+        }
+        return !isEmpty(hearing.getNonDefaultDays())
+                && hearing.getNonDefaultDays().stream()
+                .anyMatch(nd -> nonNull(nd.getDuration()) && nd.getDuration() > minutesInDay);
+    }
+
+    /**
+     * SPRDT-858: when ANY hearingDay references a draft session, the whole hearing is treated as
+     * unallocated for CROWN. Courtscheduler always pins a room to a session, but for an unallocated
+     * hearing that room MUST NOT propagate to commands or downstream events. Stripping happens here
+     * (after all enrichment branches complete) so the rule holds regardless of which branch ran.
+     */
+    static HearingListingNeeds stripRoomInfoIfAnyDraft(final HearingListingNeeds hearing) {
+        final List<HearingDay> days = hearing.getHearingDays();
+        if (isEmpty(days) || !anyDayIsDraft(days)) {
+            return hearing;
+        }
+        final List<HearingDay> sanitisedDays = days.stream()
+                .map(d -> HearingDay.hearingDay().withValuesFrom(d).withCourtRoomId(null).build())
+                .toList();
+        final HearingListingNeeds.Builder builder = HearingListingNeeds.hearingListingNeeds()
+                .withValuesFrom(hearing)
+                .withHearingDays(sanitisedDays);
+        if (nonNull(hearing.getCourtCentre())) {
+            final CourtCentre sanitisedCourtCentre = CourtCentre.courtCentre()
+                    .withValuesFrom(hearing.getCourtCentre())
+                    .withRoomId(null)
+                    .withRoomName(null)
+                    .build();
+            builder.withCourtCentre(sanitisedCourtCentre);
+        }
+        return builder.build();
+    }
+
+    /**
+     * Update-path variant — UpdateHearingForListing has no hearing-level CourtCentre, so we
+     * only sanitise the per-day courtRoomId.
+     */
+    static UpdateHearingForListing stripRoomInfoIfAnyDraft(final UpdateHearingForListing hearing) {
+        final List<HearingDay> days = hearing.getHearingDays();
+        if (isEmpty(days) || !anyDayIsDraft(days)) {
+            return hearing;
+        }
+        final List<HearingDay> sanitisedDays = days.stream()
+                .map(d -> HearingDay.hearingDay().withValuesFrom(d).withCourtRoomId(null).build())
+                .toList();
+        return UpdateHearingForListing.updateHearingForListing()
+                .withValuesFrom(hearing)
+                .withHearingDays(sanitisedDays)
+                .build();
+    }
+
+    private static boolean anyDayIsDraft(final List<HearingDay> days) {
+        return days.stream().anyMatch(d -> Boolean.TRUE.equals(d.getIsDraft()));
     }
 }

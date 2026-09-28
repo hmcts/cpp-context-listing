@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.common.utils.FileUtil.givenPayload;
 
@@ -19,6 +20,7 @@ import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -31,6 +33,7 @@ import org.apache.http.HttpStatus;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -76,9 +79,9 @@ class CourtSchedulerServiceAdapterTest {
 
             final JsonObject judiciaryJsonObject = (JsonObject) ((JsonObject) hearingSlotsResponse.getJsonArray("hearingSlots").get(0)).getJsonArray("judiciaries").get(index);
 
-            assertThat(judicialRole.getJudicialId().toString(), is(judiciaryJsonObject.getString("id")));
-            assertThat(judicialRole.getIsBenchChairman(), is(Optional.of(judiciaryJsonObject.getBoolean("isBenchChairman"))));
-            assertThat(judicialRole.getIsDeputy(), is(Optional.of(judiciaryJsonObject.getBoolean("isDeputy"))));
+            assertThat(judicialRole.getJudicialId().toString(), is(judiciaryJsonObject.getString("judiciaryId")));
+            assertThat(judicialRole.getIsBenchChairman(), is(Optional.of(judiciaryJsonObject.getBoolean("benchChairman"))));
+            assertThat(judicialRole.getIsDeputy(), is(Optional.of(judiciaryJsonObject.getBoolean("deputy"))));
             assertThat(judicialRole.getJudicialRoleType().getJudiciaryType(), is(judiciaryJsonObject.getString("judiciaryType")));
         });
 
@@ -216,11 +219,61 @@ class CourtSchedulerServiceAdapterTest {
         when(response.getEntity()).thenReturn(hearingIdsResponse);
         when(hearingSlotsService.getCourtSchedulerHearingIds(anyMap())).thenReturn(response);
 
-        final HearingIdsResponse finalResp = courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, Optional.of(Instant.now()), businessTypeOptional, "ADULT,YOUTH", pageSize, pageNumber);
+        final HearingIdsResponse finalResp = courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, Optional.of(Instant.now()), businessTypeOptional, Optional.of("MAGISTRATES"), "FINAL", "ADULT,YOUTH", pageSize, pageNumber);
 
         assertThat(finalResp.getUuids().size(), is(4));
         assertThat(finalResp.getPageCount(), is(1L));
         assertThat(finalResp.getResults(), is(4L));
+    }
+
+    @Test
+    void getCourtSchedulerHearingsShouldAddStatusFinalToQueryParamsWhenStatusIsFinal() {
+        final String courtCentreId = UUID.randomUUID().toString();
+        final Optional<String> courtSessionOptional = Optional.of("AD");
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String startDate = LocalDate.now().toString();
+        final String endDate = LocalDate.now().plusDays(7).toString();
+        final Optional<String> businessTypeOptional = Optional.of("BA123");
+        final Integer pageSize = 50;
+        final Integer pageNumber = 1;
+
+        final JsonObject hearingIdsResponse = givenPayload("/mock-data/azure.rotasl.getHearingIds.stub-data.json");
+
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(hearingIdsResponse);
+        when(hearingSlotsService.getCourtSchedulerHearingIds(anyMap())).thenReturn(response);
+
+        courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, Optional.of(Instant.now()), businessTypeOptional, Optional.of("MAGISTRATES"), "FINAL", "ADULT,YOUTH", pageSize, pageNumber);
+
+        final ArgumentCaptor<Map<String, String>> queryParamsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).getCourtSchedulerHearingIds(queryParamsCaptor.capture());
+
+        assertThat(queryParamsCaptor.getValue().get("status"), is("FINAL"));
+    }
+
+    @Test
+    void getCourtSchedulerHearingsShouldOmitStatusFromQueryParamsWhenStatusIsNull() {
+        final String courtCentreId = UUID.randomUUID().toString();
+        final Optional<String> courtSessionOptional = Optional.of("AD");
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String startDate = LocalDate.now().toString();
+        final String endDate = LocalDate.now().plusDays(7).toString();
+        final Optional<String> businessTypeOptional = Optional.of("BA123");
+        final Integer pageSize = 50;
+        final Integer pageNumber = 1;
+
+        final JsonObject hearingIdsResponse = givenPayload("/mock-data/azure.rotasl.getHearingIds.stub-data.json");
+
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(hearingIdsResponse);
+        when(hearingSlotsService.getCourtSchedulerHearingIds(anyMap())).thenReturn(response);
+
+        courtSchedulerServiceAdapter.getCourtSchedulerHearings(courtCentreId, courtSessionOptional, courtRoomId, startDate, endDate, Optional.of(Instant.now()), businessTypeOptional, Optional.of("MAGISTRATES"), null, "ADULT,YOUTH", pageSize, pageNumber);
+
+        final ArgumentCaptor<Map<String, String>> queryParamsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).getCourtSchedulerHearingIds(queryParamsCaptor.capture());
+
+        assertFalse(queryParamsCaptor.getValue().containsKey("status"));
     }
 
     @Test
@@ -260,5 +313,294 @@ class CourtSchedulerServiceAdapterTest {
         final Response result = courtSchedulerServiceAdapter.validateSessionAvailability(params);
 
         assertThat(result.getStatus(), is(HttpStatus.SC_BAD_REQUEST));
+    }
+
+
+
+    // ─── Crown fallback search-and-book (Option C: courtCentreId-only) ───
+
+    @Test
+    void crownFallbackSearchAndBook_shouldSendCentreMetadataParams_whenSupplied() {
+        // SPRDT-1283: ouCode/courtCentreName/courtRoomName travel on the wire so courtscheduler can
+        // auto-create a session at a centre with no existing session to copy metadata from.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 4, 21);
+
+        final JsonObject body = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .add("courtScheduleId", UUID.randomUUID().toString())
+                .add("sessionDate", hearingDate.toString())
+                .add("durationInMinutes", 10)
+                .add("isDraft", true)
+                .add("source", "CROWN_FB_LIST")
+                .add("overbooked", false)
+                .build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                hearingId, courtCentreId, hearingDate, 10,
+                Optional.empty(), Optional.empty(),
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING,
+                Optional.of("C99XX00"), Optional.of("Never Seeded Crown Court"), Optional.of("  "));
+
+        final org.mockito.ArgumentCaptor<java.util.Map<String, String>> paramsCaptor =
+                org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        verify(hearingSlotsService).crownFallbackSearchAndBook(paramsCaptor.capture());
+        final java.util.Map<String, String> params = paramsCaptor.getValue();
+        assertThat(params.get("ouCode"), is("C99XX00"));
+        assertThat(params.get("courtCentreName"), is("Never Seeded Crown Court"));
+        // blank values are dropped, not sent
+        assertThat(params.containsKey("courtRoomName"), is(false));
+    }
+
+    @Test
+    void crownFallbackSearchAndBook_shouldReturnParsedResult_on200() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomUuid = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 4, 21);
+        final UUID bookedScheduleId = UUID.randomUUID();
+
+        final JsonObject body = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .add("courtScheduleId", bookedScheduleId.toString())
+                .add("courtRoomId", courtRoomUuid.toString())
+                .add("sessionDate", hearingDate.toString())
+                .add("sessionStartTime", "2026-04-21T09:00:00Z")
+                .add("sessionEndTime", "2026-04-21T17:00:00Z")
+                .add("durationInMinutes", 10)
+                .add("isDraft", false)
+                .add("businessType", "CR")
+                .add("source", "CROWN_FB_LIST")
+                .add("overbooked", false)
+                .build();
+
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        final uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult result =
+                courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                        hearingId, courtCentreId, hearingDate, 10,
+                        Optional.of(courtRoomUuid), Optional.of("2026-04-21T09:00:00Z"),
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING, Optional.empty(), Optional.empty(), Optional.empty());
+
+        assertThat(result.hearingId(), is(hearingId));
+        assertThat(result.courtScheduleId(), is(bookedScheduleId));
+        // SPRDT-1274: courtRoomId is the session's room UUID, parsed for hearing-day injection.
+        assertThat(result.courtRoomId(), is(courtRoomUuid));
+        assertThat(result.isDraft(), is(false));
+        assertThat(result.businessType(), is("CR"));
+        assertThat(result.source(), is("CROWN_FB_LIST"));
+    }
+
+    @Test
+    void crownFallbackSearchAndBook_shouldTolerateLegacyIntegerCourtRoomId_on200() {
+        // Legacy courtscheduler builds sent the Integer room NUMBER in courtRoomId; the parser
+        // must yield a null room (not a ClassCastException that 500s the whole command).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 4, 21);
+        final UUID bookedScheduleId = UUID.randomUUID();
+
+        final JsonObject body = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .add("courtScheduleId", bookedScheduleId.toString())
+                .add("courtRoomId", 731816)
+                .add("sessionDate", hearingDate.toString())
+                .add("durationInMinutes", 10)
+                .add("isDraft", false)
+                .add("businessType", "CR")
+                .add("source", "CROWN_FB_LIST")
+                .add("overbooked", false)
+                .build();
+
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        final uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult result =
+                courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                        hearingId, courtCentreId, hearingDate, 10,
+                        Optional.empty(), Optional.empty(),
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING, Optional.empty(), Optional.empty(), Optional.empty());
+
+        assertThat(result.courtScheduleId(), is(bookedScheduleId));
+        assertThat(result.courtRoomId(), is((UUID) null));
+    }
+
+    @Test
+    void crownFallbackSearchAndBook_shouldThrowNoSession_on404() {
+        final UUID hearingId = UUID.randomUUID();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_NOT_FOUND);
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException.class,
+                () -> courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                        hearingId, UUID.randomUUID(), LocalDate.of(2026, 4, 21), 10,
+                        Optional.empty(), Optional.empty(),
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING, Optional.empty(), Optional.empty(), Optional.empty()));
+    }
+
+    @Test
+    void crownFallbackSearchAndBook_shouldThrowInvalidRequest_on400() {
+        when(response.getStatus()).thenReturn(HttpStatus.SC_BAD_REQUEST);
+        when(response.hasEntity()).thenReturn(false);
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException.class,
+                () -> courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                        UUID.randomUUID(), UUID.randomUUID(), LocalDate.of(2026, 4, 21), 400,
+                        Optional.empty(), Optional.empty(),
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING, Optional.empty(), Optional.empty(), Optional.empty()));
+    }
+
+    @Test
+    void crownFallbackSearchAndBook_shouldThrowNoSession_on200WithoutCourtScheduleId() {
+        // A 200 whose body carries no courtScheduleId (e.g. a differently-shaped search-and-book
+        // response) is not a booking — accepting it would fabricate an all-null hearing day.
+        final JsonObject body = javax.json.Json.createObjectBuilder()
+                .add("hearingId", UUID.randomUUID().toString())
+                .build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException.class,
+                () -> courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                        UUID.randomUUID(), UUID.randomUUID(), LocalDate.of(2026, 4, 21), 10,
+                        Optional.empty(), Optional.empty(),
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING, Optional.empty(), Optional.empty(), Optional.empty()));
+    }
+
+    // ─── getCourtScheduleDraftStatus ─────────────────────────────────────────
+
+    @Test
+    void getCourtScheduleDraftStatus_returnsTrueWhenSessionUsesIsDraftKey() {
+        // Wire format from courtscheduler.search.court-schedules-by-id is FLAT - each
+        // courtSchedules[] element is a single CourtSchedule (one session). The boolean
+        // draft field may appear under either "isDraft" or "draft" depending on how
+        // Jackson resolves the getter/setter pair. This test pins the "isDraft" path.
+        givenSchedulesResponse(
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
+                        .add("isDraft", false)
+                        .build(),
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleId", "9e4932f7-97b2-3010-b942-ddd2624e4dd8")
+                        .add("isDraft", true)
+                        .build());
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                "9e4932f7-97b2-3010-b942-ddd2624e4dd8"));
+
+        assertTrue(result.getBoolean("anyDraft"));
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_returnsTrueWhenSessionUsesDraftKey() {
+        // When Jackson's default boolean-getter convention applies, the wire field name is
+        // "draft" (the "is" prefix is stripped). Confirm we still pick it up so a Jackson
+        // configuration change doesn't silently break the strip in production.
+        givenSchedulesResponse(
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleId", "ea73df0c-2cbf-4f27-80ce-8b88ac1df702")
+                        .add("draft", true)
+                        .build());
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "ea73df0c-2cbf-4f27-80ce-8b88ac1df702"));
+
+        assertTrue(result.getBoolean("anyDraft"));
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_returnsFalseWhenAllSessionsAreNonDraft() {
+        givenSchedulesResponse(
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
+                        .add("isDraft", false)
+                        .build());
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "f8254db1-1683-483e-afb3-b87fde5a0a26"));
+
+        assertFalse(result.getBoolean("anyDraft"));
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_returnsFalseWhenAllSessionsAreNonDraftUnderDraftKey() {
+        givenSchedulesResponse(
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
+                        .add("draft", false)
+                        .build());
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "f8254db1-1683-483e-afb3-b87fde5a0a26"));
+
+        assertFalse(result.getBoolean("anyDraft"));
+    }
+
+    private void givenSchedulesResponse(final JsonObject... schedules) {
+        final javax.json.JsonArrayBuilder array = javax.json.Json.createArrayBuilder();
+        for (final JsonObject s : schedules) {
+            array.add(s);
+        }
+        final JsonObject schedulesResponse = javax.json.Json.createObjectBuilder()
+                .add("courtSchedules", array)
+                .build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(schedulesResponse);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(response);
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_failsSafeToTrueOnNon200() {
+        when(response.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(response);
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "f8254db1-1683-483e-afb3-b87fde5a0a26"));
+
+        assertTrue(result.getBoolean("anyDraft"));
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_failsSafeToTrueOnException() {
+        when(hearingSlotsService.getCourtSchedulesById(anyMap()))
+                .thenThrow(new RuntimeException("simulated connection refused"));
+
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(buildRequest(
+                "f8254db1-1683-483e-afb3-b87fde5a0a26"));
+
+        assertTrue(result.getBoolean("anyDraft"));
+    }
+
+    @Test
+    void getCourtScheduleDraftStatus_returnsFalseWhenRequestHasNoIds() {
+        final JsonObject result = courtSchedulerServiceAdapter.getCourtScheduleDraftStatus(
+                javax.json.Json.createObjectBuilder()
+                        .add("courtScheduleIdList", javax.json.Json.createArrayBuilder())
+                        .build());
+
+        assertFalse(result.getBoolean("anyDraft"));
+    }
+
+    private static JsonObject buildRequest(final String... courtScheduleIds) {
+        final javax.json.JsonArrayBuilder list = javax.json.Json.createArrayBuilder();
+        for (final String id : courtScheduleIds) {
+            list.add(id);
+        }
+        return javax.json.Json.createObjectBuilder()
+                .add("courtScheduleIdList", list)
+                .build();
     }
 }
