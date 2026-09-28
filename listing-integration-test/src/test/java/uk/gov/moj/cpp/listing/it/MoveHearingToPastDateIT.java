@@ -88,7 +88,7 @@ class MoveHearingToPastDateIT extends AbstractIT {
      * Lists a real hearing through the full flow (command → events → viewstore projection) and only
      * returns once it is queryable — the move command's HEARING_ID_NOT_FOUND pre-check reads the
      * viewstore, so moving an un-listed hearing is legitimately rejected. Mirrors VacateHearingIT:
-     * MAGS listing needs the provisional-booking + list-hearing-in-court-sessions stubs; CROWN
+     * MAGS listing needs the unconfirmed-booking + list-hearing-in-court-sessions stubs; CROWN
      * listing never calls courtscheduler pre-Phase-2.
      */
     private MoveHearingToPastDateSteps givenAListedHearing(final String jurisdiction) {

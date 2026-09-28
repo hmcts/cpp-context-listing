@@ -1216,7 +1216,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                             .orElse(sessionStartFallback)
                     : sessionStartFallback;
             return HearingDay.hearingDay()
-                    // A session resolved through the provisional-booking endpoint does not always
+                    // A session resolved through the unconfirmed-booking endpoint does not always
                     // carry courtHouseId - unlike the search-by-id response, which always does. Fall
                     // back to the hearing's own court centre, which is where it is being listed
                     // anyway. Previously this was an unguarded fromString(null) -> NPE -> 500 on the
@@ -1346,6 +1346,10 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         }
 
         if (isEmpty(sessions)) {
+            LOGGER.error("{} bookingReference={} resolved to no session for hearingId={} — the share "
+                            + "succeeded for the clerk but this hearing will NOT be listed; it needs "
+                            + "re-listing by hand",
+                    CrownFallbackInvalidRequestException.LOG_MARKER, bookingReference, hearing.getId());
             throw new CrownFallbackInvalidRequestException(
                     "CROWN bookingReference " + bookingReference
                             + " resolved neither as a court schedule id nor as a provisional booking,"
@@ -2209,6 +2213,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                                                     final CrownFallbackSource fallbackSource) {
         final int aggregatedDuration = calculateAggregatedDuration(hearing);
         if (aggregatedDuration > HearingDurationEnrichmentService.MINUTES_IN_DAY) {
+            LOGGER.error("{} multi-day CROWN hearingId={} arrived with no anchor courtScheduleId "
+                            + "(aggregatedDuration={}) — this hearing will NOT be listed",
+                    CrownFallbackInvalidRequestException.LOG_MARKER, hearing.getId(), aggregatedDuration);
             throw new CrownFallbackInvalidRequestException(
                     "Multi-day CROWN hearing arrived without an anchor courtScheduleId (hearingId="
                             + hearing.getId() + ", aggregatedDuration=" + aggregatedDuration
@@ -2286,6 +2293,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         // directly via getCourtCentreId(). No ouCode lookup needed.
         final int aggregatedDuration = calculateAggregatedDuration(hearing);
         if (aggregatedDuration > HearingDurationEnrichmentService.MINUTES_IN_DAY) {
+            LOGGER.error("{} multi-day CROWN update for hearingId={} arrived with no anchor "
+                            + "courtScheduleId (aggregatedDuration={}) — this hearing will NOT be listed",
+                    CrownFallbackInvalidRequestException.LOG_MARKER, hearing.getHearingId(), aggregatedDuration);
             throw new CrownFallbackInvalidRequestException(
                     "Multi-day CROWN update hearing arrived without an anchor courtScheduleId (hearingId="
                             + hearing.getHearingId() + ", aggregatedDuration=" + aggregatedDuration + ").");

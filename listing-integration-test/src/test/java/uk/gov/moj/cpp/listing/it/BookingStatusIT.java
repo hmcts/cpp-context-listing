@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
  *
  * <p>Exercises the full chain: HTTP request -&gt; listing-query-api Resource -&gt;
  * CourtSchedulerServiceAdapter.getBookingStatus -&gt; HearingSlotsService -&gt; WireMock-stubbed
- * courtscheduler GET /provisionalBooking/status. The reserve-a-slot feature holds court-session
+ * courtscheduler GET /unconfirmedBooking/status. The reserve-a-slot feature holds court-session
  * capacity from slot-pick until share; this endpoint is a thin pass-through so the results UI can
  * gate a share synchronously against courtscheduler's live booking status.
  *

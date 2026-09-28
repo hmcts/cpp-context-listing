@@ -61,7 +61,7 @@ public class HearingSlotsService {
     private static final String COURTSCHEDULER_MAGS_SEARCH_BOOK = "application/vnd.courtscheduler.mags.search.and.book+json";
     private static final String COURTSCHEDULER_CROWN_SEARCH_BOOK = "application/vnd.courtscheduler.crown.search.and.book+json";
     private static final String COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE = "application/vnd.courtscheduler.validate.session.availability+json";
-    private static final String PROVISIONAL_BOOKING_STATUS_RESOURCE = "/provisionalBooking/status";
+    private static final String UNCONFIRMED_BOOKING_STATUS_RESOURCE = "/unconfirmedBooking/status";
     private static final String COURTSCHEDULER_GET_BOOKING_STATUS_TYPE = "application/vnd.courtscheduler.get.booking-status+json";
 
     private static final String COURTSCHEDULER_MOVE_TO_PAST_DATE = "application/vnd.courtscheduler.move-hearing-to-past-date+json";
@@ -93,7 +93,7 @@ public class HearingSlotsService {
      * shape for this endpoint.
      */
     public Response getBookingStatus(final Map<String, String> params) {
-        return query(PROVISIONAL_BOOKING_STATUS_RESOURCE, COURTSCHEDULER_GET_BOOKING_STATUS_TYPE, params);
+        return query(UNCONFIRMED_BOOKING_STATUS_RESOURCE, COURTSCHEDULER_GET_BOOKING_STATUS_TYPE, params);
     }
 
     public Response searchBookSlots(final Map<String, String> params) {

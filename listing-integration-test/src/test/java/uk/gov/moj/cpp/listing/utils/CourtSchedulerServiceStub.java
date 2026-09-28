@@ -55,7 +55,7 @@ public class CourtSchedulerServiceStub {
     private static final String COURT_SCHEDULER_ENDPOINT = "/listingcourtscheduler-api/rest/courtscheduler";
     private static final String HOST = System.getProperty("INTEGRATION_HOST_KEY", "localhost");
 
-    private static final String PROVISIONAL_BOOKING = "/provisionalBooking";
+    private static final String UNCONFIRMED_BOOKING = "/unconfirmedBooking";
     private static final String HEARING_SLOTS = "/hearingslots";
     private static final String VALIDATE_SESSION_AVAILABILITY = "/validate-session-availability";
     private static final String SEARCH_COURT_SCHEDULES_BY_ID = "/sessions";
@@ -70,17 +70,17 @@ public class CourtSchedulerServiceStub {
     private static final String MOVE_HEARING_TO_PAST_DATE_TYPE = "application/vnd.courtscheduler.move-hearing-to-past-date+json";
     private static final String COURTSCHEDULER_GET_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.get.hearing.slots+json";
     private static final String COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE = "application/vnd.courtscheduler.validate.session.availability+json";
-    public static final String COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE = "application/vnd.courtscheduler.get.provisional.booking+json";
+    public static final String COURTSCHEDULER_GET_UNCONFIRMED_BOOKING_TYPE = "application/vnd.courtscheduler.get.unconfirmed.booking+json";
     public static final String ROTASL_GET_HEARING_SLOTS_RESPONSE_JSON_WITH_JUDICIARIES = "stub-data/rotasl.get.hearing.slots.with-judiciaries.json";
     public static final String LISTING_GET_HEARING_SLOTS_RESPONSE_JSON_WITH_JUDICIARIES_AND_SLOTTIMES = "stub-data/listing.get.hearing.slots.with-judiciaries-and-slotstarttimes.json";
     public static final String LISTING_SEARCH_HEARING_SLOTS_JSON = "stub-data/listing.search.hearing.slots.json";
     public static final String LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON = "stub-data/listing.search.hearing.slots.empty.json";
-    public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON = "stub-data/provisionalBookingSampleDataSingleCourtScheduleCountBased.json";
-    public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_JSON = "stub-data/provisionalBookingSampleDataMultipleCourtSchedulesCountBased.json";
-    public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_DURATION_BASED_JSON = "stub-data/provisionalBookingSampleDataSingleCourtScheduleDurationBased.json";
-    public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_DURATION_BASED_JSON = "stub-data/provisionalBookingSampleDataMultipleCourtSchedulesDurationBased.json";
-    public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_WITH_SESSION_DATE_JSON = "stub-data/provisionalBookingSampleDataSingleCourtScheduleCountBasedWithSessionDate.json";
-    public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULES_WITH_CUSTOM_PARAMS_JSON = "stub-data/provisionalBookingSampleDataCustomParams.json";
+    public static final String STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON = "stub-data/unconfirmedBookingSampleDataSingleCourtScheduleCountBased.json";
+    public static final String STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_JSON = "stub-data/unconfirmedBookingSampleDataMultipleCourtSchedulesCountBased.json";
+    public static final String STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_DURATION_BASED_JSON = "stub-data/unconfirmedBookingSampleDataSingleCourtScheduleDurationBased.json";
+    public static final String STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_DURATION_BASED_JSON = "stub-data/unconfirmedBookingSampleDataMultipleCourtSchedulesDurationBased.json";
+    public static final String STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_WITH_SESSION_DATE_JSON = "stub-data/unconfirmedBookingSampleDataSingleCourtScheduleCountBasedWithSessionDate.json";
+    public static final String STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULES_WITH_CUSTOM_PARAMS_JSON = "stub-data/unconfirmedBookingSampleDataCustomParams.json";
     private static final LocalTime DEFAULT_MORNING_START = LocalTime.of(10, 0, 0, 0);
     public static final String EXACT_HEARING_START_DATETIME = "exactHearingStartDateTime";
 
@@ -608,11 +608,11 @@ public class CourtSchedulerServiceStub {
         final String courtRoomId = Optional.ofNullable(values.get("courtRoomId")).orElse("fce80cd4-0c00-3c30-9471-2c2ee7a52453");
         final String hearingStartTime = sessionDate.atTime(LocalTime.of(10, 0,0,0)).atZone(ZoneId.of("Europe/London")).withZoneSameInstant(ZoneOffset.UTC).toString();
 
-        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.UNCONFIRMED_BOOKING)))
                 .withQueryParam("bookingIds", WireMock.notMatching("null"))
-                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_UNCONFIRMED_BOOKING_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_WITH_SESSION_DATE_JSON)
+                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_WITH_SESSION_DATE_JSON)
                                 .replace("%SESSION_DATE%", sessionDate.toString())
                                 .replace("%COURT_ROOM_ID%", courtRoomId)
                                 .replace("%HEARING_START_TIME%", hearingStartTime))
@@ -621,11 +621,11 @@ public class CourtSchedulerServiceStub {
     }
 
     public static void stubProvisionalBookingWithCustomParams(final Map<String, String> values) {
-        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.UNCONFIRMED_BOOKING)))
                 .withQueryParam("bookingIds", WireMock.notMatching("null"))
-                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_UNCONFIRMED_BOOKING_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULES_WITH_CUSTOM_PARAMS_JSON)
+                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULES_WITH_CUSTOM_PARAMS_JSON)
                                 .replace("%SESSION_DATE%", Optional.of(values.get("SESSION_DATE")).orElse(ItClock.today().toString()))
                                 .replace("%COURT_ROOM_ID%", Optional.of(values.get("COURT_ROOM_ID")).orElse(UUID.randomUUID().toString()))
                                 .replace("%COURT_SCHEDULE_ID%", Optional.of(values.get("COURT_SCHEDULE_ID")).orElse(UUID.randomUUID().toString()))
@@ -641,37 +641,37 @@ public class CourtSchedulerServiceStub {
 
 
     public static void stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased() {
-        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.UNCONFIRMED_BOOKING)))
                 .withQueryParam("bookingIds", WireMock.notMatching("null"))
-                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_UNCONFIRMED_BOOKING_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON))
+                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON))
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
     public static void stubGetProvisionalBookedSlotsMultipleCourtSchedulesCountBased() {
-        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.UNCONFIRMED_BOOKING)))
                 .withQueryParam("bookingIds", WireMock.notMatching("null"))
-                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_UNCONFIRMED_BOOKING_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_JSON))
+                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_JSON))
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
     public static void stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased() {
-        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.UNCONFIRMED_BOOKING)))
                 .withQueryParam("bookingIds", WireMock.notMatching("null"))
-                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_UNCONFIRMED_BOOKING_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_DURATION_BASED_JSON))
+                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_DURATION_BASED_JSON))
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
     public static void stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(final Map<String, String> courtRoomScedules, final String courtCentreId) {
-        String payload = getPayload(CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_DURATION_BASED_JSON);
+        String payload = getPayload(CourtSchedulerServiceStub.STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_DURATION_BASED_JSON);
         String dateStr;
         ZonedDateTime hearingStartTime;
         int idx = 0;
@@ -689,21 +689,21 @@ public class CourtSchedulerServiceStub {
             payload = payload.replace("COURT_CENTRE_ID", courtCentreId);
         }
 
-        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.UNCONFIRMED_BOOKING)))
                 .withQueryParam("bookingIds", WireMock.notMatching("null"))
-                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
+                .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_UNCONFIRMED_BOOKING_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
-    /** Path segment for courtscheduler's booking-status lookup: GET /provisionalBooking/status?bookingIds=... */
-    private static final String PROVISIONAL_BOOKING_STATUS = "/provisionalBooking/status";
+    /** Path segment for courtscheduler's booking-status lookup: GET /unconfirmedBooking/status?bookingIds=... */
+    private static final String UNCONFIRMED_BOOKING_STATUS = "/unconfirmedBooking/status";
     public static final String COURTSCHEDULER_GET_BOOKING_STATUS_TYPE = "application/vnd.courtscheduler.get.booking-status+json";
 
     /**
-     * Stub a successful 200 response from GET /provisionalBooking/status (courtscheduler's
+     * Stub a successful 200 response from GET /unconfirmedBooking/status (courtscheduler's
      * reserve-a-slot booking-status lookup) for any {@code bookingIds} query param. The supplied
      * {@code bookingsJsonArray} is the raw JSON array of per-booking entries (e.g.
      * {@code [{"bookingId":"bk-1","safeToShare":true,"status":"RESERVED"}]}); it is wrapped here in
@@ -712,7 +712,7 @@ public class CourtSchedulerServiceStub {
      */
     public static void stubBookingStatus(final String bookingsJsonArray) {
         final String body = "{\"bookings\":" + bookingsJsonArray + "}";
-        stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + PROVISIONAL_BOOKING_STATUS)))
+        stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + UNCONFIRMED_BOOKING_STATUS)))
                 .withHeader("Accept", containing(COURTSCHEDULER_GET_BOOKING_STATUS_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(body)
@@ -721,14 +721,14 @@ public class CourtSchedulerServiceStub {
     }
 
     /**
-     * Stub GET /provisionalBooking/status to return a 500. Exercises the listing adapter's
+     * Stub GET /unconfirmedBooking/status to return a 500. Exercises the listing adapter's
      * fail-open path: on a courtscheduler outage, {@code getBookingStatus} must answer
      * {@code status=UNKNOWN, safeToShare=true} for every requested id rather than propagate the
      * failure - blocking every share in the building during a courtscheduler blip would be worse
      * than letting an advisory check pass.
      */
     public static void stubBookingStatusServerError() {
-        stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + PROVISIONAL_BOOKING_STATUS)))
+        stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + UNCONFIRMED_BOOKING_STATUS)))
                 .willReturn(aResponse().withStatus(500)
                         .withBody("internal server error")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
