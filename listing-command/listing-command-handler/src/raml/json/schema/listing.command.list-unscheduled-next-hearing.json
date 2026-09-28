@@ -12,6 +12,10 @@
       "items": {
         "$ref": "http://justice.gov.uk/listing/commands/court-centre-details.json"
       }
+    },
+    "ptphDetail": {
+      "description": "Tier / list type inherited from the seeding hearing. Sibling of the hearing because the hearing carrier is owned by coredomain.",
+      "$ref": "http://justice.gov.uk/listing/commands/ptph-detail.json"
     }
   },
   "required": [
