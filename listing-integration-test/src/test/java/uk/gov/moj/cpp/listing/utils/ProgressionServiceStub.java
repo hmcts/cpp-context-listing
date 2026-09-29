@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.utils;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static javax.json.Json.createObjectBuilder;
 import static com.github.tomakehurst.wiremock.client.WireMock.findAll;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
@@ -36,6 +37,22 @@ public class ProgressionServiceStub {
         stubFor(WireMock.post(urlMatching(PROGRESSION_SPLIT_HEARING))
                 .willReturn(aResponse().withStatus(SC_ACCEPTED)
                         .withHeader("CPPID", UUID.randomUUID().toString())));
+    }
+
+    /**
+     * SPRDT-1411. Progression rejects a split it cannot apply - a stale request, an unknown hearing,
+     * a payload it will not accept. Registered after {@link #stubSplitHearing()}, so it wins.
+     */
+    public static void stubSplitHearingRejectedWith(final int status, final String errorCode, final String message) {
+        stubFor(WireMock.post(urlMatching(PROGRESSION_SPLIT_HEARING))
+                .willReturn(aResponse().withStatus(status)
+                        .withHeader("CPPID", UUID.randomUUID().toString())
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(createObjectBuilder()
+                                .add("errorCode", errorCode)
+                                .add("message", message)
+                                .build()
+                                .toString())));
     }
 
     /** The split requests listing forwarded for a given source hearing. */

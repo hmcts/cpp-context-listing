@@ -37,6 +37,8 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * SPRDT-1363 — the split-hearing endpoint's contract, for the front end to integrate against.
@@ -167,6 +169,49 @@ public class SplitHearingIT extends AbstractIT {
                 MEDIA_TYPE_SPLIT_HEARING,
                 payload,
                 getLoggedInHeader());
+    }
+
+    /**
+     * SPRDT-1411. Progression owns the split, so its verdict is the caller's verdict. The generated
+     * command client turned every rejection into a bare RuntimeException, which reached the front
+     * end as 500 and made a stale request indistinguishable from progression being down. Each status
+     * progression can answer with is pinned here, because only the status tells the two apart.
+     */
+    @ParameterizedTest(name = "progression {0} is returned to the caller unchanged")
+    @ValueSource(ints = {HttpStatus.SC_BAD_REQUEST, HttpStatus.SC_NOT_FOUND, HttpStatus.SC_CONFLICT})
+    void shouldReturnProgressionsRejectionStatusUnchanged(final int rejectionStatus) throws Exception {
+        final UUID hearingId = randomUUID();
+        givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+        ProgressionServiceStub.stubSplitHearingRejectedWith(rejectionStatus, "HEARING_ALREADY_CHANGED",
+                "the hearing has moved on since this request was built");
+
+        final Response response = postSplit(hearingId, crownSplitPayload());
+
+        assertThat("progression's status must reach the caller, not a generic 500",
+                response.getStatus(), is(rejectionStatus));
+        assertThat("listing must still have forwarded the split before rejecting it",
+                ProgressionServiceStub.splitRequestsForHearing(hearingId.toString()), hasSize(1));
+    }
+
+    /**
+     * The rejection body carries the errorCode the front end needs to explain itself, so it has to
+     * survive the hop back through listing rather than being replaced with listing's own message.
+     */
+    @Test
+    void shouldPassProgressionsErrorCodeBackToTheCaller() throws Exception {
+        final UUID hearingId = randomUUID();
+        givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+        ProgressionServiceStub.stubSplitHearingRejectedWith(HttpStatus.SC_CONFLICT, "HEARING_ALREADY_CHANGED",
+                "the hearing has moved on since this request was built");
+
+        final Response response = postSplit(hearingId, crownSplitPayload());
+
+        assertThat(response.getStatus(), is(HttpStatus.SC_CONFLICT));
+        try (final JsonReader reader = Json.createReader(new StringReader(response.readEntity(String.class)))) {
+            final JsonObject body = reader.readObject();
+            assertThat("the front end distinguishes a stale request by progression's errorCode",
+                    body.getString("errorCode"), is("HEARING_ALREADY_CHANGED"));
+        }
     }
 
     @Test
