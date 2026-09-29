@@ -92,6 +92,40 @@ class SplitHearingPayloadConverterTest {
         return request.getJsonObject("listNewHearing");
     }
 
+    /**
+     * A split carries no judiciary yet, so the front end sends an empty array. Progression's
+     * courtHearingRequest requires at least one entry wherever judiciary appears, so forwarding the
+     * empty array made it reject every proxied split — the field has to be dropped, not passed on.
+     */
+    /**
+     * Listing reads courtCentreId off every booked slot unguarded when it converts them to hearing
+     * days, so a slot without one fails the onward listing of the new hearing — after the split was
+     * already accepted, leaving the offence on neither hearing. The front end sets it per day only
+     * for a day sitting elsewhere, so the slot must inherit the split's own centre.
+     */
+    @Test
+    void shouldGiveEveryBookedSlotACourtCentreId() {
+        final JsonObject hearing = listNewHearing(
+                toProgressionSplitRequest(crownSplitPayload(), COURT_CENTRE_NAME, COURT_ROOM_NAME, null));
+
+        final JsonArray bookedSlots = hearing.getJsonArray("bookedSlots");
+        assertThat(bookedSlots, hasSize(1));
+        assertThat("a booked slot without a court centre breaks the onward listing",
+                bookedSlots.getJsonObject(0).getString("courtCentreId"),
+                is("07e45c88-9e5d-3e44-b664-d5345bb13be2"));
+    }
+
+    @Test
+    void shouldDropAnEmptyJudiciaryRatherThanForwardIt() {
+        final JsonObject hearing = listNewHearing(
+                toProgressionSplitRequest(crownSplitPayload(), COURT_CENTRE_NAME, COURT_ROOM_NAME, null));
+
+        assertThat("an empty judiciary must not reach progression",
+                hearing.containsKey("judiciary"), is(false));
+        assertThat("other pass-through fields are unaffected",
+                hearing.getString("jurisdictionType"), is("CROWN"));
+    }
+
     @Test
     void shouldConvertVirtualNonDefaultDaysIntoBookedSlotsAndDropTheVirtualMarker() {
         final JsonObject hearing = listNewHearing(

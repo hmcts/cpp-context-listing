@@ -54,6 +54,8 @@ import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
+import uk.gov.moj.cpp.listing.common.service.ProgressionSplitHearingService;
+import uk.gov.moj.cpp.listing.common.splithearing.SplitHearingRejectedException;
 import uk.gov.moj.cpp.listing.domain.VacateTrialEnriched;
 
 import java.time.LocalDate;
@@ -71,11 +73,14 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.json.JsonArray;
+import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
+import javax.ws.rs.core.Response;
 
+import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -163,6 +168,8 @@ public class ListingCommandApi {
     private ObjectToJsonValueConverter objectToJsonValueConverter;
     @Inject
     private HearingSlotsService hearingSlotsService;
+    @Inject
+    private ProgressionSplitHearingService progressionSplitHearingService;
     @Inject
     private HearingEnrichmentOrchestrator hearingEnrichmentOrchestrator;
     @Inject
@@ -401,11 +408,13 @@ public class ListingCommandApi {
     }
 
     /**
-     * Validates the front-end's split payload and converts it to progression's list-new-hearing
-     * shape, then accepts. The call to progression is deliberately absent: listing wires to other
-     * contexts through a generated client from their RAML, and progression's split endpoint
-     * (SPRDT-1362) is not released yet. This lets the UI integrate against the finished contract
-     * now; SPRDT-1363's follow-up adds the generated client once progression ships.
+     * Validates the front-end's split payload, converts it to progression's list-new-hearing shape
+     * and forwards it to progression, which performs the split.
+     *
+     * <p>The forward goes through {@link ProgressionSplitHearingService} rather than the generated
+     * {@code RemoteCommandApi2ProgressionCommandApi} client, because that client turns every
+     * non-202 into a bare {@code RuntimeException} and the front end needs progression's own status
+     * back: a stale request has to be distinguishable from an unknown hearing or a bad payload.
      */
     @Handles("listing.command.split-hearing")
     public void handleSplitHearing(final JsonEnvelope envelope) {
@@ -428,9 +437,24 @@ public class ListingCommandApi {
                 courtRoomName(courtCentre, payload),
                 null);
 
-        LOGGER.info("split-hearing accepted for hearing {}; converted request holds {} defendant request(s)",
+        LOGGER.info("split-hearing accepted for hearing {}; forwarding {} defendant request(s) to progression",
                 hearingId,
                 progressionRequest.getJsonObject("listNewHearing").getJsonArray("listDefendantRequests").size());
+
+        final Response response = progressionSplitHearingService.splitHearing(hearingId, progressionRequest, envelope.metadata());
+        final int status = response.getStatus();
+        if (HttpStatus.SC_ACCEPTED == status) {
+            return;
+        }
+
+        final JsonObject errorBody = (response.hasEntity() && response.getEntity() instanceof JsonObject body)
+                ? body
+                : Json.createObjectBuilder().build();
+
+        LOGGER.error("split-hearing for hearing {} rejected by progression with status {}: {}", hearingId, status, errorBody);
+
+        throw new SplitHearingRejectedException(status, errorBody,
+                "progression returned " + status + " for the split of hearing " + hearingId);
     }
 
     private static String courtRoomName(final CourtCentreDetails courtCentre, final JsonObject payload) {
