@@ -8,6 +8,8 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
@@ -57,6 +59,7 @@ public class GroupCasesIT extends AbstractIT {
     private static final String LIST_COURT_HEARING_GROUP_CASES_PART_CASES_JSON = "list-court-hearing-group-cases-part-cases.json";
     private static final String PUBLIC_PROGRESSION_CASE_REMOVED_FROM_GROUP_CASES_JSON = "public.progression.case-removed-from-group-cases.json";
     private static final String MEDIA_TYPE_SEARCH_HEARING_JSON = "application/vnd.listing.search.hearing+json";
+    private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
 
     private final UUID hearingId = randomUUID();
     private final UUID groupId = randomUUID();
@@ -94,6 +97,30 @@ public class GroupCasesIT extends AbstractIT {
         assertViewStoreUpdated(newGroupMasterCaseId, Arrays.asList(masterCaseId));
     }
 
+    @Test
+    public void shouldKeepHearingForRemovedMemberCaseWhenDefendantHasNoYouthFlag() throws IOException {
+        final UUID masterCaseId = randomUUID();
+        final UUID memberCaseId = randomUUID();
+
+        stubGetReferenceDataCourtCentreById(courtCentreId);
+        CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrown(
+                hearingId.toString(), courtCentreId.toString(), "28b922c3-0396-3c68-970f-5b805c7ab1bb");
+        postListCourtHearingCommand(masterCaseId);
+
+        assertPublicHearingConfirmed(listCourtHearingSteps.getHearingConfirmedPublicEventPayload(), masterCaseId);
+        assertViewStoreUpdated(masterCaseId, Collections.emptyList());
+
+        publishMemberCaseRemovedFromGroupCasesEvent(masterCaseId, memberCaseId);
+
+        verifyHearingInViewStore(Arrays.asList(
+                withJsonPath("$.id", equalTo(hearingId.toString())),
+                withJsonPath("$.listedCases[?(@.id == '" + masterCaseId + "')].isGroupMaster", contains(true)),
+                withJsonPath("$.listedCases[?(@.id == '" + memberCaseId + "')].isGroupMember", contains(false)),
+                withJsonPath("$.listedCases[?(@.id == '" + memberCaseId + "')].isGroupMaster", contains(false))));
+
+        verifyHearingsForCase(memberCaseId, withJsonPath("$.hearings[*].id", hasItem(hearingId.toString())));
+    }
+
     private void postListCourtHearingCommand(final UUID masterCaseId) throws IOException {
         final JsonObject listCourtHearingJsonObject = listCourtHearingSteps
                 .preparePayloadToListCourtHearingForGroupCases(LIST_COURT_HEARING_JSON,
@@ -116,6 +143,28 @@ public class GroupCasesIT extends AbstractIT {
                         .withName("public.progression.case-removed-from-group-cases")
                         .withUserId(randomUUID().toString())
                         .build());
+    }
+
+    private void publishMemberCaseRemovedFromGroupCasesEvent(final UUID masterCaseId, final UUID removedCaseId) throws IOException {
+        final JsonObject caseRemovedFromGroupCasesJson = listCourtHearingSteps
+                .preparePayloadMemberCaseRemovedFromGroupCases(PUBLIC_PROGRESSION_CASE_REMOVED_FROM_GROUP_CASES_JSON,
+                        LIST_COURT_HEARING_GROUP_CASES_PART_CASES_JSON,
+                        groupId, masterCaseId, removedCaseId, false);
+
+        sendMessage(publicMessageProducer,
+                "public.progression.case-removed-from-group-cases",
+                caseRemovedFromGroupCasesJson,
+                metadataBuilder().withId(randomUUID())
+                        .withName("public.progression.case-removed-from-group-cases")
+                        .withUserId(randomUUID().toString())
+                        .build());
+    }
+
+    private void verifyHearingsForCase(final UUID caseId, final Matcher matcher) {
+        final String url = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.unallocated-hearings"), caseId.toString()));
+        pollWithDefaults(requestParams(url, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()).build())
+                .until(status().is(Response.Status.OK), payload().isJson(matcher));
     }
 
     private void assertPublicHearingConfirmed(final JsonPath jsonResponse, final UUID masterCaseId) {

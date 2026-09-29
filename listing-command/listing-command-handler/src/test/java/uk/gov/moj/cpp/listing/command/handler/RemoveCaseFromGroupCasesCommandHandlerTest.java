@@ -165,6 +165,40 @@ public class RemoveCaseFromGroupCasesCommandHandlerTest {
     }
 
     @Test
+    public void shouldCreatePrivateEvent_WhenRemovedCaseDefendantHasNoYouthFlag() throws EventStreamException {
+        final ProsecutionCase removedCaseWithoutYouthFlag = ProsecutionCase.prosecutionCase()
+                .withValuesFrom(case1)
+                .withDefendants(asList(Defendant.defendant()
+                        .withValuesFrom(case1.getDefendants().get(0))
+                        .withIsYouth(null)
+                        .build()))
+                .build();
+
+        when(eventSource.getStreamById(MASTER_CASE_ID)).thenReturn(masterCaseEventStream);
+        when(aggregateService.get(masterCaseEventStream, Case.class)).thenReturn(masterCaseAggregate);
+        when(eventSource.getStreamById(HEARING1_ID)).thenReturn(hearing1EventStream);
+        when(aggregateService.get(hearing1EventStream, Hearing.class)).thenReturn(hearing1Aggregate);
+
+        setInitialDataIntoCaseAggregate(MASTER_CASE_ID, asList(HEARING1_ID));
+        setInitialDataIntoHearingAggregate(hearing1Aggregate, asList(masterCase, case1, case2));
+
+        handler.removeCaseFromGroupCases(getJsonEnvelopeForRemoveCommand(GROUP_ID, MASTER_CASE_ID,
+                removedCaseWithoutYouthFlag, null));
+
+        final Stream<JsonEnvelope> envelopeStream = verifyAppendAndGetArgumentFrom(hearing1EventStream);
+        assertThat(envelopeStream, streamContaining(
+                jsonEnvelope(
+                        metadata()
+                                .withName("listing.events.case-removed-from-group-cases"),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearingId", equalTo(HEARING1_ID.toString())),
+                                withJsonPath("$.removedCase.id", equalTo(CASE1_ID.toString())),
+                                withJsonPath("$.removedCase.isGroupMember", equalTo(false)),
+                                withJsonPath("$.removedCase.isGroupMaster", equalTo(false)))
+                        ))));
+    }
+
+    @Test
     public void shouldCreatePrivateEvent_WhenGroupMasterRemoved() throws EventStreamException {
 
         when(eventSource.getStreamById(MASTER_CASE_ID)).thenReturn(masterCaseEventStream);
