@@ -209,10 +209,10 @@ public class ListingCommandApiTest {
     }
 
     /**
-     * Until progression's split endpoint ships (SPRDT-1362) the handler validates and converts, then
-     * accepts. What the conversion produces is asserted directly in {@link
-     * uk.gov.moj.cpp.listing.command.api.service.SplitHearingPayloadConverterTest}; here we only
-     * pin that the handler resolves the court centre it needs and accepts both request shapes.
+     * The handler validates, converts and forwards to progression. What the conversion produces is
+     * asserted directly in {@link
+     * uk.gov.moj.cpp.listing.command.api.service.SplitHearingPayloadConverterTest}; here we pin that
+     * the handler resolves the court centre it needs and accepts both request shapes.
      */
     @Test
     public void shouldAcceptSplitHearingAndResolveTheCourtCentre() {
@@ -244,6 +244,34 @@ public class ListingCommandApiTest {
         listingCommandApi.handleSplitHearing(splitEnvelope(false));
 
         verify(courtCentreFactory).getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class));
+    }
+
+    /**
+     * The proxy's reason to exist. Accepting the request without sending it on would satisfy every
+     * other assertion here, so this pins the forward itself: the action progression is bound to, and
+     * a payload carrying both the source hearing id — which fills progression's URI template — and
+     * the converted list-new-hearing shape.
+     */
+    @Test
+    public void shouldForwardTheConvertedSplitToProgression() {
+        final CourtCentreDetails courtCentre = CourtCentreDetails.courtCentreDetails()
+                .withId(SPLIT_COURT_CENTRE_ID)
+                .withName("Croydon Crown Court")
+                .withCourtrooms(List.of())
+                .build();
+        when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
+
+        listingCommandApi.handleSplitHearing(splitEnvelope(false));
+
+        verify(sender).send(envelopeArgumentCaptor.capture());
+        final Envelope sent = envelopeArgumentCaptor.getValue();
+        assertThat(sent.metadata().name(), is("progression.split-hearing"));
+
+        final JsonObject forwarded = (JsonObject) sent.payload();
+        assertThat("the source hearing id must travel so the client can fill progression's URI",
+                forwarded.getString("hearingId"), is(SPLIT_HEARING_ID.toString()));
+        assertThat("progression receives the converted shape, not the front end's payload",
+                forwarded.containsKey("listNewHearing"), is(true));
     }
 
     @Test

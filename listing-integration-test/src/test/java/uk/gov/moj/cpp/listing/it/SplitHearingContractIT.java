@@ -4,6 +4,7 @@ import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
@@ -14,17 +15,23 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
+import uk.gov.moj.cpp.listing.utils.ProgressionServiceStub;
 
+import java.io.StringReader;
 import java.text.MessageFormat;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonReader;
 import javax.json.JsonString;
 import javax.ws.rs.core.Response;
 
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,17 +39,17 @@ import org.junit.jupiter.api.Test;
 /**
  * SPRDT-1363 — the split-hearing endpoint's contract, for the front end to integrate against.
  *
- * <p>The call on to progression is deliberately absent until its split endpoint ships
- * (SPRDT-1362); listing reaches other contexts through a client generated from their RAML, not a
- * hand-rolled HTTP call. So what is provable here is the contract: the endpoint accepts the
- * front-end's CROWN and MAGISTRATES payloads, and it still performs no enrichment, changes no
- * aggregate and emits no events — the SPRDT-1227 guard, which is why courtscheduler must see
- * nothing for the source hearing.
+ * <p>Listing accepts the front end's CROWN and MAGISTRATES payloads, converts them to
+ * progression's list-new-hearing shape and forwards them through a client generated from
+ * progression's RAML. It performs no enrichment, changes no aggregate and emits no events of its
+ * own — the SPRDT-1227 guard, which is why courtscheduler must see nothing for the source hearing.
  *
  * <p>What the payload converts into is asserted directly in {@code SplitHearingPayloadConverterTest}.
  *
- * <p>hearingId is carried only as the URI parameter. The framework merges it into the payload
- * after schema validation, so a body that also declares it fails {@code additionalProperties}.
+ * <p>On the way in, hearingId is carried only as the URI parameter — the framework merges it into
+ * the payload after schema validation, so an inbound body that also declares it fails
+ * {@code additionalProperties}. On the way out it is put into the payload so the generated
+ * client can fill progression's URI template, and the framework then drops it from the body.
  */
 public class SplitHearingContractIT extends AbstractIT {
 
@@ -71,6 +78,7 @@ public class SplitHearingContractIT extends AbstractIT {
         stubGetReferenceDataHearingTypes(randomUUID());
         stubGetReferenceDataOrganisationUnitById(fromString(COURT_CENTRE_ID));
         stubOrganisationUnit(fromString(COURT_CENTRE_ID));
+        ProgressionServiceStub.stubSplitHearing();
     }
 
     private String buildSplitHearingUrl(final UUID hearingId) {
@@ -168,6 +176,35 @@ public class SplitHearingContractIT extends AbstractIT {
         givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
 
         assertThat(postSplit(hearingId, magsSplitPayload()).getStatus(), is(HttpStatus.SC_ACCEPTED));
+    }
+
+    /**
+     * The proxy's whole purpose: a split accepted by listing has to reach progression, which owns
+     * the operation. Asserting the 202 alone would pass just as well if the forward were missing —
+     * so this reads the request progression actually received, and checks it carries the converted
+     * shape rather than the front end's.
+     */
+    @Test
+    void shouldForwardTheConvertedSplitToProgression() throws Exception {
+        final UUID hearingId = randomUUID();
+        givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+
+        assertThat(postSplit(hearingId, crownSplitPayload()).getStatus(), is(HttpStatus.SC_ACCEPTED));
+
+        final List<LoggedRequest> forwarded = ProgressionServiceStub.splitRequestsForHearing(hearingId.toString());
+        assertThat("listing must forward the split to progression", forwarded, hasSize(1));
+
+        final LoggedRequest request = forwarded.get(0);
+        assertThat("the source hearing id addresses progression's endpoint",
+                request.getUrl(), containsString(hearingId.toString()));
+
+        try (final JsonReader reader = Json.createReader(new StringReader(request.getBodyAsString()))) {
+            final JsonObject body = reader.readObject();
+            assertThat("progression receives the converted list-new-hearing shape, not listing's payload",
+                    body.containsKey("listNewHearing"), is(true));
+            assertThat("the hearing id is spent filling the URI template, so the framework drops it from the body",
+                    body.containsKey("hearingId"), is(false));
+        }
     }
 
     /**

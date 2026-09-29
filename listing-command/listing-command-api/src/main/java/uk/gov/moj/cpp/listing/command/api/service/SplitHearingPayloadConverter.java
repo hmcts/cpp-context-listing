@@ -41,6 +41,7 @@ public final class SplitHearingPayloadConverter {
     private static final String DEFENDANTS = "defendants";
     private static final String OFFENCES = "offences";
     private static final String OFFENCE_ID = "offenceId";
+    private static final String COURT_CENTRE_ID = "courtCentreId";
 
     // Copied field-for-field from a virtual nonDefaultDay onto a bookedSlot; `virtual` is dropped.
     private static final List<String> BOOKED_SLOT_FIELDS = List.of(
@@ -62,7 +63,10 @@ public final class SplitHearingPayloadConverter {
         final JsonObjectBuilder listNewHearing = createObjectBuilder();
 
         copyIfPresent(splitHearing, "type", listNewHearing, "hearingType");
-        PASS_THROUGH_FIELDS.forEach(field -> copyIfPresent(splitHearing, field, listNewHearing, field));
+        // Empty arrays are dropped rather than forwarded: progression's courtHearingRequest requires
+        // at least one entry wherever these appear, so passing the front end's empty judiciary on a
+        // split — which carries no judiciary yet — makes progression reject the whole request.
+        PASS_THROUGH_FIELDS.forEach(field -> copyIfPresentAndNotEmpty(splitHearing, field, listNewHearing, field));
 
         if (!bookedSlots.isEmpty()) {
             listNewHearing.add(BOOKED_SLOTS, bookedSlots);
@@ -100,6 +104,13 @@ public final class SplitHearingPayloadConverter {
             }
             final JsonObjectBuilder slot = createObjectBuilder();
             BOOKED_SLOT_FIELDS.forEach(field -> copyIfPresent(day, field, slot, field));
+            // Listing reads courtCentreId off every booked slot unguarded when it turns them into
+            // hearing days, so a slot without one fails the onward listing of the new hearing well
+            // after the split was accepted. The front end sets it per day only when a day sits
+            // somewhere other than the hearing's own centre, so fall back to the split's centre.
+            if (!day.containsKey(COURT_CENTRE_ID) || day.isNull(COURT_CENTRE_ID)) {
+                copyIfPresent(splitHearing, COURT_CENTRE_ID, slot, COURT_CENTRE_ID);
+            }
             slots.add(slot);
         }
         return slots.build();
@@ -202,6 +213,17 @@ public final class SplitHearingPayloadConverter {
                     .forEach(offence -> offenceIds.add(offence.get(OFFENCE_ID)));
         }
         return offenceIds.build();
+    }
+
+    private static void copyIfPresentAndNotEmpty(final JsonObject source, final String sourceField,
+                                                 final JsonObjectBuilder target, final String targetField) {
+        if (source.containsKey(sourceField) && !source.isNull(sourceField)) {
+            final JsonValue value = source.get(sourceField);
+            if (value.getValueType() == JsonValue.ValueType.ARRAY && ((JsonArray) value).isEmpty()) {
+                return;
+            }
+            target.add(targetField, value);
+        }
     }
 
     private static void copyIfPresent(final JsonObject source, final String sourceField,

@@ -145,6 +145,7 @@ public class ListingCommandApi {
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandApi.class);
     private static final String PROSECUTION_CASES = "prosecutionCases";
     private static final String HEARING_ID = "hearingId";
+    private static final String PROGRESSION_SPLIT_HEARING = "progression.split-hearing";
     public static final String START_DATE_MUST_BE_SMALLER_THAN_END_DATE = "startDate must be smaller than endDate";
     public static final String WEEK_COMMENCING_START_DATE_MUST_BE_SMALLER_THAN_WEEK_COMMENCING_END_DATE = "Week commencing start date must be smaller than week commencing end date";
 
@@ -401,11 +402,11 @@ public class ListingCommandApi {
     }
 
     /**
-     * Validates the front-end's split payload and converts it to progression's list-new-hearing
-     * shape, then accepts. The call to progression is deliberately absent: listing wires to other
-     * contexts through a generated client from their RAML, and progression's split endpoint
-     * (SPRDT-1362) is not released yet. This lets the UI integrate against the finished contract
-     * now; SPRDT-1363's follow-up adds the generated client once progression ships.
+     * Validates the front-end's split payload, converts it to progression's list-new-hearing shape
+     * and forwards it to progression, which performs the split. The forward goes through the
+     * generated {@code RemoteCommandApi2ProgressionCommandApi} client, which is bound to the
+     * {@code progression.split-hearing} action and fills {@code /hearing/&#123;hearingId&#125;/split}
+     * from the payload — so the hearing id has to travel in the body as well as the URI.
      */
     @Handles("listing.command.split-hearing")
     public void handleSplitHearing(final JsonEnvelope envelope) {
@@ -428,9 +429,13 @@ public class ListingCommandApi {
                 courtRoomName(courtCentre, payload),
                 null);
 
-        LOGGER.info("split-hearing accepted for hearing {}; converted request holds {} defendant request(s)",
+        LOGGER.info("split-hearing accepted for hearing {}; forwarding {} defendant request(s) to progression",
                 hearingId,
                 progressionRequest.getJsonObject("listNewHearing").getJsonArray("listDefendantRequests").size());
+
+        sender.send(envelopeFrom(
+                metadataFrom(envelope.metadata()).withName(PROGRESSION_SPLIT_HEARING),
+                createObjectBuilder(progressionRequest).add(HEARING_ID, hearingId).build()));
     }
 
     private static String courtRoomName(final CourtCentreDetails courtCentre, final JsonObject payload) {
