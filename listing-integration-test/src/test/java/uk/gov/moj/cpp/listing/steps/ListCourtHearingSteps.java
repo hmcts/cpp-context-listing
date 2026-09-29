@@ -2629,6 +2629,32 @@ public class ListCourtHearingSteps extends AbstractIT {
         return new StringToJsonObjectConverter().convert(eventPayloadString);
     }
 
+    public JsonObject preparePayloadMemberCaseRemovedFromGroupCases(final String fileName, final String casesFileName,
+                                                                    final UUID groupId, final UUID masterCaseId,
+                                                                    final UUID removedCaseId, final boolean removedDefendantHasYouthFlag) throws IOException {
+
+        String removedCase = getGroupCase(getStringFromResource(casesFileName), groupId, removedCaseId, randomUUID(), true, false, false);
+        if (!removedDefendantHasYouthFlag) {
+            removedCase = removedCase.replaceAll("\"isYouth\"\\s*:\\s*(true|false)\\s*,", "");
+        }
+
+        final String eventPayloadString = getStringFromResource(fileName)
+                .replaceAll("GROUP_ID", groupId.toString())
+                .replaceAll("MASTER_CASE_ID", masterCaseId.toString())
+                .replace("REMOVED_CASE", removedCase)
+                .replace("NEW_GROUP_MASTER", "null");
+
+        // a member (not the master) is removed, so there is no new group master
+        final JsonObject eventPayload = new StringToJsonObjectConverter().convert(eventPayloadString);
+        final JsonObjectBuilder builder = createObjectBuilder();
+        eventPayload.forEach((key, value) -> {
+            if (!"newGroupMaster".equals(key)) {
+                builder.add(key, value);
+            }
+        });
+        return builder.build();
+    }
+
     private String getGroupCase(final String caseString, final UUID groupId, final UUID caseId, final UUID defendantId,
                                 final Boolean isCivil, final Boolean isGroupMember, final Boolean isGroupMaster) {
         String newCase = caseString;

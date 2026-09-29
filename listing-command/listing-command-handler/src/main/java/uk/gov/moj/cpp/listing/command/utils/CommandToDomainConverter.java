@@ -203,6 +203,10 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
     }
 
     private ZonedDateTime getHearingStartDateTime(final HearingListingNeeds commandHearing) {
+        // no hearing when building a listed case on its own, e.g. a case removed from bulk (group) cases
+        if (isNull(commandHearing)) {
+            return null;
+        }
         return nonNull(extractStartDate(commandHearing)) ? ZonedDateTimes.fromString(extractStartDate(commandHearing).toString()) : null;
     }
 
