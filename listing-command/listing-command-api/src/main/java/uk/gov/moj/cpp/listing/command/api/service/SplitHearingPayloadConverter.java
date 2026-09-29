@@ -46,7 +46,7 @@ public final class SplitHearingPayloadConverter {
     // Copied field-for-field from a virtual nonDefaultDay onto a bookedSlot; `virtual` is dropped.
     private static final List<String> BOOKED_SLOT_FIELDS = List.of(
             START_TIME, DURATION, "courtScheduleId", "session", "oucode",
-            "courtRoomId", "courtCentreId", "roomId");
+            "courtRoomId", COURT_CENTRE_ID, "roomId");
 
     private static final List<String> PASS_THROUGH_FIELDS = List.of(
             "jurisdictionType", "judiciary", "priority", "bookingType", "specialRequirements");
@@ -172,7 +172,7 @@ public final class SplitHearingPayloadConverter {
                                           final String courtCentreName,
                                           final String courtRoomName) {
         final JsonObjectBuilder courtCentre = createObjectBuilder();
-        copyIfPresent(splitHearing, "courtCentreId", courtCentre, "id");
+        copyIfPresent(splitHearing, COURT_CENTRE_ID, courtCentre, "id");
         if (!isNull(courtCentreName)) {
             courtCentre.add("name", courtCentreName);
         }
