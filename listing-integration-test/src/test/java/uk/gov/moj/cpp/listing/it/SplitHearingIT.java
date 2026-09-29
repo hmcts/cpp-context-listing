@@ -7,6 +7,8 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static org.hamcrest.Matchers.notNullValue;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
@@ -51,14 +53,19 @@ import org.junit.jupiter.api.Test;
  * {@code additionalProperties}. On the way out it is put into the payload so the generated
  * client can fill progression's URI template, and the framework then drops it from the body.
  */
-public class SplitHearingContractIT extends AbstractIT {
+public class SplitHearingIT extends AbstractIT {
 
+    private static final String MEDIA_TYPE_PROGRESSION_SPLIT_HEARING =
+            "application/vnd.progression.split-hearing+json";
     private static final String MEDIA_TYPE_SPLIT_HEARING =
             "application/vnd.listing.command.split-hearing+json";
     private static final String SPLIT_HEARING_ENDPOINT_KEY = "listing.command.update-hearing-for-listing";
 
     private static final String COURT_CENTRE_ID = "07e45c88-9e5d-3e44-b664-d5345bb13be2";
     private static final String COURT_ROOM_ID = "731816c1-5ee4-373a-9bda-840e13a5bcb0";
+    private static final String SPLIT_CASE_ID = "b14ba162-3f21-4c8e-9a77-1d2e5c8b4a90";
+    private static final String SPLIT_DEFENDANT_ID = "7ba20d5f-5c44-4a1b-8e33-9f6d2c7a5b18";
+    private static final String SPLIT_OFFENCE_ID = "79d8699d-2a31-4c55-b7e8-3f1a9d6c2e44";
 
     /**
      * The handler resolves the court centre through reference data before converting, so without
@@ -198,12 +205,40 @@ public class SplitHearingContractIT extends AbstractIT {
         assertThat("the source hearing id addresses progression's endpoint",
                 request.getUrl(), containsString(hearingId.toString()));
 
+        assertThat("progression's own media type must be used, not listing's",
+                request.getHeader(CONTENT_TYPE), containsString(MEDIA_TYPE_PROGRESSION_SPLIT_HEARING));
+
         try (final JsonReader reader = Json.createReader(new StringReader(request.getBodyAsString()))) {
             final JsonObject body = reader.readObject();
-            assertThat("progression receives the converted list-new-hearing shape, not listing's payload",
-                    body.containsKey("listNewHearing"), is(true));
             assertThat("the hearing id is spent filling the URI template, so the framework drops it from the body",
                     body.containsKey("hearingId"), is(false));
+
+            final JsonObject listNewHearing = body.getJsonObject("listNewHearing");
+            assertThat("progression receives the converted list-new-hearing shape, not listing's payload",
+                    listNewHearing, is(notNullValue()));
+
+            // the offences the front end nests under prosecutionCases arrive as a flat id list
+            final JsonObject defendantRequest = listNewHearing
+                    .getJsonArray("listDefendantRequests").getJsonObject(0);
+            assertThat(defendantRequest.getString("prosecutionCaseId"), is(SPLIT_CASE_ID));
+            assertThat(defendantRequest.getString("defendantId"), is(SPLIT_DEFENDANT_ID));
+            assertThat(defendantRequest.getJsonArray("defendantOffences").getString(0), is(SPLIT_OFFENCE_ID));
+
+            // virtual nonDefaultDays become bookedSlots, and every slot carries a court centre
+            final JsonObject bookedSlot = listNewHearing.getJsonArray("bookedSlots").getJsonObject(0);
+            assertThat(bookedSlot.containsKey("virtual"), is(false));
+            assertThat(bookedSlot.getInt("duration"), is(1080));
+            assertThat("a slot without a court centre fails the onward listing of the new hearing",
+                    bookedSlot.getString("courtCentreId"), is(COURT_CENTRE_ID));
+
+            // the request carries only a courtCentreId, so a name at all proves listing resolved it
+            // through reference data rather than echoing what the front end sent
+            assertThat(listNewHearing.getJsonObject("courtCentre").getString("id"), is(COURT_CENTRE_ID));
+            assertThat("the court centre name is resolved, not echoed",
+                    listNewHearing.getJsonObject("courtCentre").getString("name", "").isEmpty(), is(false));
+
+            assertThat("a split carries no judiciary yet, and progression rejects an empty one",
+                    listNewHearing.containsKey("judiciary"), is(false));
         }
     }
 
