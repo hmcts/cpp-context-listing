@@ -344,6 +344,10 @@ class HearingIT extends AbstractIT {
         updateHearingSteps.verifyHearingDaysWhenQueryingFromAPI();
     }
 
+    // Despite the historic name, this payload carries no prosecutionCases, so the classifier returns
+    // UNALLOCATED_NO_OFFENCE_CHANGE on its early return and never reaches the SPRDT-1365 split guard.
+    // It is a plain no-offence-change update and is unaffected by the teardown; the guard is covered
+    // by HearingDaysIT, whose payload does carry an offence subset.
     @Test
     void updateHearingResultsWhenMultipleOffencesSplitToMultipleHearings() throws IOException {
         final HearingsData hearingsData = singleHearingDataSingleCaseMultipleOffences();
@@ -358,7 +362,6 @@ class HearingIT extends AbstractIT {
         stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
         updateHearingSteps.whenHearingIsUpdatedForListingHmiEnabledWithoutCourtRoomSelection();
         updateHearingSteps.verifyPublicEventHearingDaysChangedForHearing();
-
     }
 
     @Test

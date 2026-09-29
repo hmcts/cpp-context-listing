@@ -151,6 +151,14 @@ public class ExtendHearingUtils {
 
     }
 
+    /**
+     * Classifies what an update-hearing-for-listing request is asking for.
+     *
+     * SPLIT is detected only — rejected; splits are performed via progression. The two SPLIT arms
+     * below must stay: without them an allocated hearing's subset request falls through to
+     * PARTIAL_ALLOCATION, which applies room and date changes to the original hearing. That is the
+     * SPRDT-1227 failure mode, and worse than rejecting the request.
+     */
     @SuppressWarnings({"squid:S107"})
     public HearingUpdateOperationType getOperationType(final UUID hearingId,
                                                        final uk.gov.justice.listing.events.Hearing storedHearing,
