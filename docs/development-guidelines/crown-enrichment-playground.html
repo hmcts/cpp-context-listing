@@ -1,0 +1,1251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Crown Court Enrichment Playground — cpp-context-listing</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #161c24;
+    --panel-2: #1c242e;
+    --border: #2a3442;
+    --border-strong: #3a4757;
+    --text: #e6edf3;
+    --text-dim: #97a4b3;
+    --text-faint: #5e6b7a;
+    --accent: #7ee8c8;
+    --accent-warm: #f0b27a;
+    --accent-cold: #6db3f2;
+    --danger: #ef6b6b;
+    --code-bg: #0a0f15;
+    --highlight: #2a3a3a;
+    --mono: 'SF Mono', ui-monospace, 'JetBrains Mono', Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  header {
+    padding: 20px 28px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  header h1 {
+    font-size: 18px;
+    margin: 0 0 4px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  header .sub {
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  header .sub code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--code-bg);
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: var(--accent);
+  }
+  main {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 60px);
+  }
+  aside {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 20px 22px 100px;
+    overflow-y: auto;
+  }
+  .preview {
+    padding: 20px 28px 200px;
+    overflow-y: auto;
+  }
+  .group { margin-bottom: 22px; }
+  .group h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    margin: 0 0 10px;
+    font-weight: 600;
+  }
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  select, input[type="range"], button {
+    font-family: inherit;
+    font-size: 13px;
+  }
+  select {
+    width: 100%;
+    padding: 8px 10px;
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  select:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .range-val {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    margin-left: 6px;
+  }
+  .range-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 2px;
+  }
+  .toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 6px;
+    font-size: 13px;
+    user-select: none;
+    transition: all 0.1s;
+  }
+  .toggle:hover { border-color: var(--border-strong); }
+  .toggle.on { border-color: var(--accent); background: rgba(126, 232, 200, 0.06); }
+  .toggle .pip {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text-faint);
+  }
+  .toggle.on .pip { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .toggle .lbl-main { flex: 1; }
+  .toggle .lbl-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+  .toggle.disabled { opacity: 0.4; cursor: not-allowed; }
+  .toggle code {
+    font-family: var(--mono);
+    background: var(--code-bg);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 11px;
+    color: var(--accent);
+  }
+  .preset-grid { display: grid; gap: 6px; }
+  button.preset {
+    text-align: left;
+    padding: 8px 10px;
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  button.preset:hover { border-color: var(--accent); color: var(--accent); }
+  button.preset .pname { font-weight: 500; font-size: 13px; }
+  button.preset .pdesc { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+
+  /* Flow preview */
+  .journey-header {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+  }
+  .journey-header .jname {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .journey-header .jdesc {
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+
+  .step {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    position: relative;
+  }
+  .step-list { display: flex; flex-direction: column; gap: 0; }
+  .arrow {
+    width: 1px;
+    height: 18px;
+    background: var(--border-strong);
+    margin: 0 auto;
+    position: relative;
+  }
+  .arrow::after {
+    content: "▼";
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--border-strong);
+    font-size: 10px;
+  }
+
+  .step .stage {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .step .title {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .step .code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--accent);
+    display: inline-block;
+  }
+  .step .endpoint {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-left: 6px;
+  }
+  .step .lines {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .step .lines .line {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .step .lines .line .verb {
+    color: var(--text-faint);
+    font-size: 11px;
+  }
+  .step .pub-evt .code { color: var(--accent-warm); }
+  .step .priv-evt .code { color: var(--accent-cold); }
+
+  .step.entry { border-left: 3px solid var(--accent-cold); }
+  .step.crossctx { border-left: 3px solid var(--accent-warm); }
+  .step.listing { border-left: 3px solid var(--accent); }
+  .step.enrich {
+    border-left: 3px solid var(--accent);
+    background: linear-gradient(90deg, rgba(126,232,200,0.04), transparent 60%);
+  }
+  .step.public { border-left: 3px solid var(--accent-warm); }
+
+  /* Enrichment subgraph */
+  .enrich-tree {
+    margin-top: 10px;
+    background: var(--code-bg);
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .enrich-tree .branch { display: block; padding: 2px 0; white-space: pre; }
+  .enrich-tree .branch.active { color: var(--accent); font-weight: 600; }
+  .enrich-tree .branch.muted {
+    color: var(--text-faint);
+    text-decoration: line-through;
+    opacity: 0.5;
+  }
+  .enrich-tree .branch.label {
+    color: var(--text-dim);
+    margin-top: 6px;
+    text-decoration: none;
+    opacity: 1;
+  }
+  .enrich-outcome {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .enrich-outcome.allocated {
+    background: rgba(126, 232, 200, 0.08);
+    border: 1px solid rgba(126, 232, 200, 0.3);
+    color: var(--accent);
+  }
+  .enrich-outcome.unallocated {
+    background: rgba(240, 178, 122, 0.08);
+    border: 1px solid rgba(240, 178, 122, 0.3);
+    color: var(--accent-warm);
+  }
+  .enrich-outcome.skipped {
+    background: rgba(150, 150, 150, 0.06);
+    border: 1px solid var(--border-strong);
+    color: var(--text-dim);
+  }
+  .enrich-outcome.multiday {
+    background: rgba(109, 179, 242, 0.08);
+    border: 1px solid rgba(109, 179, 242, 0.3);
+    color: var(--accent-cold);
+  }
+
+  /* Prompt panel */
+  .prompt-panel {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--panel);
+    border-top: 1px solid var(--border-strong);
+    padding: 14px 28px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 5;
+  }
+  .prompt-panel .label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .prompt-panel pre {
+    flex: 1;
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    white-space: pre-wrap;
+    line-height: 1.55;
+  }
+  .copy-btn {
+    background: var(--accent);
+    color: #04150e;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    align-self: flex-start;
+    transition: all 0.1s;
+  }
+  .copy-btn:hover { filter: brightness(1.1); }
+  .copy-btn.copied { background: var(--accent-cold); }
+
+  details summary {
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 12px;
+    padding: 4px 0;
+  }
+  details summary:hover { color: var(--text); }
+  .legend {
+    display: flex;
+    gap: 14px;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-faint);
+    flex-wrap: wrap;
+  }
+  .legend span::before { content: "■"; margin-right: 4px; }
+  .legend .lg-entry::before { color: var(--accent-cold); }
+  .legend .lg-cross::before { color: var(--accent-warm); }
+  .legend .lg-listing::before { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Crown Court Enrichment Playground</h1>
+  <div class="sub">
+    Interactive route explorer for <code>cpp-context-listing</code> Crown enrichment.
+    Branch <code>team/ccsph2n</code> · driven by <code>docs/development-guidelines/journeys.md</code>
+  </div>
+</header>
+
+<main>
+  <aside>
+    <div class="group">
+      <h3>Journey</h3>
+      <div class="field">
+        <select id="journey">
+          <option value="adhoc">1. Adhoc Hearing (Crown)</option>
+          <option value="unalloc">2. Unallocated → Allocated</option>
+          <option value="updateAlloc">3. Update Allocated Hearing</option>
+          <option value="directListing">MCC → Crown (Direct Listing)</option>
+          <option value="adjFixed">4a. Adjournment — Fixed Date</option>
+          <option value="adjWC">4b. Adjournment — Week Commencing</option>
+          <option value="adjUnsched">4c. Adjournment — Unscheduled</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Crown Enrichment Inputs</h3>
+      <div class="field">
+        <label>Estimated minutes <span class="range-val" id="durVal">240</span></label>
+        <input type="range" id="duration" min="0" max="1440" step="30" value="240" />
+        <div class="range-meta">Threshold: <span style="color:var(--accent);">&gt; 360</span> = multi-day</div>
+      </div>
+
+      <div class="toggle on" id="t-csi">
+        <div class="pip"></div>
+        <div class="lbl-main">Has <code>courtScheduleId</code></div>
+        <div class="lbl-sub" id="csi-state">on</div>
+      </div>
+      <div class="toggle" id="t-draft">
+        <div class="pip"></div>
+        <div class="lbl-main"><code>isDraft</code> session</div>
+        <div class="lbl-sub" id="draft-state">off</div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Presets</h3>
+      <div class="preset-grid" id="presets"></div>
+    </div>
+
+    <div class="group">
+      <details>
+        <summary>About this playground</summary>
+        <p style="font-size:12px;color:var(--text-dim);margin-top:8px;">
+          The journey selector picks the outer flow from
+          <code style="font-family:var(--mono);font-size:11px;background:var(--code-bg);padding:1px 4px;border-radius:3px;color:var(--accent);">journeys.md</code>.
+          Each step shows the handler/event with its endpoint or action name in
+          parentheses. Crown-specific inputs drive the inner enrichment branch
+          documented in the
+          <code style="font-family:var(--mono);font-size:11px;background:var(--code-bg);padding:1px 4px;border-radius:3px;color:var(--accent);">crownphase2</code>
+          skill.
+        </p>
+        <div class="legend">
+          <span class="lg-entry">UI / cross-context entry</span>
+          <span class="lg-cross">Public events</span>
+          <span class="lg-listing">Listing internal</span>
+        </div>
+      </details>
+    </div>
+  </aside>
+
+  <section class="preview">
+    <div class="journey-header">
+      <div class="jname" id="jName">Adhoc Hearing (Crown)</div>
+      <div class="jdesc" id="jDesc">…</div>
+    </div>
+    <div class="step-list" id="steps"></div>
+  </section>
+</main>
+
+<div class="prompt-panel">
+  <div style="flex:1;">
+    <div class="label">Prompt (copy back into Claude)</div>
+    <pre id="prompt"></pre>
+  </div>
+  <button class="copy-btn" id="copy">Copy</button>
+</div>
+
+<script>
+'use strict';
+
+/* ============================================================
+   Safe DOM helper — never uses innerHTML with dynamic content.
+   ============================================================ */
+function el(tag, opts, kids) {
+  const node = document.createElement(tag);
+  if (opts) {
+    if (opts.cls) node.className = opts.cls;
+    if (opts.text != null) node.textContent = opts.text;
+    if (opts.attrs) {
+      for (const k in opts.attrs) node.setAttribute(k, opts.attrs[k]);
+    }
+    if (opts.style) {
+      for (const k in opts.style) node.style[k] = opts.style[k];
+    }
+  }
+  if (kids && kids.length) {
+    for (const c of kids) {
+      if (c == null || c === false) continue;
+      node.appendChild(c instanceof Node ? c : document.createTextNode(String(c)));
+    }
+  }
+  return node;
+}
+function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  journey: 'adhoc',
+  duration: 240,
+  hasCSI: true,
+  isDraft: false,
+};
+
+/* ============================================================
+   PRESETS
+   ============================================================ */
+const PRESETS = [
+  {
+    name: 'Adhoc Crown — Allocated',
+    desc: 'courtScheduleId + isDraft=false, single-day',
+    apply: { journey: 'adhoc', duration: 240, hasCSI: true, isDraft: false },
+  },
+  {
+    name: 'Adhoc Crown — Unallocated',
+    desc: 'courtScheduleId + isDraft=true (draft session)',
+    apply: { journey: 'adhoc', duration: 240, hasCSI: true, isDraft: true },
+  },
+  {
+    name: 'Crown Multi-Day Trial',
+    desc: 'estimatedMinutes = 1080 → multidaysearchandbook',
+    apply: { journey: 'adhoc', duration: 1080, hasCSI: false, isDraft: false },
+  },
+  {
+    name: 'MCC Direct Listing',
+    desc: 'Mags committal with courtScheduleIds → handleDirectListingCase',
+    apply: { journey: 'directListing', duration: 310, hasCSI: true, isDraft: false },
+  },
+  {
+    name: 'Adjournment — Fixed Date Multi-day',
+    desc: 'list-next-hearings-v2, 1080 min',
+    apply: { journey: 'adjFixed', duration: 1080, hasCSI: false, isDraft: false },
+  },
+  {
+    name: 'Adjournment — Week Commencing',
+    desc: 'short-circuits enrichment entirely',
+    apply: { journey: 'adjWC', duration: 60, hasCSI: false, isDraft: false },
+  },
+  {
+    name: 'Adjournment — Unscheduled',
+    desc: 'list-unscheduled-next-hearings — different handler',
+    apply: { journey: 'adjUnsched', duration: 0, hasCSI: false, isDraft: false },
+  },
+];
+
+/* ============================================================
+   JOURNEY DEFINITIONS — sourced from journeys.md.
+   Each step: { type, stage, title, code, endpoint, lines?, showEnrichment? }
+     type ∈ entry | crossctx | listing | enrich | public
+     lines: [{ kind: 'pub'|'priv', verb: string, code: string, sub?: string }]
+   ============================================================ */
+const JOURNEYS = {
+  adhoc: {
+    name: '1. Adhoc Hearing (Crown)',
+    desc: 'New hearing started directly at Crown — triggered from the prosecution casefile UI.',
+    steps: [
+      {
+        type: 'entry',
+        stage: 'Step 1 — Progression: Command API',
+        title: 'cpp-ui-prosecution-casefile → progression',
+        code: 'progression.list-new-hearing',
+        endpoint: '(POST /defendant/{defendantId}/courtdocument/{materialId})',
+      },
+      {
+        type: 'entry',
+        stage: 'Step 2 — Progression: Command Handler',
+        title: 'ListNewHearingHandler.handle()',
+        code: 'progression.command.list-new-hearing',
+        lines: [
+          { kind: 'priv', verb: 'raises', code: 'progression.event.list-hearing-requested' },
+        ],
+      },
+      {
+        type: 'crossctx',
+        stage: 'Step 3 — Progression: Event Processor',
+        title: 'ListHearingRequestedProcessor.handle()',
+        code: 'sends cross-context command →',
+        endpoint: '(listing.command.list-court-hearing)',
+      },
+      {
+        type: 'listing',
+        stage: 'Step 4 — Listing: Command API',
+        title: 'ListingCommandApi.handleListCourtHearing()',
+        code: 'listing.command.list-court-hearing',
+        endpoint: '(enriches → listing.command.list-court-hearing-enriched)',
+      },
+      {
+        type: 'enrich',
+        stage: 'Crown Enrichment Pipeline',
+        title: 'HearingEnrichmentOrchestrator.enrichListCourtHearing()',
+        code: 'CourtScheduleEnrichmentService',
+        showEnrichment: true,
+      },
+      {
+        type: 'listing',
+        stage: 'Step 5 — Listing: Command Handler',
+        title: 'ListingCommandHandler.listCourtHearing()',
+        code: 'listing.command.list-court-hearing-enriched',
+        lines: [
+          { kind: 'priv', verb: 'raises', code: 'listing.events.hearing-listed' },
+          { kind: 'priv', verb: 'raises', code: 'listing.event.court-centre-details', sub: '(aggregate-only)' },
+        ],
+      },
+      {
+        type: 'public',
+        stage: 'Step 6 — Public Events',
+        title: 'ListingEventProcessor.handleHearingListedMessage()',
+        code: 'sends → add-hearing-to-case · add-court-application-to-hearing',
+        lines: [
+          { kind: 'pub', verb: 'publishes', code: 'public.listing.hearing-listed', sub: '→ businessprocesses, notification' },
+          { kind: 'pub', verb: 'publishes', code: 'public.listing.court-application-added-for-hearing', sub: '→ notification' },
+          { kind: 'pub', verb: 'publishes', code: 'public.listing.hearing-added-to-case', sub: '→ notification (via Step 7b)' },
+        ],
+      },
+    ],
+  },
+
+  unalloc: {
+    name: '2. Unallocated → Allocated (Crown)',
+    desc: 'Listing officer assigns a courtroom/date to an unallocated Crown hearing.',
+    steps: [
+      {
+        type: 'entry',
+        stage: 'Step 1 — Listing: Command API',
+        title: 'ListingCommandApi.handleUpdateHearingForListing()',
+        code: 'listing.command.update-hearing-for-listing',
+        endpoint: '(POST /hearings/{hearingId})',
+      },
+      {
+        type: 'enrich',
+        stage: 'Crown Enrichment Pipeline',
+        title: 'HearingEnrichmentOrchestrator.enrichUpdateHearing()',
+        code: 'CourtScheduleEnrichmentService',
+        showEnrichment: true,
+      },
+      {
+        type: 'listing',
+        stage: 'Step 2 — Listing: Command Handler',
+        title: 'ListingCommandHandler.updateHearingForListing()',
+        code: 'listing.command.update-hearing-for-listing-enriched',
+        lines: [
+          { kind: 'priv', verb: 'raises', code: 'listing.events.hearing-listed' },
+          { kind: 'priv', verb: 'raises', code: 'listing.event.cases-added-to-hearing' },
+          { kind: 'priv', verb: 'raises', code: 'listing.event.added-cases-for-hearing', sub: '(viewstore)' },
+        ],
+      },
+      {
+        type: 'public',
+        stage: 'Step 3 — Public Events (hearing-listed)',
+        title: 'ListingEventProcessor.handleHearingListedMessage()',
+        code: 'add-hearing-to-case · add-court-application-to-hearing',
+        lines: [
+          { kind: 'pub', verb: 'publishes', code: 'public.listing.hearing-listed', sub: '→ businessprocesses' },
+          { kind: 'pub', verb: 'publishes', code: 'public.listing.court-application-added-for-hearing' },
+        ],
+      },
+      {
+        type: 'public',
+        stage: 'Step 4 — Public Events (cases-added)',
+        title: 'UpdateExistingHearingEventProcessor.handleCasesAddedToHearingEvent()',
+        code: 'sends → listing.command.add-hearing-to-case',
+        lines: [
+          { kind: 'pub', verb: 'publishes', code: 'public.listing.cases-added-to-hearing', sub: '→ progression, notification' },
+          { kind: 'pub', verb: 'publishes', code: 'public.events.listing.cases-added-for-updated-related-hearing', sub: '→ progression' },
+        ],
+      },
+    ],
+  },
+
+  updateAlloc: {
+    name: '3. Update Allocated Hearing (Crown)',
+    desc: 'Listing officer changes courtroom/date/judiciary on an already-allocated Crown hearing.',
+    steps: [
+      {
+        type: 'entry',
+        stage: 'Step 1 — Listing: Command API',
+        title: 'ListingCommandApi.handleUpdateHearingForListing()',
+        code: 'listing.command.update-hearing-for-listing',
+        endpoint: '(POST /hearings/{hearingId})',
+      },
+      {
+        type: 'enrich',
+        stage: 'Crown Enrichment Pipeline',
+        title: 'HearingEnrichmentOrchestrator.enrichUpdateHearing()',
+        code: 'CourtScheduleEnrichmentService',
+        showEnrichment: true,
+      },
+      {
+        type: 'listing',
+        stage: 'Step 2 — Listing: Command Handler',
+        title: 'ListingCommandHandler.updateHearingForListing()',
+        code: 'aggregate raises (conditional):',
+        lines: [
+          { kind: 'priv', verb: 'raises', code: 'listing.events.allocated-hearing-deleted', sub: 'old allocation replaced' },
+          { kind: 'priv', verb: 'raises', code: 'listing.events.hearing-listed', sub: 're-listed' },
+          { kind: 'priv', verb: 'raises', code: 'listing.event.cases-added-to-hearing' },
+          { kind: 'priv', verb: 'raises', code: 'listing.event.court-list-export-requested', sub: 'Xhibit side-effect' },
+        ],
+      },
+      {
+        type: 'public',
+        stage: 'Step 3 — Public Events (allocated-hearing-deleted)',
+        title: 'NextHearingProcessor.handleAllocatedHearingDeleted()',
+        code: 'sends → listing.command.mark-hearing-as-duplicate-for-case',
+        lines: [
+          { kind: 'pub', verb: 'publishes', code: 'public.events.listing.allocated-hearing-deleted', sub: '→ hearing, progression' },
+        ],
+      },
+      {
+        type: 'public',
+        stage: 'Step 4 — Public Events (re-listed)',
+        title: 'ListingEventProcessor.handleHearingListedMessage()',
+        code: 'same as Adhoc Steps 6–8',
+        lines: [
+          { kind: 'pub', verb: 'publishes', code: 'public.listing.hearing-listed' },
+          { kind: 'pub', verb: 'publishes', code: 'public.listing.cases-added-to-hearing', sub: '→ progression' },
+          { kind: 'pub', verb: 'publishes', code: 'public.events.listing.cases-added-for-updated-related-hearing', sub: '→ progression' },
+        ],
+      },
+    ],
+  },
+
+  directListing: {
+    name: 'MCC → Crown Direct Listing',
+    desc: 'Magistrates committal to Crown with courtScheduleIds in payload — invokes handleDirectListingCase.',
+    steps: [
+      {
+        type: 'entry',
+        stage: 'Step 1 — Listing: Command API',
+        title: 'ListingCommandApi.handleListCourtHearing()',
+        code: 'listing.command.list-court-hearing',
+        endpoint: '(POST /cases — from progression after Mags adjournment)',
+      },
+      {
+        type: 'enrich',
+        stage: 'Crown Enrichment Pipeline (Direct Listing branch)',
+        title: 'CourtScheduleEnrichmentService.handleDirectListingCase()',
+        code: 'GET /courtschedule/search.court-schedules-by-id',
+        showEnrichment: true,
+        lines: [
+          { kind: 'pub', verb: 'calls', code: 'courtscheduler', sub: '→ resolves courtScheduleId → CourtSchedule(isDraft, room, time)' },
+        ],
+      },
+      {
+        type: 'listing',
+        stage: 'Step 2 — Listing: Command Handler',
+        title: 'ListingCommandHandler.listCourtHearing()',
+        code: 'aggregate determines hasAssignedSession from isDraft',
+        lines: [
+          { kind: 'priv', verb: 'raises', code: 'listing.events.hearing-listed' },
+        ],
+      },
+      {
+        type: 'public',
+        stage: 'Step 3 — Public Events',
+        title: 'ListingEventProcessor.handleHearingListedMessage()',
+        code: 'same as Adhoc Step 6',
+        lines: [
+          { kind: 'pub', verb: 'publishes', code: 'public.listing.hearing-listed' },
+          { kind: 'pub', verb: 'publishes', code: 'public.listing.hearing-added-to-case' },
+        ],
+      },
+    ],
+  },
+
+  adjFixed: {
+    name: '4a. Adjournment — Fixed Date',
+    desc: 'Crown adjournment with a fixed listed date. Goes through Path C: hearing → progression → listing.list-next-hearings-v2.',
+    steps: [
+      {
+        type: 'entry',
+        stage: 'Step 1 — Hearing: Share Results',
+        title: 'HearingCommandApi.shareResultsV2()',
+        code: 'hearing.command.share-results-v2',
+        endpoint: '(POST /hearings/{hearingId}/share-results)',
+      },
+      {
+        type: 'crossctx',
+        stage: 'Step 2 — Hearing: Publish',
+        title: 'PublishResultsV2EventProcessor.resultsShared()',
+        code: 'publishes → public.hearing.adjourned',
+        lines: [
+          { kind: 'pub', verb: 'publishes', code: 'public.hearing.adjourned', sub: '→ progression' },
+          { kind: 'pub', verb: 'publishes', code: 'public.events.hearing.hearing-resulted', sub: '→ listing (Path A)' },
+        ],
+      },
+      {
+        type: 'crossctx',
+        stage: 'Step 3 — Progression: Adjourn Processor',
+        title: 'AdjournHearingEventProcessor.handleHearingAdjournedPublicEvent()',
+        code: 'sends cross-context command →',
+        endpoint: '(listing.list-next-hearings-v2)',
+      },
+      {
+        type: 'listing',
+        stage: 'Step 4 — Listing: Command API',
+        title: 'ListingCommandApi.handleListNextHearingsV2()',
+        code: 'listing.list-next-hearings-v2',
+        endpoint: '(payload has hearings[].listedStartDateTime + estimatedMinutes)',
+      },
+      {
+        type: 'enrich',
+        stage: 'Crown Enrichment Pipeline',
+        title: 'HearingEnrichmentOrchestrator.enrichListCourtHearing()',
+        code: 'CourtScheduleEnrichmentService',
+        showEnrichment: true,
+      },
+      {
+        type: 'public',
+        stage: 'Step 5 — Aggregate + Public Events',
+        title: 'ListingCommandHandler raises hearing-listed',
+        code: 'same downstream as Adhoc Step 6',
+        lines: [
+          { kind: 'pub', verb: 'publishes', code: 'public.listing.hearing-listed' },
+          { kind: 'pub', verb: 'publishes', code: 'public.listing.hearing-added-to-case' },
+        ],
+      },
+    ],
+  },
+
+  adjWC: {
+    name: '4b. Adjournment — Week Commencing',
+    desc: 'Crown adjournment with a week-commencing window only. Listing short-circuits enrichment.',
+    steps: [
+      {
+        type: 'entry',
+        stage: 'Step 1 — Hearing: Share Results',
+        title: 'HearingCommandApi.shareResultsV2()',
+        code: 'hearing.command.share-results-v2',
+        endpoint: '(POST /hearings/{hearingId}/share-results)',
+      },
+      {
+        type: 'crossctx',
+        stage: 'Step 2 — Progression: Adjourn Processor',
+        title: 'AdjournHearingEventProcessor.handleHearingAdjournedPublicEvent()',
+        code: 'sends cross-context command →',
+        endpoint: '(listing.list-next-hearings-v2)',
+      },
+      {
+        type: 'listing',
+        stage: 'Step 3 — Listing: Command API',
+        title: 'ListingCommandApi.handleListNextHearingsV2()',
+        code: 'listing.list-next-hearings-v2',
+        endpoint: '(payload has hearings[].weekCommencingDate)',
+      },
+      {
+        type: 'enrich',
+        stage: 'Crown Enrichment — SHORT-CIRCUIT',
+        title: 'enrichCrownCourtScheduleFirst() detects weekCommencingDate',
+        code: 'returns early — no courtscheduler call',
+        showEnrichment: true,
+      },
+      {
+        type: 'listing',
+        stage: 'Step 4 — Listing: Command Handler',
+        title: 'ListingCommandHandler.listNextHearings()',
+        code: 'computes endDate = startDate + duration - 1 (weekdays)',
+        lines: [
+          { kind: 'priv', verb: 'raises', code: 'listing.events.hearing-listed', sub: 'no allocation' },
+        ],
+      },
+      {
+        type: 'public',
+        stage: 'Step 5 — Public Events',
+        title: 'ListingEventProcessor.handleHearingListedMessage()',
+        code: 'same downstream as fixed-date',
+        lines: [
+          { kind: 'pub', verb: 'publishes', code: 'public.listing.hearing-listed' },
+        ],
+      },
+    ],
+  },
+
+  adjUnsched: {
+    name: '4c. Adjournment — Unscheduled (Date To Be Fixed)',
+    desc: 'Crown adjournment ordered but no date or week chosen. Different handler — court-schedule enrichment does not run.',
+    steps: [
+      {
+        type: 'entry',
+        stage: 'Step 1 — Hearing: Share Results',
+        title: 'HearingCommandApi.shareResultsV2()',
+        code: 'hearing.command.share-results-v2',
+        endpoint: '(POST /hearings/{hearingId}/share-results)',
+      },
+      {
+        type: 'crossctx',
+        stage: 'Step 2 — Progression → Listing',
+        title: 'AdjournHearingEventProcessor.handleHearingAdjournedPublicEvent()',
+        code: 'sends cross-context command →',
+        endpoint: '(listing.list-unscheduled-next-hearings)',
+      },
+      {
+        type: 'listing',
+        stage: 'Step 3 — Listing: Command API',
+        title: 'ListingCommandApi.handleListUnscheduledCourtHearing()',
+        code: 'listing.list-unscheduled-next-hearings',
+        endpoint: '(typeOfList = "Date and time to be fixed", dateToBeFixed=true)',
+      },
+      {
+        type: 'enrich',
+        stage: 'Crown Enrichment — SKIPPED',
+        title: 'Hearing created without session allocation',
+        code: 'no enrichment runs — no courtScheduleId, no session lookup',
+        showEnrichment: true,
+      },
+      {
+        type: 'listing',
+        stage: 'Step 4 — Listing: Command Handler',
+        title: 'ListingCommandHandler.listUnscheduledCourtHearing()',
+        code: 'unscheduled hearing persisted',
+        lines: [
+          { kind: 'priv', verb: 'raises', code: 'listing.events.hearing-requested-for-listing' },
+        ],
+      },
+      {
+        type: 'public',
+        stage: 'Step 5 — Public Events',
+        title: 'EventProcessor publishes',
+        code: '',
+        lines: [
+          { kind: 'pub', verb: 'publishes', code: 'public.listing.hearing-requested-for-listing', sub: '→ progression' },
+        ],
+      },
+    ],
+  },
+};
+
+/* ============================================================
+   ENRICHMENT BRANCH RESOLVER
+   ============================================================ */
+function resolveEnrichment() {
+  const { journey: j, hasCSI: csi, isDraft: draft, duration: dur } = state;
+
+  if (j === 'adjWC') {
+    return {
+      branch: 'shortCircuit',
+      label: 'Week-Commencing Short-Circuit',
+      detail: 'isWeekCommencing=true → returns empty before courtscheduler is called',
+      outcome: 'skipped',
+      outcomeText: 'No courtscheduler call. Hearing has no session allocation.',
+      calls: [],
+    };
+  }
+  if (j === 'adjUnsched') {
+    return {
+      branch: 'noEnrichment',
+      label: 'Different handler — enrichment does not apply',
+      detail: 'handleListUnscheduledCourtHearing creates hearing without session allocation',
+      outcome: 'skipped',
+      outcomeText: 'Hearing persisted as unscheduled. No courtschedule lookup.',
+      calls: [],
+    };
+  }
+  if (j === 'directListing') {
+    return {
+      branch: 'directListing',
+      label: 'handleDirectListingCase()',
+      detail: 'courtScheduleIds present in payload → resolved via courtscheduler',
+      outcome: draft ? 'unallocated' : 'allocated',
+      outcomeText: draft
+        ? 'isDraft=true → hasAssignedSession=false → UNALLOCATED'
+        : 'isDraft=false → hasAssignedSession=true → ALLOCATED',
+      calls: ['GET /courtschedule/search.court-schedules-by-id'],
+    };
+  }
+  if (dur > 360) {
+    return {
+      branch: 'multiDay',
+      label: 'handleCrownMultiDaySlotSearch()',
+      detail: 'estimatedMinutes (' + dur + ') > 360 → multi-day search',
+      outcome: 'multiday',
+      outcomeText: 'Calls courtscheduler multi-day search-and-book; books N consecutive sessions.',
+      calls: ['GET /multidaysearchandbook/hearingslots', 'PUT /list/hearingslots'],
+    };
+  }
+  if (csi && !draft) {
+    return {
+      branch: 'allocCandAssigned',
+      label: 'handleAllocationCandidateWithAssignedSessions()',
+      detail: 'courtScheduleId present + isDraft=false (assigned session)',
+      outcome: 'allocated',
+      outcomeText: 'hasAssignedSession=true → canAllocateForCrown()=true → ALLOCATED',
+      calls: ['GET /courtschedule/search.court-schedules-by-id'],
+    };
+  }
+  if (csi && draft) {
+    return {
+      branch: 'unallocDraft',
+      label: 'handleUnallocatedWithDraftSessions()',
+      detail: 'courtScheduleId present + isDraft=true (draft session)',
+      outcome: 'unallocated',
+      outcomeText: 'Enrichment skips listHearingInCourtSessions → no confirmed courtScheduleIds → UNALLOCATED',
+      calls: ['GET /courtschedule/search.court-schedules-by-id'],
+    };
+  }
+  return {
+    branch: 'noCsi',
+    label: 'No courtScheduleId path',
+    detail: 'No courtScheduleId in payload → not an allocation candidate',
+    outcome: 'unallocated',
+    outcomeText: 'canAllocateForCrown()=false (no courtScheduleId) → UNALLOCATED',
+    calls: [],
+  };
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+const els = {
+  journey: document.getElementById('journey'),
+  duration: document.getElementById('duration'),
+  durVal: document.getElementById('durVal'),
+  tCsi: document.getElementById('t-csi'),
+  csiState: document.getElementById('csi-state'),
+  tDraft: document.getElementById('t-draft'),
+  draftState: document.getElementById('draft-state'),
+  presets: document.getElementById('presets'),
+  jName: document.getElementById('jName'),
+  jDesc: document.getElementById('jDesc'),
+  steps: document.getElementById('steps'),
+  prompt: document.getElementById('prompt'),
+  copy: document.getElementById('copy'),
+};
+
+function buildEnrichmentNode() {
+  const r = resolveEnrichment();
+  const j = state.journey;
+
+  const branches = (function () {
+    if (j === 'adjUnsched') {
+      return [{ key: 'noEnrichment', text: '⊘ list-unscheduled-next-hearings → no courtschedule enrichment runs' }];
+    }
+    if (j === 'adjWC') {
+      return [
+        { key: 'shortCircuit', text: '⊘ weekCommencingDate detected → enrichCrownCourtScheduleFirst() returns early' },
+        { key: 'allocCandAssigned', text: '─ handleAllocationCandidateWithAssignedSessions() (skipped)' },
+        { key: 'unallocDraft', text: '─ handleUnallocatedWithDraftSessions() (skipped)' },
+        { key: 'multiDay', text: '─ handleCrownMultiDaySlotSearch() (skipped)' },
+      ];
+    }
+    if (j === 'directListing') {
+      return [{ key: 'directListing', text: '→ handleDirectListingCase() — courtScheduleIds in payload' }];
+    }
+    const md = state.duration > 360;
+    return [
+      { key: 'multiDay', text: (md ? '→' : '─') + ' handleCrownMultiDaySlotSearch()  [estimatedMinutes ' + state.duration + (md ? ' > 360 ✓' : ' ≤ 360') + ']' },
+      { key: 'allocCandAssigned', text: ((state.hasCSI && !state.isDraft && !md) ? '→' : '─') + ' handleAllocationCandidateWithAssignedSessions()  [csi=' + state.hasCSI + ', isDraft=' + state.isDraft + ']' },
+      { key: 'unallocDraft', text: ((state.hasCSI && state.isDraft && !md) ? '→' : '─') + ' handleUnallocatedWithDraftSessions()  [csi=' + state.hasCSI + ', isDraft=' + state.isDraft + ']' },
+      { key: 'noCsi', text: ((!state.hasCSI && !md) ? '→' : '─') + ' no courtScheduleId — not an allocation candidate' },
+    ];
+  })();
+
+  const branchKids = [];
+  branchKids.push(el('span', { cls: 'branch label', text: 'Crown enrichment branches:' }));
+  for (const b of branches) {
+    const cls = 'branch ' + (r.branch === b.key ? 'active' : 'muted');
+    branchKids.push(el('span', { cls, text: '  ' + b.text }));
+  }
+  if (r.calls.length) {
+    branchKids.push(el('span', { cls: 'branch label', text: 'courtscheduler calls:' }));
+    for (const c of r.calls) {
+      branchKids.push(el('span', { cls: 'branch active', text: '  ' + c }));
+    }
+  }
+
+  const tree = el('div', { cls: 'enrich-tree' }, branchKids);
+  const outcome = el('div', { cls: 'enrich-outcome ' + r.outcome }, [
+    el('strong', { text: r.label }),
+    el('span', { text: '—' }),
+    el('span', { text: r.outcomeText }),
+  ]);
+  return [tree, outcome];
+}
+
+function buildLineNode(line) {
+  const cls = 'line' + (line.kind === 'pub' ? ' pub-evt' : line.kind === 'priv' ? ' priv-evt' : '');
+  const kids = [];
+  if (line.verb) kids.push(el('span', { cls: 'verb', text: line.verb }));
+  if (line.code) kids.push(el('span', { cls: 'code', text: line.code }));
+  if (line.sub) kids.push(el('span', { cls: 'endpoint', text: line.sub }));
+  return el('div', { cls }, kids);
+}
+
+function buildStepNode(step) {
+  const kids = [];
+  kids.push(el('div', { cls: 'stage', text: step.stage }));
+  kids.push(el('div', { cls: 'title', text: step.title }));
+
+  const codeRow = el('div', null, [
+    step.code ? el('span', { cls: 'code', text: step.code }) : null,
+    step.endpoint ? el('span', { cls: 'endpoint', text: step.endpoint }) : null,
+  ]);
+  kids.push(codeRow);
+
+  if (step.lines && step.lines.length) {
+    const lineKids = step.lines.map(buildLineNode);
+    kids.push(el('div', { cls: 'lines' }, lineKids));
+  }
+
+  if (step.showEnrichment) {
+    for (const n of buildEnrichmentNode()) kids.push(n);
+  }
+
+  return el('div', { cls: 'step ' + step.type }, kids);
+}
+
+function render() {
+  const j = JOURNEYS[state.journey];
+  els.jName.textContent = j.name;
+  els.jDesc.textContent = j.desc;
+
+  clear(els.steps);
+  for (let i = 0; i < j.steps.length; i++) {
+    els.steps.appendChild(buildStepNode(j.steps[i]));
+    if (i < j.steps.length - 1) {
+      els.steps.appendChild(el('div', { cls: 'arrow' }));
+    }
+  }
+
+  const draftRelevant = state.hasCSI && !['adjWC', 'adjUnsched'].includes(state.journey);
+  els.tDraft.classList.toggle('disabled', !draftRelevant);
+
+  updatePrompt();
+}
+
+/* ============================================================
+   PROMPT BUILDER
+   ============================================================ */
+function updatePrompt() {
+  const j = JOURNEYS[state.journey];
+  const r = resolveEnrichment();
+
+  const lines = [];
+  lines.push('Walk me through the Crown enrichment for "' + j.name + '" with these inputs:');
+  lines.push('');
+  lines.push('  - estimatedMinutes: ' + state.duration + '  (' + (state.duration > 360 ? 'multi-day' : 'single-day') + ')');
+  if (!['adjWC', 'adjUnsched'].includes(state.journey)) {
+    lines.push('  - hasCourtScheduleId: ' + state.hasCSI);
+    if (state.hasCSI) lines.push('  - isDraft session: ' + state.isDraft);
+  }
+
+  lines.push('');
+  lines.push('Outer journey (from journeys.md):');
+  for (const s of j.steps) {
+    if (s.type === 'enrich') continue;
+    const ep = s.endpoint ? ' ' + s.endpoint : '';
+    const cd = s.code ? ' — ' + s.code : '';
+    lines.push('  - ' + s.stage + ': ' + s.title + cd + ep);
+  }
+
+  lines.push('');
+  lines.push('Crown enrichment decision:');
+  lines.push('  → branch: ' + r.label);
+  lines.push('  → ' + r.detail);
+  lines.push('  → courtscheduler calls: ' + (r.calls.length ? r.calls.join(', ') : 'none'));
+  lines.push('  → outcome: ' + r.outcomeText);
+
+  lines.push('');
+  lines.push('Question: explain why this branch is taken, what could change to push it onto a different branch, and which integration tests cover it (CourtSchedulerServiceStub stubs, CROWN/ test data files).');
+
+  els.prompt.textContent = lines.join('\n');
+}
+
+/* ============================================================
+   CONTROL WIRING
+   ============================================================ */
+function setToggle(elNode, on, key, lblNode) {
+  elNode.classList.toggle('on', on);
+  state[key] = on;
+  if (lblNode) lblNode.textContent = on ? 'on' : 'off';
+}
+
+els.journey.addEventListener('change', (e) => {
+  state.journey = e.target.value;
+  render();
+});
+els.duration.addEventListener('input', (e) => {
+  state.duration = +e.target.value;
+  els.durVal.textContent = state.duration;
+  render();
+});
+els.tCsi.addEventListener('click', () => {
+  setToggle(els.tCsi, !state.hasCSI, 'hasCSI', els.csiState);
+  if (!state.hasCSI) setToggle(els.tDraft, false, 'isDraft', els.draftState);
+  render();
+});
+els.tDraft.addEventListener('click', () => {
+  if (els.tDraft.classList.contains('disabled')) return;
+  setToggle(els.tDraft, !state.isDraft, 'isDraft', els.draftState);
+  render();
+});
+
+/* Presets */
+function applyPreset(p) {
+  state.journey = p.journey;
+  state.duration = p.duration;
+  state.hasCSI = p.hasCSI;
+  state.isDraft = p.isDraft;
+
+  els.journey.value = state.journey;
+  els.duration.value = state.duration;
+  els.durVal.textContent = state.duration;
+  setToggle(els.tCsi, state.hasCSI, 'hasCSI', els.csiState);
+  setToggle(els.tDraft, state.isDraft, 'isDraft', els.draftState);
+  render();
+}
+
+for (const p of PRESETS) {
+  const btn = el('button', { cls: 'preset' }, [
+    el('div', { cls: 'pname', text: p.name }),
+    el('div', { cls: 'pdesc', text: p.desc }),
+  ]);
+  btn.addEventListener('click', () => applyPreset(p.apply));
+  els.presets.appendChild(btn);
+}
+
+/* Copy */
+els.copy.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(els.prompt.textContent);
+    els.copy.textContent = 'Copied!';
+    els.copy.classList.add('copied');
+    setTimeout(() => {
+      els.copy.textContent = 'Copy';
+      els.copy.classList.remove('copied');
+    }, 1400);
+  } catch (e) {
+    els.copy.textContent = 'Copy failed';
+    setTimeout(() => { els.copy.textContent = 'Copy'; }, 1400);
+  }
+});
+
+/* Initial */
+setToggle(els.tCsi, state.hasCSI, 'hasCSI', els.csiState);
+setToggle(els.tDraft, state.isDraft, 'isDraft', els.draftState);
+render();
+</script>
+</body>
+</html>

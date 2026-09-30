@@ -2409,32 +2409,6 @@ class ListingEventProcessorTest {
     }
 
     @Test
-    public void ShouldPublicEventWhenRaisedHearingDaysWithoutCourtCentreCorrected() {
-        final UUID hearingId = randomUUID();
-        final JsonObject payload = createObjectBuilder().add(ID, hearingId.toString())
-                .add("hearingDays", createArrayBuilder()
-                        .add(createObjectBuilder().add("courtCentreId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
-                                .add("courtRoomId", "f1ead1d2-4b26-3230-b781-508d6aaafd26")
-                                .add("durationMinutes", 0)
-                                .add("endTime", "2020-08-25T09:00:00.000Z")
-                                .add("hearingDate", "2020-08-25")
-                                .add("sequence", 3)
-                                .add("startTime", "2020-08-25T09:00:00.000Z").build())).build();
-        final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.hearing-days-without-court-centre-corrected"), payload);
-        listingEventProcessor.hearingDaysWithoutCourtCentreCorrected(event);
-        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
-        final JsonEnvelope onlyPublicEvent = this.senderJsonEnvelopeCaptor.getAllValues().get(0);
-        assertThat(onlyPublicEvent.metadata().name(), is("public.events.listing.hearing-days-without-court-centre-corrected"));
-        assertThat(onlyPublicEvent.payloadAsJsonObject().getString(ID), is(hearingId.toString()));
-        assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getString("courtCentreId"), is("f8254db1-1683-483e-afb3-b87fde5a0a26"));
-        assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getString("courtRoomId"), is("f1ead1d2-4b26-3230-b781-508d6aaafd26"));
-        assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getInt("listedDurationMinutes"), is(0));
-        assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getInt("listingSequence"), is(3));
-        assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getString("sittingDay"), is("2020-08-25T09:00:00.000Z"));
-
-    }
-
-    @Test
     public void shouldHandleMarkHearingAsHearingDeleted() {
 
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
@@ -2917,9 +2891,9 @@ class ListingEventProcessorTest {
                 .map(JsonObject.class::cast)
                 .forEach(judiciaryJsonObject ->
                         judicialRoles.add(uk.gov.moj.cpp.listing.domain.JudicialRole.judicialRole()
-                                .withIsBenchChairman(of(judiciaryJsonObject.getBoolean("isBenchChairman")))
-                                .withIsDeputy(of(judiciaryJsonObject.getBoolean("isDeputy")))
-                                .withJudicialId(UUID.fromString(judiciaryJsonObject.getString("id")))
+                                .withIsBenchChairman(of(judiciaryJsonObject.getBoolean("benchChairman")))
+                                .withIsDeputy(of(judiciaryJsonObject.getBoolean("deputy")))
+                                .withJudicialId(UUID.fromString(judiciaryJsonObject.getString("judiciaryId")))
                                 .withJudicialRoleType(
                                         uk.gov.moj.cpp.listing.domain.JudicialRoleType.judicialRoleType()
                                                 .withJudiciaryType(judiciaryJsonObject.getString("judiciaryType"))
@@ -3007,6 +2981,47 @@ class ListingEventProcessorTest {
                 .withHasAdjournmentDate(false)
                 .withSource(sourceFlag ? HMI_SOURCE : null)
                 .build();
+    }
+
+    @Test
+    public void shouldRouteProgressionOffencesRemovedEventToRemoveSelectedOffencesCommand() {
+        final JsonObject eventPayload = createObjectBuilder()
+                .add("hearingId", randomUUID().toString())
+                .add("offenceIds", createArrayBuilder().add(randomUUID().toString()))
+                .build();
+        given(envelope.payloadAsJsonObject()).willReturn(eventPayload);
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = forClass(JsonEnvelope.class);
+
+        listingEventProcessor.offencesRemovedFromExistingAllocatedHearingByProgression(envelope);
+
+        verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
+        final JsonEnvelope captured = senderJsonEnvelopeCaptor.getValue();
+        assertThat(captured.metadata().name(), is("listing.command.remove-selected-offences-from-existing-hearing"));
+        assertThat(captured.payloadAsJsonObject(), is(eventPayload));
+    }
+
+    // The progression event and the hearing-context event are two publishers of the same contract,
+    // so they must reach the aggregate as the identical command for its idempotency to hold.
+    @Test
+    public void shouldRouteProgressionAndHearingOffencesRemovedEventsToTheSameCommand() {
+        final JsonObject eventPayload = createObjectBuilder()
+                .add("hearingId", randomUUID().toString())
+                .add("offenceIds", createArrayBuilder().add(randomUUID().toString()))
+                .build();
+        given(envelope.payloadAsJsonObject()).willReturn(eventPayload);
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = forClass(JsonEnvelope.class);
+
+        listingEventProcessor.offencesRemovedFromExistingHearing(envelope);
+        listingEventProcessor.offencesRemovedFromExistingAllocatedHearingByProgression(envelope);
+
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+        final List<JsonEnvelope> captured = senderJsonEnvelopeCaptor.getAllValues();
+        assertThat(captured.get(1).metadata().name(), is(captured.get(0).metadata().name()));
+        assertThat(captured.get(1).payloadAsJsonObject(), is(captured.get(0).payloadAsJsonObject()));
     }
 
     private AllocatedHearingUpdatedForListingV2 createAllocatedHearingUpdatedForListingV2ForHMIVerification(final boolean sourceFlag) {

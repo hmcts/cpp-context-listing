@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.command.handler;
 import static java.time.ZonedDateTime.parse;
 import static java.util.Optional.of;
 import static java.util.UUID.fromString;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -13,12 +14,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory.createEnvelope;
 import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
+import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.listUnscheduledNextHearingCommandEnvelopeFor;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.COURT_CENTRE_ID;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.COURT_ROOM_ID;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.DEFAULT_DURATION;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.DEFAULT_START_TIME;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.EARLIEST_START_TIME;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.HEARING_ID_1;
+import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.HEARING_ID_2;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.HEARING_TYPE;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.JURISDICTION_TYPE;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.LISTING_DIRECTIONS;
@@ -44,6 +47,8 @@ import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
+import uk.gov.moj.cpp.listing.domain.PtphDetail;
+
 import uk.gov.justice.listing.courts.ListUnscheduledNextHearingsEnriched;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.UnscheduledNextHearingRequested;
@@ -76,7 +81,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -180,7 +187,7 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_START_DATE)),
                 eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
                 eq(of(WEEK_COMMENCING_DURATION)),
-                eq(TYPE_OF_LIST));
+                eq(TYPE_OF_LIST), eq(null));
     }
 
     @Test
@@ -226,7 +233,7 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_START_DATE)),
                 eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
                 eq(of(WEEK_COMMENCING_DURATION)),
-                eq(TYPE_OF_LIST));
+                eq(TYPE_OF_LIST), eq(null));
     }
 
     @Test
@@ -283,7 +290,129 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_START_DATE)),
                 eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
                 eq(of(WEEK_COMMENCING_DURATION)),
-                eq(TYPE_OF_LIST));
+                eq(TYPE_OF_LIST), eq(null));
+    }
+
+    /**
+     * LPT-2405 — the unscheduled command carries tier / list type as a sibling of the hearing,
+     * because the hearing carrier itself is owned by coredomain. The command names one hearing,
+     * so it carries at most one detail; the handler hands the aggregate the same value object
+     * the scheduled path uses.
+     */
+    @Test
+    public void shouldInheritPtphDetailOntoTheUnscheduledHearing() throws EventStreamException {
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+
+        final JsonEnvelope commandEnvelope = listUnscheduledNextHearingCommandEnvelopeFor(
+                "/test-data/listing.command.list-unscheduled-next-hearing-with-ptph-detail.json");
+
+        unscheduledListingCommandHandler.handleListUnscheduledNextHearing(commandEnvelope);
+
+        verify(hearing).listUnscheduled(
+                eq(HEARING_ID_1), eq(HEARING_TYPE), anyList(), eq(COURT_CENTRE_ID), anyList(),
+                eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS), eq(parse(EARLIEST_START_TIME)),
+                eq(null), any(CourtCentreDefaults.class), anyList(), anyList(), eq(30),
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_DURATION)), eq(TYPE_OF_LIST),
+                eq(new PtphDetail("TIER_3", "TYPE_1_FIXED", "Vulnerable witness")));
+    }
+
+    /**
+     * The enriched command lists every next hearing being seeded, and carries a detail only for
+     * the Crown Court trials among them. Each hearing gets its own event, so a detail must reach
+     * the hearing it is keyed to and no other — the calendar would otherwise show a tier the
+     * court never set for that hearing.
+     */
+    @Test
+    public void shouldOnlyCarryPtphDetailOntoTheHearingItIsKeyedTo() throws EventStreamException {
+        when(eventSource.getStreamById(any())).thenReturn(eventStream);
+        when(aggregateService.get(any(), eq(SeedHearingAggregate.class))).thenReturn(seedHearingAggregate);
+
+        final ListUnscheduledNextHearingsEnriched payload = ListUnscheduledNextHearingsEnriched.listUnscheduledNextHearingsEnriched()
+                .withHearings(List.of(
+                        HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds().withId(HEARING_ID_1).build(),
+                        HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds().withId(HEARING_ID_2).build()))
+                .withCourtCentresDetails(List.of(CourtCentreDetails.courtCentreDetails()
+                        .withId(COURT_CENTRE_ID)
+                        .withDefaultDuration(6)
+                        .withDefaultStartTime(LocalTime.parse(DEFAULT_START_TIME))
+                        .build()))
+                .withSeedingHearing(SeedingHearing.seedingHearing()
+                        .withSeedingHearingId(SEED_HEARING_ID_1)
+                        .withSittingDay(SITTING_DAY)
+                        .withJurisdictionType(JurisdictionType.CROWN)
+                        .build())
+                .withPtphDetails(List.of(uk.gov.justice.listing.commands.HearingPtphDetail.hearingPtphDetail()
+                        .withHearingId(HEARING_ID_2)
+                        .withTier("TIER_3")
+                        .withListType("TYPE_1_FIXED")
+                        .build()))
+                .build();
+
+        final JsonObject commandPayload = createObjectBuilder().build();
+        when(jsonObjectConverter.convert(commandPayload, ListUnscheduledNextHearingsEnriched.class)).thenReturn(payload);
+
+        unscheduledListingCommandHandler.handleListUnscheduledNextHearings(
+                createEnvelope("listing.command.list-unscheduled-next-hearings-enriched", commandPayload));
+
+        final List<JsonEnvelope> events = verifyAppendAndGetArgumentFrom(eventStream).toList();
+        assertThat(events.size(), is(2));
+
+        final JsonObject withoutDetail = events.get(0).payloadAsJsonObject();
+        assertThat(withoutDetail.getJsonObject("hearing").getString("id"), is(HEARING_ID_1.toString()));
+        assertThat(withoutDetail.containsKey("ptphDetail"), is(false));
+
+        final JsonObject withDetail = events.get(1).payloadAsJsonObject();
+        assertThat(withDetail.getJsonObject("hearing").getString("id"), is(HEARING_ID_2.toString()));
+        assertThat(withDetail.getJsonObject("ptphDetail").getString("tier"), is("TIER_3"));
+    }
+
+    /**
+     * The seed aggregate puts the inherited values on the requested event, so they survive the
+     * hop to the per-hearing command.
+     */
+    @Test
+    public void shouldCarryPtphDetailOntoTheUnscheduledNextHearingRequestedEvent() throws EventStreamException {
+        when(eventSource.getStreamById(any())).thenReturn(eventStream);
+        when(aggregateService.get(any(), eq(SeedHearingAggregate.class))).thenReturn(seedHearingAggregate);
+
+        final ListUnscheduledNextHearingsEnriched payload = ListUnscheduledNextHearingsEnriched.listUnscheduledNextHearingsEnriched()
+                .withHearings(List.of(HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds()
+                        .withId(HEARING_ID_1).build()))
+                .withCourtCentresDetails(List.of(CourtCentreDetails.courtCentreDetails()
+                        .withId(COURT_CENTRE_ID)
+                        .withDefaultDuration(6)
+                        .withDefaultStartTime(LocalTime.parse(DEFAULT_START_TIME))
+                        .build()))
+                .withSeedingHearing(SeedingHearing.seedingHearing()
+                        .withSeedingHearingId(SEED_HEARING_ID_1)
+                        .withSittingDay(SITTING_DAY)
+                        .withJurisdictionType(JurisdictionType.CROWN)
+                        .build())
+                .withPtphDetails(List.of(uk.gov.justice.listing.commands.HearingPtphDetail.hearingPtphDetail()
+                        .withHearingId(HEARING_ID_1)
+                        .withTier("TIER_3")
+                        .withListType("TYPE_1_FIXED")
+                        .withKeyReason("Vulnerable witness")
+                        .build()))
+                .build();
+
+        final JsonObject commandPayload = createObjectBuilder().build();
+        when(jsonObjectConverter.convert(commandPayload, ListUnscheduledNextHearingsEnriched.class)).thenReturn(payload);
+
+        unscheduledListingCommandHandler.handleListUnscheduledNextHearings(
+                createEnvelope("listing.command.list-unscheduled-next-hearings-enriched", commandPayload));
+
+        final List<JsonEnvelope> events = verifyAppendAndGetArgumentFrom(eventStream).toList();
+        assertThat(events.size(), is(1));
+        final JsonObject emitted = events.get(0).payloadAsJsonObject().getJsonObject("ptphDetail");
+        assertThat(emitted.getString("tier"), is("TIER_3"));
+        assertThat(emitted.getString("listType"), is("TYPE_1_FIXED"));
+        assertThat(emitted.getString("keyReason"), is("Vulnerable witness"));
+        assertThat(emitted.containsKey("hearingId"), is(false));
     }
 
     @Test
@@ -320,7 +449,7 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_START_DATE)),
                 eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
                 eq(of(WEEK_COMMENCING_DURATION)),
-                eq(TYPE_OF_LIST));
+                eq(TYPE_OF_LIST), eq(null));
     }
 
     private JsonEnvelope buildListUnscheduledNextHearingsEnvelope() {
@@ -355,4 +484,234 @@ public class UnscheduledListingCommandHandlerTest {
                 .build();
     }
 
+    // SPRDT-807 — the handler used to call map.get(...) which returns null for an unmapped type.
+    // After the fix it delegates to HearingDurationDefaults.resolveHearingTypeDuration which
+    // falls back to DEFAULT_MIN=20. These tests lock in the guarantee for every path through
+    // listUnscheduledHearing (both court-hearing and next-hearing enriched entry points converge here).
+    @Test
+    void shouldFallBackToDefaultMinWhenHearingTypeMissingFromDurationMap() throws EventStreamException {
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        // Intentionally empty map — real reference data could fail to resolve a new hearing type (e.g. Crown Plea)
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.emptyMap());
+
+        unscheduledListingCommandHandler.handleListUnscheduledCourtHearing(listUnscheduledCourtHearingCommandEnvelope());
+
+        verify(hearing).listUnscheduled(
+                eq(HEARING_ID_1),
+                eq(HEARING_TYPE),
+                anyList(),
+                eq(COURT_CENTRE_ID),
+                anyList(),
+                eq(COURT_ROOM_ID),
+                eq(LISTING_DIRECTIONS),
+                eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID),
+                eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)),
+                eq(null),
+                any(CourtCentreDefaults.class),
+                anyList(),
+                anyList(),
+                eq(20),
+                eq(of(WEEK_COMMENCING_START_DATE)),
+                eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_DURATION)),
+                eq(TYPE_OF_LIST), eq(null));
+    }
+
+    @Test
+    void shouldFallBackToDefaultMinWhenMappedDurationIsZero() throws EventStreamException {
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class)))
+                .thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 0));
+
+        unscheduledListingCommandHandler.handleListUnscheduledCourtHearing(listUnscheduledCourtHearingCommandEnvelope());
+
+        verify(hearing).listUnscheduled(
+                eq(HEARING_ID_1), eq(HEARING_TYPE), anyList(), eq(COURT_CENTRE_ID), anyList(),
+                eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)), eq(null), any(CourtCentreDefaults.class),
+                anyList(), anyList(), eq(20),
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_DURATION)), eq(TYPE_OF_LIST), eq(null));
+    }
+
+    @Test
+    void shouldPassThroughMappedDurationWhenValid() throws EventStreamException {
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class)))
+                .thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 150));
+
+        unscheduledListingCommandHandler.handleListUnscheduledCourtHearing(listUnscheduledCourtHearingCommandEnvelope());
+
+        verify(hearing).listUnscheduled(
+                eq(HEARING_ID_1), eq(HEARING_TYPE), anyList(), eq(COURT_CENTRE_ID), anyList(),
+                eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)), eq(null), any(CourtCentreDefaults.class),
+                anyList(), anyList(), eq(150),
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_DURATION)), eq(TYPE_OF_LIST), eq(null));
+    }
+
+    // Manage Hearing on the unscheduled path posts a user-entered estimatedMinutes on
+    // HearingUnscheduledListingNeeds. Previously the handler discarded it and always wrote
+    // the hearing-type default into the HearingListed event. The fix prefers the user value
+    // when meaningful (>1) and only falls back to the hearing-type / DEFAULT_MIN ladder when
+    // the user did not supply a usable value, preserving the SPRDT-806/807 "never 0 / never null"
+    // guarantee.
+
+    @Test
+    void shouldUseUserEnteredEstimatedMinutesOverHearingTypeDurationOnCourtHearing() throws EventStreamException {
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class)))
+                .thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+
+        unscheduledListingCommandHandler.handleListUnscheduledCourtHearing(
+                withEstimatedMinutesOnHearings(listUnscheduledCourtHearingCommandEnvelope(), 90));
+
+        verify(hearing).listUnscheduled(
+                eq(HEARING_ID_1), eq(HEARING_TYPE), anyList(), eq(COURT_CENTRE_ID), anyList(),
+                eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)), eq(null), any(CourtCentreDefaults.class),
+                anyList(), anyList(), eq(90),
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_DURATION)), eq(TYPE_OF_LIST), eq(null));
+    }
+
+    @Test
+    void shouldUseUserEnteredEstimatedMinutesEvenWhenHearingTypeMissingFromDurationMap() throws EventStreamException {
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class)))
+                .thenReturn(Collections.emptyMap());
+
+        unscheduledListingCommandHandler.handleListUnscheduledCourtHearing(
+                withEstimatedMinutesOnHearings(listUnscheduledCourtHearingCommandEnvelope(), 640));
+
+        verify(hearing).listUnscheduled(
+                eq(HEARING_ID_1), eq(HEARING_TYPE), anyList(), eq(COURT_CENTRE_ID), anyList(),
+                eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)), eq(null), any(CourtCentreDefaults.class),
+                anyList(), anyList(), eq(640),
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_DURATION)), eq(TYPE_OF_LIST), eq(null));
+    }
+
+    @Test
+    void shouldFallBackToHearingTypeDurationWhenUserEnteredEstimatedMinutesIsOne() throws EventStreamException {
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class)))
+                .thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+
+        // 1 is treated as not-a-real-duration by HearingDurationDefaults.coerceToValidDuration,
+        // so we fall back through to the hearing-type default. Mirrors SPRDT-807 invariant.
+        unscheduledListingCommandHandler.handleListUnscheduledCourtHearing(
+                withEstimatedMinutesOnHearings(listUnscheduledCourtHearingCommandEnvelope(), 1));
+
+        verify(hearing).listUnscheduled(
+                eq(HEARING_ID_1), eq(HEARING_TYPE), anyList(), eq(COURT_CENTRE_ID), anyList(),
+                eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)), eq(null), any(CourtCentreDefaults.class),
+                anyList(), anyList(), eq(30),
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_DURATION)), eq(TYPE_OF_LIST), eq(null));
+    }
+
+    @Test
+    void shouldFallBackToHearingTypeDurationWhenUserEnteredEstimatedMinutesIsZero() throws EventStreamException {
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class)))
+                .thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+
+        unscheduledListingCommandHandler.handleListUnscheduledCourtHearing(
+                withEstimatedMinutesOnHearings(listUnscheduledCourtHearingCommandEnvelope(), 0));
+
+        verify(hearing).listUnscheduled(
+                eq(HEARING_ID_1), eq(HEARING_TYPE), anyList(), eq(COURT_CENTRE_ID), anyList(),
+                eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)), eq(null), any(CourtCentreDefaults.class),
+                anyList(), anyList(), eq(30),
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_DURATION)), eq(TYPE_OF_LIST), eq(null));
+    }
+
+    @Test
+    void shouldUseUserEnteredEstimatedMinutesOnNextHearing() throws EventStreamException {
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class)))
+                .thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+
+        unscheduledListingCommandHandler.handleListUnscheduledNextHearing(
+                withEstimatedMinutesOnHearing(listUnscheduledNextHearingCommandEnvelope(), 240));
+
+        verify(hearing).listUnscheduled(
+                eq(HEARING_ID_1), eq(HEARING_TYPE), anyList(), eq(COURT_CENTRE_ID), anyList(),
+                eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)), eq(null), any(CourtCentreDefaults.class),
+                anyList(), anyList(), eq(240),
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_DURATION)), eq(TYPE_OF_LIST), eq(null));
+    }
+
+    /**
+     * Inject {@code estimatedMinutes} into every hearing of an envelope whose payload has a
+     * top-level {@code hearings} array (list-unscheduled-court-hearing path).
+     */
+    private static JsonEnvelope withEstimatedMinutesOnHearings(final JsonEnvelope envelope, final int estimatedMinutes) {
+        final JsonObject payload = envelope.payloadAsJsonObject();
+        final JsonArrayBuilder hearingsBuilder = createArrayBuilder();
+        payload.getJsonArray("hearings").forEach(hearingValue -> hearingsBuilder.add(
+                copyWithEstimatedMinutes((JsonObject) hearingValue, estimatedMinutes)));
+        final JsonObjectBuilder updatedPayload = createObjectBuilder();
+        payload.forEach((key, value) -> {
+            if (!"hearings".equals(key)) {
+                updatedPayload.add(key, value);
+            }
+        });
+        updatedPayload.add("hearings", hearingsBuilder.build());
+        return createEnvelope(envelope.metadata().name(), updatedPayload.build());
+    }
+
+    /**
+     * Inject {@code estimatedMinutes} into a single hearing whose payload has a top-level
+     * {@code hearing} object (list-unscheduled-next-hearing path).
+     */
+    private static JsonEnvelope withEstimatedMinutesOnHearing(final JsonEnvelope envelope, final int estimatedMinutes) {
+        final JsonObject payload = envelope.payloadAsJsonObject();
+        final JsonObject hearing = payload.getJsonObject("hearing");
+        final JsonObject updatedHearing = copyWithEstimatedMinutes(hearing, estimatedMinutes);
+        final JsonObjectBuilder updatedPayload = createObjectBuilder();
+        payload.forEach((key, value) -> {
+            if (!"hearing".equals(key)) {
+                updatedPayload.add(key, value);
+            }
+        });
+        updatedPayload.add("hearing", updatedHearing);
+        return createEnvelope(envelope.metadata().name(), updatedPayload.build());
+    }
+
+    private static JsonObject copyWithEstimatedMinutes(final JsonObject hearing, final int estimatedMinutes) {
+        final JsonObjectBuilder builder = createObjectBuilder();
+        hearing.forEach((key, value) -> {
+            if (!"estimatedMinutes".equals(key)) {
+                builder.add(key, value);
+            }
+        });
+        builder.add("estimatedMinutes", estimatedMinutes);
+        return builder.build();
+    }
 }

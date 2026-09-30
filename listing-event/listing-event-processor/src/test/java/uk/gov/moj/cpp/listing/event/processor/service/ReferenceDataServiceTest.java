@@ -22,6 +22,7 @@ import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
+import uk.gov.moj.cpp.listing.common.xhibit.exception.InvalidReferenceDataException;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -35,6 +36,7 @@ import javax.json.JsonObjectBuilder;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -86,22 +88,30 @@ public class ReferenceDataServiceTest {
         final UUID courtCentreId = randomUUID();
         final UUID orgId = randomUUID();
 
-        final JsonObject jsonObject = JsonObjects.createObjectBuilder()
-                .add("id", orgId.toString())
-                .add("address1", orgId.toString())
-                .build();
-
         when(enveloper.withMetadataFrom(eq(event), eq("referencedata.query.organisation-unit")))
                 .thenReturn(function);
-        final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUID(REFERENCE_DATA_GET_COURTROOM), jsonObject);
-        when(requester.request(any())).thenReturn(jsonEnvelope);
-        when(jsonObjectConverter.convert(any(), eq(OrganisationUnit.class)))
-                .thenReturn(organisationUnit().withId(orgId.toString()).withAddress1("address1").build());
+        when(requester.requestAsAdmin(any(), eq(OrganisationUnit.class))).thenReturn(organisationUnitEnvelope);
+        when(organisationUnitEnvelope.payload()).thenReturn(organisationUnit().withId(orgId.toString()).withAddress1("address1").build());
 
         final OrganisationUnit result = referenceDataService.getOrganizationUnitById(courtCentreId, event);
 
         assertThat(result.getId(), is(orgId.toString()));
         assertThat(result.getAddress1(), is("address1"));
+    }
+
+    @Test
+    public void shouldThrowWhenOrganizationUnitNotFound() {
+        final JsonEnvelope event = hearingAllocatedEvent();
+        final UUID courtCentreId = randomUUID();
+
+        when(enveloper.withMetadataFrom(eq(event), eq("referencedata.query.organisation-unit")))
+                .thenReturn(function);
+        when(requester.requestAsAdmin(any(), eq(OrganisationUnit.class))).thenReturn(organisationUnitEnvelope);
+        when(organisationUnitEnvelope.payload()).thenReturn(null);
+
+        final Executable executable = () -> referenceDataService.getOrganizationUnitById(courtCentreId, event);
+
+        org.junit.jupiter.api.Assertions.assertThrows(InvalidReferenceDataException.class, executable);
     }
 
     @Test

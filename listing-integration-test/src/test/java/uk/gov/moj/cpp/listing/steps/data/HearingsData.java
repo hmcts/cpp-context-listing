@@ -18,6 +18,26 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsData());
     }
 
+    public static HearingsData hearingsDataForYoungDefendants() {
+        return new HearingsData(HearingsDataFactory.hearingsDataForYoungDefendants());
+    }
+
+    public static HearingsData singleHearingDataForYoungDefendants() {
+        return new HearingsData(List.of(HearingsDataFactory.hearingsDataForYoungDefendants().get(0)));
+    }
+
+    public static HearingsData hearingsDataWithAdultDefendants() {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAdultDefendants());
+    }
+
+    public static HearingsData hearingsDataForYoungCourtApplicationRespondent() {
+        return new HearingsData(HearingsDataFactory.hearingsDataForYoungCourtApplicationRespondent());
+    }
+
+    public static HearingsData hearingsDataForYoungCourtApplicationSubject() {
+        return new HearingsData(HearingsDataFactory.hearingsDataForYoungCourtApplicationSubject());
+    }
+
     public static HearingsData hearingsDataWithExParteOffence() {
         return new HearingsData(HearingsDataFactory.hearingsDataForCasesWithExParte());
     }
@@ -59,6 +79,10 @@ public class HearingsData {
 
     public static HearingsData hearingsDataForWeekCommencing(final LocalDate startDate, final Integer duration) {
         return new HearingsData(HearingsDataFactory.hearingsDataForWeekCommencing(startDate, duration));
+    }
+
+    public static HearingsData hearingsDataForWeekCommencingWithYoungDefendants(final LocalDate startDate, final Integer duration) {
+        return new HearingsData(HearingsDataFactory.hearingsDataForWeekCommencingWithYoungDefendants(startDate, duration));
     }
 
     public static HearingsData hearingsDataForWeekCommencing(final LocalDate startDate, final Integer duration, UUID courtCenterId, UUID courtRoomId, String roles) {
@@ -181,6 +205,17 @@ public class HearingsData {
                                                                           final LocalDate hearingEndDate,
                                                                           final ZonedDateTime hearingStartTime) {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithDate(caseAndDefendantData, courtCentreId, courtRoomId, hearingEndDate, hearingStartTime));
+    }
+
+    /** SPRDT-1164: variant that pins the seeded hearing's hearing type (e.g. Trial/Plea), so the
+     * viewstore type_id can be asserted on directly by court-calendar hearingTypeId-filter tests. */
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciary(final CaseAndDefendantData caseAndDefendantData,
+                                                                          final UUID courtCentreId,
+                                                                          final UUID courtRoomId,
+                                                                          final LocalDate hearingEndDate,
+                                                                          final ZonedDateTime hearingStartTime,
+                                                                          final HearingTypeData hearingTypeData) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithDate(caseAndDefendantData, courtCentreId, courtRoomId, hearingEndDate, hearingStartTime, hearingTypeData));
     }
 
 

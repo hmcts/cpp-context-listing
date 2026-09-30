@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.it;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
-import static java.time.LocalDate.now;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
@@ -22,6 +21,7 @@ import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -35,8 +35,8 @@ import org.junit.jupiter.api.Test;
 
 
 class ListCourtWeekCommencingHearingIT extends AbstractIT {
-    private final static String WEEK_COMMENCING_END_DATE_FOR_ONE_WEEK = LocalDate.now().plusDays(7L).toString();
-    private final static String WEEK_COMMENCING_END_DATE_FOR_TWO_WEEKS = LocalDate.now().plusDays(14L).toString();
+    private final static String WEEK_COMMENCING_END_DATE_FOR_ONE_WEEK = ItClock.today().plusDays(7L).toString();
+    private final static String WEEK_COMMENCING_END_DATE_FOR_TWO_WEEKS = ItClock.today().plusDays(14L).toString();
 
     private static final DatabaseCleaner databaseCleaner = new DatabaseCleaner();
     private static final ViewStoreCleaner viewStoreCleaner = new ViewStoreCleaner();
@@ -63,8 +63,8 @@ class ListCourtWeekCommencingHearingIT extends AbstractIT {
     @Test
     @Disabled("will be addressed with SPRDT-184")
     public void shouldListHearingsWithinWeekCommencingDateRangeByRelevance() {
-        final String weekCommencingSearchStartDate = now().minusDays(7).toString();
-        final String weekCommencingSearchEndDate = now().plusDays(22).toString();
+        final String weekCommencingSearchStartDate = ItClock.today().minusDays(7).toString();
+        final String weekCommencingSearchEndDate = ItClock.today().plusDays(22).toString();
 
         final HearingsData hearingsData1 = hearingsData.get(0);
         final HearingsData hearingsData2 = hearingsData.get(1);
@@ -120,8 +120,8 @@ class ListCourtWeekCommencingHearingIT extends AbstractIT {
     @Test
     @Disabled("will be addressed with SPRDT-184")
     public void shouldListHearingsWithEndDateOrWeekCommencingDatesWithinWeekCommencingDateRangeByRelevance() {
-        final String weekCommencingSearchStartDate = now().plusDays(4).toString();
-        final String weekCommencingSearchEndDate = now().plusDays(11).toString();
+        final String weekCommencingSearchStartDate = ItClock.today().plusDays(4).toString();
+        final String weekCommencingSearchEndDate = ItClock.today().plusDays(11).toString();
 
         final HearingsData hearingsData1 = hearingsData.get(2);
 
@@ -149,8 +149,8 @@ class ListCourtWeekCommencingHearingIT extends AbstractIT {
 //        for (var courtCenterId : getCourtCenterIds()) {
 //            stubGetReferenceDataCourtCentreById(courtCenterId);
 //        }
-        final String weekCommencingSearchStartDate = now().plusDays(14).toString();
-        final String weekCommencingSearchEndDate = now().plusDays(22).toString();
+        final String weekCommencingSearchStartDate = ItClock.today().plusDays(14).toString();
+        final String weekCommencingSearchEndDate = ItClock.today().plusDays(22).toString();
 
         final UpdatedHearingData updatedHearingData = updatedHearingDataList.get(0);
 
@@ -175,7 +175,7 @@ class ListCourtWeekCommencingHearingIT extends AbstractIT {
 
     @Test
     public void shouldListUnallocatedHearingsWithinWeekCommencingDateRange() {
-        final String weekCommencingSearchStartDate = now().toString();
+        final String weekCommencingSearchStartDate = ItClock.today().toString();
         final HearingsData hearingsData5 = hearingsData.get(4);
 
         final UpdatedHearingData firstUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(1);
@@ -204,8 +204,8 @@ class ListCourtWeekCommencingHearingIT extends AbstractIT {
 
     @Test
     public void shouldReturnEmptyListWhenNoHearingWithingWeekCommencingDateRangeByRelevance() {
-        final String weekCommencingSearchStartDate = now().minusDays(14).toString();
-        final String weekCommencingSearchEndDate = now().minusDays(7).toString();
+        final String weekCommencingSearchStartDate = ItClock.today().minusDays(14).toString();
+        final String weekCommencingSearchEndDate = ItClock.today().minusDays(7).toString();
 
         final Matcher[] matchers = {
                 withJsonPath("$.hearings", hasSize(0)),
@@ -217,7 +217,7 @@ class ListCourtWeekCommencingHearingIT extends AbstractIT {
 
     @Test
     public void shouldRetrieveCasesByDefendantAndHearingDateForUnallocatedHearing() {
-        final String weekCommencingSearchStartDate = now().toString();
+        final String weekCommencingSearchStartDate = ItClock.today().toString();
 
         final UpdatedHearingData firstUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(1);
 

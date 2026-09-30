@@ -90,6 +90,14 @@ public class SearchHearingHelper {
         return String.format(HEARING_FILTER, hearingId);
     }
 
+    public static String getListedCaseFilter(final String hearingId, final String caseId) {
+        return getHearingFilter(hearingId) + ".listedCases[?(@.id == '" + caseId + "')]";
+    }
+
+    public static String getDefendantFilter(final String hearingId, final String caseId, final String defendantId) {
+        return getListedCaseFilter(hearingId, caseId) + ".defendants[?(@.id == '" + defendantId + "')]";
+    }
+
     /**
      * Poll for hearing with JMS delay to handle asynchronous message processing.
      * Use this method when the test involves JMS commands that need time to process.

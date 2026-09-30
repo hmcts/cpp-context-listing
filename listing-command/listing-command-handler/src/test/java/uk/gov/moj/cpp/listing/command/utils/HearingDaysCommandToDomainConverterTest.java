@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -150,5 +151,82 @@ class HearingDaysCommandToDomainConverterTest {
         assertThat(domain.getSequence(), is(1));
         assertThat(domain.getIsCancelled().get(), is(false));
         assertThat(domain.getIsDraft().get(), is(false));
+    }
+
+    @Test
+    void shouldSetOptionalEmptyForNullableFieldsWhenNull() {
+        final ZonedDateTime startTime = ZonedDateTime.of(2026, 4, 10, 10, 0, 0, 0, ZoneOffset.UTC);
+
+        final HearingDay commandDay = HearingDay.hearingDay()
+                .withCourtCentreId(randomUUID())
+                .withCourtRoomId(null)
+                .withCourtScheduleId(null)
+                .withIsCancelled(null)
+                .withHearingDate(startTime.toLocalDate())
+                .withStartTime(startTime)
+                .withEndTime(startTime.plusMinutes(15))
+                .withDurationMinutes(15)
+                .withSequence(0)
+                .build();
+
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> result = converter.convert(List.of(commandDay));
+
+        assertThat(result, hasSize(1));
+        final uk.gov.moj.cpp.listing.domain.HearingDay domain = result.get(0);
+        assertThat(domain.getCourtRoomId(), is(Optional.empty()));
+        assertThat(domain.getCourtScheduleId(), is(Optional.empty()));
+        assertThat(domain.getIsCancelled(), is(Optional.empty()));
+    }
+
+    @Test
+    void shouldConvertMultipleHearingDaysPreservingOrder() {
+        final UUID courtCentreId = randomUUID();
+        final ZonedDateTime firstStart = ZonedDateTime.of(2026, 4, 10, 10, 0, 0, 0, ZoneOffset.UTC);
+        final ZonedDateTime secondStart = firstStart.plusDays(1);
+        final ZonedDateTime thirdStart = firstStart.plusDays(2);
+
+        final HearingDay first = HearingDay.hearingDay()
+                .withCourtCentreId(courtCentreId)
+                .withHearingDate(firstStart.toLocalDate())
+                .withStartTime(firstStart)
+                .withEndTime(firstStart.plusMinutes(30))
+                .withDurationMinutes(30)
+                .withSequence(0)
+                .withIsCancelled(null)
+                .build();
+        final HearingDay second = HearingDay.hearingDay()
+                .withCourtCentreId(courtCentreId)
+                .withHearingDate(secondStart.toLocalDate())
+                .withStartTime(secondStart)
+                .withEndTime(secondStart.plusMinutes(10))
+                .withDurationMinutes(10)
+                .withSequence(1)
+                .withIsCancelled(false)
+                .build();
+        final HearingDay third = HearingDay.hearingDay()
+                .withCourtCentreId(courtCentreId)
+                .withHearingDate(thirdStart.toLocalDate())
+                .withStartTime(thirdStart)
+                .withEndTime(thirdStart.plusMinutes(20))
+                .withDurationMinutes(20)
+                .withSequence(2)
+                .withIsCancelled(true)
+                .build();
+
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> result = converter.convert(List.of(first, second, third));
+
+        assertThat(result, hasSize(3));
+        assertThat(result.get(0).getHearingDate(), is(firstStart.toLocalDate()));
+        assertThat(result.get(0).getSequence(), is(0));
+        assertThat(result.get(0).getDurationMinutes(), is(30));
+        assertThat(result.get(0).getIsCancelled(), is(Optional.empty()));
+        assertThat(result.get(1).getHearingDate(), is(secondStart.toLocalDate()));
+        assertThat(result.get(1).getSequence(), is(1));
+        assertThat(result.get(1).getDurationMinutes(), is(10));
+        assertThat(result.get(1).getIsCancelled(), is(Optional.of(false)));
+        assertThat(result.get(2).getHearingDate(), is(thirdStart.toLocalDate()));
+        assertThat(result.get(2).getSequence(), is(2));
+        assertThat(result.get(2).getDurationMinutes(), is(20));
+        assertThat(result.get(2).getIsCancelled(), is(Optional.of(true)));
     }
 }

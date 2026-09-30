@@ -12,6 +12,7 @@ import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 import static uk.gov.justice.core.courts.LaaReference.laaReference;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
+import static uk.gov.moj.cpp.listing.it.util.PublishRetryHelper.publishUntilReflected;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDelayForJms;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
@@ -44,6 +45,7 @@ import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.steps.data.ReportingRestrictionData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -54,6 +56,7 @@ import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.path.json.JsonPath;
+import org.awaitility.core.ConditionTimeoutException;
 import org.skyscreamer.jsonassert.Customization;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.skyscreamer.jsonassert.comparator.CustomComparator;
@@ -100,7 +103,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
     private final OffenceData offenceData;
     private final UUID offenceIdToBeDeleted;
     private final UUID caseId;
-    private final UUID metadataId;
+    private UUID metadataId;
     private final UUID userId;
 
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
@@ -165,9 +168,78 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
         publishCaseDefendantOffencesUpdated(offencesForDefendantUpdated);
     }
 
+    /**
+     * Publishes the combined {@code public.progression.defendant-offences-changed} event
+     * (update + add + delete) and RE-PUBLISHES until the update is <b>reflected in the
+     * viewstore via REST</b>, or the attempt budget is exhausted.
+     *
+     * <p><b>Why re-publish?</b> The event is handled by the {@code Case} aggregate which
+     * <b>silently drops</b> the update ({@code hearingIds.isEmpty() → Stream.empty()}) when the
+     * case is not yet linked to a hearing. The async {@code add-hearing-to-case} command populates
+     * the link; on slow CI it may not complete before the first publish is processed, causing the
+     * event to be dropped with no JMS redelivery. Re-publishing (with a fresh metadata id each
+     * time) recovers once the link is established.
+     *
+     * <p><b>Why gate on REST, not on a JMS consume?</b> The previous gate consumed
+     * {@code verifyPublicEventDefendantOffencesUpdatedInActiveMQ()}, which reads back the test's
+     * <i>own</i> published event off the public topic — an echo that is ALWAYS present on the first
+     * attempt, so the loop never actually re-published and the case&lt;-&gt;hearing race was left
+     * unguarded. The downstream private-event verifies (called by the test after this gate) then
+     * died with {@code NoSuchElement} when the link had not yet formed. A REST poll is the true
+     * proof the aggregate <i>applied</i> the combined event, and — being a read — it does NOT consume
+     * the private JMS messages the test must subsequently assert. Once REST reflects the update, all
+     * downstream {@code offences-to-be-*} / {@code offence-*} events are guaranteed emitted and
+     * buffered on the consumers. This mirrors the proven gate used by the *Only variants.
+     *
+     * <p>The combined event's updated offence is built by the same {@code buildUpdatedOffences} /
+     * {@code buildOffence} as the {@code updatedOnly} variant, so {@link #verifyDefendentOffenceUpdatedOnlyFromAPI(boolean)}
+     * is a valid predicate here; the additional add (appended) and delete (offences[1]) do not shift offences[0].
+     */
+    public void publishUntilOffencesReflected(final boolean isAllocated) {
+        publishUntilReflected(LOGGER, "offences-fix", "combined defendant-offences-changed for case " + caseId,
+                this::whenCaseDefendantOffencesUpdatedPublicEventIsPublished,
+                () -> verifyDefendentOffenceUpdatedOnlyFromAPI(isAllocated));
+    }
+
+    /**
+     * Publishes the updated-only offences event and polls REST until the update is reflected,
+     * RE-PUBLISHING if the poll times out (case<->hearing link race — same root cause as
+     * {@link #publishUntilOffencesConsumed()}).
+     */
+    public void publishUntilOffencesUpdatedOnlyReflected(final boolean isAllocated) {
+        publishUntilReflected(LOGGER, "offences-fix", "defendant-offences-changed (updatedOnly) for case " + caseId,
+                this::whenCaseDefendantOffencesUpdatedPublicEventIsPublishedUpdatedOnly,
+                () -> verifyDefendentOffenceUpdatedOnlyFromAPI(isAllocated));
+    }
+
+    /**
+     * Publishes the added-only offences event and polls REST until the addition is reflected,
+     * RE-PUBLISHING if the poll times out (case<->hearing link race — same root cause as
+     * {@link #publishUntilOffencesConsumed()}).
+     */
+    public void publishUntilOffencesAddedOnlyReflected(final boolean isAllocated) {
+        publishUntilReflected(LOGGER, "offences-fix", "defendant-offences-changed (addedOnly) for case " + caseId,
+                this::whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly,
+                () -> verifyDefendentOffenceAddedOnlyFromAPI(isAllocated));
+    }
+
+    /**
+     * Publishes the deleted-only offences event and polls REST until the deletion is reflected,
+     * RE-PUBLISHING if the poll times out (case<->hearing link race — same root cause as
+     * {@link #publishUntilOffencesConsumed()}).
+     */
+    public void publishUntilOffencesDeletedOnlyReflected(final boolean isAllocated) {
+        publishUntilReflected(LOGGER, "offences-fix", "defendant-offences-changed (deletedOnly) for case " + caseId,
+                this::whenCaseDefendantOffencesUpdatedPublicEventIsPublishedDeletedOnly,
+                () -> verifyDefendentOffenceDeletedOnlyFromAPI(isAllocated));
+    }
+
     private void publishCaseDefendantOffencesUpdated(OffencesForDefendantUpdated offencesForDefendantUpdated) {
         final JsonObject updateCaseDefendantDetailsObject = (JsonObject) objectToJsonValueConverter.convert(offencesForDefendantUpdated);
 
+        // Fresh event id per publish: the framework dedupes events by metadata id, so re-publishing
+        // with the same id would be ignored. A new id guarantees each re-publish is reprocessed.
+        metadataId = randomUUID();
         sendMessage(
                 publicEventDefendantOffencesUpdated,
                 PUBLIC_EVENT_PROGRESSION_OFFENCES_FOR_DEFENDANT_CHANGED,
@@ -229,7 +301,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
                         "      \"prosecutionCaseId\": \"" + caseId + "\"\n" +
                         "    }\n" +
                         "  ],\n" +
-                        "  \"modifiedDate\": \"" + LocalDate.now() + "\",\n" +
+                        "  \"modifiedDate\": \"" + ItClock.today() + "\",\n" +
                         "  \"updatedOffences\": [\n" +
                         "    {\n" +
                         "      \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
@@ -683,7 +755,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
         return OffencesForDefendantUpdated.offencesForDefendantUpdated()
                 .withAddedOffences(buildAddedOffences(caseId, defendantId))
                 .withDeletedOffences(buildDeletedOffence(caseId, defendantId, offenceIdToBeDeleted))
-                .withModifiedDate(LocalDate.now().toString())
+                .withModifiedDate(ItClock.today().toString())
                 .withUpdatedOffences(buildUpdatedOffences(caseId, defendantId, updatedOffenceData))
                 .build();
     }
@@ -691,7 +763,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
     private OffencesForDefendantUpdated getOffencesForDefendantUpdatedOnly(UUID caseId, UUID defendantId) {
 
         return OffencesForDefendantUpdated.offencesForDefendantUpdated()
-                .withModifiedDate(LocalDate.now().toString())
+                .withModifiedDate(ItClock.today().toString())
                 .withUpdatedOffences(buildUpdatedOffences(caseId, defendantId, updatedOffenceData))
                 .build();
     }
@@ -700,7 +772,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
 
         return OffencesForDefendantUpdated.offencesForDefendantUpdated()
                 .withAddedOffences(buildAddedOffences(caseId, defendantId))
-                .withModifiedDate(LocalDate.now().toString())
+                .withModifiedDate(ItClock.today().toString())
                 .build();
     }
 
@@ -708,7 +780,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
 
         return OffencesForDefendantUpdated.offencesForDefendantUpdated()
                 .withDeletedOffences(buildDeletedOffence(caseId, defendantId, offenceIdToBeDeleted))
-                .withModifiedDate(LocalDate.now().toString())
+                .withModifiedDate(ItClock.today().toString())
                 .build();
     }
 

@@ -159,7 +159,11 @@ public class HearingObjectsListingToCoreConverter {
                             .build())
                     .build());
         }
-        builder.withOffences(defendant.getOffences().stream().map(toOffence()).collect(toList()));
+        // A defendant-like entry sourced from a court application (applicant/subject/respondent)
+        // has no offences - only case defendants do.
+        if (isNotEmpty(defendant.getOffences())) {
+            builder.withOffences(defendant.getOffences().stream().map(toOffence()).collect(toList()));
+        }
         return builder.build();
     }
 

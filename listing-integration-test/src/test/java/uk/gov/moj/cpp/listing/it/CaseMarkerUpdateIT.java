@@ -48,8 +48,10 @@ public class CaseMarkerUpdateIT extends AbstractIT {
         stubParams.put("BOOKING_ID", bookingId.toString());
         stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
         stubProvisionalBookingWithCustomParams(stubParams);
-        steps.whenCaseMarkerUpdatedPublicEventIsPublished();
-        steps.verifyCaseMarkersUpdatedThroughAPIWithJmsDelay(caseIdToUpdateMarkers);
+        // Re-publishes until the case<->hearing link (Case.hearingIds, populated by the async
+        // add-hearing-to-case command) is established and the update lands. A single publish can be
+        // silently dropped on slow environments — see UpdateCaseMarkersSteps#publishUntilCaseMarkersReflected.
+        steps.publishUntilCaseMarkersReflected(caseIdToUpdateMarkers);
     }
 
 

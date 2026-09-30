@@ -238,6 +238,12 @@ public class PayloadBasedListNextHearingSteps extends AbstractIT {
         if ("CROWN".equals(values.jurisdictionType) && values.courtRoomId != null && values.hearingId != null) {
             CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrown(
                     values.hearingId, values.courtCentreId, values.courtRoomId);
+            // SPRDT-1159: CROWN list-next-hearings without a courtScheduleId now books via the Crown
+            // fallback search-and-book (crown.search.and.book, flat single-day response) instead of
+            // the MAGS-rota search-and-book, so stub the fallback dialect too. isDraft=false so the
+            // booked next hearing comes out ALLOCATED.
+            CourtSchedulerServiceStub.stubCrownFallbackSearchAndBookSuccess(
+                    values.hearingId, UUID.randomUUID().toString(), false, "CROWN_FB_ADJOURN");
         }
     }
     

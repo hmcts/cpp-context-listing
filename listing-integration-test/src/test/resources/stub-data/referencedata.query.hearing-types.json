@@ -11,6 +11,18 @@
       "defaultDurationMin": 390,
       "validFrom": null,
       "validTo": null
+    },
+    {
+      "id": "52edf232-3c09-4c74-a6ad-737985c2e662",
+      "seqId": 2,
+      "hearingCode": "PTP",
+      "exhibitHearingCode": "PTP",
+      "hearingDescription": "Plea & Trial Preparation",
+      "exhibitHearingDescription": "Plea & Trial Preparation",
+      "welshHearingDescription": "Diffynnydd i fynychu i",
+      "defaultDurationMin": 390,
+      "validFrom": null,
+      "validTo": null
     }
   ]
 }

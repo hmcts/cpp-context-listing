@@ -21,25 +21,25 @@
       "availableDuration": 24,
       "judiciaries": [
         {
-          "id": "MA4034",
+          "judiciaryId": "MA4034",
           "courtScheduleId": "9e12bb19-da11-4437-b1a7-5169899f2d26",
           "courtListingProfileId": "ITCS2130334",
-          "isDeputy": true,
-          "isBenchChairman": false
+          "deputy": true,
+          "benchChairman": false
         },
         {
-          "id": "MA15757",
+          "judiciaryId": "MA15757",
           "courtScheduleId": "9e12bb19-da11-4437-b1a7-5169899f2d26",
           "courtListingProfileId": "ITCS2130334",
-          "isDeputy": false,
-          "isBenchChairman": true
+          "deputy": false,
+          "benchChairman": true
         },
         {
-          "id": "MA15754",
+          "judiciaryId": "MA15754",
           "courtScheduleId": "9e12bb19-da11-4437-b1a7-5169899f2d26",
           "courtListingProfileId": "ITCS2130334",
-          "isDeputy": true,
-          "isBenchChairman": false
+          "deputy": true,
+          "benchChairman": false
         }
       ],
       "slotStartTimes": [

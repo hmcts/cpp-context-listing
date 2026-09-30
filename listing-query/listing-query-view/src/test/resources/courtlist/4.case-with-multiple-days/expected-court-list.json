@@ -33,6 +33,7 @@
               "defendants":[
                 {
                   "id":"924a3c04-c594-419d-b50c-68b12005283d",
+                  "prosecutionCaseId": "1ef4ce15-ee62-419d-9ff3-ad60663ffbe6",
                   "lastName":"Protractor-6221184999",
                   "offences":[
                     {
@@ -83,6 +84,7 @@
               "defendants":[
                 {
                   "id":"924a3c04-c594-419d-b50c-68b12005283d",
+                  "prosecutionCaseId": "1ef4ce15-ee62-419d-9ff3-ad60663ffbe6",
                   "lastName":"Protractor-6221184999",
                   "offences":[
                     {
