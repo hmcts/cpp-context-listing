@@ -855,4 +855,93 @@ public class RangeSearchQueryTest {
     private List<Notes> createNotesList() {
         return newArrayList(new Notes(UUID.randomUUID(), fromString("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18"), LocalDates.from("2020-09-03"), "Note 1"));
     }
+
+    /**
+     * LPT-2406 — the court calendar must show the tier and list type a trial inherited from
+     * its seeding hearing (LPT-2405). No field mapping does this: the values live in the
+     * hearing's {@code properties} jsonb and reach the response only because the converter
+     * emits that node wholesale. This test pins that behaviour, so a converter change that
+     * starts field-picking cannot silently drop them from the calendar.
+     */
+    @Test
+    void courtCalendarSearchShouldReturnInheritedTierAndListType() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(PAGE_SIZE, 10)
+                        .add(PAGE_NUMBER, 1)
+                        .build());
+
+        when(hearingRepository.findAllocatedHearingsForCourtCalendar(
+                eq(COURT_CENTRE_ID), eq(COURT_ROOM_ID), eq(UUID.fromString(AUTHORITY_ID)), eq(HEARING_TYPE_ID),
+                eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE), eq(SEARCH_DATE), eq(null), eq(0), eq(10)))
+                .thenReturn(hearingsWithPtphDetail());
+
+        final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
+
+        final JsonArray hearings = result.payloadAsJsonObject().getJsonArray("hearings");
+        assertThat(hearings.isEmpty(), is(false));
+        final JsonObject hearing = hearings.getJsonObject(0);
+        assertThat(hearing.getString("tier"), is("TIER_3"));
+        assertThat(hearing.getString("listType"), is("TYPE_1_FIXED"));
+        assertThat(hearing.getString("keyReason"), is("Vulnerable witness"));
+    }
+
+    /**
+     * A hearing that inherited nothing (non-trial, or a seeding record that was never
+     * finalised) must simply carry no values — the calendar shows a blank, not an error.
+     */
+    @Test
+    void courtCalendarSearchShouldReturnNoTierWhenNothingWasInherited() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(PAGE_SIZE, 10)
+                        .add(PAGE_NUMBER, 1)
+                        .build());
+
+        when(hearingRepository.findAllocatedHearingsForCourtCalendar(
+                eq(COURT_CENTRE_ID), eq(COURT_ROOM_ID), eq(UUID.fromString(AUTHORITY_ID)), eq(HEARING_TYPE_ID),
+                eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE), eq(SEARCH_DATE), eq(null), eq(0), eq(10)))
+                .thenReturn(hearingsJson(ALLOCATEDSTR));
+
+        final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
+
+        final JsonArray hearings = result.payloadAsJsonObject().getJsonArray("hearings");
+        assertThat(hearings.isEmpty(), is(false));
+        assertThat(hearings.getJsonObject(0).containsKey("tier"), is(false));
+    }
+
+    private List<Hearing> hearingsWithPtphDetail() {
+        final LocalDate today = LocalDate.now();
+        final String json = "{ \"allocated\":\"" + ALLOCATEDSTR + "\", \"startDate\": \"2020-09-03\", "
+                + "\"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", "
+                + "\"tier\": \"TIER_3\", \"listType\": \"TYPE_1_FIXED\", \"keyReason\": \"Vulnerable witness\", "
+                + "\"courtApplications\" : [{}] , \"listedCases\" : [{}], "
+                + "\"hearingDays\" : [{\"hearingDate\": \"" + today + "\"}] }";
+
+        final Hearing hearing = new Hearing(randomUUID(), JacksonUtil.toJsonNode(json));
+        hearing.setAllocated(true);
+        hearing.setTotalCount(1L);
+        final HearingDays hearingDay = new HearingDays();
+        hearingDay.setHearingDate(today);
+        hearing.getHearingDays().add(hearingDay);
+        return newArrayList(hearing);
+    }
 }
