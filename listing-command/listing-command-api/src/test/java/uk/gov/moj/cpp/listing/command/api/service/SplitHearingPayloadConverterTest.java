@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.command.api.service;
 
 import static javax.json.Json.createReader;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -30,6 +31,45 @@ class SplitHearingPayloadConverterTest {
         try (var reader = createReader(new StringReader(raw))) {
             return reader.readObject();
         }
+    }
+
+    /**
+     * A split can spread the new hearing over non-consecutive days, and nothing in the schema makes
+     * the front end order them. The hearing must still start on the earliest of them - taking the
+     * first descriptor in the array would start it on whichever day happened to be sent first.
+     */
+    @Test
+    public void shouldStartTheNewHearingOnTheEarliestDayHoweverTheDaysAreOrdered() {
+        final JsonObject converted = SplitHearingPayloadConverter.toProgressionSplitRequest(
+                daysOutOfOrderPayload(), "Croydon Crown Court", "Courtroom 01", null);
+
+        assertThat("the new hearing starts on the earliest day, not the first one sent",
+                converted.getJsonObject("listNewHearing").getString("earliestStartDateTime"),
+                startsWith("2026-09-10"));
+    }
+
+    /** Three virtual days sent latest-first. */
+    private static JsonObject daysOutOfOrderPayload() {
+        return json("""
+                {
+                  "courtCentreId": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+                  "startDate": "2026-09-10",
+                  "jurisdictionType": "MAGISTRATES",
+                  "type": { "id": "52edf232-3c09-4c74-a6ad-737985c2e662", "description": "PTP" },
+                  "nonDefaultDays": [
+                    { "virtual": true, "duration": 360, "startTime": "2026-09-17T09:00:00.000Z", "courtScheduleId": "aaaaaaaa-0000-0000-0000-000000000003" },
+                    { "virtual": true, "duration": 360, "startTime": "2026-09-14T09:00:00.000Z", "courtScheduleId": "aaaaaaaa-0000-0000-0000-000000000002" },
+                    { "virtual": true, "duration": 360, "startTime": "2026-09-10T09:00:00.000Z", "courtScheduleId": "aaaaaaaa-0000-0000-0000-000000000001" }
+                  ],
+                  "prosecutionCases": [{
+                    "caseId": "b14ba162-3f21-4c8e-9a77-1d2e5c8b4a90",
+                    "defendants": [{
+                      "defendantId": "7ba20d5f-5c44-4a1b-8e33-9f6d2c7a5b18",
+                      "offences": [ { "offenceId": "79d8699d-2a31-4c55-b7e8-3f1a9d6c2e44" } ]
+                    }]
+                  }]
+                }
+                """);
     }
 
     // One 1080-minute block on a single virtual descriptor — the CROWN court-calendar split.
@@ -225,7 +265,7 @@ class SplitHearingPayloadConverterTest {
     }
 
     @Test
-    void shouldTakeEarliestStartDateTimeFromTheFirstBookedSlot() {
+    void shouldTakeEarliestStartDateTimeFromTheOnlyBookedSlotOfASingleDaySplit() {
         assertThat(listNewHearing(toProgressionSplitRequest(crownSplitPayload(), COURT_CENTRE_NAME, COURT_ROOM_NAME, null))
                 .getString("earliestStartDateTime"), is("2026-09-10T09:00:00.000Z"));
     }

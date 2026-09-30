@@ -1,9 +1,11 @@
 package uk.gov.moj.cpp.listing.command.api.service;
 
 import static java.util.Objects.isNull;
+import static java.util.Comparator.comparing;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -148,11 +150,16 @@ public final class SplitHearingPayloadConverter {
 
     // The hearing starts when its first booked session starts; the date alone is not enough for
     // progression, which wants a full timestamp.
+    /**
+     * The earliest slot's start, by time rather than by position. A split can spread the new hearing
+     * over several non-consecutive days, and nothing requires the front end to send them in order -
+     * taking the first of the array would then start the hearing on the wrong day.
+     */
     private static java.util.Optional<JsonValue> earliestStartDateTime(final JsonArray bookedSlots) {
         return bookedSlots.getValuesAs(JsonObject.class).stream()
                 .filter(slot -> slot.containsKey(START_TIME) && !slot.isNull(START_TIME))
-                .map(slot -> slot.get(START_TIME))
-                .findFirst();
+                .min(comparing(slot -> ZonedDateTime.parse(slot.getString(START_TIME)).toInstant()))
+                .map(slot -> slot.get(START_TIME));
     }
 
     private static java.util.Optional<JsonValue> weekCommencingDate(final JsonObject splitHearing) {

@@ -9,6 +9,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
@@ -162,6 +163,49 @@ public class SplitHearingIT extends AbstractIT {
                 }
                 """.formatted(COURT_CENTRE_ID);
     }
+
+    /**
+     * SPRDT-1367. A MAGS split spreads the new hearing over three non-consecutive sitting days.
+     * The CROWN case converts one all-day block, which cannot show whether several days survive the
+     * conversion intact - a converter that kept only the first, summed the wrong total or lost the
+     * real (non-virtual) day would pass every CROWN assertion.
+     */
+    @Test
+    void shouldConvertEveryVirtualDayOfAMagistratesSplit() throws Exception {
+        final UUID hearingId = randomUUID();
+        givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+
+        assertThat(postSplit(hearingId, magsSplitPayload()).getStatus(), is(HttpStatus.SC_ACCEPTED));
+
+        final List<LoggedRequest> forwarded = ProgressionServiceStub.splitRequestsForHearing(hearingId.toString());
+        assertThat("listing must forward the mags split to progression", forwarded, hasSize(1));
+
+        try (final JsonReader reader = Json.createReader(new StringReader(forwarded.get(0).getBodyAsString()))) {
+            final JsonObject listNewHearing = reader.readObject().getJsonObject("listNewHearing");
+
+            final JsonArray slots = listNewHearing.getJsonArray("bookedSlots");
+            assertThat("every virtual day becomes a booked slot", slots, hasSize(3));
+            for (int i = 0; i < slots.size(); i++) {
+                final JsonObject slot = slots.getJsonObject(i);
+                assertThat(slot.getInt("duration"), is(360));
+                assertThat("each slot keeps its own session", slot.containsKey("courtScheduleId"), is(true));
+                assertThat("listing reads courtCentreId off every slot unguarded",
+                        slot.containsKey(COURT_CENTRE_ID_KEY), is(true));
+                assertThat(slot.containsKey("virtual"), is(false));
+            }
+
+            assertThat("the estimate is the sum of the days, not one of them",
+                    listNewHearing.getInt("estimatedMinutes"), is(1080));
+            assertThat("the hearing starts on the earliest day",
+                    listNewHearing.getString("earliestStartDateTime"), startsWith("2026-09-10"));
+            assertThat("a real (non-virtual) day is carried as a nonDefaultDay, not a booked slot",
+                    listNewHearing.getJsonArray("nonDefaultDays"), hasSize(1));
+            assertThat("the week-commencing window survives the conversion",
+                    listNewHearing.containsKey("weekCommencingDate"), is(true));
+        }
+    }
+
+    private static final String COURT_CENTRE_ID_KEY = "courtCentreId";
 
     private Response postSplit(final UUID hearingId, final String payload) {
         return AbstractIT.restClient.postCommand(
