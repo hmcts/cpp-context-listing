@@ -11,6 +11,9 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.apache.http.HttpStatus.SC_ACCEPTED;
+import static org.apache.http.HttpStatus.SC_CONFLICT;
+import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
@@ -83,6 +86,8 @@ import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
+import uk.gov.moj.cpp.listing.common.service.ProgressionSplitHearingService;
+import uk.gov.moj.cpp.listing.common.splithearing.SplitHearingRejectedException;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 import uk.gov.moj.cpp.listing.domain.Type;
@@ -105,6 +110,8 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonValue;
+
+import javax.ws.rs.core.Response;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -145,6 +152,8 @@ public class ListingCommandApiTest {
     private ArgumentCaptor<Envelope> envelopeArgumentCaptor;
     @Mock
     private HearingSlotsService hearingSlotsService;
+    @Mock
+    private ProgressionSplitHearingService progressionSplitHearingService;
     @Mock
     private HearingEnrichmentOrchestrator hearingEnrichmentOrchestrator;
     @Mock
@@ -209,10 +218,10 @@ public class ListingCommandApiTest {
     }
 
     /**
-     * Until progression's split endpoint ships (SPRDT-1362) the handler validates and converts, then
-     * accepts. What the conversion produces is asserted directly in {@link
-     * uk.gov.moj.cpp.listing.command.api.service.SplitHearingPayloadConverterTest}; here we only
-     * pin that the handler resolves the court centre it needs and accepts both request shapes.
+     * The handler validates, converts and forwards to progression. What the conversion produces is
+     * asserted directly in {@link
+     * uk.gov.moj.cpp.listing.command.api.service.SplitHearingPayloadConverterTest}; here we pin that
+     * the handler resolves the court centre it needs and accepts both request shapes.
      */
     @Test
     public void shouldAcceptSplitHearingAndResolveTheCourtCentre() {
@@ -226,6 +235,8 @@ public class ListingCommandApiTest {
                 .withCourtrooms(List.of(room))
                 .build();
         when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
+
+        givenProgressionResponds(SC_ACCEPTED, null);
 
         listingCommandApi.handleSplitHearing(splitEnvelope(true));
 
@@ -241,9 +252,93 @@ public class ListingCommandApiTest {
                 .build();
         when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
 
+        givenProgressionResponds(SC_ACCEPTED, null);
+
         listingCommandApi.handleSplitHearing(splitEnvelope(false));
 
         verify(courtCentreFactory).getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class));
+    }
+
+    /**
+     * The proxy's reason to exist. Accepting the request without sending it on would satisfy every
+     * other assertion here, so this pins the forward itself: the action progression is bound to, and
+     * a payload carrying both the source hearing id — which fills progression's URI template — and
+     * the converted list-new-hearing shape.
+     */
+    @Test
+    public void shouldForwardTheConvertedSplitToProgression() {
+        final CourtCentreDetails courtCentre = CourtCentreDetails.courtCentreDetails()
+                .withId(SPLIT_COURT_CENTRE_ID)
+                .withName("Croydon Crown Court")
+                .withCourtrooms(List.of())
+                .build();
+        when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
+
+        givenProgressionResponds(SC_ACCEPTED, null);
+
+        listingCommandApi.handleSplitHearing(splitEnvelope(false));
+
+        final ArgumentCaptor<JsonObject> forwardedCaptor = forClass(JsonObject.class);
+        verify(progressionSplitHearingService).splitHearing(
+                eq(SPLIT_HEARING_ID.toString()), forwardedCaptor.capture(), any(Metadata.class));
+
+        final JsonObject forwarded = forwardedCaptor.getValue();
+        assertThat("progression receives the converted shape, not the front end's payload",
+                forwarded.containsKey("listNewHearing"), is(true));
+        assertThat("the hearing id fills the URI template, so it must not also sit in the body",
+                forwarded.containsKey("hearingId"), is(false));
+    }
+
+    /**
+     * SPRDT-1411. Progression's status is the front end's only way to tell a stale request from an
+     * unknown hearing or from progression being down, so it must come back unchanged rather than as
+     * the generic 500 the generated client would have produced.
+     */
+    @Test
+    public void shouldSurfaceProgressionsRejectionStatusAndErrorCode() {
+        final CourtCentreDetails courtCentre = CourtCentreDetails.courtCentreDetails()
+                .withId(SPLIT_COURT_CENTRE_ID)
+                .withName("Croydon Crown Court")
+                .withCourtrooms(List.of())
+                .build();
+        when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
+        givenProgressionResponds(SC_CONFLICT, Json.createObjectBuilder()
+                .add("errorCode", "HEARING_ALREADY_CHANGED")
+                .add("message", "the hearing has moved on since this request was built")
+                .build());
+
+        final SplitHearingRejectedException thrown = assertThrows(SplitHearingRejectedException.class,
+                () -> listingCommandApi.handleSplitHearing(splitEnvelope(false)));
+
+        assertThat("progression's status must reach the caller unchanged", thrown.getHttpStatus(), is(SC_CONFLICT));
+        assertThat("progression's errorCode distinguishes a stale request from any other rejection",
+                thrown.getErrorCode(), is("HEARING_ALREADY_CHANGED"));
+    }
+
+    /**
+     * A rejection with no parseable body must still carry the status; an empty body must not be
+     * allowed to collapse the failure back into a 500.
+     */
+    @Test
+    public void shouldSurfaceProgressionsRejectionWhenItSendsNoBody() {
+        final CourtCentreDetails courtCentre = CourtCentreDetails.courtCentreDetails()
+                .withId(SPLIT_COURT_CENTRE_ID)
+                .withName("Croydon Crown Court")
+                .withCourtrooms(List.of())
+                .build();
+        when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
+        givenProgressionResponds(SC_NOT_FOUND, null);
+
+        final SplitHearingRejectedException thrown = assertThrows(SplitHearingRejectedException.class,
+                () -> listingCommandApi.handleSplitHearing(splitEnvelope(false)));
+
+        assertThat(thrown.getHttpStatus(), is(SC_NOT_FOUND));
+        assertThat(thrown.getErrorCode(), is(nullValue()));
+    }
+
+    private void givenProgressionResponds(final int status, final JsonObject body) {
+        when(progressionSplitHearingService.splitHearing(anyString(), any(JsonObject.class), any(Metadata.class)))
+                .thenReturn(Response.status(status).entity(body).build());
     }
 
     @Test

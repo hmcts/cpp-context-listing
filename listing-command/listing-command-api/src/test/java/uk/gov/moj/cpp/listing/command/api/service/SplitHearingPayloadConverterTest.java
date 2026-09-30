@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.command.api.service;
 
 import static javax.json.Json.createReader;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -30,6 +31,45 @@ class SplitHearingPayloadConverterTest {
         try (var reader = createReader(new StringReader(raw))) {
             return reader.readObject();
         }
+    }
+
+    /**
+     * A split can spread the new hearing over non-consecutive days, and nothing in the schema makes
+     * the front end order them. The hearing must still start on the earliest of them - taking the
+     * first descriptor in the array would start it on whichever day happened to be sent first.
+     */
+    @Test
+    public void shouldStartTheNewHearingOnTheEarliestDayHoweverTheDaysAreOrdered() {
+        final JsonObject converted = SplitHearingPayloadConverter.toProgressionSplitRequest(
+                daysOutOfOrderPayload(), "Croydon Crown Court", "Courtroom 01", null);
+
+        assertThat("the new hearing starts on the earliest day, not the first one sent",
+                converted.getJsonObject("listNewHearing").getString("earliestStartDateTime"),
+                startsWith("2026-09-10"));
+    }
+
+    /** Three virtual days sent latest-first. */
+    private static JsonObject daysOutOfOrderPayload() {
+        return json("""
+                {
+                  "courtCentreId": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+                  "startDate": "2026-09-10",
+                  "jurisdictionType": "MAGISTRATES",
+                  "type": { "id": "52edf232-3c09-4c74-a6ad-737985c2e662", "description": "PTP" },
+                  "nonDefaultDays": [
+                    { "virtual": true, "duration": 360, "startTime": "2026-09-17T09:00:00.000Z", "courtScheduleId": "aaaaaaaa-0000-0000-0000-000000000003" },
+                    { "virtual": true, "duration": 360, "startTime": "2026-09-14T09:00:00.000Z", "courtScheduleId": "aaaaaaaa-0000-0000-0000-000000000002" },
+                    { "virtual": true, "duration": 360, "startTime": "2026-09-10T09:00:00.000Z", "courtScheduleId": "aaaaaaaa-0000-0000-0000-000000000001" }
+                  ],
+                  "prosecutionCases": [{
+                    "caseId": "b14ba162-3f21-4c8e-9a77-1d2e5c8b4a90",
+                    "defendants": [{
+                      "defendantId": "7ba20d5f-5c44-4a1b-8e33-9f6d2c7a5b18",
+                      "offences": [ { "offenceId": "79d8699d-2a31-4c55-b7e8-3f1a9d6c2e44" } ]
+                    }]
+                  }]
+                }
+                """);
     }
 
     // One 1080-minute block on a single virtual descriptor — the CROWN court-calendar split.
@@ -90,6 +130,40 @@ class SplitHearingPayloadConverterTest {
 
     private static JsonObject listNewHearing(final JsonObject request) {
         return request.getJsonObject("listNewHearing");
+    }
+
+    /**
+     * A split carries no judiciary yet, so the front end sends an empty array. Progression's
+     * courtHearingRequest requires at least one entry wherever judiciary appears, so forwarding the
+     * empty array made it reject every proxied split — the field has to be dropped, not passed on.
+     */
+    /**
+     * Listing reads courtCentreId off every booked slot unguarded when it converts them to hearing
+     * days, so a slot without one fails the onward listing of the new hearing — after the split was
+     * already accepted, leaving the offence on neither hearing. The front end sets it per day only
+     * for a day sitting elsewhere, so the slot must inherit the split's own centre.
+     */
+    @Test
+    void shouldGiveEveryBookedSlotACourtCentreId() {
+        final JsonObject hearing = listNewHearing(
+                toProgressionSplitRequest(crownSplitPayload(), COURT_CENTRE_NAME, COURT_ROOM_NAME, null));
+
+        final JsonArray bookedSlots = hearing.getJsonArray("bookedSlots");
+        assertThat(bookedSlots, hasSize(1));
+        assertThat("a booked slot without a court centre breaks the onward listing",
+                bookedSlots.getJsonObject(0).getString("courtCentreId"),
+                is("07e45c88-9e5d-3e44-b664-d5345bb13be2"));
+    }
+
+    @Test
+    void shouldDropAnEmptyJudiciaryRatherThanForwardIt() {
+        final JsonObject hearing = listNewHearing(
+                toProgressionSplitRequest(crownSplitPayload(), COURT_CENTRE_NAME, COURT_ROOM_NAME, null));
+
+        assertThat("an empty judiciary must not reach progression",
+                hearing.containsKey("judiciary"), is(false));
+        assertThat("other pass-through fields are unaffected",
+                hearing.getString("jurisdictionType"), is("CROWN"));
     }
 
     @Test
@@ -191,7 +265,7 @@ class SplitHearingPayloadConverterTest {
     }
 
     @Test
-    void shouldTakeEarliestStartDateTimeFromTheFirstBookedSlot() {
+    void shouldTakeEarliestStartDateTimeFromTheOnlyBookedSlotOfASingleDaySplit() {
         assertThat(listNewHearing(toProgressionSplitRequest(crownSplitPayload(), COURT_CENTRE_NAME, COURT_ROOM_NAME, null))
                 .getString("earliestStartDateTime"), is("2026-09-10T09:00:00.000Z"));
     }
