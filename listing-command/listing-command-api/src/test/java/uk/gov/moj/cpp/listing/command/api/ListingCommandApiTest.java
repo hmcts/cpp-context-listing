@@ -732,9 +732,9 @@ public class ListingCommandApiTest {
         final UUID courtCentreId = randomUUID();
         final UUID courtRoomId = randomUUID();
         final UUID courtScheduleId = randomUUID();
-        final LocalDate startDate = LocalDate.parse("2026-05-01");
-        final ZonedDateTime startInstant = ZonedDateTime.parse("2026-05-01T10:00:00Z");
-        final ZonedDateTime endInstant = ZonedDateTime.parse("2026-05-01T17:00:00Z");
+        final LocalDate startDate = LocalDate.now().minusDays(7);
+        final ZonedDateTime startInstant = ZonedDateTime.parse(startDate + "T10:00:00Z");
+        final ZonedDateTime endInstant = ZonedDateTime.parse(startDate + "T17:00:00Z");
 
         givenMovePayload(hearingId, courtCentreId, courtRoomId, startInstant.toString(), endInstant.toString());
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
@@ -747,7 +747,7 @@ public class ListingCommandApiTest {
         given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
 
         final MoveHearingToPastDateResult slot = new MoveHearingToPastDateResult(courtScheduleId,
-                "9d324f4f-6c3b-451f-ac1e-f459db781153", startDate, "2026-05-01T09:00:00Z", "2026-05-01T17:00:00Z", 30);
+                "9d324f4f-6c3b-451f-ac1e-f459db781153", startDate, startDate + "T09:00:00Z", startDate + "T17:00:00Z", 30);
         given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 30, "MAGISTRATES"))
                 .willReturn(slot);
 
@@ -882,35 +882,40 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    void shouldNotRejectMultiDayCrownRangeAsMultiDayNotAllowed() {
-        // Regression guard: main rejects any endDate after startDate (MULTI_DAY_NOT_ALLOWED). Team
-        // deliberately does NOT port that check - SPRDT-1333's multi-day CROWN payback must keep working.
+    void shouldRejectMultiDayCrownRequestWindowWithMultiDayNotAllowed() {
+        // Ported from main (D-C/Q5): the request window is a single calendar day for BOTH
+        // jurisdictions. Multi-day CROWN payback comes from the hearing's estimate (duration path),
+        // not from a multi-day startDateTime/endDateTime range.
+        assertMultiDayRequestWindowRejected("CROWN");
+    }
+
+    @Test
+    void shouldRejectMultiDayMagistratesRequestWindowWithMultiDayNotAllowed() {
+        assertMultiDayRequestWindowRejected("MAGISTRATES");
+    }
+
+    private void assertMultiDayRequestWindowRejected(final String jurisdictionType) {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID courtRoomId = randomUUID();
-        final UUID courtScheduleId = randomUUID();
         final String start = LocalDate.now().minusDays(7).toString();
         final String end = LocalDate.now().minusDays(5).toString();
-        final ZonedDateTime startInstant = ZonedDateTime.parse(start + "T10:00:00Z");
-        final ZonedDateTime endInstant = ZonedDateTime.parse(end + "T17:00:00Z");
 
-        givenMovePayload(hearingId, courtCentreId, courtRoomId, startInstant.toString(), endInstant.toString());
-        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        givenMovePayload(hearingId, courtCentreId, courtRoomId, start + "T10:00:00Z", end + "T17:00:00Z");
 
         final JsonObject hearing = Json.createObjectBuilder()
                 .add("id", hearingId.toString())
-                .add("jurisdictionType", "CROWN")
+                .add("jurisdictionType", jurisdictionType)
+                .add("estimatedMinutes", 1080)
                 .build();
         given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
 
-        final MoveHearingToPastDateResult slot = new MoveHearingToPastDateResult(courtScheduleId,
-                courtRoomId.toString(), LocalDate.parse(start), start + "T09:00:00Z", start + "T17:00:00Z", null);
-        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, null, "CROWN"))
-                .willReturn(slot);
-
-        listingCommandApi.handleMoveHearingToPastDate(envelope);
-
-        verify(sender, times(1)).send(any());
+        final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
+                () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getErrorCode(), is("MULTI_DAY_NOT_ALLOWED"));
+        verify(courtSchedulerServiceAdapter, never()).moveHearingToPastDate(any(), any(), any(), any(), any(), any(), any());
+        verify(sender, never()).send(any());
     }
 
     @Test
@@ -918,7 +923,7 @@ public class ListingCommandApiTest {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID courtRoomId = randomUUID();
-        final LocalDate startDate = LocalDate.parse("2026-05-01");
+        final LocalDate startDate = LocalDate.now().minusDays(7);
 
         givenMovePayload(hearingId, courtCentreId, courtRoomId, startDate + "T10:00:00Z", startDate + "T17:00:00Z");
 
@@ -944,7 +949,7 @@ public class ListingCommandApiTest {
 
     /**
      * Regression test: courtscheduler can return 200 OK with an empty sessions[] (a genuine
-     * multi-day-range search that matched nothing - exploratory, prior allocation left intact,
+     * multi-day, duration-sized search that matched nothing - exploratory, prior allocation left intact,
      * NOT an error at the adapter layer). Before this fix, command-api would still try to enrich
      * and send a command built from zero sessions, producing a broken
      * listing.command.move-hearing-to-past-date-enriched (missing courtScheduleId/sessionDate on
@@ -957,18 +962,19 @@ public class ListingCommandApiTest {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID courtRoomId = randomUUID();
-        final LocalDate startDate = LocalDate.parse("2026-05-01");
+        final LocalDate startDate = LocalDate.now().minusDays(7);
         final ZonedDateTime startInstant = ZonedDateTime.parse(startDate + "T10:00:00Z");
-        final ZonedDateTime endInstant = ZonedDateTime.parse(startDate.plusDays(3) + "T17:00:00Z");
+        final ZonedDateTime endInstant = ZonedDateTime.parse(startDate + "T17:00:00Z");
 
         givenMovePayload(hearingId, courtCentreId, courtRoomId, startInstant.toString(), endInstant.toString());
 
         final JsonObject hearing = Json.createObjectBuilder()
                 .add("id", hearingId.toString())
                 .add("jurisdictionType", "CROWN")
+                .add("estimatedMinutes", 1080)
                 .build();
         given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
-        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, null, "CROWN"))
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 1080, "CROWN"))
                 .willReturn(new MoveHearingToPastDateResult(java.util.List.of()));
 
         final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
@@ -1021,8 +1027,8 @@ public class ListingCommandApiTest {
     /**
      * Multi-day CROWN via the duration-driven day-count path: a single-day request (startDateTime and
      * endDateTime on the same calendar date) still lets the hearing's estimatedMinutes drive
-     * courtscheduler's day-count (unaffected by the new explicit-range capability, which only kicks in
-     * when endDateTime's DATE is genuinely after startDateTime's). courtscheduler books N consecutive
+     * courtscheduler's day-count (the only multi-day route - a request window spanning several dates
+     * is rejected as MULTI_DAY_NOT_ALLOWED). courtscheduler books N consecutive
      * past sessions (its CourtSchedule carries no per-hearing duration). The enrichment must carry
      * EVERY session so the handler re-issues N hearing days, with the hearing's estimatedMinutes spread
      * evenly per day, endDate = last session, and the flat single-day fields mirroring the first
