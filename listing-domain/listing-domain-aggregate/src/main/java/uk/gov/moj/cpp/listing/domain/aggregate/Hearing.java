@@ -185,7 +185,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -2103,56 +2102,22 @@ public class Hearing implements Aggregate {
             return Stream.empty();
         }
 
-        final Map<UUID, String> dateOfBirthByMasterDefendantId = getDateOfBirthByMasterDefendantId();
         final List<UUID> under18DefendantIds = getUnder18DefendantIds(effectiveHearingDate);
-        final List<UUID> under18ApplicantIds = getUnder18CourtApplicationPartyIds(effectiveHearingDate, dateOfBirthByMasterDefendantId,
-                courtApplication -> Stream.ofNullable(courtApplication.getApplicant()));
-        final List<UUID> under18SubjectIds = getUnder18CourtApplicationPartyIds(effectiveHearingDate, dateOfBirthByMasterDefendantId,
-                courtApplication -> Stream.ofNullable(courtApplication.getSubject()));
-        final List<UUID> under18RespondentIds = getUnder18CourtApplicationPartyIds(effectiveHearingDate, dateOfBirthByMasterDefendantId,
-                courtApplication -> isNull(courtApplication.getRespondents()) ? Stream.empty() : courtApplication.getRespondents().stream());
+        final List<UUID> under18SubjectIds = getUnder18CourtApplicationSubjectIds(effectiveHearingDate);
 
-        if (under18DefendantIds.isEmpty() && under18ApplicantIds.isEmpty() && under18SubjectIds.isEmpty() && under18RespondentIds.isEmpty()) {
+        if (under18DefendantIds.isEmpty() && under18SubjectIds.isEmpty()) {
             return Stream.empty();
         }
 
-        LOGGER.info("Auto-restricting under-18 parties from court list for hearing {}: {} defendant(s), {} applicant(s), {} subject(s), {} respondent(s)",
-                this.hearingId, under18DefendantIds.size(), under18ApplicantIds.size(), under18SubjectIds.size(), under18RespondentIds.size());
+        LOGGER.info("Auto-restricting under-18 parties from court list for hearing {}: {} defendant(s), {} subject(s)",
+                this.hearingId, under18DefendantIds.size(), under18SubjectIds.size());
 
         return apply(Stream.of(CourtListRestricted.courtListRestricted()
                 .withHearingId(this.hearingId)
                 .withRestrictCourtList(true)
                 .withDefendantIds(under18DefendantIds.isEmpty() ? null : under18DefendantIds)
-                .withCourtApplicationApplicantIds(under18ApplicantIds.isEmpty() ? null : under18ApplicantIds)
                 .withCourtApplicationSubjectIds(under18SubjectIds.isEmpty() ? null : under18SubjectIds)
-                .withCourtApplicationRespondentIds(under18RespondentIds.isEmpty() ? null : under18RespondentIds)
                 .build()));
-    }
-
-    /**
-     * Dates of birth known on this hearing, keyed by master defendant, so an application party
-     * recorded without a DOB (e.g. a subject) can be aged from the same person's other records.
-     */
-    private Map<UUID, String> getDateOfBirthByMasterDefendantId() {
-        final Map<UUID, String> dateOfBirthByMasterDefendantId = new HashMap<>();
-        if (nonNull(this.currentHearingEventState.getListedCases())) {
-            this.currentHearingEventState.getListedCases().stream()
-                    .filter(listedCase -> nonNull(listedCase.getDefendants()))
-                    .flatMap(listedCase -> listedCase.getDefendants().stream())
-                    .filter(defendant -> nonNull(defendant.getMasterDefendantId()) && !isBlank(defendant.getDateOfBirth()))
-                    .forEach(defendant -> dateOfBirthByMasterDefendantId.putIfAbsent(defendant.getMasterDefendantId(), defendant.getDateOfBirth()));
-        }
-        if (nonNull(this.currentHearingEventState.getCourtApplications())) {
-            this.currentHearingEventState.getCourtApplications().stream()
-                    .flatMap(courtApplication -> Stream.of(
-                            Stream.ofNullable(courtApplication.getApplicant()),
-                            Stream.ofNullable(courtApplication.getSubject()),
-                            isNull(courtApplication.getRespondents()) ? Stream.<uk.gov.justice.listing.events.ApplicantRespondent>empty() : courtApplication.getRespondents().stream())
-                            .flatMap(Function.identity()))
-                    .filter(party -> nonNull(party.getMasterDefendantId()) && !isBlank(party.getDateOfBirth()))
-                    .forEach(party -> dateOfBirthByMasterDefendantId.putIfAbsent(party.getMasterDefendantId(), party.getDateOfBirth()));
-        }
-        return dateOfBirthByMasterDefendantId;
     }
 
     private List<UUID> getUnder18DefendantIds(final LocalDate effectiveHearingDate) {
@@ -2168,27 +2133,18 @@ public class Hearing implements Aggregate {
                 .collect(toList());
     }
 
-    private List<UUID> getUnder18CourtApplicationPartyIds(final LocalDate effectiveHearingDate,
-                                                          final Map<UUID, String> dateOfBirthByMasterDefendantId,
-                                                          final Function<uk.gov.justice.listing.events.CourtApplication, Stream<uk.gov.justice.listing.events.ApplicantRespondent>> partiesOf) {
+    private List<UUID> getUnder18CourtApplicationSubjectIds(final LocalDate effectiveHearingDate) {
         if (isNull(this.currentHearingEventState.getCourtApplications())) {
             return emptyList();
         }
         return this.currentHearingEventState.getCourtApplications().stream()
-                .flatMap(partiesOf)
-                .filter(party -> nonNull(party.getId()))
-                .filter(party -> isUnder18OnHearingDate(resolveDateOfBirth(party, dateOfBirthByMasterDefendantId), effectiveHearingDate))
-                .filter(party -> !toBoolean(party.getRestrictFromCourtList()))
+                .filter(courtApplication -> nonNull(courtApplication.getSubject()))
+                .map(uk.gov.justice.listing.events.CourtApplication::getSubject)
+                .filter(subject -> nonNull(subject.getId()))
+                .filter(subject -> isUnder18OnHearingDate(subject.getDateOfBirth(), effectiveHearingDate))
+                .filter(subject -> !toBoolean(subject.getRestrictFromCourtList()))
                 .map(uk.gov.justice.listing.events.ApplicantRespondent::getId)
-                .distinct()
                 .collect(toList());
-    }
-
-    private String resolveDateOfBirth(final uk.gov.justice.listing.events.ApplicantRespondent party, final Map<UUID, String> dateOfBirthByMasterDefendantId) {
-        if (!isBlank(party.getDateOfBirth()) || isNull(party.getMasterDefendantId())) {
-            return party.getDateOfBirth();
-        }
-        return dateOfBirthByMasterDefendantId.get(party.getMasterDefendantId());
     }
 
     private LocalDate getEffectiveHearingDate() {

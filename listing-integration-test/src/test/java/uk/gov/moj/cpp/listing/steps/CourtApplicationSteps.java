@@ -124,10 +124,10 @@ public class CourtApplicationSteps extends AbstractIT {
         request = courtApplicationUpdateDataObject.toString();
     }
 
-    public void whenCourtApplicationWithYouthApplicantIsAddedToHearing(final UUID courtApplicationId, final UUID applicantId, final String applicantDateOfBirth) {
+    public void whenCourtApplicationWithYouthSubjectIsAddedToHearing(final UUID courtApplicationId, final UUID subjectId, final String subjectDateOfBirth) {
         final UUID hearingId = hearingsData.getHearingData().get(0).getId();
         final AddCourtApplicationData addCourtApplicationData = new AddCourtApplicationData(hearingId,
-                getCourtApplication(courtApplicationId, applicantId, applicantDateOfBirth));
+                getCourtApplication(courtApplicationId, subjectId, subjectDateOfBirth));
         final JsonObject addCourtApplicationDataObject = (JsonObject) objectToJsonValueConverter.convert(addCourtApplicationData);
         sendMessage(
                 publicEventCourtApplicationAdded,
@@ -288,7 +288,7 @@ public class CourtApplicationSteps extends AbstractIT {
         return getCourtApplication(courtApplicationData.getId(), APPLICANT_ID, null);
     }
 
-    private CourtApplication getCourtApplication(final UUID courtApplicationId, final UUID applicantId, final String applicantDateOfBirth) {
+    private CourtApplication getCourtApplication(final UUID courtApplicationId, final UUID subjectId, final String subjectDateOfBirth) {
         return CourtApplication.courtApplication()
                 .withApplicant(CourtApplicationParty.courtApplicationParty()
                         .withPersonDetails(Person.person()
@@ -296,9 +296,8 @@ public class CourtApplicationSteps extends AbstractIT {
                                 .withLastName(APPLICANT_LAST_NAME)
                                 .withGender(Gender.FEMALE)
                                 .withAddress(buildAddress())
-                                .withDateOfBirth(applicantDateOfBirth)
                                 .build())
-                        .withId(applicantId)
+                        .withId(APPLICANT_ID)
                         .withSummonsRequired(false)
                         .withNotificationRequired(false)
                         .build())
@@ -308,8 +307,9 @@ public class CourtApplicationSteps extends AbstractIT {
                                 .withLastName(APPLICANT_LAST_NAME)
                                 .withGender(Gender.FEMALE)
                                 .withAddress(buildAddress())
+                                .withDateOfBirth(subjectDateOfBirth)
                                 .build())
-                        .withId(APPLICANT_ID)
+                        .withId(subjectId)
                         .withSummonsRequired(false)
                         .withNotificationRequired(false)
                         .build())
