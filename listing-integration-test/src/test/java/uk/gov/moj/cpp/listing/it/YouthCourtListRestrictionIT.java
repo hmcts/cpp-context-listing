@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.it;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingByWeekCommencing;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataForYoungCourtApplicationRespondent;
@@ -16,6 +17,7 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvai
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoom;
 
+import uk.gov.moj.cpp.listing.steps.CourtApplicationSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateDefendantSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
@@ -125,7 +127,7 @@ class YouthCourtListRestrictionIT extends AbstractIT {
     }
 
     @Test
-    void shouldRestrictUnder18CourtApplicationRespondentFromCourtListWhenHearingIsAllocated() throws IOException {
+    void shouldNotAutoRestrictUnder18CourtApplicationRespondentFromCourtListWhenHearingIsAllocated() throws IOException {
         final HearingsData hearingsData = hearingsDataForYoungCourtApplicationRespondent();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -148,7 +150,7 @@ class YouthCourtListRestrictionIT extends AbstractIT {
                 withJsonPath("$.hearings[0].id", equalTo(hearingData.getId().toString())),
                 withJsonPath("$.hearings[0].courtApplications[0].id", equalTo(courtApplicationData.getId().toString())),
                 withJsonPath("$.hearings[0].courtApplications[0].respondents[0].id", equalTo(respondentId)),
-                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].restrictFromCourtList", equalTo(true))
+                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].restrictFromCourtList", equalTo(false))
         });
     }
 
@@ -177,6 +179,36 @@ class YouthCourtListRestrictionIT extends AbstractIT {
                 withJsonPath("$.hearings[0].courtApplications[0].id", equalTo(courtApplicationData.getId().toString())),
                 withJsonPath("$.hearings[0].courtApplications[0].subject.id", equalTo(subjectId)),
                 withJsonPath("$.hearings[0].courtApplications[0].subject.restrictFromCourtList", equalTo(true))
+        });
+    }
+
+    @Test
+    void shouldRestrictUnder18SubjectFromCourtListWhenCourtApplicationIsAddedToAllocatedHearing() throws IOException {
+        final HearingsData hearingsData = hearingsDataWithAdultDefendants();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForAllocation(hearingData.getId());
+        stubGetReferenceDataCourtRoom(updatedHearingDataForAllocation.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingDataForAllocation.getCourtRoomId());
+
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        stubGetAvailableHearingSlotsWithQueryParams(updateHearingSteps.getUpdatedHearingData());
+        stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
+        updateHearingSteps.whenHearingIsUpdatedForListing();
+        updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
+
+        final UUID courtApplicationId = UUID.randomUUID();
+        final UUID subjectId = UUID.randomUUID();
+        final String under18DateOfBirth = ItClock.today().minusYears(16).toString();
+        new CourtApplicationSteps(hearingsData).whenCourtApplicationWithYouthSubjectIsAddedToHearing(courtApplicationId, subjectId, under18DateOfBirth);
+
+        pollForHearing(updatedHearingDataForAllocation.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[0].id", equalTo(hearingData.getId().toString())),
+                withJsonPath("$.hearings[0].courtApplications[?(@.id == '" + courtApplicationId + "')].subject.id", hasItem(subjectId.toString())),
+                withJsonPath("$.hearings[0].courtApplications[?(@.id == '" + courtApplicationId + "')].subject.restrictFromCourtList", hasItem(true)),
+                withJsonPath("$.hearings[0].courtApplications[?(@.id == '" + courtApplicationId + "')].applicant.restrictFromCourtList", hasItem(false))
         });
     }
 

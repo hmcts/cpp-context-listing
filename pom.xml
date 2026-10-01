@@ -11,7 +11,7 @@
 
     <groupId>uk.gov.moj.cpp.listing</groupId>
     <artifactId>listing-parent</artifactId>
-    <version>17.104.16-LPT-2567-SNAPSHOT</version>
+    <version>17.104.14-release-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Listing Context Microservice Parent</name>
@@ -31,6 +31,8 @@
         <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
         <coredomain.version>17.104.3</coredomain.version>
         <referencedata.version>17.104.137</referencedata.version>
+        <!-- LPT-2405: first release carrying the hearing.get-ptph-detail query -->
+        <hearing.version>17.104.201</hearing.version>
         <documentgenerator-client.version>1.0.4</documentgenerator-client.version>
         <sardine.version>5.7</sardine.version>
         <progression.version>17.0.286</progression.version>
