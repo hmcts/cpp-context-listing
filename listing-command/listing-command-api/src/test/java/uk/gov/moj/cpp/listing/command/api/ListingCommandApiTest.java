@@ -11,6 +11,9 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.apache.http.HttpStatus.SC_ACCEPTED;
+import static org.apache.http.HttpStatus.SC_CONFLICT;
+import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
@@ -83,6 +86,8 @@ import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
+import uk.gov.moj.cpp.listing.common.service.ProgressionSplitHearingService;
+import uk.gov.moj.cpp.listing.common.splithearing.SplitHearingRejectedException;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 import uk.gov.moj.cpp.listing.domain.Type;
@@ -90,6 +95,7 @@ import uk.gov.moj.cpp.listing.domain.VacateTrialEnriched;
 
 import java.io.StringReader;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -104,6 +110,8 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonValue;
+
+import javax.ws.rs.core.Response;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -144,6 +152,8 @@ public class ListingCommandApiTest {
     private ArgumentCaptor<Envelope> envelopeArgumentCaptor;
     @Mock
     private HearingSlotsService hearingSlotsService;
+    @Mock
+    private ProgressionSplitHearingService progressionSplitHearingService;
     @Mock
     private HearingEnrichmentOrchestrator hearingEnrichmentOrchestrator;
     @Mock
@@ -208,10 +218,10 @@ public class ListingCommandApiTest {
     }
 
     /**
-     * Until progression's split endpoint ships (SPRDT-1362) the handler validates and converts, then
-     * accepts. What the conversion produces is asserted directly in {@link
-     * uk.gov.moj.cpp.listing.command.api.service.SplitHearingPayloadConverterTest}; here we only
-     * pin that the handler resolves the court centre it needs and accepts both request shapes.
+     * The handler validates, converts and forwards to progression. What the conversion produces is
+     * asserted directly in {@link
+     * uk.gov.moj.cpp.listing.command.api.service.SplitHearingPayloadConverterTest}; here we pin that
+     * the handler resolves the court centre it needs and accepts both request shapes.
      */
     @Test
     public void shouldAcceptSplitHearingAndResolveTheCourtCentre() {
@@ -225,6 +235,8 @@ public class ListingCommandApiTest {
                 .withCourtrooms(List.of(room))
                 .build();
         when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
+
+        givenProgressionResponds(SC_ACCEPTED, null);
 
         listingCommandApi.handleSplitHearing(splitEnvelope(true));
 
@@ -240,9 +252,93 @@ public class ListingCommandApiTest {
                 .build();
         when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
 
+        givenProgressionResponds(SC_ACCEPTED, null);
+
         listingCommandApi.handleSplitHearing(splitEnvelope(false));
 
         verify(courtCentreFactory).getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class));
+    }
+
+    /**
+     * The proxy's reason to exist. Accepting the request without sending it on would satisfy every
+     * other assertion here, so this pins the forward itself: the action progression is bound to, and
+     * a payload carrying both the source hearing id — which fills progression's URI template — and
+     * the converted list-new-hearing shape.
+     */
+    @Test
+    public void shouldForwardTheConvertedSplitToProgression() {
+        final CourtCentreDetails courtCentre = CourtCentreDetails.courtCentreDetails()
+                .withId(SPLIT_COURT_CENTRE_ID)
+                .withName("Croydon Crown Court")
+                .withCourtrooms(List.of())
+                .build();
+        when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
+
+        givenProgressionResponds(SC_ACCEPTED, null);
+
+        listingCommandApi.handleSplitHearing(splitEnvelope(false));
+
+        final ArgumentCaptor<JsonObject> forwardedCaptor = forClass(JsonObject.class);
+        verify(progressionSplitHearingService).splitHearing(
+                eq(SPLIT_HEARING_ID.toString()), forwardedCaptor.capture(), any(Metadata.class));
+
+        final JsonObject forwarded = forwardedCaptor.getValue();
+        assertThat("progression receives the converted shape, not the front end's payload",
+                forwarded.containsKey("listNewHearing"), is(true));
+        assertThat("the hearing id fills the URI template, so it must not also sit in the body",
+                forwarded.containsKey("hearingId"), is(false));
+    }
+
+    /**
+     * SPRDT-1411. Progression's status is the front end's only way to tell a stale request from an
+     * unknown hearing or from progression being down, so it must come back unchanged rather than as
+     * the generic 500 the generated client would have produced.
+     */
+    @Test
+    public void shouldSurfaceProgressionsRejectionStatusAndErrorCode() {
+        final CourtCentreDetails courtCentre = CourtCentreDetails.courtCentreDetails()
+                .withId(SPLIT_COURT_CENTRE_ID)
+                .withName("Croydon Crown Court")
+                .withCourtrooms(List.of())
+                .build();
+        when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
+        givenProgressionResponds(SC_CONFLICT, Json.createObjectBuilder()
+                .add("errorCode", "HEARING_ALREADY_CHANGED")
+                .add("message", "the hearing has moved on since this request was built")
+                .build());
+
+        final SplitHearingRejectedException thrown = assertThrows(SplitHearingRejectedException.class,
+                () -> listingCommandApi.handleSplitHearing(splitEnvelope(false)));
+
+        assertThat("progression's status must reach the caller unchanged", thrown.getHttpStatus(), is(SC_CONFLICT));
+        assertThat("progression's errorCode distinguishes a stale request from any other rejection",
+                thrown.getErrorCode(), is("HEARING_ALREADY_CHANGED"));
+    }
+
+    /**
+     * A rejection with no parseable body must still carry the status; an empty body must not be
+     * allowed to collapse the failure back into a 500.
+     */
+    @Test
+    public void shouldSurfaceProgressionsRejectionWhenItSendsNoBody() {
+        final CourtCentreDetails courtCentre = CourtCentreDetails.courtCentreDetails()
+                .withId(SPLIT_COURT_CENTRE_ID)
+                .withName("Croydon Crown Court")
+                .withCourtrooms(List.of())
+                .build();
+        when(courtCentreFactory.getCourtCentre(eq(SPLIT_COURT_CENTRE_ID), any(JsonEnvelope.class))).thenReturn(courtCentre);
+        givenProgressionResponds(SC_NOT_FOUND, null);
+
+        final SplitHearingRejectedException thrown = assertThrows(SplitHearingRejectedException.class,
+                () -> listingCommandApi.handleSplitHearing(splitEnvelope(false)));
+
+        assertThat(thrown.getHttpStatus(), is(SC_NOT_FOUND));
+        assertThat(thrown.getErrorCode(), is(nullValue()));
+    }
+
+    private void givenProgressionResponds(final int status, final JsonObject body) {
+        when(progressionSplitHearingService.splitHearing(anyString(), any(JsonObject.class), any(Metadata.class)))
+                .thenReturn(Response.status(status).entity(body).build());
     }
 
     @Test
@@ -697,15 +793,24 @@ public class ListingCommandApiTest {
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
     }
 
+    /** Stubs the request-body fields shared by every move-hearing-to-past-date test (courtRoomId now mandatory, main-contract aligned). */
+    private void givenMovePayload(final UUID hearingId, final UUID courtCentreId, final UUID courtRoomId,
+                                  final String startDateTime, final String endDateTime) {
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(payload.getString("hearingId")).willReturn(hearingId.toString());
+        given(payload.getString("courtCentreId")).willReturn(courtCentreId.toString());
+        given(payload.getString("courtRoomId")).willReturn(courtRoomId.toString());
+        given(payload.getString("startDateTime")).willReturn(startDateTime);
+        given(payload.getString("endDateTime")).willReturn(endDateTime);
+    }
+
     @Test
     void shouldRejectMoveHearingToPastDateWhenHearingIdUnknown() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
 
-        given(envelope.payloadAsJsonObject()).willReturn(payload);
-        given(payload.getString("hearingId")).willReturn(hearingId.toString());
-        given(payload.getString("courtCentreId")).willReturn(courtCentreId.toString());
-        given(payload.getString("startDate")).willReturn("2026-05-01");
+        givenMovePayload(hearingId, courtCentreId, courtRoomId, "2026-05-01T10:00:00Z", "2026-05-01T17:00:00Z");
         given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.empty());
 
         final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
@@ -720,13 +825,13 @@ public class ListingCommandApiTest {
     public void shouldMoveMagistratesHearingToPastDateEnrichWithSlotDetailsAndSend() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
         final UUID courtScheduleId = randomUUID();
         final LocalDate startDate = LocalDate.parse("2026-05-01");
+        final ZonedDateTime startInstant = ZonedDateTime.parse("2026-05-01T10:00:00Z");
+        final ZonedDateTime endInstant = ZonedDateTime.parse("2026-05-01T17:00:00Z");
 
-        given(envelope.payloadAsJsonObject()).willReturn(payload);
-        given(payload.getString("hearingId")).willReturn(hearingId.toString());
-        given(payload.getString("courtCentreId")).willReturn(courtCentreId.toString());
-        given(payload.getString("startDate")).willReturn(startDate.toString());
+        givenMovePayload(hearingId, courtCentreId, courtRoomId, startInstant.toString(), endInstant.toString());
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
         final JsonObject hearing = Json.createObjectBuilder()
@@ -738,13 +843,14 @@ public class ListingCommandApiTest {
 
         final MoveHearingToPastDateResult slot = new MoveHearingToPastDateResult(courtScheduleId,
                 "9d324f4f-6c3b-451f-ac1e-f459db781153", startDate, "2026-05-01T09:00:00Z", "2026-05-01T17:00:00Z", 30);
-        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, startDate, 30, "MAGISTRATES")).willReturn(slot);
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 30, "MAGISTRATES"))
+                .willReturn(slot);
 
         final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
 
         listingCommandApi.handleMoveHearingToPastDate(envelope);
 
-        verify(courtSchedulerServiceAdapter).moveHearingToPastDate(hearingId, courtCentreId, startDate, 30, "MAGISTRATES");
+        verify(courtSchedulerServiceAdapter).moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 30, "MAGISTRATES");
         verify(sender, times(1)).send(captor.capture());
         final JsonObject sent = (JsonObject) captor.getValue().payload();
         assertThat(sent.getString("hearingId"), is(hearingId.toString()));
@@ -758,15 +864,15 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    void shouldNotSendWhenCourtschedulerRejectsMagistratesMove() {
+    void shouldRejectMagistratesMoveToFutureDateWithoutCallingCourtScheduler() {
+        // Ported validation now applies to MAGS too: listing rejects a future date itself, before
+        // courtscheduler is ever called (previously MAGS had no listing-side date check at all).
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
-        final LocalDate startDate = LocalDate.parse("2999-01-01");
+        final UUID courtRoomId = randomUUID();
+        final String future = LocalDate.now().plusDays(1).toString();
 
-        given(envelope.payloadAsJsonObject()).willReturn(payload);
-        given(payload.getString("hearingId")).willReturn(hearingId.toString());
-        given(payload.getString("courtCentreId")).willReturn(courtCentreId.toString());
-        given(payload.getString("startDate")).willReturn(startDate.toString());
+        givenMovePayload(hearingId, courtCentreId, courtRoomId, future + "T10:00:00Z", future + "T17:00:00Z");
 
         final JsonObject hearing = Json.createObjectBuilder()
                 .add("id", hearingId.toString())
@@ -774,12 +880,29 @@ public class ListingCommandApiTest {
                 .build();
         given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
 
-        final JsonObject body = Json.createObjectBuilder()
-                .add("errorCode", "FUTURE_DATE_NOT_ALLOWED")
-                .add("message", "Hearings can only be moved to today or an earlier date")
+        final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
+                () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getErrorCode(), is("FUTURE_DATE_NOT_ALLOWED"));
+        verify(courtSchedulerServiceAdapter, never()).moveHearingToPastDate(any(), any(), any(), any(), any(), any(), any());
+        verify(sender, never()).send(any());
+    }
+
+    @Test
+    void shouldRejectMoveToTodayWithoutCallingCourtScheduler() {
+        // SPRDT-1185: today itself is rejected, not just future dates - now enforced for both jurisdictions.
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
+        final String today = LocalDate.now().toString();
+
+        givenMovePayload(hearingId, courtCentreId, courtRoomId, today + "T10:00:00Z", today + "T17:00:00Z");
+
+        final JsonObject hearing = Json.createObjectBuilder()
+                .add("id", hearingId.toString())
+                .add("jurisdictionType", "MAGISTRATES")
                 .build();
-        given(courtSchedulerServiceAdapter.moveHearingToPastDate(any(), any(), any(), any(), any()))
-                .willThrow(new MoveHearingToPastDateException(422, body, "rejected"));
+        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
 
         final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
                 () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
@@ -789,15 +912,110 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldNotSendWhenCourtschedulerFindsNoSessionForMagistratesMove() {
+    void shouldRejectMoveWithInvalidDateWhenStartDateTimeIsMalformed() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
-        final LocalDate startDate = LocalDate.parse("2026-05-01");
+        final UUID courtRoomId = randomUUID();
 
+        // startDateTime is parsed (and fails) before endDateTime is ever read, so only stub the
+        // fields actually consulted on this path - an endDateTime stub here would go unused.
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(payload.getString("hearingId")).willReturn(hearingId.toString());
         given(payload.getString("courtCentreId")).willReturn(courtCentreId.toString());
-        given(payload.getString("startDate")).willReturn(startDate.toString());
+        given(payload.getString("courtRoomId")).willReturn(courtRoomId.toString());
+        given(payload.getString("startDateTime")).willReturn("not-a-date");
+
+        final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
+                () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getErrorCode(), is("INVALID_DATE"));
+        verify(hearingLookupService, never()).findHearing(any(), any());
+        verify(sender, never()).send(any());
+    }
+
+    @Test
+    void shouldRejectMoveWithInvalidDateRangeWhenEndDateTimeBeforeStartDateTime() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
+
+        givenMovePayload(hearingId, courtCentreId, courtRoomId, "2026-05-01T17:00:00Z", "2026-05-01T10:00:00Z");
+
+        final JsonObject hearing = Json.createObjectBuilder()
+                .add("id", hearingId.toString())
+                .add("jurisdictionType", "MAGISTRATES")
+                .build();
+        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
+
+        final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
+                () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getErrorCode(), is("INVALID_DATE_RANGE"));
+        verify(sender, never()).send(any());
+    }
+
+    @Test
+    void shouldRejectMoveWhenStartDateIsMoreThanSixMonthsInThePast() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
+        final String tooOld = LocalDate.now().minusMonths(7).toString();
+
+        givenMovePayload(hearingId, courtCentreId, courtRoomId, tooOld + "T10:00:00Z", tooOld + "T17:00:00Z");
+
+        final JsonObject hearing = Json.createObjectBuilder()
+                .add("id", hearingId.toString())
+                .add("jurisdictionType", "CROWN")
+                .build();
+        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
+
+        final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
+                () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getErrorCode(), is("START_DATE_TOO_OLD"));
+        verify(sender, never()).send(any());
+    }
+
+    @Test
+    void shouldNotRejectMultiDayCrownRangeAsMultiDayNotAllowed() {
+        // Regression guard: main rejects any endDate after startDate (MULTI_DAY_NOT_ALLOWED). Team
+        // deliberately does NOT port that check - SPRDT-1333's multi-day CROWN payback must keep working.
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
+        final UUID courtScheduleId = randomUUID();
+        final String start = LocalDate.now().minusDays(7).toString();
+        final String end = LocalDate.now().minusDays(5).toString();
+        final ZonedDateTime startInstant = ZonedDateTime.parse(start + "T10:00:00Z");
+        final ZonedDateTime endInstant = ZonedDateTime.parse(end + "T17:00:00Z");
+
+        givenMovePayload(hearingId, courtCentreId, courtRoomId, startInstant.toString(), endInstant.toString());
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+
+        final JsonObject hearing = Json.createObjectBuilder()
+                .add("id", hearingId.toString())
+                .add("jurisdictionType", "CROWN")
+                .build();
+        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
+
+        final MoveHearingToPastDateResult slot = new MoveHearingToPastDateResult(courtScheduleId,
+                courtRoomId.toString(), LocalDate.parse(start), start + "T09:00:00Z", start + "T17:00:00Z", null);
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, null, "CROWN"))
+                .willReturn(slot);
+
+        listingCommandApi.handleMoveHearingToPastDate(envelope);
+
+        verify(sender, times(1)).send(any());
+    }
+
+    @Test
+    public void shouldNotSendWhenCourtschedulerFindsNoSessionForMagistratesMove() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
+        final LocalDate startDate = LocalDate.parse("2026-05-01");
+
+        givenMovePayload(hearingId, courtCentreId, courtRoomId, startDate + "T10:00:00Z", startDate + "T17:00:00Z");
 
         final JsonObject hearing = Json.createObjectBuilder()
                 .add("id", hearingId.toString())
@@ -807,10 +1025,46 @@ public class ListingCommandApiTest {
 
         final JsonObject noSessionBody = Json.createObjectBuilder()
                 .add("errorCode", "NO_SESSION_FOUND")
-                .add("message", "No court-schedule session found")
+                .add("message", "No suitable sessions are available for the selected date. Please select another date.")
                 .build();
-        given(courtSchedulerServiceAdapter.moveHearingToPastDate(any(), any(), any(), any(), any()))
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(any(), any(), any(), any(), any(), any(), any()))
                 .willThrow(new MoveHearingToPastDateException(422, noSessionBody, "no session"));
+
+        final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
+                () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getErrorCode(), is("NO_SESSION_FOUND"));
+        verify(sender, never()).send(any());
+    }
+
+    /**
+     * Regression test: courtscheduler can return 200 OK with an empty sessions[] (a genuine
+     * multi-day-range search that matched nothing - exploratory, prior allocation left intact,
+     * NOT an error at the adapter layer). Before this fix, command-api would still try to enrich
+     * and send a command built from zero sessions, producing a broken
+     * listing.command.move-hearing-to-past-date-enriched (missing courtScheduleId/sessionDate on
+     * sessions[0], since the adapter's legacy flat-body fallback fabricated one null session from
+     * the empty envelope) that failed schema validation on the handler side. Nothing to enrich must
+     * surface as the same NO_SESSION_FOUND failure a single-date miss gets.
+     */
+    @Test
+    void shouldRejectMoveWithNoSessionFoundWhenAdapterReturnsEmptySessions() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
+        final LocalDate startDate = LocalDate.parse("2026-05-01");
+        final ZonedDateTime startInstant = ZonedDateTime.parse(startDate + "T10:00:00Z");
+        final ZonedDateTime endInstant = ZonedDateTime.parse(startDate.plusDays(3) + "T17:00:00Z");
+
+        givenMovePayload(hearingId, courtCentreId, courtRoomId, startInstant.toString(), endInstant.toString());
+
+        final JsonObject hearing = Json.createObjectBuilder()
+                .add("id", hearingId.toString())
+                .add("jurisdictionType", "CROWN")
+                .build();
+        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, null, "CROWN"))
+                .willReturn(new MoveHearingToPastDateResult(java.util.List.of()));
 
         final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
                 () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
@@ -823,13 +1077,13 @@ public class ListingCommandApiTest {
     void shouldMoveCrownHearingToPastDateViaCourtScheduler() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
         final UUID courtScheduleId = randomUUID();
         final LocalDate startDate = LocalDate.now().minusDays(1);
+        final ZonedDateTime startInstant = ZonedDateTime.parse(startDate + "T10:00:00Z");
+        final ZonedDateTime endInstant = ZonedDateTime.parse(startDate + "T17:00:00Z");
 
-        given(envelope.payloadAsJsonObject()).willReturn(payload);
-        given(payload.getString("hearingId")).willReturn(hearingId.toString());
-        given(payload.getString("courtCentreId")).willReturn(courtCentreId.toString());
-        given(payload.getString("startDate")).willReturn(startDate.toString());
+        givenMovePayload(hearingId, courtCentreId, courtRoomId, startInstant.toString(), endInstant.toString());
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
         final JsonObject hearing = Json.createObjectBuilder()
@@ -840,13 +1094,14 @@ public class ListingCommandApiTest {
 
         final MoveHearingToPastDateResult slot = new MoveHearingToPastDateResult(courtScheduleId,
                 "9d324f4f-6c3b-451f-ac1e-f459db781153", startDate, startDate + "T09:00:00Z", startDate + "T17:00:00Z", null);
-        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, startDate, null, "CROWN")).willReturn(slot);
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, null, "CROWN"))
+                .willReturn(slot);
 
         final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
 
         listingCommandApi.handleMoveHearingToPastDate(envelope);
 
-        verify(courtSchedulerServiceAdapter).moveHearingToPastDate(hearingId, courtCentreId, startDate, null, "CROWN");
+        verify(courtSchedulerServiceAdapter).moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, null, "CROWN");
         verify(sender, times(1)).send(captor.capture());
         final JsonObject sent = (JsonObject) captor.getValue().payload();
         assertThat(sent.getString("hearingId"), is(hearingId.toString()));
@@ -859,26 +1114,30 @@ public class ListingCommandApiTest {
     }
 
     /**
-     * Multi-day CROWN: courtscheduler books N consecutive past sessions (its CourtSchedule carries no
-     * per-hearing duration). The enrichment must carry EVERY session so the handler re-issues N hearing
-     * days, with the hearing's estimatedMinutes spread evenly per day, endDate = last session, and the
-     * flat single-day fields mirroring the first session - never the hearing's old day details.
+     * Multi-day CROWN via the duration-driven day-count path: a single-day request (startDateTime and
+     * endDateTime on the same calendar date) still lets the hearing's estimatedMinutes drive
+     * courtscheduler's day-count (unaffected by the new explicit-range capability, which only kicks in
+     * when endDateTime's DATE is genuinely after startDateTime's). courtscheduler books N consecutive
+     * past sessions (its CourtSchedule carries no per-hearing duration). The enrichment must carry
+     * EVERY session so the handler re-issues N hearing days, with the hearing's estimatedMinutes spread
+     * evenly per day, endDate = last session, and the flat single-day fields mirroring the first
+     * session - never the hearing's old day details.
      */
     @Test
     void shouldEnrichCrownMultiDayMoveWithEverySessionAndPerDayDuration() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
         final UUID schedule1 = randomUUID();
         final UUID schedule2 = randomUUID();
         final UUID schedule3 = randomUUID();
         final UUID bookedRoomId = randomUUID();
         final UUID existingRoomId = randomUUID();
         final LocalDate startDate = LocalDate.now().minusDays(7);
+        final ZonedDateTime startInstant = ZonedDateTime.parse(startDate + "T10:00:00Z");
+        final ZonedDateTime endInstant = ZonedDateTime.parse(startDate + "T17:00:00Z");
 
-        given(envelope.payloadAsJsonObject()).willReturn(payload);
-        given(payload.getString("hearingId")).willReturn(hearingId.toString());
-        given(payload.getString("courtCentreId")).willReturn(courtCentreId.toString());
-        given(payload.getString("startDate")).willReturn(startDate.toString());
+        givenMovePayload(hearingId, courtCentreId, courtRoomId, startInstant.toString(), endInstant.toString());
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
         final JsonObject hearing = Json.createObjectBuilder()
@@ -901,13 +1160,14 @@ public class ListingCommandApiTest {
                         startDate.plusDays(1) + "T09:00:00Z", startDate.plusDays(1) + "T17:00:00Z", null, false),
                 new MoveHearingToPastDateResult.BookedSession(schedule3, bookedRoomId.toString(), courtCentreId, startDate.plusDays(2),
                         startDate.plusDays(2) + "T09:00:00Z", startDate.plusDays(2) + "T17:00:00Z", null, false)));
-        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, startDate, 1080, "CROWN")).willReturn(slot);
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 1080, "CROWN"))
+                .willReturn(slot);
 
         final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
 
         listingCommandApi.handleMoveHearingToPastDate(envelope);
 
-        verify(courtSchedulerServiceAdapter).moveHearingToPastDate(hearingId, courtCentreId, startDate, 1080, "CROWN");
+        verify(courtSchedulerServiceAdapter).moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 1080, "CROWN");
         verify(sender, times(1)).send(captor.capture());
         final JsonObject sent = (JsonObject) captor.getValue().payload();
         // flat fields = first session, duration = 1080 / 3
@@ -933,12 +1193,10 @@ public class ListingCommandApiTest {
     void shouldRejectCrownMoveToFutureDate() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
-        final LocalDate startDate = LocalDate.now().plusDays(1);
+        final UUID courtRoomId = randomUUID();
+        final String future = LocalDate.now().plusDays(1).toString();
 
-        given(envelope.payloadAsJsonObject()).willReturn(payload);
-        given(payload.getString("hearingId")).willReturn(hearingId.toString());
-        given(payload.getString("courtCentreId")).willReturn(courtCentreId.toString());
-        given(payload.getString("startDate")).willReturn(startDate.toString());
+        givenMovePayload(hearingId, courtCentreId, courtRoomId, future + "T10:00:00Z", future + "T17:00:00Z");
 
         final JsonObject hearing = Json.createObjectBuilder()
                 .add("id", hearingId.toString())
@@ -951,7 +1209,7 @@ public class ListingCommandApiTest {
 
         assertThat(thrown.getHttpStatus(), is(422));
         assertThat(thrown.getErrorCode(), is("FUTURE_DATE_NOT_ALLOWED"));
-        verify(courtSchedulerServiceAdapter, never()).moveHearingToPastDate(any(), any(), any(), any(), any());
+        verify(courtSchedulerServiceAdapter, never()).moveHearingToPastDate(any(), any(), any(), any(), any(), any(), any());
         verify(sender, never()).send(any());
     }
 

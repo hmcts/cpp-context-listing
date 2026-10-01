@@ -2568,6 +2568,8 @@ class ListingCommandHandlerTest {
         when(hearing.changeEndDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
         when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()))).thenReturn(Stream.empty());
+        when(hearing.applyAllocationRules(any(), eq(false), eq(false))).thenReturn(Stream.empty());
+        when(hearing.applyRescheduledCheck(any())).thenReturn(Stream.empty());
 
         listingCommandHandler.moveHearingToPastDate(commandEnvelope);
 
@@ -2576,6 +2578,10 @@ class ListingCommandHandlerTest {
         verify(hearing, times(1)).changeEndDate(LocalDate.parse("2026-05-01"), HEARING_ID_1);
         verify(hearing, times(1)).assignHearingDaysV2(eq(HEARING_ID_1), captor.capture(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()));
+        // SPRDT-1214 gap closed: MAGS and CROWN now go through the same applyAllocationRules/
+        // applyRescheduledCheck wiring as every other listing command handler.
+        verify(hearing, times(1)).applyAllocationRules(any(), eq(false), eq(false));
+        verify(hearing, times(1)).applyRescheduledCheck(any());
         verify(hearing, never()).raiseHearingDayCourtSchedulesUpdated(any(), any());
         final uk.gov.moj.cpp.listing.domain.HearingDay movedDay = captor.getValue().get(0);
         assertThat(movedDay.getCourtScheduleId().orElse(null), is(courtScheduleId));
@@ -2596,6 +2602,8 @@ class ListingCommandHandlerTest {
         when(hearing.assignCourtRoom(crownRoomId, HEARING_ID_1, Optional.empty())).thenReturn(Stream.empty());
         when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.CROWN), eq(emptyList()))).thenReturn(Stream.empty());
+        when(hearing.applyAllocationRules(any(), eq(false), eq(false))).thenReturn(Stream.empty());
+        when(hearing.applyRescheduledCheck(any())).thenReturn(Stream.empty());
 
         listingCommandHandler.moveHearingToPastDate(commandEnvelope);
 
@@ -2605,6 +2613,9 @@ class ListingCommandHandlerTest {
         verify(hearing, times(1)).changeEndDate(LocalDate.parse("2026-05-03"), HEARING_ID_1);
         verify(hearing, times(1)).assignHearingDaysV2(eq(HEARING_ID_1), captor.capture(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.CROWN), eq(emptyList()));
+        // CROWN goes through the same allocation-rules/rescheduled-check wiring as MAGS (SPRDT-1214 gap closed)
+        verify(hearing, times(1)).applyAllocationRules(any(), eq(false), eq(false));
+        verify(hearing, times(1)).applyRescheduledCheck(any());
         verify(hearing, never()).raiseHearingDayCourtSchedulesUpdated(any(), any());
         final uk.gov.moj.cpp.listing.domain.HearingDay movedDay = captor.getValue().get(0);
         assertThat(movedDay.getHearingDate(), is(LocalDate.parse(startDate)));
@@ -2640,6 +2651,8 @@ class ListingCommandHandlerTest {
         when(hearing.assignCourtRoom(roomId, HEARING_ID_1, Optional.empty())).thenReturn(Stream.empty());
         when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.CROWN), eq(emptyList()))).thenReturn(Stream.empty());
+        when(hearing.applyAllocationRules(any(), eq(false), eq(false))).thenReturn(Stream.empty());
+        when(hearing.applyRescheduledCheck(any())).thenReturn(Stream.empty());
 
         listingCommandHandler.moveHearingToPastDate(commandEnvelope);
 
@@ -2685,12 +2698,16 @@ class ListingCommandHandlerTest {
         when(hearing.changeStartDate(LocalDate.parse("2026-05-01"), HEARING_ID_1)).thenReturn(Stream.empty());
         when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()))).thenReturn(Stream.empty());
+        when(hearing.applyAllocationRules(any(), eq(false), eq(false))).thenReturn(Stream.empty());
+        when(hearing.applyRescheduledCheck(any())).thenReturn(Stream.empty());
 
         listingCommandHandler.moveHearingToPastDate(commandEnvelope);
 
         verify(hearing, never()).changeEndDate(any(), any());
         verify(hearing, never()).removeEndDate(any());
         verify(hearing, never()).assignCourtRoom(any(), any(), any());
+        verify(hearing, times(1)).applyAllocationRules(any(), eq(false), eq(false));
+        verify(hearing, times(1)).applyRescheduledCheck(any());
     }
 
     @Test
