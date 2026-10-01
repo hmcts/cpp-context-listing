@@ -4626,6 +4626,153 @@ class HearingAggregateTest {
         assertThat(courtListRestricted.getDefendantIds(), hasItem(under18DefendantId));
     }
 
+    @Test
+    void shouldEmitCourtListRestrictedForUnder18ApplicantWhenCourtApplicationAddedToAllocatedHearing() {
+        final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
+        givenAllocatedHearingWithDefendant(hearingStartDate, randomUUID(), hearingStartDate.minusYears(40).toString(), false);
+        final UUID under18ApplicantId = randomUUID();
+
+        final List<Object> resultEvents = hearing.addCourtApplication(hearingId, courtApplicationWith(
+                        applicationParty(under18ApplicantId, randomUUID(), hearingStartDate.minusYears(16).toString()),
+                        null,
+                        singletonList(applicationParty(randomUUID(), null, hearingStartDate.minusYears(40).toString()))))
+                .collect(Collectors.toList());
+
+        assertThat(resultEvents, hasSize(2));
+        assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CourtApplicationAddedForHearing.class));
+        assertThat(resultEvents.get(1), CoreMatchers.instanceOf(CourtListRestricted.class));
+
+        final CourtListRestricted courtListRestricted = (CourtListRestricted) resultEvents.get(1);
+        assertThat(courtListRestricted.getHearingId(), is(hearingId));
+        assertThat(courtListRestricted.getRestrictCourtList(), is(true));
+        assertThat(courtListRestricted.getCourtApplicationApplicantIds(), hasSize(1));
+        assertThat(courtListRestricted.getCourtApplicationApplicantIds(), hasItem(under18ApplicantId));
+        assertThat(courtListRestricted.getDefendantIds(), is(nullValue()));
+        assertThat(courtListRestricted.getCourtApplicationRespondentIds(), is(nullValue()));
+    }
+
+    @Test
+    void shouldRestrictApplicationSubjectWithoutDateOfBirthUsingApplicantDateOfBirthForSameMasterDefendant() {
+        final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
+        givenAllocatedHearingWithDefendant(hearingStartDate, randomUUID(), hearingStartDate.minusYears(40).toString(), false);
+        final UUID masterDefendantId = randomUUID();
+        final UUID applicantId = randomUUID();
+        final UUID subjectId = randomUUID();
+
+        final List<Object> resultEvents = hearing.addCourtApplication(hearingId, courtApplicationWith(
+                        applicationParty(applicantId, masterDefendantId, hearingStartDate.minusYears(16).toString()),
+                        applicationParty(subjectId, masterDefendantId, null),
+                        null))
+                .collect(Collectors.toList());
+
+        assertThat(resultEvents, hasSize(2));
+        final CourtListRestricted courtListRestricted = (CourtListRestricted) resultEvents.get(1);
+        assertThat(courtListRestricted.getCourtApplicationApplicantIds(), hasItem(applicantId));
+        assertThat(courtListRestricted.getCourtApplicationSubjectIds(), hasSize(1));
+        assertThat(courtListRestricted.getCourtApplicationSubjectIds(), hasItem(subjectId));
+    }
+
+    @Test
+    void shouldRestrictApplicationSubjectWithoutDateOfBirthUsingListedDefendantDateOfBirthForSameMasterDefendant() {
+        final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
+        final UUID masterDefendantId = randomUUID();
+        givenAllocatedHearingWithDefendant(hearingStartDate, masterDefendantId, hearingStartDate.minusYears(15).toString(), true);
+        final UUID subjectId = randomUUID();
+
+        final List<Object> resultEvents = hearing.addCourtApplication(hearingId, courtApplicationWith(
+                        applicationParty(randomUUID(), null, null),
+                        applicationParty(subjectId, masterDefendantId, null),
+                        null))
+                .collect(Collectors.toList());
+
+        assertThat(resultEvents, hasSize(2));
+        final CourtListRestricted courtListRestricted = (CourtListRestricted) resultEvents.get(1);
+        assertThat(courtListRestricted.getCourtApplicationSubjectIds(), hasSize(1));
+        assertThat(courtListRestricted.getCourtApplicationSubjectIds(), hasItem(subjectId));
+        assertThat(courtListRestricted.getDefendantIds(), is(nullValue()));
+        assertThat(courtListRestricted.getCourtApplicationApplicantIds(), is(nullValue()));
+    }
+
+    @Test
+    void shouldNotEmitCourtListRestrictedWhenCourtApplicationAddedWithOnlyAdultOrUndatedParties() {
+        final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
+        givenAllocatedHearingWithDefendant(hearingStartDate, randomUUID(), hearingStartDate.minusYears(40).toString(), false);
+
+        final List<Object> resultEvents = hearing.addCourtApplication(hearingId, courtApplicationWith(
+                        applicationParty(randomUUID(), randomUUID(), hearingStartDate.minusYears(18).toString()),
+                        applicationParty(randomUUID(), randomUUID(), null),
+                        singletonList(applicationParty(randomUUID(), null, null))))
+                .collect(Collectors.toList());
+
+        assertThat(resultEvents, hasSize(1));
+        assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CourtApplicationAddedForHearing.class));
+    }
+
+    private void givenAllocatedHearingWithDefendant(final LocalDate hearingStartDate, final UUID masterDefendantId,
+                                                    final String dateOfBirth, final boolean restrictFromCourtList) {
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(Arrays.asList(HearingDay.hearingDay().withCourtScheduleId(randomUUID()).build()))
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(hearingStartDate)
+                        .withEndDate(hearingStartDate.plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withListedCases(new ArrayList<>(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(caseId)
+                                .withDefendants(new ArrayList<>(Arrays.asList(Defendant.defendant()
+                                        .withId(defendantId)
+                                        .withMasterDefendantId(masterDefendantId)
+                                        .withDateOfBirth(dateOfBirth)
+                                        .withRestrictFromCourtList(restrictFromCourtList)
+                                        .withOffences(new ArrayList<>(Arrays.asList(Offence.offence().withId(offenceId).build())))
+                                        .build())))
+                                .build())))
+                        .build())
+                .build());
+
+        hearing.apply(HearingAllocatedForListing.hearingAllocatedForListing()
+                .withHearingId(hearingId)
+                .withProsecutionCaseDefendantsOffenceIds(Arrays.asList(ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
+                        .withId(caseId)
+                        .withDefendants(Arrays.asList(DefendantOffenceIds.defendantOffenceIds()
+                                .withId(defendantId)
+                                .withOffenceIds(Arrays.asList(offenceId))
+                                .build()))
+                        .build()))
+                .build());
+    }
+
+    private CourtApplication courtApplicationWith(final uk.gov.moj.cpp.listing.domain.CourtApplicationParty applicant,
+                                                  final uk.gov.moj.cpp.listing.domain.CourtApplicationParty subject,
+                                                  final List<uk.gov.moj.cpp.listing.domain.CourtApplicationParty> respondents) {
+        return CourtApplication.courtApplication()
+                .withId(randomUUID())
+                .withApplicationType(STRING.next())
+                .withApplicant(applicant)
+                .withSubject(subject)
+                .withRespondents(respondents)
+                .build();
+    }
+
+    private uk.gov.moj.cpp.listing.domain.CourtApplicationParty applicationParty(final UUID id, final UUID masterDefendantId, final String dateOfBirth) {
+        return uk.gov.moj.cpp.listing.domain.CourtApplicationParty.courtApplicationParty()
+                .withId(id)
+                .withLastName(STRING.next())
+                .withIsRespondent(false)
+                .withCourtApplicationPartyType(uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.PERSON)
+                .withMasterDefendantId(masterDefendantId)
+                .withDateOfBirth(dateOfBirth)
+                .build();
+    }
+
     private uk.gov.justice.listing.events.Hearing prepareHearing(final UUID hearingId, final Boolean allocated,  final Map<UUID,List<Map<UUID, List<Map<UUID, Optional<UUID>>>>>> cases){
         return uk.gov.justice.listing.events.Hearing.hearing()
                 .withId(hearingId)
