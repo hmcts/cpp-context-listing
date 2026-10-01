@@ -1,4 +1,6 @@
 {
   "courtCentreId": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
-  "startDate": "2026-05-01"
+  "courtRoomId": "b7a1c2d3-9e5d-3e44-b664-d5345bb13be2",
+  "startDateTime": "2026-05-01T10:30:00.000Z",
+  "endDateTime": "2026-05-01T13:30:00.000Z"
 }
