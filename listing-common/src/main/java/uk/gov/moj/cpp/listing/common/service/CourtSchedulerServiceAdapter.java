@@ -58,6 +58,7 @@ public class CourtSchedulerServiceAdapter {
     public static final String HEARING_SLOTS = "hearingSlots";
     public static final String COURT_SESSION = "courtSession";
     public static final String BUSINESS_TYPE = "businessType";
+    public static final String HEARING_IDS = "hearingIds";
     public static final String JURISDICTION = "jurisdiction";
     public static final String STATUS = "status";
     public static final String PANEL_ADULT_YOUTH = "ADULT,YOUTH";
@@ -521,19 +522,30 @@ public class CourtSchedulerServiceAdapter {
     }
 
     HearingIdsResponse getHearingIds(final Response response) {
-        final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
-
-       List<IdResponse> uuids = new ArrayList<>();
-        final JsonArray li = responseJson.getJsonArray("hearingIds");
-        for (int i = 0; i < li.size(); i++) {
-            IdResponse res = jsonObjectConverter.convert(li.getJsonObject(i), IdResponse.class);
-            uuids.add(res);
-
+        final int status = response.getStatus();
+        if (HttpStatus.SC_OK != status) {
+            throw new HearingQueryException(format("Court scheduler hearing id search failed with status %d", status));
         }
-        final int results = responseJson.getInt("results");
-        final int pageCount = responseJson.getInt("pageCount");
+
+        final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
+        if (responseJson == null || !responseJson.containsKey(HEARING_IDS) || responseJson.isNull(HEARING_IDS)) {
+            throw new HearingQueryException("Court scheduler hearing id search returned no hearingIds");
+        }
+
+        final List<IdResponse> uuids = new ArrayList<>();
+        final JsonArray li = responseJson.getJsonArray(HEARING_IDS);
+        for (int i = 0; i < li.size(); i++) {
+            uuids.add(jsonObjectConverter.convert(li.getJsonObject(i), IdResponse.class));
+        }
+
+        final int results = intOrDefault(responseJson, "results", uuids.size());
+        final int pageCount = intOrDefault(responseJson, "pageCount", 1);
 
         return new HearingIdsResponse(uuids, results, pageCount);
+    }
+
+    private static int intOrDefault(final JsonObject json, final String key, final int fallback) {
+        return json.containsKey(key) && !json.isNull(key) ? json.getInt(key) : fallback;
     }
 
     /**
