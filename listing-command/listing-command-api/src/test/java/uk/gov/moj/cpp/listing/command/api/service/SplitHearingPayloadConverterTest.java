@@ -308,6 +308,26 @@ class SplitHearingPayloadConverterTest {
     }
 
     @Test
+    void shouldNotCarryListingsVirtualMarkerIntoProgressionsNonDefaultDays() {
+        final JsonObject noSession = json("""
+                {
+                  "courtCentreId": "cc-1", "jurisdictionType": "CROWN",
+                  "nonDefaultDays": [
+                    { "virtual": true, "duration": 1080, "startTime": "2026-09-10T09:00:00.000Z" }
+                  ],
+                  "prosecutionCases": [{ "caseId": "c", "defendants": [{ "defendantId": "d", "offences": [] }] }]
+                }
+                """);
+
+        final JsonObject hearing = listNewHearing(toProgressionSplitRequest(noSession, COURT_CENTRE_NAME, null, null));
+
+        final JsonObject day = hearing.getJsonArray("nonDefaultDays").getJsonObject(0);
+        assertThat(day.containsKey("virtual"), is(false));
+        assertThat(day.getInt("duration"), is(1080));
+        assertThat(day.getString("startTime"), is("2026-09-10T09:00:00.000Z"));
+    }
+
+    @Test
     void shouldLeaveAVirtualDayThatNamesNoSessionAsANonDefaultDay() {
         final JsonObject noSession = json("""
                 {

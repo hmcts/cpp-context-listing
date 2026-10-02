@@ -132,8 +132,25 @@ public final class SplitHearingPayloadConverter {
         final JsonArrayBuilder days = createArrayBuilder();
         nonDefaultDays(splitHearing).stream()
                 .filter(day -> !isVirtual(day) || !isBooked(day))
+                .map(SplitHearingPayloadConverter::withoutVirtualFlag)
                 .forEach(days::add);
         return days.build();
+    }
+
+    /**
+     * {@code virtual} is listing's own marker for a day that stands in for a booked session; it is
+     * not part of progression's nonDefaultDay shape, whose schema rejects unknown keys. The booked
+     * slot path drops it for the same reason.
+     */
+    private static JsonObject withoutVirtualFlag(final JsonObject day) {
+        if (!day.containsKey(VIRTUAL)) {
+            return day;
+        }
+        final JsonObjectBuilder stripped = createObjectBuilder();
+        day.entrySet().stream()
+                .filter(entry -> !VIRTUAL.equals(entry.getKey()))
+                .forEach(entry -> stripped.add(entry.getKey(), entry.getValue()));
+        return stripped.build();
     }
 
     private static boolean isBooked(final JsonObject day) {
