@@ -600,7 +600,7 @@ public class ListingCommandApi {
             throw new MoveHearingToPastDateException(422, buildMoveHearingToPastDateErrorBody(INVALID_DATE_RANGE, message), message);
         }
         if (endDate.isAfter(startDate)) {
-            final String message = "Hearings can only be moved to a single date";
+            final String message = "Only Single day hearing can be moved to past date";
             throw new MoveHearingToPastDateException(422, buildMoveHearingToPastDateErrorBody(MULTI_DAY_NOT_ALLOWED, message), message);
         }
         if (startDate.isBefore(today.minusMonths(MAX_PAST_MONTHS))) {
