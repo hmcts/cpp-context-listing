@@ -15,6 +15,8 @@ import static uk.gov.moj.cpp.listing.utils.FileUtil.resourceToString;
 import java.util.List;
 import java.util.UUID;
 
+import org.apache.http.HttpStatus;
+
 import javax.json.Json;
 import javax.json.JsonObject;
 
@@ -51,6 +53,22 @@ public class ProgressionServiceStub {
                         .withBody(createObjectBuilder()
                                 .add("errorCode", errorCode)
                                 .add("message", message)
+                                .build()
+                                .toString())));
+    }
+
+    /**
+     * Progression refuses a split of a resulted hearing with its own shape - the reason under
+     * {@code error} and the hearing under {@code id}, with no {@code message} or {@code errorCode}.
+     */
+    public static void stubSplitHearingRejectedAsResulted(final String reason, final String hearingId) {
+        stubFor(WireMock.post(urlMatching(PROGRESSION_SPLIT_HEARING))
+                .willReturn(aResponse().withStatus(HttpStatus.SC_CONFLICT)
+                        .withHeader("CPPID", UUID.randomUUID().toString())
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(createObjectBuilder()
+                                .add("error", reason)
+                                .add("id", hearingId)
                                 .build()
                                 .toString())));
     }

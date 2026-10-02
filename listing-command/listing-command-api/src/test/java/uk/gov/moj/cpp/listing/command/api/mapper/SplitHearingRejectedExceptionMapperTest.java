@@ -20,6 +20,10 @@ import org.slf4j.Logger;
 @ExtendWith(MockitoExtension.class)
 class SplitHearingRejectedExceptionMapperTest {
 
+    private static final String ERROR_CODE = "errorCode";
+    private static final String ERROR = "error";
+    private static final String FALLBACK = "fallback";
+
     @Mock
     private Logger logger;
 
@@ -28,9 +32,9 @@ class SplitHearingRejectedExceptionMapperTest {
 
     @Test
     void shouldReturnProgressionStatusWithErrorCodeAndBodyMessage() {
-        final JsonObject body = createObjectBuilder().add("errorCode", "STALE").add("message", "hearing changed").build();
+        final JsonObject body = createObjectBuilder().add(ERROR_CODE, "STALE").add("message", "hearing changed").build();
 
-        final Response response = mapper.toResponse(new SplitHearingRejectedException(409, body, "fallback"));
+        final Response response = mapper.toResponse(new SplitHearingRejectedException(409, body, FALLBACK));
 
         assertThat(response.getStatus(), is(409));
         assertThat(response.getMediaType().toString(), is("application/json"));
@@ -38,10 +42,57 @@ class SplitHearingRejectedExceptionMapperTest {
     }
 
     @Test
-    void shouldFallBackToExceptionMessageWhenBodyHasNoMessage() {
-        final JsonObject body = createObjectBuilder().add("errorCode", "NOT_FOUND").build();
+    void shouldSurfaceProgressionsReasonWhenItReportsItUnderError() {
+        final JsonObject body = createObjectBuilder()
+                .add(ERROR, "Hearing is resulted and cannot be split")
+                .add("id", "0b8ba084-1f3b-4c27-a2b7-8f32d12164f8")
+                .build();
 
-        final Response response = mapper.toResponse(new SplitHearingRejectedException(404, body, "fallback"));
+        final Response response = mapper.toResponse(new SplitHearingRejectedException(409, body,
+                "progression returned 409 for the split of hearing 0b8ba084-1f3b-4c27-a2b7-8f32d12164f8"));
+
+        assertThat(response.getStatus(), is(409));
+        assertThat(response.getEntity().toString(), is(
+                "{\"errorCode\":\"HEARING_NOT_SPLITTABLE\","
+                        + "\"message\":\"Hearing is resulted and cannot be split\","
+                        + "\"id\":\"0b8ba084-1f3b-4c27-a2b7-8f32d12164f8\"}"));
+    }
+
+    @Test
+    void shouldPreferMessageOverErrorWhenProgressionSendsBoth() {
+        final JsonObject body = createObjectBuilder()
+                .add("message", "framework message")
+                .add(ERROR, "domain error")
+                .build();
+
+        final Response response = mapper.toResponse(new SplitHearingRejectedException(409, body, FALLBACK));
+
+        assertThat(response.getEntity().toString(),
+                is("{\"errorCode\":\"HEARING_NOT_SPLITTABLE\",\"message\":\"framework message\"}"));
+    }
+
+    @Test
+    void shouldCodeAConflictThatProgressionLeftUncoded() {
+        final Response response = mapper.toResponse(new SplitHearingRejectedException(409, null, "progression said no"));
+
+        assertThat(response.getEntity().toString(),
+                is("{\"errorCode\":\"HEARING_NOT_SPLITTABLE\",\"message\":\"progression said no\"}"));
+    }
+
+    @Test
+    void shouldKeepProgressionsOwnCodeInsteadOfTheConflictDefault() {
+        final JsonObject body = createObjectBuilder().add(ERROR_CODE, "STALE").add(ERROR, "stale read").build();
+
+        final Response response = mapper.toResponse(new SplitHearingRejectedException(409, body, FALLBACK));
+
+        assertThat(response.getEntity().toString(), is("{\"errorCode\":\"STALE\",\"message\":\"stale read\"}"));
+    }
+
+    @Test
+    void shouldFallBackToExceptionMessageWhenBodyHasNoMessage() {
+        final JsonObject body = createObjectBuilder().add(ERROR_CODE, "NOT_FOUND").build();
+
+        final Response response = mapper.toResponse(new SplitHearingRejectedException(404, body, FALLBACK));
 
         assertThat(response.getStatus(), is(404));
         assertThat(response.getEntity().toString(), is("{\"errorCode\":\"NOT_FOUND\",\"message\":\"fallback\"}"));
