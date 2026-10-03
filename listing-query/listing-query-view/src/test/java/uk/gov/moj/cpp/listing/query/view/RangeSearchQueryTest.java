@@ -18,6 +18,8 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
@@ -52,9 +54,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
@@ -63,6 +67,10 @@ import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -1210,132 +1218,6 @@ public class RangeSearchQueryTest {
     }
 
     @Test
-    void rangeSearchCourtCalendarWithCrownAndCourtSessionNonAnyShouldIgnoreAndProceedToAllocatedHearings() {
-        final List<Hearing> mockHearings = hearingsJson(ALLOCATEDSTR);
-        when(hearingRepository.findAllocatedHearingsForCourtCalendar(
-                eq(COURT_CENTRE_ID),
-                eq(COURT_ROOM_ID),
-                eq(UUID.fromString(AUTHORITY_ID)),
-                eq(HEARING_TYPE_ID),
-                eq(JURISDICTION_TYPE.toString()),
-                eq(SEARCH_DATE),
-                eq(SEARCH_DATE),
-                eq(null),
-                eq(0),
-                eq(50)
-        )).thenReturn(mockHearings);
-
-        final JsonEnvelope query = envelopeFrom(
-                metadataBuilder().withId(randomUUID()).withName("event.name"),
-                createObjectBuilder()
-                        .add(ALLOCATED_QUERY_PARAMETER, true)
-                        .add(COURT_SESSION_QUERY_PARAMETER, AM)
-                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
-                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
-                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
-                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
-                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
-                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
-                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
-                        .add(PAGE_SIZE, "50")
-                        .add(PAGE_NUMBER, "1")
-                        .build());
-
-        final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
-
-        assertThat(result, is(notNullValue()));
-        verify(hearingRepository).findAllocatedHearingsForCourtCalendar(
-                eq(COURT_CENTRE_ID),
-                eq(COURT_ROOM_ID),
-                eq(UUID.fromString(AUTHORITY_ID)),
-                eq(HEARING_TYPE_ID),
-                eq(JURISDICTION_TYPE.toString()),
-                eq(SEARCH_DATE),
-                eq(SEARCH_DATE),
-                eq(null),
-                eq(0),
-                eq(50)
-        );
-    }
-
-    @Test
-    void rangeSearchCourtCalendarWithMagsAndBusinessTypeUnallocatedShouldProceedToFindHearings() {
-        when(hearingRepository.findHearings(
-                false,
-                (UUID) null,
-                (UUID) null,
-                (UUID) null,
-                (UUID) null,
-                MAGISTRATES_TYPE.toString(),
-                LocalDate.parse(EARLIEST_SEARCH_DATE),
-                LocalDate.parse(LATEST_SEARCH_DATE),
-                0, 50)
-        ).thenReturn(List.of());
-
-        final JsonEnvelope query = envelopeFrom(
-                metadataBuilder().withId(randomUUID()).withName("event.name"),
-                createObjectBuilder()
-                        .add(ALLOCATED_QUERY_PARAMETER, false)
-                        .add(BUSINESS_TYPE_QUERY_PARAMETER, BUSINESS_TYPE)
-                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, MAGISTRATES_TYPE.toString())
-                        .add(OU_CODE_QUERY_PARAMETER, OU_CODE)
-                        .add(PAGE_SIZE, "50")
-                        .add(PAGE_NUMBER, "1")
-                        .build());
-
-        final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
-
-        assertThat(result, is(notNullValue()));
-        verify(hearingRepository).findHearings(
-                false,
-                (UUID) null,
-                (UUID) null,
-                (UUID) null,
-                (UUID) null,
-                MAGISTRATES_TYPE.toString(),
-                LocalDate.parse(EARLIEST_SEARCH_DATE),
-                LocalDate.parse(LATEST_SEARCH_DATE),
-                0, 50);
-    }
-
-    @Test
-    void rangeSearchCourtCalendarWithMagsAndBusinessTypeNoOuCodeShouldProceedToAllocatedHearings() {
-        when(hearingRepository.findAllocatedHearingsForCourtCalendar(
-                null,
-                null,
-                null,
-                null,
-                MAGISTRATES_TYPE.toString(),
-                LocalDate.parse(EARLIEST_SEARCH_DATE),
-                LocalDate.parse(LATEST_SEARCH_DATE),
-                null, 0, 50)
-        ).thenReturn(List.of());
-
-        final JsonEnvelope query = envelopeFrom(
-                metadataBuilder().withId(randomUUID()).withName("event.name"),
-                createObjectBuilder()
-                        .add(ALLOCATED_QUERY_PARAMETER, true)
-                        .add(BUSINESS_TYPE_QUERY_PARAMETER, BUSINESS_TYPE)
-                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, MAGISTRATES_TYPE.toString())
-                        .add(PAGE_SIZE, "50")
-                        .add(PAGE_NUMBER, "1")
-                        .build());
-
-        final JsonEnvelope result = rangeSearchQuery.rangeSearchCourtCalendar(query);
-
-        assertThat(result, is(notNullValue()));
-        verify(hearingRepository).findAllocatedHearingsForCourtCalendar(
-                null,
-                null,
-                null,
-                null,
-                MAGISTRATES_TYPE.toString(),
-                LocalDate.parse(EARLIEST_SEARCH_DATE),
-                LocalDate.parse(LATEST_SEARCH_DATE),
-                null, 0, 50);
-    }
-
-    @Test
     void rangeSearchCourtCalendarUnallocatedShouldUseFindHearings() {
         final List<Hearing> mockHearings = hearingsJson(ALLOCATEDSTR);
         when(hearingRepository.findHearings(
@@ -1468,6 +1350,251 @@ public class RangeSearchQueryTest {
         );
 
         assertThat(thrown.getMessage(), CoreMatchers.containsString("Invalid startDateTime format"));
+    }
+
+    // -----------------------------------------------------------------------
+    // rangeSearchCourtCalendar – businessType / courtSession routing
+    //   allocated=true            -> courtscheduler status=FINAL (any jurisdiction)
+    //   allocated=false + CROWN   -> courtscheduler status=DRAFT
+    //   allocated=false + other   -> 400
+    //   no ouCode                 -> 400
+    // -----------------------------------------------------------------------
+
+    private static final String CROWN_OU_CODE = "C01CY00";
+    private static final String PTPH = "PTPH";
+
+    static Stream<Arguments> courtCalendarSessionFilterRejections() {
+        final String unallocatedNotCrown = RangeSearchQuery.COURT_SESSION_OR_BUSINESS_TYPE_UNALLOCATED_NOT_CROWN;
+        final String withoutOuCode = RangeSearchQuery.COURT_SESSION_OR_BUSINESS_TYPE_WITHOUT_OU_CODE;
+        return Stream.of(
+                Arguments.of("MAGISTRATES", false, OU_CODE, BUSINESS_TYPE_QUERY_PARAMETER, BUSINESS_TYPE, unallocatedNotCrown),
+                Arguments.of("MAGISTRATES", false, OU_CODE, COURT_SESSION_QUERY_PARAMETER, AM, unallocatedNotCrown),
+                Arguments.of("MAGISTRATES", false, null, BUSINESS_TYPE_QUERY_PARAMETER, BUSINESS_TYPE, unallocatedNotCrown),
+                Arguments.of(null, false, OU_CODE, BUSINESS_TYPE_QUERY_PARAMETER, BUSINESS_TYPE, unallocatedNotCrown),
+                Arguments.of(null, false, OU_CODE, COURT_SESSION_QUERY_PARAMETER, AM, unallocatedNotCrown),
+                Arguments.of("MAGISTRATES", true, null, BUSINESS_TYPE_QUERY_PARAMETER, BUSINESS_TYPE, withoutOuCode),
+                Arguments.of("MAGISTRATES", true, null, COURT_SESSION_QUERY_PARAMETER, AM, withoutOuCode),
+                Arguments.of("CROWN", true, null, BUSINESS_TYPE_QUERY_PARAMETER, PTPH, withoutOuCode),
+                Arguments.of("CROWN", true, null, COURT_SESSION_QUERY_PARAMETER, AM, withoutOuCode),
+                Arguments.of("CROWN", false, null, BUSINESS_TYPE_QUERY_PARAMETER, PTPH, withoutOuCode),
+                Arguments.of("CROWN", false, null, COURT_SESSION_QUERY_PARAMETER, AM, withoutOuCode)
+        );
+    }
+
+    @ParameterizedTest(name = "[{index}] jurisdiction={0} allocated={1} ouCode={2} {3}={4} -> 400")
+    @MethodSource("courtCalendarSessionFilterRejections")
+    void rangeSearchCourtCalendarWithSessionFilterThatCannotBeHonouredShouldThrowBadRequest(final String jurisdictionType,
+                                                                                            final boolean allocated,
+                                                                                            final String ouCode,
+                                                                                            final String filterParameter,
+                                                                                            final String filterValue,
+                                                                                            final String expectedMessage) {
+        final var payload = createObjectBuilder()
+                .add(ALLOCATED_QUERY_PARAMETER, allocated)
+                .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                .add(WEEK_COMMENCING_START_DATE_QUERY_PARAMETER, WEEK_COMMENCING_START_DATE.toString())
+                .add(WEEK_COMMENCING_END_DATE_QUERY_PARAMETER, WEEK_COMMENCING_END_DATE.toString())
+                .add(filterParameter, filterValue)
+                .add(PAGE_SIZE, 40)
+                .add(PAGE_NUMBER, 1);
+        if (jurisdictionType != null) {
+            payload.add(JURISDICTION_TYPE_QUERY_PARAMETER, jurisdictionType);
+        }
+        if (ouCode != null) {
+            payload.add(OU_CODE_QUERY_PARAMETER, ouCode);
+        }
+        final JsonEnvelope query = envelopeFrom(metadataBuilder().withId(randomUUID()).withName("event.name"), payload.build());
+
+        final BadRequestException thrown = assertThrows(BadRequestException.class, () -> rangeSearchQuery.rangeSearchCourtCalendar(query));
+
+        assertThat(thrown.getMessage(), is(expectedMessage));
+        // rejected before any lookup: never silently falls back to an unfiltered viewstore search
+        verifyNoInteractions(courtSchedulerServiceAdapter, hearingRepository);
+    }
+
+    static Stream<Arguments> crownUnallocatedCourtSchedulerWindows() {
+        final String wcStart = WEEK_COMMENCING_START_DATE.toString();
+        final String wcEnd = WEEK_COMMENCING_END_DATE.toString();
+        final String searchDate = SEARCH_DATE.toString();
+        return Stream.of(
+                Arguments.of(wcStart, wcEnd, null, null, wcStart, wcEnd),
+                Arguments.of(wcStart, null, null, null, wcStart, LATEST_SEARCH_DATE),
+                Arguments.of(null, null, searchDate, searchDate, searchDate, searchDate),
+                Arguments.of(null, null, null, null, EARLIEST_SEARCH_DATE, LATEST_SEARCH_DATE)
+        );
+    }
+
+    @ParameterizedTest(name = "[{index}] wc={0}..{1} range={2}..{3} -> courtscheduler {4}..{5}")
+    @MethodSource("crownUnallocatedCourtSchedulerWindows")
+    void rangeSearchCourtCalendarCrownUnallocatedWithBusinessTypeShouldSearchDraftSessionsInCourtScheduler(final String weekCommencingStartDate,
+                                                                                                           final String weekCommencingEndDate,
+                                                                                                           final String startDate,
+                                                                                                           final String endDate,
+                                                                                                           final String expectedSessionStartDate,
+                                                                                                           final String expectedSessionEndDate) {
+        final Hearing unallocated = unallocatedCrownHearing(WEEK_COMMENCING_START_DATE, null);
+        final HearingIdsResponse response = new HearingIdsResponse(
+                List.of(new IdResponse(unallocated.getId(), randomUUID(), WEEK_COMMENCING_START_DATE, 1, 1)), 1, 1);
+        when(courtSchedulerServiceAdapter.getCourtSchedulerHearings(
+                CROWN_OU_CODE, Optional.empty(), null, expectedSessionStartDate, expectedSessionEndDate, Optional.empty(),
+                Optional.of(PTPH), Optional.of(JURISDICTION_TYPE.toString()), "DRAFT", "ADULT,YOUTH", 40, 1))
+                .thenReturn(response);
+        when(hearingRepository.findAllCourtSchedulerHearingByIds(List.of(unallocated.getId()))).thenReturn(newArrayList(unallocated));
+
+        final var payload = createObjectBuilder()
+                .add(ALLOCATED_QUERY_PARAMETER, false)
+                .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                .add(OU_CODE_QUERY_PARAMETER, CROWN_OU_CODE)
+                .add(BUSINESS_TYPE_QUERY_PARAMETER, PTPH)
+                .add(PAGE_SIZE, 40)
+                .add(PAGE_NUMBER, 1);
+        addIfPresent(payload, WEEK_COMMENCING_START_DATE_QUERY_PARAMETER, weekCommencingStartDate);
+        addIfPresent(payload, WEEK_COMMENCING_END_DATE_QUERY_PARAMETER, weekCommencingEndDate);
+        addIfPresent(payload, START_DATE_QUERY_PARAMETER, startDate);
+        addIfPresent(payload, END_DATE_QUERY_PARAMETER, endDate);
+        final JsonEnvelope query = envelopeFrom(metadataBuilder().withId(randomUUID()).withName("event.name"), payload.build());
+
+        final JsonObject result = rangeSearchQuery.rangeSearchCourtCalendar(query).payloadAsJsonObject();
+
+        assertThat(result.getInt("results"), is(1));
+        assertThat(result.getJsonArray("hearings").size(), is(1));
+        assertThat(result.getJsonArray("hearings").getJsonObject(0).getString("id"), is(unallocated.getId().toString()));
+        // only the courtscheduler-backed id lookup: no unfiltered viewstore range query
+        verify(hearingRepository).findAllCourtSchedulerHearingByIds(List.of(unallocated.getId()));
+        verifyNoMoreInteractions(hearingRepository);
+    }
+
+    @Test
+    void rangeSearchCourtCalendarCrownUnallocatedWithCourtSessionShouldSearchDraftSessionsInCourtScheduler() {
+        final Hearing unallocated = unallocatedCrownHearing(SEARCH_DATE, null);
+        final HearingIdsResponse response = new HearingIdsResponse(
+                List.of(new IdResponse(unallocated.getId(), randomUUID(), SEARCH_DATE, 1, 1)), 1, 1);
+        when(courtSchedulerServiceAdapter.getCourtSchedulerHearings(
+                CROWN_OU_CODE, Optional.of(AM), COURT_ROOM_ID.toString(), SEARCH_DATE.toString(), SEARCH_DATE.toString(), Optional.empty(),
+                Optional.empty(), Optional.of(JURISDICTION_TYPE.toString()), "DRAFT", "ADULT,YOUTH", 40, 1))
+                .thenReturn(response);
+        when(hearingRepository.findAllCourtSchedulerHearingByIds(List.of(unallocated.getId()))).thenReturn(newArrayList(unallocated));
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, false)
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(OU_CODE_QUERY_PARAMETER, CROWN_OU_CODE)
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(COURT_SESSION_QUERY_PARAMETER, AM)
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(PAGE_SIZE, 40)
+                        .add(PAGE_NUMBER, 1)
+                        .build());
+
+        final JsonObject result = rangeSearchQuery.rangeSearchCourtCalendar(query).payloadAsJsonObject();
+
+        assertThat(result.getJsonArray("hearings").size(), is(1));
+        assertThat(result.getJsonArray("hearings").getJsonObject(0).getString("id"), is(unallocated.getId().toString()));
+    }
+
+    @Test
+    void rangeSearchCourtCalendarCrownUnallocatedWithBusinessTypeShouldStillFilterByHearingTypeListingSide() {
+        final UUID otherHearingTypeId = randomUUID();
+        final Hearing matching = unallocatedCrownHearing(WEEK_COMMENCING_START_DATE, HEARING_TYPE_ID);
+        final Hearing otherType = unallocatedCrownHearing(WEEK_COMMENCING_START_DATE, otherHearingTypeId);
+        final HearingIdsResponse response = new HearingIdsResponse(List.of(
+                new IdResponse(matching.getId(), randomUUID(), WEEK_COMMENCING_START_DATE, 1, 1),
+                new IdResponse(otherType.getId(), randomUUID(), WEEK_COMMENCING_START_DATE, 1, 1)), 2, 1);
+        when(courtSchedulerServiceAdapter.getCourtSchedulerHearings(
+                eq(CROWN_OU_CODE), any(), any(), any(), any(), any(), eq(Optional.of(PTPH)), any(), eq("DRAFT"), any(), any(), any()))
+                .thenReturn(response);
+        when(hearingRepository.findAllCourtSchedulerHearingByIds(anyList())).thenReturn(newArrayList(matching, otherType));
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, false)
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(OU_CODE_QUERY_PARAMETER, CROWN_OU_CODE)
+                        .add(BUSINESS_TYPE_QUERY_PARAMETER, PTPH)
+                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
+                        .add(WEEK_COMMENCING_START_DATE_QUERY_PARAMETER, WEEK_COMMENCING_START_DATE.toString())
+                        .add(WEEK_COMMENCING_END_DATE_QUERY_PARAMETER, WEEK_COMMENCING_END_DATE.toString())
+                        .add(PAGE_SIZE, 40)
+                        .add(PAGE_NUMBER, 1)
+                        .build());
+
+        final JsonArray hearings = rangeSearchQuery.rangeSearchCourtCalendar(query).payloadAsJsonObject().getJsonArray("hearings");
+
+        assertThat(hearings.size(), is(1));
+        assertThat(hearings.getJsonObject(0).getString("id"), is(matching.getId().toString()));
+    }
+
+    @Test
+    void rangeSearchCourtCalendarAllocatedWithBusinessTypeAndWeekCommencingShouldSearchFinalSessionsInThatWindow() {
+        when(courtSchedulerServiceAdapter.getCourtSchedulerHearings(
+                OU_CODE, Optional.empty(), null, WEEK_COMMENCING_START_DATE.toString(), WEEK_COMMENCING_END_DATE.toString(), Optional.empty(),
+                Optional.of(BUSINESS_TYPE), Optional.of(MAGISTRATES_TYPE.toString()), "FINAL", "ADULT,YOUTH", 40, 1))
+                .thenReturn(new HearingIdsResponse(List.of(), 0, 0));
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, true)
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, MAGISTRATES_TYPE.toString())
+                        .add(OU_CODE_QUERY_PARAMETER, OU_CODE)
+                        .add(BUSINESS_TYPE_QUERY_PARAMETER, BUSINESS_TYPE)
+                        .add(WEEK_COMMENCING_START_DATE_QUERY_PARAMETER, WEEK_COMMENCING_START_DATE.toString())
+                        .add(WEEK_COMMENCING_END_DATE_QUERY_PARAMETER, WEEK_COMMENCING_END_DATE.toString())
+                        .add(PAGE_SIZE, 40)
+                        .add(PAGE_NUMBER, 1)
+                        .build());
+
+        final JsonObject result = rangeSearchQuery.rangeSearchCourtCalendar(query).payloadAsJsonObject();
+
+        assertThat(result.getInt("results"), is(0));
+        assertThat(result.getJsonArray("hearings").size(), is(0));
+        verifyNoInteractions(hearingRepository);
+    }
+
+    @ParameterizedTest(name = "[{index}] jurisdiction={0}")
+    @ValueSource(strings = {"CROWN", "MAGISTRATES"})
+    void rangeSearchCourtCalendarUnallocatedWithCourtSessionAnyIsNotAFilterAndShouldSearchViewstore(final String jurisdictionType) {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, false)
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, jurisdictionType)
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(COURT_SESSION_QUERY_PARAMETER, "Any")
+                        .add(WEEK_COMMENCING_START_DATE_QUERY_PARAMETER, WEEK_COMMENCING_START_DATE.toString())
+                        .add(WEEK_COMMENCING_END_DATE_QUERY_PARAMETER, WEEK_COMMENCING_END_DATE.toString())
+                        .add(PAGE_SIZE, 40)
+                        .add(PAGE_NUMBER, 1)
+                        .build());
+
+        final JsonObject result = rangeSearchQuery.rangeSearchCourtCalendar(query).payloadAsJsonObject();
+
+        assertThat(result.getInt("results"), is(0));
+        verify(hearingRepository).findUnallocatedHearingsByWeekCommencingRange(
+                COURT_CENTRE_ID, null, null, null, jurisdictionType,
+                WEEK_COMMENCING_START_DATE, WEEK_COMMENCING_END_DATE, false, 0, 40);
+        verifyNoInteractions(courtSchedulerServiceAdapter);
+    }
+
+    private static void addIfPresent(final JsonObjectBuilder builder, final String name, final String value) {
+        if (value != null) {
+            builder.add(name, value);
+        }
+    }
+
+    private static Hearing unallocatedCrownHearing(final LocalDate hearingDate, final UUID hearingTypeId) {
+        final UUID hearingId = randomUUID();
+        final String json = "{ \"id\": \"" + hearingId + "\", \"allocated\": false, \"jurisdictionType\": \"CROWN\", \"startDate\": \"" + hearingDate + "\", "
+                + "\"courtApplications\": [{}], \"listedCases\": [{}], \"hearingDays\": [{\"hearingDate\": \"" + hearingDate + "\"}] }";
+        final Hearing hearing = new Hearing(hearingId, JacksonUtil.toJsonNode(json));
+        hearing.setAllocated(false);
+        hearing.setTypeId(hearingTypeId);
+        return hearing;
     }
 
     // -----------------------------------------------------------------------
