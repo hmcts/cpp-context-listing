@@ -71,10 +71,10 @@ import org.junit.jupiter.api.Test;
  * (the review artifact this reconciles): {@code courtCentreId}/{@code courtRoomId}/
  * {@code startDateTime}/{@code endDateTime} are all mandatory UTC-instant/UUID fields. Date
  * validation (FUTURE_DATE_NOT_ALLOWED including today, INVALID_DATE, INVALID_DATE_RANGE,
- * START_DATE_TOO_OLD) is ported from main and applied by LISTING ITSELF, uniformly for BOTH
- * jurisdictions, before courtscheduler is ever called - EXCEPT main's MULTI_DAY_NOT_ALLOWED, which
- * is deliberately NOT ported so SPRDT-1333's multi-day CROWN payback (via an explicit date range or
- * the hearing's duration estimate) keeps working. courtscheduler is WireMock here, so the pay-back
+ * MULTI_DAY_NOT_ALLOWED, START_DATE_TOO_OLD) is ported from main and applied by LISTING ITSELF,
+ * uniformly for BOTH jurisdictions, before courtscheduler is ever called. The request window is a
+ * single calendar day (D-C/Q5); SPRDT-1333's multi-day CROWN payback comes from the hearing's
+ * duration estimate, not from a multi-day request range. courtscheduler is WireMock here, so the pay-back
  * of the prior allocation is asserted in courtscheduler's own MoveHearingToPastDateIT; these tests
  * prove listing validates up front, asks for the move (CROWN jurisdiction on the request), and
  * re-dates the hearing from the response, for single- and multi-day.
@@ -397,33 +397,32 @@ class MoveHearingToPastDateIT extends AbstractIT {
     }
 
     /**
-     * Regression guard (rule 3 decision): an explicit multi-day range - startDateTime/endDateTime on
-     * DIFFERENT dates, driving courtscheduler's day-count directly rather than via the hearing's
-     * duration estimate - must be accepted, not rejected as MULTI_DAY_NOT_ALLOWED (main's check,
-     * deliberately NOT ported so SPRDT-1333's multi-day CROWN payback keeps working).
+     * Ported from main (D-C/Q5): a request window spanning several dates is rejected for BOTH
+     * jurisdictions before courtscheduler is called. Multi-day CROWN payback goes through the
+     * duration path instead (see shouldMoveMultiDayCrownHearingToPastDateViaCourtSchedulerReleasingTheFutureBlock).
      */
     @Test
-    void shouldMoveMultiDayCrownHearingWithExplicitEndDateToPastDateRange() {
+    void shouldRejectCrownMoveWith422WhenRequestWindowSpansMultipleDays() {
         final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(CROWN_JURISDICTION);
         final LocalDate pastDay1 = ItClock.today().minusWeeks(4).with(previous(MONDAY));
-        final LocalDate pastDay3 = pastDay1.plusDays(2);
-        final String pastScheduleD1 = randomUUID().toString();
-        final String pastScheduleD2 = randomUUID().toString();
-        final String pastScheduleD3 = randomUUID().toString();
-        stubMoveHearingToPastDate(moveSteps.getHearingId(), List.of(
-                new MoveToPastDateStubSession(pastScheduleD1, COURT_ROOM_ID, pastDay1),
-                new MoveToPastDateStubSession(pastScheduleD2, COURT_ROOM_ID, pastDay1.plusDays(1)),
-                new MoveToPastDateStubSession(pastScheduleD3, COURT_ROOM_ID, pastDay3)));
 
-        final Response response = moveSteps.whenHearingIsMovedToPastDateRange("CROWN", pastDay1, pastDay3);
+        final Response response = moveSteps.whenHearingIsMovedToPastDateRange("CROWN", pastDay1, pastDay1.plusDays(2));
 
-        // ACCEPTED itself is the proof this wasn't rejected as MULTI_DAY_NOT_ALLOWED (that check
-        // doesn't exist on this path) - a rejection would be a 422, not 202. Other passing tests in
-        // this suite never call readEntity() on a 202 response; its entity stream is already closed
-        // by the framework once the status is read (RESTEASY003765 otherwise).
-        assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
-        verifyMoveHearingToPastDateCalled(moveSteps.getHearingId(), "CROWN", null);
-        moveSteps.verifyStartAndEndDateUpdated(pastDay1, pastDay3);
+        assertThat(response.getStatus(), is(422));
+        assertThat(response.readEntity(String.class), containsString("MULTI_DAY_NOT_ALLOWED"));
+        verifyMoveHearingToPastDateNeverCalled(moveSteps.getHearingId());
+    }
+
+    @Test
+    void shouldRejectMagistratesMoveWith422WhenRequestWindowSpansMultipleDays() {
+        final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
+        final LocalDate pastDay1 = ItClock.today().minusWeeks(4).with(previous(MONDAY));
+
+        final Response response = moveSteps.whenHearingIsMovedToPastDateRange("MAGS", pastDay1, pastDay1.plusDays(2));
+
+        assertThat(response.getStatus(), is(422));
+        assertThat(response.readEntity(String.class), containsString("MULTI_DAY_NOT_ALLOWED"));
+        verifyMoveHearingToPastDateNeverCalled(moveSteps.getHearingId());
     }
 
     @Test

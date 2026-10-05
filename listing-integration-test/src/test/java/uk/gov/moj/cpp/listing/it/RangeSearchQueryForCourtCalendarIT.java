@@ -21,6 +21,7 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMat
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -55,6 +56,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @SuppressWarnings({"squid:S1607"})
 public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
@@ -65,6 +68,9 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
         put(fromString("28b922c3-0396-3c68-970f-5b805c7ab1bb"), "Courtroom 04");
         put(fromString("02d9847e-00e9-3c6c-b25c-1adbf5355a52"), "Courtroom 05");
     }};
+
+    private static final String CROWN_OU_CODE = "C01CY00";
+    private static final String PTPH = "PTPH";
 
     private final DatabaseCleaner databaseCleaner = new DatabaseCleaner();
 
@@ -292,6 +298,90 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
         // explicit assertion on the final polled payload (Sonar java:S2699 does not recognise the
         // pollWithDefaults(...).until(...) matchers as assertions)
         assertThat(response.getPayload(), isJson(withJsonPath("$.hearings.size()", is(0))));
+    }
+
+    /**
+     * businessType/courtSession are court-schedule session attributes, so court-calendar searches filtered on
+     * them are answered by courtscheduler: unallocated CROWN searches DRAFT sessions in the week-commencing
+     * window the unallocated panel sends, allocated searches FINAL sessions. Each status is stubbed to return a
+     * different hearing, so only correct routing returns the expected one (an unfiltered or unrouted request
+     * misses both stubs). The viewstore lookup that follows is by hearing id, independent of allocation state.
+     */
+    @Test
+    public void crownCourtCalendarBusinessTypeSearchRoutesUnallocatedToDraftAndAllocatedToFinalSessions() {
+        final UUID courtCentreId = getRandomCourtCenterId();
+        final UUID courtRoomId = new ArrayList<>(COURT_ROOMS.keySet()).get(0);
+        final LocalDate windowStart = ItClock.nextWorkingDay();
+        final LocalDate windowEnd = ItClock.plusWorkingDays(windowStart, 4);
+        final ZonedDateTime hearingStartTime = windowStart.atTime(10, 0).atZone(ItClock.LONDON).withZoneSameInstant(ItClock.UTC);
+
+        final UUID draftSessionHearingId = listCrownHearing(courtCentreId, courtRoomId, windowStart, hearingStartTime);
+        final UUID finalSessionHearingId = listCrownHearing(courtCentreId, courtRoomId, windowStart, hearingStartTime);
+
+        stubGetHearingIdsWithBody(Map.of("status", "DRAFT", "businessType", PTPH, "ouCode", CROWN_OU_CODE,
+                        "sessionStartDate", windowStart.toString(), "sessionEndDate", windowEnd.toString()),
+                hearingIdsBodyForDays(draftSessionHearingId, List.of(windowStart)));
+        stubGetHearingIdsWithBody(Map.of("status", "FINAL", "businessType", PTPH, "ouCode", CROWN_OU_CODE,
+                        "sessionStartDate", windowStart.toString(), "sessionEndDate", windowEnd.toString()),
+                hearingIdsBodyForDays(finalSessionHearingId, List.of(windowStart)));
+
+        final String unallocatedUrl = String.format("%s/listing-query-api/query/api/rest/listing/hearings/range-search"
+                        + "?allocated=false&jurisdictionType=CROWN&businessType=%s&ouCode=%s&courtCentreId=%s"
+                        + "&weekCommencingStartDate=%s&weekCommencingEndDate=%s&pageSize=40&pageNumber=1",
+                getBaseUri(), PTPH, CROWN_OU_CODE, courtCentreId, windowStart, windowEnd);
+        pollWithDefaults(courtCalendarRequest(unallocatedUrl)).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.hearings.size()", is(1)),
+                        withJsonPath("$.hearings[0].id", is(draftSessionHearingId.toString()))
+                )));
+
+        final String allocatedUrl = String.format("%s/listing-query-api/query/api/rest/listing/hearings/range-search"
+                        + "?allocated=true&jurisdictionType=CROWN&businessType=%s&ouCode=%s&courtCentreId=%s"
+                        + "&startDate=%s&endDate=%s&pageSize=40&pageNumber=1",
+                getBaseUri(), PTPH, CROWN_OU_CODE, courtCentreId, windowStart, windowEnd);
+        final ResponseData response = pollWithDefaults(courtCalendarRequest(allocatedUrl)).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.hearings.size()", is(1)),
+                        withJsonPath("$.hearings[0].id", is(finalSessionHearingId.toString()))
+                )));
+        // explicit assertion on the final polled payload (Sonar java:S2699)
+        assertThat(response.getPayload(), isJson(withJsonPath("$.hearings[0].id", is(finalSessionHearingId.toString()))));
+    }
+
+    /**
+     * Session filters that cannot be honoured are rejected instead of being silently dropped (which used to
+     * return every hearing): unallocated MAGS hearings have no court-schedule session to filter on, and without
+     * ouCode courtscheduler would search every court.
+     */
+    @ParameterizedTest(name = "[{index}] {0} -> 400")
+    @ValueSource(strings = {
+            "allocated=false&jurisdictionType=MAGISTRATES&businessType=GENC&ouCode=B01LY00",
+            "allocated=false&jurisdictionType=MAGISTRATES&courtSession=AM&ouCode=B01LY00",
+            "allocated=false&jurisdictionType=CROWN&businessType=PTPH",
+            "allocated=true&jurisdictionType=CROWN&courtSession=AM",
+            "allocated=true&jurisdictionType=MAGISTRATES&businessType=GENC"
+    })
+    public void courtCalendarSessionFilterThatCannotBeHonouredIsRejectedWithBadRequest(final String filter) {
+        final LocalDate windowStart = ItClock.nextWorkingDay();
+        final String url = String.format("%s/listing-query-api/query/api/rest/listing/hearings/range-search?%s"
+                        + "&courtCentreId=%s&weekCommencingStartDate=%s&weekCommencingEndDate=%s&pageSize=40&pageNumber=1",
+                getBaseUri(), filter, getRandomCourtCenterId(), windowStart, ItClock.plusWorkingDays(windowStart, 4));
+
+        final ResponseData response = pollWithDefaults(courtCalendarRequest(url)).until(status().is(BAD_REQUEST));
+
+        assertThat(response.getStatus().getStatusCode(), is(BAD_REQUEST.getStatusCode()));
+    }
+
+    private UUID listCrownHearing(final UUID courtCentreId, final UUID courtRoomId, final LocalDate hearingEndDate, final ZonedDateTime hearingStartTime) {
+        final UUID hearingId = randomUUID();
+        final String jurisdictionType = JurisdictionType.CROWN.name();
+        final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(hearingId, STRING.next(), STRING.next(),
+                randomUUID(), CASE_IN_HEARING, jurisdictionType, jurisdictionType, null, null);
+        new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(
+                caseAndDefendantData, courtCentreId, courtRoomId, hearingEndDate, hearingStartTime))
+                .whenCaseIsSubmittedForListing();
+        new UpdateHearingSteps().pollUntilHearingIsPresentWithHearingId(courtCentreId.toString(), ALLOCATED, getLoggedInUser().toString(), hearingId.toString());
+        return hearingId;
     }
 
     private static RequestParams courtCalendarRequest(final String url) {
