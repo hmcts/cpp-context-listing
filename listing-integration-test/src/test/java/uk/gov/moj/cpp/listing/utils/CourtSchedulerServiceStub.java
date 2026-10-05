@@ -41,6 +41,7 @@ import java.util.UUID;
 import javax.json.JsonObject;
 import org.awaitility.Awaitility;
 
+import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.VerificationException;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
@@ -601,6 +602,21 @@ public class CourtSchedulerServiceStub {
                         .withBody(body)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
+    }
+
+    /**
+     * Stubs the courtscheduler get-hearing-ids endpoint for an exact set of query parameters (e.g.
+     * status=DRAFT + businessType + session window), so a test can prove which court-schedule sessions a
+     * court-calendar search was routed to: only a request carrying every given parameter gets the body.
+     */
+    public static void stubGetHearingIdsWithBody(final Map<String, String> queryParams, final String body) {
+        final MappingBuilder mapping = get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
+                .withHeader("Accept", containing("application/vnd.courtscheduler.get.hearing.ids+json"));
+        queryParams.forEach((name, value) -> mapping.withQueryParam(name, WireMock.equalTo(value)));
+        stubFor(mapping.willReturn(aResponse().withStatus(OK.getStatusCode())
+                .withBody(body)
+                .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+        ));
     }
 
     public static void stubGetHearingIds(final Instant exactHearingStartDateTime) {

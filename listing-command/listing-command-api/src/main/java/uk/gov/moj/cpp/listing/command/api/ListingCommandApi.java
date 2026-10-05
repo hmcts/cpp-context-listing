@@ -136,6 +136,7 @@ public class ListingCommandApi {
     public static final String FUTURE_DATE_NOT_ALLOWED = "FUTURE_DATE_NOT_ALLOWED";
     public static final String INVALID_DATE = "INVALID_DATE";
     public static final String INVALID_DATE_RANGE = "INVALID_DATE_RANGE";
+    public static final String MULTI_DAY_NOT_ALLOWED = "MULTI_DAY_NOT_ALLOWED";
     public static final String START_DATE_TOO_OLD = "START_DATE_TOO_OLD";
     private static final int MAX_PAST_MONTHS = 6;
     private static final String CROWN_JURISDICTION = "CROWN";
@@ -525,9 +526,10 @@ public class ListingCommandApi {
      * reconciles); jurisdiction is still resolved from the hearing's own {@code jurisdictionType} in
      * the listing viewstore (NOT main's court-centre reference-data lookup — that lookup is
      * deliberately not ported, see the plan's Part B.2 note 4 / decisions). Date validation
-     * ({@link #validateMoveDates}) mirrors main's rules for BOTH jurisdictions, EXCLUDING main's
-     * single-day-only (MULTI_DAY_NOT_ALLOWED) check, which would regress SPRDT-1333's multi-day CROWN
-     * payback capability — deliberately not ported.
+     * ({@link #validateMoveDates}) mirrors main's rules for BOTH jurisdictions, including the
+     * single-day request window (MULTI_DAY_NOT_ALLOWED, D-C/Q5). Multi-day CROWN payback
+     * (SPRDT-1333) comes from the hearing's own estimate - courtscheduler sizes the day-count from
+     * durationInMinutes - not from a multi-day request window. MAGS stays single-day.
      */
     @Handles("listing.command.move-hearing-to-past-date")
     public void handleMoveHearingToPastDate(final JsonEnvelope envelope) {
@@ -580,9 +582,9 @@ public class ListingCommandApi {
     }
 
     /**
-     * Ported from main's {@code validateMoveDates}, minus the single-day-only (MULTI_DAY_NOT_ALLOWED)
-     * check — SPRDT-1333's multi-day CROWN payback must keep working, so a multi-day span
-     * (endDateTime's date after startDateTime's date) is deliberately NOT rejected here.
+     * Ported from main's {@code validateMoveDates}, applied to both jurisdictions: target strictly
+     * before today, endDateTime not before startDateTime, a single-day request window (endDate must
+     * equal startDate - D-C/Q5), and startDate no older than {@value #MAX_PAST_MONTHS} months.
      */
     private static void validateMoveDates(final ZonedDateTime startInstant, final ZonedDateTime endInstant) {
         final LocalDate startDate = startInstant.toLocalDate();
@@ -596,6 +598,10 @@ public class ListingCommandApi {
         if (endInstant.isBefore(startInstant)) {
             final String message = "endDateTime must not be earlier than startDateTime";
             throw new MoveHearingToPastDateException(422, buildMoveHearingToPastDateErrorBody(INVALID_DATE_RANGE, message), message);
+        }
+        if (endDate.isAfter(startDate)) {
+            final String message = "Only Single day hearing can be moved to past date";
+            throw new MoveHearingToPastDateException(422, buildMoveHearingToPastDateErrorBody(MULTI_DAY_NOT_ALLOWED, message), message);
         }
         if (startDate.isBefore(today.minusMonths(MAX_PAST_MONTHS))) {
             final String message = "startDate cannot be earlier than " + MAX_PAST_MONTHS + " months before today";
@@ -614,11 +620,11 @@ public class ListingCommandApi {
                 hearingId, courtCentreId, courtRoomId, startInstant, endInstant, durationInMinutes, jurisdictionType);
 
         if (slot.sessions().isEmpty()) {
-            // courtscheduler can return 200 with an empty sessions[] for a genuine multi-day-range
-            // search that matched nothing (exploratory - it deliberately leaves the prior allocation
-            // intact rather than erroring). Nothing to enrich/move in that case - surface it as the
-            // same NO_SESSION_FOUND failure a single-date miss gets, rather than sending a broken
-            // enriched command downstream.
+            // courtscheduler can return 200 with an empty sessions[] for a genuine multi-day
+            // (duration-sized) search that matched nothing (exploratory - it deliberately leaves the
+            // prior allocation intact rather than erroring). Nothing to enrich/move in that case -
+            // surface it as the same NO_SESSION_FOUND failure a single-date miss gets, rather than
+            // sending a broken enriched command downstream.
             throw new MoveHearingToPastDateException(422,
                     buildMoveHearingToPastDateErrorBody(CourtSchedulerServiceAdapter.NO_SESSION_FOUND,
                             CourtSchedulerServiceAdapter.NO_SESSION_FOUND_MESSAGE),
