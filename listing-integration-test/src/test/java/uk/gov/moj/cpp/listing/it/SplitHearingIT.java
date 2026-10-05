@@ -259,6 +259,26 @@ public class SplitHearingIT extends AbstractIT {
     }
 
     @Test
+    void shouldPassProgressionsResultedHearingReasonBackToTheCaller() throws Exception {
+        final UUID hearingId = randomUUID();
+        givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+        ProgressionServiceStub.stubSplitHearingRejectedAsResulted(
+                "Hearing is resulted and cannot be split", hearingId.toString());
+
+        final Response response = postSplit(hearingId, crownSplitPayload());
+
+        assertThat(response.getStatus(), is(HttpStatus.SC_CONFLICT));
+        try (final JsonReader reader = Json.createReader(new StringReader(response.readEntity(String.class)))) {
+            final JsonObject body = reader.readObject();
+            assertThat("the caller must see progression's reason, not listing's internal wording",
+                    body.getString("message"), is("Hearing is resulted and cannot be split"));
+            assertThat("a split refused on a resulted hearing needs a stable code for the front end",
+                    body.getString("errorCode"), is("HEARING_NOT_SPLITTABLE"));
+            assertThat(body.getString("id"), is(hearingId.toString()));
+        }
+    }
+
+    @Test
     void shouldAcceptTheCrownSplitPayload() throws Exception {
         final UUID hearingId = randomUUID();
         givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
