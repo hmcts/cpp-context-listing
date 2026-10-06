@@ -1675,10 +1675,11 @@ public class Hearing implements Aggregate {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
-        return apply(Stream.of(CourtApplicationAddedForHearing.courtApplicationAddedForHearing()
+        final Stream<Object> courtApplicationAddedEvents = apply(Stream.of(CourtApplicationAddedForHearing.courtApplicationAddedForHearing()
                 .withHearingId(hearingId)
                 .withCourtApplication(NewDomainToEventConverter.buildCourtApplications(courtApplication))
                 .build()));
+        return concat(courtApplicationAddedEvents, emitYouthCourtListRestrictions());
     }
 
     public Stream<Object> updateCourtApplication(final UUID hearingId, final CourtApplication courtApplication) {
@@ -2103,21 +2104,19 @@ public class Hearing implements Aggregate {
 
         final List<UUID> under18DefendantIds = getUnder18DefendantIds(effectiveHearingDate);
         final List<UUID> under18SubjectIds = getUnder18CourtApplicationSubjectIds(effectiveHearingDate);
-        final List<UUID> under18RespondentIds = getUnder18CourtApplicationRespondentIds(effectiveHearingDate);
 
-        if (under18DefendantIds.isEmpty() && under18SubjectIds.isEmpty() && under18RespondentIds.isEmpty()) {
+        if (under18DefendantIds.isEmpty() && under18SubjectIds.isEmpty()) {
             return Stream.empty();
         }
 
-        LOGGER.info("Auto-restricting under-18 parties from court list for hearing {}: {} defendant(s), {} subject(s), {} respondent(s)",
-                this.hearingId, under18DefendantIds.size(), under18SubjectIds.size(), under18RespondentIds.size());
+        LOGGER.info("Auto-restricting under-18 parties from court list for hearing {}: {} defendant(s), {} subject(s)",
+                this.hearingId, under18DefendantIds.size(), under18SubjectIds.size());
 
         return apply(Stream.of(CourtListRestricted.courtListRestricted()
                 .withHearingId(this.hearingId)
                 .withRestrictCourtList(true)
                 .withDefendantIds(under18DefendantIds.isEmpty() ? null : under18DefendantIds)
                 .withCourtApplicationSubjectIds(under18SubjectIds.isEmpty() ? null : under18SubjectIds)
-                .withCourtApplicationRespondentIds(under18RespondentIds.isEmpty() ? null : under18RespondentIds)
                 .build()));
     }
 
@@ -2144,20 +2143,6 @@ public class Hearing implements Aggregate {
                 .filter(subject -> nonNull(subject.getId()))
                 .filter(subject -> isUnder18OnHearingDate(subject.getDateOfBirth(), effectiveHearingDate))
                 .filter(subject -> !toBoolean(subject.getRestrictFromCourtList()))
-                .map(uk.gov.justice.listing.events.ApplicantRespondent::getId)
-                .collect(toList());
-    }
-
-    private List<UUID> getUnder18CourtApplicationRespondentIds(final LocalDate effectiveHearingDate) {
-        if (isNull(this.currentHearingEventState.getCourtApplications())) {
-            return emptyList();
-        }
-        return this.currentHearingEventState.getCourtApplications().stream()
-                .filter(courtApplication -> nonNull(courtApplication.getRespondents()))
-                .flatMap(courtApplication -> courtApplication.getRespondents().stream())
-                .filter(respondent -> nonNull(respondent.getId()))
-                .filter(respondent -> isUnder18OnHearingDate(respondent.getDateOfBirth(), effectiveHearingDate))
-                .filter(respondent -> !toBoolean(respondent.getRestrictFromCourtList()))
                 .map(uk.gov.justice.listing.events.ApplicantRespondent::getId)
                 .collect(toList());
     }
