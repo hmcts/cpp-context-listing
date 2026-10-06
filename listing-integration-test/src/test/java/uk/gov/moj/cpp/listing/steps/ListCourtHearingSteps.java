@@ -5,6 +5,7 @@ import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -2025,16 +2026,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                                 .withProsecutionAuthorityCode(STRING.next()).build())
                                         .withIsSJP(false)
                                         .withCaseStatus("ACTIVE")
-                                        .withOffences(singletonList(Offence.offence().withId(hearingData.getCourtApplications().get(0).getOffenceId())
-                                                .withOffenceDefinitionId(randomUUID())
-                                                .withOffenceCode(STRING.next())
-                                                .withOffenceTitle(STRING.next())
-                                                .withWording(STRING.next())
-                                                .withCount(OFFENCE_COUNT)
-                                                .withOrderIndex(OFFENCE_ORDER_INDEX)
-                                                .withOffenceLegislation(OFFENCE_LEGISLATION)
-                                                .withStartDate(ItClock.today().toString())
-                                                .build()))
+                                        .withOffences(getStandaloneApplicationOffences(hearingData.getCourtApplications().get(0).getOffenceId()))
                                         .build()))
                                 .withApplicant(getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
                                 .withRespondents(singletonList(CourtApplicationParty.courtApplicationParty()
@@ -2062,6 +2054,23 @@ public class ListCourtHearingSteps extends AbstractIT {
                         .withIsGroupProceedings(false)
                         .build())).build();
 
+    }
+
+    // A standalone application without an offenceId is listed with no offences (e.g. a bail variation application)
+    private List<Offence> getStandaloneApplicationOffences(final UUID offenceId) {
+        if (isNull(offenceId)) {
+            return emptyList();
+        }
+        return singletonList(Offence.offence().withId(offenceId)
+                .withOffenceDefinitionId(randomUUID())
+                .withOffenceCode(STRING.next())
+                .withOffenceTitle(STRING.next())
+                .withWording(STRING.next())
+                .withCount(OFFENCE_COUNT)
+                .withOrderIndex(OFFENCE_ORDER_INDEX)
+                .withOffenceLegislation(OFFENCE_LEGISLATION)
+                .withStartDate(ItClock.today().toString())
+                .build());
     }
 
     private HearingType getHearingType(final HearingData hearingData) {
