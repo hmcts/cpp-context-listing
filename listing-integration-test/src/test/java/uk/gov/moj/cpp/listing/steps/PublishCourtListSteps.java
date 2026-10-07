@@ -256,6 +256,16 @@ public class PublishCourtListSteps extends CommonHearingSteps {
 
     }
 
+    // Works for WARN, FIRM and DRAFT/FINAL lists: the application's party listed in XHIBIT is the only cs:Defendant,
+    // other application parties (e.g. a PERSON_DEFENDANT respondent) are not listed as defendants
+    public void verifySentPublishedCourtListHasOnlyOneDefendantAndExcludes(final String excludedPartyLastName) throws Exception {
+        final String sentXml = getSentXml();
+        final XpathEngine simpleXpathEngine = XMLUnit.newXpathEngine();
+        assertEquals("1", simpleXpathEngine.evaluate("count(//*[local-name()='Defendant'])", XMLUnit.buildControlDocument(sentXml)));
+        assertEquals("0", simpleXpathEngine.evaluate("count(//*[local-name()='Defendant']//*[local-name()='CitizenNameSurname'][text()='" + excludedPartyLastName + "'])",
+                XMLUnit.buildControlDocument(sentXml)));
+    }
+
     private void verifyCourtHeader() throws Exception {
 
         final String sentXml = getSentXml();

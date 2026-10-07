@@ -2029,16 +2029,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                                         .withOffences(getStandaloneApplicationOffences(hearingData.getCourtApplications().get(0).getOffenceId()))
                                         .build()))
                                 .withApplicant(getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
-                                .withRespondents(singletonList(CourtApplicationParty.courtApplicationParty()
-                                        .withId(hearingData.getCourtApplications().get(0).getRespondent().getId())
-                                        .withPersonDetails(Person.person().withLastName(hearingData.getCourtApplications().get(0).getRespondent().getLastName())
-                                                .withFirstName(hearingData.getCourtApplications().get(0).getRespondent().getFirstName())
-                                                .withGender(Gender.FEMALE)
-                                                .withAddress(getAddress(hearingData.getCourtApplications().get(0).getRespondent().getAddress()))
-                                                .build())
-                                        .withSummonsRequired(false)
-                                        .withNotificationRequired(false)
-                                        .build()))
+                                .withRespondents(singletonList(getStandaloneApplicationRespondent(hearingData.getCourtApplications().get(0).getRespondent())))
                                 .withSubject(hearingData.getCourtApplications().get(0).getSubject() != null
                                         ? ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getSubject())
                                         : ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
@@ -2056,9 +2047,27 @@ public class ListCourtHearingSteps extends AbstractIT {
 
     }
 
+    // A respondent with a masterDefendantId is sent as a master defendant (listed as PERSON_DEFENDANT), otherwise as a person (PERSON)
+    private CourtApplicationParty getStandaloneApplicationRespondent(final CourtApplicationPartyData respondent) {
+        if (nonNull(respondent.getMasterDefendantId())) {
+            return getApplicant(respondent);
+        }
+        return CourtApplicationParty.courtApplicationParty()
+                .withId(respondent.getId())
+                .withPersonDetails(Person.person().withLastName(respondent.getLastName())
+                        .withFirstName(respondent.getFirstName())
+                        .withGender(Gender.FEMALE)
+                        .withAddress(getAddress(respondent.getAddress()))
+                        .build())
+                .withSummonsRequired(false)
+                .withNotificationRequired(false)
+                .build();
+    }
+
     // A standalone application without an offenceId is listed with no offences (e.g. a bail variation application)
     private List<Offence> getStandaloneApplicationOffences(final UUID offenceId) {
-        if (isNull(offenceId)) {
+        if (isNull(offenceId))
+        {
             return emptyList();
         }
         return singletonList(Offence.offence().withId(offenceId)

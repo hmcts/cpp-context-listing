@@ -785,9 +785,10 @@ class ExhibitScenarioIT extends AbstractIT {
 
     /**
      * Test: Create a crown allocated hearing for a court application that has no offences
-     * (e.g. a bail variation). Its only PERSON_DEFENDANT party (the subject) therefore has no offences.
+     * (e.g. a bail variation). Its subject and its respondent are both PERSON_DEFENDANTs with no offences.
      * The hearing must still be exported to XHIBIT for WARN, FIRM and DRAFT lists - it must not be
-     * dropped from the court list because the defendant has no offences.
+     * dropped from the court list because the defendants have no offences.
+     * Only the subject is listed as the cs:Defendant - the PERSON_DEFENDANT respondent is not added as a defendant.
      */
     @Test
     @ExpectedServerErrors("court application hearings without a prosecution case -> WARN 'Hearing does not contain caseIdentifier' from the court-list export (application-only hearings are valid)")
@@ -825,21 +826,30 @@ class ExhibitScenarioIT extends AbstractIT {
 
         final String subjectFirstName = applicationHearing.getCourtApplications().get(0).getSubject().getFirstName();
         final String subjectLastName = applicationHearing.getCourtApplications().get(0).getSubject().getLastName();
+        final String respondentLastName = applicationHearing.getCourtApplications().get(0).getRespondent().getLastName();
 
         publishAndVerifyCourtList(applicationWithoutOffencesData, crownCourtCentreId, PublishCourtListType.WARN, "true",
                 subjectFirstName, subjectLastName, (steps, firstName, lastName) ->
-                    steps.verifySentPublishedCourtListHearingDataForWarnWithSubject(firstName, lastName));
+                {
+                    steps.verifySentPublishedCourtListHearingDataForWarnWithSubject(firstName, lastName);
+                    steps.verifySentPublishedCourtListHasOnlyOneDefendantAndExcludes(respondentLastName);
+                });
 
         publishAndVerifyCourtList(applicationWithoutOffencesData, crownCourtCentreId, PublishCourtListType.FIRM, "true",
                 subjectFirstName, subjectLastName, (steps, firstName, lastName) ->
-                    steps.verifySentPublishedCourtListHearingDataForFirmWithSubject(firstName, lastName));
+                {
+                    steps.verifySentPublishedCourtListHearingDataForFirmWithSubject(firstName, lastName);
+                    steps.verifySentPublishedCourtListHasOnlyOneDefendantAndExcludes(respondentLastName);
+                });
 
         publishAndVerifyCourtList(applicationWithoutOffencesData, crownCourtCentreId, PublishCourtListType.DRAFT, "false",
                 subjectFirstName, subjectLastName, (steps, firstName, lastName) ->
-                    steps.verifySentPublishedCourtListHearingDataForDraftWithSubject(firstName, lastName));
+                {
+                    steps.verifySentPublishedCourtListHearingDataForDraftWithSubject(firstName, lastName);
+                    steps.verifySentPublishedCourtListHasOnlyOneDefendantAndExcludes(respondentLastName);
+                });
     }
-
-    private void setHearingDataFields(final HearingData hearing, final HearingTypeData hearingTypeData, 
+    private void setHearingDataFields(final HearingData hearing, final HearingTypeData hearingTypeData,
                                       final UUID courtCentreId, final UUID courtRoomId, 
                                       final LocalDate hearingDate, final ZonedDateTime hearingStartTime) {
         try {

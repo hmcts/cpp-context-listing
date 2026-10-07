@@ -50,7 +50,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -110,11 +109,6 @@ public class CourtServicesMapper {
     private static final String DEFENDANTS = "defendants";
     private static final String COMMA = ", ";
     public static final String SUBJECT = "subject";
-    private static final String APPLICANT = "applicant";
-    private static final String RESPONDENTS = "respondents";
-    private static final String COURT_APPLICATION_PARTY_TYPE = "courtApplicationPartyType";
-    private static final String PERSON_DEFENDANT_PARTY_TYPE = "PERSON_DEFENDANT";
-    private static final String PARTY_ID = "id";
     public static final String COURT_HOUSE_TYPE = "courtHouseType";
     private static final String MAGISTRATES_COURT_TYPE = "MAGISTRATES_COURT";
 
@@ -344,12 +338,12 @@ public class CourtServicesMapper {
         for (final JsonObject hearingJson : hearingJsonList) {
 
             if (!hearingJson.getBoolean(RESTRICT_FROM_COURT_LIST)) {
-                // A court application hearing may also carry a caseIdentifier (for its case reference),
-                // so applicationReference must be checked first to keep these mutually exclusive.
-                if (hearingJson.containsKey(APPLICATION_REFERENCE)) {
-                    sittingStructureHearings.getHearing().add(generateHearingStructureForCourtApplication(hearingJson, hearingSequenceNumber++, weekCommencing));
-                } else if (hearingJson.containsKey(CASE_IDENTIFIER) || hearingJson.containsKey(PROSECUTOR)) {
+                if (hearingJson.containsKey(CASE_IDENTIFIER) || hearingJson.containsKey(PROSECUTOR)) {
                     sittingStructureHearings.getHearing().add(generateHearingStructureForListedCase(hearingJson, hearingSequenceNumber++, weekCommencing));
+                }
+
+                if (hearingJson.containsKey(APPLICATION_REFERENCE)) {
+                     sittingStructureHearings.getHearing().add(generateHearingStructureForCourtApplication(hearingJson, hearingSequenceNumber++, weekCommencing));
                 }
             }
         }
@@ -569,12 +563,9 @@ public class CourtServicesMapper {
             final JsonObject courtApplication) {
 
         final HearingStructure.Defendants defendants = objectFactory.createHearingStructureDefendants();
-        final JsonObject applicant = courtApplication.getJsonObject(APPLICANT);
 
-        defendants.getDefendant().add(generateDefendantStructureForApplicant(applicant,
+        defendants.getDefendant().add(generateDefendantStructureForApplicant(courtApplication.getJsonObject("applicant"),
                 courtApplication.getString(APPLICATION_REFERENCE)));
-
-        appendRespondentDefendants(defendants, courtApplication, applicant);
 
         return defendants;
     }
@@ -583,43 +574,11 @@ public class CourtServicesMapper {
             final JsonObject courtApplication) {
 
         final HearingStructure.Defendants defendants = objectFactory.createHearingStructureDefendants();
-        final JsonObject subject = courtApplication.getJsonObject(SUBJECT);
 
-        defendants.getDefendant().add(generateDefendantStructureForApplicant(subject,
+        defendants.getDefendant().add(generateDefendantStructureForApplicant(courtApplication.getJsonObject(SUBJECT),
                 courtApplication.getString(APPLICATION_REFERENCE)));
 
-        appendRespondentDefendants(defendants, courtApplication, subject);
-
         return defendants;
-    }
-
-    // Respondents are only treated like a defendant when they are a person party to the application
-    // (e.g. the person a bail/breach application is about) - a respondent that is a prosecuting
-    // authority/organisation must not appear as a cs:Defendant.
-    private void appendRespondentDefendants(final HearingStructure.Defendants defendants,
-                                            final JsonObject courtApplication,
-                                            final JsonObject alreadyIncludedParty) {
-
-        if (!courtApplication.containsKey(RESPONDENTS)) {
-            return;
-        }
-
-        final String alreadyIncludedPartyId = alreadyIncludedParty.getString(PARTY_ID, null);
-
-        for (final JsonObject respondent : courtApplication.getJsonArray(RESPONDENTS).getValuesAs(JsonObject.class)) {
-            if (isPersonDefendantParty(respondent) && !isSameParty(respondent, alreadyIncludedPartyId)) {
-                defendants.getDefendant().add(generateDefendantStructureForApplicant(respondent,
-                        courtApplication.getString(APPLICATION_REFERENCE)));
-            }
-        }
-    }
-
-    private boolean isPersonDefendantParty(final JsonObject party) {
-        return PERSON_DEFENDANT_PARTY_TYPE.equals(party.getString(COURT_APPLICATION_PARTY_TYPE, null));
-    }
-
-    private boolean isSameParty(final JsonObject party, final String partyId) {
-        return partyId != null && partyId.equals(party.getString(PARTY_ID, null));
     }
 
     private DefendantStructure generateDefendantStructureForDefendant(
@@ -822,12 +781,12 @@ public class CourtServicesMapper {
 
     private void generateCaseStructureForCaseOrCourtApplication(
             final CasesStructure casesStructure, final JsonObject hearingJson) {
-        // A court application hearing may also carry a caseIdentifier (for its case reference),
-        // so applicationReference must be checked first to keep these mutually exclusive.
+        if (hearingJson.containsKey(CASE_IDENTIFIER)) {
+            casesStructure.getCase().add(generateCaseStructureForCase(hearingJson));
+        }
+
         if (hearingJson.containsKey(APPLICATION_REFERENCE)) {
             casesStructure.getCase().add(generateCaseStructureForCourtApplication(hearingJson));
-        } else if (hearingJson.containsKey(CASE_IDENTIFIER)) {
-            casesStructure.getCase().add(generateCaseStructureForCase(hearingJson));
         }
     }
 
@@ -857,32 +816,11 @@ public class CourtServicesMapper {
             // Use subject if present, otherwise use applicant
             final JsonObject partyToUse = courtApplication.containsKey(SUBJECT)
                     ? courtApplication.getJsonObject(SUBJECT)
-                    : courtApplication.getJsonObject(APPLICANT);
-            final String applicationReference = courtApplication.getString(APPLICATION_REFERENCE);
-            casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(partyToUse, applicationReference));
-
-            for (final JsonObject respondent : getPersonDefendantRespondents(courtApplication, partyToUse)) {
-                casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(respondent, applicationReference));
-            }
+                    : courtApplication.getJsonObject("applicant");
+            casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(partyToUse, courtApplication.getString(APPLICATION_REFERENCE)));
         }
 
         return casesStructureCase;
-    }
-
-    private List<JsonObject> getPersonDefendantRespondents(final JsonObject courtApplication,
-                                                            final JsonObject alreadyIncludedParty) {
-
-        if (!courtApplication.containsKey(RESPONDENTS)) {
-            return Collections.emptyList();
-        }
-
-        final String alreadyIncludedPartyId = alreadyIncludedParty.getString(PARTY_ID, null);
-
-        return courtApplication.getJsonArray(RESPONDENTS).getValuesAs(JsonObject.class)
-                .stream()
-                .filter(this::isPersonDefendantParty)
-                .filter(respondent -> !isSameParty(respondent, alreadyIncludedPartyId))
-                .collect(Collectors.toList());
     }
 
     private CasesStructure.Case.Defendants generateCaseStructureCaseDefendants(
