@@ -11,6 +11,8 @@ import static org.apache.commons.io.FileUtils.readFileToString;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
@@ -57,11 +59,20 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     private static final String EXPECTED_PUBLIC_LIST_MULTIPLE_CASES = "src/test/resources/json/expectedHearingDataForPublic.json";
     private static final String ALPHABETICAL_LIST = "/json/hearingDataForAlphabeticalListWithEjectFlag.json";
     private static final String ALPHABETICAL_LIST_WITH_EJECTFLAG_AND_EXPARTE_OFFENCES = "/json/hearingDataForAlphabeticalListWithEjectFlagAndExParteOffences.json";
+    private static final String ALPHABETICAL_LIST_EXPARTE_CASE_ONLY = "/json/hearingDataForAlphabeticalListExParteCaseOnly.json";
+    private static final String ALPHABETICAL_LIST_APPLICATION_LINKED_TO_EXPARTE_CASE_ON_SEPARATE_HEARING = "/json/hearingDataForAlphabeticalListApplicationLinkedToExParteCaseOnSeparateHearing.json";
+    private static final String ALPHABETICAL_LIST_APPLICATION_LINKED_TO_DIFFERENT_CASE_SHARING_HEARING_WITH_EXPARTE_CASE = "/json/hearingDataForAlphabeticalListApplicationLinkedToDifferentCaseSharingHearingWithExParteCase.json";
+    private static final String PUBLIC_LIST_APPLICATION_LINKED_TO_DIFFERENT_CASE_SHARING_HEARING_WITH_EXPARTE_CASE = "/json/hearingDataForPublicListApplicationLinkedToDifferentCaseSharingHearingWithExParteCase.json";
     private static final String SAMPLE_HEARING_WITH_2_HEARING_DAYS_IN_DIFFERENT_HEARING_DATE = "/json/hearingSampleDataWith2HearingDaysInDifferentHearingDate.json";
     private static final String SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_DIFFERENT_HEARING_DATE = "/json/hearingSampleDataWith3HearingDaysInDifferentHearingDate.json";
     private static final String SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_THE_SAME_HEARING_DATE = "/json/hearingSampleDataWith3HearingDaysInTheSameHearingDate.json";
     private static final String SAMPLE_HEARING_WITH_2_HEARING_DAYS_IN_THE_SAME_HEARING_DATE = "/json/hearingSampleDataWith2HearingDaysInTheSameHearingDate.json";
     private static final String SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_DIFFERENT_COURT_CENTRE = "/json/hearingSampleDataWith3HearingDaysInDifferentCourtCentre.json";
+
+    private static final String WARN_FIRM_CIVIL_CASE_SINGLE_OFFENCE = "/json/hearingDataForWarnFirmListCivilCaseSingleOffence.json";
+    private static final String WARN_FIRM_CIVIL_CASE_TWO_OFFENCES = "/json/hearingDataForWarnFirmListCivilCaseTwoOffences.json";
+    private static final String WARN_FIRM_TWO_CIVIL_CASES = "/json/hearingDataForWarnFirmListTwoCivilCases.json";
+    private static final String WARN_FIRM_APPLICATION_HEARING = "/json/hearingDataForWarnFirmListApplicationHearing.json";
 
     private static final String COURT_CENTRE_ID_QUERY_PARAMETER = "courtCentreId";
     private static final String COURT_ROOM_ID_QUERY_PARAMETER = "courtRoomId";
@@ -472,6 +483,50 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
+    public void shouldExcludeCourtApplicationFromAlphabeticalListWhenApplicationLinkedToExParteCaseOnDifferentHearingRecord() throws IOException {
+        final Hearing exParteCaseHearing = createHearing(ALPHABETICAL_LIST_EXPARTE_CASE_ONLY);
+        final Hearing applicationHearing = createHearing(ALPHABETICAL_LIST_APPLICATION_LINKED_TO_EXPARTE_CASE_ON_SEPARATE_HEARING);
+
+        final JsonArray hearingJsonArrayAlphabeticalList = converter.convertHearingResultForAlphabeticalList(
+                ImmutableList.of(exParteCaseHearing, applicationHearing));
+
+        assertThat(hearingJsonArrayAlphabeticalList.toString(), isJson(allOf(
+
+                withJsonPath("$[0].hearingsByHearingDate", hasSize(0)),
+
+                withJsonPath("$[1].hearingsByHearingDate", hasSize(0))
+        )));
+    }
+
+    @Test
+    public void shouldExcludeCourtApplicationFromAlphabeticalListWhenApplicationSharesHearingWithExParteCaseButLinkedToDifferentCase() throws IOException {
+        // The application's linkedCaseIds points at a case that never appears anywhere in this
+        // fixture (representing a case listed elsewhere) - it is only reachable through this
+        // same hearing record as the ex-parte case. It must still be excluded, because it is
+        // physically listed within the ex-parte case's own hearing session, regardless of which
+        // case it is legally linked to.
+        final Hearing hearing = createHearing(ALPHABETICAL_LIST_APPLICATION_LINKED_TO_DIFFERENT_CASE_SHARING_HEARING_WITH_EXPARTE_CASE);
+
+        final JsonArray hearingJsonArrayAlphabeticalList = converter.convertHearingResultForAlphabeticalList(ImmutableList.of(hearing));
+
+        assertThat(hearingJsonArrayAlphabeticalList.toString(), isJson(allOf(
+                withJsonPath("$[0].hearingsByHearingDate", hasSize(0))
+        )));
+    }
+
+    @Test
+    public void shouldExcludeCourtApplicationFromPublicListWhenApplicationSharesHearingWithExParteCaseButLinkedToDifferentCase() throws IOException {
+        final Hearing hearing = createHearing(PUBLIC_LIST_APPLICATION_LINKED_TO_DIFFERENT_CASE_SHARING_HEARING_WITH_EXPARTE_CASE);
+
+        final JsonArray hearingJsonArrayPublicList = converter.convertHearingResultForPublicList(hearing);
+
+        assertThat(hearingJsonArrayPublicList.toString(), isJson(allOf(
+                withJsonPath("$[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.listedCases", hasSize(0)),
+                withJsonPath("$[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.courtApplications", hasSize(0))
+        )));
+    }
+
+    @Test
     public void shouldDeepCopyHearingAndConvertHearingResultForAlphabeticalList() throws IOException {
         final Hearing hearing = createHearing(ALPHABETICAL_LIST);
 
@@ -568,6 +623,207 @@ public class HearingJsonListConverterFilterEjectCasesTest {
 
     }
 
+    @Test
+    public void shouldExcludeCivilCaseWithSingleExParteOffenceFromWarnFirmList() throws IOException {
+        // AC1
+        final String caseId = randomUuid();
+        final List<Hearing> hearings = newArrayList(createHearing(WARN_FIRM_CIVIL_CASE_SINGLE_OFFENCE, singleOffenceReplacements(caseId, "true")));
+        final JsonArray convertedHearings = converter.convert(hearings);
+
+        final JsonArray filtered = converter.filterExParteOffencesFromHearings(convertedHearings);
+
+        assertThat(filtered.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(1)),
+                withJsonPath("$[0].listedCases", hasSize(0))
+        )));
+    }
+
+    @Test
+    public void shouldIncludeCivilCaseWithSingleNonExParteOffenceInWarnFirmList() throws IOException {
+        // AC2
+        final String caseId = randomUuid();
+        final List<Hearing> hearings = newArrayList(createHearing(WARN_FIRM_CIVIL_CASE_SINGLE_OFFENCE, singleOffenceReplacements(caseId, "false")));
+        final JsonArray convertedHearings = converter.convert(hearings);
+
+        final JsonArray filtered = converter.filterExParteOffencesFromHearings(convertedHearings);
+
+        assertThat(filtered.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(1)),
+                withJsonPath("$[0].listedCases", hasSize(1)),
+                withJsonPath("$[0].listedCases[0].id", equalTo(caseId))
+        )));
+    }
+
+    @Test
+    public void shouldExcludeCivilCaseWithAtLeastOneExParteOffenceAmongMultipleFromWarnFirmList() throws IOException {
+        // AC3
+        final String caseId = randomUuid();
+        final List<Hearing> hearings = newArrayList(createHearing(WARN_FIRM_CIVIL_CASE_TWO_OFFENCES, twoOffencesReplacements(caseId, "false", "true")));
+        final JsonArray convertedHearings = converter.convert(hearings);
+
+        final JsonArray filtered = converter.filterExParteOffencesFromHearings(convertedHearings);
+
+        assertThat(filtered.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(1)),
+                withJsonPath("$[0].listedCases", hasSize(0))
+        )));
+    }
+
+    @Test
+    public void shouldIncludeCivilCaseWithAllNonExParteOffencesInWarnFirmList() throws IOException {
+        // AC4
+        final String caseId = randomUuid();
+        final List<Hearing> hearings = newArrayList(createHearing(WARN_FIRM_CIVIL_CASE_TWO_OFFENCES, twoOffencesReplacements(caseId, "false", "false")));
+        final JsonArray convertedHearings = converter.convert(hearings);
+
+        final JsonArray filtered = converter.filterExParteOffencesFromHearings(convertedHearings);
+
+        assertThat(filtered.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(1)),
+                withJsonPath("$[0].listedCases", hasSize(1)),
+                withJsonPath("$[0].listedCases[0].id", equalTo(caseId))
+        )));
+    }
+
+    @Test
+    public void shouldExcludeApplicationLinkedToExParteCaseListedOnADifferentHearingFromWarnFirmList() throws IOException {
+        // AC5 - the linked case and the application are on two different Hearing entities
+        // (two different array elements), so the ex-parte case id must be resolved array-wide.
+        final String caseId = randomUuid();
+        final String applicationReference = "TESTAPP-" + randomUuid();
+        final List<Hearing> hearings = newArrayList(
+                createHearing(WARN_FIRM_CIVIL_CASE_SINGLE_OFFENCE, singleOffenceReplacements(caseId, "true")),
+                createHearing(WARN_FIRM_APPLICATION_HEARING, applicationHearingReplacements(applicationReference, caseId)));
+        final JsonArray convertedHearings = converter.convert(hearings);
+
+        final JsonArray filtered = converter.filterExParteOffencesFromHearings(convertedHearings);
+
+        assertThat(filtered.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(2)),
+                withJsonPath("$[0].listedCases", hasSize(0)),
+                withJsonPath("$[1].courtApplications", hasSize(0))
+        )));
+    }
+
+    @Test
+    public void shouldIncludeApplicationLinkedToNonExParteCaseListedOnADifferentHearingInWarnFirmList() throws IOException {
+        // AC6
+        final String caseId = randomUuid();
+        final String applicationReference = "TESTAPP-" + randomUuid();
+        final List<Hearing> hearings = newArrayList(
+                createHearing(WARN_FIRM_CIVIL_CASE_SINGLE_OFFENCE, singleOffenceReplacements(caseId, "false")),
+                createHearing(WARN_FIRM_APPLICATION_HEARING, applicationHearingReplacements(applicationReference, caseId)));
+        final JsonArray convertedHearings = converter.convert(hearings);
+
+        final JsonArray filtered = converter.filterExParteOffencesFromHearings(convertedHearings);
+
+        assertThat(filtered.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(2)),
+                withJsonPath("$[0].listedCases", hasSize(1)),
+                withJsonPath("$[1].courtApplications", hasSize(1)),
+                withJsonPath("$[1].courtApplications[0].applicationReference", equalTo(applicationReference))
+        )));
+    }
+
+    @Test
+    public void shouldExcludeApplicationLinkedToMultipleCasesWithAtLeastOneExParteFromWarnFirmList() throws IOException {
+        // AC7
+        final String caseId1 = randomUuid();
+        final String caseId2 = randomUuid();
+        final String applicationReference = "TESTAPP-" + randomUuid();
+        final List<Hearing> hearings = newArrayList(
+                createHearing(WARN_FIRM_TWO_CIVIL_CASES, twoCasesReplacements(caseId1, "false", caseId2, "true")),
+                createHearing(WARN_FIRM_APPLICATION_HEARING, applicationHearingReplacements(applicationReference, caseId1, caseId2)));
+        final JsonArray convertedHearings = converter.convert(hearings);
+
+        final JsonArray filtered = converter.filterExParteOffencesFromHearings(convertedHearings);
+
+        assertThat(filtered.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(2)),
+                withJsonPath("$[0].listedCases", hasSize(1)),
+                withJsonPath("$[0].listedCases[0].id", equalTo(caseId1)),
+                withJsonPath("$[1].courtApplications", hasSize(0))
+        )));
+    }
+
+    @Test
+    public void shouldIncludeApplicationLinkedToMultipleCasesWithNoneExParteInWarnFirmList() throws IOException {
+        // AC8
+        final String caseId1 = randomUuid();
+        final String caseId2 = randomUuid();
+        final String applicationReference = "TESTAPP-" + randomUuid();
+        final List<Hearing> hearings = newArrayList(
+                createHearing(WARN_FIRM_TWO_CIVIL_CASES, twoCasesReplacements(caseId1, "false", caseId2, "false")),
+                createHearing(WARN_FIRM_APPLICATION_HEARING, applicationHearingReplacements(applicationReference, caseId1, caseId2)));
+        final JsonArray convertedHearings = converter.convert(hearings);
+
+        final JsonArray filtered = converter.filterExParteOffencesFromHearings(convertedHearings);
+
+        assertThat(filtered.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(2)),
+                withJsonPath("$[0].listedCases", hasSize(2)),
+                withJsonPath("$[1].courtApplications", hasSize(1)),
+                withJsonPath("$[1].courtApplications[0].applicationReference", equalTo(applicationReference))
+        )));
+    }
+
+    @Test
+    public void shouldReturnEmptyArrayWhenFilteringNullOrEmptyHearingsArrayForWarnFirmList() {
+        assertThat(converter.filterExParteOffencesFromHearings(null), is(nullValue()));
+    }
+
+    private String randomUuid() {
+        return UUID.randomUUID().toString();
+    }
+
+    private Map<String, String> singleOffenceReplacements(final String caseId, final String isExParte) {
+        final Map<String, String> replacements = new HashMap<>();
+        replacements.put("HEARING_ID_PLACEHOLDER", randomUuid());
+        replacements.put("CASE_ID_PLACEHOLDER", caseId);
+        replacements.put("DEFENDANT_ID_PLACEHOLDER", randomUuid());
+        replacements.put("OFFENCE_ID_PLACEHOLDER", randomUuid());
+        replacements.put("IS_EXPARTE_PLACEHOLDER", isExParte);
+        return replacements;
+    }
+
+    private Map<String, String> twoOffencesReplacements(final String caseId, final String offence1IsExParte, final String offence2IsExParte) {
+        final Map<String, String> replacements = new HashMap<>();
+        replacements.put("HEARING_ID_PLACEHOLDER", randomUuid());
+        replacements.put("CASE_ID_PLACEHOLDER", caseId);
+        replacements.put("DEFENDANT_ID_PLACEHOLDER", randomUuid());
+        replacements.put("OFFENCE_1_ID_PLACEHOLDER", randomUuid());
+        replacements.put("OFFENCE_2_ID_PLACEHOLDER", randomUuid());
+        replacements.put("OFFENCE_1_IS_EXPARTE_PLACEHOLDER", offence1IsExParte);
+        replacements.put("OFFENCE_2_IS_EXPARTE_PLACEHOLDER", offence2IsExParte);
+        return replacements;
+    }
+
+    private Map<String, String> twoCasesReplacements(final String caseId1, final String case1IsExParte, final String caseId2, final String case2IsExParte) {
+        final Map<String, String> replacements = new HashMap<>();
+        replacements.put("HEARING_ID_PLACEHOLDER", randomUuid());
+        replacements.put("CASE_1_ID_PLACEHOLDER", caseId1);
+        replacements.put("DEFENDANT_1_ID_PLACEHOLDER", randomUuid());
+        replacements.put("OFFENCE_1_ID_PLACEHOLDER", randomUuid());
+        replacements.put("CASE_1_IS_EXPARTE_PLACEHOLDER", case1IsExParte);
+        replacements.put("CASE_2_ID_PLACEHOLDER", caseId2);
+        replacements.put("DEFENDANT_2_ID_PLACEHOLDER", randomUuid());
+        replacements.put("OFFENCE_2_ID_PLACEHOLDER", randomUuid());
+        replacements.put("CASE_2_IS_EXPARTE_PLACEHOLDER", case2IsExParte);
+        return replacements;
+    }
+
+    private Map<String, String> applicationHearingReplacements(final String applicationReference, final String... linkedCaseIds) {
+        final Map<String, String> replacements = new HashMap<>();
+        replacements.put("HEARING_ID_PLACEHOLDER", randomUuid());
+        replacements.put("APPLICATION_ID_PLACEHOLDER", randomUuid());
+        replacements.put("APPLICATION_REFERENCE_PLACEHOLDER", applicationReference);
+        final String linkedCaseIdsJson = Arrays.stream(linkedCaseIds)
+                .map(id -> "\"" + id + "\"")
+                .collect(java.util.stream.Collectors.joining(","));
+        replacements.put("LINKED_CASE_IDS_PLACEHOLDER", linkedCaseIdsJson);
+        return replacements;
+    }
+
     private Hearing createHearing(final String filePath) throws IOException {
         final StringWriter writer = new StringWriter();
 
@@ -575,6 +831,20 @@ public class HearingJsonListConverterFilterEjectCasesTest {
         IOUtils.copy(inputStream, writer, UTF_8);
 
         return new Hearing(UUID.randomUUID(), objectMapper.readTree(writer.toString()));
+    }
+
+    private Hearing createHearing(final String filePath, final Map<String, String> replacements) throws IOException {
+        final StringWriter writer = new StringWriter();
+
+        InputStream inputStream = getClass().getResourceAsStream(filePath);
+        IOUtils.copy(inputStream, writer, UTF_8);
+
+        String content = writer.toString();
+        for (final Map.Entry<String, String> replacement : replacements.entrySet()) {
+            content = content.replace(replacement.getKey(), replacement.getValue());
+        }
+
+        return new Hearing(UUID.randomUUID(), objectMapper.readTree(content));
     }
 
     private List<Hearing> createHearings(final String filePath1, final String filePath2) throws IOException {
