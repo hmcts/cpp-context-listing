@@ -3,6 +3,9 @@ package uk.gov.moj.cpp.listing.it;
 import static com.google.common.collect.ImmutableMap.of;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.buildPublishCourtListCommandPayload;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataForWeekCommencing;
@@ -780,7 +783,73 @@ class ExhibitScenarioIT extends AbstractIT {
                     steps.verifySentPublishedCourtListHearingDataForDraftWithSubject(firstName, lastName));
     }
 
-    private void setHearingDataFields(final HearingData hearing, final HearingTypeData hearingTypeData, 
+    /**
+     * Test: Create a crown allocated hearing for a court application that has no offences
+     * (e.g. a bail variation). Its subject and its respondent are both PERSON_DEFENDANTs with no offences.
+     * The hearing must still be exported to XHIBIT for WARN, FIRM and DRAFT lists - it must not be
+     * dropped from the court list because the defendants have no offences.
+     * Only the subject is listed as the cs:Defendant - the PERSON_DEFENDANT respondent is not added as a defendant.
+     */
+    @Test
+    @ExpectedServerErrors("court application hearings without a prosecution case -> WARN 'Hearing does not contain caseIdentifier' from the court-list export (application-only hearings are valid)")
+    void testCrownAllocatedCourtApplicationWithoutOffencesIsSentToXhibit() throws Exception {
+        stubUpdateAvailableHearingSlotsService();
+
+        final UUID crownCourtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+        final UUID crownCourtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
+        final String courtScheduleId = "8e837de0-743a-4a2c-9db3-b2e678c48729";
+        final UUID courtListId = randomUUID();
+        final int courtRoomId = 231;
+
+        final HearingsData applicationWithoutOffencesData = HearingsData.hearingsDataStandaloneApplicationWithSubjectAndNoOffences();
+        final HearingData applicationHearing = applicationWithoutOffencesData.getHearingData().get(0);
+        assertThat(applicationHearing.getCourtApplications().get(0).getOffenceId(), is(nullValue()));
+
+        final HearingTypeData hearingTypeData = applicationHearing.getHearingTypeData();
+
+        stubGetReferenceDataHearingTypes(hearingTypeData.getTypeId());
+        stubOrganisationUnit(crownCourtCentreId);
+        stubGetReferenceDataCourtMappings(new CourtCentreData(crownCourtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, crownCourtRoomUUID, "Leeds Crown Court"));
+
+        final LocalDate hearingDate = ItClock.today();
+        final ZonedDateTime hearingStartTime = ItClock.nowUtc().withHour(10).withMinute(0).withSecond(0).withNano(0);
+        setHearingDataFields(applicationHearing, hearingTypeData, crownCourtCentreId, crownCourtRoomUUID, hearingDate, hearingStartTime);
+
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(applicationWithoutOffencesData);
+        stubProvisionalBooking(crownCourtCentreId, crownCourtRoomUUID, courtScheduleId, hearingDate, hearingStartTime);
+        stubListHearingInCourtSessions(applicationHearing.getId().toString(), courtScheduleId, hearingStartTime);
+
+        listCourtHearingSteps.whenCaseIsSubmittedForListingStandaloneApplication();
+        listCourtHearingSteps.verifyHearingListedFromAPIForStandaloneApplication(ALLOCATED);
+
+        stubReferenceDataForPublishing(crownCourtCentreId, courtListId, applicationHearing, hearingTypeData, courtRoomId);
+
+        final String subjectFirstName = applicationHearing.getCourtApplications().get(0).getSubject().getFirstName();
+        final String subjectLastName = applicationHearing.getCourtApplications().get(0).getSubject().getLastName();
+        final String respondentLastName = applicationHearing.getCourtApplications().get(0).getRespondent().getLastName();
+
+        publishAndVerifyCourtList(applicationWithoutOffencesData, crownCourtCentreId, PublishCourtListType.WARN, "true",
+                subjectFirstName, subjectLastName, (steps, firstName, lastName) ->
+                {
+                    steps.verifySentPublishedCourtListHearingDataForWarnWithSubject(firstName, lastName);
+                    steps.verifySentPublishedCourtListHasOnlyOneDefendantAndExcludes(respondentLastName);
+                });
+
+        publishAndVerifyCourtList(applicationWithoutOffencesData, crownCourtCentreId, PublishCourtListType.FIRM, "true",
+                subjectFirstName, subjectLastName, (steps, firstName, lastName) ->
+                {
+                    steps.verifySentPublishedCourtListHearingDataForFirmWithSubject(firstName, lastName);
+                    steps.verifySentPublishedCourtListHasOnlyOneDefendantAndExcludes(respondentLastName);
+                });
+
+        publishAndVerifyCourtList(applicationWithoutOffencesData, crownCourtCentreId, PublishCourtListType.DRAFT, "false",
+                subjectFirstName, subjectLastName, (steps, firstName, lastName) ->
+                {
+                    steps.verifySentPublishedCourtListHearingDataForDraftWithSubject(firstName, lastName);
+                    steps.verifySentPublishedCourtListHasOnlyOneDefendantAndExcludes(respondentLastName);
+                });
+    }
+    private void setHearingDataFields(final HearingData hearing, final HearingTypeData hearingTypeData,
                                       final UUID courtCentreId, final UUID courtRoomId, 
                                       final LocalDate hearingDate, final ZonedDateTime hearingStartTime) {
         try {
