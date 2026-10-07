@@ -31,12 +31,12 @@ class SplitHearingRejectedExceptionMapperTest {
     private SplitHearingRejectedExceptionMapper mapper;
 
     @Test
-    void shouldReturnProgressionStatusWithErrorCodeAndBodyMessage() {
+    void shouldReturnProgressionsConflictAs422WithErrorCodeAndBodyMessage() {
         final JsonObject body = createObjectBuilder().add(ERROR_CODE, "STALE").add("message", "hearing changed").build();
 
         final Response response = mapper.toResponse(new SplitHearingRejectedException(409, body, FALLBACK));
 
-        assertThat(response.getStatus(), is(409));
+        assertThat(response.getStatus(), is(422));
         assertThat(response.getMediaType().toString(), is("application/json"));
         assertThat(response.getEntity().toString(), is("{\"errorCode\":\"STALE\",\"message\":\"hearing changed\"}"));
     }
@@ -51,11 +51,10 @@ class SplitHearingRejectedExceptionMapperTest {
         final Response response = mapper.toResponse(new SplitHearingRejectedException(409, body,
                 "progression returned 409 for the split of hearing 0b8ba084-1f3b-4c27-a2b7-8f32d12164f8"));
 
-        assertThat(response.getStatus(), is(409));
+        assertThat(response.getStatus(), is(422));
         assertThat(response.getEntity().toString(), is(
                 "{\"errorCode\":\"HEARING_NOT_SPLITTABLE\","
-                        + "\"message\":\"Hearing is resulted and cannot be split\","
-                        + "\"id\":\"0b8ba084-1f3b-4c27-a2b7-8f32d12164f8\"}"));
+                        + "\"message\":\"Hearing is resulted and cannot be split\"}"));
     }
 
     @Test

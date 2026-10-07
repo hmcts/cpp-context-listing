@@ -4,6 +4,7 @@ import static javax.json.Json.createObjectBuilder;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.http.HttpStatus.SC_CONFLICT;
+import static org.apache.http.HttpStatus.SC_UNPROCESSABLE_ENTITY;
 import static uk.gov.justice.services.messaging.JsonObjects.getString;
 
 import uk.gov.moj.cpp.listing.common.splithearing.SplitHearingRejectedException;
@@ -36,6 +37,14 @@ public class SplitHearingRejectedExceptionMapper implements ExceptionMapper<Spli
         return SC_CONFLICT == exception.getHttpStatus() ? Optional.of(HEARING_NOT_SPLITTABLE) : Optional.empty();
     }
 
+    /**
+     * The front end has no 409 handling, so progression's conflict is returned as 422 like the other
+     * listing rejections; every other status is passed through unchanged.
+     */
+    private static int statusFrom(final SplitHearingRejectedException exception) {
+        return SC_CONFLICT == exception.getHttpStatus() ? SC_UNPROCESSABLE_ENTITY : exception.getHttpStatus();
+    }
+
     private static Optional<String> reasonFrom(final JsonObject responseBody) {
         if (responseBody == null) {
             return Optional.empty();
@@ -55,11 +64,8 @@ public class SplitHearingRejectedExceptionMapper implements ExceptionMapper<Spli
         if (message != null) {
             builder.add("message", message);
         }
-        if (responseBody != null) {
-            getString(responseBody, "id").ifPresent(id -> builder.add("id", id));
-        }
 
-        return status(exception.getHttpStatus())
+        return status(statusFrom(exception))
                 .entity(builder.build().toString())
                 .type(APPLICATION_JSON)
                 .build();

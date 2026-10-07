@@ -220,9 +220,10 @@ public class SplitHearingIT extends AbstractIT {
      * command client turned every rejection into a bare RuntimeException, which reached the front
      * end as 500 and made a stale request indistinguishable from progression being down. Each status
      * progression can answer with is pinned here, because only the status tells the two apart.
+     * A 409 is the exception: the front end has no 409 handling, so it is returned as 422.
      */
     @ParameterizedTest(name = "progression {0} is returned to the caller unchanged")
-    @ValueSource(ints = {HttpStatus.SC_BAD_REQUEST, HttpStatus.SC_NOT_FOUND, HttpStatus.SC_CONFLICT})
+    @ValueSource(ints = {HttpStatus.SC_BAD_REQUEST, HttpStatus.SC_NOT_FOUND})
     void shouldReturnProgressionsRejectionStatusUnchanged(final int rejectionStatus) throws Exception {
         final UUID hearingId = randomUUID();
         givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
@@ -233,6 +234,21 @@ public class SplitHearingIT extends AbstractIT {
 
         assertThat("progression's status must reach the caller, not a generic 500",
                 response.getStatus(), is(rejectionStatus));
+        assertThat("listing must still have forwarded the split before rejecting it",
+                ProgressionServiceStub.splitRequestsForHearing(hearingId.toString()), hasSize(1));
+    }
+
+    @Test
+    void shouldReturnProgressionsConflictAsUnprocessableEntity() throws Exception {
+        final UUID hearingId = randomUUID();
+        givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+        ProgressionServiceStub.stubSplitHearingRejectedWith(HttpStatus.SC_CONFLICT, "HEARING_ALREADY_CHANGED",
+                "the hearing has moved on since this request was built");
+
+        final Response response = postSplit(hearingId, crownSplitPayload());
+
+        assertThat("progression's 409 must reach the front end as the 422 it handles",
+                response.getStatus(), is(HttpStatus.SC_UNPROCESSABLE_ENTITY));
         assertThat("listing must still have forwarded the split before rejecting it",
                 ProgressionServiceStub.splitRequestsForHearing(hearingId.toString()), hasSize(1));
     }
@@ -250,7 +266,7 @@ public class SplitHearingIT extends AbstractIT {
 
         final Response response = postSplit(hearingId, crownSplitPayload());
 
-        assertThat(response.getStatus(), is(HttpStatus.SC_CONFLICT));
+        assertThat(response.getStatus(), is(HttpStatus.SC_UNPROCESSABLE_ENTITY));
         try (final JsonReader reader = Json.createReader(new StringReader(response.readEntity(String.class)))) {
             final JsonObject body = reader.readObject();
             assertThat("the front end distinguishes a stale request by progression's errorCode",
@@ -267,14 +283,14 @@ public class SplitHearingIT extends AbstractIT {
 
         final Response response = postSplit(hearingId, crownSplitPayload());
 
-        assertThat(response.getStatus(), is(HttpStatus.SC_CONFLICT));
+        assertThat(response.getStatus(), is(HttpStatus.SC_UNPROCESSABLE_ENTITY));
         try (final JsonReader reader = Json.createReader(new StringReader(response.readEntity(String.class)))) {
             final JsonObject body = reader.readObject();
             assertThat("the caller must see progression's reason, not listing's internal wording",
                     body.getString("message"), is("Hearing is resulted and cannot be split"));
             assertThat("a split refused on a resulted hearing needs a stable code for the front end",
                     body.getString("errorCode"), is("HEARING_NOT_SPLITTABLE"));
-            assertThat(body.getString("id"), is(hearingId.toString()));
+            assertThat("the 422 body carries only errorCode and message", body.containsKey("id"), is(false));
         }
     }
 
