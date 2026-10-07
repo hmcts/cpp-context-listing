@@ -2609,6 +2609,41 @@ public class ListCourtHearingSteps extends AbstractIT {
         return new StringToJsonObjectConverter().convert(eventPayloadString);
     }
 
+    /**
+     * Lists a group hearing with the master case plus the given member cases (isGroupMember=true,
+     * isGroupMaster=false), so the hearing holds every case of the group.
+     */
+    public JsonObject preparePayloadToListCourtHearingForGroupCases(final String fileName, final Map<String, String> values, final UUID groupId,
+                                                                    final UUID masterCaseId, final List<UUID> memberCaseIds) throws IOException {
+
+        final String needString = getStringFromResource(fileName.concat("-part-defendant-listing-needs.json"));
+        final String caseString = getStringFromResource(fileName.concat("-part-cases.json"));
+        String eventPayloadString = getStringFromResource(fileName.concat(".json"))
+                .replaceAll("HEARING_ID", values.get("hearingId"))
+                .replaceAll("COURT_CENTRE_ID", values.get("courtCentreId"))
+                .replaceAll("EARLIEST_START_TIME", values.get("hearingStartTime"))
+                .replaceAll("ESTIMATED_MINUTES", values.get("estimatedMinutes"))
+                .replaceAll("HEARING_TYPE_ID", values.get("hearingTypeId"));
+
+        final List<String> cases = new ArrayList<>();
+        final List<String> needs = new ArrayList<>();
+
+        final UUID masterDefendantId = randomUUID();
+        cases.add(getGroupCase(caseString, groupId, masterCaseId, masterDefendantId, true, true, true));
+        needs.add(getGroupCaseListingNeeds(needString, masterDefendantId, masterCaseId));
+
+        for (final UUID memberCaseId : memberCaseIds) {
+            final UUID memberDefendantId = randomUUID();
+            cases.add(getGroupCase(caseString, groupId, memberCaseId, memberDefendantId, true, true, false));
+            needs.add(getGroupCaseListingNeeds(needString, memberDefendantId, memberCaseId));
+        }
+
+        eventPayloadString = eventPayloadString.replace("DEFENDANT_LISTING_NEEDS", String.join(",", needs));
+        eventPayloadString = eventPayloadString.replace("PROSECUTION_CASES", String.join(",", cases));
+
+        return new StringToJsonObjectConverter().convert(eventPayloadString);
+    }
+
     public JsonObject preparePayloadCaseRemovedFromGroupCases(final String fileName, final String casesFileName,
                                                               final UUID groupId, final UUID masterCaseId,
                                                               final UUID removedCaseId, final UUID newGroupMasterCaseId) throws IOException {

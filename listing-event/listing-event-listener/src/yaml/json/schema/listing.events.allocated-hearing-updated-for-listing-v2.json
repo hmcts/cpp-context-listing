@@ -68,6 +68,11 @@
     },
     "isNotificationAllocationFieldUpdated": {
       "type" : "boolean"
+    },
+    "numberOfGroupCases": {
+      "description": "Number of cases remaining in the group, including the master case",
+      "type": "integer",
+      "minimum": 1
     }
   },
   "required": [
