@@ -57,6 +57,10 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     private static final String EXPECTED_PUBLIC_LIST_MULTIPLE_CASES = "src/test/resources/json/expectedHearingDataForPublic.json";
     private static final String ALPHABETICAL_LIST = "/json/hearingDataForAlphabeticalListWithEjectFlag.json";
     private static final String ALPHABETICAL_LIST_WITH_EJECTFLAG_AND_EXPARTE_OFFENCES = "/json/hearingDataForAlphabeticalListWithEjectFlagAndExParteOffences.json";
+    private static final String ALPHABETICAL_LIST_EXPARTE_CASE_ONLY = "/json/hearingDataForAlphabeticalListExParteCaseOnly.json";
+    private static final String ALPHABETICAL_LIST_APPLICATION_LINKED_TO_EXPARTE_CASE_ON_SEPARATE_HEARING = "/json/hearingDataForAlphabeticalListApplicationLinkedToExParteCaseOnSeparateHearing.json";
+    private static final String ALPHABETICAL_LIST_APPLICATION_LINKED_TO_DIFFERENT_CASE_SHARING_HEARING_WITH_EXPARTE_CASE = "/json/hearingDataForAlphabeticalListApplicationLinkedToDifferentCaseSharingHearingWithExParteCase.json";
+    private static final String PUBLIC_LIST_APPLICATION_LINKED_TO_DIFFERENT_CASE_SHARING_HEARING_WITH_EXPARTE_CASE = "/json/hearingDataForPublicListApplicationLinkedToDifferentCaseSharingHearingWithExParteCase.json";
     private static final String SAMPLE_HEARING_WITH_2_HEARING_DAYS_IN_DIFFERENT_HEARING_DATE = "/json/hearingSampleDataWith2HearingDaysInDifferentHearingDate.json";
     private static final String SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_DIFFERENT_HEARING_DATE = "/json/hearingSampleDataWith3HearingDaysInDifferentHearingDate.json";
     private static final String SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_THE_SAME_HEARING_DATE = "/json/hearingSampleDataWith3HearingDaysInTheSameHearingDate.json";
@@ -468,6 +472,50 @@ public class HearingJsonListConverterFilterEjectCasesTest {
                 withJsonPath("$[0].hearingsByHearingDate", hasSize(2)),
                 withJsonPath("$[0].hearingsByHearingDate[0].hearing.listedCases", hasSize(1)),
                 withJsonPath("$[0].hearingsByHearingDate[0].hearing.listedCases[0].id", equalTo("e4f56b2e-3f36-4782-ab3d-aaca5fbdbd56"))
+        )));
+    }
+
+    @Test
+    public void shouldExcludeCourtApplicationFromAlphabeticalListWhenApplicationLinkedToExParteCaseOnDifferentHearingRecord() throws IOException {
+        final Hearing exParteCaseHearing = createHearing(ALPHABETICAL_LIST_EXPARTE_CASE_ONLY);
+        final Hearing applicationHearing = createHearing(ALPHABETICAL_LIST_APPLICATION_LINKED_TO_EXPARTE_CASE_ON_SEPARATE_HEARING);
+
+        final JsonArray hearingJsonArrayAlphabeticalList = converter.convertHearingResultForAlphabeticalList(
+                ImmutableList.of(exParteCaseHearing, applicationHearing));
+
+        assertThat(hearingJsonArrayAlphabeticalList.toString(), isJson(allOf(
+
+                withJsonPath("$[0].hearingsByHearingDate", hasSize(0)),
+
+                withJsonPath("$[1].hearingsByHearingDate", hasSize(0))
+        )));
+    }
+
+    @Test
+    public void shouldExcludeCourtApplicationFromAlphabeticalListWhenApplicationSharesHearingWithExParteCaseButLinkedToDifferentCase() throws IOException {
+        // The application's linkedCaseIds points at a case that never appears anywhere in this
+        // fixture (representing a case listed elsewhere) - it is only reachable through this
+        // same hearing record as the ex-parte case. It must still be excluded, because it is
+        // physically listed within the ex-parte case's own hearing session, regardless of which
+        // case it is legally linked to.
+        final Hearing hearing = createHearing(ALPHABETICAL_LIST_APPLICATION_LINKED_TO_DIFFERENT_CASE_SHARING_HEARING_WITH_EXPARTE_CASE);
+
+        final JsonArray hearingJsonArrayAlphabeticalList = converter.convertHearingResultForAlphabeticalList(ImmutableList.of(hearing));
+
+        assertThat(hearingJsonArrayAlphabeticalList.toString(), isJson(allOf(
+                withJsonPath("$[0].hearingsByHearingDate", hasSize(0))
+        )));
+    }
+
+    @Test
+    public void shouldExcludeCourtApplicationFromPublicListWhenApplicationSharesHearingWithExParteCaseButLinkedToDifferentCase() throws IOException {
+        final Hearing hearing = createHearing(PUBLIC_LIST_APPLICATION_LINKED_TO_DIFFERENT_CASE_SHARING_HEARING_WITH_EXPARTE_CASE);
+
+        final JsonArray hearingJsonArrayPublicList = converter.convertHearingResultForPublicList(hearing);
+
+        assertThat(hearingJsonArrayPublicList.toString(), isJson(allOf(
+                withJsonPath("$[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.listedCases", hasSize(0)),
+                withJsonPath("$[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.courtApplications", hasSize(0))
         )));
     }
 
