@@ -61,11 +61,10 @@ import javax.ws.rs.core.Response;
 import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 
-public class GroupCasesIT extends AbstractIT {
+class GroupCasesIT extends AbstractIT {
 
     private static final String LIST_COURT_HEARING_JSON = "list-court-hearing-group-cases";
     private static final String LIST_COURT_HEARING_GROUP_CASES_PART_CASES_JSON = "list-court-hearing-group-cases-part-cases.json";
@@ -101,7 +100,7 @@ public class GroupCasesIT extends AbstractIT {
     }
 
     @Test
-    public void shouldSaveGroupCasesWithFilteringMembers() throws IOException {
+    void shouldSaveGroupCasesWithFilteringMembers() throws IOException {
         final UUID masterCaseId = randomUUID();
         final UUID newGroupMasterCaseId = randomUUID();
 
@@ -120,7 +119,7 @@ public class GroupCasesIT extends AbstractIT {
     }
 
     @Test
-    public void shouldKeepHearingForRemovedMemberCaseWhenDefendantHasNoYouthFlag() throws IOException {
+    void shouldKeepHearingForRemovedMemberCaseWhenDefendantHasNoYouthFlag() throws IOException {
         final UUID masterCaseId = randomUUID();
         final UUID memberCaseId = randomUUID();
 
@@ -144,7 +143,7 @@ public class GroupCasesIT extends AbstractIT {
     }
 
     @Test
-    public void shouldReturnRemainingGroupSizeFromSearchEndpointsWhenRemovalEventCarriesCount() throws IOException {
+    void shouldReturnRemainingGroupSizeFromSearchEndpointsWhenRemovalEventCarriesCount() throws IOException {
         final UUID masterCaseId = randomUUID();
         final UUID removedMemberCaseId = randomUUID();
         final UUID remainingMemberCaseId = randomUUID();
@@ -157,7 +156,7 @@ public class GroupCasesIT extends AbstractIT {
     }
 
     @Test
-    public void shouldLeaveGroupSizeUnchangedWhenRemovalEventHasNoCount() throws IOException {
+    void shouldLeaveGroupSizeUnchangedWhenRemovalEventHasNoCount() throws IOException {
         final UUID masterCaseId = randomUUID();
         final UUID removedMemberCaseId = randomUUID();
         final UUID remainingMemberCaseId = randomUUID();
@@ -170,7 +169,7 @@ public class GroupCasesIT extends AbstractIT {
     }
 
     @Test
-    public void shouldCarryRemainingGroupSizeOnHearingConfirmedWhenAllocatedAfterRemoval() throws IOException {
+    void shouldCarryRemainingGroupSizeOnHearingConfirmedWhenAllocatedAfterRemoval() throws IOException {
         final UUID masterCaseId = randomUUID();
         final UUID removedMemberCaseId = randomUUID();
         final UUID remainingMemberCaseId = randomUUID();
