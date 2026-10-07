@@ -6,9 +6,9 @@ import javax.json.JsonObject;
 
 /**
  * Raised when progression rejects a forwarded split-hearing request. Carries progression's HTTP
- * status and body so {@code SplitHearingRejectedExceptionMapper} can return the same status to the
- * front end, which needs to tell a stale request (409) apart from an unknown hearing (404), a bad
- * payload (400) and progression being down (500).
+ * status and body so {@code SplitHearingRejectedExceptionMapper} can return a matching status to the
+ * front end, which needs to tell a stale request (progression's 409, returned as 422) apart from an
+ * unknown hearing (404), a bad payload (400) and progression being down (500).
  */
 public class SplitHearingRejectedException extends RuntimeException {
 
