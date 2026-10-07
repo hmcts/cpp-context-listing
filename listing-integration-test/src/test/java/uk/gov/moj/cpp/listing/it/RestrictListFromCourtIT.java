@@ -14,6 +14,7 @@ import static uk.gov.moj.cpp.listing.utils.SystemIdMapperStub.stubIdMapperReturn
 
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
+import uk.gov.moj.cpp.listing.steps.CourtApplicationSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.PublishCourtListSteps;
 import uk.gov.moj.cpp.listing.steps.RestrictCourtListSteps;
@@ -78,6 +79,53 @@ class RestrictListFromCourtIT extends AbstractIT {
         final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
         restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getCourtApplicationDataToBeRestricted(hearingsData));
         restrictCourtListSteps.verifyCourtApplicationOrApplicantOrRespondentListingRestrictedInHearing(true, true, false, false);
+    }
+
+    @Test
+    void shouldRestrictCourtApplicationInHearingWhenCaseIsRestrictedForHearingId() {
+        HearingsData hearingsData = HearingsData.hearingsData();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
+        restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getCaseDataToBeRestricted(hearingsData, true));
+        restrictCourtListSteps.verifyCourtApplicationOrApplicantOrRespondentListingRestrictedInHearing(true, false, false, false);
+        restrictCourtListSteps.verifyPublicCourtListRestrictedEventWithCourtApplication(true);
+    }
+
+    @Test
+    void shouldUnRestrictCourtApplicationInHearingWhenCaseIsUnrestrictedForHearingId() {
+        HearingsData hearingsData = HearingsData.hearingsData();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
+        restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getCaseDataToBeRestricted(hearingsData, true));
+        restrictCourtListSteps.verifyCourtApplicationOrApplicantOrRespondentListingRestrictedInHearing(true, false, false, false);
+
+        restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getCaseDataToBeRestricted(hearingsData, false));
+        restrictCourtListSteps.verifyCourtApplicationOrApplicantOrRespondentListingRestrictedInHearing(false, false, false, false);
+        restrictCourtListSteps.verifyPublicCourtListRestrictedEventWithCourtApplication(false);
+    }
+
+    @Test
+    void shouldRestrictCourtApplicationAddedToHearingAfterCaseIsRestrictedForHearingId() {
+        HearingsData hearingsData = HearingsData.hearingsData();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
+        restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getCaseDataToBeRestricted(hearingsData, true));
+        restrictCourtListSteps.verifyPublicCourtListRestrictedEventWithCourtApplication(true);
+
+        final UUID courtApplicationId = randomUUID();
+        final String adultDateOfBirth = ItClock.today().minusYears(30).toString();
+        new CourtApplicationSteps(hearingsData).whenCourtApplicationWithYouthSubjectIsAddedToHearing(courtApplicationId, randomUUID(), adultDateOfBirth);
+
+        restrictCourtListSteps.verifyPublicCourtListRestrictedEventForAddedCourtApplication(courtApplicationId);
     }
 
     @Test
