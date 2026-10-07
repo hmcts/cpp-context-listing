@@ -240,6 +240,7 @@ public class Hearing implements Aggregate {
     private Map<UUID, List<UUID>> prosecutionCaseDefendants = new HashMap<>();
     private Map<UUID, List<UUID>> applicationOffenceIds = new HashMap<>();
     private uk.gov.justice.listing.events.Hearing currentHearingEventState;
+    private Integer numberOfGroupCases;
 
     private boolean isSummonsApprovedExists = false;
 
@@ -2266,6 +2267,7 @@ public class Hearing implements Aggregate {
                 .withApplicationOffenceIds(getAllOffenceIds())
                 .withSource(source.orElse(null))
                 .withIsGroupProceedings(isGroupProceedings)
+                .withNumberOfGroupCases(this.numberOfGroupCases)
                 .withSource(source.isPresent() ? source.get() : null)
                 .withSendNotificationToParties(sendNotificationToParties)
                 .withIsNotificationAllocationFieldUpdated(isNotificationRelatedAllocatedFieldsUpdated)
@@ -2310,6 +2312,7 @@ public class Hearing implements Aggregate {
                         .collect(toList()))
                 .withCourtApplicationIds(this.confirmedCourtApplicationIds.isEmpty() ? null : this.confirmedCourtApplicationIds)
                 .withUpdateSlot(this.updateSlot)
+                .withNumberOfGroupCases(this.numberOfGroupCases)
                 .withSource(source.isPresent() ? source.get() : null)
                 .withSendNotificationToParties(sendNotificationToParties)
                 .withIsNotificationAllocationFieldUpdated(isNotificationRelatedAllocatedFieldsUpdated)
@@ -2553,6 +2556,7 @@ public class Hearing implements Aggregate {
         }
 
         this.hasAdjournmentDate = StringUtils.isNotEmpty(hearing.getAdjournedFromDate());
+        this.numberOfGroupCases = hearing.getNumberOfGroupCases();
 
         this.weekCommencingStartDate = hearing.getWeekCommencingStartDate();
         this.weekCommencingEndDate = hearing.getWeekCommencingEndDate();
@@ -3382,6 +3386,9 @@ public class Hearing implements Aggregate {
         if (!event.getUnAllocatedListedCases().isEmpty()) {
             unAllocatedListedCases.addAll(event.getUnAllocatedListedCases().stream().map(EventAggregateConverter::buildAggregateListedCase).collect(toList()));
         }
+        if (nonNull(hearing.getNumberOfGroupCases())) {
+            this.numberOfGroupCases = hearing.getNumberOfGroupCases();
+        }
         initialiseCurrentHearingState(hearing);
     }
 
@@ -3850,16 +3857,22 @@ public class Hearing implements Aggregate {
 
     public Stream<Object> removeCaseFromGroupCases(final UUID hearingId, final UUID groupId,
                                                    final ListedCase removedCase,
-                                                   final ListedCase newGroupMaster) {
+                                                   final ListedCase newGroupMaster,
+                                                   final Integer numberOfGroupCases) {
         return apply(Stream.of(CaseRemovedFromGroupCases.caseRemovedFromGroupCases()
                 .withHearingId(hearingId)
                 .withGroupId(groupId)
                 .withRemovedCase(NewDomainToEventConverter.buildListedCase(removedCase))
                 .withNewGroupMaster(nonNull(newGroupMaster) ? NewDomainToEventConverter.buildListedCase(newGroupMaster) : null)
+                .withNumberOfGroupCases(numberOfGroupCases)
                 .build()));
     }
 
     private void onCaseRemovedFromGroupCases(final CaseRemovedFromGroupCases caseRemovedFromGroupCases) {
+        // CAD-947: progression sends the remaining group size; without it the count is left unchanged
+        if (nonNull(caseRemovedFromGroupCases.getNumberOfGroupCases())) {
+            this.numberOfGroupCases = caseRemovedFromGroupCases.getNumberOfGroupCases();
+        }
         if (isNotEmpty(this.unAllocatedListedCases)) {
             final UUID removedCaseId = caseRemovedFromGroupCases.getRemovedCase().getId();
             if (this.unAllocatedListedCases.stream()

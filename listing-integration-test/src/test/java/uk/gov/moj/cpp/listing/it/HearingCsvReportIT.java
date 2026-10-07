@@ -27,6 +27,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 
 import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
+import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
@@ -115,6 +116,10 @@ public class HearingCsvReportIT extends AbstractIT {
                 null
         );
 
+
+        // Wait until the listed hearing is in the viewstore: the update handler looks the hearing up there,
+        // and if the update arrives first it fails ("There is no Hearing for this ID") and is dropped.
+        new ListCourtHearingSteps(data).verifyHearingIsCreated(first.getId(), first.getListedCases().size());
 
         final UpdateHearingSteps updateHearingStepsWithoutNonDefaultDaysShouldPreservePrevRoomChange = new UpdateHearingSteps(data, updatedHearingDataWithoutNonDefaultDaysShouldPreservePrevRoomChange);
         updateHearingStepsWithoutNonDefaultDaysShouldPreservePrevRoomChange.whenHearingIsUpdatedForListing();
