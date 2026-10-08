@@ -38,7 +38,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ProgressionServiceTest {
+class ProgressionServiceTest {
 
     @InjectMocks
     private ProgressionService progressionService;
@@ -57,7 +57,7 @@ public class ProgressionServiceTest {
 
 
     @Test
-    public void shouldGetOrganisationUnitByOuCode1() {
+    void shouldGetOrganisationUnitByOuCode1() {
         final UUID caseId = randomUUID();
         final UUID applicationId = randomUUID();
 
@@ -77,7 +77,7 @@ public class ProgressionServiceTest {
     }
 
     @Test
-    public void shouldGetProsecutionCaseByCaseId(){
+    void shouldGetProsecutionCaseByCaseId(){
         final JsonEnvelope envelope = JsonEnvelope.envelopeFrom(
                 MetadataBuilderFactory.metadataWithRandomUUIDAndName(),
                 createObjectBuilder().build());
@@ -92,7 +92,7 @@ public class ProgressionServiceTest {
     }
 
     @Test
-    public void shouldFindProsecutionCaseByCaseId() {
+    void shouldFindProsecutionCaseByCaseId() {
         final JsonEnvelope envelope = JsonEnvelope.envelopeFrom(MetadataBuilderFactory.metadataWithRandomUUIDAndName(), createObjectBuilder().build());
         final String caseId = randomUUID().toString();
         final JsonObject prosecutionCaseJson = createObjectBuilder().add("id", caseId).build();
@@ -105,7 +105,7 @@ public class ProgressionServiceTest {
     }
 
     @Test
-    public void shouldNotFindProsecutionCaseWhenProgressionReturnsNoPayload() {
+    void shouldNotFindProsecutionCaseWhenProgressionReturnsNoPayload() {
         final JsonEnvelope envelope = JsonEnvelope.envelopeFrom(MetadataBuilderFactory.metadataWithRandomUUIDAndName(), createObjectBuilder().build());
         @SuppressWarnings("unchecked")
         final Envelope<JsonObject> result = mock(Envelope.class);
@@ -115,7 +115,7 @@ public class ProgressionServiceTest {
     }
 
     @Test
-    public void shouldNotFindProsecutionCaseWhenPayloadHasNoProsecutionCase() {
+    void shouldNotFindProsecutionCaseWhenPayloadHasNoProsecutionCase() {
         final JsonEnvelope envelope = JsonEnvelope.envelopeFrom(MetadataBuilderFactory.metadataWithRandomUUIDAndName(), createObjectBuilder().build());
         final Envelope<JsonObject> result = Envelope.envelopeFrom(metadataBuilder().withName("progression.query.prosecutioncase").withId(randomUUID()),
                 createObjectBuilder().build());
@@ -125,7 +125,7 @@ public class ProgressionServiceTest {
     }
 
     @Test
-    public void shouldPropagateFailureToReachProgressionWhenFindingProsecutionCase() {
+    void shouldPropagateFailureToReachProgressionWhenFindingProsecutionCase() {
         final JsonEnvelope envelope = JsonEnvelope.envelopeFrom(MetadataBuilderFactory.metadataWithRandomUUIDAndName(), createObjectBuilder().build());
         when(requester.requestAsAdmin(any(), eq(JsonObject.class))).thenThrow(new IllegalStateException("progression unavailable"));
 

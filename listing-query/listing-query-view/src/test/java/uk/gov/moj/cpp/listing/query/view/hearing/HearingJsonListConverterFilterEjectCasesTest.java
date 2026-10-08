@@ -45,7 +45,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.junit.jupiter.api.Test;
 
-public class HearingJsonListConverterFilterEjectCasesTest {
+class HearingJsonListConverterFilterEjectCasesTest {
 
     private static final String SAMPLE_HEARING_WITH_EJECTED_CASE = "/json/hearingSampleDataWithEjectCaseFlag.json";
     private static final String SAMPLE_HEARING_WITHOUT_EJECTED_CASE = "/json/hearingSampleDataWithoutEjectCaseFlag.json";
@@ -88,7 +88,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     private final HearingJsonListConverterFilterEjectCases converter = new HearingJsonListConverterFilterEjectCases();
 
     @Test
-    public void shouldConvertToJsonArrayWith2HearingDaysInDifferentHearingDate() throws IOException {
+    void shouldConvertToJsonArrayWith2HearingDaysInDifferentHearingDate() throws IOException {
         //Given
         final List<Hearing> hearings = Arrays.asList(createHearing(SAMPLE_HEARING_WITH_2_HEARING_DAYS_IN_DIFFERENT_HEARING_DATE));
 
@@ -113,7 +113,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertToJsonArrayWith2HearingDaysInDifferentHearingDate2() throws IOException {
+    void shouldConvertToJsonArrayWith2HearingDaysInDifferentHearingDate2() throws IOException {
         //Given
         final List<Hearing> hearings = Arrays.asList(createHearing(SAMPLE_HEARING_WITH_2_HEARING_DAYS_IN_DIFFERENT_HEARING_DATE));
 
@@ -138,7 +138,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertToJsonArrayWith3HearingDaysInDifferentHearingDate() throws IOException {
+    void shouldConvertToJsonArrayWith3HearingDaysInDifferentHearingDate() throws IOException {
         //Given
         final List<Hearing> hearings = Arrays.asList(createHearing(SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_DIFFERENT_HEARING_DATE));
 
@@ -164,7 +164,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertToJsonArrayWith3HearingDaysInDifferentHearingDate2() throws IOException {
+    void shouldConvertToJsonArrayWith3HearingDaysInDifferentHearingDate2() throws IOException {
         //Given
         final List<Hearing> hearings = Arrays.asList(createHearing(SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_DIFFERENT_HEARING_DATE));
 
@@ -190,7 +190,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertToJsonArrayWith3HearingDaysInDifferentHearingDate3() throws IOException {
+    void shouldConvertToJsonArrayWith3HearingDaysInDifferentHearingDate3() throws IOException {
         //Given
         final List<Hearing> hearings = Arrays.asList(createHearing(SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_DIFFERENT_HEARING_DATE));
 
@@ -216,7 +216,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertToJsonArrayWith3HearingDaysInDifferentHearingDate4() throws IOException {
+    void shouldConvertToJsonArrayWith3HearingDaysInDifferentHearingDate4() throws IOException {
         //Given
         final List<Hearing> hearings = Arrays.asList(createHearing(SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_DIFFERENT_HEARING_DATE));
 
@@ -242,7 +242,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertToJsonArrayWith3HearingDaysInDifferentCourtCentre() throws IOException {
+    void shouldConvertToJsonArrayWith3HearingDaysInDifferentCourtCentre() throws IOException {
         //Given
         final List<Hearing> hearings = Arrays.asList(createHearing(SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_DIFFERENT_COURT_CENTRE));
 
@@ -268,7 +268,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertToJsonArrayWith3HearingDaysInDifferentCourtCentre2() throws IOException {
+    void shouldConvertToJsonArrayWith3HearingDaysInDifferentCourtCentre2() throws IOException {
         //Given
         final List<Hearing> hearings = Arrays.asList(createHearing(SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_DIFFERENT_COURT_CENTRE));
 
@@ -294,7 +294,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertToJsonArrayWith3HearingDaysInTheSameHearingDate() throws IOException {
+    void shouldConvertToJsonArrayWith3HearingDaysInTheSameHearingDate() throws IOException {
         //Given
         final List<Hearing> hearings = Arrays.asList(createHearing(SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_THE_SAME_HEARING_DATE));
 
@@ -320,7 +320,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertToJsonArrayWith2HearingDaysInTheSameHearingDate() throws IOException {
+    void shouldConvertToJsonArrayWith2HearingDaysInTheSameHearingDate() throws IOException {
         //Given
         final LocalDate dateNow = LocalDate.now();
         final LocalTime timeNow = LocalTime.now();
@@ -363,7 +363,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertToJsonArrayWith3HearingDaysInTheSameHearingDate2() throws IOException {
+    void shouldConvertToJsonArrayWith3HearingDaysInTheSameHearingDate2() throws IOException {
         //Given
         final List<Hearing> hearings = Arrays.asList(createHearing(SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_THE_SAME_HEARING_DATE));
 
@@ -389,7 +389,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertToJsonArrayWith3HearingDaysInTheSameHearingDate3() throws IOException {
+    void shouldConvertToJsonArrayWith3HearingDaysInTheSameHearingDate3() throws IOException {
         //Given
         final List<Hearing> hearings = Arrays.asList(createHearing(SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_THE_SAME_HEARING_DATE));
 
@@ -415,7 +415,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertHearingResultForPublicList() throws IOException {
+    void shouldConvertHearingResultForPublicList() throws IOException {
         //Given
         final Hearing hearing = createHearing(PUBLIC_LIST);
 
@@ -431,7 +431,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertHearingResultForPublicListForMultipleCases() throws IOException, JSONException {
+    void shouldConvertHearingResultForPublicListForMultipleCases() throws IOException, JSONException {
         //Given
         final Hearing hearing = createHearing(PUBLIC_LIST_MULTIPLE_CASES);
 
@@ -454,7 +454,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertHearingResultForAlphabeticalList() throws IOException {
+    void shouldConvertHearingResultForAlphabeticalList() throws IOException {
         final Hearing hearing = createHearing(ALPHABETICAL_LIST);
 
         final JsonArray hearingJsonArrayAlphabeticalList = converter.convertHearingResultForAlphabeticalList(ImmutableList.of(hearing));
@@ -469,7 +469,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
         )));
     }
     @Test
-    public void shouldConvertHearingResultForAlphabeticalListWithExParteOffences() throws IOException {
+    void shouldConvertHearingResultForAlphabeticalListWithExParteOffences() throws IOException {
         final Hearing hearing = createHearing(ALPHABETICAL_LIST_WITH_EJECTFLAG_AND_EXPARTE_OFFENCES);
 
         final JsonArray hearingJsonArrayAlphabeticalList = converter.convertHearingResultForAlphabeticalList(ImmutableList.of(hearing));
@@ -483,7 +483,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldExcludeCourtApplicationFromAlphabeticalListWhenApplicationLinkedToExParteCaseOnDifferentHearingRecord() throws IOException {
+    void shouldExcludeCourtApplicationFromAlphabeticalListWhenApplicationLinkedToExParteCaseOnDifferentHearingRecord() throws IOException {
         final Hearing exParteCaseHearing = createHearing(ALPHABETICAL_LIST_EXPARTE_CASE_ONLY);
         final Hearing applicationHearing = createHearing(ALPHABETICAL_LIST_APPLICATION_LINKED_TO_EXPARTE_CASE_ON_SEPARATE_HEARING);
 
@@ -499,7 +499,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldExcludeCourtApplicationFromAlphabeticalListWhenApplicationSharesHearingWithExParteCaseButLinkedToDifferentCase() throws IOException {
+    void shouldExcludeCourtApplicationFromAlphabeticalListWhenApplicationSharesHearingWithExParteCaseButLinkedToDifferentCase() throws IOException {
         // The application's linkedCaseIds points at a case that never appears anywhere in this
         // fixture (representing a case listed elsewhere) - it is only reachable through this
         // same hearing record as the ex-parte case. It must still be excluded, because it is
@@ -515,7 +515,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldExcludeCourtApplicationFromPublicListWhenApplicationSharesHearingWithExParteCaseButLinkedToDifferentCase() throws IOException {
+    void shouldExcludeCourtApplicationFromPublicListWhenApplicationSharesHearingWithExParteCaseButLinkedToDifferentCase() throws IOException {
         final Hearing hearing = createHearing(PUBLIC_LIST_APPLICATION_LINKED_TO_DIFFERENT_CASE_SHARING_HEARING_WITH_EXPARTE_CASE);
 
         final JsonArray hearingJsonArrayPublicList = converter.convertHearingResultForPublicList(hearing);
@@ -527,7 +527,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldDeepCopyHearingAndConvertHearingResultForAlphabeticalList() throws IOException {
+    void shouldDeepCopyHearingAndConvertHearingResultForAlphabeticalList() throws IOException {
         final Hearing hearing = createHearing(ALPHABETICAL_LIST);
 
         final JsonArray hearingJsonArrayAlphabeticalList = converter.convertHearingResultForAlphabeticalList(ImmutableList.of(hearing));
@@ -547,7 +547,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertHearingResultForPublicListForCasesWithExParteOffences() throws IOException {
+    void shouldConvertHearingResultForPublicListForCasesWithExParteOffences() throws IOException {
         //Given
         final Hearing hearing = createHearing(PUBLIC_LIST_WITH_EXPARTE_OFFENCES);
         //When
@@ -564,7 +564,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldFilterCivilCaseWithAtleastOneExParteForPublicList() throws IOException {
+    void shouldFilterCivilCaseWithAtleastOneExParteForPublicList() throws IOException {
 
         //Given
         final Hearing hearing = createHearing(PUBLIC_LIST_WITH_ATLEAST_ONE_CIVIL_EXPARTE_OFFENCES);
@@ -578,7 +578,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldFilterCriminalCaseWithNoExParteNodeForPublicList() throws IOException {
+    void shouldFilterCriminalCaseWithNoExParteNodeForPublicList() throws IOException {
 
         //Given
         final Hearing hearing = createHearing(PUBLIC_LIST_WITH_CRIMINAL_CASE_WITH_NO_EXPARTE_OFFENCES);
@@ -593,7 +593,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldFilterCivilCaseWithMultipleOffencesAndAllExParteFalseForPublicList() throws IOException {
+    void shouldFilterCivilCaseWithMultipleOffencesAndAllExParteFalseForPublicList() throws IOException {
 
         //Given
         final Hearing hearing = createHearing(PUBLIC_LIST_WITH_CIVIL_CASE_WITH_MULTIPLE_OFFENCES_ALL_EXPARTE_FALSE);
@@ -608,7 +608,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertHearingResultForPublicListForCasesWithExParteOffencesAndEjectedCases() throws IOException {
+    void shouldConvertHearingResultForPublicListForCasesWithExParteOffencesAndEjectedCases() throws IOException {
         //Given
         final Hearing hearing = createHearing(PUBLIC_LIST_WITH_EXPARTE_OFFENCES_AND_EJECTED_CASES);
         //When
@@ -624,7 +624,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldExcludeCivilCaseWithSingleExParteOffenceFromWarnFirmList() throws IOException {
+    void shouldExcludeCivilCaseWithSingleExParteOffenceFromWarnFirmList() throws IOException {
         // AC1
         final String caseId = randomUuid();
         final List<Hearing> hearings = newArrayList(createHearing(WARN_FIRM_CIVIL_CASE_SINGLE_OFFENCE, singleOffenceReplacements(caseId, "true")));
@@ -639,7 +639,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldExcludeCivilCaseWhoseExParteOffenceIsOnItsSecondDefendant() {
+    void shouldExcludeCivilCaseWhoseExParteOffenceIsOnItsSecondDefendant() {
         // CAD-1760 AC1/AC3 - every defendant's offences count, not just the first defendant's
         final String exParteCaseId = randomUuid();
         final String otherCaseId = randomUuid();
@@ -676,7 +676,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldIncludeCivilCaseWithSingleNonExParteOffenceInWarnFirmList() throws IOException {
+    void shouldIncludeCivilCaseWithSingleNonExParteOffenceInWarnFirmList() throws IOException {
         // AC2
         final String caseId = randomUuid();
         final List<Hearing> hearings = newArrayList(createHearing(WARN_FIRM_CIVIL_CASE_SINGLE_OFFENCE, singleOffenceReplacements(caseId, "false")));
@@ -692,7 +692,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldExcludeCivilCaseWithAtLeastOneExParteOffenceAmongMultipleFromWarnFirmList() throws IOException {
+    void shouldExcludeCivilCaseWithAtLeastOneExParteOffenceAmongMultipleFromWarnFirmList() throws IOException {
         // AC3
         final String caseId = randomUuid();
         final List<Hearing> hearings = newArrayList(createHearing(WARN_FIRM_CIVIL_CASE_TWO_OFFENCES, twoOffencesReplacements(caseId, "false", "true")));
@@ -707,7 +707,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldIncludeCivilCaseWithAllNonExParteOffencesInWarnFirmList() throws IOException {
+    void shouldIncludeCivilCaseWithAllNonExParteOffencesInWarnFirmList() throws IOException {
         // AC4
         final String caseId = randomUuid();
         final List<Hearing> hearings = newArrayList(createHearing(WARN_FIRM_CIVIL_CASE_TWO_OFFENCES, twoOffencesReplacements(caseId, "false", "false")));
@@ -723,7 +723,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldExcludeApplicationLinkedToExParteCaseListedOnADifferentHearingFromWarnFirmList() throws IOException {
+    void shouldExcludeApplicationLinkedToExParteCaseListedOnADifferentHearingFromWarnFirmList() throws IOException {
         // AC5 - the linked case and the application are on two different Hearing entities
         // (two different array elements), so the ex-parte case id must be resolved array-wide.
         final String caseId = randomUuid();
@@ -743,7 +743,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldIncludeApplicationLinkedToNonExParteCaseListedOnADifferentHearingInWarnFirmList() throws IOException {
+    void shouldIncludeApplicationLinkedToNonExParteCaseListedOnADifferentHearingInWarnFirmList() throws IOException {
         // AC6
         final String caseId = randomUuid();
         final String applicationReference = "TESTAPP-" + randomUuid();
@@ -763,7 +763,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldExcludeApplicationLinkedToMultipleCasesWithAtLeastOneExParteFromWarnFirmList() throws IOException {
+    void shouldExcludeApplicationLinkedToMultipleCasesWithAtLeastOneExParteFromWarnFirmList() throws IOException {
         // AC7
         final String caseId1 = randomUuid();
         final String caseId2 = randomUuid();
@@ -784,7 +784,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldIncludeApplicationLinkedToMultipleCasesWithNoneExParteInWarnFirmList() throws IOException {
+    void shouldIncludeApplicationLinkedToMultipleCasesWithNoneExParteInWarnFirmList() throws IOException {
         // AC8
         final String caseId1 = randomUuid();
         final String caseId2 = randomUuid();
@@ -805,7 +805,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldReturnEmptyArrayWhenFilteringNullOrEmptyHearingsArrayForWarnFirmList() {
+    void shouldReturnEmptyArrayWhenFilteringNullOrEmptyHearingsArrayForWarnFirmList() {
         assertThat(converter.filterExParteOffencesFromHearings(null), is(nullValue()));
     }
 

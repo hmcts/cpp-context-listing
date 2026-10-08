@@ -36,7 +36,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class CourtListServiceTest {
+class CourtListServiceTest {
 
     @Spy
     private Enveloper enveloper = createEnveloper();
@@ -63,7 +63,7 @@ public class CourtListServiceTest {
     private CourtListService courtListService;
 
     @Test
-    public void retrieveCourtList() {
+    void retrieveCourtList() {
 
         final UUID courtCentreId = UUID.randomUUID();
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
@@ -89,12 +89,12 @@ public class CourtListServiceTest {
     }
 
     @Test
-    public void shouldApplyExParteFilterToHearingsWhenPublishCourtListTypeIsWarn() {
+    void shouldApplyExParteFilterToHearingsWhenPublishCourtListTypeIsWarn() {
         assertExParteFilterAppliedForListType(PublishCourtListType.WARN);
     }
 
     @Test
-    public void shouldApplyExParteFilterToHearingsWhenPublishCourtListTypeIsFirm() {
+    void shouldApplyExParteFilterToHearingsWhenPublishCourtListTypeIsFirm() {
         assertExParteFilterAppliedForListType(PublishCourtListType.FIRM);
     }
 
@@ -137,19 +137,19 @@ public class CourtListServiceTest {
     }
 
     @Test
-    public void shouldApplyExParteFilterToHearingsWhenPublishCourtListTypeIsDraft() {
+    void shouldApplyExParteFilterToHearingsWhenPublishCourtListTypeIsDraft() {
         // CAD-1760 - DRAFT also backs the "Daily list" download
         assertExParteFilterAppliedForListType(PublishCourtListType.DRAFT);
     }
 
     @Test
-    public void shouldApplyExParteFilterToHearingsWhenPublishCourtListTypeIsFinal() {
+    void shouldApplyExParteFilterToHearingsWhenPublishCourtListTypeIsFinal() {
         // CAD-1760
         assertExParteFilterAppliedForListType(PublishCourtListType.FINAL);
     }
 
     @Test
-    public void shouldReturnEmptyCourtList() {
+    void shouldReturnEmptyCourtList() {
 
         final UUID courtCentreId = UUID.randomUUID();
         final JsonEnvelope queryEnvelope = generateQuery(createObjectBuilder().build());
