@@ -1326,34 +1326,30 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         final String bookingReference = hearing.getBookingReference().toString();
 
         // bookingReference is the bookingId courtscheduler minted when the clerk picked the slot, so it
-        // resolves through the provisional booking endpoint - but only answers that actually belong to
-        // THIS booking are trusted. A bookingIds query matching nothing of ours can still come back
-        // carrying somebody else's booking; promoting that session would put an unrelated courtScheduleId
-        // on the bookedSlot and fail later with "Missing courtScheduleIds", which is far harder to trace
-        // than an empty result. A session that does not name its booking is trusted as-is, since older
-        // responses omit the field.
-        List<CourtSchedule> sessions = courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingReference)
+        // resolves through the provisional booking endpoint - and ONLY that way. Crown once wrote a
+        // courtScheduleId into this prompt and a second lookup used to read it that way too; both
+        // writers are gone, so a reference that does not resolve as a booking is an error rather than
+        // something to reinterpret. Magistrates has only ever carried a bookingId and resolves the
+        // same single way.
+        //
+        // Only answers that actually belong to THIS booking are trusted: a bookingIds query matching
+        // nothing of ours can still come back carrying somebody else's booking, and promoting that
+        // would put an unrelated courtScheduleId on the bookedSlot and fail later with "Missing
+        // courtScheduleIds", far harder to trace than an empty result. A session that does not name
+        // its booking is trusted as-is, since older responses omit the field.
+        final List<CourtSchedule> sessions = courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingReference)
                 .stream()
                 .filter(session -> isBlank(session.getBookingId()) || bookingReference.equals(session.getBookingId()))
                 .toList();
 
         if (isEmpty(sessions)) {
-            // bookingReference only becomes the minted bookingId once cpp-ui-hearing ships its side.
-            // Until then - and for every hearing listed before it - a CROWN bookingReference IS a
-            // courtScheduleId, and listing deploys independently of the UI. Permanent fallback, not a
-            // migration shim; mirrors the legacy fallback courtscheduler keeps for magistrates.
-            sessions = fetchCourtSchedulesByIds(List.of(bookingReference));
-        }
-
-        if (isEmpty(sessions)) {
-            LOGGER.error("{} bookingReference={} resolved to no session for hearingId={} — the share "
+            LOGGER.error("{} bookingReference={} resolved to no booking for hearingId={} — the share "
                             + "succeeded for the clerk but this hearing will NOT be listed; it needs "
                             + "re-listing by hand",
                     CrownFallbackInvalidRequestException.LOG_MARKER, bookingReference, hearing.getId());
             throw new CrownFallbackInvalidRequestException(
                     "CROWN bookingReference " + bookingReference
-                            + " resolved neither as a court schedule id nor as a provisional booking,"
-                            + " for hearingId " + hearing.getId());
+                            + " resolved to no booking, for hearingId " + hearing.getId());
         }
 
         // Crown picks a single anchor session; multi-day is expanded downstream by
@@ -2135,6 +2131,28 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 hearing.getId(), hearing.getBookingReference());
 
         final List<CourtSchedule> courtScheduleList = courtSchedulerService.getCourtSchedulesByProvisionalBookingId(hearing.getBookingReference().toString());
+
+        // Same guard Crown has in promoteCrownBookingReferenceToBookedSlot, for the same reason.
+        // generateHearingDaysFromCourtSchedule is driven entirely by this list - it uses the
+        // hearing's own days only as a lookup map - so an empty list yields no hearing days, which
+        // serialises as "courtScheduleIds": [] and courtscheduler rejects it with
+        //   #/hearingSlots/0/courtScheduleIds: expected minimum item count: 1, found: 0
+        // That 400 is unhandled, so it leaves listing as a 500, fails the caller's "expected 202"
+        // check and lands the message on the DLQ - carrying no hint that a booking was missing.
+        //
+        // Fail here instead, naming the reference. This does not save the hearing: it is lost
+        // either way until the booking is restored. It makes the loss greppable in one line
+        // ([LISTING-LOST]) rather than something to trace back across three services.
+        if (isEmpty(courtScheduleList)) {
+            LOGGER.error("{} bookingReference={} resolved to no booking for hearingId={} — the share "
+                            + "succeeded for the clerk but this hearing will NOT be listed; it needs "
+                            + "re-listing by hand",
+                    CrownFallbackInvalidRequestException.LOG_MARKER, hearing.getBookingReference(), hearing.getId());
+            throw new CrownFallbackInvalidRequestException(
+                    "MAGISTRATES bookingReference " + hearing.getBookingReference()
+                            + " resolved to no booking, for hearingId " + hearing.getId());
+        }
+
         final List<HearingDay> hearingDaysFromProvisionalBooking = generateHearingDaysFromCourtSchedule(hearing.getHearingDays(), courtScheduleList, hearing);
 
         return listHearingSessionsAndExtractData(hearing.getId(), hearingDaysFromProvisionalBooking, hearing.getBookingReference());

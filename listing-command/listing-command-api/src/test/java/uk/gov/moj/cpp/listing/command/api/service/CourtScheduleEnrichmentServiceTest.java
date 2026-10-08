@@ -2853,6 +2853,33 @@ class CourtScheduleEnrichmentServiceTest {
         assertThat(result.getHearingDays().size(), is(1));
     }
 
+    /**
+     * The magistrates twin of shouldFailFastWhenTheBookingResolvesToNothing. Without this guard the
+     * empty list became "courtScheduleIds": [], courtscheduler answered 400 (minItems 1), listing
+     * turned that into a 500 and the message went to the DLQ with nothing naming the booking. Both
+     * jurisdictions must fail the same way, and say which reference failed.
+     */
+    @Test
+    void shouldFailFastWhenAMagistratesBookingResolvesToNothing() {
+        final UUID bookingReference = UUID.randomUUID();
+        when(courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingReference.toString()))
+                .thenReturn(List.of());
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withBookingReference(bookingReference)
+                .withEstimatedMinutes(20)
+                .build();
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException.class,
+                () -> courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class)));
+
+        // It must give up before asking courtscheduler to list an empty set of sessions.
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+    }
+
     // ─── needsCourtScheduleEnrichment static tests ───────────────────────
 
     @Test
@@ -6232,6 +6259,13 @@ class CourtScheduleEnrichmentServiceTest {
         org.junit.jupiter.api.Assertions.assertThrows(
                 uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException.class,
                 () -> courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing));
+
+        // A bookingReference that does not resolve as a booking is an error, not something to
+        // reinterpret. Crown used to retry it as a courtScheduleId - a reading that existed only
+        // for drafts written before the picker minted bookingIds, and which magistrates never had.
+        // Both writers are gone, so the second lookup must not be attempted: one reference, one
+        // meaning, the same for both jurisdictions.
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
     }
 
     @Test
