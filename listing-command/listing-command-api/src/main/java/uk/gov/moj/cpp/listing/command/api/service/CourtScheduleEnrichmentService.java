@@ -72,6 +72,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     private static final String HEARING_SLOTS = "hearingSlots";
     // Body key for the list.hearings-in-sessions request (hearingSlots[].courtScheduleIds).
     private static final String COURT_SCHEDULE_IDS = "courtScheduleIds";
+    private static final String BOOKING_REFERENCES_WITH_COURT_SCHEDULE_IDS = "bookingReferencesWithCourtScheduleIds";
     // Optional body key for the list.hearings-in-sessions request (hearingSlots[].bookingId) — the
     // bookingId courtscheduler minted at slot-pick time, sent so it can release the matching hold
     // once the hearing is confirmed on the list (BUG-3 Task 2).
@@ -970,7 +971,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             }
             // Case 3: Has booking reference (provisional booking) — MAGS only at this point
             else if (nonNull(hearing.getBookingReference())) {
-                enrichmentResult = handleProvisionalBookingCase(hearing);
+                enrichmentResult = handleProvisionalBookingCase(hearing, envelope);
             }
             // Case 4: Is candidate for allocation
             else if (isCandidateForAllocation(hearing)) {
@@ -1738,25 +1739,64 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         final List<HearingDay> hearingDaysUpdatedByCourtSchedules = new ArrayList<>();
         final Map<LocalDate, HearingDay> hearingDaysMapByDate = hearingDays.stream().collect(Collectors.toMap(HearingDay::getHearingDate, HearingDay -> HearingDay));
         courtScheduleList.forEach(cs -> {
-            if (hearingDaysMapByDate.get(cs.getSessionDate()) != null) {
+            final HearingDay existingDay = hearingDaysMapByDate.get(cs.getSessionDate());
+            if (existingDay != null) {
                 hearingDaysUpdatedByCourtSchedules.add(HearingDay.hearingDay()
-                        .withValuesFrom(hearingDaysMapByDate.get(cs.getSessionDate()))
+                        .withValuesFrom(existingDay)
                         .withCourtScheduleId(fromString(cs.getCourtScheduleId()))
                         .withCourtRoomId(fromString(cs.getCourtRoomId()))
-                        .withStartTime(ZonedDateTime.parse(cs.getHearingStartTime()))
+                        .withStartTime(resolveBookedStartTime(cs, existingDay, hearing))
                         .build());
             } else {
                 hearingDaysUpdatedByCourtSchedules.add(HearingDay.hearingDay()
                         .withCourtCentreId(fromString(cs.getCourtHouseId()))
                         .withCourtScheduleId(fromString(cs.getCourtScheduleId()))
                         .withCourtRoomId(fromString(cs.getCourtRoomId()))
-                        .withStartTime(ZonedDateTime.parse(cs.getHearingStartTime()))
+                        .withStartTime(resolveBookedStartTime(cs, null, hearing))
                         .withHearingDate(cs.getSessionDate())
                         .withDurationMinutes(hearing.getEstimatedMinutes())
                         .build());
             }
         });
         return hearingDaysUpdatedByCourtSchedules;
+    }
+
+    /**
+     * The time of day this hearing day should be listed at.
+     *
+     * <p>{@code hearingStartTime} is the clerk's own pick and is the only right answer, but it is
+     * a property of the booking, not of the session: the unconfirmed-booking endpoint reads it off
+     * the reservation row, and the search-by-id endpoint - which has no booking to read - never
+     * returns it. So the field is populated when a bookingReference still resolves and null when
+     * handleProvisionalBookingCase has had to fall back to resolving the sessions by id, which is
+     * exactly the case a re-share produces. This used to be an unguarded
+     * {@code ZonedDateTime.parse}, so that case was an NPE rather than a listing.
+     *
+     * <p>Falls back to the time the hearing day already carries (set from the result's own next
+     * hearing details, before this enrichment runs), then to the session's start. Both are
+     * approximations of a time the clerk chose and no longer survives anywhere, so the fallback is
+     * logged: the hearing is listed, on the right day in the right room, but its start time is
+     * derived rather than the booked one.
+     */
+    private ZonedDateTime resolveBookedStartTime(final CourtSchedule cs, final HearingDay existingDay, final HearingListingNeeds hearing) {
+        if (nonNull(cs.getHearingStartTime())) {
+            return ZonedDateTime.parse(cs.getHearingStartTime());
+        }
+        if (nonNull(existingDay) && nonNull(existingDay.getStartTime())) {
+            LOGGER.warn("session {} carries no hearingStartTime for hearingId {}; listing it at the "
+                            + "hearing day's own start time - the booked start time did not survive",
+                    cs.getCourtScheduleId(), hearing.getId());
+            return existingDay.getStartTime();
+        }
+        if (nonNull(cs.getSessionStartTime())) {
+            LOGGER.warn("session {} carries no hearingStartTime for hearingId {} and the hearing day has "
+                            + "no start time either; listing it at the session start",
+                    cs.getCourtScheduleId(), hearing.getId());
+            return cs.getSessionStartTime().toInstant().atZone(ZoneOffset.UTC);
+        }
+        LOGGER.warn("session {} carries no start time of any kind for hearingId {}; listing it without one",
+                cs.getCourtScheduleId(), hearing.getId());
+        return null;
     }
 
     /**
@@ -2126,11 +2166,26 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     /**
      * Case 2: Handle hearings with provisional booking reference
      */
-    private EnrichmentResult handleProvisionalBookingCase(final HearingListingNeeds hearing) {
+    private EnrichmentResult handleProvisionalBookingCase(final HearingListingNeeds hearing, final JsonEnvelope envelope) {
         LOGGER.info("Hearing has booking reference, so we can list them directly hearingId : {}, bookingReference : {}",
                 hearing.getId(), hearing.getBookingReference());
 
-        final List<CourtSchedule> courtScheduleList = courtSchedulerService.getCourtSchedulesByProvisionalBookingId(hearing.getBookingReference().toString());
+        List<CourtSchedule> courtScheduleList = courtSchedulerService.getCourtSchedulesByProvisionalBookingId(hearing.getBookingReference().toString());
+
+        // A re-share frees the previous hearing's slots before the new one is listed, and freeing
+        // them removes the only rows that still tied this bookingReference to its sessions - so
+        // the lookup above comes back empty for a reference the clerk picked perfectly well.
+        // Progression resolved the same reference before the release and replays its own copy on
+        // the command; resolve the sessions by id from that instead of losing the hearing.
+        if (isEmpty(courtScheduleList)) {
+            final List<String> carriedIds = carriedCourtScheduleIdsFor(envelope, hearing.getBookingReference());
+            if (isNotEmpty(carriedIds)) {
+                LOGGER.info("bookingReference={} no longer resolves in courtscheduler for hearingId={}; "
+                                + "listing against the {} courtScheduleId(s) carried on the command",
+                        hearing.getBookingReference(), hearing.getId(), carriedIds.size());
+                courtScheduleList = fetchCourtSchedulesByIds(carriedIds);
+            }
+        }
 
         // Same guard Crown has in promoteCrownBookingReferenceToBookedSlot, for the same reason.
         // generateHearingDaysFromCourtSchedule is driven entirely by this list - it uses the
@@ -2140,9 +2195,10 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         // That 400 is unhandled, so it leaves listing as a 500, fails the caller's "expected 202"
         // check and lands the message on the DLQ - carrying no hint that a booking was missing.
         //
-        // Fail here instead, naming the reference. This does not save the hearing: it is lost
-        // either way until the booking is restored. It makes the loss greppable in one line
-        // ([LISTING-LOST]) rather than something to trace back across three services.
+        // Reached now only when the carried map has nothing for this reference either. Fail here
+        // instead, naming the reference. This does not save the hearing: it is lost either way
+        // until the booking is restored. It makes the loss greppable in one line ([LISTING-LOST])
+        // rather than something to trace back across three services.
         if (isEmpty(courtScheduleList)) {
             LOGGER.error("{} bookingReference={} resolved to no booking for hearingId={} — the share "
                             + "succeeded for the clerk but this hearing will NOT be listed; it needs "
@@ -2156,6 +2212,51 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         final List<HearingDay> hearingDaysFromProvisionalBooking = generateHearingDaysFromCourtSchedule(hearing.getHearingDays(), courtScheduleList, hearing);
 
         return listHearingSessionsAndExtractData(hearing.getId(), hearingDaysFromProvisionalBooking, hearing.getBookingReference());
+    }
+
+    /**
+     * The court schedule ids the command itself carries for {@code bookingReference}, or an empty
+     * list when it carries none.
+     *
+     * <p>Read off the envelope rather than taken as a parameter because the map is a property of
+     * the whole command, not of the one hearing being enriched, and only this branch has ever
+     * needed it - threading it through the orchestrator and both other enrichment services would
+     * put it in four signatures to be used in one place.
+     *
+     * <p>Absent on every command except {@code listing.list-next-hearings-v2}, absent on that one
+     * too until a progression carrying the field is deployed, and populated there only for
+     * references progression had already resolved and stored at an earlier share - so a booking
+     * that genuinely expired before it was ever shared has no entry here and still fails loudly.
+     * An empty result is therefore ordinary, and the caller falls through to the behaviour that
+     * existed before.
+     */
+    private List<String> carriedCourtScheduleIdsFor(final JsonEnvelope envelope, final UUID bookingReference) {
+        if (envelope == null || bookingReference == null) {
+            return new ArrayList<>();
+        }
+        final JsonObject payload = envelope.payloadAsJsonObject();
+        if (payload == null) {
+            return new ArrayList<>();
+        }
+        final JsonArray carried = payload.getJsonArray(BOOKING_REFERENCES_WITH_COURT_SCHEDULE_IDS);
+        if (carried == null) {
+            return new ArrayList<>();
+        }
+        final String wanted = bookingReference.toString();
+        final List<String> courtScheduleIds = new ArrayList<>();
+        for (int i = 0; i < carried.size(); i++) {
+            final JsonObject entry = carried.getJsonObject(i);
+            if (!wanted.equals(entry.getString(BOOKING_ID, null))) {
+                continue;
+            }
+            final JsonArray ids = entry.getJsonArray(COURT_SCHEDULE_IDS);
+            if (ids != null) {
+                for (int j = 0; j < ids.size(); j++) {
+                    courtScheduleIds.add(ids.getString(j));
+                }
+            }
+        }
+        return courtScheduleIds;
     }
 
     /**

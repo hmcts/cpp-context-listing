@@ -612,7 +612,7 @@ class CourtSchedulerServiceAdapterTest {
                 "{\"bookings\":[" +
                 "{\"bookingId\":\"bk-1\",\"safeToShare\":true,\"status\":\"RESERVED\"}," +
                 "{\"bookingId\":\"bk-2\",\"safeToShare\":true,\"status\":\"SHARED\"}," +
-                "{\"bookingId\":\"bk-3\",\"safeToShare\":false,\"status\":\"NONE\"}]}")).readObject();
+                "{\"bookingId\":\"bk-3\",\"safeToShare\":false,\"status\":\"NOT_FOUND\"}]}")).readObject();
         givenCourtschedulerReturns(HttpStatus.SC_OK, downstream);
 
         final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(request("bk-1", "bk-2", "bk-3"));
@@ -660,15 +660,15 @@ class CourtSchedulerServiceAdapterTest {
     }
 
     @Test
-    public void shouldNotReinterpretALegacyStatus() {
+    public void shouldPassCourtschedulerStatusThroughUnchanged() {
         final JsonObject downstream = javax.json.Json.createReader(new java.io.StringReader(
-                "{\"bookings\":[{\"bookingId\":\"legacy-1\",\"safeToShare\":true,\"status\":\"LEGACY\"}]}")).readObject();
+                "{\"bookings\":[{\"bookingId\":\"gone-1\",\"safeToShare\":false,\"status\":\"NOT_FOUND\"}]}")).readObject();
         givenCourtschedulerReturns(HttpStatus.SC_OK, downstream);
 
-        final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(request("legacy-1"));
+        final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(request("gone-1"));
 
-        assertThat(result.getJsonArray("bookings").getJsonObject(0).getString("status"), is("LEGACY"));
-        assertThat(result.getJsonArray("bookings").getJsonObject(0).getBoolean("safeToShare"), is(true));
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getString("status"), is("NOT_FOUND"));
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getBoolean("safeToShare"), is(false));
     }
 
     private static JsonObject request(final String... bookingIds) {

@@ -358,12 +358,8 @@ public class CourtSchedulerServiceAdapter {
      * Reports, for each booking id, whether the draft carrying it is still safe to share, and why.
      * A pure pass-through of courtscheduler's answer: {@code RESERVED} (a reservation still holds
      * capacity), {@code SHARED} (already shared — the confirmed row carries this booking id),
-     * or {@code NONE} (no row under this booking id in either shape, so the hold is gone).
+     * or {@code NOT_FOUND} (no row under this booking id in either shape, so the hold is gone).
      * Listing never re-maps or collapses these.
-     *
-     * <p>{@code LEGACY} was removed upstream: it was returned when only a row in the deprecated
-     * provisional_booking table existed, which proves a booking was once recorded but never that
-     * a session is still held.
      *
      * <p><b>Fails open</b>, deliberately the opposite of {@link #getCourtScheduleDraftStatus}.
      * This gates a clerk's share, so a courtscheduler outage must not block every share in the

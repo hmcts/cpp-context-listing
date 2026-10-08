@@ -47,7 +47,7 @@ class BookingStatusIT extends AbstractIT {
     void shouldReturnCourtschedulerStatusesVerbatim() {
         CourtSchedulerServiceStub.stubBookingStatus(
                 "[{\"bookingId\":\"bk-1\",\"safeToShare\":true,\"status\":\"RESERVED\"},"
-              + "{\"bookingId\":\"bk-2\",\"safeToShare\":false,\"status\":\"NONE\"}]");
+              + "{\"bookingId\":\"bk-2\",\"safeToShare\":false,\"status\":\"NOT_FOUND\"}]");
 
         final Response response = postBookingStatusCheck("bk-1", "bk-2");
 
@@ -55,19 +55,19 @@ class BookingStatusIT extends AbstractIT {
         final JsonArray bookings = readBody(response).getJsonArray("bookings");
         assertThat(bookings.size(), is(2));
         assertThat(bookings.getJsonObject(0).getString("status"), is("RESERVED"));
-        assertThat(bookings.getJsonObject(1).getString("status"), is("NONE"));
+        assertThat(bookings.getJsonObject(1).getString("status"), is("NOT_FOUND"));
         assertThat(bookings.getJsonObject(1).getBoolean("safeToShare"), is(false));
     }
 
     @Test
-    void shouldPassALegacyStatusThroughUntouched() {
+    void shouldPassAnAlreadySharedStatusThroughUntouched() {
         CourtSchedulerServiceStub.stubBookingStatus(
-                "[{\"bookingId\":\"legacy-1\",\"safeToShare\":true,\"status\":\"LEGACY\"}]");
+                "[{\"bookingId\":\"shared-1\",\"safeToShare\":true,\"status\":\"SHARED\"}]");
 
-        final JsonArray bookings = readBody(postBookingStatusCheck("legacy-1")).getJsonArray("bookings");
+        final JsonArray bookings = readBody(postBookingStatusCheck("shared-1")).getJsonArray("bookings");
 
-        assertThat("a pre-reserve-a-slot magistrates draft must not be reported as expired",
-                bookings.getJsonObject(0).getString("status"), is("LEGACY"));
+        assertThat("a re-share of an already-shared result must not be blocked",
+                bookings.getJsonObject(0).getString("status"), is("SHARED"));
     }
 
     @Test

@@ -11,11 +11,11 @@
           "bookingId": { "type": "string" },
           "safeToShare": {
             "type": "boolean",
-            "description": "False only when the hold expired and was purged. True for a live reservation, an already-shared booking, a legacy draft, and an unreachable courtscheduler."
+            "description": "False only when the hold expired and was purged. True for a live reservation, an already-shared booking, and an unreachable courtscheduler."
           },
           "status": {
             "type": "string",
-            "enum": ["RESERVED", "SHARED", "LEGACY", "NONE", "UNKNOWN"],
+            "enum": ["RESERVED", "SHARED", "NOT_FOUND", "UNKNOWN"],
             "description": "UNKNOWN means courtscheduler could not be reached and the check failed open; courtscheduler itself never emits it."
           }
         },
