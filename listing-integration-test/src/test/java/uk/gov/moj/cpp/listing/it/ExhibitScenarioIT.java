@@ -789,6 +789,7 @@ class ExhibitScenarioIT extends AbstractIT {
      * The hearing must still be exported to XHIBIT for WARN, FIRM and DRAFT lists - it must not be
      * dropped from the court list because the defendants have no offences.
      * Only the subject is listed as the cs:Defendant - the PERSON_DEFENDANT respondent is not added as a defendant.
+     * The public.listing.court-list-published event carries the application hearing without defendants.
      */
     @Test
     @ExpectedServerErrors("court application hearings without a prosecution case -> WARN 'Hearing does not contain caseIdentifier' from the court-list export (application-only hearings are valid)")
@@ -833,6 +834,7 @@ class ExhibitScenarioIT extends AbstractIT {
                 {
                     steps.verifySentPublishedCourtListHearingDataForWarnWithSubject(firstName, lastName);
                     steps.verifySentPublishedCourtListHasOnlyOneDefendantAndExcludes(respondentLastName);
+                    steps.verifyPublicEventApplicationHearingHasNoDefendants(crownCourtCentreId.toString());
                 });
 
         publishAndVerifyCourtList(applicationWithoutOffencesData, crownCourtCentreId, PublishCourtListType.FIRM, "true",
@@ -840,6 +842,7 @@ class ExhibitScenarioIT extends AbstractIT {
                 {
                     steps.verifySentPublishedCourtListHearingDataForFirmWithSubject(firstName, lastName);
                     steps.verifySentPublishedCourtListHasOnlyOneDefendantAndExcludes(respondentLastName);
+                    steps.verifyPublicEventApplicationHearingHasNoDefendants(crownCourtCentreId.toString());
                 });
 
         publishAndVerifyCourtList(applicationWithoutOffencesData, crownCourtCentreId, PublishCourtListType.DRAFT, "false",
@@ -847,6 +850,7 @@ class ExhibitScenarioIT extends AbstractIT {
                 {
                     steps.verifySentPublishedCourtListHearingDataForDraftWithSubject(firstName, lastName);
                     steps.verifySentPublishedCourtListHasOnlyOneDefendantAndExcludes(respondentLastName);
+                    steps.verifyPublicEventApplicationHearingHasNoDefendants(crownCourtCentreId.toString());
                 });
     }
     private void setHearingDataFields(final HearingData hearing, final HearingTypeData hearingTypeData,
