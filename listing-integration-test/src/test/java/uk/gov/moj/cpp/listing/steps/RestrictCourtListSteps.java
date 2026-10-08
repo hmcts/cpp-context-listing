@@ -10,6 +10,7 @@ import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
@@ -250,6 +251,29 @@ public class RestrictCourtListSteps extends AbstractIT {
                 .withHearingId(hearingData.getId())
                 .withRestrictCourtList(true)
                 .build();
+    }
+
+    public RestrictCourtListData getCaseDataToBeRestricted(HearingsData hearingsData, final Boolean restrictCourtList) {
+        HearingData hearingData = hearingsData.getHearingData().get(0);
+        ListedCaseData listedCaseData = hearingsData.getHearingData().get(0).getListedCases().get(0);
+        return RestrictCourtListData.restrictCourtList()
+                .withCaseIds(Arrays.asList(listedCaseData.getCaseId()))
+                .withHearingId(hearingData.getId())
+                .withRestrictCourtList(restrictCourtList)
+                .build();
+    }
+
+    // Restricting a case restricts every court application in the hearing, so the application
+    // does not need to be linked to the restricted case
+    public void verifyPublicCourtListRestrictedEventWithCourtApplication(final Boolean restrictCourtList) {
+        final CourtApplicationData courtApplication = hearingsData.getHearingData().get(0).getCourtApplications().get(0);
+        final String caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId().toString();
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerCourtListRestricted,
+                isJson(allOf(withJsonPath("$.restrictCourtList", equalTo(restrictCourtList)),
+                        withJsonPath("$.hearingId", equalTo(hearingsData.getHearingData().get(0).getId().toString())),
+                        withJsonPath("$.caseIds[*]", hasItem(caseId)),
+                        withJsonPath("$.courtApplicationIds[*]", hasItem(courtApplication.getId().toString())))));
+        assertThat(jsonResponse, notNullValue());
     }
 
     public void verifyPublicCourtListRestrictedEvent(final Boolean restrictCourtList) {
