@@ -639,6 +639,43 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
+    public void shouldExcludeCivilCaseWhoseExParteOffenceIsOnItsSecondDefendant() {
+        // CAD-1760 AC1/AC3 - every defendant's offences count, not just the first defendant's
+        final String exParteCaseId = randomUuid();
+        final String otherCaseId = randomUuid();
+        final JsonArray hearings = uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder()
+                .add(uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder()
+                        .add("id", randomUuid())
+                        .add("listedCases", uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder()
+                                .add(civilCase(exParteCaseId, false, true))
+                                .add(civilCase(otherCaseId, false, false))))
+                .build();
+
+        final JsonArray filtered = converter.filterExParteOffencesFromHearings(hearings);
+
+        assertThat(filtered.toString(), isJson(allOf(
+                withJsonPath("$[0].listedCases", hasSize(1)),
+                withJsonPath("$[0].listedCases[0].id", equalTo(otherCaseId))
+        )));
+    }
+
+    private javax.json.JsonObject civilCase(final String caseId, final boolean... defendantOffenceExParteFlags) {
+        final javax.json.JsonArrayBuilder defendants = uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder();
+        for (final boolean exParte : defendantOffenceExParteFlags) {
+            defendants.add(uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder()
+                    .add("id", randomUuid())
+                    .add("offences", uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder()
+                            .add(uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder()
+                                    .add("id", randomUuid())
+                                    .add("civilOffence", uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder().add("isExParte", exParte)))));
+        }
+        return uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder()
+                .add("id", caseId)
+                .add("defendants", defendants)
+                .build();
+    }
+
+    @Test
     public void shouldIncludeCivilCaseWithSingleNonExParteOffenceInWarnFirmList() throws IOException {
         // AC2
         final String caseId = randomUuid();
