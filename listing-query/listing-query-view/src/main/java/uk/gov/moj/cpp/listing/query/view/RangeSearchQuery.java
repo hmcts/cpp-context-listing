@@ -1,10 +1,14 @@
 package uk.gov.moj.cpp.listing.query.view;
 
+import static java.lang.Math.toIntExact;
+import static java.lang.String.format;
 import static java.time.LocalDate.parse;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.lang3.BooleanUtils.isFalse;
 import static org.apache.commons.lang3.BooleanUtils.isTrue;
@@ -40,6 +44,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -72,6 +78,7 @@ public class RangeSearchQuery {
     private static final String STATUS_DRAFT = "DRAFT";
     static final String COURT_SESSION_OR_BUSINESS_TYPE_UNALLOCATED_NOT_CROWN = "courtSession or businessType can only filter unallocated hearings when jurisdictionType is CROWN";
     static final String COURT_SESSION_OR_BUSINESS_TYPE_WITHOUT_OU_CODE = "courtSession or businessType require ouCode";
+    static final String COURT_SESSION_OR_BUSINESS_TYPE_UNALLOCATED_WINDOW_TOO_LARGE = "courtSession or businessType search matches %d unallocated hearing days, more than the %d allowed; narrow the date window";
 
     @SuppressWarnings("squid:S1312")
     @Inject
@@ -421,9 +428,56 @@ public class RangeSearchQuery {
         final boolean weekCommencing = !params.weekCommencingStartDate().isEmpty();
         final String startDate = weekCommencing ? params.weekCommencingStartDate() : params.startDate();
         final String endDate = weekCommencing && !params.weekCommencingEndDate().isEmpty() ? params.weekCommencingEndDate() : params.endDate();
-        final String status = params.allocated() ? STATUS_FINAL : STATUS_DRAFT;
 
-        return getCourtSchedulerHearings(query, params.allocated(), params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), startDate, endDate, params.exactHearingStartDateTime(), params.businessType(), Optional.ofNullable(params.jurisdictionType()), status, params.hearingTypeId(), PANEL_ADULT_YOUTH, params.paginationParameter());
+        if (params.allocated()) {
+            return getCourtSchedulerHearings(query, true, params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), startDate, endDate, params.exactHearingStartDateTime(), params.businessType(), Optional.ofNullable(params.jurisdictionType()), STATUS_FINAL, params.hearingTypeId(), PANEL_ADULT_YOUTH, params.paginationParameter());
+        }
+        return getUnallocatedCourtSchedulerHearings(query, params, startDate, endDate);
+    }
+
+    /**
+     * The unallocated court calendar lists one row per hearing carrying all of its hearing days, as the
+     * viewstore search does. courtscheduler returns, and pages over, one row per hearing day, so every DRAFT
+     * hearing day in the window is fetched, collapsed to distinct hearings in courtscheduler order, and the
+     * hearings are counted and paged here. The allocated calendar keeps one row per hearing day. A window
+     * holding more DRAFT hearing days than the range-search page size cap is rejected rather than truncated.
+     */
+    private JsonEnvelope getUnallocatedCourtSchedulerHearings(final JsonEnvelope query, final RangeSearchQueryParams params,
+                                                              final String startDate, final String endDate) {
+        final PaginationParameter paginationParameter = params.paginationParameter();
+        HearingIdsResponse draftHearingDays = getDraftCourtSchedulerHearingDays(params, startDate, endDate, paginationParameter.getPageSize());
+        if (draftHearingDays.getResults() > draftHearingDays.getUuids().size()) {
+            final long maxHearingDays = paginationParameterFactory.getMaxPageSize();
+            if (draftHearingDays.getResults() > maxHearingDays) {
+                throw new BadRequestException(format(COURT_SESSION_OR_BUSINESS_TYPE_UNALLOCATED_WINDOW_TOO_LARGE, draftHearingDays.getResults(), maxHearingDays));
+            }
+            draftHearingDays = getDraftCourtSchedulerHearingDays(params, startDate, endDate, toIntExact(draftHearingDays.getResults()));
+        }
+        final List<UUID> hearingIds = draftHearingDays.getUuids().stream().map(IdResponse::hearingId).distinct().toList();
+        final List<Hearing> hearings = findHearingsInOrder(hearingIds, params.hearingTypeId());
+        final List<Hearing> pageOfHearings = hearings.stream()
+                .skip(paginationParameter.getOffSet())
+                .limit(paginationParameter.getPageSize())
+                .toList();
+        logger.info("getUnallocatedCourtSchedulerHearings found {} hearings in {} DRAFT hearing days", hearings.size(), draftHearingDays.getResults());
+        return buildHearingsResponse(query, false, params.courtRoomId(), startDate, pageOfHearings, (long) hearings.size(), EMPTY_HEARING_ID_RESPONSE, paginationParameter);
+    }
+
+    private HearingIdsResponse getDraftCourtSchedulerHearingDays(final RangeSearchQueryParams params, final String startDate, final String endDate, final int pageSize) {
+        return courtSchedulerServiceAdapter.getCourtSchedulerHearings(params.ouCode(), params.courtSessionOptional(), params.courtRoomId(), startDate, endDate, params.exactHearingStartDateTime(), params.businessType(), Optional.ofNullable(params.jurisdictionType()), STATUS_DRAFT, PANEL_ADULT_YOUTH, pageSize, 1);
+    }
+
+    private List<Hearing> findHearingsInOrder(final List<UUID> hearingIds, final String hearingTypeId) {
+        if (hearingIds.isEmpty()) {
+            return emptyList();
+        }
+        final Map<UUID, Hearing> hearingsById = repository.findAllCourtSchedulerHearingByIds(hearingIds).stream()
+                .collect(toMap(Hearing::getId, identity(), (first, duplicate) -> first));
+        return hearingIds.stream()
+                .map(hearingsById::get)
+                .filter(Objects::nonNull)
+                .filter(hearing -> matchesHearingType(hearing, hearingTypeId))
+                .toList();
     }
 
     private RangeSearchQueryParams rangeQueryParams(final JsonEnvelope query) {
