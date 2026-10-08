@@ -273,7 +273,13 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         // WeekCommencing payloads never reach the courtscheduler booking calls — they model a weekly
         // window, not discrete days (the orchestrator routes them separately; this guard keeps the
         // invariant for direct callers too).
-        final int blockDuration = clampToRequestedWindow(totalDuration, hearing.getStartDate(), hearing.getEndDate());
+        // SPRDT-1446: only an allocated hearing collapsed onto one day (SPRDT-1220) is clamped. Court
+        // Calendar unallocation also sends endDate == startDate, but with no courtroom and the block's
+        // full duration: courtscheduler needs that duration to move every booked day onto draft
+        // sessions — clamped to one court day it takes its single-day idempotent path and moves nothing.
+        final int blockDuration = carriesCourtRoom(hearing)
+                ? clampToRequestedWindow(totalDuration, hearing.getStartDate(), hearing.getEndDate())
+                : totalDuration;
 
         final boolean isMultiDay = totalDuration > HearingDurationEnrichmentService.MINUTES_IN_DAY
                 && isNull(hearing.getWeekCommencingStartDate());
@@ -571,6 +577,23 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return hearing.getSelectedCourtCentre().getCourtRoomId().toString();
         }
         return null;
+    }
+
+    /**
+     * True when any part of the command names a courtroom. A Court Calendar unallocation names none:
+     * the hearing, its selected court centre, its days and its nonDefaultDays are all room-less.
+     */
+    private static boolean carriesCourtRoom(final UpdateHearingForListing hearing) {
+        if (nonNull(resolveCommandCourtRoomId(hearing))) {
+            return true;
+        }
+        if (!isEmpty(hearing.getHearingDays())
+                && hearing.getHearingDays().stream().anyMatch(d -> nonNull(d.getCourtRoomId()))) {
+            return true;
+        }
+        return !isEmpty(hearing.getNonDefaultDays())
+                && hearing.getNonDefaultDays().stream()
+                .anyMatch(nd -> !isBlank(nd.getRoomId()) || nonNull(nd.getCourtRoomId()));
     }
 
     /**

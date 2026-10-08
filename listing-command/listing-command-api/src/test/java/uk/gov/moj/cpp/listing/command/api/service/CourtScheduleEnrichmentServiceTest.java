@@ -966,6 +966,7 @@ class CourtScheduleEnrichmentServiceTest {
 
     // ─── SPRDT-1220: resizing a multi-day block down ─────────────────────
 
+    /** An allocated hearing being resized: it keeps its courtroom (SPRDT-1446 clamps only these). */
     private UpdateHearingForListing crownBlockResize(final UUID hearingId,
                                                      final UUID courtScheduleId,
                                                      final UUID courtCentreId,
@@ -976,6 +977,7 @@ class CourtScheduleEnrichmentServiceTest {
                 .withHearingId(hearingId)
                 .withJurisdictionType(JurisdictionType.CROWN)
                 .withCourtCentreId(courtCentreId)
+                .withCourtRoomId(UUID.randomUUID())
                 .withStartDate(start)
                 .withEndDate(end)
                 .withHearingDays(Collections.singletonList(
@@ -1081,6 +1083,88 @@ class CourtScheduleEnrichmentServiceTest {
         final ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
         verify(hearingSlotsService).multiDaySearchAndBook(params.capture());
         assertThat(params.getValue().get(CourtScheduleEnrichmentService.DURATION_MINUTES), is("1440"));
+    }
+
+    // ─── SPRDT-1446: Court Calendar unallocation of a multi-day block ─────
+
+    /**
+     * The payload Court Calendar sends to unallocate a CROWN hearing (cpp-ui-listing
+     * AllocateHearingFactory.unallocateHearing): endDate == startDate, no courtroom anywhere, and ONE
+     * virtual nonDefaultDay carrying the chosen draft session and the hearing's whole duration.
+     */
+    private UpdateHearingForListing courtCalendarUnallocation(final UUID hearingId,
+                                                              final UUID draftCourtScheduleId,
+                                                              final UUID courtCentreId,
+                                                              final LocalDate day,
+                                                              final int blockMinutes) {
+        return UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .withStartDate(day)
+                .withEndDate(day)
+                .withNonSittingDays(Collections.emptyList())
+                .withNonDefaultDays(Collections.singletonList(NonDefaultDay.nonDefaultDay()
+                        .withStartTime(ZonedDateTime.parse(day + "T09:00:00Z"))
+                        .withCourtCentreId(courtCentreId.toString())
+                        .withCourtScheduleId(draftCourtScheduleId.toString())
+                        .withDuration(blockMinutes)
+                        .withVirtual(Boolean.TRUE)
+                        .build()))
+                .build();
+    }
+
+    @Test
+    void shouldSendTheWholeBlockToCourtScheduler_whenCourtCalendarUnallocatesAMultiDayHearing() {
+        // Clamped to one court day, courtscheduler takes its single-day idempotent path: the FINAL
+        // sessions stay booked and no draft session is booked. The whole block makes it MOVE the
+        // hearing onto a draft run instead.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID draftDay1 = UUID.randomUUID();
+        final UUID draftDay2 = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate monday = LocalDate.now().plusDays(5).with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+
+        mockMultiDaySearchAndBook(draftDay1, draftDay2,
+                buildCourtSchedule(draftDay1, UUID.randomUUID(), courtCentreId, monday, true),
+                buildCourtSchedule(draftDay2, UUID.randomUUID(), courtCentreId, monday.plusDays(1), true));
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(
+                courtCalendarUnallocation(hearingId, draftDay1, courtCentreId, monday, 720));
+
+        final ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(params.capture());
+        assertThat(params.getValue().get(CourtScheduleEnrichmentService.DURATION_MINUTES), is("720"));
+        assertThat(params.getValue().get("courtScheduleId"), is(draftDay1.toString()));
+
+        assertThat(result.getHearingDays().size(), is(2));
+        result.getHearingDays().forEach(day -> {
+            assertThat(day.getIsDraft(), is(Boolean.TRUE));
+            assertThat(day.getCourtRoomId(), is(nullValue()));
+        });
+    }
+
+    @Test
+    void shouldStillClampToOneCourtDay_whenTheSameSingleDayRequestCarriesTheHearingsCourtroom() {
+        // The SPRDT-1220 conversion of an allocated hearing keeps its courtroom, so it is still clamped.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate monday = LocalDate.now().plusDays(5).with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+
+        givenSingleBookedSession(courtScheduleId, courtCentreId, monday);
+
+        final UpdateHearingForListing unallocation = courtCalendarUnallocation(hearingId, courtScheduleId, courtCentreId, monday, 720);
+        courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(
+                UpdateHearingForListing.updateHearingForListing()
+                        .withValuesFrom(unallocation)
+                        .withCourtRoomId(UUID.randomUUID())
+                        .build());
+
+        final ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(params.capture());
+        assertThat(params.getValue().get(CourtScheduleEnrichmentService.DURATION_MINUTES),
+                is(String.valueOf(HearingDurationEnrichmentService.MINUTES_IN_DAY)));
     }
 
     // ─── CROWN update hearing enrichment tests ───────────────────────────
