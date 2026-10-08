@@ -19,6 +19,7 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasNoJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -71,6 +72,7 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
 
     private static final String CROWN_OU_CODE = "C01CY00";
     private static final String PTPH = "PTPH";
+    private static final String GENC = "GENC";
 
     private final DatabaseCleaner databaseCleaner = new DatabaseCleaner();
 
@@ -346,6 +348,43 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
                 )));
         // explicit assertion on the final polled payload (Sonar java:S2699)
         assertThat(response.getPayload(), isJson(withJsonPath("$.hearings[0].id", is(finalSessionHearingId.toString()))));
+    }
+
+    /**
+     * courtscheduler returns one DRAFT row per hearing day, but the unallocated panel lists each hearing once with
+     * its own hearing days and counts hearings, as the unfiltered search does. Without that, a three-day hearing
+     * came back as three one-day rows carrying the allocated calendar's hearingDayCount/hearingDayPosition.
+     */
+    @Test
+    public void crownUnallocatedBusinessTypeSearchReturnsMultiDayHearingOnceWithItsHearingDays() {
+        final UUID courtCentreId = getRandomCourtCenterId();
+        final UUID courtRoomId = new ArrayList<>(COURT_ROOMS.keySet()).get(0);
+        final LocalDate windowStart = ItClock.nextWorkingDay();
+        final LocalDate windowEnd = ItClock.plusWorkingDays(windowStart, 4);
+        final List<LocalDate> hearingDates = List.of(windowStart, ItClock.plusWorkingDays(windowStart, 1), ItClock.plusWorkingDays(windowStart, 2));
+        final ZonedDateTime hearingStartTime = windowStart.atTime(10, 0).atZone(ItClock.LONDON).withZoneSameInstant(ItClock.UTC);
+
+        final UUID hearingId = listCrownHearing(courtCentreId, courtRoomId, hearingDates.get(2), hearingStartTime);
+
+        stubGetHearingIdsWithBody(Map.of("status", "DRAFT", "businessType", GENC, "ouCode", CROWN_OU_CODE,
+                        "sessionStartDate", windowStart.toString(), "sessionEndDate", windowEnd.toString()),
+                hearingIdsBodyForDays(hearingId, hearingDates));
+
+        final String unallocatedUrl = String.format("%s/listing-query-api/query/api/rest/listing/hearings/range-search"
+                        + "?allocated=false&jurisdictionType=CROWN&businessType=%s&ouCode=%s&courtCentreId=%s"
+                        + "&weekCommencingStartDate=%s&weekCommencingEndDate=%s&pageSize=40&pageNumber=1",
+                getBaseUri(), GENC, CROWN_OU_CODE, courtCentreId, windowStart, windowEnd);
+        final ResponseData response = pollWithDefaults(courtCalendarRequest(unallocatedUrl)).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.results", is(1)),
+                        withJsonPath("$.hearings.size()", is(1)),
+                        withJsonPath("$.hearings[0].id", is(hearingId.toString())),
+                        withJsonPath("$.hearings[0].hearingDays[*].hearingDate", hasItem(windowStart.toString())),
+                        hasNoJsonPath("$.hearings[0].hearingDayCount"),
+                        hasNoJsonPath("$.hearings[0].hearingDayPosition")
+                )));
+        // explicit assertion on the final polled payload (Sonar java:S2699)
+        assertThat(response.getPayload(), isJson(withJsonPath("$.results", is(1))));
     }
 
     /**
