@@ -527,16 +527,16 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
 
     private boolean isExparteOffenceCase(JsonNode listedCase) {
 
-        JsonNode offencesNode = listedCase.findPath("offences");
-
-        if (offencesNode.isMissingNode() || !offencesNode.isArray()) {
-            return false;
-        }
-
-        for (JsonNode offence : offencesNode) {
-            JsonNode isExParteNode = offence.findPath("civilOffence").findPath("isExParte");
-            if (!isExParteNode.isMissingNode() && isExParteNode.asBoolean()) {
-                return true;
+        // every defendant's offences, not just the first defendant's
+        for (JsonNode offencesNode : listedCase.findValues("offences")) {
+            if (!offencesNode.isArray()) {
+                continue;
+            }
+            for (JsonNode offence : offencesNode) {
+                JsonNode isExParteNode = offence.findPath("civilOffence").findPath("isExParte");
+                if (!isExParteNode.isMissingNode() && isExParteNode.asBoolean()) {
+                    return true;
+                }
             }
         }
 

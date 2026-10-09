@@ -21,7 +21,8 @@ import javax.json.JsonObjectBuilder;
 @ApplicationScoped
 public class CourtListService {
 
-    private static final Set<PublishCourtListType> EX_PARTE_FILTERED_LIST_TYPES = Set.of(PublishCourtListType.WARN, PublishCourtListType.FIRM);
+    private static final Set<PublishCourtListType> EX_PARTE_FILTERED_LIST_TYPES = Set.of(
+            PublishCourtListType.WARN, PublishCourtListType.FIRM, PublishCourtListType.DRAFT, PublishCourtListType.FINAL);
 
     private static final String HEARINGS = "hearings";
 
@@ -40,6 +41,9 @@ public class CourtListService {
     @Inject
     private HearingJsonListConverterFilterEjectCases hearingJsonListConverterFilterEjectCases;
 
+    @Inject
+    private ExParteLinkedCaseApplicationFilter exParteLinkedCaseApplicationFilter;
+
     public JsonObject retrieveUnPublishedCourtList(final UUID courtCentreId,
                                                    final PublishCourtListType publishCourtListType,
                                                    final LocalDate startDate,
@@ -55,7 +59,8 @@ public class CourtListService {
         final JsonEnvelope rangeSearchResponse = rangeSearchQuery.rangeSearchHearings(rangeSearchQueryEnvelope);
 
         final JsonObject rangeSearchResponsePayload = EX_PARTE_FILTERED_LIST_TYPES.contains(publishCourtListType)
-                ? filterExParteOffences(rangeSearchResponse.payloadAsJsonObject())
+                ? exParteLinkedCaseApplicationFilter.removeApplicationsLinkedToExParteCases(
+                        filterExParteOffences(rangeSearchResponse.payloadAsJsonObject()), envelope)
                 : rangeSearchResponse.payloadAsJsonObject();
 
         return rangeSearchConverter.generateCourtListQueryPayload(courtCentreId, rangeSearchResponsePayload, startDate, endDate);
