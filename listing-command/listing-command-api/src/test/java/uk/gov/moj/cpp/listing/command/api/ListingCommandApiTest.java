@@ -1670,7 +1670,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    void shouldRejectChangeCourtRoomForMultidayHearingWhenNotCrown() {
+    void shouldRejectChangeCourtRoomForMultidayHearingWhenJurisdictionIsUnsupported() {
         final UUID hearingId = randomUUID();
 
         given(envelope.payloadAsJsonObject()).willReturn(payload);
@@ -1678,7 +1678,6 @@ public class ListingCommandApiTest {
 
         final JsonObject hearing = Json.createObjectBuilder()
                 .add("id", hearingId.toString())
-                .add("jurisdictionType", "MAGISTRATES")
                 .add("hearingDays", Json.createArrayBuilder()
                         .add(Json.createObjectBuilder().add("hearingDate", "2026-07-14"))
                         .add(Json.createObjectBuilder().add("hearingDate", "2026-07-15")))
@@ -1689,9 +1688,59 @@ public class ListingCommandApiTest {
                 () -> listingCommandApi.handleChangeCourtRoomForMultidayHearing(envelope));
 
         assertThat(thrown.getHttpStatus(), is(422));
-        assertThat(thrown.getErrorCode(), is("NOT_CROWN_HEARING"));
+        assertThat(thrown.getErrorCode(), is("UNSUPPORTED_JURISDICTION"));
         verify(courtSchedulerServiceAdapter, never()).changeCourtRoomForMultidayHearing(any(), any());
         verify(sender, never()).send(any());
+    }
+
+    @Test
+    void shouldChangeCourtRoomForMultidayMagistratesHearing() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID requestedCourtRoomId = randomUUID();
+        final UUID targetCourtScheduleId = randomUUID();
+        final LocalDate d1 = LocalDate.parse("2026-07-14");
+        final LocalDate d2 = LocalDate.parse("2026-07-15");
+
+        final JsonObject hearing = Json.createObjectBuilder()
+                .add("id", hearingId.toString())
+                .add("jurisdictionType", "MAGISTRATES")
+                .add("hearingDays", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder().add("hearingDate", d1.toString()))
+                        .add(Json.createObjectBuilder().add("hearingDate", d2.toString())))
+                .build();
+        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
+
+        final JsonArray nonDefaultDays = Json.createArrayBuilder()
+                .add(Json.createObjectBuilder()
+                        .add("startTime", d2 + "T10:00:00Z")
+                        .add("duration", 180)
+                        .add("courtCentreId", courtCentreId.toString())
+                        .add("roomId", requestedCourtRoomId.toString())
+                        .add("courtScheduleId", targetCourtScheduleId.toString())
+                        .add("virtual", true))
+                .build();
+
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(payload.getString("hearingId")).willReturn(hearingId.toString());
+        given(payload.getJsonArray("nonDefaultDays")).willReturn(nonDefaultDays);
+        given(payload.getBoolean("sendNotificationToParties", true)).willReturn(true);
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(courtSchedulerServiceAdapter.changeCourtRoomForMultidayHearing(eq(hearingId), any()))
+                .willReturn(List.of(new ChangedDaySession(targetCourtScheduleId, "mags-room-2", d2, d2 + "T10:00:00Z", 180)));
+
+        listingCommandApi.handleChangeCourtRoomForMultidayHearing(envelope);
+
+        verify(courtSchedulerServiceAdapter).changeCourtRoomForMultidayHearing(eq(hearingId),
+                eq(List.of(new RequestedChangeDay(d2, targetCourtScheduleId, 180))));
+        final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
+        verify(sender, times(1)).send(captor.capture());
+        final JsonObject sent = (JsonObject) captor.getValue().payload();
+        assertThat(sent.getString("hearingId"), is(hearingId.toString()));
+        final JsonArray changedDays = sent.getJsonArray("changedDays");
+        assertThat(changedDays.size(), is(1));
+        assertThat(changedDays.getJsonObject(0).getString("courtRoomId"), is("mags-room-2"));
+        assertThat(changedDays.getJsonObject(0).getString("courtScheduleId"), is(targetCourtScheduleId.toString()));
     }
 
     @Test

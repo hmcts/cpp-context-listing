@@ -657,8 +657,8 @@ public class CourtSchedulerServiceAdapter {
     }
 
     /**
-     * CROWN-only. Calls courtscheduler's {@code change-court-room-for-multiday-hearing} action
-     * synchronously, moving one or more days of a multi-day CROWN hearing to a different
+     * Calls courtscheduler's {@code change-court-room-for-multiday-hearing} action
+     * synchronously, moving one or more days of a multi-day hearing to a different
      * court-schedule session. On any non-200 response the upstream errorCode/status is surfaced
      * via {@link ChangeCourtRoomForMultidayException} so the caller sends no event; a legacy bare
      * 404 is normalised to 422 NO_SESSION_FOUND exactly as {@link #moveHearingToPastDate} does.
