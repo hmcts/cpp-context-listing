@@ -1,0 +1,33 @@
+{
+  "id": "f2112cca-f55b-4d99-9336-a80930d53bb6",
+  "oucode": "C99CA00",
+  "oucodeL3Code": "CA",
+  "oucodeL3Name": "CAD-1710 Test Crown Court",
+  "oucodeL1Code": "C",
+  "oucodeL1Name": "Crown Courts",
+  "oucodeL2Code": "99",
+  "oucodeL2Name": "CAD-1710",
+  "region": "Test",
+  "lja": "9999",
+  "oucodeEffectiveFromDate": "2016-01-01",
+  "address1": "CAD-1710 Test Crown Court",
+  "address2": "Test Street",
+  "address3": "Testville",
+  "postcode": "T3 5TT",
+  "oucodeL3WelshName": "CAD-1710 Test Crown Court",
+  "defaultStartTime": "10:30:00",
+  "defaultDurationHrs": "06:00:00",
+  "lastModified": "2026-01-01T00:00:00.000Z",
+  "cpsEmailAddress": "cad1710.cchub@cps.gov.uk",
+  "pecsContractorEmail": "cad1710@geoamey.co.uk",
+  "divisionCode": "9",
+  "courtLocationCode": "999",
+  "courtId": "999",
+  "courtrooms": [
+    {
+      "id": "648adc16-fc0a-4d5f-84f5-a3ea132aad1f",
+      "venueName": "CAD-1710 TEST COURT",
+      "courtroomId": 9991,
+      "courtroomName": "Courtroom 01"
+    }]
+}

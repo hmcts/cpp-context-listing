@@ -6,7 +6,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -37,7 +36,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class CourtListServiceTest {
+class CourtListServiceTest {
 
     @Spy
     private Enveloper enveloper = createEnveloper();
@@ -57,11 +56,14 @@ public class CourtListServiceTest {
     @Mock
     private HearingJsonListConverterFilterEjectCases hearingJsonListConverterFilterEjectCases;
 
+    @Mock
+    private ExParteLinkedCaseApplicationFilter exParteLinkedCaseApplicationFilter;
+
     @InjectMocks
     private CourtListService courtListService;
 
     @Test
-    public void retrieveCourtList() {
+    void retrieveCourtList() {
 
         final UUID courtCentreId = UUID.randomUUID();
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
@@ -78,6 +80,7 @@ public class CourtListServiceTest {
         when(rangeSearchQueryRequestFactory.buildRangeSearchQueryEnvelope(courtCentreId, publishCourtListType, startDate, queryEnvelope)).thenReturn(rangeSearchQueryEnvelope);
         when(rangeSearchQuery.rangeSearchHearings(rangeSearchQueryEnvelope)).thenReturn(rangeSearchResponse);
         when(rangeSearchResponse.payloadAsJsonObject()).thenReturn(rangeSearchResponsePayload);
+        when(exParteLinkedCaseApplicationFilter.removeApplicationsLinkedToExParteCases(rangeSearchResponsePayload, queryEnvelope)).thenReturn(rangeSearchResponsePayload);
         when(rangeSearchConverter.generateCourtListQueryPayload(courtCentreId, rangeSearchResponsePayload, startDate, endDate)).thenReturn(courtListResponse);
 
         final JsonObject response = courtListService.retrieveUnPublishedCourtList(courtCentreId, publishCourtListType, startDate, endDate, queryEnvelope);
@@ -86,12 +89,12 @@ public class CourtListServiceTest {
     }
 
     @Test
-    public void shouldApplyExParteFilterToHearingsWhenPublishCourtListTypeIsWarn() {
+    void shouldApplyExParteFilterToHearingsWhenPublishCourtListTypeIsWarn() {
         assertExParteFilterAppliedForListType(PublishCourtListType.WARN);
     }
 
     @Test
-    public void shouldApplyExParteFilterToHearingsWhenPublishCourtListTypeIsFirm() {
+    void shouldApplyExParteFilterToHearingsWhenPublishCourtListTypeIsFirm() {
         assertExParteFilterAppliedForListType(PublishCourtListType.FIRM);
     }
 
@@ -120,50 +123,33 @@ public class CourtListServiceTest {
         when(rangeSearchQueryRequestFactory.buildRangeSearchQueryEnvelope(courtCentreId, publishCourtListType, startDate, queryEnvelope)).thenReturn(rangeSearchQueryEnvelope);
         when(rangeSearchQuery.rangeSearchHearings(rangeSearchQueryEnvelope)).thenReturn(rangeSearchResponse);
         when(rangeSearchResponse.payloadAsJsonObject()).thenReturn(rangeSearchResponsePayload);
+        final JsonObject exParteCasesRemovedPayload = createObjectBuilder().add("hearings", filteredHearings).build();
+        final JsonObject linkedApplicationsRemovedPayload = createObjectBuilder().add("hearings", createArrayBuilder()).build();
+
         when(hearingJsonListConverterFilterEjectCases.filterExParteOffencesFromHearings(unfilteredHearings)).thenReturn(filteredHearings);
+        when(exParteLinkedCaseApplicationFilter.removeApplicationsLinkedToExParteCases(exParteCasesRemovedPayload, queryEnvelope)).thenReturn(linkedApplicationsRemovedPayload);
         when(rangeSearchConverter.generateCourtListQueryPayload(any(), any(), any(), any())).thenReturn(courtListResponse);
 
         final JsonObject response = courtListService.retrieveUnPublishedCourtList(courtCentreId, publishCourtListType, startDate, endDate, queryEnvelope);
 
         assertThat(response, is(courtListResponse));
-        verify(rangeSearchConverter).generateCourtListQueryPayload(courtCentreId, createObjectBuilder().add("hearings", filteredHearings).build(), startDate, endDate);
+        verify(rangeSearchConverter).generateCourtListQueryPayload(courtCentreId, linkedApplicationsRemovedPayload, startDate, endDate);
     }
 
     @Test
-    public void shouldNotApplyExParteFilterToHearingsWhenPublishCourtListTypeIsDraft() {
-        assertExParteFilterNotAppliedForListType(PublishCourtListType.DRAFT);
+    void shouldApplyExParteFilterToHearingsWhenPublishCourtListTypeIsDraft() {
+        // CAD-1760 - DRAFT also backs the "Daily list" download
+        assertExParteFilterAppliedForListType(PublishCourtListType.DRAFT);
     }
 
     @Test
-    public void shouldNotApplyExParteFilterToHearingsWhenPublishCourtListTypeIsFinal() {
-        assertExParteFilterNotAppliedForListType(PublishCourtListType.FINAL);
-    }
-
-    private void assertExParteFilterNotAppliedForListType(final PublishCourtListType publishCourtListType) {
-        final UUID courtCentreId = UUID.randomUUID();
-        final LocalDate startDate = LocalDate.now();
-        final String endDate = LocalDate.now().toString();
-
-        final JsonEnvelope queryEnvelope = generateQuery(createObjectBuilder().build());
-
-        final JsonEnvelope rangeSearchQueryEnvelope = mock(JsonEnvelope.class);
-        final JsonEnvelope rangeSearchResponse = mock(JsonEnvelope.class);
-        final JsonObject rangeSearchResponsePayload = mock(JsonObject.class);
-        final JsonObject courtListResponse = mock(JsonObject.class);
-
-        when(rangeSearchQueryRequestFactory.buildRangeSearchQueryEnvelope(courtCentreId, publishCourtListType, startDate, queryEnvelope)).thenReturn(rangeSearchQueryEnvelope);
-        when(rangeSearchQuery.rangeSearchHearings(rangeSearchQueryEnvelope)).thenReturn(rangeSearchResponse);
-        when(rangeSearchResponse.payloadAsJsonObject()).thenReturn(rangeSearchResponsePayload);
-        when(rangeSearchConverter.generateCourtListQueryPayload(courtCentreId, rangeSearchResponsePayload, startDate, endDate)).thenReturn(courtListResponse);
-
-        final JsonObject response = courtListService.retrieveUnPublishedCourtList(courtCentreId, publishCourtListType, startDate, endDate, queryEnvelope);
-
-        assertThat(response, is(courtListResponse));
-        verify(hearingJsonListConverterFilterEjectCases, never()).filterExParteOffencesFromHearings(any());
+    void shouldApplyExParteFilterToHearingsWhenPublishCourtListTypeIsFinal() {
+        // CAD-1760
+        assertExParteFilterAppliedForListType(PublishCourtListType.FINAL);
     }
 
     @Test
-    public void shouldReturnEmptyCourtList() {
+    void shouldReturnEmptyCourtList() {
 
         final UUID courtCentreId = UUID.randomUUID();
         final JsonEnvelope queryEnvelope = generateQuery(createObjectBuilder().build());
