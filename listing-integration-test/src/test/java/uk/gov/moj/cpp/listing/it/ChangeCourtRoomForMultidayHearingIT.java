@@ -86,7 +86,8 @@ import uk.gov.justice.services.test.utils.core.http.ResponseData;
  * hearing day's current schedule on that date (SPRDT-1225), otherwise without any courtscheduler
  * booking. Schema violations (duration > 420, missing
  * courtScheduleId/roomId) are rejected as 400 by the framework before COMMAND_API runs. Business
- * failures (unknown hearing, unsupported jurisdiction, non-multiday, duplicate day dates, or a courtscheduler
+ * failures (unknown hearing, unsupported jurisdiction, non-multiday, a day longer than the jurisdiction's
+ * sitting day, duplicate day dates, or a courtscheduler
  * rejection) are surfaced synchronously as 422 via {@code ChangeCourtRoomForMultidayException}.
  * The happy path is asynchronous: the enriched command is sent, the aggregate emits
  * hearing-days-changed-for-hearing + hearing-day-court-schedule-updated +
@@ -481,6 +482,21 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
      * SPRDT-1225 regression report), so a VIRTUAL day without one is now a business 422
      * (booking is its whole purpose), no longer a schema 400.
      */
+    @Test
+    void shouldReturn422WhenACrownDayExceedsTheSittingDay() {
+        final ThreeDayCrownHearing hearing = givenAllocatedThreeDayCrownHearing();
+
+        // 420 passes the schema (the MAGISTRATES all-day length) but is longer than a Crown sitting day.
+        final String payload = changeCourtRoomPayload(hearing.courtCentreId, of(
+                dayChange(hearing.day2, hearing.courtRoomId, UUID.randomUUID())), MAGS_ALL_DAY_DURATION_MINUTES);
+
+        final Response response = postChangeCourtRoom(hearing.hearingId, payload);
+
+        assertThat(response.getStatus(), is(422));
+        assertThat(response.readEntity(String.class), containsString("DAY_DURATION_EXCEEDS_SITTING_DAY"));
+        verifyChangeCourtRoomForMultidayHearingNeverCalled(hearing.hearingId.toString());
+    }
+
     @Test
     void shouldReturn422WhenVirtualDayHasNoCourtScheduleId() {
         final ThreeDayCrownHearing hearing = givenAllocatedThreeDayCrownHearing();

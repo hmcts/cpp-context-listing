@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.api;
 
+import static uk.gov.moj.cpp.listing.command.api.service.HearingDurationEnrichmentService.MINUTES_IN_DAY;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
@@ -108,6 +109,7 @@ public class ListingCommandApi {
     public static final String NOT_MULTIDAY_HEARING = "NOT_MULTIDAY_HEARING";
     public static final String DUPLICATE_DAY_DATES = "DUPLICATE_DAY_DATES";
     public static final String MISSING_COURT_SCHEDULE_ID = "MISSING_COURT_SCHEDULE_ID";
+    public static final String DAY_DURATION_EXCEEDS_SITTING_DAY = "DAY_DURATION_EXCEEDS_SITTING_DAY";
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String START_DATE = "startDate";
     private static final String START_DATE_TIME = "startDateTime";
@@ -142,6 +144,7 @@ public class ListingCommandApi {
     private static final String CROWN_JURISDICTION = "CROWN";
     private static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
     private static final Set<String> CHANGE_COURT_ROOM_JURISDICTIONS = Set.of(CROWN_JURISDICTION, MAGISTRATES_JURISDICTION);
+    private static final int MAGISTRATES_ALL_DAY_SESSION_MINUTES = 420;
     private static final String LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING = "listing.command.mark-unallocated-hearing-as-duplicate";
     private static final String LISTING_COMMAND_UPDATE_EXISTING_HEARING = "listing.command.update-existing-hearing";
     private static final String LISTING_COMMAND_DELETE_NEXT_HEARINGS = "listing.command.delete-next-hearings";
@@ -748,9 +751,16 @@ public class ListingCommandApi {
         final Map<LocalDate, JsonObject> rebookedRealRequestedByDate = new LinkedHashMap<>();
         final List<RequestedChangeDay> daysToBook = new ArrayList<>();
         final JsonArrayBuilder realNonDefaultDays = createArrayBuilder();
+        final int maxDayMinutes = maxDayMinutesFor(hearing.getString(JURISDICTION_TYPE));
         for (final JsonValue value : nonDefaultDays) {
             final JsonObject nonDefaultDay = (JsonObject) value;
             final LocalDate date = ZonedDateTime.parse(nonDefaultDay.getString(DAY_START_TIME)).toLocalDate();
+            if (nonDefaultDay.getInt(NON_DEFAULT_DAY_DURATION) > maxDayMinutes) {
+                final String message = "Day " + date + " duration " + nonDefaultDay.getInt(NON_DEFAULT_DAY_DURATION)
+                        + " exceeds the " + maxDayMinutes + " minute sitting day of a " + hearing.getString(JURISDICTION_TYPE) + " hearing";
+                throw new ChangeCourtRoomForMultidayException(422,
+                        buildChangeCourtRoomForMultidayErrorBody(DAY_DURATION_EXCEEDS_SITTING_DAY, message), message);
+            }
             if (!seenDates.add(date)) {
                 throw new ChangeCourtRoomForMultidayException(422,
                         buildChangeCourtRoomForMultidayErrorBody(DUPLICATE_DAY_DATES, "Duplicate day " + date + " in nonDefaultDays"),
@@ -786,6 +796,15 @@ public class ListingCommandApi {
                         .add(CHANGED_DAYS, changedDays.build())
                         .add(NON_DEFAULT_DAYS, realNonDefaultDays.build())
                         .build()));
+    }
+
+    /**
+     * The longest day this command accepts for a hearing's jurisdiction: the Crown sitting day the
+     * multiday enrichment is built on, or the length of the default MAGISTRATES all-day session
+     * (10:00 to 17:00). Courtscheduler still checks the target session's real capacity.
+     */
+    private static int maxDayMinutesFor(final String jurisdictionType) {
+        return MAGISTRATES_JURISDICTION.equals(jurisdictionType) ? MAGISTRATES_ALL_DAY_SESSION_MINUTES : MINUTES_IN_DAY;
     }
 
     /**
