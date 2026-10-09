@@ -51,6 +51,7 @@ import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDelayForJm
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForCourtSchedule;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrown;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSearchCourtSchedulesByIdSession;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubUnconfirmedBookingForBookingReference;
 import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByOrganisationDefendant;
 import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByPersonDefendant;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
@@ -439,9 +440,11 @@ public class ListCourtHearingSteps extends AbstractIT {
     }
 
     /**
-     * For a CROWN hearing the {@code bookingReference} IS the courtScheduleId. The listing command resolves
-     * it against courtscheduler (GET {@code /sessions?ids=} — was {@code /courtschedule/search.court-schedules-by-id})
-     * and then lists it (POST {@code /hearings} — was {@code list.hearings-in-court-sessions}).
+     * For a CROWN hearing the {@code bookingReference} is the bookingId courtscheduler minted at
+     * slot-pick time. The listing command resolves it as a BOOKING (GET {@code /unconfirmedBooking?bookingIds=}),
+     * then lists the resolved session (POST {@code /hearings}). It used to be resolved as a
+     * courtScheduleId through {@code GET /sessions?ids=}; that reinterpretation is gone, so the
+     * booking endpoint must be stubbed or nothing resolves.
      * Stub both so the bookingReference resolves to a session echoing this hearing's own centre/room —
      * keeping the enriched hearing consistent with the listed values.
      * No-op for MAGISTRATES, unallocated hearings (no booking reference) or hearings without a court centre.
@@ -458,6 +461,14 @@ public class ListCourtHearingSteps extends AbstractIT {
         final LocalDate sessionDate = hearingData.getHearingStartDate() != null
                 ? hearingData.getHearingStartDate()
                 : startTime.toLocalDate();
+        // The booking endpoint is how Crown resolves the reference now (LPT-2537). Stub it first:
+        // without it the suite-wide stub from AbstractIT#setUp answers instead, naming a booking
+        // this hearing never asked for, which the ownership filter discards - and an empty resolve
+        // is a hard failure, surfacing as a 500 on submit-for-listing.
+        stubUnconfirmedBookingForBookingReference(
+                bookingReference.toString(), hearingData.getCourtCentreId(), hearingData.getCourtRoomId(),
+                sessionDate, startTime);
+        // Still needed: the same id is resolved as a session downstream when the hearing is listed.
         stubSearchCourtSchedulesByIdSession(
                 bookingReference.toString(), hearingData.getCourtCentreId(), hearingData.getCourtRoomId(),
                 sessionDate, startTime, false);

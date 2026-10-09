@@ -198,6 +198,58 @@ public class CourtSchedulerServiceStub {
     }
 
     /**
+     * Stub GET /unconfirmedBooking so a CROWN bookingReference resolves as a BOOKING, echoing the
+     * supplied courtHouse / room / date.
+     *
+     * <p>This is the contract {@code promoteCrownBookingReferenceToBookedSlot} now uses (LPT-2537:
+     * "resolve Crown's bookingReference as a booking id, as mags already does"). It replaced the
+     * older shape in which the bookingReference WAS a courtScheduleId resolved through
+     * {@code GET /sessions?ids=} — {@link #stubSearchCourtSchedulesByIdSession} still stubs that,
+     * because the same id is used downstream when the hearing is listed.
+     *
+     * <p>{@code bookingId} is set to the bookingReference deliberately. The production filter keeps
+     * only sessions that belong to the booking it asked for:
+     * <pre>isBlank(session.getBookingId()) || bookingReference.equals(session.getBookingId())</pre>
+     * A stub naming any other booking is discarded, and the empty result is then a hard failure —
+     * so a stub that answers for this reference must say so.
+     *
+     * <p>Scoped by the {@code bookingIds} query param and registered at priority 2 so it beats the
+     * suite-wide stub registered in AbstractIT#setUp, and answers only for this hearing.
+     */
+    public static void stubUnconfirmedBookingForBookingReference(final String bookingReference,
+                                                                 final UUID courtHouseId,
+                                                                 final UUID courtRoomId,
+                                                                 final LocalDate sessionDate,
+                                                                 final ZonedDateTime hearingStartTime) {
+        final StringBuilder slot = new StringBuilder();
+        slot.append("{\"courtScheduleId\":\"").append(bookingReference).append("\"");
+        slot.append(",\"bookingId\":\"").append(bookingReference).append("\"");
+        if (courtHouseId != null) {
+            slot.append(",\"courtHouseId\":\"").append(courtHouseId).append("\"");
+        }
+        if (courtRoomId != null) {
+            slot.append(",\"courtRoomId\":\"").append(courtRoomId).append("\"");
+        }
+        if (sessionDate != null) {
+            slot.append(",\"sessionDate\":\"").append(sessionDate).append("\"");
+        }
+        if (hearingStartTime != null) {
+            slot.append(",\"hearingStartTime\":\"").append(hearingStartTime).append("\"");
+        }
+        slot.append(",\"maxSlots\":20,\"availableSlots\":20,\"maxDuration\":0,\"availableDuration\":0");
+        slot.append(",\"judiciaries\":[],\"slotStartTimes\":[]}");
+
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + UNCONFIRMED_BOOKING)))
+                .atPriority(2)
+                .withQueryParam("bookingIds", containing(bookingReference))
+                .withHeader("Accept", containing(COURTSCHEDULER_GET_UNCONFIRMED_BOOKING_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody("{\"provisionalSlots\":[" + slot + "]}")
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    /**
      * Stub GET /sessions (was /courtschedule/search.court-schedules-by-id) so a CROWN bookingReference
      * (which IS the courtScheduleId) resolves to a single session echoing the supplied courtHouse / room / date.
      * The listing command resolves the bookingReference here
@@ -640,12 +692,24 @@ public class CourtSchedulerServiceStub {
 
 
 
+    /**
+     * Registered by AbstractIT#setUp, so this is the booking every test resolves against unless it
+     * overrides it. The session date is substituted rather than baked in: it used to be a literal
+     * 2020-05-21, which only went unnoticed because the sessions were being discarded upstream
+     * before anything read them - once they were resolved, hearings started getting listed in 2020.
+     */
     public static void stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased() {
+        final LocalDate sessionDate = ItClock.today();
+        final String hearingStartTime = sessionDate.atTime(LocalTime.of(10, 0, 0, 0))
+                .atZone(ZoneId.of("Europe/London")).withZoneSameInstant(ZoneOffset.UTC).toString();
+
         stubFor(get(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + CourtSchedulerServiceStub.UNCONFIRMED_BOOKING)))
                 .withQueryParam("bookingIds", WireMock.notMatching("null"))
                 .withHeader("Accept", containing(CourtSchedulerServiceStub.COURTSCHEDULER_GET_UNCONFIRMED_BOOKING_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON))
+                        .withBody(getPayload(CourtSchedulerServiceStub.STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON)
+                                .replace("%SESSION_DATE%", sessionDate.toString())
+                                .replace("%HEARING_START_TIME%", hearingStartTime))
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }

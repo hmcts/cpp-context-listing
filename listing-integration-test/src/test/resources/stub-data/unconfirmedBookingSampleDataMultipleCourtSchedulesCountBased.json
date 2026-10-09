@@ -18,8 +18,7 @@
       "availableSlots": 20,
       "availableDuration": 0,
       "judiciaries": [],
-      "slotStartTimes": [],
-      "bookingId": "62883cad-6dfa-4485-8e97-c766a1d45c37"
+      "slotStartTimes": []
     },
     {
       "courtScheduleId": "be096933-e90d-4f43-86cf-98f5bf353b85",
@@ -39,8 +38,7 @@
       "availableSlots": 20,
       "availableDuration": 0,
       "judiciaries": [],
-      "slotStartTimes": [],
-      "bookingId": "62883cad-6dfa-4485-8e97-c766a1d45c37"
+      "slotStartTimes": []
     }
   ]
 }

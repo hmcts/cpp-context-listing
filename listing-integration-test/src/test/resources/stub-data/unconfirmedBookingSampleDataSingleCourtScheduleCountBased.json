@@ -13,15 +13,14 @@
       "businessType": "REM",
       "panel": "ADULT",
       "courtSession": "AD",
-      "sessionDate": "2020-05-21",
-      "hearingStartTime": "2020-06-01T10:00:00.000Z",
+      "sessionDate": "%SESSION_DATE%",
+      "hearingStartTime": "%HEARING_START_TIME%",
       "maxSlots": 20,
       "maxDuration": 0,
       "availableSlots": 20,
       "availableDuration": 0,
       "judiciaries": [],
-      "slotStartTimes": [],
-      "bookingId": "62883cad-6dfa-4485-8e97-c766a1d45c37"
+      "slotStartTimes": []
     }
   ]
 }

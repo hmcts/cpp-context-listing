@@ -6515,6 +6515,67 @@ class CourtScheduleEnrichmentServiceTest {
         verify(courtSchedulerService).getCourtSchedulesByProvisionalBookingId(bookingId.toString());
     }
 
+    /**
+     * The ownership filter had no test, and that gap cost a day: the integration stubs returned a
+     * canned session naming a bookingId nobody had asked for, every session was filtered out, and
+     * the fail-fast below turned it into a 500 across ~57 IT classes.
+     */
+    @Test
+    public void shouldIgnoreSessionsThatNameADifferentBooking() {
+        final UUID bookingId = UUID.randomUUID();
+
+        final CourtSchedule someoneElsesSession = new CourtSchedule();
+        someoneElsesSession.setCourtScheduleId(UUID.randomUUID().toString());
+        someoneElsesSession.setHearingStartTime("2026-10-14T10:00:00Z");
+        someoneElsesSession.setCourtHouseId(UUID.randomUUID().toString());
+        someoneElsesSession.setOuCode("B01LY");
+        someoneElsesSession.setBookingId(UUID.randomUUID().toString());
+
+        when(courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingId.toString()))
+                .thenReturn(List.of(someoneElsesSession));
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withBookingReference(bookingId)
+                .withEstimatedMinutes(60)
+                .build();
+
+        // Promoting it would put an unrelated courtScheduleId on the bookedSlot; refusing is right.
+        org.junit.jupiter.api.Assertions.assertThrows(
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException.class,
+                () -> courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing));
+    }
+
+    /**
+     * The other half of the same rule: a session that does not name a booking at all is trusted,
+     * because older courtscheduler responses omit the field. The shared integration stubs rely on
+     * this - they are registered before any test knows its booking id, so they cannot name one.
+     */
+    @Test
+    public void shouldTrustASessionThatNamesNoBookingAtAll() {
+        final UUID bookingId = UUID.randomUUID();
+        final String resolvedCourtScheduleId = UUID.randomUUID().toString();
+
+        final CourtSchedule unnamedSession = new CourtSchedule();
+        unnamedSession.setCourtScheduleId(resolvedCourtScheduleId);
+        unnamedSession.setHearingStartTime("2026-10-14T10:00:00Z");
+        unnamedSession.setCourtHouseId(UUID.randomUUID().toString());
+        unnamedSession.setOuCode("B01LY");
+
+        when(courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingId.toString()))
+                .thenReturn(List.of(unnamedSession));
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withBookingReference(bookingId)
+                .withEstimatedMinutes(60)
+                .build();
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing);
+
+        assertThat(result.getBookedSlots().get(0).getCourtScheduleId(), is(resolvedCourtScheduleId));
+    }
+
     @Test
     public void shouldFailFastWhenTheBookingResolvesToNothing() {
         final UUID bookingId = UUID.randomUUID();
