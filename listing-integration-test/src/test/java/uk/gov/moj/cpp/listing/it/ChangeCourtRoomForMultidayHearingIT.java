@@ -20,8 +20,11 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
+import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocation;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubChangeCourtRoomForMultidayHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubChangeCourtRoomForMultidayHearingFailure;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMultiDaySearchAndBookForHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
@@ -35,18 +38,23 @@ import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoom;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataOrganisationUnitById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 
 import uk.gov.moj.cpp.listing.it.util.ItClock;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
+import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData;
+import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 import uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory;
 import uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.ChangeCourtRoomStubSession;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
@@ -67,18 +75,19 @@ import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClien
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
 
 /**
- * Covers {@code listing.command.change-court-room-for-multiday-hearing}: a CROWN-only wrapper on
+ * Covers {@code listing.command.change-court-room-for-multiday-hearing}: a wrapper on
  * {@code POST /hearings/{hearingId}} that changes the courtroom of SELECTED days of an already
- * allocated multi-day CROWN hearing, distinguished by the media type
+ * allocated multi-day CROWN or MAGISTRATES hearing, distinguished by the media type
  * {@code application/vnd.listing.command.change-court-room-for-multiday-hearing+json}.
  *
  * <p>Each day carries an optional {@code virtual} flag. Virtual days (virtual=true) are (re)booked
  * in courtscheduler and converted into hearing days; real days (virtual false/absent) are persisted
  * as nonDefaultDays - booked in courtscheduler ONLY when their courtScheduleId differs from the
  * hearing day's current schedule on that date (SPRDT-1225), otherwise without any courtscheduler
- * booking. Schema violations (duration > 360, missing
+ * booking. Schema violations (duration > 420, missing
  * courtScheduleId/roomId) are rejected as 400 by the framework before COMMAND_API runs. Business
- * failures (unknown hearing, non-CROWN, non-multiday, duplicate day dates, or a courtscheduler
+ * failures (unknown hearing, unsupported jurisdiction, non-multiday, a day longer than the jurisdiction's
+ * sitting day, duplicate day dates, or a courtscheduler
  * rejection) are surfaced synchronously as 422 via {@code ChangeCourtRoomForMultidayException}.
  * The happy path is asynchronous: the enriched command is sent, the aggregate emits
  * hearing-days-changed-for-hearing + hearing-day-court-schedule-updated +
@@ -97,6 +106,8 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
     private static final String LISTING_QUERY_HEARING = "listing.search.hearing";
     private static final int MULTI_DAY_TOTAL_DURATION_MINUTES = 1080;
     private static final int DAY_DURATION_MINUTES = 360;
+    private static final int MAGS_SESSION_DURATION_MINUTES = 180;
+    private static final int MAGS_ALL_DAY_DURATION_MINUTES = 420;
 
     private static final String PUBLIC_HEARING_UPDATED = "public.listing.hearing-updated";
     private static final String PUBLIC_HEARING_DAYS_CHANGED_FOR_HEARING = "public.listing.hearing-days-changed-for-hearing";
@@ -472,6 +483,21 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
      * (booking is its whole purpose), no longer a schema 400.
      */
     @Test
+    void shouldReturn422WhenACrownDayExceedsTheSittingDay() {
+        final ThreeDayCrownHearing hearing = givenAllocatedThreeDayCrownHearing();
+
+        // 420 passes the schema (the MAGISTRATES all-day length) but is longer than a Crown sitting day.
+        final String payload = changeCourtRoomPayload(hearing.courtCentreId, of(
+                dayChange(hearing.day2, hearing.courtRoomId, UUID.randomUUID())), MAGS_ALL_DAY_DURATION_MINUTES);
+
+        final Response response = postChangeCourtRoom(hearing.hearingId, payload);
+
+        assertThat(response.getStatus(), is(422));
+        assertThat(response.readEntity(String.class), containsString("DAY_DURATION_EXCEEDS_SITTING_DAY"));
+        verifyChangeCourtRoomForMultidayHearingNeverCalled(hearing.hearingId.toString());
+    }
+
+    @Test
     void shouldReturn422WhenVirtualDayHasNoCourtScheduleId() {
         final ThreeDayCrownHearing hearing = givenAllocatedThreeDayCrownHearing();
 
@@ -533,42 +559,117 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
                         )));
     }
 
+    // ---------------------------------------------------------------------------------------
+    // Group 4: MAGISTRATES — the same command and the same path, slot sessions included.
+    // ---------------------------------------------------------------------------------------
+
     @Test
-    void shouldReturn422WhenHearingIsNotCrown() {
-        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
-        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary(
-                HearingsDataFactory.MAGISTRATES_JURISDICTION);
-        final ListCourtHearingSteps seedSteps = new ListCourtHearingSteps(hearingsData);
+    void shouldChangeCourtRoomForASelectedDayOfAMagistratesMultidayHearing() throws IOException {
+        final TwoDayMagistratesHearing hearing = givenAllocatedTwoDayMagistratesHearing();
 
-        // MAGS listing calls courtscheduler during list-court-hearing; CROWN doesn't (mirrors
-        // MoveHearingToPastDateIT.givenAListedHearing).
-        final HearingData seedHearingData = hearingsData.getHearingData().get(0);
-        final ZonedDateTime hearingStartTime = seedHearingData.getHearingStartTime();
-        final String listedCourtScheduleId = UUID.randomUUID().toString();
-        final Map<String, String> stubParams = new HashMap<>();
-        stubParams.put("SESSION_DATE", hearingStartTime.toLocalDate().toString());
-        stubParams.put("COURT_CENTRE_ID", seedHearingData.getCourtCentreId().toString());
-        stubParams.put("COURT_SCHEDULE_ID", listedCourtScheduleId);
-        stubParams.put("COURT_ROOM_ID", seedHearingData.getCourtRoomId().toString());
-        stubParams.put("BOOKING_ID", UUID.randomUUID().toString());
-        stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
-        stubProvisionalBookingWithCustomParams(stubParams);
-        stubListHearingInCourtSessions(seedHearingData.getId().toString(), listedCourtScheduleId, hearingStartTime);
+        final JmsMessageConsumerClient hearingUpdatedConsumer = publicEvents.createPublicConsumer(PUBLIC_HEARING_UPDATED);
+        final JmsMessageConsumerClient hearingDaysChangedConsumer = publicEvents.createPublicConsumer(PUBLIC_HEARING_DAYS_CHANGED_FOR_HEARING);
 
-        seedSteps.whenCaseIsSubmittedForListing();
-        final UUID hearingId = seedHearingData.getId();
-        seedSteps.verifyHearingIsCreated(hearingId, 2);
+        final UUID room2 = UUID.randomUUID();
+        final UUID targetScheduleD2 = UUID.randomUUID();
+        stubChangeCourtRoomForMultidayHearing(hearing.hearingId.toString(), of(
+                new ChangeCourtRoomStubSession(targetScheduleD2.toString(), room2.toString(),
+                        hearing.day2.toString(), hearing.day2 + "T10:00:00Z", MAGS_SESSION_DURATION_MINUTES)));
 
-        final UUID courtCentreId = hearingsData.getHearingData().get(0).getCourtCentreId();
-        final UUID courtRoomId = hearingsData.getHearingData().get(0).getCourtRoomId();
-        final String payload = changeCourtRoomPayload(courtCentreId, of(
-                dayChange(ItClock.today().plusDays(30), courtRoomId, UUID.randomUUID())));
+        final String payload = changeCourtRoomPayload(hearing.courtCentreId, of(
+                dayChange(hearing.day2, hearing.courtRoomId, targetScheduleD2)), MAGS_SESSION_DURATION_MINUTES);
 
-        final Response response = postChangeCourtRoom(hearingId, payload);
+        final Response response = postChangeCourtRoom(hearing.hearingId, payload);
 
-        assertThat(response.getStatus(), is(422));
-        assertThat(response.readEntity(String.class), containsString("NOT_CROWN_HEARING"));
-        verifyChangeCourtRoomForMultidayHearingNeverCalled(hearingId.toString());
+        assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
+        verifyChangeCourtRoomForMultidayHearingCalled(hearing.hearingId.toString());
+
+        // The moved day carries the new room, the new schedule and the booked session's times
+        // (10:00 start, 180 minutes); the untouched day is compared field for field against the
+        // values captured before the change. Still MAGISTRATES, still two days.
+        pollWithDefaults(requestParams(searchHearingUrl(hearing.hearingId), MEDIA_TYPE_SEARCH_HEARING)
+                .withHeader(USER_ID, getLoggedInUser()).build())
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.id", is(hearing.hearingId.toString())),
+                                withJsonPath("$.jurisdictionType", is("MAGISTRATES")),
+                                withJsonPath("$.hearingDays", hasSize(2)),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].courtRoomId",
+                                        hasItem(room2.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].courtScheduleId",
+                                        hasItem(targetScheduleD2.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].courtCentreId",
+                                        hasItem(hearing.courtCentreId.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].startTime",
+                                        hasItem(startsWith(hearing.day2 + "T10:00"))),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].endTime",
+                                        hasItem(startsWith(hearing.day2 + "T13:00"))),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtRoomId",
+                                        hasItem(hearing.courtRoomId.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtScheduleId",
+                                        hasItem(hearing.scheduleD1.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtCentreId",
+                                        hasItem(hearing.day1CourtCentreId)),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].startTime",
+                                        hasItem(hearing.day1StartTime)),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].endTime",
+                                        hasItem(hearing.day1EndTime))
+                        )));
+
+        final JsonPath hearingDaysChanged = retrieveMessage(hearingDaysChangedConsumer,
+                containsString(hearing.hearingId.toString()));
+        assertThat(hearingDaysChanged.get("hearingId"), is(hearing.hearingId.toString()));
+
+        final JsonPath hearingUpdated = retrieveMessage(hearingUpdatedConsumer,
+                containsString(hearing.hearingId.toString()));
+        assertThat(hearingUpdated.get("updatedHearing.id"), is(hearing.hearingId.toString()));
+        assertThat(hearingUpdated.get("updatedHearing.jurisdictionType"), is("MAGISTRATES"));
+    }
+
+    @Test
+    void shouldAcceptAMagistratesAllDaySessionOf420Minutes() throws IOException {
+        final TwoDayMagistratesHearing hearing = givenAllocatedTwoDayMagistratesHearing();
+
+        final UUID room2 = UUID.randomUUID();
+        final UUID targetScheduleD2 = UUID.randomUUID();
+        stubChangeCourtRoomForMultidayHearing(hearing.hearingId.toString(), of(
+                new ChangeCourtRoomStubSession(targetScheduleD2.toString(), room2.toString(),
+                        hearing.day2.toString(), hearing.day2 + "T10:00:00Z", MAGS_ALL_DAY_DURATION_MINUTES)));
+
+        final String payload = changeCourtRoomPayload(hearing.courtCentreId, of(
+                dayChange(hearing.day2, hearing.courtRoomId, targetScheduleD2)), MAGS_ALL_DAY_DURATION_MINUTES);
+
+        final Response response = postChangeCourtRoom(hearing.hearingId, payload);
+
+        assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
+        verifyChangeCourtRoomForMultidayHearingCalled(hearing.hearingId.toString());
+
+        // A 420-minute day is the whole MAGISTRATES sitting day: 10:00 to 17:00 on the new session.
+        pollWithDefaults(requestParams(searchHearingUrl(hearing.hearingId), MEDIA_TYPE_SEARCH_HEARING)
+                .withHeader(USER_ID, getLoggedInUser()).build())
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.id", is(hearing.hearingId.toString())),
+                                withJsonPath("$.hearingDays", hasSize(2)),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].courtRoomId",
+                                        hasItem(room2.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].courtScheduleId",
+                                        hasItem(targetScheduleD2.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].startTime",
+                                        hasItem(startsWith(hearing.day2 + "T10:00"))),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].endTime",
+                                        hasItem(startsWith(hearing.day2 + "T17:00"))),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtRoomId",
+                                        hasItem(hearing.courtRoomId.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtScheduleId",
+                                        hasItem(hearing.scheduleD1.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].startTime",
+                                        hasItem(hearing.day1StartTime)),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].endTime",
+                                        hasItem(hearing.day1EndTime))
+                        )));
     }
 
     @Test
@@ -660,6 +761,74 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
                 day1CourtCentreIds.get(0));
     }
 
+    /**
+     * A MAGISTRATES hearing listed on one day and then allocated over two sitting days through the
+     * ordinary update-hearing-for-listing path, so both hearing days carry the courtScheduleId the
+     * courtscheduler stub returned for them - the state the court calendar's change-courtroom action
+     * starts from.
+     */
+    private TwoDayMagistratesHearing givenAllocatedTwoDayMagistratesHearing() throws IOException {
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary(
+                HearingsDataFactory.MAGISTRATES_JURISDICTION);
+        final HearingData seedHearingData = hearingsData.getHearingData().get(0);
+        final ZonedDateTime hearingStartTime = seedHearingData.getHearingStartTime();
+        final String listedCourtScheduleId = UUID.randomUUID().toString();
+        final Map<String, String> stubParams = new HashMap<>();
+        stubParams.put("SESSION_DATE", hearingStartTime.toLocalDate().toString());
+        stubParams.put("COURT_CENTRE_ID", seedHearingData.getCourtCentreId().toString());
+        stubParams.put("COURT_SCHEDULE_ID", listedCourtScheduleId);
+        stubParams.put("COURT_ROOM_ID", seedHearingData.getCourtRoomId().toString());
+        stubParams.put("BOOKING_ID", UUID.randomUUID().toString());
+        stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
+        stubProvisionalBookingWithCustomParams(stubParams);
+        stubListHearingInCourtSessions(seedHearingData.getId().toString(), listedCourtScheduleId, hearingStartTime);
+        final ListCourtHearingSteps seedSteps = new ListCourtHearingSteps(hearingsData);
+        seedSteps.whenCaseIsSubmittedForListing();
+        final UUID hearingId = seedHearingData.getId();
+        seedSteps.verifyHearingIsCreated(hearingId, 2);
+
+        final UpdatedHearingData updatedHearingData = updatedHearingDataForAllocation(hearingId);
+        stubGetReferenceDataCourtRoom(updatedHearingData.getCourtCentreId(), LocalTime.of(10, 30), "6:30",
+                updatedHearingData.getCourtRoomId());
+        final UpdateHearingSteps updateSteps = new UpdateHearingSteps(hearingsData, updatedHearingData);
+        stubGetAvailableHearingSlotsWithQueryParams(updateSteps.getUpdatedHearingData());
+        stubListHearingInCourtSessionsWithMultipleSchedules(updateSteps.getUpdatedHearingData());
+        updateSteps.whenHearingIsUpdatedForListing();
+        updateSteps.verifyHearingAllocatedWhenQueryingFromAPI();
+
+        final NonDefaultDayData firstDay = updatedHearingData.getNonDefaultDays().get(0);
+        final NonDefaultDayData secondDay = updatedHearingData.getNonDefaultDays().get(1);
+        final LocalDate day1 = ZonedDateTime.parse(firstDay.getStartTime()).toLocalDate();
+        final LocalDate day2 = ZonedDateTime.parse(secondDay.getStartTime()).toLocalDate();
+        final UUID scheduleD1 = UUID.fromString(firstDay.getCourtScheduleId().orElseThrow());
+        final UUID scheduleD2 = UUID.fromString(secondDay.getCourtScheduleId().orElseThrow());
+
+        final ResponseData allocatedResponse = pollWithDefaults(requestParams(searchHearingUrl(hearingId), MEDIA_TYPE_SEARCH_HEARING)
+                .withHeader(USER_ID, getLoggedInUser()).build())
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.id", is(hearingId.toString())),
+                                withJsonPath("$.jurisdictionType", is("MAGISTRATES")),
+                                withJsonPath("$.hearingDays", hasSize(2)),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + day1 + "')].courtScheduleId", hasItem(scheduleD1.toString())),
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + day2 + "')].courtScheduleId", hasItem(scheduleD2.toString()))
+                        )));
+
+        // Day 1 as the viewstore serialises it before the change, so the tests can prove the
+        // untouched day survives the room change field for field, as the Crown fixture does.
+        final List<String> day1StartTimes = com.jayway.jsonpath.JsonPath.read(allocatedResponse.getPayload(),
+                "$.hearingDays[?(@.hearingDate=='" + day1 + "')].startTime");
+        final List<String> day1EndTimes = com.jayway.jsonpath.JsonPath.read(allocatedResponse.getPayload(),
+                "$.hearingDays[?(@.hearingDate=='" + day1 + "')].endTime");
+        final List<String> day1CourtCentreIds = com.jayway.jsonpath.JsonPath.read(allocatedResponse.getPayload(),
+                "$.hearingDays[?(@.hearingDate=='" + day1 + "')].courtCentreId");
+
+        return new TwoDayMagistratesHearing(hearingId, updatedHearingData.getCourtCentreId(), updatedHearingData.getCourtRoomId(),
+                day1, day2, scheduleD1, scheduleD2, day1StartTimes.get(0), day1EndTimes.get(0), day1CourtCentreIds.get(0));
+    }
+
     private static void givenReferenceDataStubsForUpdateHearing(final UUID courtCentreId, final UUID courtRoomId) {
         final CourtCentreData courtCentreData = new CourtCentreData(
                 courtCentreId,
@@ -720,11 +889,15 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
     }
 
     private static String changeCourtRoomPayload(final UUID courtCentreId, final List<DayChange> days) {
+        return changeCourtRoomPayload(courtCentreId, days, DAY_DURATION_MINUTES);
+    }
+
+    private static String changeCourtRoomPayload(final UUID courtCentreId, final List<DayChange> days, final int dayDurationMinutes) {
         final JsonArrayBuilder nonDefaultDays = Json.createArrayBuilder();
         for (final DayChange day : days) {
             final JsonObjectBuilder dayBuilder = Json.createObjectBuilder()
                     .add("startTime", day.date + "T09:00:00Z")
-                    .add("duration", DAY_DURATION_MINUTES)
+                    .add("duration", dayDurationMinutes)
                     .add("courtCentreId", courtCentreId.toString())
                     .add("roomId", day.courtRoomId.toString())
                     .add("courtScheduleId", day.targetCourtScheduleId.toString())
@@ -756,6 +929,11 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
                                          UUID scheduleD1, UUID scheduleD2, UUID scheduleD3,
                                          String day1StartTime, String day1EndTime,
                                          String day1CourtCentreId) {
+    }
+
+    private record TwoDayMagistratesHearing(UUID hearingId, UUID courtCentreId, UUID courtRoomId,
+                                           LocalDate day1, LocalDate day2, UUID scheduleD1, UUID scheduleD2,
+                                           String day1StartTime, String day1EndTime, String day1CourtCentreId) {
     }
 
     private record DayChange(LocalDate date, UUID courtRoomId, UUID targetCourtScheduleId) {

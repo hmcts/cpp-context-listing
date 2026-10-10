@@ -1082,7 +1082,7 @@ public class Hearing implements Aggregate {
     }
 
     /**
-     * Change the courtroom of SELECTED days of a multiday CROWN hearing. {@code changedDays} carries only the
+     * Change the courtroom of SELECTED days of a multiday CROWN or MAGISTRATES hearing. {@code changedDays} carries only the
      * days being changed; every other day is preserved verbatim from aggregate state. Emits the same event set
      * as today's update flow so downstream public events fire identically:
      * hearing-days-changed-for-hearing (full merged day set), allocation events, hearing-day-court-schedule-updated.
@@ -1095,7 +1095,7 @@ public class Hearing implements Aggregate {
     }
 
     /**
-     * CROWN multi-day courtroom change with mixed day types. {@code changedDays} are the days already
+     * Multi-day courtroom change with mixed day types. {@code changedDays} are the days already
      * (re)booked in courtscheduler by COMMAND_API - every virtual day, plus any REAL day whose
      * courtScheduleId changed (SPRDT-1225) - merged into hearingDays with their court schedules
      * updated. {@code changedNonDefaultDays} are the REAL days (virtual false/absent): each is merged
@@ -1196,7 +1196,7 @@ public class Hearing implements Aggregate {
         // branch; changedDates as daysOfNonDefaultDays exempts exactly the days being changed here. Sequence is
         // re-derived by startTime inside mergeHearingDaySequences, so it is not carried on the changed days.
         final Stream<Object> dayEvents = assignHearingDaysV2(hearingId, mergedDays, parentCourtRoom, parentCourtRoom,
-                uk.gov.justice.core.courts.JurisdictionType.CROWN, changedDates);
+                valueFor(this.jurisdictionType.toString()).orElseThrow(IllegalArgumentException::new), changedDates);
         // Schedule updates fire for every pre-booked day (virtual or rebooked real); a request whose
         // days all keep their existing schedule has none.
         final Stream<Object> scheduleEvents = changedSchedules.isEmpty()

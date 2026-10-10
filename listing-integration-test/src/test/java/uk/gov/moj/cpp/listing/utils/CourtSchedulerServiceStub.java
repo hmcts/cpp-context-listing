@@ -1720,7 +1720,7 @@ public class CourtSchedulerServiceStub {
                 .withHeader(CONTENT_TYPE, containing(MOVE_HEARING_TO_PAST_DATE_TYPE)));
     }
 
-    // --- change-court-room-for-multiday-hearing stubs (CROWN-only: POST /hearings/{hearingId}) ---
+    // --- change-court-room-for-multiday-hearing stubs (CROWN and MAGISTRATES: POST /hearings/{hearingId}) ---
 
     private static final String CHANGE_COURT_ROOM_MULTIDAY_TYPE =
             "application/vnd.courtscheduler.change-court-room-for-multiday-hearing+json";

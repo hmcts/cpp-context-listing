@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.api;
 
+import static uk.gov.moj.cpp.listing.command.api.service.HearingDurationEnrichmentService.MINUTES_IN_DAY;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
@@ -104,10 +105,11 @@ public class ListingCommandApi {
     private static final String SEND_NOTIFICATION_TO_PARTIES = "sendNotificationToParties";
     private static final String CHANGED_DAYS = "changedDays";
     private static final String HEARING_DATE = "hearingDate";
-    public static final String NOT_CROWN_HEARING = "NOT_CROWN_HEARING";
+    public static final String UNSUPPORTED_JURISDICTION = "UNSUPPORTED_JURISDICTION";
     public static final String NOT_MULTIDAY_HEARING = "NOT_MULTIDAY_HEARING";
     public static final String DUPLICATE_DAY_DATES = "DUPLICATE_DAY_DATES";
     public static final String MISSING_COURT_SCHEDULE_ID = "MISSING_COURT_SCHEDULE_ID";
+    public static final String DAY_DURATION_EXCEEDS_SITTING_DAY = "DAY_DURATION_EXCEEDS_SITTING_DAY";
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String START_DATE = "startDate";
     private static final String START_DATE_TIME = "startDateTime";
@@ -140,6 +142,9 @@ public class ListingCommandApi {
     public static final String START_DATE_TOO_OLD = "START_DATE_TOO_OLD";
     private static final int MAX_PAST_MONTHS = 6;
     private static final String CROWN_JURISDICTION = "CROWN";
+    private static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
+    private static final Set<String> CHANGE_COURT_ROOM_JURISDICTIONS = Set.of(CROWN_JURISDICTION, MAGISTRATES_JURISDICTION);
+    private static final int MAGISTRATES_ALL_DAY_SESSION_MINUTES = 420;
     private static final String LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING = "listing.command.mark-unallocated-hearing-as-duplicate";
     private static final String LISTING_COMMAND_UPDATE_EXISTING_HEARING = "listing.command.update-existing-hearing";
     private static final String LISTING_COMMAND_DELETE_NEXT_HEARINGS = "listing.command.delete-next-hearings";
@@ -703,7 +708,7 @@ public class ListingCommandApi {
     }
 
     /**
-     * CROWN-only. Changes the courtroom of one or more SELECTED days of a multi-day CROWN
+     * Changes the courtroom of one or more SELECTED days of a multi-day CROWN or MAGISTRATES
      * hearing. Days not present in {@code nonDefaultDays} are never touched. Virtual days are always
      * (re)booked in courtscheduler; a REAL day is (re)booked too when its {@code courtScheduleId}
      * differs from the hearing day's current schedule on that date, so the old session's duration is
@@ -711,7 +716,7 @@ public class ListingCommandApi {
      * persisted and never booked - the UI omits the id when no bookable slot exists for the room/date
      * (e.g. the day's own session is fully consumed), which must not be a contract violation. Schema
      * violations (missing/malformed fields) are rejected as 400 by the framework via the request
-     * schema; business failures (unknown hearing, non-CROWN, non-multiday, duplicate day dates, a
+     * schema; business failures (unknown hearing, unsupported jurisdiction, non-multiday, duplicate day dates, a
      * virtual day without a courtScheduleId, or a courtscheduler rejection) are all surfaced as 422
      * via {@link ChangeCourtRoomForMultidayException} so no command is ever sent.
      */
@@ -726,7 +731,7 @@ public class ListingCommandApi {
         final UUID hearingId = fromString(payload.getString(HEARING_ID));
         final JsonArray nonDefaultDays = payload.getJsonArray(NON_DEFAULT_DAYS);
 
-        final JsonObject hearing = validateCrownMultidayHearingOrThrow(hearingId, envelope);
+        final JsonObject hearing = validateMultidayHearingOrThrow(hearingId, envelope);
         final Map<LocalDate, String> currentScheduleByDate = currentCourtScheduleIdsByDate(hearing);
 
         // Each requested day is either VIRTUAL (virtual=true -> (re)booked in courtscheduler and
@@ -746,9 +751,16 @@ public class ListingCommandApi {
         final Map<LocalDate, JsonObject> rebookedRealRequestedByDate = new LinkedHashMap<>();
         final List<RequestedChangeDay> daysToBook = new ArrayList<>();
         final JsonArrayBuilder realNonDefaultDays = createArrayBuilder();
+        final int maxDayMinutes = maxDayMinutesFor(hearing.getString(JURISDICTION_TYPE));
         for (final JsonValue value : nonDefaultDays) {
             final JsonObject nonDefaultDay = (JsonObject) value;
             final LocalDate date = ZonedDateTime.parse(nonDefaultDay.getString(DAY_START_TIME)).toLocalDate();
+            if (nonDefaultDay.getInt(NON_DEFAULT_DAY_DURATION) > maxDayMinutes) {
+                final String message = "Day " + date + " duration " + nonDefaultDay.getInt(NON_DEFAULT_DAY_DURATION)
+                        + " exceeds the " + maxDayMinutes + " minute sitting day of a " + hearing.getString(JURISDICTION_TYPE) + " hearing";
+                throw new ChangeCourtRoomForMultidayException(422,
+                        buildChangeCourtRoomForMultidayErrorBody(DAY_DURATION_EXCEEDS_SITTING_DAY, message), message);
+            }
             if (!seenDates.add(date)) {
                 throw new ChangeCourtRoomForMultidayException(422,
                         buildChangeCourtRoomForMultidayErrorBody(DUPLICATE_DAY_DATES, "Duplicate day " + date + " in nonDefaultDays"),
@@ -787,20 +799,30 @@ public class ListingCommandApi {
     }
 
     /**
-     * CROWN-only business validations for change-court-room-for-multiday: hearing must exist, be CROWN,
-     * and be multiday. Returns the looked-up hearing so callers can compare requested days against its
-     * current hearingDays without a second query.
+     * The longest day this command accepts for a hearing's jurisdiction: the Crown sitting day the
+     * multiday enrichment is built on, or the length of the default MAGISTRATES all-day session
+     * (10:00 to 17:00). Courtscheduler still checks the target session's real capacity.
      */
-    private JsonObject validateCrownMultidayHearingOrThrow(final UUID hearingId, final JsonEnvelope envelope) {
+    private static int maxDayMinutesFor(final String jurisdictionType) {
+        return MAGISTRATES_JURISDICTION.equals(jurisdictionType) ? MAGISTRATES_ALL_DAY_SESSION_MINUTES : MINUTES_IN_DAY;
+    }
+
+    /**
+     * Business validations for change-court-room-for-multiday: hearing must exist, be CROWN or
+     * MAGISTRATES, and be multiday. Returns the looked-up hearing so callers can compare requested
+     * days against its current hearingDays without a second query.
+     */
+    private JsonObject validateMultidayHearingOrThrow(final UUID hearingId, final JsonEnvelope envelope) {
         final JsonObject hearing = hearingLookupService.findHearing(hearingId, envelope)
                 .orElseThrow(() -> new ChangeCourtRoomForMultidayException(422,
                         buildChangeCourtRoomForMultidayErrorBody(HEARING_ID_NOT_FOUND, NO_HEARING_FOUND_FOR_HEARING_ID + hearingId),
                         NO_HEARING_FOUND_FOR_HEARING_ID + hearingId));
 
-        if (!CROWN_JURISDICTION.equals(hearing.getString(JURISDICTION_TYPE, null))) {
+        final String jurisdictionType = hearing.getString(JURISDICTION_TYPE, null);
+        if (jurisdictionType == null || !CHANGE_COURT_ROOM_JURISDICTIONS.contains(jurisdictionType)) {
+            final String message = "change-court-room-for-multiday-hearing supports CROWN and MAGISTRATES hearings, not " + jurisdictionType;
             throw new ChangeCourtRoomForMultidayException(422,
-                    buildChangeCourtRoomForMultidayErrorBody(NOT_CROWN_HEARING, "change-court-room-for-multiday-hearing is CROWN-only"),
-                    "change-court-room-for-multiday-hearing is CROWN-only");
+                    buildChangeCourtRoomForMultidayErrorBody(UNSUPPORTED_JURISDICTION, message), message);
         }
 
         final JsonArray hearingDays = hearing.containsKey(HEARING_DAYS) ? hearing.getJsonArray(HEARING_DAYS) : null;
