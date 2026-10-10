@@ -2,18 +2,30 @@
 
 # Script that runs, liquibase, deploys wars and runs integration test
 #
-# Usage: ./runIntegrationTests.sh [errorlog]
+# Usage: ./runIntegrationTests.sh [errorlog] [durations] [nounit]
 #   errorlog  - strict server.log mode: any unexpected ERROR/WARN in a test's server.log window
 #               FAILS that test (see ServerLogTestMarkerExtension / @ExpectedServerErrors).
 #               Also disables failsafe reruns so strict failures cannot be masked as flakes.
+#   durations - also activate the test-duration-tracking profile (TestDurationListener): ranked
+#               per-test durations in listing-integration-test/target/test-results/test-durations.csv
+#   nounit    - build the wars with -DskipTests (unit tests are not needed to deploy; the PR gate's
+#               own `mvn clean install` still runs them). Saves the ~1 min unit-test pass per IT run.
 
 CONTEXT_NAME=listing
 
 SERVER_LOG_STRICT_PROPS=""
+EXTRA_IT_PROFILES=""
+BUILD_SKIP_TESTS=""
 for arg in "$@"; do
   case "$arg" in
     errorlog)
       SERVER_LOG_STRICT_PROPS="-Dserver.log.failOnUnexpectedErrors=true -Dfailsafe.rerunFailingTestsCount=0"
+      ;;
+    durations)
+      EXTRA_IT_PROFILES=",test-duration-tracking"
+      ;;
+    nounit)
+      BUILD_SKIP_TESTS="-DskipTests"
       ;;
   esac
 done
@@ -43,8 +55,17 @@ source $CPP_DOCKER_DIR/build-scripts/integration-test-scipt-functions.sh
 integrationTests() {
   echo
   echo "Running Integration Tests${SERVER_LOG_STRICT_PROPS:+ (strict server.log mode: unexpected ERROR/WARN fails the owning test)}"
-  mvn -B -C -U verify -pl ${CONTEXT_NAME}-integration-test -P${CONTEXT_NAME}-integration-test -DINTEGRATION_HOST_KEY=localhost -Dfailsafe.rerunFailingTestsCount=4 ${SERVER_LOG_STRICT_PROPS}
+  mvn -B -C -U verify -pl ${CONTEXT_NAME}-integration-test -P${CONTEXT_NAME}-integration-test${EXTRA_IT_PROFILES} -DINTEGRATION_HOST_KEY=localhost -Dfailsafe.rerunFailingTestsCount=4 ${SERVER_LOG_STRICT_PROPS}
   echo "Finished executing Integration Tests"
+}
+
+# Local override of cpp-developers-docker's buildWars()/doBuildWars 'service': same clean + install,
+# plus -DskipTests when "nounit" is given.
+buildWars() {
+  mvn -f ${CONTEXT_NAME}-service/pom.xml clean
+  echo "Building wars..."
+  mvn install -nsu ${BUILD_SKIP_TESTS}
+  echo "Finished building wars"
 }
 
 runLiquibase() {
