@@ -13,6 +13,7 @@ import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingDataWithJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.randomJudicialRole;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
@@ -74,6 +75,12 @@ public class HearingCsvReportIT extends AbstractIT {
         stubGetReferenceDataCourtCentreById(courtCentreId);
 
         data = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
+        // The update below is handled by ListingCommandHandler.updateHearingForListingEnriched, which
+        // reads the hearing from the VIEW STORE. Sent before the list-court-hearing projection lands it
+        // throws NotFoundException, is redelivered to the DLQ and the update is lost — the 90s
+        // court-calendar poll then times out. Wait for the projection first (same as PublishCourtListIT).
+        pollUntilHearingIsPresent(courtCentreId.toString(), ALLOCATED, USER_ID_VALUE.toString(),
+                data.getHearingData().get(0).getId().toString());
 
         // The CSV report resolves judiciary names via referencedata.query.judiciaries; without
         // this stub the response payload is null -> NPE -> WARN "Failed to resolve judiciary name".
