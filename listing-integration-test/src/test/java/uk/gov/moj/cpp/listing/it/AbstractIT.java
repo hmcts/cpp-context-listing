@@ -13,6 +13,7 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCourtSc
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubDeleteAvailableHearingSlotsServiceForAnyHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataOrganisationUnitCatchAll;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataOrganisationUnitListCatchAll;
 import uk.gov.moj.cpp.listing.it.util.ArtemisQueuePurger;
 import uk.gov.moj.cpp.listing.it.util.PipelineIdleBarrier;
 import static uk.gov.moj.cpp.listing.utils.WebDavStub.acceptCourtListXmlFile;
@@ -86,6 +87,7 @@ public class AbstractIT {
         // minimal. Tests that re-arm later still win — most recent stub wins at equal priority.
         acceptCourtListXmlFile(OK);
         stubGetReferenceDataOrganisationUnitCatchAll();
+        stubGetReferenceDataOrganisationUnitListCatchAll();
         stubCourtSchedulerCatchAll();
         setupAsAuthorisedUser(USER_ID_VALUE);
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased();
