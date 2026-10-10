@@ -86,6 +86,11 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
     public void hearingCanBeSearchedForUsingDifferentCombinationsOfParametersForMagsCourtCalendar() throws JsonProcessingException {
         final UUID magsCourtCenterId = getRandomCourtCenterId();
         final List<TestData> testDataList = new ArrayList<>();
+        // Seed in phases (submit all -> await all -> update all -> await all) instead of one hearing at a
+        // time: the 7 hearings live on independent streams, so the server processes them concurrently.
+        // Stubs are still armed per hearing right before its submission — enrichment reads them
+        // synchronously inside the command-API request.
+        final List<ListCourtHearingSteps> listingSteps = new ArrayList<>();
         IntStream.range(0, 7).forEach(i ->
         {
             final UUID magestirateCourtRoomId = new ArrayList<>(COURT_ROOMS.keySet()).get(i % COURT_ROOMS.size());
@@ -97,15 +102,18 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
             final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciaryWithCourtCenterForMagistrate(magsCourtCenterId, magestirateCourtRoomId, hearingEndDate, hearingStartTime);
             final ListCourtHearingSteps listCourtHearingSteps = getListCourtHearingStepsWithStubbedBookingRef(hearingsData, hearingStartTime);
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(ALLOCATED);
-
-            final UpdatedHearingData updatedHearingDataWithUpdatedJudiciary = UpdatedHearingData.updatedHearingDataDifferentJudiciary(hearingsData.getHearingData().get(0));
-            final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataWithUpdatedJudiciary);
-            updateHearingSteps.whenJudiciaryIsChangedForHearings();
-            updateHearingSteps.verifyHearingWithUpdatedJudiciaryWhenQueryingFromAPI();
+            listingSteps.add(listCourtHearingSteps);
             testDataList.add(new TestData(hearingStartTime.toLocalDate(), magestirateCourtRoomId, COURT_ROOMS.get(magestirateCourtRoomId), hearingStartTime));
-
         });
+        listingSteps.forEach(steps -> steps.verifyHearingListedFromAPIWithJmsDelay(ALLOCATED));
+
+        final List<UpdateHearingSteps> judiciaryUpdates = listingSteps.stream()
+                .map(ListCourtHearingSteps::getHearingsData)
+                .map(hearingsData -> new UpdateHearingSteps(hearingsData,
+                        UpdatedHearingData.updatedHearingDataDifferentJudiciary(hearingsData.getHearingData().get(0))))
+                .toList();
+        judiciaryUpdates.forEach(UpdateHearingSteps::whenJudiciaryIsChangedForHearings);
+        judiciaryUpdates.forEach(UpdateHearingSteps::verifyHearingWithUpdatedJudiciaryWhenQueryingFromAPI);
 
         final String payload = new UpdateHearingSteps().verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDateCourtCalendarWithPagination(magsCourtCenterId, 5, 1, 5);
         checkPayload(payload, 5, testDataList, 5, 1);
@@ -123,6 +131,7 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
         final List<TestData> testDataList = new ArrayList<>();
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps();
+        final List<UUID> seededHearingIds = new ArrayList<>();
 
         IntStream.range(0, 7).forEach(i ->
         {
@@ -140,8 +149,11 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
             ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData, crownCourtCenterId, crownCourtRoomId, hearingEndDate, hearingStartTime));
             testDataList.add(new TestData(hearingStartTime.toLocalDate(), crownCourtRoomId, COURT_ROOMS.get(crownCourtRoomId), hearingStartTime));
             listCourtHearingSteps1.whenCaseIsSubmittedForListing();
-            updateHearingSteps.pollUntilHearingIsPresentWithHearingId(crownCourtCenterId.toString(), ALLOCATED, getLoggedInUser().toString(), hearingId.toString());
+            seededHearingIds.add(hearingId);
         });
+        // Await after submitting all 7 (independent streams, processed concurrently) rather than one at a time.
+        seededHearingIds.forEach(hearingId -> updateHearingSteps.pollUntilHearingIsPresentWithHearingId(
+                crownCourtCenterId.toString(), ALLOCATED, getLoggedInUser().toString(), hearingId.toString()));
 
         final String payload = updateHearingSteps.verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDateCourtCalendarWithPagination(crownCourtCenterId, 5, 1, 5);
         checkPayload(payload, 5, testDataList, 5, 1);
