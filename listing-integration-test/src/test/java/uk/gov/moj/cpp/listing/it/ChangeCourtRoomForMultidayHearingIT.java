@@ -84,7 +84,7 @@ import uk.gov.justice.services.test.utils.core.http.ResponseData;
  * in courtscheduler and converted into hearing days; real days (virtual false/absent) are persisted
  * as nonDefaultDays - booked in courtscheduler ONLY when their courtScheduleId differs from the
  * hearing day's current schedule on that date (SPRDT-1225), otherwise without any courtscheduler
- * booking. Schema violations (duration > 420, missing
+ * booking. Schema violations (duration > 360, missing
  * courtScheduleId/roomId) are rejected as 400 by the framework before COMMAND_API runs. Business
  * failures (unknown hearing, unsupported jurisdiction, non-multiday, duplicate day dates, or a courtscheduler
  * rejection) are surfaced synchronously as 422 via {@code ChangeCourtRoomForMultidayException}.
@@ -106,7 +106,6 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
     private static final int MULTI_DAY_TOTAL_DURATION_MINUTES = 1080;
     private static final int DAY_DURATION_MINUTES = 360;
     private static final int MAGS_SESSION_DURATION_MINUTES = 180;
-    private static final int MAGS_ALL_DAY_DURATION_MINUTES = 420;
 
     private static final String PUBLIC_HEARING_UPDATED = "public.listing.hearing-updated";
     private static final String PUBLIC_HEARING_DAYS_CHANGED_FOR_HEARING = "public.listing.hearing-days-changed-for-hearing";
@@ -609,51 +608,6 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
                 containsString(hearing.hearingId.toString()));
         assertThat(hearingUpdated.get("updatedHearing.id"), is(hearing.hearingId.toString()));
         assertThat(hearingUpdated.get("updatedHearing.jurisdictionType"), is("MAGISTRATES"));
-    }
-
-    @Test
-    void shouldAcceptAMagistratesAllDaySessionOf420Minutes() throws IOException {
-        final TwoDayMagistratesHearing hearing = givenAllocatedTwoDayMagistratesHearing();
-
-        final UUID room2 = UUID.randomUUID();
-        final UUID targetScheduleD2 = UUID.randomUUID();
-        stubChangeCourtRoomForMultidayHearing(hearing.hearingId.toString(), of(
-                new ChangeCourtRoomStubSession(targetScheduleD2.toString(), room2.toString(),
-                        hearing.day2.toString(), hearing.day2 + "T10:00:00Z", MAGS_ALL_DAY_DURATION_MINUTES)));
-
-        final String payload = changeCourtRoomPayload(hearing.courtCentreId, of(
-                dayChange(hearing.day2, hearing.courtRoomId, targetScheduleD2)), MAGS_ALL_DAY_DURATION_MINUTES);
-
-        final Response response = postChangeCourtRoom(hearing.hearingId, payload);
-
-        assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
-        verifyChangeCourtRoomForMultidayHearingCalled(hearing.hearingId.toString());
-
-        // A 420-minute day is the whole MAGISTRATES sitting day: 10:00 to 17:00 on the new session.
-        pollWithDefaults(requestParams(searchHearingUrl(hearing.hearingId), MEDIA_TYPE_SEARCH_HEARING)
-                .withHeader(USER_ID, getLoggedInUser()).build())
-                .until(
-                        status().is(OK),
-                        payload().isJson(allOf(
-                                withJsonPath("$.id", is(hearing.hearingId.toString())),
-                                withJsonPath("$.hearingDays", hasSize(2)),
-                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].courtRoomId",
-                                        hasItem(room2.toString())),
-                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].courtScheduleId",
-                                        hasItem(targetScheduleD2.toString())),
-                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].startTime",
-                                        hasItem(startsWith(hearing.day2 + "T10:00"))),
-                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day2 + "')].endTime",
-                                        hasItem(startsWith(hearing.day2 + "T17:00"))),
-                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtRoomId",
-                                        hasItem(hearing.courtRoomId.toString())),
-                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].courtScheduleId",
-                                        hasItem(hearing.scheduleD1.toString())),
-                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].startTime",
-                                        hasItem(hearing.day1StartTime)),
-                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + hearing.day1 + "')].endTime",
-                                        hasItem(hearing.day1EndTime))
-                        )));
     }
 
     @Test

@@ -1714,7 +1714,7 @@ public class ListingCommandApiTest {
         final JsonArray nonDefaultDays = Json.createArrayBuilder()
                 .add(Json.createObjectBuilder()
                         .add("startTime", d2 + "T10:00:00Z")
-                        .add("duration", 420)
+                        .add("duration", 360)
                         .add("courtCentreId", courtCentreId.toString())
                         .add("roomId", requestedCourtRoomId.toString())
                         .add("courtScheduleId", targetCourtScheduleId.toString())
@@ -1727,12 +1727,12 @@ public class ListingCommandApiTest {
         given(payload.getBoolean("sendNotificationToParties", true)).willReturn(true);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
         given(courtSchedulerServiceAdapter.changeCourtRoomForMultidayHearing(eq(hearingId), any()))
-                .willReturn(List.of(new ChangedDaySession(targetCourtScheduleId, "mags-room-2", d2, d2 + "T10:00:00Z", 420)));
+                .willReturn(List.of(new ChangedDaySession(targetCourtScheduleId, "mags-room-2", d2, d2 + "T10:00:00Z", 360)));
 
         listingCommandApi.handleChangeCourtRoomForMultidayHearing(envelope);
 
         verify(courtSchedulerServiceAdapter).changeCourtRoomForMultidayHearing(eq(hearingId),
-                eq(List.of(new RequestedChangeDay(d2, targetCourtScheduleId, 420))));
+                eq(List.of(new RequestedChangeDay(d2, targetCourtScheduleId, 360))));
         final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
         verify(sender, times(1)).send(captor.capture());
         final JsonObject sent = (JsonObject) captor.getValue().payload();
