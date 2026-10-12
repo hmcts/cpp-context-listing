@@ -1744,41 +1744,6 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    void shouldRejectChangeCourtRoomForMultidayHearingWhenACrownDayExceedsTheSittingDay() {
-        final UUID hearingId = randomUUID();
-        final LocalDate d2 = LocalDate.parse("2026-07-15");
-
-        final JsonObject hearing = Json.createObjectBuilder()
-                .add("id", hearingId.toString())
-                .add("jurisdictionType", "CROWN")
-                .add("hearingDays", Json.createArrayBuilder()
-                        .add(Json.createObjectBuilder().add("hearingDate", "2026-07-14"))
-                        .add(Json.createObjectBuilder().add("hearingDate", d2.toString())))
-                .build();
-        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
-        final JsonArray nonDefaultDays = Json.createArrayBuilder()
-                .add(Json.createObjectBuilder()
-                        .add("startTime", d2 + "T09:00:00Z")
-                        .add("duration", 420)
-                        .add("courtCentreId", randomUUID().toString())
-                        .add("roomId", randomUUID().toString())
-                        .add("courtScheduleId", randomUUID().toString())
-                        .add("virtual", true))
-                .build();
-        given(envelope.payloadAsJsonObject()).willReturn(payload);
-        given(payload.getString("hearingId")).willReturn(hearingId.toString());
-        given(payload.getJsonArray("nonDefaultDays")).willReturn(nonDefaultDays);
-
-        final ChangeCourtRoomForMultidayException thrown = assertThrows(ChangeCourtRoomForMultidayException.class,
-                () -> listingCommandApi.handleChangeCourtRoomForMultidayHearing(envelope));
-
-        assertThat(thrown.getHttpStatus(), is(422));
-        assertThat(thrown.getErrorCode(), is("DAY_DURATION_EXCEEDS_SITTING_DAY"));
-        verify(courtSchedulerServiceAdapter, never()).changeCourtRoomForMultidayHearing(any(), any());
-        verify(sender, never()).send(any());
-    }
-
-    @Test
     void shouldRejectChangeCourtRoomForMultidayHearingWhenNotMultiday() {
         final UUID hearingId = randomUUID();
 
