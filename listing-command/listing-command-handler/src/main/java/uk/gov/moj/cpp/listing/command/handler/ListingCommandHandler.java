@@ -645,7 +645,8 @@ public class ListingCommandHandler {
             final JsonObject organisationUnitJsonObject = courtCentreFactory.getOrganisationUnit(courtCentreId, command);
             final String ouCode = organisationUnitJsonObject.getString(OUCODE);
 
-            final Stream<Object> judiciaryEvents = getJudiciaryEvents(hearingId, judiciary, hearing, judiciaryAssignmentSource);
+            // Must run before court room / hearing day events so the aggregate still holds the old court sessions
+            final Stream<Object> judiciaryEvents = getJudiciaryEvents(hearingId, judiciary, hearing, judiciaryAssignmentSource, hearingDays);
 
             //Capture old courtRoomId before it is updated
             final UUID oldCourtRoomId = hearing.getCurrentHearingEventState() == null ? null: hearing.getCurrentHearingEventState().getCourtRoomId();
@@ -703,8 +704,9 @@ public class ListingCommandHandler {
         }
     }
 
-    private Stream<Object> getJudiciaryEvents(final UUID hearingId, final List<JudicialRole> judiciary, final Hearing hearing, final String judiciaryAssignmentSource) {
-        return isNotEmpty(judiciary) ? hearing.assignJudiciary(judiciary, hearingId, judiciaryAssignmentSource) : hearing.removeJudiciary(hearingId);
+    private Stream<Object> getJudiciaryEvents(final UUID hearingId, final List<JudicialRole> judiciary, final Hearing hearing, final String judiciaryAssignmentSource,
+                                              final List<uk.gov.justice.listing.commands.HearingDay> hearingDays) {
+        return hearing.updateJudiciary(judiciary, hearingId, judiciaryAssignmentSource, convertHearingDaysCommandToDomain(hearingDays));
     }
 
     private UUID getCourtRoomId(final UpdateHearingForListing updateHearingForListing) {

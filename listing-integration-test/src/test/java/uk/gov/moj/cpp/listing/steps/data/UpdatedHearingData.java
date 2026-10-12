@@ -230,6 +230,22 @@ public class UpdatedHearingData {
         return updatedHearingDataForAllocationWithVirtual(hearingId, judiciary, true);
     }
 
+    /**
+     * Same hearing, court room and days as {@code allocated}, but moved into new court sessions (new courtScheduleIds)
+     * and with no judiciary, as the UI sends on a reallocation.
+     */
+    public static UpdatedHearingData updatedHearingDataForReallocationToNewCourtSessions(final UpdatedHearingData allocated) {
+        final List<NonDefaultDayData> nonDefaultDays = allocated.getNonDefaultDays().stream()
+                .map(day -> new NonDefaultDayData(day.getStartTime(), day.getDuration(), of(randomUUID().toString()), day.getCourtRoomId(),
+                        day.getOucode(), day.getSession(), day.getCourtCentreId(), day.getRoomId(), day.getVirtual()))
+                .toList();
+
+        return new UpdatedHearingData(allocated.getHearingId(), allocated.getCourtCentreId(), allocated.getName(), allocated.getCourtRoomId(), allocated.getHearingTypData(),
+                allocated.getStartDate(), allocated.getEndDate(), nonDefaultDays,
+                allocated.getNonSittingDays(), allocated.getHearingLanguage(), Collections.emptyList(), allocated.getJurisdictionType(), null, null, null,
+                allocated.getHasVideoLink(), allocated.getPublicListNote(), false, null, null, JOH_RESOURCE);
+    }
+
     private static UpdatedHearingData updatedHearingDataForAllocation(final UUID hearingId, final List<JudicialRoleData> judiciary) {
         return updatedHearingDataForAllocationWithVirtual(hearingId, judiciary, null);
     }

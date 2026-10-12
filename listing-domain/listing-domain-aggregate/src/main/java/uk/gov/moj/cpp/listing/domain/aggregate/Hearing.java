@@ -5,6 +5,7 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Comparator.comparing;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -12,6 +13,7 @@ import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.concat;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
@@ -1006,6 +1008,60 @@ public class Hearing implements Aggregate {
             LOGGER.info("Incoming judiciary {} is the same as current judiciary {} for hearing with id {} - Ignore", judiciary, this.judiciary, hearingId);
             return Stream.empty();
         }
+    }
+
+    public Stream<Object> updateJudiciary(final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciary, final UUID hearingId,
+                                          final String judiciaryAssignmentSource, final List<uk.gov.moj.cpp.listing.domain.HearingDay> newHearingDays) {
+
+      // need to revisit when we do judiciary assignment for CROWN
+        if (MAGISTRATES.equals(this.jurisdictionType) && hasCourtSessionChanged(newHearingDays)) {
+            return assignJudiciaryOnCourtSessionChange(judiciary, hearingId);
+        }
+        return isNotEmpty(judiciary) ? assignJudiciary(judiciary, hearingId, judiciaryAssignmentSource) : removeJudiciary(hearingId);
+    }
+
+    private boolean hasCourtSessionChanged(final List<uk.gov.moj.cpp.listing.domain.HearingDay> newHearingDays) {
+        if (isEmpty(newHearingDays)) {
+            return false;
+        }
+        // Cancelled days are ignored on both sides - cancelling a day is not a reallocation
+        final Set<UUID> incomingCourtScheduleIds = newHearingDays.stream()
+                .filter(hearingDay -> !hearingDay.getIsCancelled().orElse(false))
+                .map(hearingDay -> hearingDay.getCourtScheduleId().orElse(null))
+                .filter(Objects::nonNull)
+                .collect(toSet());
+        final Set<UUID> currentCourtScheduleIds = isEmpty(this.hearingDays) ? emptySet() : this.hearingDays.stream()
+                .filter(hearingDay -> !hearingDay.isCancelled())
+                .map(HearingDay::getCourtScheduleId)
+                .filter(Objects::nonNull)
+                .collect(toSet());
+        // A first allocation (no current court session) is not a reallocation
+        if (currentCourtScheduleIds.isEmpty() || incomingCourtScheduleIds.isEmpty()) {
+            return false;
+        }
+        // Only removing days (shorten) or only adding days (extend) is not a reallocation - a session must be both left and joined
+        final boolean courtSessionLeft = !incomingCourtScheduleIds.containsAll(currentCourtScheduleIds);
+        final boolean courtSessionJoined = !currentCourtScheduleIds.containsAll(incomingCourtScheduleIds);
+        return courtSessionLeft && courtSessionJoined;
+    }
+
+    private Stream<Object> assignJudiciaryOnCourtSessionChange(final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciary, final UUID hearingId) {
+        if (this.duplicate || this.deleted) {
+            return Stream.empty();
+        }
+        if (isEmpty(judiciary)) {
+            return removeJudiciary(hearingId);
+        }
+        if (!isManuallyAssigned(getJudiciaryAssignmentSource())) {
+            return assignJudiciary(judiciary, hearingId, JudiciaryAssignmentSource.AUTO.toString());
+        }
+        LOGGER.info("Court session changed for manually assigned hearing with id {} - resetting judiciary to AUTO", hearingId);
+        // Always emit, even if the judiciary is unchanged, so the assignment source flips MANUAL -> AUTO
+        return apply(Stream.of(JudiciaryChangedForHearing.judiciaryChangedForHearing()
+                .withJudiciary(convertToEvents(judiciary))
+                .withHearingId(hearingId)
+                .withJudiciaryAssignmentSource(JudiciaryAssignmentSource.AUTO)
+                .build()));
     }
 
     private boolean isEligibleToAutoAssignJudiciary(final String judiciaryAssignmentSource) {
