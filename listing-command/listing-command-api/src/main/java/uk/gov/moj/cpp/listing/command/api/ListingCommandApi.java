@@ -801,7 +801,7 @@ public class ListingCommandApi {
     /**
      * The longest day this command accepts for a hearing's jurisdiction: the Crown sitting day the
      * multiday enrichment is built on, or the length of the default MAGISTRATES all-day session
-     * (10:00 to 17:00). Courtscheduler still checks the target session's real capacity.
+     * (10:00 to 17:00). Courtscheduler books the day regardless of capacity on this journey and only marks it overbooked.
      */
     private static int maxDayMinutesFor(final String jurisdictionType) {
         return MAGISTRATES_JURISDICTION.equals(jurisdictionType) ? MAGISTRATES_ALL_DAY_SESSION_MINUTES : MINUTES_IN_DAY;
