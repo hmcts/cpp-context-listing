@@ -22,6 +22,7 @@ public class QueueUtil {
 
     private static final long RETRIEVE_TIMEOUT = 5000;
     private static final long MESSAGE_RETRIEVE_TRIAL_TIMEOUT = 60000;
+    private static final long ABSENCE_WINDOW_MILLIS = 1000;
 
     // vld cross-pod / Istio mesh latency + the update-hearing-for-listing-enriched redelivery loop can
     // push a downstream private/public event past the default 60s consume window even though it DOES
@@ -117,5 +118,24 @@ public class QueueUtil {
         do {
             message = consumer.retrieveMessage(200).map(Object::toString);
         } while (message.isPresent());
+    }
+
+    /**
+     * Asserts that no message matching {@code matcher} is (or arrives) on {@code consumer}.
+     *
+     * <p>Call ONLY after {@code AbstractIT.awaitAsyncProcessingComplete()}: once the pipeline is idle,
+     * anything the command could have emitted is already on the test's subscription, so a short
+     * {@value #ABSENCE_WINDOW_MILLIS}ms window is enough. Without the barrier this would race the
+     * async work; the old alternative — expecting {@code retrieveMessage} to time out — burned the
+     * full {@value #MESSAGE_RETRIEVE_TRIAL_TIMEOUT}ms on every green run.</p>
+     */
+    public static void assertNoMessage(final JmsMessageConsumerClient consumer, final Matcher<?> matcher) {
+        Optional<JsonPath> message;
+        while ((message = consumer.retrieveMessageAsJsonPath(ABSENCE_WINDOW_MILLIS)).isPresent()) {
+            final String payload = message.get().prettify();
+            if (matcher.matches(payload)) {
+                throw new AssertionError("Expected no JMS message matching [" + matcher + "] but received: " + payload);
+            }
+        }
     }
 }

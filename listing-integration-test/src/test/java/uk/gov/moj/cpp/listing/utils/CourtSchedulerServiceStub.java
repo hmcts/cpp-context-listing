@@ -226,7 +226,7 @@ public class CourtSchedulerServiceStub {
         if (hearingStartTime != null) {
             session.append(",\"hearingStartTime\":\"").append(hearingStartTime).append("\"");
         }
-        session.append(",\"isDraft\":").append(isDraft).append("}");
+        session.append(draftFields(isDraft)).append("}");
         final String body = "{\"courtSchedules\":[" + session + "]}";
 
         stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + SESSIONS_PATH)))
@@ -1526,8 +1526,8 @@ public class CourtSchedulerServiceStub {
             if (i > 0) {
                 schedulesJson.append(",");
             }
-            schedulesJson.append("{\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\",")
-                    .append("\"isDraft\":").append(isDraft).append("}");
+            schedulesJson.append("{\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\"")
+                    .append(draftFields(isDraft)).append("}");
         }
         stubCourtSchedulesByIdResponse("{\"courtSchedules\":[" + schedulesJson + "]}");
     }
@@ -1579,9 +1579,19 @@ public class CourtSchedulerServiceStub {
             }
             schedulesJson.append(",\"sessionDate\":\"").append(session.sessionDate()).append("\"")
                     .append(",\"hearingStartTime\":\"").append(session.hearingStartTime()).append("\"")
-                    .append(",\"isDraft\":").append(session.isDraft()).append("}");
+                    .append(draftFields(session.isDraft())).append("}");
         }
         stubCourtSchedulesByIdResponse("{\"courtSchedules\":[" + schedulesJson + "]}");
+    }
+
+    /**
+     * The draft flag of a search-by-id session, under both wire names. Listing's command side maps the
+     * response onto {@code uk.gov.moj.cpp.listing.domain.CourtSchedule}, whose Jackson property is
+     * {@code draft} ({@code isDraft()}/{@code setDraft()}), so an {@code isDraft} key alone is ignored there
+     * and every session reads as non-draft. The query-side draft-status parser accepts either name.
+     */
+    private static String draftFields(final boolean isDraft) {
+        return ",\"isDraft\":" + isDraft + ",\"draft\":" + isDraft;
     }
 
     private static void stubCourtSchedulesByIdResponse(final String body) {

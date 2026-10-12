@@ -178,6 +178,18 @@ public class DatabaseCleaner {
         return false;
     }
 
+    /**
+     * Rows still waiting in the event-store publish relay ({@code publish_queue} +
+     * {@code pre_publish_queue}) — one snapshot, no waiting. Used by the pipeline-idle barrier.
+     */
+    public long publishQueueDepth(final String contextName) {
+        try (final Connection connection = testJdbcConnectionProvider.getEventStoreConnection(contextName)) {
+            return countRows(connection, "publish_queue") + countRows(connection, "pre_publish_queue");
+        } catch (SQLException e) {
+            throw new DataAccessException("Failed to open or close event-store connection", e);
+        }
+    }
+
     private long countRows(final Connection connection, final String tableName) {
         final String sql = format("SELECT count(*) FROM %s", tableName);
         try (final PreparedStatement preparedStatement = connection.prepareStatement(sql);

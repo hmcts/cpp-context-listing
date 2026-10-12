@@ -452,6 +452,25 @@ public class ReferenceDataStub {
         InternalEndpointMockUtils.stubPingFor("referencedata-service");
     }
 
+    /**
+     * Low-priority catch-all for the org-unit LIST endpoint. ReferenceDataCache (@ApplicationScoped)
+     * loads the list once, in @PostConstruct, on first use; without this, the suite passes only when a
+     * class that calls {@link #stubOrganisationUnit(UUID)} happens to touch the cache first.
+     * Test-specific stubs (default priority) still win.
+     */
+    public static void stubGetReferenceDataOrganisationUnitListCatchAll() {
+        stubPingForReferenceDataService();
+        final String payload = getPayload("stub-data/referencedata.query.organisationunits.json")
+                .replace("OU_ID", "f8254db1-1683-483e-afb4-a4d911484209");
+
+        stubFor(get(urlPathMatching(REFERENCE_DATA_ORGANISATIONAL_UNITS_URL))
+                .atPriority(10)
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", UUID.randomUUID().toString())
+                        .withHeader("Content-Type", REFERENCE_DATA_ORGANISATIONAL_UNITS_MEDIA_TYPE)
+                        .withBody(payload)));
+    }
+
     public static void stubOrganisationUnit(final UUID ouId) {
         stubPingForReferenceDataService();
         String payload = getPayload("stub-data/referencedata.query.organisationunits.json")

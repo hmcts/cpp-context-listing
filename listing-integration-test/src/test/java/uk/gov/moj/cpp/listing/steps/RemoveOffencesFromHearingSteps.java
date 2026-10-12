@@ -4,8 +4,8 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.assertNoMessage;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
@@ -15,7 +15,6 @@ import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClien
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArrayBuilder;
@@ -86,9 +85,8 @@ public class RemoveOffencesFromHearingSteps extends AbstractIT {
      * idempotency means no event at all rather than a duplicate one.
      */
     public void verifyNoFurtherPublicListingOffencesRemoved() {
-        assertThrows(NoSuchElementException.class,
-                () -> retrieveMessage(publicSelectedOffenceRemovedFromHearing,
-                        org.hamcrest.CoreMatchers.containsString(hearingId)));
+        awaitAsyncProcessingComplete();
+        assertNoMessage(publicSelectedOffenceRemovedFromHearing, org.hamcrest.CoreMatchers.containsString(hearingId));
     }
 
 }
