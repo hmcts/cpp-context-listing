@@ -4653,7 +4653,33 @@ class HearingAggregateTest {
     }
 
     @Test
-    void shouldNotAutoRestrictUnder18ApplicantOrRespondentWhenCourtApplicationAddedToAllocatedHearing() {
+    void shouldEmitCourtListRestrictedForUnder18RespondentWhenCourtApplicationAddedToAllocatedHearing() {
+        final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
+        givenAllocatedHearingWithAdultDefendant(hearingStartDate);
+        final UUID under18RespondentId = randomUUID();
+
+        final List<Object> resultEvents = hearing.addCourtApplication(hearingId, courtApplicationWith(
+                        applicationParty(randomUUID(), null, hearingStartDate.minusYears(40).toString()),
+                        null,
+                        singletonList(applicationParty(under18RespondentId, randomUUID(), hearingStartDate.minusYears(16).toString()))))
+                .collect(Collectors.toList());
+
+        assertThat(resultEvents, hasSize(2));
+        assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CourtApplicationAddedForHearing.class));
+        assertThat(resultEvents.get(1), CoreMatchers.instanceOf(CourtListRestricted.class));
+
+        final CourtListRestricted courtListRestricted = (CourtListRestricted) resultEvents.get(1);
+        assertThat(courtListRestricted.getHearingId(), is(hearingId));
+        assertThat(courtListRestricted.getRestrictCourtList(), is(true));
+        assertThat(courtListRestricted.getCourtApplicationRespondentIds(), hasSize(1));
+        assertThat(courtListRestricted.getCourtApplicationRespondentIds(), hasItem(under18RespondentId));
+        assertThat(courtListRestricted.getDefendantIds(), is(nullValue()));
+        assertThat(courtListRestricted.getCourtApplicationSubjectIds(), is(nullValue()));
+        assertThat(courtListRestricted.getCourtApplicationApplicantIds(), is(nullValue()));
+    }
+
+    @Test
+    void shouldNotAutoRestrictUnder18ApplicantWhenCourtApplicationAddedToAllocatedHearing() {
         final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
         givenAllocatedHearingWithAdultDefendant(hearingStartDate);
         final String under18Dob = hearingStartDate.minusYears(16).toString();
@@ -4661,7 +4687,7 @@ class HearingAggregateTest {
         final List<Object> resultEvents = hearing.addCourtApplication(hearingId, courtApplicationWith(
                         applicationParty(randomUUID(), randomUUID(), under18Dob),
                         null,
-                        singletonList(applicationParty(randomUUID(), randomUUID(), under18Dob))))
+                        singletonList(applicationParty(randomUUID(), null, hearingStartDate.minusYears(40).toString()))))
                 .collect(Collectors.toList());
 
         assertThat(resultEvents, hasSize(1));
@@ -7213,7 +7239,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    void shouldNotAutoRestrictUnder18RespondentOnAllocation() {
+    void shouldEmitCourtListRestrictedForUnder18RespondentOnAllocation() {
         final UUID caseId = randomUUID();
         final UUID defendantId = randomUUID();
         final UUID offenceId = randomUUID();
@@ -7272,8 +7298,15 @@ class HearingAggregateTest {
                         .build()),
                 true, true).collect(Collectors.toList());
 
-        assertThat(allocationEvents, hasSize(1));
+        assertThat(allocationEvents, hasSize(2));
         assertThat(allocationEvents.get(0), is(CoreMatchers.instanceOf(HearingAllocatedForListingV2.class)));
+        assertThat(allocationEvents.get(1), is(CoreMatchers.instanceOf(CourtListRestricted.class)));
+
+        final CourtListRestricted courtListRestricted = (CourtListRestricted) allocationEvents.get(1);
+        assertThat(courtListRestricted.getHearingId(), is(hearingId));
+        assertThat(courtListRestricted.getRestrictCourtList(), is(true));
+        assertThat(courtListRestricted.getCourtApplicationRespondentIds(), hasSize(1));
+        assertThat(courtListRestricted.getCourtApplicationRespondentIds(), hasItem(respondentId));
     }
 
     @Test
@@ -7346,7 +7379,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    void shouldEmitCourtListRestrictedForUnder18SubjectAndDefendantButNotRespondentOnAllocation() {
+    void shouldEmitCourtListRestrictedForMixOfUnder18SubjectRespondentAndDefendantOnAllocation() {
         final UUID caseId = randomUUID();
         final UUID under18DefendantId = randomUUID();
         final UUID under18MasterDefendantId = randomUUID();
@@ -7435,7 +7468,8 @@ class HearingAggregateTest {
         assertThat(courtListRestricted.getDefendantIds(), hasItem(under18DefendantId));
         assertThat(courtListRestricted.getCourtApplicationSubjectIds(), hasSize(1));
         assertThat(courtListRestricted.getCourtApplicationSubjectIds(), hasItem(under18SubjectId));
-        assertThat(courtListRestricted.getCourtApplicationRespondentIds(), is(nullValue()));
+        assertThat(courtListRestricted.getCourtApplicationRespondentIds(), hasSize(1));
+        assertThat(courtListRestricted.getCourtApplicationRespondentIds(), hasItem(under18RespondentId));
     }
 
     @Test
