@@ -8560,6 +8560,46 @@ class HearingAggregateTest {
     }
 
     @Test
+    void changeCourtRoom_magistratesHearing_emitsMergedDaysScheduleUpdatesAndAllocation() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final LocalDate d3Date = now().plusDays(9);
+        final List<HearingDay> original = applyThreeDayAllocatedHearing(
+                uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES, room1, courtCentre1, d1Date, d2Date, d3Date);
+
+        final ZonedDateTime newStart2 = ZonedDateTime.of(d2Date, LocalTime.parse("10:00"), UTC);
+        final UUID newScheduleD2 = randomUUID();
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = List.of(
+                changedDomainDay(d2Date, room2, courtCentre1, newStart2));
+        final List<HearingDayCourtSchedule> schedules = List.of(new HearingDayCourtSchedule(newScheduleD2, d2Date));
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+                .collect(Collectors.toList());
+
+        final HearingDaysChangedForHearing daysChanged = events.stream()
+                .filter(HearingDaysChangedForHearing.class::isInstance)
+                .map(HearingDaysChangedForHearing.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(daysChanged.getHearingDays(), hasSize(3));
+        assertThat(dayFor(daysChanged, d1Date), is(original.get(0)));
+        assertThat(dayFor(daysChanged, d2Date).getCourtRoomId(), is(room2));
+        assertThat(dayFor(daysChanged, d2Date).getStartTime(), is(newStart2));
+        assertThat(dayFor(daysChanged, d3Date), is(original.get(2)));
+
+        final HearingDayCourtScheduleUpdated scheduleUpdated = events.stream()
+                .filter(HearingDayCourtScheduleUpdated.class::isInstance)
+                .map(HearingDayCourtScheduleUpdated.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(scheduleUpdated.getHearingDayCourtSchedules(), hasSize(1));
+        assertThat(scheduleUpdated.getHearingDayCourtSchedules().get(0).getHearingDate(), is(d2Date));
+        assertThat(scheduleUpdated.getHearingDayCourtSchedules().get(0).getCourtScheduleId(), is(newScheduleD2));
+        assertThat(events.stream().anyMatch(AllocatedHearingUpdatedForListingV2.class::isInstance), is(true));
+    }
+
+    @Test
     void changeCourtRoom_emitsAllocationEventsUsingAggregateCases() {
         final UUID room1 = randomUUID();
         final UUID room2 = randomUUID();
@@ -9006,6 +9046,12 @@ class HearingAggregateTest {
 
     private List<HearingDay> applyThreeDayCrownAllocatedHearing(final UUID room1, final UUID courtCentre1,
             final LocalDate d1Date, final LocalDate d2Date, final LocalDate d3Date) {
+        return applyThreeDayAllocatedHearing(CROWN, room1, courtCentre1, d1Date, d2Date, d3Date);
+    }
+
+    private List<HearingDay> applyThreeDayAllocatedHearing(final uk.gov.justice.core.courts.JurisdictionType jurisdictionType,
+            final UUID room1, final UUID courtCentre1,
+            final LocalDate d1Date, final LocalDate d2Date, final LocalDate d3Date) {
         final HearingDay d1 = crownHearingDay(d1Date, room1, courtCentre1, randomUUID(), 1);
         final HearingDay d2 = crownHearingDay(d2Date, room1, courtCentre1, randomUUID(), 2);
         final HearingDay d3 = crownHearingDay(d3Date, room1, courtCentre1, randomUUID(), 3);
@@ -9019,7 +9065,7 @@ class HearingAggregateTest {
                         .withId(hearingId)
                         .withType(uk.gov.justice.listing.events.Type.type().build())
                         .withHearingLanguage(HearingLanguage.ENGLISH)
-                        .withJurisdictionType(CROWN)
+                        .withJurisdictionType(jurisdictionType)
                         .withCourtRoomId(room1)
                         .withCourtCentreId(courtCentre1)
                         .withStartDate(d1Date)
