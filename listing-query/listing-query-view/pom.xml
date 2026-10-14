@@ -11,6 +11,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.10-cct-1981-r-SNAPSHOT</version>
@@ -33,6 +34,9 @@
 =======
         <version>17.104.13-SNAPSHOT</version>
 >>>>>>> fed8d9f493 (Team/cct 1981 release (#165))
+=======
+        <version>17.104.14-SNAPSHOT</version>
+>>>>>>> 8f6782676a (updating poms for 17.104.14-SNAPSHOT development)
     </parent>
 
     <artifactId>listing-query-view</artifactId>
