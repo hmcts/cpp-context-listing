@@ -20,6 +20,7 @@ import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,6 +58,7 @@ public class CourtSchedulerServiceAdapter {
     public static final String HEARING_SLOTS = "hearingSlots";
     public static final String COURT_SESSION = "courtSession";
     public static final String BUSINESS_TYPE = "businessType";
+    public static final String HEARING_IDS = "hearingIds";
     public static final String JURISDICTION = "jurisdiction";
     public static final String STATUS = "status";
     public static final String PANEL_ADULT_YOUTH = "ADULT,YOUTH";
@@ -82,6 +84,11 @@ public class CourtSchedulerServiceAdapter {
     private static final String DRAFT = "draft";
     private static final String OVERBOOKED = "overbooked";
     private static final String ANY_DRAFT = "anyDraft";
+    // move-hearing-to-past-date wire-field constants; JURISDICTION/COURT_ROOM_ID reuse the fields
+    // declared above. startTime/endTime (UTC instants) replace the old date-only startDate/endDate
+    // fields, aligning the outbound contract with main (see the review artifact this reconciles).
+    private static final String START_TIME = "startTime";
+    private static final String END_TIME = "endTime";
     private static final String BOOKINGS = "bookings";
     // move-hearing-to-past-date (MAGS) wire-field constants; JURISDICTION reuses the field declared above
     private static final String START_DATE = "startDate";
@@ -90,6 +97,10 @@ public class CourtSchedulerServiceAdapter {
     private static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
     // no-session normalisation (422 NO_SESSION_FOUND) constants
     public static final String NO_SESSION_FOUND = "NO_SESSION_FOUND";
+    // Fixed user-facing copy (ported from main) replacing whatever diagnostic message courtscheduler
+    // itself supplies, on both the legacy-404 normalisation and a genuine 422 NO_SESSION_FOUND passthrough.
+    public static final String NO_SESSION_FOUND_MESSAGE =
+            "No suitable sessions are available for the selected date. Please select another date.";
     private static final String ERROR_CODE = "errorCode";
     private static final String MESSAGE = "message";
     @Inject
@@ -583,44 +594,56 @@ public class CourtSchedulerServiceAdapter {
     }
 
     HearingIdsResponse getHearingIds(final Response response) {
-        final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
-
-       List<IdResponse> uuids = new ArrayList<>();
-        final JsonArray li = responseJson.getJsonArray("hearingIds");
-        for (int i = 0; i < li.size(); i++) {
-            IdResponse res = jsonObjectConverter.convert(li.getJsonObject(i), IdResponse.class);
-            uuids.add(res);
-
+        final int status = response.getStatus();
+        if (HttpStatus.SC_OK != status) {
+            throw new HearingQueryException(format("Court scheduler hearing id search failed with status %d", status));
         }
-        final int results = responseJson.getInt("results");
-        final int pageCount = responseJson.getInt("pageCount");
+
+        final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
+        if (responseJson == null || !responseJson.containsKey(HEARING_IDS) || responseJson.isNull(HEARING_IDS)) {
+            throw new HearingQueryException("Court scheduler hearing id search returned no hearingIds");
+        }
+
+        final List<IdResponse> uuids = new ArrayList<>();
+        final JsonArray li = responseJson.getJsonArray(HEARING_IDS);
+        for (int i = 0; i < li.size(); i++) {
+            uuids.add(jsonObjectConverter.convert(li.getJsonObject(i), IdResponse.class));
+        }
+
+        final int results = intOrDefault(responseJson, "results", uuids.size());
+        final int pageCount = intOrDefault(responseJson, "pageCount", 1);
 
         return new HearingIdsResponse(uuids, results, pageCount);
     }
 
+    private static int intOrDefault(final JsonObject json, final String key, final int fallback) {
+        return json.containsKey(key) && !json.isNull(key) ? json.getInt(key) : fallback;
+    }
+
     /**
      * Calls courtscheduler's {@code move-hearing-to-past-date} action synchronously for both
-     * MAGISTRATES and CROWN moves (CROWN is additionally restricted to today-or-earlier by the
-     * command API). On any non-200 response the upstream errorCode/status is surfaced via
-     * {@link MoveHearingToPastDateException} so the caller sends no event.
+     * MAGISTRATES and CROWN moves. courtRoomId/startInstant/endInstant mirror main's contract
+     * (courtRoomId scopes the session search to that room; startInstant/endInstant are UTC instants
+     * whose dates drive courtscheduler's [startDate, endDate] span — see the review artifact this
+     * reconciles). On any non-200 response the upstream errorCode/status is surfaced via
+     * {@link MoveHearingToPastDateException} so the caller sends no event; a NO_SESSION_FOUND failure
+     * (whether a legacy bare 404 or a genuine 422) always carries the fixed user-facing message below,
+     * replacing whatever diagnostic message courtscheduler itself supplied (ported from main).
      */
     public MoveHearingToPastDateResult moveHearingToPastDate(final UUID hearingId,
                                                               final UUID courtCentreId,
-                                                              final LocalDate startDate,
-                                                              final Integer durationInMinutes) {
-        return moveHearingToPastDate(hearingId, courtCentreId, startDate, durationInMinutes, MAGISTRATES_JURISDICTION);
-    }
-
-    public MoveHearingToPastDateResult moveHearingToPastDate(final UUID hearingId,
-                                                              final UUID courtCentreId,
-                                                              final LocalDate startDate,
+                                                              final UUID courtRoomId,
+                                                              final ZonedDateTime startInstant,
+                                                              final ZonedDateTime endInstant,
                                                               final Integer durationInMinutes,
                                                               final String jurisdiction) {
         // hearingId travels only in the URL path; courtscheduler's REST adapter injects it
         final JsonObjectBuilder requestBuilder = Json.createObjectBuilder()
                 .add(COURT_CENTRE_ID, courtCentreId.toString())
+                .add(COURT_ROOM_ID, courtRoomId.toString())
                 .add(JURISDICTION, jurisdiction == null || jurisdiction.isBlank() ? MAGISTRATES_JURISDICTION : jurisdiction)
-                .add(START_DATE, startDate.toString());
+                .add(START_TIME, formatInstant(startInstant))
+                .add(END_TIME, formatInstant(endInstant));
         if (durationInMinutes != null) {
             requestBuilder.add(DURATION_IN_MINUTES, durationInMinutes);
         }
@@ -638,13 +661,13 @@ public class CourtSchedulerServiceAdapter {
         LOGGER.error("moveHearingToPastDate from courtscheduler returned status {} for hearingId {}: {}",
                 status, hearingId, body);
 
-        if (HttpStatus.SC_NOT_FOUND == status) {
-            // older courtscheduler releases signal no-session as a bare 404 - normalise to the
-            // 422 NO_SESSION_FOUND contract so callers see a single failure shape
+        // A legacy bare 404 (older courtscheduler releases) and a genuine 422 NO_SESSION_FOUND both
+        // collapse onto the same fixed user-facing shape/message - callers see one failure shape.
+        if (HttpStatus.SC_NOT_FOUND == status
+                || (HttpStatus.SC_UNPROCESSABLE_ENTITY == status && NO_SESSION_FOUND.equals(body.getString(ERROR_CODE, null)))) {
             final JsonObject noSessionBody = Json.createObjectBuilder()
                     .add(ERROR_CODE, NO_SESSION_FOUND)
-                    .add(MESSAGE, body.getString(MESSAGE,
-                            "No court-schedule session found for hearingId " + hearingId + " on " + startDate))
+                    .add(MESSAGE, NO_SESSION_FOUND_MESSAGE)
                     .build();
             throw new MoveHearingToPastDateException(HttpStatus.SC_UNPROCESSABLE_ENTITY, noSessionBody,
                     "moveHearingToPastDate found no session for hearingId " + hearingId);
@@ -655,6 +678,17 @@ public class CourtSchedulerServiceAdapter {
     }
 
     /**
+     * ZonedDateTime.toString() (via LocalDateTime.toString()) OMITS the seconds field entirely when
+     * seconds and nanos are both zero - e.g. "2026-09-01T09:00Z" for an on-the-minute time - which
+     * fails courtscheduler's request schema (seconds are a MANDATORY group in its startTime/endTime
+     * pattern, not optional). DateTimeFormatter.ISO_INSTANT always emits seconds and only adds a
+     * fractional part when non-zero, matching that pattern exactly.
+     */
+    private static String formatInstant(final ZonedDateTime instant) {
+        return DateTimeFormatter.ISO_INSTANT.format(instant.toInstant());
+    }
+
+    /**
      * courtscheduler's wire response is {@code {hearingId, source, sessions:[CourtSchedule...]}} — EVERY
      * booked past day, nested and ordered by date (first = the day the hearing now starts on). All of
      * them are returned so the caller can re-issue one hearing day per booked session. A flat body
@@ -662,15 +696,19 @@ public class CourtSchedulerServiceAdapter {
      * keep working.
      */
     private static MoveHearingToPastDateResult parseMoveHearingToPastDateResult(final JsonObject body) {
+        // A PRESENT sessions key is authoritative, even when empty (e.g. a genuine multi-day-range
+        // search that matched nothing - courtscheduler's own "exploratory, leave allocation intact"
+        // 200 response). Falling through to the flat-body fallback in that case would misparse the
+        // top-level {hearingId, source, sessions:[]} envelope as a single session with every field
+        // null, producing an enriched command with a broken sessions[0] entry. Only fall back to the
+        // legacy flat-body shape when the sessions key is absent entirely (older courtscheduler releases).
         if (body.containsKey(SESSIONS) && !body.isNull(SESSIONS)) {
             final JsonArray sessions = body.getJsonArray(SESSIONS);
-            if (!sessions.isEmpty()) {
-                final List<MoveHearingToPastDateResult.BookedSession> booked = new ArrayList<>();
-                for (int i = 0; i < sessions.size(); i++) {
-                    booked.add(parseBookedSession(sessions.getJsonObject(i)));
-                }
-                return new MoveHearingToPastDateResult(booked);
+            final List<MoveHearingToPastDateResult.BookedSession> booked = new ArrayList<>();
+            for (int i = 0; i < sessions.size(); i++) {
+                booked.add(parseBookedSession(sessions.getJsonObject(i)));
             }
+            return new MoveHearingToPastDateResult(booked);
         }
         return new MoveHearingToPastDateResult(List.of(parseBookedSession(body)));
     }
@@ -691,8 +729,8 @@ public class CourtSchedulerServiceAdapter {
     }
 
     /**
-     * CROWN-only. Calls courtscheduler's {@code change-court-room-for-multiday-hearing} action
-     * synchronously, moving one or more days of a multi-day CROWN hearing to a different
+     * Calls courtscheduler's {@code change-court-room-for-multiday-hearing} action
+     * synchronously, moving one or more days of a multi-day hearing to a different
      * court-schedule session. On any non-200 response the upstream errorCode/status is surfaced
      * via {@link ChangeCourtRoomForMultidayException} so the caller sends no event; a legacy bare
      * 404 is normalised to 422 NO_SESSION_FOUND exactly as {@link #moveHearingToPastDate} does.

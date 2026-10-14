@@ -13,7 +13,9 @@ import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
+import uk.gov.moj.cpp.listing.command.api.service.SplitHearingPayloadConverter;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
+import uk.gov.justice.listing.courts.Courtrooms;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
 import uk.gov.justice.listing.commands.ListCourtHearing;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
@@ -39,7 +41,12 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.HearingEnrichmentOrchestrator;
+import uk.gov.justice.core.courts.HearingType;
+import uk.gov.justice.core.courts.JurisdictionType;
+import uk.gov.justice.core.courts.SeedingHearing;
+import uk.gov.moj.cpp.listing.domain.PtphDetail;
 import uk.gov.moj.cpp.listing.command.api.service.HearingLookupService;
+import uk.gov.moj.cpp.listing.command.api.service.PtphDetailEnrichmentService;
 import uk.gov.moj.cpp.listing.common.courtroomchange.ChangeCourtRoomForMultidayException;
 import uk.gov.moj.cpp.listing.common.courtroomchange.ChangedDaySession;
 import uk.gov.moj.cpp.listing.common.courtroomchange.RequestedChangeDay;
@@ -47,27 +54,33 @@ import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
+import uk.gov.moj.cpp.listing.common.service.ProgressionSplitHearingService;
+import uk.gov.moj.cpp.listing.common.splithearing.SplitHearingRejectedException;
 import uk.gov.moj.cpp.listing.domain.VacateTrialEnriched;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.json.JsonArray;
+import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
+import javax.ws.rs.core.Response;
 
+import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,12 +104,14 @@ public class ListingCommandApi {
     private static final String SEND_NOTIFICATION_TO_PARTIES = "sendNotificationToParties";
     private static final String CHANGED_DAYS = "changedDays";
     private static final String HEARING_DATE = "hearingDate";
-    public static final String NOT_CROWN_HEARING = "NOT_CROWN_HEARING";
+    public static final String UNSUPPORTED_JURISDICTION = "UNSUPPORTED_JURISDICTION";
     public static final String NOT_MULTIDAY_HEARING = "NOT_MULTIDAY_HEARING";
     public static final String DUPLICATE_DAY_DATES = "DUPLICATE_DAY_DATES";
     public static final String MISSING_COURT_SCHEDULE_ID = "MISSING_COURT_SCHEDULE_ID";
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String START_DATE = "startDate";
+    private static final String START_DATE_TIME = "startDateTime";
+    private static final String END_DATE_TIME = "endDateTime";
     private static final String JURISDICTION = "jurisdiction";
     private static final String JURISDICTION_TYPE = "jurisdictionType";
     private static final String ESTIMATED_MINUTES = "estimatedMinutes";
@@ -114,13 +129,19 @@ public class ListingCommandApi {
     private static final String DURATION_IN_MINUTES = "durationInMinutes";
     private static final String HEARING_DAYS = "hearingDays";
     private static final String DAY_START_TIME = "startTime";
-    private static final String DAY_END_TIME = "endTime";
     private static final String DAY_DURATION_MINUTES = "durationMinutes";
     private static final String ERROR_CODE = "errorCode";
     private static final String MESSAGE = "message";
     public static final String HEARING_ID_NOT_FOUND = "HEARING_ID_NOT_FOUND";
     public static final String FUTURE_DATE_NOT_ALLOWED = "FUTURE_DATE_NOT_ALLOWED";
+    public static final String INVALID_DATE = "INVALID_DATE";
+    public static final String INVALID_DATE_RANGE = "INVALID_DATE_RANGE";
+    public static final String MULTI_DAY_NOT_ALLOWED = "MULTI_DAY_NOT_ALLOWED";
+    public static final String START_DATE_TOO_OLD = "START_DATE_TOO_OLD";
+    private static final int MAX_PAST_MONTHS = 6;
     private static final String CROWN_JURISDICTION = "CROWN";
+    private static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
+    private static final Set<String> CHANGE_COURT_ROOM_JURISDICTIONS = Set.of(CROWN_JURISDICTION, MAGISTRATES_JURISDICTION);
     private static final String LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING = "listing.command.mark-unallocated-hearing-as-duplicate";
     private static final String LISTING_COMMAND_UPDATE_EXISTING_HEARING = "listing.command.update-existing-hearing";
     private static final String LISTING_COMMAND_DELETE_NEXT_HEARINGS = "listing.command.delete-next-hearings";
@@ -142,6 +163,7 @@ public class ListingCommandApi {
 
     @Inject
     private CourtCentreFactory courtCentreFactory;
+
     @Inject
     private JsonObjectToObjectConverter jsonObjectConverter;
 
@@ -150,11 +172,15 @@ public class ListingCommandApi {
     @Inject
     private HearingSlotsService hearingSlotsService;
     @Inject
+    private ProgressionSplitHearingService progressionSplitHearingService;
+    @Inject
     private HearingEnrichmentOrchestrator hearingEnrichmentOrchestrator;
     @Inject
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
     @Inject
     private HearingLookupService hearingLookupService;
+    @Inject
+    private PtphDetailEnrichmentService ptphDetailEnrichmentService;
 
     @Handles("listing.command.list-court-hearing")
     public void handleListCourtHearing(final JsonEnvelope envelope) {
@@ -192,9 +218,12 @@ public class ListingCommandApi {
 
         final JsonObject payload = envelope.payloadAsJsonObject();
         final ListNextHearingsV2 listNextHearings = jsonObjectConverter.convert(payload, ListNextHearingsV2.class);
-        final List<HearingListingNeeds> enrichedHearings = hearingEnrichmentOrchestrator.enrichListCourtHearing(
-                listNextHearings.getHearings(), envelope,
-                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_NEXT_HEARINGS_V2);
+        final List<HearingListingNeeds> enrichedHearings = ptphDetailEnrichmentService.enrichWithPtphDetail(
+                hearingEnrichmentOrchestrator.enrichListCourtHearing(
+                        listNextHearings.getHearings(), envelope,
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_NEXT_HEARINGS_V2),
+                listNextHearings.getSeedingHearing(),
+                envelope);
         final Set<CourtCentreDetails> courtCentres = getCourtCentreDetails(envelope, enrichedHearings);
 
         final ListNextHearingsEnrichedV2 listNextHearingsEnriched = ListNextHearingsEnrichedV2.listNextHearingsEnrichedV2()
@@ -221,14 +250,56 @@ public class ListingCommandApi {
         final UpdateRelatedHearing updateRelatedHearing = jsonObjectConverter.convert(payload, UpdateRelatedHearing.class);
         final UUID hearingId = fromString(payload.getString(HEARING_ID));
 
+        // LPT-2405: the next hearing already exists, so nothing is created and this command
+        // carries no hearing type. Enrich it from the stored hearing before applying the same
+        // gates as the create flows — an absent hearing simply inherits nothing.
+        final Optional<PtphDetail> ptphDetail = resolvePtphDetailForExistingHearing(
+                hearingId, updateRelatedHearing.getSeedingHearing(), envelope);
+
         final UpdateExistingHearing updateExistingHearing = UpdateExistingHearing.updateExistingHearing()
                 .withHearingId(hearingId)
                 .withSeedingHearing(updateRelatedHearing.getSeedingHearing())
                 .withProsecutionCases(updateRelatedHearing.getProsecutionCases())
                 .withShadowListedOffences(updateRelatedHearing.getShadowListedOffences())
+                .withTier(ptphDetail.map(PtphDetail::getTier).orElse(null))
+                .withListType(ptphDetail.map(PtphDetail::getListType).orElse(null))
+                .withKeyReason(ptphDetail.map(PtphDetail::getKeyReason).orElse(null))
                 .build();
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_UPDATE_EXISTING_HEARING), objectToJsonValueConverter.convert(updateExistingHearing)));
+    }
+
+    /**
+     * Reads the jurisdiction and hearing type of an already-existing hearing from the listing
+     * view store, so the PTPH gates can be applied to a command that carries neither.
+     * Returns empty when the hearing is not found — the id came from a result prompt, so it is
+     * not guaranteed to exist here.
+     */
+    private Optional<PtphDetail> resolvePtphDetailForExistingHearing(final UUID hearingId,
+                                                                     final SeedingHearing seedingHearing,
+                                                                     final JsonEnvelope envelope) {
+        final Optional<JsonObject> storedHearing = hearingLookupService.findHearing(hearingId, envelope);
+        if (storedHearing.isEmpty()) {
+            LOGGER.info("Existing hearing {} not found in listing; nothing inherited", hearingId);
+            return Optional.empty();
+        }
+
+        final JsonObject hearing = storedHearing.get();
+        final JsonObject storedType = hearing.getJsonObject("type");
+        if (isNull(storedType) || !storedType.containsKey("id")) {
+            LOGGER.info("Existing hearing {} has no hearing type stored; nothing inherited", hearingId);
+            return Optional.empty();
+        }
+
+        final HearingType hearingType = HearingType.hearingType()
+                .withId(fromString(storedType.getString("id")))
+                .withDescription(storedType.getString("description", null))
+                .build();
+        final JurisdictionType jurisdictionType = hearing.containsKey(JURISDICTION_TYPE)
+                ? JurisdictionType.valueOf(hearing.getString(JURISDICTION_TYPE))
+                : null;
+
+        return ptphDetailEnrichmentService.resolveForExistingHearing(jurisdictionType, hearingType, seedingHearing, envelope);
     }
 
     @Handles("listing.command.list-unscheduled-court-hearing")
@@ -273,6 +344,10 @@ public class ListingCommandApi {
         final ListUnscheduledNextHearingsEnriched listCourtHearingEnriched = ListUnscheduledNextHearingsEnriched.listUnscheduledNextHearingsEnriched()
                 .withCourtCentresDetails(new ArrayList<>(courtCentres))
                 .withHearings(unscheduledNextHearings.getHearings())
+                .withPtphDetails(ptphDetailEnrichmentService.resolvePtphDetails(
+                        unscheduledNextHearings.getHearings(),
+                        unscheduledNextHearings.getSeedingHearing(),
+                        envelope))
                 .withSeedingHearing(unscheduledNextHearings.getSeedingHearing())
                 .build();
 
@@ -335,6 +410,69 @@ public class ListingCommandApi {
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED), objectToJsonValueConverter.convert(updateHearingForListingEnriched)));
     }
 
+    /**
+     * Validates the front-end's split payload, converts it to progression's list-new-hearing shape
+     * and forwards it to progression, which performs the split.
+     *
+     * <p>The forward goes through {@link ProgressionSplitHearingService} rather than the generated
+     * {@code RemoteCommandApi2ProgressionCommandApi} client, because that client turns every
+     * non-202 into a bare {@code RuntimeException} and the front end needs progression's own status
+     * back: a stale request has to be distinguishable from an unknown hearing or a bad payload.
+     */
+    @Handles("listing.command.split-hearing")
+    public void handleSplitHearing(final JsonEnvelope envelope) {
+        final JsonObject payload = envelope.payloadAsJsonObject();
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.split-hearing' received with payload {}", envelope.toObfuscatedDebugString());
+        }
+
+        final String hearingId = payload.getString(HEARING_ID);
+        final UUID courtCentreId = payload.containsKey(COURT_CENTRE_ID) && !payload.isNull(COURT_CENTRE_ID)
+                ? fromString(payload.getString(COURT_CENTRE_ID))
+                : null;
+        final CourtCentreDetails courtCentre = isNull(courtCentreId)
+                ? null
+                : courtCentreFactory.getCourtCentre(courtCentreId, envelope);
+
+        final JsonObject progressionRequest = SplitHearingPayloadConverter.toProgressionSplitRequest(
+                payload,
+                isNull(courtCentre) ? null : courtCentre.getName(),
+                courtRoomName(courtCentre, payload),
+                null);
+
+        LOGGER.info("split-hearing accepted for hearing {}; forwarding {} defendant request(s) to progression",
+                hearingId,
+                progressionRequest.getJsonObject("listNewHearing").getJsonArray("listDefendantRequests").size());
+
+        final Response response = progressionSplitHearingService.splitHearing(hearingId, progressionRequest, envelope.metadata());
+        final int status = response.getStatus();
+        if (HttpStatus.SC_ACCEPTED == status) {
+            return;
+        }
+
+        final JsonObject errorBody = (response.hasEntity() && response.getEntity() instanceof JsonObject body)
+                ? body
+                : Json.createObjectBuilder().build();
+
+        LOGGER.error("split-hearing for hearing {} rejected by progression with status {}: {}", hearingId, status, errorBody);
+
+        throw new SplitHearingRejectedException(status, errorBody,
+                "progression returned " + status + " for the split of hearing " + hearingId);
+    }
+
+    private static String courtRoomName(final CourtCentreDetails courtCentre, final JsonObject payload) {
+        if (isNull(courtCentre) || isNull(courtCentre.getCourtrooms())
+                || !payload.containsKey(COURT_ROOM_ID) || payload.isNull(COURT_ROOM_ID)) {
+            return null;
+        }
+        final UUID courtRoomId = fromString(payload.getString(COURT_ROOM_ID));
+        return courtCentre.getCourtrooms().stream()
+                .filter(room -> courtRoomId.equals(room.getId()))
+                .map(Courtrooms::getCourtroomName)
+                .findFirst()
+                .orElse(null);
+    }
+
     @Handles("listing.command.update-hearings-for-listing")
     public void handleUpdateHearingsForListing(final JsonEnvelope envelope) {
         final JsonObject hearingsPayload = envelope.payloadAsJsonObject();
@@ -385,6 +523,16 @@ public class ListingCommandApi {
                 envelope.payload()));
     }
 
+    /**
+     * courtRoomId/startDateTime/endDateTime mirror main's contract (the review artifact this
+     * reconciles); jurisdiction is still resolved from the hearing's own {@code jurisdictionType} in
+     * the listing viewstore (NOT main's court-centre reference-data lookup — that lookup is
+     * deliberately not ported, see the plan's Part B.2 note 4 / decisions). Date validation
+     * ({@link #validateMoveDates}) mirrors main's rules for BOTH jurisdictions, including the
+     * single-day request window (MULTI_DAY_NOT_ALLOWED, D-C/Q5). Multi-day CROWN payback
+     * (SPRDT-1333) comes from the hearing's own estimate - courtscheduler sizes the day-count from
+     * durationInMinutes - not from a multi-day request window. MAGS stays single-day.
+     */
     @Handles("listing.command.move-hearing-to-past-date")
     public void handleMoveHearingToPastDate(final JsonEnvelope envelope) {
         final JsonObject payload = envelope.payloadAsJsonObject();
@@ -395,7 +543,10 @@ public class ListingCommandApi {
 
         final UUID hearingId = fromString(payload.getString(HEARING_ID));
         final UUID courtCentreId = fromString(payload.getString(COURT_CENTRE_ID));
-        final LocalDate startDate = LocalDate.parse(payload.getString(START_DATE));
+        final UUID courtRoomId = fromString(payload.getString(COURT_ROOM_ID));
+        final ZonedDateTime startInstant = parseInstant(payload.getString(START_DATE_TIME), START_DATE_TIME);
+        final ZonedDateTime endInstant = parseInstant(payload.getString(END_DATE_TIME), END_DATE_TIME);
+        final LocalDate startDate = startInstant.toLocalDate();
 
         final JsonObject hearing = hearingLookupService.findHearing(hearingId, envelope)
                 .orElseThrow(() -> new MoveHearingToPastDateException(422,
@@ -410,33 +561,77 @@ public class ListingCommandApi {
                 .add(START_DATE, startDate.toString())
                 .add(COURT_CENTRE_ID, courtCentreId.toString());
 
-        if (CROWN_JURISDICTION.equals(jurisdictionType)) {
-            // CROWN moves may only target today or an earlier date; the slot is then booked in courtscheduler like MAGISTRATES.
-            rejectCrownMoveToFutureDate(startDate);
-        }
-        enrichWithBookedPastDateSlot(enrichedBuilder, hearingId, courtCentreId, startDate, hearing, jurisdictionType);
+        // Ported from main, applied uniformly to BOTH jurisdictions (main runs this before any
+        // CROWN/MAGISTRATES branching too) — closes the gap where MAGS previously had no listing-side
+        // date validation at all, and CROWN only had a future-date check that still allowed today.
+        validateMoveDates(startInstant, endInstant);
+
+        enrichWithBookedPastDateSlot(enrichedBuilder, hearingId, courtCentreId, courtRoomId,
+                startInstant, endInstant, hearing, jurisdictionType);
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_MOVE_HEARING_TO_PAST_DATE_ENRICHED),
                 enrichedBuilder.build()));
     }
 
+    /** Mirrors main's {@code parseInstant}: malformed startDateTime/endDateTime => 422 INVALID_DATE. */
+    private static ZonedDateTime parseInstant(final String value, final String field) {
+        try {
+            return ZonedDateTime.parse(value);
+        } catch (final DateTimeParseException e) {
+            final String message = field + " is not a valid date";
+            throw new MoveHearingToPastDateException(422, buildMoveHearingToPastDateErrorBody(INVALID_DATE, message), message);
+        }
+    }
 
-    private static void rejectCrownMoveToFutureDate(final LocalDate startDate) {
-        if (startDate.isAfter(LocalDate.now())) {
-            throw new MoveHearingToPastDateException(422,
-                    buildMoveHearingToPastDateErrorBody(FUTURE_DATE_NOT_ALLOWED, "Hearings can only be moved to today or an earlier date"),
-                    "Hearings can only be moved to today or an earlier date");
+    /**
+     * Ported from main's {@code validateMoveDates}, applied to both jurisdictions: target strictly
+     * before today, endDateTime not before startDateTime, a single-day request window (endDate must
+     * equal startDate - D-C/Q5), and startDate no older than {@value #MAX_PAST_MONTHS} months.
+     */
+    private static void validateMoveDates(final ZonedDateTime startInstant, final ZonedDateTime endInstant) {
+        final LocalDate startDate = startInstant.toLocalDate();
+        final LocalDate endDate = endInstant.toLocalDate();
+        final LocalDate today = LocalDate.now();
+        // today itself and any future date are rejected (isBefore is exclusive of today) - SPRDT-1185.
+        if (!startDate.isBefore(today) || !endDate.isBefore(today)) {
+            final String message = "Hearings can only be moved to an earlier date";
+            throw new MoveHearingToPastDateException(422, buildMoveHearingToPastDateErrorBody(FUTURE_DATE_NOT_ALLOWED, message), message);
+        }
+        if (endInstant.isBefore(startInstant)) {
+            final String message = "endDateTime must not be earlier than startDateTime";
+            throw new MoveHearingToPastDateException(422, buildMoveHearingToPastDateErrorBody(INVALID_DATE_RANGE, message), message);
+        }
+        if (endDate.isAfter(startDate)) {
+            final String message = "Only Single day hearing can be moved to past date";
+            throw new MoveHearingToPastDateException(422, buildMoveHearingToPastDateErrorBody(MULTI_DAY_NOT_ALLOWED, message), message);
+        }
+        if (startDate.isBefore(today.minusMonths(MAX_PAST_MONTHS))) {
+            final String message = "startDate cannot be earlier than " + MAX_PAST_MONTHS + " months before today";
+            throw new MoveHearingToPastDateException(422, buildMoveHearingToPastDateErrorBody(START_DATE_TOO_OLD, message), message);
         }
     }
 
     private void enrichWithBookedPastDateSlot(final JsonObjectBuilder enrichedBuilder, final UUID hearingId,
-                                              final UUID courtCentreId, final LocalDate startDate, final JsonObject hearing,
-                                              final String jurisdictionType) {
+                                              final UUID courtCentreId, final UUID courtRoomId,
+                                              final ZonedDateTime startInstant, final ZonedDateTime endInstant,
+                                              final JsonObject hearing, final String jurisdictionType) {
         final Integer durationInMinutes = (hearing.containsKey(ESTIMATED_MINUTES) && !hearing.isNull(ESTIMATED_MINUTES))
                 ? hearing.getInt(ESTIMATED_MINUTES) : null;
 
-        final MoveHearingToPastDateResult slot =
-                courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, startDate, durationInMinutes, jurisdictionType);
+        final MoveHearingToPastDateResult slot = courtSchedulerServiceAdapter.moveHearingToPastDate(
+                hearingId, courtCentreId, courtRoomId, startInstant, endInstant, durationInMinutes, jurisdictionType);
+
+        if (slot.sessions().isEmpty()) {
+            // courtscheduler can return 200 with an empty sessions[] for a genuine multi-day
+            // (duration-sized) search that matched nothing (exploratory - it deliberately leaves the
+            // prior allocation intact rather than erroring). Nothing to enrich/move in that case -
+            // surface it as the same NO_SESSION_FOUND failure a single-date miss gets, rather than
+            // sending a broken enriched command downstream.
+            throw new MoveHearingToPastDateException(422,
+                    buildMoveHearingToPastDateErrorBody(CourtSchedulerServiceAdapter.NO_SESSION_FOUND,
+                            CourtSchedulerServiceAdapter.NO_SESSION_FOUND_MESSAGE),
+                    CourtSchedulerServiceAdapter.NO_SESSION_FOUND_MESSAGE);
+        }
 
         // courtscheduler's CourtSchedule carries no per-hearing duration: the moved day(s) keep the
         // hearing's own estimate, spread evenly across the booked sessions (mirrors
@@ -510,7 +705,7 @@ public class ListingCommandApi {
     }
 
     /**
-     * CROWN-only. Changes the courtroom of one or more SELECTED days of a multi-day CROWN
+     * Changes the courtroom of one or more SELECTED days of a multi-day CROWN or MAGISTRATES
      * hearing. Days not present in {@code nonDefaultDays} are never touched. Virtual days are always
      * (re)booked in courtscheduler; a REAL day is (re)booked too when its {@code courtScheduleId}
      * differs from the hearing day's current schedule on that date, so the old session's duration is
@@ -518,7 +713,7 @@ public class ListingCommandApi {
      * persisted and never booked - the UI omits the id when no bookable slot exists for the room/date
      * (e.g. the day's own session is fully consumed), which must not be a contract violation. Schema
      * violations (missing/malformed fields) are rejected as 400 by the framework via the request
-     * schema; business failures (unknown hearing, non-CROWN, non-multiday, duplicate day dates, a
+     * schema; business failures (unknown hearing, unsupported jurisdiction, non-multiday, duplicate day dates, a
      * virtual day without a courtScheduleId, or a courtscheduler rejection) are all surfaced as 422
      * via {@link ChangeCourtRoomForMultidayException} so no command is ever sent.
      */
@@ -533,7 +728,7 @@ public class ListingCommandApi {
         final UUID hearingId = fromString(payload.getString(HEARING_ID));
         final JsonArray nonDefaultDays = payload.getJsonArray(NON_DEFAULT_DAYS);
 
-        final JsonObject hearing = validateCrownMultidayHearingOrThrow(hearingId, envelope);
+        final JsonObject hearing = validateMultidayHearingOrThrow(hearingId, envelope);
         final Map<LocalDate, String> currentScheduleByDate = currentCourtScheduleIdsByDate(hearing);
 
         // Each requested day is either VIRTUAL (virtual=true -> (re)booked in courtscheduler and
@@ -594,20 +789,21 @@ public class ListingCommandApi {
     }
 
     /**
-     * CROWN-only business validations for change-court-room-for-multiday: hearing must exist, be CROWN,
-     * and be multiday. Returns the looked-up hearing so callers can compare requested days against its
-     * current hearingDays without a second query.
+     * Business validations for change-court-room-for-multiday: hearing must exist, be CROWN or
+     * MAGISTRATES, and be multiday. Returns the looked-up hearing so callers can compare requested
+     * days against its current hearingDays without a second query.
      */
-    private JsonObject validateCrownMultidayHearingOrThrow(final UUID hearingId, final JsonEnvelope envelope) {
+    private JsonObject validateMultidayHearingOrThrow(final UUID hearingId, final JsonEnvelope envelope) {
         final JsonObject hearing = hearingLookupService.findHearing(hearingId, envelope)
                 .orElseThrow(() -> new ChangeCourtRoomForMultidayException(422,
                         buildChangeCourtRoomForMultidayErrorBody(HEARING_ID_NOT_FOUND, NO_HEARING_FOUND_FOR_HEARING_ID + hearingId),
                         NO_HEARING_FOUND_FOR_HEARING_ID + hearingId));
 
-        if (!CROWN_JURISDICTION.equals(hearing.getString(JURISDICTION_TYPE, null))) {
+        final String jurisdictionType = hearing.getString(JURISDICTION_TYPE, null);
+        if (jurisdictionType == null || !CHANGE_COURT_ROOM_JURISDICTIONS.contains(jurisdictionType)) {
+            final String message = "change-court-room-for-multiday-hearing supports CROWN and MAGISTRATES hearings, not " + jurisdictionType;
             throw new ChangeCourtRoomForMultidayException(422,
-                    buildChangeCourtRoomForMultidayErrorBody(NOT_CROWN_HEARING, "change-court-room-for-multiday-hearing is CROWN-only"),
-                    "change-court-room-for-multiday-hearing is CROWN-only");
+                    buildChangeCourtRoomForMultidayErrorBody(UNSUPPORTED_JURISDICTION, message), message);
         }
 
         final JsonArray hearingDays = hearing.containsKey(HEARING_DAYS) ? hearing.getJsonArray(HEARING_DAYS) : null;
@@ -635,7 +831,9 @@ public class ListingCommandApi {
             }
             final LocalDate date = LocalDate.parse(rawDate.length() > 10 ? rawDate.substring(0, 10) : rawDate);
             final boolean cancelled = day.getBoolean("isCancelled", false);
-            if (!scheduleByDate.containsKey(date) || !cancelled) {
+            if (cancelled) {
+                scheduleByDate.putIfAbsent(date, scheduleId);
+            } else {
                 scheduleByDate.put(date, scheduleId);
             }
         }

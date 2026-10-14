@@ -2,18 +2,41 @@
 
 # Script that runs, liquibase, deploys wars and runs integration test
 #
-# Usage: ./runIntegrationTests.sh [errorlog]
+# Usage: ./runIntegrationTests.sh [errorlog] [durations] [nounit] [nomidnightguard]
 #   errorlog  - strict server.log mode: any unexpected ERROR/WARN in a test's server.log window
 #               FAILS that test (see ServerLogTestMarkerExtension / @ExpectedServerErrors).
 #               Also disables failsafe reruns so strict failures cannot be masked as flakes.
+#   durations - also activate the test-duration-tracking profile (TestDurationListener): ranked
+#               per-test durations in listing-integration-test/target/test-results/test-durations.csv
+#   nounit    - build the wars with -DskipTests (unit tests are not needed to deploy; the PR gate's
+#               own `mvn clean install` still runs them). Saves the ~1 min unit-test pass per IT run.
+#   nomidnightguard - do not wait when 00:00 UTC is near (see waitIfUtcMidnightIsNear below).
+# Any other argument is rejected: in particular -D options (-Dit.test, -Dit.clock) are NOT forwarded to Maven.
 
 CONTEXT_NAME=listing
 
 SERVER_LOG_STRICT_PROPS=""
+EXTRA_IT_PROFILES=""
+BUILD_SKIP_TESTS=""
+MIDNIGHT_GUARD=true
 for arg in "$@"; do
   case "$arg" in
     errorlog)
       SERVER_LOG_STRICT_PROPS="-Dserver.log.failOnUnexpectedErrors=true -Dfailsafe.rerunFailingTestsCount=0"
+      ;;
+    durations)
+      EXTRA_IT_PROFILES=",test-duration-tracking"
+      ;;
+    nounit)
+      BUILD_SKIP_TESTS="-DskipTests"
+      ;;
+    nomidnightguard)
+      MIDNIGHT_GUARD=false
+      ;;
+    *)
+      echo "Unknown argument '$arg' (supported: errorlog durations nounit nomidnightguard)."
+      echo "-D options such as -Dit.test / -Dit.clock are NOT forwarded to the failsafe run."
+      exit 2
       ;;
   esac
 done
@@ -43,8 +66,32 @@ source $CPP_DOCKER_DIR/build-scripts/integration-test-scipt-functions.sh
 integrationTests() {
   echo
   echo "Running Integration Tests${SERVER_LOG_STRICT_PROPS:+ (strict server.log mode: unexpected ERROR/WARN fails the owning test)}"
-  mvn -B -C -U verify -pl ${CONTEXT_NAME}-integration-test -P${CONTEXT_NAME}-integration-test -DINTEGRATION_HOST_KEY=localhost -Dfailsafe.rerunFailingTestsCount=4 ${SERVER_LOG_STRICT_PROPS}
+  mvn -B -C -U verify -pl ${CONTEXT_NAME}-integration-test -P${CONTEXT_NAME}-integration-test${EXTRA_IT_PROFILES} -DINTEGRATION_HOST_KEY=localhost -Dfailsafe.rerunFailingTestsCount=4 ${SERVER_LOG_STRICT_PROPS}
   echo "Finished executing Integration Tests"
+}
+
+# Local override of cpp-developers-docker's buildWars()/doBuildWars 'service': same clean + install,
+# plus -DskipTests when "nounit" is given.
+buildWars() {
+  mvn -f ${CONTEXT_NAME}-service/pom.xml clean
+  echo "Building wars..."
+  mvn install -nsu ${BUILD_SKIP_TESTS}
+  echo "Finished building wars"
+}
+
+# Never start the IT JVM within IT_MIDNIGHT_GUARD_SECONDS of 00:00 UTC (01:00 BST in summer).
+# ItClock anchors "today" once per IT JVM, but the server's LocalDate.now() rolls over at 00:00 UTC:
+# hearings the suite created for "today" then count as past (Hearing.isHearingInThePast drops defendant,
+# offence, case-marker, application ... updates) and date-filtered searches stop matching. A run that
+# straddled midnight on 2026-10-09 went 24+ tests red and ran for over 45 minutes.
+waitIfUtcMidnightIsNear() {
+  [ "$MIDNIGHT_GUARD" = true ] || return 0
+  local guard="${IT_MIDNIGHT_GUARD_SECONDS:-1200}"
+  local secs_left=$(( 86400 - $(date -u +%s) % 86400 ))
+  if [ "$secs_left" -le "$guard" ]; then
+    echo "00:00 UTC is ${secs_left}s away: waiting $(( secs_left + 30 ))s so the IT JVM and the server agree on 'today'"
+    sleep $(( secs_left + 30 ))
+  fi
 }
 
 runLiquibase() {
@@ -75,6 +122,7 @@ buildDeployAndTest() {
   deployWiremock
   deployWars
   healthchecks
+  waitIfUtcMidnightIsNear
   integrationTests
 }
 

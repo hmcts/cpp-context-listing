@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.common.service;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -224,6 +225,54 @@ class CourtSchedulerServiceAdapterTest {
         assertThat(finalResp.getUuids().size(), is(4));
         assertThat(finalResp.getPageCount(), is(1L));
         assertThat(finalResp.getResults(), is(4L));
+    }
+
+    @Test
+    void getCourtSchedulerHearingsShouldFailWithTheCourtSchedulerStatusWhenTheSearchIsRejected() {
+        when(response.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        when(response.hasEntity()).thenReturn(false);
+        when(hearingSlotsService.getCourtSchedulerHearingIds(anyMap())).thenReturn(response);
+
+        final HearingQueryException thrown = org.junit.jupiter.api.Assertions.assertThrows(
+                HearingQueryException.class,
+                () -> courtSchedulerServiceAdapter.getCourtSchedulerHearings(UUID.randomUUID().toString(), Optional.of("AD"), UUID.randomUUID().toString(), LocalDate.now().toString(), LocalDate.now().plusDays(7).toString(), Optional.of(Instant.now()), Optional.of("BA123"), Optional.of("MAGISTRATES"), "FINAL", "ADULT,YOUTH", 50, 1));
+
+        assertThat(thrown.getMessage(), containsString("500"));
+    }
+
+    @Test
+    void getCourtSchedulerHearingsShouldFailWhenTheBodyCarriesNoHearingIds() {
+        final JsonObject noHearingIds = javax.json.Json.createObjectBuilder()
+                .add("error", "court schedule search unavailable")
+                .build();
+
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(noHearingIds);
+        when(hearingSlotsService.getCourtSchedulerHearingIds(anyMap())).thenReturn(response);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                HearingQueryException.class,
+                () -> courtSchedulerServiceAdapter.getCourtSchedulerHearings(UUID.randomUUID().toString(), Optional.of("AD"), UUID.randomUUID().toString(), LocalDate.now().toString(), LocalDate.now().plusDays(7).toString(), Optional.of(Instant.now()), Optional.of("BA123"), Optional.of("MAGISTRATES"), "FINAL", "ADULT,YOUTH", 50, 1));
+    }
+
+    @Test
+    void getCourtSchedulerHearingsShouldDefaultTheCountsWhenThePageOmitsThem() {
+        final JsonObject countlessPage = javax.json.Json.createObjectBuilder()
+                .add("hearingIds", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("hearingId", UUID.randomUUID().toString())
+                                .add("courtScheduleId", UUID.randomUUID().toString())))
+                .build();
+
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(countlessPage);
+        when(hearingSlotsService.getCourtSchedulerHearingIds(anyMap())).thenReturn(response);
+
+        final HearingIdsResponse actual = courtSchedulerServiceAdapter.getCourtSchedulerHearings(UUID.randomUUID().toString(), Optional.of("AD"), UUID.randomUUID().toString(), LocalDate.now().toString(), LocalDate.now().plusDays(7).toString(), Optional.of(Instant.now()), Optional.of("BA123"), Optional.of("MAGISTRATES"), "FINAL", "ADULT,YOUTH", 50, 1);
+
+        assertThat(actual.getUuids().size(), is(1));
+        assertThat(actual.getResults(), is(1L));
+        assertThat(actual.getPageCount(), is(1L));
     }
 
     @Test

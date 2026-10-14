@@ -2983,6 +2983,47 @@ class ListingEventProcessorTest {
                 .build();
     }
 
+    @Test
+    public void shouldRouteProgressionOffencesRemovedEventToRemoveSelectedOffencesCommand() {
+        final JsonObject eventPayload = createObjectBuilder()
+                .add("hearingId", randomUUID().toString())
+                .add("offenceIds", createArrayBuilder().add(randomUUID().toString()))
+                .build();
+        given(envelope.payloadAsJsonObject()).willReturn(eventPayload);
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = forClass(JsonEnvelope.class);
+
+        listingEventProcessor.offencesRemovedFromExistingAllocatedHearingByProgression(envelope);
+
+        verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
+        final JsonEnvelope captured = senderJsonEnvelopeCaptor.getValue();
+        assertThat(captured.metadata().name(), is("listing.command.remove-selected-offences-from-existing-hearing"));
+        assertThat(captured.payloadAsJsonObject(), is(eventPayload));
+    }
+
+    // The progression event and the hearing-context event are two publishers of the same contract,
+    // so they must reach the aggregate as the identical command for its idempotency to hold.
+    @Test
+    public void shouldRouteProgressionAndHearingOffencesRemovedEventsToTheSameCommand() {
+        final JsonObject eventPayload = createObjectBuilder()
+                .add("hearingId", randomUUID().toString())
+                .add("offenceIds", createArrayBuilder().add(randomUUID().toString()))
+                .build();
+        given(envelope.payloadAsJsonObject()).willReturn(eventPayload);
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = forClass(JsonEnvelope.class);
+
+        listingEventProcessor.offencesRemovedFromExistingHearing(envelope);
+        listingEventProcessor.offencesRemovedFromExistingAllocatedHearingByProgression(envelope);
+
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+        final List<JsonEnvelope> captured = senderJsonEnvelopeCaptor.getAllValues();
+        assertThat(captured.get(1).metadata().name(), is(captured.get(0).metadata().name()));
+        assertThat(captured.get(1).payloadAsJsonObject(), is(captured.get(0).payloadAsJsonObject()));
+    }
+
     private AllocatedHearingUpdatedForListingV2 createAllocatedHearingUpdatedForListingV2ForHMIVerification(final boolean sourceFlag) {
         return new AllocatedHearingUpdatedForListingV2.Builder()
                 .withUpdateSlot(false)

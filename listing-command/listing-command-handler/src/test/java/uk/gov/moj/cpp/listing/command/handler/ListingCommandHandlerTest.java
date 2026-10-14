@@ -215,6 +215,7 @@ import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 import uk.gov.moj.cpp.listing.domain.Type;
 import uk.gov.moj.cpp.listing.domain.aggregate.Application;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
+import uk.gov.moj.cpp.listing.domain.PtphDetail;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate;
 import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
@@ -255,7 +256,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -616,7 +616,7 @@ class ListingCommandHandlerTest {
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
                 eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY),
-                eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(of(2)))).thenReturn(events);
+                eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(of(2)), eq(null))).thenReturn(events);
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(createObjectBuilder().add("oucode", "B06AN00").build());
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
@@ -624,7 +624,7 @@ class ListingCommandHandlerTest {
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES),eq(ESTIMATED_DURATION), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
-                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(of(2)));
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(of(2)), eq(null));
 
     }
 
@@ -670,14 +670,14 @@ class ListingCommandHandlerTest {
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
                 eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(true), eq(BOOKING_TYPE), eq(PRIORITY),
-                eq(SPECIAL_REQUIREMENTS), eq(of(Boolean.FALSE)), eq(empty()), eq(empty()))).thenReturn(events);
+                eq(SPECIAL_REQUIREMENTS), eq(of(Boolean.FALSE)), eq(empty()), eq(empty()), eq(null))).thenReturn(events);
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
 
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(ESTIMATED_DURATION), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
-                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(true), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()));
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(true), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()), eq(null));
 
     }
 
@@ -714,14 +714,14 @@ class ListingCommandHandlerTest {
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
                 eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(hearingDays), eq(NON_DEFAULT_DAYS), eq(nonSittingDays), eq(true), eq(BOOKING_TYPE), eq(PRIORITY),
-                eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()))).thenReturn(events);
+                eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()), eq(null))).thenReturn(events);
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
 
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES),eq(ESTIMATED_DURATION), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(parse(LISTED_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
-                eq(empty()), eq(empty()), eq(empty()), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()));
+                eq(empty()), eq(empty()), eq(empty()), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()), eq(null));
 
     }
 
@@ -755,7 +755,7 @@ class ListingCommandHandlerTest {
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
                 eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(NON_DEFAULT_DAYS), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY),
-                eq(SPECIAL_REQUIREMENTS), eq(empty()),eq(empty()), eq(empty()))).thenReturn(events);
+                eq(SPECIAL_REQUIREMENTS), eq(empty()),eq(empty()), eq(empty()), eq(null))).thenReturn(events);
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(createObjectBuilder().add("oucode", "B06AN00").build());
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
@@ -763,7 +763,7 @@ class ListingCommandHandlerTest {
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES),eq(ESTIMATED_DURATION), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(null), eq(null), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(empty()),
-                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(convertNonDefaultDaysCommandToDomain(nonDefaultDaysList)), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()));
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))), eq(of(WEEK_COMMENCING_DURATION)), eq(HEARING_DAYS), eq(convertNonDefaultDaysCommandToDomain(nonDefaultDaysList)), eq(NON_SITTING_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS), eq(empty()), eq(empty()), eq(empty()), eq(null));
 
 
     }
@@ -2568,6 +2568,8 @@ class ListingCommandHandlerTest {
         when(hearing.changeEndDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
         when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()))).thenReturn(Stream.empty());
+        when(hearing.applyAllocationRules(any(), eq(false), eq(false))).thenReturn(Stream.empty());
+        when(hearing.applyRescheduledCheck(any())).thenReturn(Stream.empty());
 
         listingCommandHandler.moveHearingToPastDate(commandEnvelope);
 
@@ -2576,6 +2578,10 @@ class ListingCommandHandlerTest {
         verify(hearing, times(1)).changeEndDate(LocalDate.parse("2026-05-01"), HEARING_ID_1);
         verify(hearing, times(1)).assignHearingDaysV2(eq(HEARING_ID_1), captor.capture(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()));
+        // SPRDT-1214 gap closed: MAGS and CROWN now go through the same applyAllocationRules/
+        // applyRescheduledCheck wiring as every other listing command handler.
+        verify(hearing, times(1)).applyAllocationRules(any(), eq(false), eq(false));
+        verify(hearing, times(1)).applyRescheduledCheck(any());
         verify(hearing, never()).raiseHearingDayCourtSchedulesUpdated(any(), any());
         final uk.gov.moj.cpp.listing.domain.HearingDay movedDay = captor.getValue().get(0);
         assertThat(movedDay.getCourtScheduleId().orElse(null), is(courtScheduleId));
@@ -2583,7 +2589,7 @@ class ListingCommandHandlerTest {
     }
 
     @Test
-    public void listingCommandHandlerShouldMoveCrownHearingToPastDateWithBookedCourtSchedule() throws Exception {
+    void listingCommandHandlerShouldMoveCrownHearingToPastDateWithBookedCourtSchedule() throws Exception {
         final String startDate = "2026-05-01";
         final UUID crownRoomId = randomUUID();
         final UUID courtScheduleId = randomUUID();
@@ -2591,11 +2597,13 @@ class ListingCommandHandlerTest {
 
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
-        when(hearing.changeStartDate(eq(LocalDate.parse(startDate)), eq(HEARING_ID_1))).thenReturn(Stream.empty());
-        when(hearing.changeEndDate(eq(LocalDate.parse("2026-05-03")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
-        when(hearing.assignCourtRoom(eq(crownRoomId), eq(HEARING_ID_1), eq(Optional.empty()))).thenReturn(Stream.empty());
+        when(hearing.changeStartDate(LocalDate.parse(startDate), HEARING_ID_1)).thenReturn(Stream.empty());
+        when(hearing.changeEndDate(LocalDate.parse("2026-05-03"), HEARING_ID_1)).thenReturn(Stream.empty());
+        when(hearing.assignCourtRoom(crownRoomId, HEARING_ID_1, Optional.empty())).thenReturn(Stream.empty());
         when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.CROWN), eq(emptyList()))).thenReturn(Stream.empty());
+        when(hearing.applyAllocationRules(any(), eq(false), eq(false))).thenReturn(Stream.empty());
+        when(hearing.applyRescheduledCheck(any())).thenReturn(Stream.empty());
 
         listingCommandHandler.moveHearingToPastDate(commandEnvelope);
 
@@ -2605,6 +2613,9 @@ class ListingCommandHandlerTest {
         verify(hearing, times(1)).changeEndDate(LocalDate.parse("2026-05-03"), HEARING_ID_1);
         verify(hearing, times(1)).assignHearingDaysV2(eq(HEARING_ID_1), captor.capture(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.CROWN), eq(emptyList()));
+        // CROWN goes through the same allocation-rules/rescheduled-check wiring as MAGS (SPRDT-1214 gap closed)
+        verify(hearing, times(1)).applyAllocationRules(any(), eq(false), eq(false));
+        verify(hearing, times(1)).applyRescheduledCheck(any());
         verify(hearing, never()).raiseHearingDayCourtSchedulesUpdated(any(), any());
         final uk.gov.moj.cpp.listing.domain.HearingDay movedDay = captor.getValue().get(0);
         assertThat(movedDay.getHearingDate(), is(LocalDate.parse(startDate)));
@@ -2616,7 +2627,7 @@ class ListingCommandHandlerTest {
     /** Multi-day: one hearing day per booked session (sequence 1..N), each with its own schedule/date,
      *  per-day duration and session times; flat single-slot fields are ignored when sessions[] is present. */
     @Test
-    public void listingCommandHandlerShouldMoveMultiDayCrownHearingToPastDateReissuingOneDayPerBookedSession() throws Exception {
+    void listingCommandHandlerShouldMoveMultiDayCrownHearingToPastDateReissuingOneDayPerBookedSession() throws Exception {
         final UUID schedule1 = randomUUID();
         final UUID schedule2 = randomUUID();
         final UUID schedule3 = randomUUID();
@@ -2635,11 +2646,13 @@ class ListingCommandHandlerTest {
 
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
-        when(hearing.changeStartDate(eq(LocalDate.parse("2026-05-04")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
-        when(hearing.changeEndDate(eq(LocalDate.parse("2026-05-06")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
-        when(hearing.assignCourtRoom(eq(roomId), eq(HEARING_ID_1), eq(Optional.empty()))).thenReturn(Stream.empty());
+        when(hearing.changeStartDate(LocalDate.parse("2026-05-04"), HEARING_ID_1)).thenReturn(Stream.empty());
+        when(hearing.changeEndDate(LocalDate.parse("2026-05-06"), HEARING_ID_1)).thenReturn(Stream.empty());
+        when(hearing.assignCourtRoom(roomId, HEARING_ID_1, Optional.empty())).thenReturn(Stream.empty());
         when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.CROWN), eq(emptyList()))).thenReturn(Stream.empty());
+        when(hearing.applyAllocationRules(any(), eq(false), eq(false))).thenReturn(Stream.empty());
+        when(hearing.applyRescheduledCheck(any())).thenReturn(Stream.empty());
 
         listingCommandHandler.moveHearingToPastDate(commandEnvelope);
 
@@ -2673,7 +2686,7 @@ class ListingCommandHandlerTest {
     }
 
     @Test
-    public void listingCommandHandlerShouldLeaveEndDateUntouchedWhenMoveEnrichmentCarriesNone() throws Exception {
+    void listingCommandHandlerShouldLeaveEndDateUntouchedWhenMoveEnrichmentCarriesNone() throws Exception {
         final UUID courtScheduleId = randomUUID();
         final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"jurisdiction\":\"MAGISTRATES\",\"startDate\":\"2026-05-01\","
                 + "\"courtCentreId\":\"" + randomUUID() + "\",\"courtScheduleId\":\"" + courtScheduleId + "\",\"sessionDate\":\"2026-05-01\"}";
@@ -2682,19 +2695,23 @@ class ListingCommandHandlerTest {
 
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
-        when(hearing.changeStartDate(eq(LocalDate.parse("2026-05-01")), eq(HEARING_ID_1))).thenReturn(Stream.empty());
+        when(hearing.changeStartDate(LocalDate.parse("2026-05-01"), HEARING_ID_1)).thenReturn(Stream.empty());
         when(hearing.assignHearingDaysV2(eq(HEARING_ID_1), any(), isNull(), isNull(),
                 eq(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES), eq(emptyList()))).thenReturn(Stream.empty());
+        when(hearing.applyAllocationRules(any(), eq(false), eq(false))).thenReturn(Stream.empty());
+        when(hearing.applyRescheduledCheck(any())).thenReturn(Stream.empty());
 
         listingCommandHandler.moveHearingToPastDate(commandEnvelope);
 
         verify(hearing, never()).changeEndDate(any(), any());
         verify(hearing, never()).removeEndDate(any());
         verify(hearing, never()).assignCourtRoom(any(), any(), any());
+        verify(hearing, times(1)).applyAllocationRules(any(), eq(false), eq(false));
+        verify(hearing, times(1)).applyRescheduledCheck(any());
     }
 
     @Test
-    public void listingCommandHandlerShouldChangeCourtRoomForMultidayHearing() throws Exception {
+    void listingCommandHandlerShouldChangeCourtRoomForMultidayHearing() throws Exception {
         final UUID room2 = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID sched1 = randomUUID();
@@ -2745,7 +2762,7 @@ class ListingCommandHandlerTest {
     }
 
     @Test
-    public void listingCommandHandlerShouldPersistRealDaysAsNonDefaultDaysForChangeCourtRoom() throws Exception {
+    void listingCommandHandlerShouldPersistRealDaysAsNonDefaultDaysForChangeCourtRoom() throws Exception {
         final UUID room3 = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID realScheduleId = randomUUID();
@@ -2795,7 +2812,7 @@ class ListingCommandHandlerTest {
      * an empty schedule - the aggregate's merge keeps the stored day's existing one - not NPE.
      */
     @Test
-    public void listingCommandHandlerShouldPersistRealDayWithoutCourtScheduleIdForChangeCourtRoom() throws Exception {
+    void listingCommandHandlerShouldPersistRealDayWithoutCourtScheduleIdForChangeCourtRoom() throws Exception {
         final UUID room3 = randomUUID();
         final UUID courtCentreId = randomUUID();
         final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"sendNotificationToParties\":false,"
@@ -2929,7 +2946,36 @@ class ListingCommandHandlerTest {
 
         listingCommandHandler.handleAddCasesToHearing(commandEnvelope);
 
-        verify(hearing, times(1)).addCasesToHearing(any(List.class), any(), any());
+        // LPT-2405 added a trailing PtphDetail: null here, because this command carries no
+        // inherited tier or list type
+        verify(hearing, times(1)).addCasesToHearing(any(List.class), any(), any(), isNull());
+    }
+
+
+    /**
+     * LPT-2405: when the add-cases command carries inherited values they must reach the
+     * aggregate as a PtphDetail. The test above covers the null case, so both sides of the
+     * guard are pinned.
+     */
+    @Test
+    public void handleAddCasesForHearingWithInheritedPtphDetail() throws Exception {
+        final String jsonString = givenPayload("/test-data/listing.command.add-cases-to-hearing.json").toString();
+        final JsonObject withPtphDetail = JsonObjects.createObjectBuilder(
+                        JsonObjects.createReader(new StringReader(jsonString)).readObject())
+                .add("tier", "TIER_3")
+                .add("listType", "TYPE_1_FIXED")
+                .add("keyReason", "Vulnerable witness")
+                .build();
+
+        listingCommandHandler.handleAddCasesToHearing(
+                createEnvelope("listing.command.add-cases-to-hearing", withPtphDetail));
+
+        final ArgumentCaptor<PtphDetail> captor = ArgumentCaptor.forClass(PtphDetail.class);
+        verify(hearing).addCasesToHearing(any(List.class), any(), any(), captor.capture());
+
+        assertThat(captor.getValue().getTier(), is("TIER_3"));
+        assertThat(captor.getValue().getListType(), is("TYPE_1_FIXED"));
+        assertThat(captor.getValue().getKeyReason(), is("Vulnerable witness"));
     }
 
     @Test
@@ -4589,121 +4635,66 @@ class ListingCommandHandlerTest {
         verify(hearing).assignNonDefaultDays(any(), any());
     }
 
+    // The marker is an external contract: the production alert and the ITs' @ExpectedServerErrors
+    // annotations both key off this exact string, and neither can reference the constant. Renaming
+    // it would silently disable the alert, so pin the value here.
     @Test
-    public void shouldNotCreateNonDefaultDaysForSplitHearingWhenPayloadNonDefaultDaysAreVirtual() throws Exception {
-        final JsonEnvelope commandEnvelope = updateHearingForListingCommandEnvelope(
-                "/test-data/listing.command.update-hearing-for-listing-split-with-virtual-non-default-days.json");
-
-        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime", "09:00").build());
-        when(hearing.updateUnallocatedHearingPartially(any(), any(), any())).thenReturn(Stream.of(new Object()));
-        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
-        doReturn(HearingUpdateOperationType.SPLIT).when(extendHearingUtils)
-                .getOperationType(any(), any(), any(), any(), any(), any(), any(), any());
-
-        @SuppressWarnings("unchecked")
-        final ArgumentCaptor<List<NonDefaultDay>> nonDefaultDaysCaptor = ArgumentCaptor.forClass(List.class);
-        @SuppressWarnings("unchecked")
-        final ArgumentCaptor<List<uk.gov.justice.core.courts.RotaSlot>> bookedSlotsCaptor = ArgumentCaptor.forClass(List.class);
-        when(hearing.listForSplit(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                nonDefaultDaysCaptor.capture(), any(), bookedSlotsCaptor.capture())).thenReturn(Stream.of());
-
-        listingCommandHandler.updateHearingForListing(commandEnvelope);
-
-        assertThat("virtual nonDefaultDays are courtscheduler booking proxies and must not be persisted "
-                        + "as nonDefaultDays on the new split hearing",
-                nonDefaultDaysCaptor.getValue(), hasSize(0));
-        assertThat("the booked courtscheduler sessions on the enriched hearingDays must ride on "
-                        + "bookedSlots so the new split hearing is listed allocated on them (multiday)",
-                bookedSlotsCaptor.getValue(), hasSize(1));
-        assertThat(bookedSlotsCaptor.getValue().get(0).getCourtScheduleId(), is(COURT_SCHEDULE_ID_1.toString()));
-        assertThat(bookedSlotsCaptor.getValue().get(0).getDuration(), is(360));
-        assertThat(bookedSlotsCaptor.getValue().get(0).getRoomId(), is(COURT_ROOM_ID.toString()));
+    void theRejectionMarkerValueIsFixedBecauseAlertingDependsOnIt() {
+        assertThat(ListingCommandHandler.SPLIT_VIA_UPDATE_HEARING_REJECTED,
+                is("SPLIT_VIA_UPDATE_HEARING_REJECTED"));
     }
 
+    // SPRDT-1365: splits are performed by progression via the listing proxy. A split-shaped
+    // update-hearing-for-listing must not touch the original hearing at all — a partial update
+    // here would move the original's room/date, which is the SPRDT-1227 failure.
+    //
+    // Asserting "no events appended" alone is NOT enough: the aggregate is a mock whose methods
+    // return empty streams by default, so an empty append is the default state and the assertion
+    // passes even with the guard removed. Verifying the aggregate is never asked to mutate is what
+    // actually fails when the guard is gone.
     @Test
-    public void shouldCreateNonDefaultDaysFromHearingDaysForSplitHearingWhenPayloadNonDefaultDaysAreNotVirtual() throws Exception {
-        final JsonEnvelope commandEnvelope = updateHearingForListingCommandEnvelope(
-                "/test-data/listing.command.update-hearing-for-listing-split-with-real-non-default-days.json");
-
-        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime", "09:00").build());
-        when(hearing.updateUnallocatedHearingPartially(any(), any(), any())).thenReturn(Stream.of(new Object()));
-        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
-        doReturn(HearingUpdateOperationType.SPLIT).when(extendHearingUtils)
-                .getOperationType(any(), any(), any(), any(), any(), any(), any(), any());
-
-        @SuppressWarnings("unchecked")
-        final ArgumentCaptor<List<NonDefaultDay>> nonDefaultDaysCaptor = ArgumentCaptor.forClass(List.class);
-        @SuppressWarnings("unchecked")
-        final ArgumentCaptor<List<uk.gov.justice.core.courts.RotaSlot>> bookedSlotsCaptor = ArgumentCaptor.forClass(List.class);
-        when(hearing.listForSplit(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                nonDefaultDaysCaptor.capture(), any(), bookedSlotsCaptor.capture())).thenReturn(Stream.of());
-
-        listingCommandHandler.updateHearingForListing(commandEnvelope);
-
-        assertThat(nonDefaultDaysCaptor.getValue(), hasSize(1));
-        assertThat(nonDefaultDaysCaptor.getValue().get(0).getRoomId(), is(of(COURT_ROOM_ID.toString())));
-        // booked sessions on hearingDays are carried as bookedSlots on the non-virtual path too
-        assertThat(bookedSlotsCaptor.getValue(), hasSize(1));
-        assertThat(bookedSlotsCaptor.getValue().get(0).getCourtScheduleId(), is(COURT_SCHEDULE_ID_1.toString()));
-    }
-
-    @Test
-    public void shouldCreateBookedSlotPerBookedHearingDayForMultidaySplit() throws Exception {
+    void shouldNotAskTheHearingAggregateToMutateAnythingForASplit() throws Exception {
         final JsonEnvelope commandEnvelope = updateHearingForListingCommandEnvelope(
                 "/test-data/listing.command.update-hearing-for-listing-split-with-multiday-booked-days.json");
 
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime", "09:00").build());
-        when(hearing.updateUnallocatedHearingPartially(any(), any(), any())).thenReturn(Stream.of(new Object()));
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
         doReturn(HearingUpdateOperationType.SPLIT).when(extendHearingUtils)
                 .getOperationType(any(), any(), any(), any(), any(), any(), any(), any());
 
-        @SuppressWarnings("unchecked")
-        final ArgumentCaptor<List<uk.gov.justice.core.courts.RotaSlot>> bookedSlotsCaptor = ArgumentCaptor.forClass(List.class);
-        when(hearing.listForSplit(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                any(), any(), bookedSlotsCaptor.capture())).thenReturn(Stream.of());
-
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
-        // One slot per booked session day, in hearingDay order, with per-day booking details —
-        // this is what lets the returning list-court-hearing take the CROWN multi-day
-        // CourtSchedule-first path and list the split's new hearing ALLOCATED across all days.
-        final List<uk.gov.justice.core.courts.RotaSlot> bookedSlots = bookedSlotsCaptor.getValue();
-        assertThat(bookedSlots, hasSize(2));
-        assertThat(bookedSlots.get(0).getCourtScheduleId(), is(COURT_SCHEDULE_ID_1.toString()));
-        assertThat(bookedSlots.get(1).getCourtScheduleId(), is(COURT_SCHEDULE_ID_2.toString()));
-        assertThat(bookedSlots.get(0).getDuration(), is(360));
-        assertThat(bookedSlots.get(1).getDuration(), is(360));
-        assertThat(bookedSlots.get(0).getRoomId(), is(COURT_ROOM_ID.toString()));
-        assertThat(bookedSlots.get(0).getCourtCentreId(), is(COURT_CENTRE_ID.toString()));
-        assertThat(bookedSlots.get(0).getStartTime(), is(notNullValue()));
+        verify(hearing, never()).changeType(any(), any());
+        verify(hearing, never()).isNotificationRelatedAllocatedFieldsUpdated(any());
+        verify(hearing, never()).changeCourtCentre(any(), any());
+        verify(hearing, never()).applyAllocationRules(any(), any(), any(), any(), any());
+
+        final ArgumentCaptor<Stream<JsonEnvelope>> appendCaptor = ArgumentCaptor.forClass(Stream.class);
+        verify(eventStream).append(appendCaptor.capture());
+        assertThat("a SPLIT must append no events to the original hearing",
+                appendCaptor.getValue().collect(toList()), hasSize(0));
     }
 
+    // The partial-update stream must never be built for a SPLIT: the guard sits before it, so the
+    // remaining-cases event is not produced either.
     @Test
-    public void shouldNotCreateBookedSlotsForSplitWhenHearingDaysCarryNoCourtScheduleId() throws Exception {
+    void shouldNotBuildThePartialAllocationStreamForASplit() throws Exception {
         final JsonEnvelope commandEnvelope = updateHearingForListingCommandEnvelope(
-                "/test-data/listing.command.update-hearing-for-listing-split-with-days-without-court-schedule-id.json");
+                "/test-data/listing.command.update-hearing-for-listing-split-with-multiday-booked-days.json");
 
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime", "09:00").build());
-        when(hearing.updateUnallocatedHearingPartially(any(), any(), any())).thenReturn(Stream.of(new Object()));
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
         doReturn(HearingUpdateOperationType.SPLIT).when(extendHearingUtils)
                 .getOperationType(any(), any(), any(), any(), any(), any(), any(), any());
 
-        @SuppressWarnings("unchecked")
-        final ArgumentCaptor<List<uk.gov.justice.core.courts.RotaSlot>> bookedSlotsCaptor = ArgumentCaptor.forClass(List.class);
-        when(hearing.listForSplit(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                any(), any(), bookedSlotsCaptor.capture())).thenReturn(Stream.of());
-
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
-        // No courtScheduleId on any hearingDay = no courtscheduler sessions were booked for the
-        // split, so the request must carry no bookedSlots and fall back to the legacy behaviour.
-        assertThat(bookedSlotsCaptor.getValue(), hasSize(0));
+        verify(extendHearingUtils, never()).createPartiallyAllocationEventForUpdateHearing(any(), any(), any(), any(), any(), any());
+        verify(hearing, never()).updateUnallocatedHearingPartially(any(), any(), any());
     }
 
     @Test
-    public void shouldPropagateIsDraftTrueFromHearingDayThroughConvertHearingDaysCommandToDomain() throws Exception {
+    void shouldPropagateIsDraftTrueFromHearingDayThroughConvertHearingDaysCommandToDomain() throws Exception {
         final JsonEnvelope commandEnvelope = updateHearingForListingWithDraftHearingDayCommandEnvelope();
 
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
@@ -4726,7 +4717,7 @@ class ListingCommandHandlerTest {
     }
 
     @Test
-    public void shouldPropagateIsDraftFalseFromHearingDayThroughConvertHearingDaysCommandToDomain() throws Exception {
+    void shouldPropagateIsDraftFalseFromHearingDayThroughConvertHearingDaysCommandToDomain() throws Exception {
         final JsonEnvelope commandEnvelope = updateHearingForListingWithNonDraftHearingDayCommandEnvelope();
 
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());

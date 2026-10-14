@@ -13,7 +13,9 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCourtSc
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubDeleteAvailableHearingSlotsServiceForAnyHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataOrganisationUnitCatchAll;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataOrganisationUnitListCatchAll;
 import uk.gov.moj.cpp.listing.it.util.ArtemisQueuePurger;
+import uk.gov.moj.cpp.listing.it.util.PipelineIdleBarrier;
 import static uk.gov.moj.cpp.listing.utils.WebDavStub.acceptCourtListXmlFile;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProgressionNotesStubs;
@@ -85,6 +87,7 @@ public class AbstractIT {
         // minimal. Tests that re-arm later still win — most recent stub wins at equal priority.
         acceptCourtListXmlFile(OK);
         stubGetReferenceDataOrganisationUnitCatchAll();
+        stubGetReferenceDataOrganisationUnitListCatchAll();
         stubCourtSchedulerCatchAll();
         setupAsAuthorisedUser(USER_ID_VALUE);
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased();
@@ -149,5 +152,22 @@ public class AbstractIT {
 
     protected static String getStringFromResource(final String path) throws IOException {
         return Resources.toString(getResource(path), defaultCharset());
+    }
+
+    /**
+     * Full happens-after barrier for a command whose expected effect is that NOTHING happens.
+     *
+     * Waits until the listing command queues, the service's own topic subscriptions and the
+     * publish relay tables have all been observed empty several times in a row (see
+     * {@link PipelineIdleBarrier}). The earlier relay-drain + DeliveringCount pair could return
+     * while the work sat on a command queue or was routed but not yet dispatched.
+     *
+     * Needed whenever a test asserts state is UNCHANGED, or that an event was NOT emitted: that
+     * condition is already true the instant the command is accepted, so checking it without this
+     * barrier races the async work instead of observing its absence. After the barrier a short
+     * absence window is enough — see {@code QueueUtil.assertNoMessage}.
+     */
+    protected void awaitAsyncProcessingComplete() {
+        PipelineIdleBarrier.awaitPipelineIdle(databaseCleaner, CONTEXT_NAME);
     }
 }

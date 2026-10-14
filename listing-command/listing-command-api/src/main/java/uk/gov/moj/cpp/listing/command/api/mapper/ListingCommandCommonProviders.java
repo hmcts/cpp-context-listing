@@ -30,6 +30,7 @@ public class ListingCommandCommonProviders extends DefaultCommonProviders {
         providers.add(CrownMultiDayExtensionExceptionMapper.class);
         providers.add(MoveHearingToPastDateExceptionMapper.class);
         providers.add(ChangeCourtRoomForMultidayExceptionMapper.class);
+        providers.add(SplitHearingRejectedExceptionMapper.class);
         return providers;
     }
 }

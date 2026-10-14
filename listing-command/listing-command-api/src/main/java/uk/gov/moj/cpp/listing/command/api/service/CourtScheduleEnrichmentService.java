@@ -280,6 +280,14 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         // WeekCommencing payloads never reach the courtscheduler booking calls — they model a weekly
         // window, not discrete days (the orchestrator routes them separately; this guard keeps the
         // invariant for direct callers too).
+        // SPRDT-1446: only an allocated hearing collapsed onto one day (SPRDT-1220) is clamped. Court
+        // Calendar unallocation also sends endDate == startDate, but with no courtroom and the block's
+        // full duration: courtscheduler needs that duration to move every booked day onto draft
+        // sessions — clamped to one court day it takes its single-day idempotent path and moves nothing.
+        final int blockDuration = carriesCourtRoom(hearing)
+                ? clampToRequestedWindow(totalDuration, hearing.getStartDate(), hearing.getEndDate())
+                : totalDuration;
+
         final boolean isMultiDay = totalDuration > HearingDurationEnrichmentService.MINUTES_IN_DAY
                 && isNull(hearing.getWeekCommencingStartDate());
 
@@ -349,7 +357,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             // main courtroom and the user's start time ride along so a same-start EXTEND books its tail
             // days into the submitted room at the submitted time (SPRDT-1273/1274).
             final int bookingMinutes = bookingWindowMinutes(
-                    hearing.getStartDate(), hearing.getEndDate(), hearing.getNonSittingDays(), totalDuration);
+                    hearing.getStartDate(), hearing.getEndDate(), hearing.getNonSittingDays(), blockDuration);
             final String mainCourtRoomId = resolveCommandCourtRoomId(hearing);
             final String userStartTimeIso = virtualAnchor
                     .map(NonDefaultDay::getStartTime)
@@ -395,7 +403,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             }
 
             final Map<LocalDate, Integer> perDayDurations = resolvePerDayDurations(
-                    sessions, hearing.getNonDefaultDays(), totalDuration);
+                    sessions, hearing.getNonDefaultDays(), blockDuration);
             final List<HearingDay> expandedDays = sessions.stream().map(session -> {
                     HearingDay.Builder dayBuilder = HearingDay.hearingDay()
                             .withCourtScheduleId(fromString(session.getCourtScheduleId()))
@@ -583,6 +591,23 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     }
 
     /**
+     * True when any part of the command names a courtroom. A Court Calendar unallocation names none:
+     * the hearing, its selected court centre, its days and its nonDefaultDays are all room-less.
+     */
+    private static boolean carriesCourtRoom(final UpdateHearingForListing hearing) {
+        if (nonNull(resolveCommandCourtRoomId(hearing))) {
+            return true;
+        }
+        if (!isEmpty(hearing.getHearingDays())
+                && hearing.getHearingDays().stream().anyMatch(d -> nonNull(d.getCourtRoomId()))) {
+            return true;
+        }
+        return !isEmpty(hearing.getNonDefaultDays())
+                && hearing.getNonDefaultDays().stream()
+                .anyMatch(nd -> !isBlank(nd.getRoomId()) || nonNull(nd.getCourtRoomId()));
+    }
+
+    /**
      * Per-day durations for the booked block: a date named by a genuine (non-virtual) nonDefaultDay
      * keeps ITS duration; every other day takes at most one court day (MINUTES_IN_DAY) from what is
      * left of the requested total, in date order. The block total only sizes the BOOKING — it is not
@@ -647,6 +672,13 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
      * deliberately wide window must not buy itself a bigger block. All counts are plain arithmetic
      * over the dates — no walk — and the window is capped at {@code MAX_BLOCK_BUSINESS_DAYS}.</p>
      */
+    private static int clampToRequestedWindow(final int totalDuration, final LocalDate startDate, final LocalDate endDate) {
+        if (isNull(startDate) || isNull(endDate) || !endDate.equals(startDate)) {
+            return totalDuration;
+        }
+        return Math.min(totalDuration, HearingDurationEnrichmentService.MINUTES_IN_DAY);
+    }
+
     private static int bookingWindowMinutes(final LocalDate startDate, final LocalDate endDate,
                                             final List<LocalDate> nonSittingDays, final int totalDuration) {
         if (isNull(startDate) || isNull(endDate) || !endDate.isAfter(startDate) || isEmpty(nonSittingDays)) {

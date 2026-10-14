@@ -279,7 +279,7 @@ class HearingAggregateTest {
         nonSittingDays = Stream.of(LocalDate.now().plusDays(3), LocalDate.now().plusDays(5)).collect(Collectors.toList());
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked,
-                "", "'", null, of(Boolean.FALSE),of(false),empty());
+                "", "'", null, of(Boolean.FALSE),of(false),empty(), null);
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -312,7 +312,7 @@ class HearingAggregateTest {
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked,
-                "", "'", null, of(Boolean.FALSE), of(false), empty());
+                "", "'", null, of(Boolean.FALSE), of(false), empty(), null);
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -334,7 +334,7 @@ class HearingAggregateTest {
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked,
-                "", "'", null, of(Boolean.TRUE), of(false), empty());
+                "", "'", null, of(Boolean.TRUE), of(false), empty(), null);
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -352,7 +352,7 @@ class HearingAggregateTest {
                 .collect(Collectors.toList());
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
-                reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked, "", "'", null, Optional.empty(), of(false), empty());
+                reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked, "", "'", null, Optional.empty(), of(false), empty(), null);
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -380,7 +380,7 @@ class HearingAggregateTest {
         endDate = now().plusDays(2);
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
-                reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked, "", "", null, of(Boolean.FALSE), of(false), empty());
+                reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked, "", "", null, of(Boolean.FALSE), of(false), empty(), null);
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -2982,98 +2982,6 @@ class HearingAggregateTest {
         uk.gov.justice.listing.events.Defendant defendant1 = listedCase1.getDefendants().stream().filter(def -> def.getId().equals(defendant1Id)).findFirst().get();
         assertThat(defendant1.getOffences().size(), is(1));
         assertTrue(defendant1.getOffences().stream().anyMatch(o -> o.getId().equals(offence1Id)));
-    }
-
-    @Test
-    void shouldCreateEventForSplit() {
-        final List<uk.gov.justice.listing.events.ListedCase> listedCases = singletonList(uk.gov.justice.listing.events.ListedCase
-                .listedCase()
-                .withId(randomUUID())
-                .withDefendants(singletonList(Defendant.defendant()
-                        .withId(randomUUID())
-                        .withOffences(singletonList(Offence.offence()
-                                .withId(randomUUID())
-                                .build()))
-                        .build())).build());
-
-        startDate = ZonedDateTime.now();
-
-        final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
-                .withDuration(Optional.of(1))
-                .withStartTime(ZonedDateTime.now())
-                .withCourtCentreId(Optional.of("courtCentreId"))
-                .withCourtRoomId(Optional.of(1))
-                .withCourtScheduleId(Optional.of("courtScheduleId"))
-                .withOucode(Optional.of("oucode"))
-                .withSession(Optional.of("PM"))
-                .withRoomId(Optional.of("roomId"))
-                .build();
-        final List<NonDefaultDay> nonDefaultDays = new ArrayList<>();
-        nonDefaultDays.add(nonDefaultDay);
-
-        final Stream<Object> listedHearing = hearing.listForSplit(type, listedCases, courtCentreId, "court name", courtRoomId, jurisdictionType, startDate,
-                null, null, emptyList(), nonDefaultDays, 90, emptyList());
-
-        final HearingRequestedForListing hearingRequestedForListing = listedHearing.findFirst().map(HearingRequestedForListing.class::cast).get();
-
-        assertThat(hearingRequestedForListing.getListNewHearing().getId(), is(nullValue()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getCourtCentre().getId(), is(courtCentreId));
-        assertThat(hearingRequestedForListing.getListNewHearing().getCourtCentre().getRoomId(), is(courtRoomId));
-        assertThat(hearingRequestedForListing.getListNewHearing().getHearingType().getId(), is(type.getId()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getJurisdictionType().toString(), is(jurisdictionType.toString()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getEarliestStartDateTime(), is(startDate));
-        assertThat(hearingRequestedForListing.getListNewHearing().getListDefendantRequests().get(0).getDefendantId(), is(listedCases.get(0).getDefendants().get(0).getId()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getListDefendantRequests().get(0).getProsecutionCaseId(), is(listedCases.get(0).getId()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getListDefendantRequests().get(0).getDefendantOffences().get(0), is(listedCases.get(0).getDefendants().get(0).getOffences().get(0).getId()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getWeekCommencingDate(), is(nullValue()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getNonDefaultDays().size(), is(1));
-        assertThat(hearingRequestedForListing.getListNewHearing().getEstimatedMinutes(), is(90));
-    }
-
-    @Test
-    void shouldCreateEventForWeekCommencingSplit() {
-        final List<uk.gov.justice.listing.events.ListedCase> listedCases = singletonList(uk.gov.justice.listing.events.ListedCase
-                .listedCase()
-                .withId(randomUUID())
-                .withDefendants(singletonList(Defendant.defendant()
-                        .withId(randomUUID())
-                        .withOffences(singletonList(Offence.offence()
-                                .withId(randomUUID())
-                                .build()))
-                        .build())).build());
-
-        final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
-                .withDuration(Optional.of(1))
-                .withStartTime(ZonedDateTime.now())
-                .withCourtCentreId(Optional.of("courtCentreId"))
-                .withCourtRoomId(Optional.of(1))
-                .withCourtScheduleId(Optional.of("courtScheduleId"))
-                .withOucode(Optional.of("oucode"))
-                .withSession(Optional.of("PM"))
-                .withRoomId(Optional.of("roomId"))
-                .build();
-        final List<NonDefaultDay> nonDefaultDays = new ArrayList<>();
-        nonDefaultDays.add(nonDefaultDay);
-
-        final LocalDate weekCommencingStartDate = LocalDate.now();
-        final Stream<Object> listedHearing = hearing.listForSplit(type, listedCases, courtCentreId, "court name", courtRoomId, jurisdictionType, startDate,
-                weekCommencingStartDate, 1, emptyList(), nonDefaultDays, 120, emptyList());
-
-        final HearingRequestedForListing hearingRequestedForListing = listedHearing.findFirst().map(HearingRequestedForListing.class::cast).get();
-
-        assertThat(hearingRequestedForListing.getListNewHearing().getId(), is(nullValue()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getCourtCentre().getId(), is(courtCentreId));
-        assertThat(hearingRequestedForListing.getListNewHearing().getCourtCentre().getRoomId(), is(courtRoomId));
-        assertThat(hearingRequestedForListing.getListNewHearing().getHearingType().getId(), is(type.getId()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getJurisdictionType().toString(), is(jurisdictionType.toString()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getEarliestStartDateTime(), is(nullValue()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getListDefendantRequests().get(0).getDefendantId(), is(listedCases.get(0).getDefendants().get(0).getId()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getListDefendantRequests().get(0).getProsecutionCaseId(), is(listedCases.get(0).getId()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getListDefendantRequests().get(0).getDefendantOffences().get(0), is(listedCases.get(0).getDefendants().get(0).getOffences().get(0).getId()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getWeekCommencingDate().getStartDate(), is(weekCommencingStartDate.toString()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getWeekCommencingDate().getDuration(), is(1));
-        assertThat(hearingRequestedForListing.getListNewHearing().getNonDefaultDays().size(), is(1));
-        assertThat(hearingRequestedForListing.getListNewHearing().getEstimatedMinutes(), is(120));
     }
 
     @Test
@@ -7456,7 +7364,7 @@ class HearingAggregateTest {
                 courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate,
                 of(wcStartDate), of(wcEndDate), of(1),
                 emptyList(), emptyList(), emptyList(), isSlotsBooked, "", "", null, Optional.empty(), of(false), empty()
-        ).collect(Collectors.toList());
+        , null).collect(Collectors.toList());
 
         assertThat(events, hasSize(2));
         assertThat(events.get(0), is(CoreMatchers.instanceOf(HearingListed.class)));
@@ -7501,7 +7409,7 @@ class HearingAggregateTest {
                 courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate,
                 of(wcStartDate), of(wcEndDate), of(1),
                 emptyList(), emptyList(), emptyList(), isSlotsBooked, "", "", null, Optional.empty(), of(false), empty()
-        ).collect(Collectors.toList());
+        , null).collect(Collectors.toList());
 
         assertThat(events, hasSize(1));
         assertThat(events.get(0), is(CoreMatchers.instanceOf(HearingListed.class)));
@@ -7538,7 +7446,7 @@ class HearingAggregateTest {
                 LocalDate.now().plusDays(37), courtCentreDefaults, courtApplications,
                 courtApplicationPartyListingNeeds, estimateMinutes,
                 of(wcStartDate), of(wcEndDate), of(1), null
-        ).collect(Collectors.toList());
+        , null).collect(Collectors.toList());
 
         assertThat(events, hasSize(2));
         assertThat(events.get(0), is(CoreMatchers.instanceOf(HearingListed.class)));
@@ -7582,7 +7490,7 @@ class HearingAggregateTest {
                 LocalDate.now().plusDays(37), courtCentreDefaults, courtApplications,
                 courtApplicationPartyListingNeeds, estimateMinutes,
                 of(wcStartDate), of(wcEndDate), of(1), null
-        ).collect(Collectors.toList());
+        , null).collect(Collectors.toList());
 
         assertThat(events, hasSize(1));
         assertThat(events.get(0), is(CoreMatchers.instanceOf(HearingListed.class)));
@@ -8558,149 +8466,6 @@ class HearingAggregateTest {
         assertThat(hearing.getCurrentHearingEventState().getEstimatedMinutes(), is(30));
     }
 
-    // SPRDT-806 — listForSplit must fall back to DEFAULT_MIN (20) when resolver returns null/0/1.
-    @Test
-    void shouldCoerceNullHearingTypeDurationToDefaultMinForListForSplit() {
-        assertListForSplitEstimatedMinutes(null, 20);
-    }
-
-    @Test
-    void shouldCoerceZeroHearingTypeDurationToDefaultMinForListForSplit() {
-        assertListForSplitEstimatedMinutes(0, 20);
-    }
-
-    @Test
-    void shouldCoerceOneMinuteHearingTypeDurationToDefaultMinForListForSplit() {
-        assertListForSplitEstimatedMinutes(1, 20);
-    }
-
-    @Test
-    void shouldPassConfiguredHearingTypeDurationThroughForListForSplit() {
-        assertListForSplitEstimatedMinutes(90, 90);
-    }
-
-    private void assertListForSplitEstimatedMinutes(final Integer hearingTypeDuration, final int expected) {
-        final List<uk.gov.justice.listing.events.ListedCase> splitListedCases = singletonList(uk.gov.justice.listing.events.ListedCase
-                .listedCase()
-                .withId(randomUUID())
-                .withDefendants(singletonList(Defendant.defendant()
-                        .withId(randomUUID())
-                        .withOffences(singletonList(Offence.offence()
-                                .withId(randomUUID())
-                                .build()))
-                        .build()))
-                .build());
-
-        final Stream<Object> listedHearing = hearing.listForSplit(type, splitListedCases, courtCentreId,
-                "court name", courtRoomId, jurisdictionType, ZonedDateTime.now(),
-                null, null, emptyList(), emptyList(), hearingTypeDuration, emptyList());
-
-        final HearingRequestedForListing requested = listedHearing.findFirst()
-                .map(HearingRequestedForListing.class::cast).orElseThrow();
-        assertThat(requested.getListNewHearing().getEstimatedMinutes(), is(expected));
-    }
-
-    // Multiday split (court-calendar CROWN): the booked sessions must ride on bookedSlots and their
-    // total duration must become the request's estimatedMinutes, so the returning list-court-hearing
-    // takes the CROWN multi-day CourtSchedule-first path and lists the new hearing ALLOCATED.
-    @Test
-    void shouldCarryBookedSlotsAndTheirTotalDurationOnListForSplit() {
-        final List<uk.gov.justice.listing.events.ListedCase> splitListedCases = singletonList(uk.gov.justice.listing.events.ListedCase
-                .listedCase()
-                .withId(randomUUID())
-                .withDefendants(singletonList(Defendant.defendant()
-                        .withId(randomUUID())
-                        .withOffences(singletonList(Offence.offence()
-                                .withId(randomUUID())
-                                .build()))
-                        .build()))
-                .build());
-
-        final String courtScheduleId1 = randomUUID().toString();
-        final String courtScheduleId2 = randomUUID().toString();
-        final List<uk.gov.justice.core.courts.RotaSlot> bookedSlots = asList(
-                uk.gov.justice.core.courts.RotaSlot.rotaSlot()
-                        .withCourtScheduleId(courtScheduleId1)
-                        .withStartTime(ZonedDateTime.now())
-                        .withDuration(360)
-                        .build(),
-                uk.gov.justice.core.courts.RotaSlot.rotaSlot()
-                        .withCourtScheduleId(courtScheduleId2)
-                        .withStartTime(ZonedDateTime.now().plusDays(1))
-                        .withDuration(360)
-                        .build());
-
-        final Stream<Object> listedHearing = hearing.listForSplit(type, splitListedCases, courtCentreId,
-                "court name", courtRoomId, jurisdictionType, ZonedDateTime.now(),
-                null, null, emptyList(), emptyList(), 90, bookedSlots);
-
-        final HearingRequestedForListing requested = listedHearing.findFirst()
-                .map(HearingRequestedForListing.class::cast).orElseThrow();
-        assertThat(requested.getListNewHearing().getBookedSlots().size(), is(2));
-        assertThat(requested.getListNewHearing().getBookedSlots().get(0).getCourtScheduleId(), is(courtScheduleId1));
-        assertThat(requested.getListNewHearing().getBookedSlots().get(1).getCourtScheduleId(), is(courtScheduleId2));
-        // total booked duration wins over hearingTypeDuration
-        assertThat(requested.getListNewHearing().getEstimatedMinutes(), is(720));
-        // SPRDT-1169 still holds: no nonDefaultDays on the request
-        assertThat(requested.getListNewHearing().getNonDefaultDays(), is(nullValue()));
-    }
-
-    // bookedSlots without usable durations must not zero the estimate — fall back to hearingTypeDuration.
-    @Test
-    void shouldFallBackToHearingTypeDurationWhenBookedSlotsCarryNoDurationsOnListForSplit() {
-        final List<uk.gov.justice.listing.events.ListedCase> splitListedCases = singletonList(uk.gov.justice.listing.events.ListedCase
-                .listedCase()
-                .withId(randomUUID())
-                .withDefendants(singletonList(Defendant.defendant()
-                        .withId(randomUUID())
-                        .withOffences(singletonList(Offence.offence()
-                                .withId(randomUUID())
-                                .build()))
-                        .build()))
-                .build());
-
-        final List<uk.gov.justice.core.courts.RotaSlot> slotsWithoutDurations = singletonList(
-                uk.gov.justice.core.courts.RotaSlot.rotaSlot()
-                        .withCourtScheduleId(randomUUID().toString())
-                        .withStartTime(ZonedDateTime.now())
-                        .build());
-
-        final Stream<Object> listedHearing = hearing.listForSplit(type, splitListedCases, courtCentreId,
-                "court name", courtRoomId, jurisdictionType, ZonedDateTime.now(),
-                null, null, emptyList(), emptyList(), 90, slotsWithoutDurations);
-
-        final HearingRequestedForListing requested = listedHearing.findFirst()
-                .map(HearingRequestedForListing.class::cast).orElseThrow();
-        // slots still ride on the request (courtScheduleId is the allocation anchor downstream)
-        assertThat(requested.getListNewHearing().getBookedSlots().size(), is(1));
-        // but the estimate falls back to the hearing type duration rather than 0
-        assertThat(requested.getListNewHearing().getEstimatedMinutes(), is(90));
-    }
-
-    // No booked sessions (legacy split shape) — the request must carry no bookedSlots at all.
-    @Test
-    void shouldNotSetBookedSlotsOnListForSplitWhenNoneProvided() {
-        final List<uk.gov.justice.listing.events.ListedCase> splitListedCases = singletonList(uk.gov.justice.listing.events.ListedCase
-                .listedCase()
-                .withId(randomUUID())
-                .withDefendants(singletonList(Defendant.defendant()
-                        .withId(randomUUID())
-                        .withOffences(singletonList(Offence.offence()
-                                .withId(randomUUID())
-                                .build()))
-                        .build()))
-                .build());
-
-        final Stream<Object> listedHearing = hearing.listForSplit(type, splitListedCases, courtCentreId,
-                "court name", courtRoomId, jurisdictionType, ZonedDateTime.now(),
-                null, null, emptyList(), emptyList(), 90, emptyList());
-
-        final HearingRequestedForListing requested = listedHearing.findFirst()
-                .map(HearingRequestedForListing.class::cast).orElseThrow();
-        assertThat(requested.getListNewHearing().getBookedSlots(), is(nullValue()));
-        assertThat(requested.getListNewHearing().getEstimatedMinutes(), is(90));
-    }
-
     // SPRDT-807 defence in depth — onHearingListed must never leave this.estimatedMinutes as null/0/1.
     @Test
     void shouldCoerceNullEstimatedMinutesOnHearingListedToDefaultMin() {
@@ -8792,6 +8557,46 @@ class HearingAggregateTest {
         final HearingDay emittedD3 = dayFor(daysChanged, d3Date);
         assertThat(emittedD3.getCourtRoomId(), is(room2));
         assertThat(emittedD3.getStartTime(), is(newStart3));
+    }
+
+    @Test
+    void changeCourtRoom_magistratesHearing_emitsMergedDaysScheduleUpdatesAndAllocation() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final LocalDate d3Date = now().plusDays(9);
+        final List<HearingDay> original = applyThreeDayAllocatedHearing(
+                uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES, room1, courtCentre1, d1Date, d2Date, d3Date);
+
+        final ZonedDateTime newStart2 = ZonedDateTime.of(d2Date, LocalTime.parse("10:00"), UTC);
+        final UUID newScheduleD2 = randomUUID();
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = List.of(
+                changedDomainDay(d2Date, room2, courtCentre1, newStart2));
+        final List<HearingDayCourtSchedule> schedules = List.of(new HearingDayCourtSchedule(newScheduleD2, d2Date));
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+                .collect(Collectors.toList());
+
+        final HearingDaysChangedForHearing daysChanged = events.stream()
+                .filter(HearingDaysChangedForHearing.class::isInstance)
+                .map(HearingDaysChangedForHearing.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(daysChanged.getHearingDays(), hasSize(3));
+        assertThat(dayFor(daysChanged, d1Date), is(original.get(0)));
+        assertThat(dayFor(daysChanged, d2Date).getCourtRoomId(), is(room2));
+        assertThat(dayFor(daysChanged, d2Date).getStartTime(), is(newStart2));
+        assertThat(dayFor(daysChanged, d3Date), is(original.get(2)));
+
+        final HearingDayCourtScheduleUpdated scheduleUpdated = events.stream()
+                .filter(HearingDayCourtScheduleUpdated.class::isInstance)
+                .map(HearingDayCourtScheduleUpdated.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(scheduleUpdated.getHearingDayCourtSchedules(), hasSize(1));
+        assertThat(scheduleUpdated.getHearingDayCourtSchedules().get(0).getHearingDate(), is(d2Date));
+        assertThat(scheduleUpdated.getHearingDayCourtSchedules().get(0).getCourtScheduleId(), is(newScheduleD2));
+        assertThat(events.stream().anyMatch(AllocatedHearingUpdatedForListingV2.class::isInstance), is(true));
     }
 
     @Test
@@ -9241,6 +9046,12 @@ class HearingAggregateTest {
 
     private List<HearingDay> applyThreeDayCrownAllocatedHearing(final UUID room1, final UUID courtCentre1,
             final LocalDate d1Date, final LocalDate d2Date, final LocalDate d3Date) {
+        return applyThreeDayAllocatedHearing(CROWN, room1, courtCentre1, d1Date, d2Date, d3Date);
+    }
+
+    private List<HearingDay> applyThreeDayAllocatedHearing(final uk.gov.justice.core.courts.JurisdictionType jurisdictionType,
+            final UUID room1, final UUID courtCentre1,
+            final LocalDate d1Date, final LocalDate d2Date, final LocalDate d3Date) {
         final HearingDay d1 = crownHearingDay(d1Date, room1, courtCentre1, randomUUID(), 1);
         final HearingDay d2 = crownHearingDay(d2Date, room1, courtCentre1, randomUUID(), 2);
         final HearingDay d3 = crownHearingDay(d3Date, room1, courtCentre1, randomUUID(), 3);
@@ -9254,7 +9065,7 @@ class HearingAggregateTest {
                         .withId(hearingId)
                         .withType(uk.gov.justice.listing.events.Type.type().build())
                         .withHearingLanguage(HearingLanguage.ENGLISH)
-                        .withJurisdictionType(CROWN)
+                        .withJurisdictionType(jurisdictionType)
                         .withCourtRoomId(room1)
                         .withCourtCentreId(courtCentre1)
                         .withStartDate(d1Date)
@@ -9337,5 +9148,102 @@ class HearingAggregateTest {
         return event.getHearingDays().stream()
                 .filter(day -> date.equals(day.getHearingDate()))
                 .findFirst().orElseThrow();
+    }
+
+    @Test
+    void shouldCarryPtphDetailOntoHearingListedEvent() {
+        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
+                reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked,
+                "", "'", null, of(Boolean.FALSE), of(false), empty(),
+                new uk.gov.moj.cpp.listing.domain.PtphDetail("TIER_3", "TYPE_1_FIXED", "Vulnerable witness"));
+
+        final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
+        final uk.gov.justice.listing.events.Hearing listedEventHearing = hearingListed.getHearing();
+
+        assertThat(listedEventHearing.getTier(), is("TIER_3"));
+        assertThat(listedEventHearing.getListType(), is("TYPE_1_FIXED"));
+        assertThat(listedEventHearing.getKeyReason(), is("Vulnerable witness"));
+    }
+
+    @Test
+    void shouldLeavePtphDetailFieldsNullWhenNotSupplied() {
+        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
+                reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingDays, nonDefaultDays, nonSittingDays, isSlotsBooked,
+                "", "'", null, of(Boolean.FALSE), of(false), empty(),
+                null);
+
+        final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
+        final uk.gov.justice.listing.events.Hearing listedEventHearing = hearingListed.getHearing();
+
+        assertThat(listedEventHearing.getTier(), is(nullValue()));
+        assertThat(listedEventHearing.getListType(), is(nullValue()));
+        assertThat(listedEventHearing.getKeyReason(), is(nullValue()));
+    }
+
+    // ---------------------------------------------------------------------------------
+    // LPT-2405: the next hearing already existed, so the inherited tier / list type ride
+    // the cases-added event rather than hearing-listed.
+    // ---------------------------------------------------------------------------------
+
+    @Test
+    public void shouldCarryInheritedPtphDetailOntoCasesAddedToHearing() {
+        final uk.gov.moj.cpp.listing.domain.aggregate.Hearing hearing = new uk.gov.moj.cpp.listing.domain.aggregate.Hearing();
+        final UUID hearingId = randomUUID();
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(prepareHearing(hearingId, true, Map.of()))
+                .build());
+
+        final List<Object> events = hearing.addCasesToHearing(
+                asList(ProsecutionCase.prosecutionCase()
+                        .withId(randomUUID())
+                        .withDefendants(asList())
+                        .withProsecutionCaseIdentifier(prosecutionCaseIdentifier()
+                                .withProsecutionAuthorityCode(STRING.next())
+                                .withProsecutionAuthorityId(randomUUID())
+                                .withProsecutionAuthorityReference(STRING.next())
+                                .build())
+                        .build()),
+                asList(),
+                Optional.of(randomUUID()),
+                new uk.gov.moj.cpp.listing.domain.PtphDetail("TIER_3", "TYPE_1_FIXED", "Vulnerable witness"))
+                .collect(java.util.stream.Collectors.toList());
+
+        final CasesAddedToHearing casesAdded = (CasesAddedToHearing) events.stream()
+                .filter(CasesAddedToHearing.class::isInstance).findFirst().get();
+
+        assertThat(casesAdded.getTier(), is("TIER_3"));
+        assertThat(casesAdded.getListType(), is("TYPE_1_FIXED"));
+        assertThat(casesAdded.getKeyReason(), is("Vulnerable witness"));
+    }
+
+    @Test
+    public void shouldRaiseCasesAddedToHearingWithoutPtphDetailWhenNothingInherited() {
+        final uk.gov.moj.cpp.listing.domain.aggregate.Hearing hearing = new uk.gov.moj.cpp.listing.domain.aggregate.Hearing();
+        final UUID hearingId = randomUUID();
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(prepareHearing(hearingId, true, Map.of()))
+                .build());
+
+        final List<Object> events = hearing.addCasesToHearing(
+                asList(ProsecutionCase.prosecutionCase()
+                        .withId(randomUUID())
+                        .withDefendants(asList())
+                        .withProsecutionCaseIdentifier(prosecutionCaseIdentifier()
+                                .withProsecutionAuthorityCode(STRING.next())
+                                .withProsecutionAuthorityId(randomUUID())
+                                .withProsecutionAuthorityReference(STRING.next())
+                                .build())
+                        .build()),
+                asList(),
+                Optional.of(randomUUID()),
+                null)
+                .collect(java.util.stream.Collectors.toList());
+
+        final CasesAddedToHearing casesAdded = (CasesAddedToHearing) events.stream()
+                .filter(CasesAddedToHearing.class::isInstance).findFirst().get();
+
+        assertThat(casesAdded.getTier(), is(nullValue()));
+        assertThat(casesAdded.getListType(), is(nullValue()));
+        assertThat(casesAdded.getKeyReason(), is(nullValue()));
     }
 }

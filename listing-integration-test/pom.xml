@@ -22,6 +22,23 @@
     </properties>
 
     <dependencies>
+        <!--
+          SLF4J must come FIRST on the test classpath: wildfly-client-all (below) is a fat jar that
+          bundles slf4j-api 1.7.36 classes. When it wins, LoggerFactory looks for the 1.7
+          StaticLoggerBinder, finds none (slf4j-reload4j 2.x registers a 2.x provider) and falls back
+          to the NOP logger, which silently drops every test-side log line, the "loud" ERROR/WARN
+          from ArtemisQueuePurger / DatabaseCleaner / PublishRetryHelper included.
+        -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-reload4j</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>uk.gov.justice.utils</groupId>
             <artifactId>integration-test-utils-jms</artifactId>
@@ -111,11 +128,6 @@
         <dependency>
             <groupId>uk.gov.moj.cpp.common.library.utils</groupId>
             <artifactId>cpp-platform-test-utils</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-reload4j</artifactId>
             <scope>test</scope>
         </dependency>
 

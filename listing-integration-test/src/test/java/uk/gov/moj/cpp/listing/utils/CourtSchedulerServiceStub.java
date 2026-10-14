@@ -41,6 +41,7 @@ import java.util.UUID;
 import javax.json.JsonObject;
 import org.awaitility.Awaitility;
 
+import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.VerificationException;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
@@ -277,7 +278,7 @@ public class CourtSchedulerServiceStub {
         if (hearingStartTime != null) {
             session.append(",\"hearingStartTime\":\"").append(hearingStartTime).append("\"");
         }
-        session.append(",\"isDraft\":").append(isDraft).append("}");
+        session.append(draftFields(isDraft)).append("}");
         final String body = "{\"courtSchedules\":[" + session + "]}";
 
         stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + SESSIONS_PATH)))
@@ -367,6 +368,20 @@ public class CourtSchedulerServiceStub {
 
     /** Verify POST /hearings/{id} (crown.search.and.book) was NEVER called
      * (regression guard for MAGS / already-allocated CROWN). */
+    /**
+     * Every courtscheduler call recorded for this hearing id, whatever the resource. SPRDT-1363's
+     * proxy must leave this at zero for the source hearing — a non-zero count is the SPRDT-1227
+     * leak returning.
+     */
+    public static int courtSchedulerCallCountForHearing(final String hearingId) {
+        return WireMock.findAll(WireMock.anyRequestedFor(urlPathMatching(COURT_SCHEDULER_ENDPOINT + ".*")))
+                .stream()
+                .filter(request -> request.getUrl().contains(hearingId)
+                        || (request.getBody() != null && request.getBodyAsString().contains(hearingId)))
+                .toList()
+                .size();
+    }
+
     public static void verifyCrownFallbackSearchAndBookNeverCalled() {
         WireMock.verify(0, WireMock.postRequestedFor(urlPathMatching(
                 COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/[0-9a-fA-F-]+"))
@@ -639,6 +654,21 @@ public class CourtSchedulerServiceStub {
                         .withBody(body)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
+    }
+
+    /**
+     * Stubs the courtscheduler get-hearing-ids endpoint for an exact set of query parameters (e.g.
+     * status=DRAFT + businessType + session window), so a test can prove which court-schedule sessions a
+     * court-calendar search was routed to: only a request carrying every given parameter gets the body.
+     */
+    public static void stubGetHearingIdsWithBody(final Map<String, String> queryParams, final String body) {
+        final MappingBuilder mapping = get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
+                .withHeader("Accept", containing("application/vnd.courtscheduler.get.hearing.ids+json"));
+        queryParams.forEach((name, value) -> mapping.withQueryParam(name, WireMock.equalTo(value)));
+        stubFor(mapping.willReturn(aResponse().withStatus(OK.getStatusCode())
+                .withBody(body)
+                .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+        ));
     }
 
     public static void stubGetHearingIds(final Instant exactHearingStartDateTime) {
@@ -1597,8 +1627,8 @@ public class CourtSchedulerServiceStub {
             if (i > 0) {
                 schedulesJson.append(",");
             }
-            schedulesJson.append("{\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\",")
-                    .append("\"isDraft\":").append(isDraft).append("}");
+            schedulesJson.append("{\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\"")
+                    .append(draftFields(isDraft)).append("}");
         }
         stubCourtSchedulesByIdResponse("{\"courtSchedules\":[" + schedulesJson + "]}");
     }
@@ -1650,9 +1680,19 @@ public class CourtSchedulerServiceStub {
             }
             schedulesJson.append(",\"sessionDate\":\"").append(session.sessionDate()).append("\"")
                     .append(",\"hearingStartTime\":\"").append(session.hearingStartTime()).append("\"")
-                    .append(",\"isDraft\":").append(session.isDraft()).append("}");
+                    .append(draftFields(session.isDraft())).append("}");
         }
         stubCourtSchedulesByIdResponse("{\"courtSchedules\":[" + schedulesJson + "]}");
+    }
+
+    /**
+     * The draft flag of a search-by-id session, under both wire names. Listing's command side maps the
+     * response onto {@code uk.gov.moj.cpp.listing.domain.CourtSchedule}, whose Jackson property is
+     * {@code draft} ({@code isDraft()}/{@code setDraft()}), so an {@code isDraft} key alone is ignored there
+     * and every session reads as non-draft. The query-side draft-status parser accepts either name.
+     */
+    private static String draftFields(final boolean isDraft) {
+        return ",\"isDraft\":" + isDraft + ",\"draft\":" + isDraft;
     }
 
     private static void stubCourtSchedulesByIdResponse(final String body) {
@@ -1781,7 +1821,7 @@ public class CourtSchedulerServiceStub {
                 .withHeader(CONTENT_TYPE, containing(MOVE_HEARING_TO_PAST_DATE_TYPE)));
     }
 
-    // --- change-court-room-for-multiday-hearing stubs (CROWN-only: POST /hearings/{hearingId}) ---
+    // --- change-court-room-for-multiday-hearing stubs (CROWN and MAGISTRATES: POST /hearings/{hearingId}) ---
 
     private static final String CHANGE_COURT_ROOM_MULTIDAY_TYPE =
             "application/vnd.courtscheduler.change-court-room-for-multiday-hearing+json";

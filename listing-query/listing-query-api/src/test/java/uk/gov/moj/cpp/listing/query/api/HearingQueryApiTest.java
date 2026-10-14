@@ -71,6 +71,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
@@ -1015,6 +1016,103 @@ public class HearingQueryApiTest {
         assertThat(enrichedJudiciary.getString("judicialId"), is(judicialId));
         assertThat(enrichedJudiciary.getString("judiciaryName"), is(judiciaryName));
         assertThat(enrichedJudiciary.getString("welshJudiciaryName"), is(welshJudiciaryName));
+    }
+
+    @Test
+    void shouldRemoveOnlyTheDefendantWithoutOffenceButKeepMixedHearing() {
+        final String courtCentreId = randomUUID().toString();
+        final String startDate = "2026-05-07";
+        final String publishCourtListType = "FINAL";
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(randomUUID())
+                        .withName("listing.search.daily.list.payload"),
+                createObjectBuilder()
+                        .add("courtCentreId", courtCentreId)
+                        .add("startDate", startDate)
+                        .add("publishCourtListType", publishCourtListType)
+                        .build());
+
+        final JsonObject offence = createObjectBuilder()
+                .add("offenceCode", "TH68001")
+                .build();
+
+        final JsonObject defendantWithOffence = createObjectBuilder()
+                .add("defendantId", randomUUID().toString())
+                .add("offences", createArrayBuilder().add(offence).build())
+                .build();
+
+        final JsonObject defendantWithoutOffence = createObjectBuilder()
+                .add("defendantId", randomUUID().toString())
+                .add("offences", createArrayBuilder().build())
+                .build();
+
+        final JsonObject hearingWithoutOffence = createObjectBuilder()
+                .add("startTime", "2026-05-07T10:00:00")
+                .add("defendants", createArrayBuilder().add(defendantWithoutOffence).build())
+                .build();
+
+        final JsonObject hearingWithOffence = createObjectBuilder()
+                .add("startTime", "2026-05-07T11:00:00")
+                .add("defendants", createArrayBuilder().add(defendantWithOffence).build())
+                .build();
+
+        final JsonObject hearingWithMixedDefendants = createObjectBuilder()
+                .add("startTime", "2026-05-07T12:00:00")
+                .add("defendants", createArrayBuilder().add(defendantWithOffence).add(defendantWithoutOffence).build())
+                .build();
+
+        final JsonObject sitting = createObjectBuilder()
+                .add("sittingDate", startDate)
+                .add("judiciary", createArrayBuilder().build())
+                .add("hearings", createArrayBuilder()
+                        .add(hearingWithoutOffence)
+                        .add(hearingWithOffence)
+                        .add(hearingWithMixedDefendants)
+                        .build())
+                .build();
+
+        final JsonObject courtListPayload = createObjectBuilder()
+                .add("courtCentreId", courtCentreId)
+                .add("courtLists", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("crestCourtSite", createObjectBuilder()
+                                        .add("crestCourtSiteId", "415")
+                                        .add("crestCourtSiteName", "Kingston Crown Court")
+                                        .add("courtType", "CROWN")
+                                        .build())
+                                .add("sittings", createArrayBuilder().add(sitting).build())
+                                .build())
+                        .build())
+                .build();
+
+        final JsonEnvelope courtListResponse = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("listing.courtlist"),
+                courtListPayload);
+
+        final JsonObject courtCentreEnvelopePayload = createObjectBuilder().add("isWelsh", false).build();
+        final JsonEnvelope courtCentreEnvelope = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("referencedata.query.courtroom"),
+                courtCentreEnvelopePayload);
+
+        when(hearingQueryView.retrieveCourtList(any(JsonEnvelope.class))).thenReturn(courtListResponse);
+        when(referenceDataService.isHearingLanguageWelsh(any(), eq(courtCentreId))).thenReturn(Optional.of(false));
+        when(referenceDataService.getCourtCentreById(any(UUID.class), any(JsonEnvelope.class))).thenReturn(courtCentreEnvelope);
+
+        final JsonObject resultPayload = hearingQueryApi.getDailyList(query).payloadAsJsonObject();
+
+        final JsonArray remainingHearings = resultPayload.getJsonArray("courtLists").getJsonObject(0)
+                .getJsonArray("sittings").getJsonObject(0)
+                .getJsonArray("hearings");
+
+        assertThat(remainingHearings.size(), is(2));
+        assertThat(remainingHearings.getJsonObject(0).getString("startTime"), is("2026-05-07T11:00:00"));
+        assertThat(remainingHearings.getJsonObject(1).getString("startTime"), is("2026-05-07T12:00:00"));
+
+        final JsonArray mixedHearingDefendants = remainingHearings.getJsonObject(1).getJsonArray("defendants");
+        assertThat(mixedHearingDefendants.size(), is(1));
+        assertThat(mixedHearingDefendants.getJsonObject(0), is(defendantWithOffence));
     }
 
     @Test

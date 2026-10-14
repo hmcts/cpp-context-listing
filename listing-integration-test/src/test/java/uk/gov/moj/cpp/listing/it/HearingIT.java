@@ -344,6 +344,10 @@ class HearingIT extends AbstractIT {
         updateHearingSteps.verifyHearingDaysWhenQueryingFromAPI();
     }
 
+    // Despite the historic name, this payload carries no prosecutionCases, so the classifier returns
+    // UNALLOCATED_NO_OFFENCE_CHANGE on its early return and never reaches the SPRDT-1365 split guard.
+    // It is a plain no-offence-change update and is unaffected by the teardown; the guard is covered
+    // by HearingDaysIT, whose payload does carry an offence subset.
     @Test
     void updateHearingResultsWhenMultipleOffencesSplitToMultipleHearings() throws IOException {
         final HearingsData hearingsData = singleHearingDataSingleCaseMultipleOffences();
@@ -358,7 +362,6 @@ class HearingIT extends AbstractIT {
         stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
         updateHearingSteps.whenHearingIsUpdatedForListingHmiEnabledWithoutCourtRoomSelection();
         updateHearingSteps.verifyPublicEventHearingDaysChangedForHearing();
-
     }
 
     @Test
@@ -846,7 +849,8 @@ class HearingIT extends AbstractIT {
     @Test
     void shouldNotAllocateCrownHearingWhenCourtScheduleSessionIsDraft() {
         final HearingsData hearingsData = HearingsData.hearingsDataForBookedSlot();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        // The bookingReference the command resolves is generated on submit; the steps stub it as a draft session.
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData).withDraftCrownSessions();
 
         // Stub fetchCourtSchedulesByIds to return isDraft=true
         final String courtScheduleId = hearingsData.getHearingData().get(0).getBookedSlots().get(0).getCourtScheduleId();
