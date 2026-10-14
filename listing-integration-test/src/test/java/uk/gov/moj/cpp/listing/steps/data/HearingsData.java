@@ -220,6 +220,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataStandaloneApplicationWithSubject());
     }
 
+    public static HearingsData hearingsDataStandaloneApplicationWithSubjectAndNoOffences() {
+        return new HearingsData(HearingsDataFactory.hearingsDataStandaloneApplicationWithSubjectAndNoOffences());
+    }
+
 
     public static HearingsData hearingsDataWithShadowListedOffences() {
         return new HearingsData(HearingsDataFactory.hearingsDataWithShadowListedOffences());
