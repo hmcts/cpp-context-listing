@@ -42,7 +42,7 @@ public class SessionJudiciaryEnrichmentService {
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
     private static final String COURT_SCHEDULES = "courtSchedules";
     private static final String SESSIONS = "sessions";
-    private static final String COURT_SCHEDULE_IDS_PARAM = "courtScheduleIds";
+    private static final String COURT_SCHEDULE_IDS_PARAM = "ids";
 
     private static final String JUDICIARY_ID = "id";
     private static final String JUDICIAL_ID = "judicialId";

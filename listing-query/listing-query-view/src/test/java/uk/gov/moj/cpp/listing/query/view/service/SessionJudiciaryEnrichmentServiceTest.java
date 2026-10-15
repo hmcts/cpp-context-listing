@@ -74,7 +74,7 @@ class SessionJudiciaryEnrichmentServiceTest {
         final Hearing hearing = hearingWithoutJudiciary(COURT_SCHEDULE_ID_1);
 
         when(hearingSlotsService.getCourtSchedulesById(argThat(
-                m -> COURT_SCHEDULE_ID_1.equals(m.get("courtScheduleIds")))))
+                m -> COURT_SCHEDULE_ID_1.equals(m.get("ids")))))
                 .thenReturn(buildCourtSchedulerResponse(
                         COURT_SCHEDULE_ID_1, JUDICIARY_ID_1, "RECORDER", true, false));
 
@@ -182,8 +182,8 @@ class SessionJudiciaryEnrichmentServiceTest {
         final Hearing hearing2 = hearingWithoutJudiciary(COURT_SCHEDULE_ID_2);
 
         when(hearingSlotsService.getCourtSchedulesById(argThat(
-                m -> m.get("courtScheduleIds").contains(COURT_SCHEDULE_ID_1)
-                  && m.get("courtScheduleIds").contains(COURT_SCHEDULE_ID_2))))
+                m -> m.get("ids").contains(COURT_SCHEDULE_ID_1)
+                  && m.get("ids").contains(COURT_SCHEDULE_ID_2))))
                 .thenReturn(buildCourtSchedulerResponseWithTwoSessions(
                         COURT_SCHEDULE_ID_1, JUDICIARY_ID_1, "RECORDER",
                         COURT_SCHEDULE_ID_2, JUDICIARY_ID_2, "JUDGE"));
@@ -202,7 +202,7 @@ class SessionJudiciaryEnrichmentServiceTest {
         final Hearing hearingWithoutJudiciary = hearingWithoutJudiciary(COURT_SCHEDULE_ID_2);
 
         when(hearingSlotsService.getCourtSchedulesById(argThat(
-                m -> COURT_SCHEDULE_ID_2.equals(m.get("courtScheduleIds")))))
+                m -> COURT_SCHEDULE_ID_2.equals(m.get("ids")))))
                 .thenReturn(buildCourtSchedulerResponse(
                         COURT_SCHEDULE_ID_2, JUDICIARY_ID_2, "DISTRICT_JUDGE", false, true));
 

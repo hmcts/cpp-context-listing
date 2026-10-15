@@ -56,7 +56,7 @@ public class CourtSchedulerServiceStub {
     private static final String HOST = System.getProperty("INTEGRATION_HOST_KEY", "localhost");
 
     private static final String PROVISIONAL_BOOKING = "/provisionalBooking";
-    private static final String JUDICIARIES_SEARCH_AVAILABLE = "/judiciaries/search-available";
+    private static final String JUDICIARIES_SEARCH_AVAILABLE = "/judiciaries";
     private static final String COURTSCHEDULER_SEARCH_AVAILABLE_JUDICIARIES_TYPE =
             "application/vnd.courtscheduler.search.available.judiciaries+json";
     public static final String LISTING_SEARCH_AVAILABLE_JUDICIARIES_JSON = "stub-data/listing.search.available.judiciaries.json";
