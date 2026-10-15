@@ -30,6 +30,7 @@ import javax.json.JsonObject;
 
 import org.junit.jupiter.api.Test;
 
+@SuppressWarnings({"squid:UnusedPrivateMethod", "squid:S1607"})
 class RestrictListFromCourtIT extends AbstractIT {
 
     @Test

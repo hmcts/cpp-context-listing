@@ -152,8 +152,9 @@ public class CourtApplicationEventListener {
         final Optional<CourtApplication> origCourtApplication = courtApplications.stream().filter(ca -> ca.getId().equals(updateCourtApplication.getId())).findFirst();
         if (origCourtApplication.isPresent()) {
             filterDuplicateOffencesById(updateCourtApplication.getOffences());
-            // The update event always carries restriction flags as false, so keep the court list
-            // restrictions (manual and youth) already applied to the application and its parties
+            // The event always carries restriction flags as false, so keep the court list restrictions
+            // (manual and youth) already applied to the application and its parties. This covers both an
+            // update and a repeated CourtApplicationAddedForHearing for an application already stored
             final CourtApplication existingCourtApplication = origCourtApplication.get();
             final List<ApplicantRespondent> existingParties = getParties(existingCourtApplication);
             final CourtApplication newCourtApplication = CourtApplication.courtApplication()
@@ -191,6 +192,8 @@ public class CourtApplicationEventListener {
         return parties;
     }
 
+    // Matches by party id across applicant, respondents and subject together, so a party restricted in one
+    // role stays restricted if it moves to another (e.g. respondent to subject) - intended: never un-redact
     private ApplicantRespondent keepPartyRestriction(final ApplicantRespondent updatedParty, final List<ApplicantRespondent> existingParties) {
         if (isNull(updatedParty) || isNull(updatedParty.getId())) {
             return updatedParty;

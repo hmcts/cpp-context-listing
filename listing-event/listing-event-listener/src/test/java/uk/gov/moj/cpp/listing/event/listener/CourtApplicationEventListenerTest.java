@@ -239,6 +239,41 @@ public class CourtApplicationEventListenerTest {
         assertThat(objectNodeCaptor.getValue().get(0).get("subject").get("restrictFromCourtList").asBoolean(), is(false));
     }
 
+    @Test
+    public void shouldKeepCourtListRestrictionsWhenCourtApplicationIsAddedAgain() throws Exception {
+        final UUID subjectId = randomUUID();
+        final List<CourtApplication> existingCourtApplications = singletonList(CourtApplication.courtApplication()
+                .withId(ID)
+                .withApplicationType(APPLICATION_TYPE)
+                .withRestrictFromCourtList(true)
+                .withApplicant(party(randomUUID(), false))
+                .withSubject(party(subjectId, true))
+                .build());
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        final JsonNode existingCourtApplicationsProperties = new ObjectMapper().readTree(mapper.writeValueAsString(existingCourtApplications));
+        given(properties.get(COURT_APPLICATIONS)).willReturn(existingCourtApplicationsProperties);
+
+        given(courtApplicationAddedForHearingsEnvelope.payload()).willReturn(CourtApplicationAddedForHearing.courtApplicationAddedForHearing()
+                .withHearingId(HEARING_ID)
+                .withCourtApplication(CourtApplication.courtApplication()
+                        .withId(ID)
+                        .withApplicationType(APPLICATION_TYPE)
+                        .withRestrictFromCourtList(false)
+                        .withApplicant(party(randomUUID(), false))
+                        .withSubject(party(subjectId, false))
+                        .build())
+                .build());
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor = ArgumentCaptor.forClass(ArrayNode.class);
+
+        courtApplicationEventListener.courtApplicationAdded(courtApplicationAddedForHearingsEnvelope);
+
+        verify(properties).replace(any(), objectNodeCaptor.capture());
+        final JsonNode addedCourtApplication = objectNodeCaptor.getValue().get(0);
+        assertThat(addedCourtApplication.get("restrictFromCourtList").asBoolean(), is(true));
+        assertThat(addedCourtApplication.get("subject").get("restrictFromCourtList").asBoolean(), is(true));
+    }
+
     private ApplicantRespondent party(final UUID id, final boolean restrictFromCourtList) {
         return ApplicantRespondent.applicantRespondent()
                 .withId(id)

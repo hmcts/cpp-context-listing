@@ -4746,6 +4746,33 @@ class HearingAggregateTest {
         assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CourtApplicationUpdatedForHearing.class));
     }
 
+    @Test
+    void shouldNotEmitCourtListRestrictedOnUpdateWithUnder18SubjectWhenHearingCannotBeAllocated() {
+        final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
+        // no court room, so the hearing can't be allocated yet - the allocation path restricts the subject later
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withStartDate(hearingStartDate)
+                        .withEndDate(hearingStartDate.plusDays(1))
+                        .build())
+                .build());
+        final UUID courtApplicationId = randomUUID();
+        hearing.addCourtApplication(hearingId, courtApplicationWithId(courtApplicationId,
+                applicationParty(randomUUID(), null, hearingStartDate.minusYears(40).toString()))).collect(Collectors.toList());
+
+        final List<Object> resultEvents = hearing.updateCourtApplication(hearingId, courtApplicationWithId(courtApplicationId,
+                        applicationParty(randomUUID(), null, hearingStartDate.minusYears(16).toString())))
+                .collect(Collectors.toList());
+
+        assertThat(resultEvents, hasSize(1));
+        assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CourtApplicationUpdatedForHearing.class));
+    }
+
     private void assertUpdatedAndSubjectRestricted(final List<Object> resultEvents, final UUID subjectId) {
         assertThat(resultEvents, hasSize(2));
         assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CourtApplicationUpdatedForHearing.class));
