@@ -1,15 +1,18 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.lang.Boolean.TRUE;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static uk.gov.moj.cpp.listing.event.util.ReportingRestrictionHelper.dedupAllReportingRestrictions;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.event.CourtApplicationHearingDeleted;
+import uk.gov.justice.listing.events.ApplicantRespondent;
 import uk.gov.justice.listing.events.CourtApplication;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
 import uk.gov.justice.listing.events.CourtApplicationUpdatedForHearing;
@@ -24,6 +27,7 @@ import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -148,19 +152,27 @@ public class CourtApplicationEventListener {
         final Optional<CourtApplication> origCourtApplication = courtApplications.stream().filter(ca -> ca.getId().equals(updateCourtApplication.getId())).findFirst();
         if (origCourtApplication.isPresent()) {
             filterDuplicateOffencesById(updateCourtApplication.getOffences());
+            // The update event always carries restriction flags as false, so keep the court list
+            // restrictions (manual and youth) already applied to the application and its parties
+            final CourtApplication existingCourtApplication = origCourtApplication.get();
+            final List<ApplicantRespondent> existingParties = getParties(existingCourtApplication);
             final CourtApplication newCourtApplication = CourtApplication.courtApplication()
-                    .withApplicant(updateCourtApplication.getApplicant())
-                    .withRespondents(updateCourtApplication.getRespondents())
+                    .withApplicant(keepPartyRestriction(updateCourtApplication.getApplicant(), existingParties))
+                    .withRespondents(ofNullable(updateCourtApplication.getRespondents())
+                            .map(respondents -> respondents.stream()
+                                    .map(respondent -> keepPartyRestriction(respondent, existingParties))
+                                    .collect(toList()))
+                            .orElse(null))
                     .withApplicationType(updateCourtApplication.getApplicationType())
                     .withId(updateCourtApplication.getId())
                     .withParentApplicationId(updateCourtApplication.getParentApplicationId())
                     .withLinkedCaseIds(updateCourtApplication.getLinkedCaseIds())
-                    .withRestrictCourtApplicationType(updateCourtApplication.getRestrictCourtApplicationType())
-                    .withRestrictFromCourtList(updateCourtApplication.getRestrictFromCourtList())
+                    .withRestrictCourtApplicationType(existingCourtApplication.getRestrictCourtApplicationType())
+                    .withRestrictFromCourtList(existingCourtApplication.getRestrictFromCourtList())
                     .withApplicationReference(updateCourtApplication.getApplicationReference())
                     .withApplicationParticulars(updateCourtApplication.getApplicationParticulars())
                     .withOffences(updateCourtApplication.getOffences())
-                    .withSubject(updateCourtApplication.getSubject())
+                    .withSubject(keepPartyRestriction(updateCourtApplication.getSubject(), existingParties))
                     .build();
 
             courtApplications.replaceAll(courtApplication -> courtApplication.getId()
@@ -169,6 +181,29 @@ public class CourtApplicationEventListener {
             courtApplications.add(updateCourtApplication);
         }
         return courtApplications;
+    }
+
+    private List<ApplicantRespondent> getParties(final CourtApplication courtApplication) {
+        final List<ApplicantRespondent> parties = new ArrayList<>();
+        ofNullable(courtApplication.getApplicant()).ifPresent(parties::add);
+        ofNullable(courtApplication.getRespondents()).ifPresent(parties::addAll);
+        ofNullable(courtApplication.getSubject()).ifPresent(parties::add);
+        return parties;
+    }
+
+    private ApplicantRespondent keepPartyRestriction(final ApplicantRespondent updatedParty, final List<ApplicantRespondent> existingParties) {
+        if (isNull(updatedParty) || isNull(updatedParty.getId())) {
+            return updatedParty;
+        }
+        return existingParties.stream()
+                .filter(existingParty -> updatedParty.getId().equals(existingParty.getId()))
+                .filter(existingParty -> TRUE.equals(existingParty.getRestrictFromCourtList()))
+                .findFirst()
+                .map(existingParty -> ApplicantRespondent.applicantRespondent()
+                        .withValuesFrom(updatedParty)
+                        .withRestrictFromCourtList(true)
+                        .build())
+                .orElse(updatedParty);
     }
 
     private List<CourtApplication> getUpdatedLaaReferenceCourtApplications(final LaaReferenceForApplicationUpdated laaReferenceForApplicationUpdated, final List<CourtApplication> courtApplications) {
