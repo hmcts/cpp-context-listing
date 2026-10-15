@@ -169,6 +169,13 @@ public class CourtApplicationSteps extends AbstractIT {
                 this::verifyCourtApplicationUpdatedFromAPI);
     }
 
+    // For an application already restricted from the court list - the update must keep that restriction
+    public void publishUntilCourtApplicationReflected(final Boolean expectedRestrictFromCourtList) {
+        publishUntilReflected(LOGGER, "court-application-fix", "court-application-changed",
+                this::whenCaseCourtApplicationUpdatedPublicEventIsPublished,
+                () -> verifyCourtApplicationUpdatedFromAPI(expectedRestrictFromCourtList));
+    }
+
     public void verifyPublicEventCourtApplicationAdded() {
         JsonPath jsRequest = new JsonPath(request);
 
@@ -180,6 +187,10 @@ public class CourtApplicationSteps extends AbstractIT {
     }
 
     public void verifyCourtApplicationUpdatedFromAPI() {
+        verifyCourtApplicationUpdatedFromAPI(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictFromCourtList());
+    }
+
+    public void verifyCourtApplicationUpdatedFromAPI(final Boolean expectedRestrictFromCourtList) {
         final Filter idFilter = filter(where("id").is(hearingsData.getHearingData().get(0).getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
 
@@ -204,7 +215,7 @@ public class CourtApplicationSteps extends AbstractIT {
                 withJsonPath("$.hearings[0].courtApplications[0].parentApplicationId",
                         equalTo(LINKED_APPLICATION_ID.toString())),
                 withJsonPath("$.hearings[0].courtApplications[0].restrictFromCourtList",
-                        equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictFromCourtList())),
+                        equalTo(expectedRestrictFromCourtList)),
                 withJsonPath("$.hearings[0].courtApplications[0].restrictCourtApplicationType",
                         equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictCourtApplicationType()))
         });

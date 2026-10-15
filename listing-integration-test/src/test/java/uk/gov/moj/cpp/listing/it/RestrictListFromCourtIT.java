@@ -14,6 +14,7 @@ import static uk.gov.moj.cpp.listing.utils.SystemIdMapperStub.stubIdMapperReturn
 
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
+import uk.gov.moj.cpp.listing.steps.CourtApplicationSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.PublishCourtListSteps;
 import uk.gov.moj.cpp.listing.steps.RestrictCourtListSteps;
@@ -29,7 +30,6 @@ import javax.json.JsonObject;
 
 import org.junit.jupiter.api.Test;
 
-@SuppressWarnings({"squid:UnusedPrivateMethod", "squid:S1607"})
 class RestrictListFromCourtIT extends AbstractIT {
 
     @Test
@@ -78,6 +78,20 @@ class RestrictListFromCourtIT extends AbstractIT {
         final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
         restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getCourtApplicationDataToBeRestricted(hearingsData));
         restrictCourtListSteps.verifyCourtApplicationOrApplicantOrRespondentListingRestrictedInHearing(true, true, false, false);
+    }
+
+    @Test
+    void shouldKeepCourtApplicationRestrictedWhenCourtApplicationIsUpdatedForHearingId() {
+        HearingsData hearingsData = HearingsData.hearingsData();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
+        restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getCourtApplicationDataToBeRestricted(hearingsData));
+        restrictCourtListSteps.verifyCourtApplicationOrApplicantOrRespondentListingRestrictedInHearing(true, true, false, false);
+
+        new CourtApplicationSteps(hearingsData).publishUntilCourtApplicationReflected(true);
     }
 
     @Test
