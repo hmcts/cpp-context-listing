@@ -428,7 +428,7 @@ For a visual diagram of all integration points, see [integration-map.mmd](./inte
 
 | Target Service | Endpoint | Called From | Purpose |
 |---|---|---|---|
-| **courtscheduler** | `GET /courtschedule/search.court-schedules-by-id` | `CourtSchedulerService` | Fetch court schedules for enrichment |
+| **courtscheduler** | `GET /sessions?ids=` | `HearingSlotsService` | Fetch court schedule sessions by id for enrichment |
 | **courtscheduler** | `GET /hearingslots` | `HearingSlotsService`, `CourtSchedulerServiceAdapter` | Search hearing slots / judicial roles |
 | **courtscheduler** | `GET /searchlist/hearingslots` | `HearingSlotsService` | Search and book hearing slots |
 | **courtscheduler** | `GET /multidaysearchandbook/hearingslots` | `HearingSlotsService` | Multi-day search and book |

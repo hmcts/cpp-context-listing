@@ -14,7 +14,7 @@ import javax.ws.rs.core.Response;
 @ApplicationScoped
 public class CourtSchedulerSearchService {
 
-    private static final String SEARCH_AVAILABLE_JUDICIARIES_RESOURCE = "/judiciaries";
+    private static final String JUDICIARIES_RESOURCE = "/judiciaries";
     private static final String COURTSCHEDULER_SEARCH_AVAILABLE_JUDICIARIES =
             "application/vnd.courtscheduler.search.available.judiciaries+json";
 
@@ -33,7 +33,7 @@ public class CourtSchedulerSearchService {
                 baseUri,
                 systemUserProvider,
                 stringToJsonObjectConverter,
-                SEARCH_AVAILABLE_JUDICIARIES_RESOURCE,
+                JUDICIARIES_RESOURCE,
                 COURTSCHEDULER_SEARCH_AVAILABLE_JUDICIARIES,
                 params,
                 "CourtScheduler");

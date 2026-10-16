@@ -441,7 +441,7 @@ public class CourtSchedulerServiceAdapter {
         if (responseJson == null || responseJson.isEmpty() || !responseJson.containsKey("courtSchedules")) {
             return false;
         }
-        // The /courtschedule/search.court-schedules-by-id wire response is FLAT: a top-level
+        // The GET /sessions?ids= wire response is FLAT: a top-level
         // courtSchedules array whose every element is one CourtSchedule (a session).
         // Each array element is a single CourtSchedule. The schema/example file in
         // courtscheduler-api shows a misleading nested "sessions" array copied from a

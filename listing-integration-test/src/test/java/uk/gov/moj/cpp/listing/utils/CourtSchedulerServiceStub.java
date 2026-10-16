@@ -56,7 +56,7 @@ public class CourtSchedulerServiceStub {
     private static final String HOST = System.getProperty("INTEGRATION_HOST_KEY", "localhost");
 
     private static final String PROVISIONAL_BOOKING = "/provisionalBooking";
-    private static final String JUDICIARIES_SEARCH_AVAILABLE = "/judiciaries";
+    private static final String JUDICIARIES_RESOURCE = "/judiciaries";
     private static final String COURTSCHEDULER_SEARCH_AVAILABLE_JUDICIARIES_TYPE =
             "application/vnd.courtscheduler.search.available.judiciaries+json";
     public static final String LISTING_SEARCH_AVAILABLE_JUDICIARIES_JSON = "stub-data/listing.search.available.judiciaries.json";
@@ -183,6 +183,7 @@ public class CourtSchedulerServiceStub {
         final String body = "{\"courtSchedules\":[{\"courtScheduleId\":\"" + courtScheduleId
                 + "\",\"" + draftKey + "\":" + draft + "}]}";
         stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + SESSIONS_PATH)))
+                .withQueryParam("ids", matching(".*"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(body)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -195,6 +196,7 @@ public class CourtSchedulerServiceStub {
      */
     public static void stubSearchCourtSchedulesByIdServerError() {
         stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + SESSIONS_PATH)))
+                .withQueryParam("ids", matching(".*"))
                 .willReturn(aResponse().withStatus(500)
                         .withBody("internal server error")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1468,9 +1470,10 @@ public class CourtSchedulerServiceStub {
                         .withBody("{\"hearingSlots\":[]}")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
 
-        // GET /sessions — search-court-schedules-by-id (was /courtschedule/search.court-schedules-by-id)
+        // GET /sessions?ids= — search-court-schedules-by-id (was /courtschedule/search.court-schedules-by-id)
         stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + SESSIONS_PATH)))
                 .atPriority(10)
+                .withQueryParam("ids", matching(".*"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody("{\"courtSchedules\":[]}")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
@@ -1793,7 +1796,7 @@ public class CourtSchedulerServiceStub {
     }
 
     public static void stubSearchAvailableJudiciaries() {
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + JUDICIARIES_SEARCH_AVAILABLE)))
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + JUDICIARIES_RESOURCE)))
                 .withQueryParam("search", matching("ai"))
                 .withHeader("Accept", containing(COURTSCHEDULER_SEARCH_AVAILABLE_JUDICIARIES_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
@@ -1803,7 +1806,7 @@ public class CourtSchedulerServiceStub {
     }
 
     public static void stubSearchAvailableJudiciariesBadRequest() {
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + JUDICIARIES_SEARCH_AVAILABLE)))
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + JUDICIARIES_RESOURCE)))
                 .withQueryParam("search", matching("x"))
                 .withHeader("Accept", containing(COURTSCHEDULER_SEARCH_AVAILABLE_JUDICIARIES_TYPE))
                 .willReturn(aResponse().withStatus(BAD_REQUEST.getStatusCode())

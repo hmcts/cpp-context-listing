@@ -68,7 +68,7 @@ graph TB
     %% OUTBOUND REST SERVICES (listing calls these)
     %% =============================================
     subgraph COURTSCHEDULER["cpp-context-listing-courtscheduler"]
-        CS_API["REST API<br/>/hearingslots<br/>/courtschedule/search.court-schedules-by-id<br/>/validate-session-availability<br/>/list/hearingslots<br/>/searchlist/hearingslots<br/>/multidaysearchandbook/hearingslots"]
+        CS_API["REST API<br/>/hearingslots<br/>/sessions<br/>/validate-session-availability<br/>/list/hearingslots<br/>/searchlist/hearingslots<br/>/multidaysearchandbook/hearingslots"]
     end
 
     subgraph DOC_GEN["Document Generator Service"]
@@ -109,7 +109,7 @@ graph TB
     %% =============================================
     %% OUTBOUND REST CALLS (listing → external services)
     %% =============================================
-    CMD_API -->|"GET /courtschedule/search.court-schedules-by-id<br/>GET /hearingslots<br/>GET /searchlist/hearingslots<br/>GET /multidaysearchandbook/hearingslots<br/>PUT /list/hearingslots"| CS_API
+    CMD_API -->|"GET /sessions?ids=<br/>GET /hearingslots<br/>GET /searchlist/hearingslots<br/>GET /multidaysearchandbook/hearingslots<br/>PUT /list/hearingslots"| CS_API
     QRY_SLOTS -->|"GET /hearingslots<br/>POST /validate-session-availability"| CS_API
 
     QRY_COURTLIST -->|"POST generateDocument()"| DG_API
