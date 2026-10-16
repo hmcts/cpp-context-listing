@@ -742,6 +742,33 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
+    public void shouldKeepNonExParteCaseWhenTheExParteCaseAndItsApplicationAreOnTheSameHearingInWarnFirmList() {
+        // the ex-parte case is on the hearing itself: it and every application go, the other case stays
+        final String exParteCaseId = randomUuid();
+        final String nonExParteCaseId = randomUuid();
+        final JsonArray hearings = uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder()
+                .add(uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder()
+                        .add("id", randomUuid())
+                        .add("listedCases", uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder()
+                                .add(civilCase(exParteCaseId, true))
+                                .add(civilCase(nonExParteCaseId, false)))
+                        .add("courtApplications", uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder()
+                                .add(uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder()
+                                        .add("id", randomUuid())
+                                        .add("linkedCaseIds", uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder().add(exParteCaseId)))))
+                .build();
+
+        final JsonArray filtered = converter.filterExParteOffencesFromHearings(hearings);
+
+        assertThat(filtered.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(1)),
+                withJsonPath("$[0].listedCases", hasSize(1)),
+                withJsonPath("$[0].listedCases[0].id", equalTo(nonExParteCaseId)),
+                withJsonPath("$[0].courtApplications", hasSize(0))
+        )));
+    }
+
+    @Test
     public void shouldExcludeWholeHearingWhenNonExParteCaseSharesItWithApplicationLinkedToExParteCaseFromWarnFirmList() {
         // a non-ex-parte case adjourned into the hearing of an application linked to an ex-parte case
         final String exParteCaseId = randomUuid();
