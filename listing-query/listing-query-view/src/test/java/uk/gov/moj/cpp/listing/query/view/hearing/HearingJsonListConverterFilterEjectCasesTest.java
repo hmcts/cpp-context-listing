@@ -736,9 +736,42 @@ public class HearingJsonListConverterFilterEjectCasesTest {
         final JsonArray filtered = converter.filterExParteOffencesFromHearings(convertedHearings);
 
         assertThat(filtered.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(1)),
+                withJsonPath("$[0].listedCases", hasSize(0))
+        )));
+    }
+
+    @Test
+    public void shouldExcludeWholeHearingWhenNonExParteCaseSharesItWithApplicationLinkedToExParteCaseFromWarnFirmList() {
+        // a non-ex-parte case adjourned into the hearing of an application linked to an ex-parte case
+        final String exParteCaseId = randomUuid();
+        final String adjournedCaseId = randomUuid();
+        final String otherHearingId = randomUuid();
+        final JsonArray hearings = uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder()
+                .add(uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder()
+                        .add("id", randomUuid())
+                        .add("listedCases", uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder()
+                                .add(civilCase(exParteCaseId, true))))
+                .add(uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder()
+                        .add("id", randomUuid())
+                        .add("listedCases", uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder()
+                                .add(civilCase(adjournedCaseId, false)))
+                        .add("courtApplications", uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder()
+                                .add(uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder()
+                                        .add("id", randomUuid())
+                                        .add("linkedCaseIds", uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder().add(exParteCaseId)))))
+                .add(uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder()
+                        .add("id", otherHearingId)
+                        .add("listedCases", uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder()
+                                .add(civilCase(randomUuid(), false))))
+                .build();
+
+        final JsonArray filtered = converter.filterExParteOffencesFromHearings(hearings);
+
+        assertThat(filtered.toString(), isJson(allOf(
                 withJsonPath("$", hasSize(2)),
                 withJsonPath("$[0].listedCases", hasSize(0)),
-                withJsonPath("$[1].courtApplications", hasSize(0))
+                withJsonPath("$[1].id", equalTo(otherHearingId))
         )));
     }
 
@@ -776,10 +809,9 @@ public class HearingJsonListConverterFilterEjectCasesTest {
         final JsonArray filtered = converter.filterExParteOffencesFromHearings(convertedHearings);
 
         assertThat(filtered.toString(), isJson(allOf(
-                withJsonPath("$", hasSize(2)),
+                withJsonPath("$", hasSize(1)),
                 withJsonPath("$[0].listedCases", hasSize(1)),
-                withJsonPath("$[0].listedCases[0].id", equalTo(caseId1)),
-                withJsonPath("$[1].courtApplications", hasSize(0))
+                withJsonPath("$[0].listedCases[0].id", equalTo(caseId1))
         )));
     }
 

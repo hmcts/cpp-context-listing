@@ -105,6 +105,11 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
 
         final JsonArrayBuilder builder = createArrayBuilder();
         hearingsNode.forEach(hearing -> {
+            // a hearing carrying an application linked to an ex-parte case is left off the list altogether,
+            // including any other case or application listed on it
+            if (hasCourtApplicationLinkedToAnyExParteCase(hearing, exParteCaseIds)) {
+                return;
+            }
             removeCourtApplicationsSharingHearingWithExParteCase(hearing);
             hearing.findValues(LISTED_CASES).forEach(this::removeNodeForExParteFlag);
             final JsonNode filteredHearing = removeCourtApplicationsLinkedToExParteCases(hearing, exParteCaseIds);
@@ -441,6 +446,20 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
                 iterator.remove();
             }
         }
+    }
+
+    private boolean hasCourtApplicationLinkedToAnyExParteCase(final JsonNode hearing, final Set<String> exParteCaseIds) {
+        if (exParteCaseIds.isEmpty()) {
+            return false;
+        }
+        for (final JsonNode courtApplicationsNode : hearing.findValues(COURT_APPLICATIONS)) {
+            for (final JsonNode courtApplication : courtApplicationsNode) {
+                if (isLinkedToAnyExParteCase(courtApplication, exParteCaseIds)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private boolean isLinkedToAnyExParteCase(final JsonNode courtApplication, final Set<String> exParteCaseIds) {
