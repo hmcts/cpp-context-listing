@@ -35,7 +35,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Removes applications linked to an ex-parte civil case that is not itself on the court list.
+ * Removes hearings carrying an application linked to an ex-parte civil case that is not itself on
+ * the court list - the whole hearing, including any other case or application listed on it.
  * <p>
  * Ex-parte cases on the list, and applications linked to them, are already removed by
  * {@link uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases#filterExParteOffencesFromHearings},
@@ -157,25 +158,9 @@ public class ExParteLinkedCaseApplicationFilter {
     }
 
     private static JsonObject filterHearing(final JsonObject hearing, final Set<String> exParteCaseIds) {
-        final List<JsonObject> courtApplications = objectsIn(hearing, COURT_APPLICATIONS);
-        final List<JsonObject> keptCourtApplications = courtApplications.stream()
-                .filter(courtApplication -> linkedCaseIdsOf(courtApplication).stream().noneMatch(exParteCaseIds::contains))
-                .toList();
-
-        if (keptCourtApplications.size() == courtApplications.size()) {
-            return hearing;
-        }
-        if (keptCourtApplications.isEmpty() && objectsIn(hearing, LISTED_CASES).isEmpty()) {
-            return null;
-        }
-
-        final JsonArrayBuilder applicationsBuilder = createArrayBuilder();
-        keptCourtApplications.forEach(applicationsBuilder::add);
-        final JsonArray keptCourtApplicationsArray = applicationsBuilder.build();
-
-        final JsonObjectBuilder hearingBuilder = createObjectBuilder();
-        hearing.forEach((key, value) -> hearingBuilder.add(key, COURT_APPLICATIONS.equals(key) ? keptCourtApplicationsArray : value));
-        return hearingBuilder.build();
+        final boolean hasApplicationLinkedToExParteCase = objectsIn(hearing, COURT_APPLICATIONS).stream()
+                .anyMatch(courtApplication -> linkedCaseIdsOf(courtApplication).stream().anyMatch(exParteCaseIds::contains));
+        return hasApplicationLinkedToExParteCase ? null : hearing;
     }
 
     private static boolean hasExParteOffence(final JsonNode listedCase) {

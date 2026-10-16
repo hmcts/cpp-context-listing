@@ -177,19 +177,39 @@ class ExParteLinkedCaseApplicationFilterTest {
     }
 
     @Test
-    void shouldKeepOtherApplicationsOnTheSameHearing() throws Exception {
+    void shouldRemoveTheWholeHearingIncludingOtherApplicationsOnIt() throws Exception {
         final UUID exParteCaseId = randomUUID();
-        final UUID keptApplicationId = randomUUID();
         when(hearingRepository.findHearingsByListedCaseIds(List.of(exParteCaseId)))
                 .thenReturn(List.of(viewStoreHearing(listedCase(exParteCaseId, true))));
         final JsonObject payload = hearingsPayload(applicationHearing(
                 courtApplication(randomUUID(), exParteCaseId),
-                createObjectBuilder().add("id", keptApplicationId.toString()).build()));
+                createObjectBuilder().add("id", randomUUID().toString()).build()));
 
         final JsonObject result = filter.removeApplicationsLinkedToExParteCases(payload, ENVELOPE);
 
-        assertThat(result.getJsonArray("hearings").getJsonObject(0).getJsonArray("courtApplications").getValuesAs(JsonObject.class)
-                .stream().map(application -> application.getString("id")).toList(), contains(keptApplicationId.toString()));
+        assertThat(result.getJsonArray("hearings").isEmpty(), is(true));
+    }
+
+    @Test
+    void shouldRemoveTheWholeHearingWhenANonExParteCaseIsAdjournedIntoTheApplicationsHearing() throws Exception {
+        final UUID exParteCaseId = randomUUID();
+        final UUID otherHearingId = randomUUID();
+        when(hearingRepository.findHearingsByListedCaseIds(List.of(exParteCaseId)))
+                .thenReturn(List.of(viewStoreHearing(listedCase(exParteCaseId, true))));
+        final JsonObject sharedHearing = createObjectBuilder()
+                .add("id", randomUUID().toString())
+                .add("listedCases", createArrayBuilder().add(listedCase(randomUUID(), false)))
+                .add("courtApplications", createArrayBuilder().add(courtApplication(randomUUID(), exParteCaseId)))
+                .build();
+        final JsonObject otherHearing = createObjectBuilder()
+                .add("id", otherHearingId.toString())
+                .add("listedCases", createArrayBuilder().add(listedCase(randomUUID(), false)))
+                .build();
+
+        final JsonObject result = filter.removeApplicationsLinkedToExParteCases(hearingsPayload(sharedHearing, otherHearing), ENVELOPE);
+
+        assertThat(result.getJsonArray("hearings").getValuesAs(JsonObject.class)
+                .stream().map(hearing -> hearing.getString("id")).toList(), contains(otherHearingId.toString()));
     }
 
     @Test
