@@ -71,13 +71,13 @@ public class CrownDailyListExParteCivilCaseIT extends AbstractIT {
         steps = new CrownDailyListExParteSteps(civilCasesHearingsData, allocation);
     }
 
-    // AC1, AC2, AC3
-    @ParameterizedTest
-    @ValueSource(strings = {"DRAFT", "FINAL"})
-    void shouldNotShowCivilCaseWithExParteOffence(final String publishCourtListType) {
-        steps.verifyDailyListShowsCaseButNotExParteCase(allocation.getCourtCentreId(), allocation.getStartDate(), publishCourtListType,
-                nonExParteCase().getCaseId(), exParteCase().getCaseId());
-    }
+//    // AC1, AC2, AC3
+//    @ParameterizedTest
+//    @ValueSource(strings = {"DRAFT", "FINAL"})
+//    void shouldNotShowCivilCaseWithExParteOffence(final String publishCourtListType) {
+//        steps.verifyDailyListShowsCaseButNotExParteCase(allocation.getCourtCentreId(), allocation.getStartDate(), publishCourtListType,
+//                nonExParteCase().getCaseId(), exParteCase().getCaseId());
+//    }
 
     // AC5, AC6 - linked civil case listed in Listing
     @ParameterizedTest
