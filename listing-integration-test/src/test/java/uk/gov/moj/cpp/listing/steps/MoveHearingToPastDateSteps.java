@@ -19,6 +19,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.UUID;
 
 import javax.ws.rs.core.Response;
@@ -63,11 +64,21 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
     /** Explicit date-RANGE move: startDateTime/endDateTime carry different dates - the caller now
      * drives multi-day CROWN payback directly (rather than only via the hearing's duration estimate). */
     public Response whenHearingIsMovedToPastDateRange(final String jurisdictionDir, final LocalDate startDate, final LocalDate endDate) {
+        return whenHearingIsMoved(jurisdictionDir, startDate + "T10:00:00Z", endDate + "T17:00:00Z");
+    }
+
+    /** Single-day move into an explicit UTC window on {@code date}. */
+    public Response whenHearingIsMovedToPastDateWindow(final String jurisdictionDir, final LocalDate date,
+                                                       final LocalTime start, final LocalTime end) {
+        return whenHearingIsMoved(jurisdictionDir, date + "T" + start + ":00Z", date + "T" + end + ":00Z");
+    }
+
+    private Response whenHearingIsMoved(final String jurisdictionDir, final String startDateTime, final String endDateTime) {
         final String payload = getPayload("test-data/" + jurisdictionDir + "/move-to-past-date/move-hearing-to-past-date.json")
                 .replace("%%COURT_CENTRE_ID%%", courtCentreId.toString())
                 .replace("%%COURT_ROOM_ID%%", courtRoomId.toString())
-                .replace("%%START_DATE_TIME%%", startDate + "T10:00:00Z")
-                .replace("%%END_DATE_TIME%%", endDate + "T17:00:00Z");
+                .replace("%%START_DATE_TIME%%", startDateTime)
+                .replace("%%END_DATE_TIME%%", endDateTime);
 
         return postMove(payload);
     }
@@ -150,6 +161,29 @@ public class MoveHearingToPastDateSteps extends AbstractIT {
                                 withJsonPath("$.startDate", is(expectedStartDate.toString())),
                                 withJsonPath("$.endDate", is(expectedEndDate.toString())),
                                 withJsonPath("$.hearingDays[0].hearingDate", is(expectedStartDate.toString()))
+                        )));
+    }
+
+    /**
+     * The moved hearing day on {@code date} carries the submitted start, end and duration; as the only
+     * day, it also sets the hearing's estimatedMinutes (the aggregate sums its days' durations).
+     */
+    public void verifyMovedHearingDayTimes(final LocalDate date, final LocalTime expectedStart,
+                                           final LocalTime expectedEnd, final int expectedDurationMinutes) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty(LISTING_QUERY_HEARING), hearingId));
+        final String day = "$.hearingDays[?(@.hearingDate=='" + date + "')]";
+
+        pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARING).withHeader(USER_ID, getLoggedInUser()).build())
+                .until(
+                        status().is(OK),
+                        payload().isJson(org.hamcrest.CoreMatchers.allOf(
+                                withJsonPath("$.id", is(hearingId)),
+                                withJsonPath("$.hearingDays", org.hamcrest.Matchers.hasSize(1)),
+                                withJsonPath("$.estimatedMinutes", is(expectedDurationMinutes)),
+                                withJsonPath(day + ".durationMinutes", hasItem(expectedDurationMinutes)),
+                                withJsonPath(day + ".startTime", hasItem(org.hamcrest.Matchers.startsWith(date + "T" + expectedStart))),
+                                withJsonPath(day + ".endTime", hasItem(org.hamcrest.Matchers.startsWith(date + "T" + expectedEnd)))
                         )));
     }
 

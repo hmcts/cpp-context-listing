@@ -61,6 +61,7 @@ import uk.gov.moj.cpp.listing.domain.VacateTrialEnriched;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -114,7 +115,6 @@ public class ListingCommandApi {
     private static final String END_DATE_TIME = "endDateTime";
     private static final String JURISDICTION = "jurisdiction";
     private static final String JURISDICTION_TYPE = "jurisdictionType";
-    private static final String ESTIMATED_MINUTES = "estimatedMinutes";
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
     private static final String COURT_ROOM_ID = "courtRoomId";
     private static final String ROOM_ID = "roomId";
@@ -529,9 +529,9 @@ public class ListingCommandApi {
      * the listing viewstore (NOT main's court-centre reference-data lookup — that lookup is
      * deliberately not ported, see the plan's Part B.2 note 4 / decisions). Date validation
      * ({@link #validateMoveDates}) mirrors main's rules for BOTH jurisdictions, including the
-     * single-day request window (MULTI_DAY_NOT_ALLOWED, D-C/Q5). Multi-day CROWN payback
-     * (SPRDT-1333) comes from the hearing's own estimate - courtscheduler sizes the day-count from
-     * durationInMinutes - not from a multi-day request window. MAGS stays single-day.
+     * single-day request window (MULTI_DAY_NOT_ALLOWED, D-C/Q5). The moved day's duration is the
+     * submitted window (endDateTime - startDateTime), not the hearing's previous estimate, so its
+     * end time is the submitted endDateTime (SPRDT-1447).
      */
     @Handles("listing.command.move-hearing-to-past-date")
     public void handleMoveHearingToPastDate(final JsonEnvelope envelope) {
@@ -567,7 +567,7 @@ public class ListingCommandApi {
         validateMoveDates(startInstant, endInstant);
 
         enrichWithBookedPastDateSlot(enrichedBuilder, hearingId, courtCentreId, courtRoomId,
-                startInstant, endInstant, hearing, jurisdictionType);
+                startInstant, endInstant, jurisdictionType);
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_MOVE_HEARING_TO_PAST_DATE_ENRICHED),
                 enrichedBuilder.build()));
@@ -614,9 +614,11 @@ public class ListingCommandApi {
     private void enrichWithBookedPastDateSlot(final JsonObjectBuilder enrichedBuilder, final UUID hearingId,
                                               final UUID courtCentreId, final UUID courtRoomId,
                                               final ZonedDateTime startInstant, final ZonedDateTime endInstant,
-                                              final JsonObject hearing, final String jurisdictionType) {
-        final Integer durationInMinutes = (hearing.containsKey(ESTIMATED_MINUTES) && !hearing.isNull(ESTIMATED_MINUTES))
-                ? hearing.getInt(ESTIMATED_MINUTES) : null;
+                                              final String jurisdictionType) {
+        // The moved day lasts exactly the submitted window, not the hearing's previous estimate:
+        // the handler derives the day's endTime as startTime + this duration, so it lands on the
+        // submitted endDateTime. validateMoveDates has already restricted the move to a single day.
+        final int durationInMinutes = (int) ChronoUnit.MINUTES.between(startInstant, endInstant);
 
         final MoveHearingToPastDateResult slot = courtSchedulerServiceAdapter.moveHearingToPastDate(
                 hearingId, courtCentreId, courtRoomId, startInstant, endInstant, durationInMinutes, jurisdictionType);
@@ -633,14 +635,9 @@ public class ListingCommandApi {
                     CourtSchedulerServiceAdapter.NO_SESSION_FOUND_MESSAGE);
         }
 
-        // courtscheduler's CourtSchedule carries no per-hearing duration: the moved day(s) keep the
-        // hearing's own estimate, spread evenly across the booked sessions (mirrors
-        // CourtScheduleEnrichmentService.buildHearingDaysFromMultiDaySessions for the update flow).
-        final Integer perDayMinutes = perDayMinutes(durationInMinutes, slot);
-
         // Flat single-slot fields mirror the FIRST booked session (the day the hearing now starts on).
         if (!slot.sessions().isEmpty()) {
-            addBookedSessionFields(enrichedBuilder, slot.sessions().get(0), perDayMinutes);
+            addBookedSessionFields(enrichedBuilder, slot.sessions().get(0), durationInMinutes);
         }
         // The hearing's new end date is the last day courtscheduler booked (== sessionDate for single-day).
         addIfPresent(enrichedBuilder, MOVE_END_DATE, slot.lastSessionDate());
@@ -650,7 +647,7 @@ public class ListingCommandApi {
         final JsonArrayBuilder sessions = createArrayBuilder();
         for (final MoveHearingToPastDateResult.BookedSession session : slot.sessions()) {
             final JsonObjectBuilder day = createObjectBuilder();
-            addBookedSessionFields(day, session, perDayMinutes);
+            addBookedSessionFields(day, session, durationInMinutes);
             addIfPresent(day, COURT_CENTRE_ID, session.courtCentreId());
             addIfPresent(day, MOVE_IS_DRAFT, session.isDraft());
             sessions.add(day);
@@ -658,16 +655,16 @@ public class ListingCommandApi {
         enrichedBuilder.add(MOVE_SESSIONS, sessions);
     }
 
-    /** courtScheduleId / courtRoomId / sessionDate / session times / per-day duration of one booked session. */
+    /** courtScheduleId / courtRoomId / sessionDate / session times / duration of one booked session. */
     private static void addBookedSessionFields(final JsonObjectBuilder target,
                                                final MoveHearingToPastDateResult.BookedSession session,
-                                               final Integer perDayMinutes) {
+                                               final int durationInMinutes) {
         addIfPresent(target, COURT_SCHEDULE_ID, session.courtScheduleId());
         addIfPresent(target, COURT_ROOM_ID, session.courtRoomId());
         addIfPresent(target, SESSION_DATE, session.sessionDate());
         addIfPresent(target, SESSION_START_TIME, session.sessionStartTime());
         addIfPresent(target, SESSION_END_TIME, session.sessionEndTime());
-        addIfPresent(target, DURATION_IN_MINUTES, perDayMinutes);
+        addIfPresent(target, DURATION_IN_MINUTES, durationInMinutes);
     }
 
     /** Adds {@code value} under {@code key} unless null: Integers and Booleans natively, anything else via toString(). */
@@ -682,19 +679,6 @@ public class ListingCommandApi {
         } else {
             target.add(key, value.toString());
         }
-    }
-
-    /**
-     * Per-day duration for the moved hearing: the hearing's estimatedMinutes split evenly over the
-     * booked sessions; falls back to whatever courtscheduler reported on the first session when the
-     * hearing has no estimate.
-     */
-    private static Integer perDayMinutes(final Integer estimatedMinutes, final MoveHearingToPastDateResult slot) {
-        final int days = Math.max(1, slot.sessions().size());
-        if (estimatedMinutes != null && estimatedMinutes > 0) {
-            return Math.max(1, estimatedMinutes / days);
-        }
-        return slot.durationInMinutes();
     }
 
     private static JsonObject buildMoveHearingToPastDateErrorBody(final String errorCode, final String message) {
