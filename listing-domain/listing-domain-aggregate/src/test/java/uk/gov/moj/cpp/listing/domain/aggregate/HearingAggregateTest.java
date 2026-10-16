@@ -38,6 +38,7 @@ import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.CaseIdentifierUpdated;
 import uk.gov.justice.listing.events.CasesAddedToHearing;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
+import uk.gov.justice.listing.events.CourtApplicationUpdatedForHearing;
 import uk.gov.justice.listing.events.CourtListRestricted;
 import uk.gov.justice.listing.events.CrownHearingMigratedToCourtschedule;
 import uk.gov.justice.listing.events.HearingDayCourtSchedule;
@@ -4681,6 +4682,117 @@ class HearingAggregateTest {
 
         assertThat(resultEvents, hasSize(1));
         assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CourtApplicationAddedForHearing.class));
+    }
+
+    @Test
+    void shouldNotEmitCourtListRestrictedAgainWhenCourtApplicationWithUnder18SubjectIsUpdated() {
+        final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
+        givenAllocatedHearingWithAdultDefendant(hearingStartDate);
+        final UUID courtApplicationId = randomUUID();
+        final uk.gov.moj.cpp.listing.domain.CourtApplicationParty under18Subject = applicationParty(randomUUID(), null, hearingStartDate.minusYears(16).toString());
+        hearing.addCourtApplication(hearingId, courtApplicationWithId(courtApplicationId, under18Subject)).collect(Collectors.toList());
+
+        final List<Object> resultEvents = hearing.updateCourtApplication(hearingId, courtApplicationWithId(courtApplicationId, under18Subject))
+                .collect(Collectors.toList());
+
+        assertThat(resultEvents, hasSize(1));
+        assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CourtApplicationUpdatedForHearing.class));
+    }
+
+    @Test
+    void shouldEmitCourtListRestrictedWhenCourtApplicationIsUpdatedWithNewUnder18Subject() {
+        final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
+        givenAllocatedHearingWithAdultDefendant(hearingStartDate);
+        final UUID courtApplicationId = randomUUID();
+        hearing.addCourtApplication(hearingId, courtApplicationWithId(courtApplicationId,
+                applicationParty(randomUUID(), null, hearingStartDate.minusYears(40).toString()))).collect(Collectors.toList());
+        final UUID under18SubjectId = randomUUID();
+
+        final List<Object> resultEvents = hearing.updateCourtApplication(hearingId, courtApplicationWithId(courtApplicationId,
+                        applicationParty(under18SubjectId, null, hearingStartDate.minusYears(16).toString())))
+                .collect(Collectors.toList());
+
+        assertUpdatedAndSubjectRestricted(resultEvents, under18SubjectId);
+    }
+
+    @Test
+    void shouldEmitCourtListRestrictedWhenCourtApplicationSubjectDateOfBirthIsUpdatedToUnder18() {
+        final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
+        givenAllocatedHearingWithAdultDefendant(hearingStartDate);
+        final UUID courtApplicationId = randomUUID();
+        final UUID subjectId = randomUUID();
+        hearing.addCourtApplication(hearingId, courtApplicationWithId(courtApplicationId,
+                applicationParty(subjectId, null, hearingStartDate.minusYears(40).toString()))).collect(Collectors.toList());
+
+        final List<Object> resultEvents = hearing.updateCourtApplication(hearingId, courtApplicationWithId(courtApplicationId,
+                        applicationParty(subjectId, null, hearingStartDate.minusYears(16).toString())))
+                .collect(Collectors.toList());
+
+        assertUpdatedAndSubjectRestricted(resultEvents, subjectId);
+    }
+
+    @Test
+    void shouldNotEmitCourtListRestrictedWhenCourtApplicationIsUpdatedWithAdultSubject() {
+        final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
+        givenAllocatedHearingWithAdultDefendant(hearingStartDate);
+        final UUID courtApplicationId = randomUUID();
+        final uk.gov.moj.cpp.listing.domain.CourtApplicationParty adultSubject = applicationParty(randomUUID(), null, hearingStartDate.minusYears(40).toString());
+        hearing.addCourtApplication(hearingId, courtApplicationWithId(courtApplicationId, adultSubject)).collect(Collectors.toList());
+
+        final List<Object> resultEvents = hearing.updateCourtApplication(hearingId, courtApplicationWithId(courtApplicationId, adultSubject))
+                .collect(Collectors.toList());
+
+        assertThat(resultEvents, hasSize(1));
+        assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CourtApplicationUpdatedForHearing.class));
+    }
+
+    @Test
+    void shouldNotEmitCourtListRestrictedOnUpdateWithUnder18SubjectWhenHearingCannotBeAllocated() {
+        final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
+        // no court room, so the hearing can't be allocated yet - the allocation path restricts the subject later
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withStartDate(hearingStartDate)
+                        .withEndDate(hearingStartDate.plusDays(1))
+                        .build())
+                .build());
+        final UUID courtApplicationId = randomUUID();
+        hearing.addCourtApplication(hearingId, courtApplicationWithId(courtApplicationId,
+                applicationParty(randomUUID(), null, hearingStartDate.minusYears(40).toString()))).collect(Collectors.toList());
+
+        final List<Object> resultEvents = hearing.updateCourtApplication(hearingId, courtApplicationWithId(courtApplicationId,
+                        applicationParty(randomUUID(), null, hearingStartDate.minusYears(16).toString())))
+                .collect(Collectors.toList());
+
+        assertThat(resultEvents, hasSize(1));
+        assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CourtApplicationUpdatedForHearing.class));
+    }
+
+    private void assertUpdatedAndSubjectRestricted(final List<Object> resultEvents, final UUID subjectId) {
+        assertThat(resultEvents, hasSize(2));
+        assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CourtApplicationUpdatedForHearing.class));
+        assertThat(resultEvents.get(1), CoreMatchers.instanceOf(CourtListRestricted.class));
+        final CourtListRestricted courtListRestricted = (CourtListRestricted) resultEvents.get(1);
+        assertThat(courtListRestricted.getHearingId(), is(hearingId));
+        assertThat(courtListRestricted.getRestrictCourtList(), is(true));
+        assertThat(courtListRestricted.getCourtApplicationSubjectIds(), hasSize(1));
+        assertThat(courtListRestricted.getCourtApplicationSubjectIds(), hasItem(subjectId));
+        assertThat(courtListRestricted.getDefendantIds(), is(nullValue()));
+    }
+
+    private CourtApplication courtApplicationWithId(final UUID courtApplicationId, final uk.gov.moj.cpp.listing.domain.CourtApplicationParty subject) {
+        return CourtApplication.courtApplication()
+                .withId(courtApplicationId)
+                .withApplicationType(STRING.next())
+                .withApplicant(applicationParty(randomUUID(), null, null))
+                .withSubject(subject)
+                .withRespondents(emptyList())
+                .build();
     }
 
     private void givenAllocatedHearingWithAdultDefendant(final LocalDate hearingStartDate) {

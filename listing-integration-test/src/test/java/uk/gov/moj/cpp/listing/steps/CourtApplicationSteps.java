@@ -169,6 +169,43 @@ public class CourtApplicationSteps extends AbstractIT {
                 this::verifyCourtApplicationUpdatedFromAPI);
     }
 
+    // For an application already restricted from the court list - the update must keep that restriction
+    public void publishUntilCourtApplicationReflected(final Boolean expectedRestrictFromCourtList) {
+        publishUntilReflected(LOGGER, "court-application-fix", "court-application-changed",
+                this::whenCaseCourtApplicationUpdatedPublicEventIsPublished,
+                () -> verifyCourtApplicationUpdatedFromAPI(expectedRestrictFromCourtList));
+    }
+
+    // Re-publishes court-application-changed (as publishUntilCourtApplicationReflected does) with the given subject
+    // until the allocated hearing shows the update with that subject restricted from the court list
+    public void publishUntilCourtApplicationSubjectRestricted(final UUID courtCentreId, final UUID subjectId, final String subjectDateOfBirth) {
+        publishUntilReflected(LOGGER, "court-application-subject", "court-application-changed",
+                () -> whenCourtApplicationIsUpdatedWithSubject(subjectId, subjectDateOfBirth),
+                () -> verifyCourtApplicationSubjectRestrictedFromAPI(courtCentreId, subjectId));
+    }
+
+    private void whenCourtApplicationIsUpdatedWithSubject(final UUID subjectId, final String subjectDateOfBirth) {
+        final UUID courtApplicationId = hearingsData.getHearingData().get(0).getCourtApplications().get(0).getId();
+        final CourtApplicationUpdateData courtApplicationUpdateData = new CourtApplicationUpdateData(getCourtApplication(courtApplicationId, subjectId, subjectDateOfBirth));
+        final JsonObject courtApplicationUpdateDataObject = (JsonObject) objectToJsonValueConverter.convert(courtApplicationUpdateData);
+
+        sendMessage(
+                publicEventCourtApplicationUpdated,
+                PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED,
+                courtApplicationUpdateDataObject,
+                metadataOf(randomUUID(), PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED).withUserId(randomUUID().toString()).build());
+        request = courtApplicationUpdateDataObject.toString();
+    }
+
+    private void verifyCourtApplicationSubjectRestrictedFromAPI(final UUID courtCentreId, final UUID subjectId) {
+        pollForHearingWithJmsDelay(courtCentreId.toString(), true, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[0].id", equalTo(hearingsData.getHearingData().get(0).getId().toString())),
+                withJsonPath("$.hearings[0].courtApplications[0].applicant.firstName", equalTo(APPLICANT_FIRST_NAME)),
+                withJsonPath("$.hearings[0].courtApplications[0].subject.id", equalTo(subjectId.toString())),
+                withJsonPath("$.hearings[0].courtApplications[0].subject.restrictFromCourtList", equalTo(true))
+        });
+    }
+
     public void verifyPublicEventCourtApplicationAdded() {
         JsonPath jsRequest = new JsonPath(request);
 
@@ -180,6 +217,10 @@ public class CourtApplicationSteps extends AbstractIT {
     }
 
     public void verifyCourtApplicationUpdatedFromAPI() {
+        verifyCourtApplicationUpdatedFromAPI(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictFromCourtList());
+    }
+
+    public void verifyCourtApplicationUpdatedFromAPI(final Boolean expectedRestrictFromCourtList) {
         final Filter idFilter = filter(where("id").is(hearingsData.getHearingData().get(0).getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
 
@@ -204,7 +245,7 @@ public class CourtApplicationSteps extends AbstractIT {
                 withJsonPath("$.hearings[0].courtApplications[0].parentApplicationId",
                         equalTo(LINKED_APPLICATION_ID.toString())),
                 withJsonPath("$.hearings[0].courtApplications[0].restrictFromCourtList",
-                        equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictFromCourtList())),
+                        equalTo(expectedRestrictFromCourtList)),
                 withJsonPath("$.hearings[0].courtApplications[0].restrictCourtApplicationType",
                         equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictCourtApplicationType()))
         });
