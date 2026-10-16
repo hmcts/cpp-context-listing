@@ -1289,7 +1289,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     /**
      * CROWN list paths (list-court-hearing / list-next-hearings-v2) carry the chosen courtScheduleId in
      * {@code bookingReference} — Crown has no provisional-booking concept, so the id IS a court-schedule
-     * session id. Resolve it against courtscheduler ({@code search.court-schedules-by-id}) and promote the
+     * session id. Resolve it against courtscheduler (GET {@code /sessions?ids=}) and promote the
      * resolved session onto a bookedSlot (courtScheduleId + courtHouse/room/start) so the CourtSchedule-first
      * flow can list and allocate it.
      *

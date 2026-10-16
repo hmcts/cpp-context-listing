@@ -747,7 +747,7 @@ const JOURNEYS = {
         type: 'enrich',
         stage: 'Crown Enrichment Pipeline (Direct Listing branch)',
         title: 'CourtScheduleEnrichmentService.handleDirectListingCase()',
-        code: 'GET /courtschedule/search.court-schedules-by-id',
+        code: 'GET /sessions?ids=',
         showEnrichment: true,
         lines: [
           { kind: 'pub', verb: 'calls', code: 'courtscheduler', sub: '→ resolves courtScheduleId → CourtSchedule(isDraft, room, time)' },
@@ -972,7 +972,7 @@ function resolveEnrichment() {
       outcomeText: draft
         ? 'isDraft=true → hasAssignedSession=false → UNALLOCATED'
         : 'isDraft=false → hasAssignedSession=true → ALLOCATED',
-      calls: ['GET /courtschedule/search.court-schedules-by-id'],
+      calls: ['GET /sessions?ids='],
     };
   }
   if (dur > 360) {
@@ -992,7 +992,7 @@ function resolveEnrichment() {
       detail: 'courtScheduleId present + isDraft=false (assigned session)',
       outcome: 'allocated',
       outcomeText: 'hasAssignedSession=true → canAllocateForCrown()=true → ALLOCATED',
-      calls: ['GET /courtschedule/search.court-schedules-by-id'],
+      calls: ['GET /sessions?ids='],
     };
   }
   if (csi && draft) {
@@ -1002,7 +1002,7 @@ function resolveEnrichment() {
       detail: 'courtScheduleId present + isDraft=true (draft session)',
       outcome: 'unallocated',
       outcomeText: 'Enrichment skips listHearingInCourtSessions → no confirmed courtScheduleIds → UNALLOCATED',
-      calls: ['GET /courtschedule/search.court-schedules-by-id'],
+      calls: ['GET /sessions?ids='],
     };
   }
   return {

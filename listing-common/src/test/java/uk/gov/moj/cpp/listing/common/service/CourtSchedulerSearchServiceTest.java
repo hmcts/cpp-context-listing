@@ -83,7 +83,7 @@ class CourtSchedulerSearchServiceTest {
             assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
             verify(httpClient).execute(httpGetCaptor.capture());
             assertThat(httpGetCaptor.getValue().getURI().toString(),
-                    is(BASE_URI + "/judiciaries/search-available?search=ai"));
+                    is(BASE_URI + "/judiciaries?search=ai"));
         }
     }
 }
