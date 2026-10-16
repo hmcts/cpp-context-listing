@@ -105,9 +105,12 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
 
         final JsonArrayBuilder builder = createArrayBuilder();
         hearingsNode.forEach(hearing -> {
-            // a hearing carrying an application linked to an ex-parte case is left off the list altogether,
-            // including any other case or application listed on it
-            if (hasCourtApplicationLinkedToAnyExParteCase(hearing, exParteCaseIds)) {
+            // a hearing carrying an application linked to an ex-parte case listed elsewhere is left off the list
+            // altogether, including any other case or application on it; when the ex-parte case is on this
+            // hearing, only it and the applications are removed below
+            final Set<String> exParteCaseIdsListedElsewhere = new HashSet<>(exParteCaseIds);
+            exParteCaseIdsListedElsewhere.removeAll(collectExParteCaseIds(hearing));
+            if (hasCourtApplicationLinkedToAnyExParteCase(hearing, exParteCaseIdsListedElsewhere)) {
                 return;
             }
             removeCourtApplicationsSharingHearingWithExParteCase(hearing);
