@@ -41,6 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 /**
  * CAD-1760 AC5-AC8 for applications whose linked civil case is not on the list. Linked cases on the
  * list are CAD-1710's {@code filterExParteOffencesFromHearings}, tested with that converter.
+ *
  */
 @ExtendWith(MockitoExtension.class)
 class ExParteLinkedCaseApplicationFilterTest {
