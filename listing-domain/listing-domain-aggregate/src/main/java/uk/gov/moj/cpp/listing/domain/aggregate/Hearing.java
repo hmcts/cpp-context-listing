@@ -5,6 +5,7 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparing;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -67,6 +68,7 @@ import uk.gov.justice.listing.events.AllocatedHearingExtendedForListing;
 import uk.gov.justice.listing.events.AllocatedHearingExtendedForListingV2;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListingV2;
+import uk.gov.justice.listing.events.ApplicantRespondent;
 import uk.gov.justice.listing.events.ApplicationEjected;
 import uk.gov.justice.listing.events.CaseEjected;
 import uk.gov.justice.listing.events.CaseIdentifier;
@@ -1688,12 +1690,51 @@ public class Hearing implements Aggregate {
         }
 
         if (!isHearingInThePast()) {
-            return apply(Stream.of(CourtApplicationUpdatedForHearing.courtApplicationUpdatedForHearing()
+            final ApplicantRespondent previousSubject = getCourtApplicationSubject(courtApplication.getId());
+            final Stream<Object> courtApplicationUpdatedEvents = apply(Stream.of(CourtApplicationUpdatedForHearing.courtApplicationUpdatedForHearing()
                     .withHearingId(hearingId)
                     .withCourtApplication(NewDomainToEventConverter.buildCourtApplications(courtApplication))
                     .build()));
+            return concat(courtApplicationUpdatedEvents, emitYouthCourtListRestrictionForNewUnder18Subject(courtApplication.getId(), previousSubject));
         }
         return Stream.empty();
+    }
+
+    private Stream<Object> emitYouthCourtListRestrictionForNewUnder18Subject(final UUID courtApplicationId,
+                                                                            final ApplicantRespondent previousSubject) {
+        if (!canAllocate() && !isAllocated()) {
+            return Stream.empty();
+        }
+        final LocalDate effectiveHearingDate = getEffectiveHearingDate();
+        final ApplicantRespondent subject = getCourtApplicationSubject(courtApplicationId);
+        if (isNull(subject) || isNull(subject.getId()) || !isUnder18OnHearingDate(subject.getDateOfBirth(), effectiveHearingDate)) {
+            return Stream.empty();
+        }
+        final boolean alreadyUnder18Subject = nonNull(previousSubject) && subject.getId().equals(previousSubject.getId())
+                && isUnder18OnHearingDate(previousSubject.getDateOfBirth(), effectiveHearingDate);
+        if (alreadyUnder18Subject) {
+            return Stream.empty();
+        }
+
+        LOGGER.info("Auto-restricting under-18 subject from court list for hearing {} on court application update", this.hearingId);
+
+        return apply(Stream.of(CourtListRestricted.courtListRestricted()
+                .withHearingId(this.hearingId)
+                .withRestrictCourtList(true)
+                .withCourtApplicationSubjectIds(singletonList(subject.getId()))
+                .build()));
+    }
+
+    private ApplicantRespondent getCourtApplicationSubject(final UUID courtApplicationId) {
+        if (isNull(this.currentHearingEventState) || isNull(this.currentHearingEventState.getCourtApplications())) {
+            return null;
+        }
+        return this.currentHearingEventState.getCourtApplications().stream()
+                .filter(courtApplication -> courtApplicationId.equals(courtApplication.getId()))
+                .map(uk.gov.justice.listing.events.CourtApplication::getSubject)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 
     public Stream<Object> addDefendantsForCourtProceedings(final UUID caseId, final List<uk.gov.moj.cpp.listing.domain.Defendant> defendants) {
@@ -1782,7 +1823,7 @@ public class Hearing implements Aggregate {
                 .filter(courtApplication -> nonNull(courtApplication.getSubject()))
                 .map(uk.gov.justice.listing.events.CourtApplication::getSubject)
                 .filter(subject -> nonNull(subject.getMasterDefendantId()) && masterDefendantIds.contains(subject.getMasterDefendantId()))
-                .map(uk.gov.justice.listing.events.ApplicantRespondent::getId)
+                .map(ApplicantRespondent::getId)
                 .collect(toList());
     }
 
@@ -1794,7 +1835,7 @@ public class Hearing implements Aggregate {
                 .filter(courtApplication -> nonNull(courtApplication.getApplicant()))
                 .map(uk.gov.justice.listing.events.CourtApplication::getApplicant)
                 .filter(applicant -> nonNull(applicant.getMasterDefendantId()) && masterDefendantIds.contains(applicant.getMasterDefendantId()))
-                .map(uk.gov.justice.listing.events.ApplicantRespondent::getId)
+                .map(ApplicantRespondent::getId)
                 .collect(toList());
     }
 
@@ -1806,7 +1847,7 @@ public class Hearing implements Aggregate {
                 .filter(courtApplication -> nonNull(courtApplication.getRespondents()))
                 .flatMap(courtApplication -> courtApplication.getRespondents().stream())
                 .filter(respondent -> nonNull(respondent.getMasterDefendantId()) && masterDefendantIds.contains(respondent.getMasterDefendantId()))
-                .map(uk.gov.justice.listing.events.ApplicantRespondent::getId)
+                .map(ApplicantRespondent::getId)
                 .collect(toList());
     }
 
@@ -2143,7 +2184,7 @@ public class Hearing implements Aggregate {
                 .filter(subject -> nonNull(subject.getId()))
                 .filter(subject -> isUnder18OnHearingDate(subject.getDateOfBirth(), effectiveHearingDate))
                 .filter(subject -> !toBoolean(subject.getRestrictFromCourtList()))
-                .map(uk.gov.justice.listing.events.ApplicantRespondent::getId)
+                .map(ApplicantRespondent::getId)
                 .collect(toList());
     }
 
