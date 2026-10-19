@@ -4830,30 +4830,61 @@ class HearingAggregateTest {
     }
 
     @Test
-    void shouldEmitCourtListRestrictedForUnder18DefendantWhenCaseRemovedFromGroupCases() {
+    void shouldEmitCourtListRestrictedForUnder18DefendantsOfCaseRemovedFromGroupCases() {
         final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
-        final UUID caseId = randomUUID();
+        givenAllocatedHearingWithAdultDefendant(hearingStartDate);
         final UUID under18DefendantId = randomUUID();
-        givenAllocatedHearingWithDefendant(hearingStartDate, caseId, under18DefendantId, hearingStartDate.minusYears(16).toString());
+        final ListedCase removedCase = domainListedCase(randomUUID(),
+                domainDefendant(under18DefendantId, hearingStartDate.minusYears(16).toString()),
+                domainDefendant(randomUUID(), hearingStartDate.minusYears(40).toString()));
 
-        final List<Object> resultEvents = hearing.removeCaseFromGroupCases(hearingId, randomUUID(), domainListedCase(caseId), null)
+        final List<Object> resultEvents = hearing.removeCaseFromGroupCases(hearingId, randomUUID(), removedCase, null)
                 .collect(Collectors.toList());
 
         assertThat(resultEvents, hasSize(2));
         assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CaseRemovedFromGroupCases.class));
         assertThat(resultEvents.get(1), CoreMatchers.instanceOf(CourtListRestricted.class));
         final CourtListRestricted courtListRestricted = (CourtListRestricted) resultEvents.get(1);
+        assertThat(courtListRestricted.getHearingId(), is(hearingId));
         assertThat(courtListRestricted.getRestrictCourtList(), is(true));
+        assertThat(courtListRestricted.getDefendantIds(), hasSize(1));
         assertThat(courtListRestricted.getDefendantIds(), hasItem(under18DefendantId));
+        assertThat(courtListRestricted.getCaseIds(), is(nullValue()));
     }
 
     @Test
-    void shouldNotEmitCourtListRestrictedWhenAdultCaseRemovedFromGroupCases() {
+    void shouldOnlyRestrictDefendantsOfCaseRemovedFromGroupCasesNotOtherUnder18DefendantsInHearing() {
         final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
-        final UUID caseId = randomUUID();
-        givenAllocatedHearingWithDefendant(hearingStartDate, caseId, randomUUID(), hearingStartDate.minusYears(40).toString());
+        givenAllocatedHearingWithDefendant(hearingStartDate, randomUUID(), randomUUID(), hearingStartDate.minusYears(16).toString());
+        final ListedCase adultRemovedCase = domainListedCase(randomUUID(),
+                domainDefendant(randomUUID(), hearingStartDate.minusYears(40).toString()));
 
-        final List<Object> resultEvents = hearing.removeCaseFromGroupCases(hearingId, randomUUID(), domainListedCase(caseId), null)
+        final List<Object> resultEvents = hearing.removeCaseFromGroupCases(hearingId, randomUUID(), adultRemovedCase, null)
+                .collect(Collectors.toList());
+
+        assertThat(resultEvents, hasSize(1));
+        assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CaseRemovedFromGroupCases.class));
+    }
+
+    @Test
+    void shouldNotEmitCourtListRestrictedForCaseRemovedFromGroupCasesWhenHearingCannotBeAllocated() {
+        final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
+        // no court room, so the hearing can't be allocated yet - the allocation path restricts the defendant later
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withStartDate(hearingStartDate)
+                        .withEndDate(hearingStartDate.plusDays(1))
+                        .build())
+                .build());
+        final ListedCase removedCase = domainListedCase(randomUUID(),
+                domainDefendant(randomUUID(), hearingStartDate.minusYears(16).toString()));
+
+        final List<Object> resultEvents = hearing.removeCaseFromGroupCases(hearingId, randomUUID(), removedCase, null)
                 .collect(Collectors.toList());
 
         assertThat(resultEvents, hasSize(1));
@@ -4881,7 +4912,7 @@ class HearingAggregateTest {
                 .build();
     }
 
-    private ListedCase domainListedCase(final UUID caseId) {
+    private ListedCase domainListedCase(final UUID caseId, final uk.gov.moj.cpp.listing.domain.Defendant... defendants) {
         return ListedCase.listedCase()
                 .withId(caseId)
                 .withCaseIdentifier(uk.gov.moj.cpp.listing.domain.CaseIdentifier.caseIdentifier()
@@ -4889,11 +4920,19 @@ class HearingAggregateTest {
                         .withAuthorityId(randomUUID())
                         .withCaseReference(STRING.next())
                         .build())
-                .withDefendants(emptyList())
+                .withDefendants(Arrays.asList(defendants))
                 .withIsCivil(Optional.empty())
                 .withGroupId(Optional.of(randomUUID()))
                 .withIsGroupMember(Optional.of(false))
                 .withIsGroupMaster(Optional.of(false))
+                .build();
+    }
+
+    private uk.gov.moj.cpp.listing.domain.Defendant domainDefendant(final UUID defendantId, final String dateOfBirth) {
+        return uk.gov.moj.cpp.listing.domain.Defendant.defendant()
+                .withId(defendantId)
+                .withDateOfBirth(Optional.of(dateOfBirth))
+                .withOffences(emptyList())
                 .build();
     }
 

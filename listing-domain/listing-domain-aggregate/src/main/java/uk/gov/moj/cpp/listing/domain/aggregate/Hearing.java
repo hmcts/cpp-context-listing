@@ -3970,14 +3970,39 @@ public class Hearing implements Aggregate {
     public Stream<Object> removeCaseFromGroupCases(final UUID hearingId, final UUID groupId,
                                                    final ListedCase removedCase,
                                                    final ListedCase newGroupMaster) {
+        final uk.gov.justice.listing.events.ListedCase removedListedCase = NewDomainToEventConverter.buildListedCase(removedCase);
         final Stream<Object> caseRemovedEvents = apply(Stream.of(CaseRemovedFromGroupCases.caseRemovedFromGroupCases()
                 .withHearingId(hearingId)
                 .withGroupId(groupId)
-                .withRemovedCase(NewDomainToEventConverter.buildListedCase(removedCase))
+                .withRemovedCase(removedListedCase)
                 .withNewGroupMaster(nonNull(newGroupMaster) ? NewDomainToEventConverter.buildListedCase(newGroupMaster) : null)
                 .build()));
-        // a case leaving the group is listed on its own again, so any under-18 defendant on it must be restricted
-        return concat(caseRemovedEvents, emitYouthCourtListRestrictions());
+        return concat(caseRemovedEvents, emitYouthCourtListRestrictionsForRemovedCase(hearingId, removedListedCase));
+    }
+
+    // The removed case is listed on its own again, rebuilt from progression with every restriction flag false,
+    // so restrict its under-18 defendants - gated like every other youth path, after which allocation does it
+    private Stream<Object> emitYouthCourtListRestrictionsForRemovedCase(final UUID hearingId, final uk.gov.justice.listing.events.ListedCase removedCase) {
+        if ((!canAllocate() && !isAllocated()) || isNull(removedCase.getDefendants())) {
+            return Stream.empty();
+        }
+        final LocalDate effectiveHearingDate = getEffectiveHearingDate();
+        final List<UUID> under18DefendantIds = removedCase.getDefendants().stream()
+                .filter(defendant -> isUnder18OnHearingDate(defendant.getDateOfBirth(), effectiveHearingDate))
+                .map(uk.gov.justice.listing.events.Defendant::getId)
+                .collect(toList());
+        if (under18DefendantIds.isEmpty()) {
+            return Stream.empty();
+        }
+
+        LOGGER.info("Auto-restricting {} under-18 defendant(s) of case {} removed from group cases for hearing {}",
+                under18DefendantIds.size(), removedCase.getId(), hearingId);
+
+        return apply(Stream.of(CourtListRestricted.courtListRestricted()
+                .withHearingId(hearingId)
+                .withRestrictCourtList(true)
+                .withDefendantIds(under18DefendantIds)
+                .build()));
     }
 
     private void onCaseRemovedFromGroupCases(final CaseRemovedFromGroupCases caseRemovedFromGroupCases) {

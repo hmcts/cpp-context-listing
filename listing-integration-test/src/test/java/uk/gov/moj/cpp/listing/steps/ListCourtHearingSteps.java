@@ -176,6 +176,7 @@ public class ListCourtHearingSteps extends AbstractIT {
     private static final String PUBLIC_LISTING_HEARING_LISTED = "public.listing.hearing-listed";
     private static final String PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED = "public.listing.hearing-partially-updated";
     private static final String PUBLIC_LISTING_HEARING_CHANGES_SAVED = "public.listing.hearing-changes-saved";
+    private static final String DEFAULT_GROUP_CASE_DEFENDANT_DATE_OF_BIRTH = "2000-07-02";
     private static final String PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING = "public.listing.court-application-added-for-hearing";
     private static final String LISTING_EVENTS_HEARING_DAY_COURT_SCHEDULE_UPDATED = "listing.events.hearing-day-court-schedule-updated";
     static final String CROWN_COURT_SCHEDULE_ID = "8e837de0-743a-4a2c-9db3-b2e678c48729";
@@ -2631,6 +2632,14 @@ public class ListCourtHearingSteps extends AbstractIT {
     public JsonObject preparePayloadCaseRemovedFromGroupCases(final String fileName, final String casesFileName,
                                                               final UUID groupId, final UUID masterCaseId,
                                                               final UUID removedCaseId, final UUID newGroupMasterCaseId) throws IOException {
+        return preparePayloadCaseRemovedFromGroupCases(fileName, casesFileName, groupId, masterCaseId, removedCaseId, newGroupMasterCaseId,
+                randomUUID(), DEFAULT_GROUP_CASE_DEFENDANT_DATE_OF_BIRTH);
+    }
+
+    public JsonObject preparePayloadCaseRemovedFromGroupCases(final String fileName, final String casesFileName,
+                                                              final UUID groupId, final UUID masterCaseId,
+                                                              final UUID removedCaseId, final UUID newGroupMasterCaseId,
+                                                              final UUID removedCaseDefendantId, final String removedCaseDefendantDateOfBirth) throws IOException {
 
         String eventPayloadString = getStringFromResource(fileName)
                 .replaceAll("GROUP_ID", groupId.toString())
@@ -2639,7 +2648,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         String casePayloadString = getStringFromResource(casesFileName);
         StringBuilder newGroupMasterCaseBuilder = new StringBuilder();
 
-        final String removedCaseBuilder = getGroupCase(casePayloadString, groupId, removedCaseId, randomUUID(), true, false, false);
+        final String removedCaseBuilder = getGroupCase(casePayloadString, groupId, removedCaseId, removedCaseDefendantId, removedCaseDefendantDateOfBirth, true, false, false);
         newGroupMasterCaseBuilder.append(getGroupCase(casePayloadString, groupId, newGroupMasterCaseId, randomUUID(), true, true, true));
 
         eventPayloadString = eventPayloadString.replace("REMOVED_CASE", removedCaseBuilder);
@@ -2650,7 +2659,13 @@ public class ListCourtHearingSteps extends AbstractIT {
 
     private String getGroupCase(final String caseString, final UUID groupId, final UUID caseId, final UUID defendantId,
                                 final Boolean isCivil, final Boolean isGroupMember, final Boolean isGroupMaster) {
+        return getGroupCase(caseString, groupId, caseId, defendantId, DEFAULT_GROUP_CASE_DEFENDANT_DATE_OF_BIRTH, isCivil, isGroupMember, isGroupMaster);
+    }
+
+    private String getGroupCase(final String caseString, final UUID groupId, final UUID caseId, final UUID defendantId, final String defendantDateOfBirth,
+                                final Boolean isCivil, final Boolean isGroupMember, final Boolean isGroupMaster) {
         String newCase = caseString;
+        newCase = newCase.replaceAll("DATE_OF_BIRTH", defendantDateOfBirth);
         newCase = newCase.replaceAll("CASE_ID", caseId.toString());
         newCase = newCase.replaceAll("IS_CIVIL", isCivil.toString());
         newCase = newCase.replaceAll("IS_GROUP_MEMBER", isGroupMember.toString());

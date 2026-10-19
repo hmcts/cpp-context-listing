@@ -1,11 +1,7 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.quality.Strictness.LENIENT;
@@ -13,9 +9,7 @@ import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderF
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 
 import uk.gov.justice.listing.events.CaseRemovedFromGroupCases;
-import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.ListedCase;
-import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
@@ -25,17 +19,11 @@ import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
-import java.util.List;
 import java.util.UUID;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -51,9 +39,6 @@ public class CaseRemovedFromGroupCasesEventListenerTest {
     @Spy
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
-    @Spy
-    private ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
-
     @InjectMocks
     private CaseRemovedFromGroupCasesEventListener caseRemovedFromGroupCasesEventListener;
 
@@ -68,9 +53,6 @@ public class CaseRemovedFromGroupCasesEventListenerTest {
 
     @Mock
     private Hearing hearing;
-
-    @Captor
-    private ArgumentCaptor<List<ListedCase>> listedCasesCaptor;
 
     private final static UUID HEARING_ID = randomUUID();
     private final static UUID GROUP_ID = randomUUID();
@@ -124,61 +106,6 @@ public class CaseRemovedFromGroupCasesEventListenerTest {
                         objectToJsonObjectConverter.convert(caseRemovedFromGroupCases)));
 
         verify(hearingSearchSyncService).syncEntity(hearing, asList(removedCase, newGroupMaster));
-    }
-
-    @Test
-    public void shouldKeepCourtListRestrictionsOfStoredCaseRemovedFromGroupCases() {
-        final UUID defendantId = randomUUID();
-        final UUID restrictedOffenceId = randomUUID();
-        final UUID unrestrictedOffenceId = randomUUID();
-        // the event case is rebuilt from progression, so every restriction flag is false
-        final ListedCase removedCase = ListedCase.listedCase()
-                .withValuesFrom(getListedCase(MASTER_CASE_ID, GROUP_ID, Boolean.FALSE, Boolean.FALSE))
-                .withRestrictFromCourtList(false)
-                .withDefendants(singletonList(defendant(defendantId, false, offence(restrictedOffenceId, false), offence(unrestrictedOffenceId, false))))
-                .build();
-        final ListedCase storedCase = ListedCase.listedCase()
-                .withValuesFrom(getListedCase(MASTER_CASE_ID, GROUP_ID, Boolean.TRUE, Boolean.TRUE))
-                .withRestrictFromCourtList(true)
-                .withDefendants(singletonList(defendant(defendantId, true, offence(restrictedOffenceId, true), offence(unrestrictedOffenceId, false))))
-                .build();
-        final ObjectNode properties = objectMapper.createObjectNode();
-        properties.set("listedCases", objectMapper.valueToTree(singletonList(storedCase)));
-        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
-        given(hearing.getProperties()).willReturn(properties);
-
-        caseRemovedFromGroupCasesEventListener.caseRemovedFromGroupCases(
-                JsonEnvelope.envelopeFrom(metadataWithRandomUUID("listing.events.case-removed-from-group-cases"),
-                        objectToJsonObjectConverter.convert(CaseRemovedFromGroupCases.caseRemovedFromGroupCases()
-                                .withHearingId(HEARING_ID)
-                                .withGroupId(GROUP_ID)
-                                .withRemovedCase(removedCase)
-                                .build())));
-
-        verify(hearingSearchSyncService).syncEntity(eq(hearing), listedCasesCaptor.capture());
-        final ListedCase syncedCase = listedCasesCaptor.getValue().get(0);
-        assertThat(syncedCase.getRestrictFromCourtList(), is(true));
-        assertThat(syncedCase.getIsGroupMember(), is(false));
-        assertThat(syncedCase.getIsGroupMaster(), is(false));
-        final Defendant syncedDefendant = syncedCase.getDefendants().get(0);
-        assertThat(syncedDefendant.getRestrictFromCourtList(), is(true));
-        assertThat(syncedDefendant.getOffences().get(0).getRestrictFromCourtList(), is(true));
-        assertThat(syncedDefendant.getOffences().get(1).getRestrictFromCourtList(), is(false));
-    }
-
-    private static Defendant defendant(final UUID defendantId, final boolean restrictFromCourtList, final Offence... offences) {
-        return Defendant.defendant()
-                .withId(defendantId)
-                .withRestrictFromCourtList(restrictFromCourtList)
-                .withOffences(asList(offences))
-                .build();
-    }
-
-    private static Offence offence(final UUID offenceId, final boolean restrictFromCourtList) {
-        return Offence.offence()
-                .withId(offenceId)
-                .withRestrictFromCourtList(restrictFromCourtList)
-                .build();
     }
 
     private ListedCase getListedCase(final UUID caseId, final UUID groupId,

@@ -76,7 +76,7 @@
             "address5": "AMDMzQMy1k",
             "postcode": "CR1 4BX"
           },
-          "dateOfBirth": "2000-07-02",
+          "dateOfBirth": "DATE_OF_BIRTH",
           "ethnicity": {
             "observedEthnicityDescription": "QY84TAVRYH",
             "observedEthnicityId": "62766d09-ba25-4858-a8c7-848867517392"

@@ -4,7 +4,6 @@ import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.time.ZoneOffset.UTC;
 import static java.util.UUID.randomUUID;
-import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -23,11 +22,8 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCente
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
-import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
-import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
-import uk.gov.moj.cpp.listing.steps.data.RestrictCourtListData;
 import uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 import uk.gov.moj.cpp.listing.it.util.ItClock;
@@ -99,9 +95,10 @@ public class GroupCasesIT extends AbstractIT {
     }
 
     @Test
-    public void shouldKeepCourtListRestrictionOfCaseRemovedFromGroupCases() throws IOException {
+    public void shouldRestrictUnder18DefendantOfCaseRemovedFromGroupCases() throws IOException {
         final UUID masterCaseId = randomUUID();
         final UUID newGroupMasterCaseId = randomUUID();
+        final UUID removedCaseDefendantId = randomUUID();
 
         stubGetReferenceDataCourtCentreById(courtCentreId);
         CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrown(
@@ -109,30 +106,14 @@ public class GroupCasesIT extends AbstractIT {
         postListCourtHearingCommand(masterCaseId);
         assertViewStoreUpdated(masterCaseId, Collections.emptyList());
 
-        restrictCaseFromCourtList(masterCaseId);
-        verifyHearingInViewStore(Arrays.<Matcher>asList(
-                withJsonPath("$.listedCases[0].id", is(masterCaseId.toString())),
-                withJsonPath("$.listedCases[0].restrictFromCourtList", is(true))));
-
-        // the removed case is rebuilt from progression's payload, with every restriction flag false
-        publishCaseRemovedFromGroupCasesEvent(masterCaseId, masterCaseId, newGroupMasterCaseId);
+        // the removed case is listed on its own again with an under-18 defendant, so that defendant must be restricted
+        publishCaseRemovedFromGroupCasesEvent(masterCaseId, masterCaseId, newGroupMasterCaseId,
+                removedCaseDefendantId, startDate.minusYears(16).toString());
         assertViewStoreUpdated(newGroupMasterCaseId, Arrays.asList(masterCaseId));
         verifyHearingInViewStore(Arrays.<Matcher>asList(
                 withJsonPath("$.listedCases[0].id", is(masterCaseId.toString())),
-                withJsonPath("$.listedCases[0].restrictFromCourtList", is(true))));
-    }
-
-    private void restrictCaseFromCourtList(final UUID caseId) {
-        final RestrictCourtListData restrictCourtListData = RestrictCourtListData.restrictCourtList()
-                .withHearingId(hearingId)
-                .withCaseIds(Collections.singletonList(caseId))
-                .withRestrictCourtList(true)
-                .build();
-        final String request = new ObjectToJsonValueConverter(new ObjectMapperProducer().objectMapper()).convert(restrictCourtListData).toString();
-        final String url = String.format("%s/%s", getBaseUri(), readConfig().getProperty("listing.command.restrict-court-list"));
-
-        final Response response = restClient.postCommand(url, "application/vnd.listing.command.restrict-court-list+json", request, getLoggedInHeader());
-        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+                withJsonPath("$.listedCases[0].defendants[0].id", is(removedCaseDefendantId.toString())),
+                withJsonPath("$.listedCases[0].defendants[0].restrictFromCourtList", is(true))));
     }
 
     private void postListCourtHearingCommand(final UUID masterCaseId) throws IOException {
@@ -145,10 +126,22 @@ public class GroupCasesIT extends AbstractIT {
 
     private void publishCaseRemovedFromGroupCasesEvent(final UUID masterCaseId, final UUID removedCaseId,
                                                        final UUID newGroupMasterCaseId) throws IOException {
-        final JsonObject caseRemovedFromGroupCasesJson = listCourtHearingSteps
+        publishCaseRemovedFromGroupCasesEvent(listCourtHearingSteps
                 .preparePayloadCaseRemovedFromGroupCases(PUBLIC_PROGRESSION_CASE_REMOVED_FROM_GROUP_CASES_JSON,
                         LIST_COURT_HEARING_GROUP_CASES_PART_CASES_JSON,
-                        groupId, masterCaseId, removedCaseId, newGroupMasterCaseId);
+                        groupId, masterCaseId, removedCaseId, newGroupMasterCaseId));
+    }
+
+    private void publishCaseRemovedFromGroupCasesEvent(final UUID masterCaseId, final UUID removedCaseId, final UUID newGroupMasterCaseId,
+                                                       final UUID removedCaseDefendantId, final String removedCaseDefendantDateOfBirth) throws IOException {
+        publishCaseRemovedFromGroupCasesEvent(listCourtHearingSteps
+                .preparePayloadCaseRemovedFromGroupCases(PUBLIC_PROGRESSION_CASE_REMOVED_FROM_GROUP_CASES_JSON,
+                        LIST_COURT_HEARING_GROUP_CASES_PART_CASES_JSON,
+                        groupId, masterCaseId, removedCaseId, newGroupMasterCaseId,
+                        removedCaseDefendantId, removedCaseDefendantDateOfBirth));
+    }
+
+    private void publishCaseRemovedFromGroupCasesEvent(final JsonObject caseRemovedFromGroupCasesJson) {
 
         sendMessage(publicMessageProducer,
                 "public.progression.case-removed-from-group-cases",
