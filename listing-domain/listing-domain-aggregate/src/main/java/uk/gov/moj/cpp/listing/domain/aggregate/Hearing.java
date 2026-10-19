@@ -3542,12 +3542,13 @@ public class Hearing implements Aggregate {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
-        return apply(Stream.of(AddedCasesForHearing.addedCasesForHearing()
+        final Stream<Object> addedCasesEvents = apply(Stream.of(AddedCasesForHearing.addedCasesForHearing()
                 .withUnAllocatedListedCases(prosecutionCases.stream()
                         .map(prosecutionCase -> buildListedCase(prosecutionCase, shadowListedOffences))
                         .collect(Collectors.toList()))
                 .withHearingId(hearingId)
                 .build()));
+        return concat(addedCasesEvents, emitYouthCourtListRestrictions());
     }
 
     public Stream<Object> raiseHearingDaysWithoutCourtCentreCorrected(final UUID hearingId, final List<uk.gov.justice.listing.events.HearingDay> hearingDays) {
@@ -3969,12 +3970,14 @@ public class Hearing implements Aggregate {
     public Stream<Object> removeCaseFromGroupCases(final UUID hearingId, final UUID groupId,
                                                    final ListedCase removedCase,
                                                    final ListedCase newGroupMaster) {
-        return apply(Stream.of(CaseRemovedFromGroupCases.caseRemovedFromGroupCases()
+        final Stream<Object> caseRemovedEvents = apply(Stream.of(CaseRemovedFromGroupCases.caseRemovedFromGroupCases()
                 .withHearingId(hearingId)
                 .withGroupId(groupId)
                 .withRemovedCase(NewDomainToEventConverter.buildListedCase(removedCase))
                 .withNewGroupMaster(nonNull(newGroupMaster) ? NewDomainToEventConverter.buildListedCase(newGroupMaster) : null)
                 .build()));
+        // a case leaving the group is listed on its own again, so any under-18 defendant on it must be restricted
+        return concat(caseRemovedEvents, emitYouthCourtListRestrictions());
     }
 
     private void onCaseRemovedFromGroupCases(final CaseRemovedFromGroupCases caseRemovedFromGroupCases) {

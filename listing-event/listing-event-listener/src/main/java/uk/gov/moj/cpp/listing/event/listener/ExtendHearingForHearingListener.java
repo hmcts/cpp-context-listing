@@ -302,12 +302,29 @@ public class ExtendHearingForHearingListener {
         dbListedCases.stream().filter(dbListedCase -> dbListedCase.getId().equals(listedCase.getId())).forEach(dbListedCase ->
                 dbListedCase.getDefendants().stream().filter(dbListedDefendant -> dbListedDefendant.getId().equals(defendant.getId())).forEach(dbListedDefendant ->
                         defendant.getOffences().forEach(defendantOffence -> {
-                                    final Offence latestVersionOfOffence = offenceComparator.getLatestVersionOfOffence(defendantOffence, dbListedDefendant.getOffences());
+                                    final Offence latestVersionOfOffence = keepOffenceRestriction(
+                                            offenceComparator.getLatestVersionOfOffence(defendantOffence, dbListedDefendant.getOffences()),
+                                            dbListedDefendant.getOffences());
                                     dbListedDefendant.getOffences().removeIf(dbOffence -> dbOffence.getId().equals(defendantOffence.getId()));
                                     dbListedDefendant.getOffences().add(latestVersionOfOffence);
                                 }
                         ))
         );
+    }
+
+    // An incoming offence always carries restrictFromCourtList as false, so keep a court list
+    // restriction already applied to the stored offence when the incoming version replaces it
+    private Offence keepOffenceRestriction(final Offence latestVersionOfOffence, final List<Offence> dbOffences) {
+        final boolean storedOffenceRestricted = dbOffences.stream()
+                .filter(dbOffence -> dbOffence.getId().equals(latestVersionOfOffence.getId()))
+                .anyMatch(dbOffence -> Boolean.TRUE.equals(dbOffence.getRestrictFromCourtList()));
+        if (!storedOffenceRestricted || Boolean.TRUE.equals(latestVersionOfOffence.getRestrictFromCourtList())) {
+            return latestVersionOfOffence;
+        }
+        return Offence.offence()
+                .withValuesFrom(latestVersionOfOffence)
+                .withRestrictFromCourtList(true)
+                .build();
     }
 
     private void addDefendants(final List<ListedCase> dbListedCases, final ListedCase listedCase, final Defendant defendant) {

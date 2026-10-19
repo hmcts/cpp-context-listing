@@ -26,8 +26,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -113,6 +116,61 @@ public class ExtendHearingForHearingListenerTest {
         extendHearingForHearingListener.hearingAddedCasesForHearing(envelope);
         verify(properties).replace(any(), objectNodeCaptor.capture());
         verify(hearingRepository).save(any(uk.gov.moj.cpp.listing.persistence.entity.Hearing.class));
+    }
+
+    @Test
+    public void shouldKeepOffenceRestrictionWhenCaseIsAddedAgainForHearing() throws IOException {
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID restrictedOffenceId = randomUUID();
+        final UUID unrestrictedOffenceId = randomUUID();
+        final Envelope<AddedCasesForHearing> envelope = (Envelope<AddedCasesForHearing>) mock(Envelope.class);
+
+        // the incoming offences always carry restrictFromCourtList as false and win on an equal listing number
+        given(envelope.payload()).willReturn(AddedCasesForHearing.addedCasesForHearing()
+                .withHearingId(randomUUID())
+                .withUnAllocatedListedCases(new ArrayList<>(singletonList(listedCaseWithOffences(caseId, defendantId,
+                        offence(restrictedOffenceId, false), offence(unrestrictedOffenceId, false)))))
+                .build());
+        final JsonNode storedCases = new ObjectMapper().readTree(mapper.writeValueAsString(singletonList(listedCaseWithOffences(caseId, defendantId,
+                offence(restrictedOffenceId, true), offence(unrestrictedOffenceId, false)))));
+        given(hearingRepository.findBy(any((UUID.class)))).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES_FIELD)).willReturn(storedCases);
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor = ArgumentCaptor.forClass(ArrayNode.class);
+
+        extendHearingForHearingListener.hearingAddedCasesForHearing(envelope);
+
+        verify(properties).replace(any(), objectNodeCaptor.capture());
+        final JsonNode offences = objectNodeCaptor.getValue().get(0).get("defendants").get(0).get("offences");
+        assertThat(restrictFromCourtListOf(offences, restrictedOffenceId), is(true));
+        assertThat(restrictFromCourtListOf(offences, unrestrictedOffenceId), is(false));
+    }
+
+    private static boolean restrictFromCourtListOf(final JsonNode offences, final UUID offenceId) {
+        for (final JsonNode offence : offences) {
+            if (offenceId.toString().equals(offence.get("id").asText())) {
+                return offence.get("restrictFromCourtList").asBoolean();
+            }
+        }
+        throw new AssertionError("offence " + offenceId + " not found");
+    }
+
+    private static ListedCase listedCaseWithOffences(final UUID caseId, final UUID defendantId, final Offence... offences) {
+        return ListedCase.listedCase()
+                .withId(caseId)
+                .withDefendants(new ArrayList<>(singletonList(Defendant.defendant()
+                        .withId(defendantId)
+                        .withOffences(new ArrayList<>(asList(offences)))
+                        .build())))
+                .build();
+    }
+
+    private static Offence offence(final UUID offenceId, final boolean restrictFromCourtList) {
+        return Offence.offence()
+                .withId(offenceId)
+                .withRestrictFromCourtList(restrictFromCourtList)
+                .build();
     }
 
     @Test

@@ -1,8 +1,10 @@
 package uk.gov.moj.cpp.listing.it;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingByWeekCommencing;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataForYoungCourtApplicationRespondent;
@@ -15,6 +17,9 @@ import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearin
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithWeekCommencingDate;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
+import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoom;
 
 import uk.gov.moj.cpp.listing.steps.CourtApplicationSteps;
@@ -31,9 +36,12 @@ import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
+
+import javax.ws.rs.core.Response;
 
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
@@ -253,6 +261,43 @@ class YouthCourtListRestrictionIT extends AbstractIT {
                 withJsonPath("$.hearings[0].courtApplications[?(@.id == '" + courtApplicationId + "')].subject.id", hasItem(subjectId.toString())),
                 withJsonPath("$.hearings[0].courtApplications[?(@.id == '" + courtApplicationId + "')].subject.restrictFromCourtList", hasItem(true)),
                 withJsonPath("$.hearings[0].courtApplications[?(@.id == '" + courtApplicationId + "')].applicant.restrictFromCourtList", hasItem(false))
+        });
+    }
+
+    @Test
+    void shouldRestrictUnder18DefendantFromCourtListWhenCaseIsAddedToAllocatedHearingByBdf() throws IOException {
+        final HearingsData hearingsData = hearingsDataWithAdultDefendants();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForAllocation(hearingData.getId());
+        stubGetReferenceDataCourtRoom(updatedHearingDataForAllocation.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingDataForAllocation.getCourtRoomId());
+
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        stubGetAvailableHearingSlotsWithQueryParams(updateHearingSteps.getUpdatedHearingData());
+        stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
+        updateHearingSteps.whenHearingIsUpdatedForListing();
+        updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
+
+        final UUID caseId = UUID.randomUUID();
+        final UUID defendantId = UUID.randomUUID();
+        final String under18DateOfBirth = ItClock.today().minusYears(16).toString();
+        final String payload = getPayload("listing.update-hearing-add-case-bdf.json")
+                .replace("CASE_ID", caseId.toString())
+                .replace("DEFENDANT_ID", defendantId.toString())
+                .replace("OFFENCE_ID", UUID.randomUUID().toString())
+                .replace("DATE_OF_BIRTH", under18DateOfBirth);
+        final String url = String.format("%s/%s", getBaseUri(),
+                MessageFormat.format(readConfig().getProperty("listing.update-hearing-add-case-bdf"), hearingData.getId()));
+        final Response response = restClient.postCommand(url, "application/vnd.listing.update-hearing-add-case-bdf+json", payload, getLoggedInHeader());
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+
+        pollForHearing(updatedHearingDataForAllocation.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[0].id", equalTo(hearingData.getId().toString())),
+                withJsonPath("$.hearings[0].listedCases[?(@.id == '" + caseId + "')].defendants[0].id", hasItem(defendantId.toString())),
+                withJsonPath("$.hearings[0].listedCases[?(@.id == '" + caseId + "')].defendants[0].restrictFromCourtList", hasItem(true))
         });
     }
 
