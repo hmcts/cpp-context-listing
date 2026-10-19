@@ -1622,18 +1622,25 @@ public class CourtSchedulerServiceStub {
     }
 
     /**
-     * Stub a successful move-hearing-to-past-date response carrying one or more booked past sessions.
+     * Stub a successful move-hearing-to-past-date response carrying one or more booked past sessions,
+     * for the default 10:00-17:00 UTC window that {@code MoveHearingToPastDateSteps} submits.
      * Body mirrors courtscheduler's REAL wire shape - {@code MoveHearingToPastDateResponse}:
-     * {@code {hearingId, source:"MOVE_TO_PAST_DATE", sessions:[CourtSchedule...]}} with the sessions
-     * ordered by date (first = the day the hearing now starts on). Each session mirrors courtscheduler's
-     * CourtSchedule: courtScheduleId, courtRoomId, courtHouseId, sessionDate, session start/end times
-     * - and NO per-hearing durationInMinutes (listing derives the per-day duration from the hearing's
-     * own estimatedMinutes). A flat body is NOT what courtscheduler returns.
+     * {@code {hearingId, source:"MOVE_TO_PAST_DATE", sessions:[...]}} with the sessions ordered by date
+     * (first = the day the hearing now starts on). Like courtscheduler, each session echoes the SUBMITTED
+     * start/end time-of-day as sessionStartTime/sessionEndTime and carries the window's
+     * durationInMinutes. A flat body is NOT what courtscheduler returns.
      */
     /** courtHouseId every stubbed move-to-past-date session reports (a court-schedule's centre). */
     public static final String MOVE_TO_PAST_DATE_COURT_HOUSE_ID = "2b6c0f3e-5c1a-4d0e-9a7b-0f1e2d3c4b5a";
 
     public static void stubMoveHearingToPastDate(final String hearingId, final List<MoveToPastDateStubSession> sessions) {
+        stubMoveHearingToPastDate(hearingId, sessions, LocalTime.of(10, 0), LocalTime.of(17, 0));
+    }
+
+    /** As {@link #stubMoveHearingToPastDate(String, List)} for an explicit submitted window (UTC time-of-day). */
+    public static void stubMoveHearingToPastDate(final String hearingId, final List<MoveToPastDateStubSession> sessions,
+                                                 final LocalTime submittedStart, final LocalTime submittedEnd) {
+        final long durationInMinutes = java.time.Duration.between(submittedStart, submittedEnd).toMinutes();
         final StringBuilder sessionsJson = new StringBuilder("[");
         for (int i = 0; i < sessions.size(); i++) {
             final MoveToPastDateStubSession session = sessions.get(i);
@@ -1645,8 +1652,9 @@ public class CourtSchedulerServiceStub {
                     .append("\"courtRoomId\":\"").append(session.courtRoomId()).append("\",")
                     .append("\"courtHouseId\":\"").append(MOVE_TO_PAST_DATE_COURT_HOUSE_ID).append("\",")
                     .append("\"sessionDate\":\"").append(session.sessionDate()).append("\",")
-                    .append("\"sessionStartTime\":\"").append(session.sessionDate()).append("T09:00:00.000+00:00\",")
-                    .append("\"sessionEndTime\":\"").append(session.sessionDate()).append("T17:00:00.000+00:00\",")
+                    .append("\"sessionStartTime\":\"").append(session.sessionDate()).append('T').append(submittedStart).append(":00.000Z\",")
+                    .append("\"sessionEndTime\":\"").append(session.sessionDate()).append('T').append(submittedEnd).append(":00.000Z\",")
+                    .append("\"durationInMinutes\":").append(durationInMinutes).append(',')
                     .append("\"maxDuration\":360,\"availableDuration\":0,\"isDraft\":false")
                     .append('}');
         }
