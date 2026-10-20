@@ -17,6 +17,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.10-cct-1981-r-SNAPSHOT</version>
@@ -57,6 +58,9 @@
 =======
         <version>17.104.14</version>
 >>>>>>> e62850afee (updating develop poms to master versions to avoid merge conflicts)
+=======
+        <version>17.104.14</version>
+>>>>>>> e6beaec791 (updating poms for branch'dev/release-17.104.14' with non-snapshot versions)
     </parent>
 
     <artifactId>listing-query-api</artifactId>
