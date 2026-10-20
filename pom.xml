@@ -22,6 +22,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
     <version>17.104.10-cct-1981-r-SNAPSHOT</version>
@@ -56,6 +57,9 @@
 =======
     <version>17.104.14-SNAPSHOT</version>
 >>>>>>> a26703426a (Updating develop poms back to pre merge state)
+=======
+    <version>17.104.15-SNAPSHOT</version>
+>>>>>>> 89b9f99883 (updating poms for 17.104.15-SNAPSHOT development)
     <packaging>pom</packaging>
 
     <name>Listing Context Microservice Parent</name>
