@@ -68,7 +68,7 @@ public class HearingEnrichmentOrchestrator {
                 // bookingReference — the same identity magistrates has always carried. Resolve it against
                 // courtscheduler's provisional booking endpoint and promote the resolved session onto a
                 // bookedSlot so the CourtSchedule-first flow below lists/allocates it.
-                final HearingListingNeeds crownHearing = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing);
+                final HearingListingNeeds crownHearing = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing, envelope);
                 if (hasCourtScheduleId(crownHearing) || isCrownFallbackCandidate(crownHearing)) {
                     // CROWN with courtScheduleId (bookedSlots or hearingDays): CourtSchedule-first flow
                     // expands multi-day into N hearingDays, then HearingDays computes start/end,

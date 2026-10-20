@@ -6660,6 +6660,80 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
+    void promoteCrownBookingReferenceToBookedSlot_listsAReShareAgainstTheCourtScheduleIdsCarriedOnTheCommand() {
+        // A re-share deletes the previous next hearing and frees its slots before the recreated
+        // one is listed, which erases the booking - so a Crown reference the clerk picked
+        // perfectly well no longer resolves. Progression resolved it at the earlier share and
+        // carries the sessions on the command; Crown must fall back to them, as magistrates does.
+        final UUID bookingReference = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withBookingReference(bookingReference)
+                .withEstimatedMinutes(30)
+                .withListedStartDateTime(ZonedDateTime.parse("2027-01-19T10:00:00Z"))
+                .build();
+
+        when(courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingReference.toString()))
+                .thenReturn(List.of());
+
+        final CourtSchedule cs = new CourtSchedule();
+        cs.setCourtScheduleId(courtScheduleId.toString());
+        cs.setCourtHouseId(courtHouseId.toString());
+        cs.setCourtRoomId(courtRoomId.toString());
+        cs.setSessionDate(LocalDate.parse("2027-01-19"));
+        cs.setHearingStartTime("2027-01-19T10:00:00Z");
+        cs.setOuCode("C01CY00");
+        cs.setDraft(false);
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())))
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(
+                hearing, envelopeCarrying(bookingReference, courtScheduleId));
+
+        assertThat(result.getBookedSlots().size(), is(1));
+        final RotaSlot slot = result.getBookedSlots().get(0);
+        assertThat(slot.getCourtScheduleId(), is(courtScheduleId.toString()));
+        assertThat(slot.getCourtCentreId(), is(courtHouseId.toString()));
+        assertThat(slot.getRoomId(), is(courtRoomId.toString()));
+        assertThat(slot.getDuration(), is(30));
+    }
+
+    @Test
+    void promoteCrownBookingReferenceToBookedSlot_stillThrowsWhenTheCommandCarriesNothingForThisBooking() {
+        // The fallback is the carried copy of THIS reference only. Sessions carried for another
+        // booking must not be borrowed: a genuinely lost booking still fails loudly.
+        final UUID bookingReference = UUID.randomUUID();
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withBookingReference(bookingReference)
+                .withEstimatedMinutes(30)
+                .build();
+
+        when(courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingReference.toString()))
+                .thenReturn(List.of());
+
+        final JsonEnvelope envelope = envelopeCarrying(UUID.randomUUID(), UUID.randomUUID());
+        org.junit.jupiter.api.Assertions.assertThrows(
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException.class,
+                () -> courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing, envelope));
+
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+    }
+
+    @Test
     void promoteCrownBookingReferenceToBookedSlot_noOpWhenNoBookingReference() {
         final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
                 .withId(UUID.randomUUID())

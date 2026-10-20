@@ -1347,6 +1347,16 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
      * hearingDays/bookedSlots.
      */
     public HearingListingNeeds promoteCrownBookingReferenceToBookedSlot(final HearingListingNeeds hearing) {
+        return promoteCrownBookingReferenceToBookedSlot(hearing, null);
+    }
+
+    /**
+     * As {@link #promoteCrownBookingReferenceToBookedSlot(HearingListingNeeds)}, falling back to the
+     * court schedule ids the command carries for the bookingReference when it no longer resolves -
+     * the same fallback magistrates has in {@code handleProvisionalBookingCase}, for the same re-share.
+     */
+    public HearingListingNeeds promoteCrownBookingReferenceToBookedSlot(final HearingListingNeeds hearing,
+                                                                       final JsonEnvelope envelope) {
         if (isNull(hearing.getBookingReference())
                 || anyHearingDayHasCourtScheduleId(hearing)
                 || hasBookedSlotsWithCourtScheduleId(hearing)) {
@@ -1370,10 +1380,25 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         // would put an unrelated courtScheduleId on the bookedSlot and fail later with "Missing
         // courtScheduleIds", far harder to trace than an empty result. A session that does not name
         // its booking is trusted as-is, since older responses omit the field.
-        final List<CourtSchedule> sessions = courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingReference)
+        List<CourtSchedule> sessions = courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingReference)
                 .stream()
                 .filter(session -> isBlank(session.getBookingId()) || bookingReference.equals(session.getBookingId()))
                 .toList();
+
+        // A re-share deletes the previous next hearing and frees its slots before the recreated one
+        // is listed, and freeing them removes the only rows that still tied this bookingReference to
+        // its sessions. Progression resolved the same reference at the earlier share and replays its
+        // own copy on the command; list against that rather than losing the hearing. These are ids
+        // stored for THIS reference, not the reference reinterpreted as a courtScheduleId.
+        if (isEmpty(sessions)) {
+            final List<String> carriedIds = carriedCourtScheduleIdsFor(envelope, hearing.getBookingReference());
+            if (isNotEmpty(carriedIds)) {
+                LOGGER.info("CROWN bookingReference={} no longer resolves in courtscheduler for hearingId={}; "
+                                + "listing against the {} courtScheduleId(s) carried on the command",
+                        bookingReference, hearing.getId(), carriedIds.size());
+                sessions = fetchCourtSchedulesByIds(carriedIds);
+            }
+        }
 
         if (isEmpty(sessions)) {
             LOGGER.error("{} bookingReference={} resolved to no booking for hearingId={} — the share "
