@@ -188,7 +188,7 @@ class GroupCasesIT extends AbstractIT {
         updateHearingForListingWithCourtRoom();
         final JsonPath hearingConfirmed = retrieveMessage(hearingConfirmedConsumer, containsString(hearingId.toString()));
         assertThat(hearingConfirmed.get("confirmedHearing.id"), is(hearingId.toString()));
-        // isGroupProceedings is not asserted: update-hearing-for-listing passes null for it (ListingCommandHandler), existing behaviour
+        assertThat(hearingConfirmed.get("confirmedHearing.isGroupProceedings"), is(true));
         assertThat(hearingConfirmed.get("confirmedHearing.numberOfGroupCases"), is(2));
 
         // a further update of the now allocated hearing raises AllocatedHearingUpdatedForListingV2 -> public.listing.hearing-updated
@@ -196,6 +196,20 @@ class GroupCasesIT extends AbstractIT {
         final JsonPath hearingUpdated = retrieveMessage(hearingUpdatedConsumer, containsString(hearingId.toString()));
         assertThat(hearingUpdated.get("updatedHearing.id"), is(hearingId.toString()));
         assertThat(hearingUpdated.get("updatedHearing.numberOfGroupCases"), is(2));
+    }
+
+    @Test
+    void shouldKeepGroupProceedingsOnHearingConfirmedWhenAllocatedFromUnallocated() throws IOException {
+        final JmsMessageConsumerClient hearingConfirmedConsumer = QueueUtil.publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_CONFIRMED);
+
+        listUnallocatedGroupHearingOfThree(randomUUID(), randomUUID(), randomUUID());
+
+        // allocating through update-hearing-for-listing, which does not carry isGroupProceedings
+        updateHearingForListingWithCourtRoom();
+        final JsonPath hearingConfirmed = retrieveMessage(hearingConfirmedConsumer, containsString(hearingId.toString()));
+        assertThat(hearingConfirmed.get("confirmedHearing.id"), is(hearingId.toString()));
+        assertThat(hearingConfirmed.get("confirmedHearing.isGroupProceedings"), is(true));
+        assertThat(hearingConfirmed.get("confirmedHearing.numberOfGroupCases"), is(3));
     }
 
     private void listUnallocatedGroupHearingOfThree(final UUID masterCaseId, final UUID memberCase1Id, final UUID memberCase2Id) throws IOException {
