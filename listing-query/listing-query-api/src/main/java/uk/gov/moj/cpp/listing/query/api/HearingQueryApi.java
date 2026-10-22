@@ -27,6 +27,9 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.xhibit.ReferenceDataLoader;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
+import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.pdda.PddaListService;
 import uk.gov.moj.cpp.listing.query.api.service.AlphabeticalCourtListService;
 import uk.gov.moj.cpp.listing.query.api.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.query.document.generator.JudgeListTemplateAssembler;
@@ -37,6 +40,8 @@ import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +79,7 @@ public class HearingQueryApi {
     private static final String LIST_ID = "listId";
     private static final String START_DATE = "startDate";
     private static final String END_DATE = "endDate";
+    private static final String PUBLISH_COURT_LIST_TYPE = "publishCourtListType";
     private static final String OU_L2_CODE = "oucodeL2Code";
     private static final String FIRST_NAME = "firstName";
     private static final String LAST_NAME = "lastName";
@@ -128,6 +134,9 @@ public class HearingQueryApi {
 
     @Inject
     private ProgressionService progressionService;
+
+    @Inject
+    private PddaListService pddaListService;
 
     @Inject
     private JsonObjectToObjectConverter jsonObjectToObjectConverter;
@@ -294,6 +303,29 @@ public class HearingQueryApi {
         }
 
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.daily.list.payload"), enrichedBuilder.build());
+    }
+
+    @Handles("listing.search.pdda.list.payload")
+    public JsonEnvelope getPddaList(final JsonEnvelope query) {
+        final JsonObject payload = query.payloadAsJsonObject();
+
+        final PublishCourtListRequestParameters parameters;
+        try {
+            parameters = new PublishCourtListRequestParameters(
+                    UUID.randomUUID(),
+                    UUID.fromString(payload.getString(COURT_CENTRE_ID)),
+                    LocalDate.parse(payload.getString(START_DATE)),
+                    LocalDate.parse(payload.getString(END_DATE)),
+                    PublishCourtListType.valueOf(payload.getString(PUBLISH_COURT_LIST_TYPE)),
+                    ZonedDateTime.now(),
+                    false);
+        } catch (final IllegalArgumentException | NullPointerException | DateTimeParseException ex) {
+            throw new BadRequestException("Please supply a valid courtCentreId, startDate, endDate, and publishCourtListType (DRAFT, FINAL, WARN or FIRM).", ex);
+        }
+
+        final JsonObject pddaList = pddaListService.generate(query, parameters);
+
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.pdda.list.payload"), pddaList);
     }
 
     private JsonArray enrichCourtListsWithAddress(final JsonArray courtLists, final String address1, final String address2, final String welshAddress1, final String welshAddress2, final Map<String, JsonObject> judiciariesById, final Map<String, String> prosecutorOrganisationNamesById) {

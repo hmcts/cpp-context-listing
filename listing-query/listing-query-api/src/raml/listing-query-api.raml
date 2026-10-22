@@ -283,13 +283,16 @@ protocols: [ HTTP, HTTPS ]
           application/vnd.listing.search.court.list+json:
 
 /dailylistpayload:
-  description: get exhibit daily list as JSON payload
+  description: get exhibit daily list as JSON payload. With Accept application/vnd.listing.search.pdda.list.payload+json the list is returned in the shape of the HMCTS PDDA schemas (crown_daily_pdda_list, crown_advance_pdda_list, crown_firm_pdda_list) instead. For it courtCentreId, startDate, endDate and publishCourtListType are required (the same as the Xhibit publish command, without requestedTime and sendNotificationToParties); publishCourtListType DRAFT or FINAL returns a DailyList, WARN a WarnedList (advance list) and FIRM a FirmList
   get:
     description: |
       ...
       (mapping):
           responseType: application/vnd.listing.search.daily.list.payload+json
           name: listing.search.daily.list.payload
+      (mapping):
+          responseType: application/vnd.listing.search.pdda.list.payload+json
+          name: listing.search.pdda.list.payload
       ...
     queryParameters:
         courtCentreId:
@@ -322,6 +325,9 @@ protocols: [ HTTP, HTTPS ]
           application/vnd.listing.search.daily.list.payload+json:
             example: !include json/listing.search.daily.list.payload.json
             schema: !include json/schema/listing.search.daily.list.payload.json
+          application/vnd.listing.search.pdda.list.payload+json:
+            example: !include json/listing.search.pdda.list.payload.json
+            schema: !include json/schema/listing.search.pdda.list.payload.json
 
 /courtlistpayload:
   description: get court list payload

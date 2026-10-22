@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/query/listing.search.pdda.list.payload.json",
+  "description": "One of DailyList, WarnedList or FirmList. The full structure of each is defined by the HMCTS PDDA schemas crown_daily_pdda_list.json, crown_advance_pdda_list.json and crown_firm_pdda_list.json, which the output is validated against in tests.",
+  "type": "object",
+  "properties": {
+    "DailyList":  { "type": "object" },
+    "WarnedList": { "type": "object" },
+    "FirmList":   { "type": "object" }
+  },
+  "oneOf": [
+    { "required": ["DailyList"] },
+    { "required": ["WarnedList"] },
+    { "required": ["FirmList"] }
+  ]
+}

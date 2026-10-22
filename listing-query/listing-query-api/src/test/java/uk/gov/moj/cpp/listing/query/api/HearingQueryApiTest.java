@@ -57,6 +57,9 @@ import uk.gov.moj.cpp.listing.query.api.service.AlphabeticalCourtListService;
 import uk.gov.moj.cpp.listing.query.api.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.query.api.util.FileUtil;
 import uk.gov.moj.cpp.listing.query.document.generator.JudgeListTemplateAssembler;
+import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.pdda.PddaListService;
 import uk.gov.moj.cpp.listing.query.document.generator.JudiciaryNameMapper;
 import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
@@ -65,6 +68,8 @@ import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 import java.io.File;
 import java.io.StringReader;
 import java.lang.reflect.Method;
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -148,6 +153,9 @@ public class HearingQueryApiTest {
 
     @Mock
     private JudiciaryNameMapper judiciaryNameMapper;
+
+    @Mock
+    private PddaListService pddaListService;
 
     @Captor
     private ArgumentCaptor<JsonEnvelope> requesterCaptor;
@@ -1751,6 +1759,73 @@ public class HearingQueryApiTest {
                 .getJsonArray("hearings").getJsonObject(0)
                 .getJsonArray("courtApplications").getJsonObject(0);
         assertThat(resultApplication.containsKey("applicationTypeCode"), is(false));
+    }
+
+    @Test
+    public void shouldGetPddaListUsingTheXhibitPublishCommandParameters() {
+        final String courtCentreId = randomUUID().toString();
+        final JsonEnvelope query = pddaListQuery(createObjectBuilder()
+                .add("courtCentreId", courtCentreId)
+                .add("startDate", "2026-11-02")
+                .add("endDate", "2026-11-06")
+                .add("publishCourtListType", "WARN"));
+        final JsonObject pddaList = createObjectBuilder()
+                .add("WarnedList", createObjectBuilder().add("DocumentID", createObjectBuilder().add("DocumentType", "WL")))
+                .build();
+        final ArgumentCaptor<PublishCourtListRequestParameters> parametersCaptor = ArgumentCaptor.forClass(PublishCourtListRequestParameters.class);
+        when(pddaListService.generate(eq(query), parametersCaptor.capture())).thenReturn(pddaList);
+
+        final JsonEnvelope result = hearingQueryApi.getPddaList(query);
+
+        final PublishCourtListRequestParameters parameters = parametersCaptor.getValue();
+        assertThat(parameters.getCourtCentreId(), is(fromString(courtCentreId)));
+        assertThat(parameters.getStartDate(), is(LocalDate.parse("2026-11-02")));
+        assertThat(parameters.getEndDate(), is(LocalDate.parse("2026-11-06")));
+        assertThat(parameters.getPublishCourtListType(), is(PublishCourtListType.WARN));
+        assertThat(parameters.getSendNotificationToParties(), is(false));
+        assertThat(result.metadata().name(), is("listing.search.pdda.list.payload"));
+        assertThat(result.payloadAsJsonObject(), is(pddaList));
+    }
+
+    @Test
+    public void shouldUseTheCurrentTimeAsTheRequestedTime() {
+        final JsonEnvelope query = pddaListQuery(createObjectBuilder()
+                .add("courtCentreId", randomUUID().toString())
+                .add("startDate", "2026-11-02")
+                .add("endDate", "2026-11-02")
+                .add("publishCourtListType", "FINAL"));
+        final ArgumentCaptor<PublishCourtListRequestParameters> parametersCaptor = ArgumentCaptor.forClass(PublishCourtListRequestParameters.class);
+        when(pddaListService.generate(eq(query), parametersCaptor.capture())).thenReturn(createObjectBuilder().build());
+
+        final ZonedDateTime before = ZonedDateTime.now();
+        hearingQueryApi.getPddaList(query);
+
+        assertThat(parametersCaptor.getValue().getRequestedTime().isBefore(before), is(false));
+        assertThat(parametersCaptor.getValue().getPublishCourtListType(), is(PublishCourtListType.FINAL));
+    }
+
+    @Test
+    public void shouldRejectPddaListRequestsWithInvalidParameters() {
+        final String courtCentreId = randomUUID().toString();
+        final List<JsonObjectBuilder> invalidRequests = Arrays.asList(
+                createObjectBuilder().add("startDate", "2026-11-02").add("endDate", "2026-11-02").add("publishCourtListType", "FINAL"),
+                createObjectBuilder().add("courtCentreId", "not-a-uuid").add("startDate", "2026-11-02").add("endDate", "2026-11-02").add("publishCourtListType", "FINAL"),
+                createObjectBuilder().add("courtCentreId", courtCentreId).add("startDate", "02/11/2026").add("endDate", "2026-11-02").add("publishCourtListType", "FINAL"),
+                createObjectBuilder().add("courtCentreId", courtCentreId).add("startDate", "2026-11-02").add("publishCourtListType", "FINAL"),
+                createObjectBuilder().add("courtCentreId", courtCentreId).add("startDate", "2026-11-02").add("endDate", "2026-11-02").add("publishCourtListType", "UNKNOWN"));
+
+        invalidRequests.forEach(invalid ->
+                assertThrows(BadRequestException.class, () -> hearingQueryApi.getPddaList(pddaListQuery(invalid))));
+
+        verify(pddaListService, never()).generate(any(), any());
+    }
+
+    private JsonEnvelope pddaListQuery(final JsonObjectBuilder payload) {
+        return envelopeFrom(
+                metadataBuilder()
+                        .withId(randomUUID())
+                        .withName("listing.search.pdda.list.payload"),
+                payload.build());
     }
 
     private JsonObject returnAsJsonObject(final String expectedJsonPath) {

@@ -160,11 +160,20 @@ public class UpdatedHearingData {
     }
 
     public static UpdatedHearingData updatedHearingDataForCrownAllocation(final UUID hearingId) {
-        final List<JudicialRoleData> judiciary = singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "CIRCUIT_JUDGE")));
-        return updatedHearingDataForCrownAllocationWithVirtual(hearingId, judiciary, null);
+        return updatedHearingDataForCrownAllocation(hearingId, SENTENCE_HEARING_TYPE);
     }
 
-    private static UpdatedHearingData updatedHearingDataForCrownAllocationWithVirtual(final UUID hearingId, final List<JudicialRoleData> judiciary, final Boolean virtual) {
+    /**
+     * Crown allocation that keeps the given hearing type. Tests that go through the Xhibit generation
+     * need a hearing type that the (once-loaded) hearing type reference data cache contains, which
+     * the random default type is not.
+     */
+    public static UpdatedHearingData updatedHearingDataForCrownAllocation(final UUID hearingId, final HearingTypeData hearingType) {
+        final List<JudicialRoleData> judiciary = singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), UUID.randomUUID(), new JudicialRoleTypeData(Optional.of(randomUUID()), "CIRCUIT_JUDGE")));
+        return updatedHearingDataForCrownAllocationWithVirtual(hearingId, judiciary, null, hearingType);
+    }
+
+    private static UpdatedHearingData updatedHearingDataForCrownAllocationWithVirtual(final UUID hearingId, final List<JudicialRoleData> judiciary, final Boolean virtual, final HearingTypeData hearingType) {
 
         final UUID courtCentreId = getRandomCourtCenterId();
         final UUID roomId = getRandomCourtRoomId();
@@ -183,7 +192,7 @@ public class UpdatedHearingData {
         final Boolean hasVideoLink = true;
         final String publicListNote = "publicListNote";
 
-        return new UpdatedHearingData(hearingId, courtCentreId, RandomGenerator.STRING.next(), roomId, SENTENCE_HEARING_TYPE,
+        return new UpdatedHearingData(hearingId, courtCentreId, RandomGenerator.STRING.next(), roomId, hearingType,
                 startDate.toString(), endDate, nonDefaultDays,
                 nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_CROWN, null, null, null, hasVideoLink, publicListNote, false, null, null);
     }

@@ -22,6 +22,7 @@ import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.transform.Source;
+import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
@@ -29,6 +30,8 @@ import javax.xml.validation.Validator;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
 public class XmlUtils {
@@ -66,6 +69,22 @@ public class XmlUtils {
         }
 
         return sw.toString();
+    }
+
+    /**
+     * Marshals the document into an in-memory DOM tree, with no XML text in between.
+     */
+    public Element convertToDom(final JAXBElement<?> documentRoot) {
+
+        final DOMResult result = new DOMResult();
+
+        try {
+            getJaxbContext().createMarshaller().marshal(documentRoot, result);
+        } catch (final JAXBException e) {
+            throw new GenerationFailedException("Could not marshal document", e);
+        }
+
+        return ((Document) result.getNode()).getDocumentElement();
     }
 
     @SuppressWarnings({"squid:S2755", "squid:S1160"})

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.xml.bind.JAXBElement;
 
 public class CourtListFileGenerator {
 
@@ -35,6 +36,18 @@ public class CourtListFileGenerator {
                               final CourtListMetadata courtListMetadata,
                               final JsonObject courtListJson) {
 
+        return xmlUtils.convertToXml(generateDocument(envelope, requestParameters, courtListMetadata, courtListJson));
+    }
+
+    /**
+     * Builds the Xhibit list document (DailyList, WarnedList or FirmList) without writing it out as XML.
+     */
+    @SuppressWarnings({"squid:S1452"})
+    public JAXBElement<?> generateDocument(final JsonEnvelope envelope,
+                                           final PublishCourtListRequestParameters requestParameters,
+                                           final CourtListMetadata courtListMetadata,
+                                           final JsonObject courtListJson) {
+
         final CourtListGenerationContext context =
                 new CourtListGenerationContext(envelope, requestParameters, courtListMetadata);
 
@@ -56,7 +69,7 @@ public class CourtListFileGenerator {
         // Ensure mapperFactory and xmlUtils are thread-safe
         final AbstractCourtListMapper mapper = mapperFactory.createCourtListMapper(context, union(courtCentreCourtLists, publishedCourtListsJson));
 
-        return xmlUtils.convertToXml(mapper.generate());
+        return mapper.generate();
     }
 
     private List<JsonObject> getCourtLists(final JsonEnvelope envelope, final PublishCourtListRequestParameters requestParameters, final UUID courtCentreId) {
