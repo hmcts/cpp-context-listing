@@ -30,6 +30,7 @@ import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentres;
 
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
@@ -74,6 +75,7 @@ class GroupCasesIT extends AbstractIT {
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_COURT_CALENDAR_JSON = "application/vnd.listing.search.hearings.court.calendar+json";
     private static final int LISTED_NUMBER_OF_GROUP_CASES = 1000;
     private static final String MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING = "application/vnd.listing.command.update-hearing-for-listing+json";
+    private static final String MEDIA_TYPE_UPDATE_HEARINGS_FOR_LISTING = "application/vnd.listing.command.update-hearings-for-listing+json";
     private static final String PUBLIC_LISTING_HEARING_CONFIRMED = "public.listing.hearing-confirmed";
     private static final String PUBLIC_LISTING_HEARING_UPDATED = "public.listing.hearing-updated";
     private static final String COURT_ROOM_ID = "28b922c3-0396-3c68-970f-5b805c7ab1bb";
@@ -188,7 +190,7 @@ class GroupCasesIT extends AbstractIT {
         updateHearingForListingWithCourtRoom();
         final JsonPath hearingConfirmed = retrieveMessage(hearingConfirmedConsumer, containsString(hearingId.toString()));
         assertThat(hearingConfirmed.get("confirmedHearing.id"), is(hearingId.toString()));
-        // isGroupProceedings is not asserted: update-hearing-for-listing passes null for it (ListingCommandHandler), existing behaviour
+        assertThat(hearingConfirmed.get("confirmedHearing.isGroupProceedings"), is(true));
         assertThat(hearingConfirmed.get("confirmedHearing.numberOfGroupCases"), is(2));
 
         // a further update of the now allocated hearing raises AllocatedHearingUpdatedForListingV2 -> public.listing.hearing-updated
@@ -196,6 +198,34 @@ class GroupCasesIT extends AbstractIT {
         final JsonPath hearingUpdated = retrieveMessage(hearingUpdatedConsumer, containsString(hearingId.toString()));
         assertThat(hearingUpdated.get("updatedHearing.id"), is(hearingId.toString()));
         assertThat(hearingUpdated.get("updatedHearing.numberOfGroupCases"), is(2));
+    }
+
+    @Test
+    void shouldKeepGroupProceedingsOnHearingConfirmedWhenAllocatedFromUnallocated() throws IOException {
+        final JmsMessageConsumerClient hearingConfirmedConsumer = QueueUtil.publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_CONFIRMED);
+
+        listUnallocatedGroupHearingOfThree(randomUUID(), randomUUID(), randomUUID());
+
+        // allocating through update-hearing-for-listing, which does not carry isGroupProceedings
+        updateHearingForListingWithCourtRoom();
+        final JsonPath hearingConfirmed = retrieveMessage(hearingConfirmedConsumer, containsString(hearingId.toString()));
+        assertThat(hearingConfirmed.get("confirmedHearing.id"), is(hearingId.toString()));
+        assertThat(hearingConfirmed.get("confirmedHearing.isGroupProceedings"), is(true));
+        assertThat(hearingConfirmed.get("confirmedHearing.numberOfGroupCases"), is(3));
+    }
+
+    @Test
+    void shouldKeepGroupProceedingsOnHearingConfirmedWhenAllocatedFromUnallocatedViaBulkUpdate() throws IOException {
+        final JmsMessageConsumerClient hearingConfirmedConsumer = QueueUtil.publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_CONFIRMED);
+
+        listUnallocatedGroupHearingOfThree(randomUUID(), randomUUID(), randomUUID());
+
+        // allocating through update-hearings-for-listing (court calendar), which does not carry isGroupProceedings either
+        updateHearingsForListingWithCourtRoom();
+        final JsonPath hearingConfirmed = retrieveMessage(hearingConfirmedConsumer, containsString(hearingId.toString()));
+        assertThat(hearingConfirmed.get("confirmedHearing.id"), is(hearingId.toString()));
+        assertThat(hearingConfirmed.get("confirmedHearing.isGroupProceedings"), is(true));
+        assertThat(hearingConfirmed.get("confirmedHearing.numberOfGroupCases"), is(3));
     }
 
     private void listUnallocatedGroupHearingOfThree(final UUID masterCaseId, final UUID memberCase1Id, final UUID memberCase2Id) throws IOException {
@@ -216,7 +246,27 @@ class GroupCasesIT extends AbstractIT {
         CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrown(hearingId.toString(), courtCentreId.toString(), COURT_ROOM_ID);
         final String updateHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.command.update-hearing-for-listing"), hearingId.toString()));
-        final JsonObject updateHearing = createObjectBuilder()
+
+        final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
+                updateHearingWithCourtRoom().build().toString(), getLoggedInHeader());
+        assertThat(response.getStatus(), is(Response.Status.ACCEPTED.getStatusCode()));
+    }
+
+    private void updateHearingsForListingWithCourtRoom() {
+        CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrown(hearingId.toString(), courtCentreId.toString(), COURT_ROOM_ID);
+        stubGetReferenceDataCourtCentres(new CourtCentreData(courtCentreId, defaultStartTime, "6:30", fromString(COURT_ROOM_ID), "Court Centre"));
+        final String updateHearingsUrl = String.format("%s/%s", getBaseUri(), readConfig().getProperty("listing.command.update-hearings-for-listing"));
+        final JsonObject updateHearings = createObjectBuilder()
+                .add("hearings", createArrayBuilder().add(updateHearingWithCourtRoom().add("hearingId", hearingId.toString())))
+                .build();
+
+        final Response response = restClient.postCommand(updateHearingsUrl, MEDIA_TYPE_UPDATE_HEARINGS_FOR_LISTING,
+                updateHearings.toString(), getLoggedInHeader());
+        assertThat(response.getStatus(), is(Response.Status.ACCEPTED.getStatusCode()));
+    }
+
+    private JsonObjectBuilder updateHearingWithCourtRoom() {
+        return createObjectBuilder()
                 .add("courtCentreId", courtCentreId.toString())
                 .add("courtRoomId", COURT_ROOM_ID)
                 .add("type", createObjectBuilder().add("id", hearingTypeId.toString()).add("description", "PTP"))
@@ -227,12 +277,7 @@ class GroupCasesIT extends AbstractIT {
                 .add("judiciary", createArrayBuilder())
                 .add("jurisdictionType", "CROWN")
                 .add("hearingLanguage", "ENGLISH")
-                .add("sendNotificationToParties", false)
-                .build();
-
-        final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
-                updateHearing.toString(), getLoggedInHeader());
-        assertThat(response.getStatus(), is(Response.Status.ACCEPTED.getStatusCode()));
+                .add("sendNotificationToParties", false);
     }
 
     private JsonObject withoutCourtRoomAndBooking(final JsonObject listCourtHearingPayload) {

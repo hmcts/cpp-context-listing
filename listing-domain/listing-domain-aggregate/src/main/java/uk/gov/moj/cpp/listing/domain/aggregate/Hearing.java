@@ -241,6 +241,7 @@ public class Hearing implements Aggregate {
     private Map<UUID, List<UUID>> applicationOffenceIds = new HashMap<>();
     private uk.gov.justice.listing.events.Hearing currentHearingEventState;
     private Integer numberOfGroupCases;
+    private Boolean isGroupProceedings;
 
     private boolean isSummonsApprovedExists = false;
 
@@ -2266,7 +2267,7 @@ public class Hearing implements Aggregate {
                 .withHasAdjournmentDate(this.hasAdjournmentDate)
                 .withApplicationOffenceIds(getAllOffenceIds())
                 .withSource(source.orElse(null))
-                .withIsGroupProceedings(isGroupProceedings)
+                .withIsGroupProceedings(ofNullable(isGroupProceedings).orElse(this.isGroupProceedings))
                 .withNumberOfGroupCases(this.numberOfGroupCases)
                 .withSource(source.isPresent() ? source.get() : null)
                 .withSendNotificationToParties(sendNotificationToParties)
@@ -2557,6 +2558,7 @@ public class Hearing implements Aggregate {
 
         this.hasAdjournmentDate = StringUtils.isNotEmpty(hearing.getAdjournedFromDate());
         this.numberOfGroupCases = hearing.getNumberOfGroupCases();
+        this.isGroupProceedings = hearing.getIsGroupProceedings();
 
         this.weekCommencingStartDate = hearing.getWeekCommencingStartDate();
         this.weekCommencingEndDate = hearing.getWeekCommencingEndDate();
@@ -2843,6 +2845,10 @@ public class Hearing implements Aggregate {
     @SuppressWarnings({"squid:S1172"})
     private void onHearingAllocatedForListingV2(final HearingAllocatedForListingV2 event) {
         updateAllocated(TRUE);
+
+        if (nonNull(event.getIsGroupProceedings())) {
+            this.isGroupProceedings = event.getIsGroupProceedings();
+        }
 
         if (isNotEmpty(event.getProsecutionCaseDefendantsOffenceIds())) {
             final Map<UUID, SeedingHearing> seedingHearingMap = getOffencesSeedingHearingMap();
@@ -3388,6 +3394,9 @@ public class Hearing implements Aggregate {
         }
         if (nonNull(hearing.getNumberOfGroupCases())) {
             this.numberOfGroupCases = hearing.getNumberOfGroupCases();
+        }
+        if (nonNull(hearing.getIsGroupProceedings())) {
+            this.isGroupProceedings = hearing.getIsGroupProceedings();
         }
         initialiseCurrentHearingState(hearing);
     }
