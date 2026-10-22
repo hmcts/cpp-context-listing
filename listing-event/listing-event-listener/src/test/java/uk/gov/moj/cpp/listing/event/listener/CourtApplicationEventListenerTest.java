@@ -4,6 +4,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -159,6 +160,129 @@ public class CourtApplicationEventListenerTest {
         verify(hearingSearchSyncService).sync(HEARING_ID);
     }
 
+
+    @Test
+    public void shouldKeepCourtListRestrictionsWhenCourtApplicationIsUpdated() throws Exception {
+        final UUID applicantId = randomUUID();
+        final UUID restrictedRespondentId = randomUUID();
+        final UUID unrestrictedRespondentId = randomUUID();
+        final UUID subjectId = randomUUID();
+        final List<CourtApplication> existingCourtApplications = singletonList(CourtApplication.courtApplication()
+                .withId(ID)
+                .withApplicationType(APPLICATION_TYPE)
+                .withRestrictFromCourtList(true)
+                .withRestrictCourtApplicationType(true)
+                .withApplicant(party(applicantId, true))
+                .withRespondents(asList(party(restrictedRespondentId, true), party(unrestrictedRespondentId, false)))
+                .withSubject(party(subjectId, true))
+                .build());
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        final JsonNode existingCourtApplicationsProperties = new ObjectMapper().readTree(mapper.writeValueAsString(existingCourtApplications));
+        given(properties.get(COURT_APPLICATIONS)).willReturn(existingCourtApplicationsProperties);
+
+        // the update event always carries the restriction flags as false
+        given(courtApplicationUpdatedForHearingEnvelope.payload()).willReturn(CourtApplicationUpdatedForHearing.courtApplicationUpdatedForHearing()
+                .withHearingId(HEARING_ID)
+                .withCourtApplication(CourtApplication.courtApplication()
+                        .withId(ID)
+                        .withApplicationType(APPLICATION_TYPE)
+                        .withRestrictFromCourtList(false)
+                        .withRestrictCourtApplicationType(false)
+                        .withApplicant(party(applicantId, false))
+                        .withRespondents(asList(party(restrictedRespondentId, false), party(unrestrictedRespondentId, false)))
+                        .withSubject(party(subjectId, false))
+                        .build())
+                .build());
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor = ArgumentCaptor.forClass(ArrayNode.class);
+
+        courtApplicationEventListener.courtApplicationUpdated(courtApplicationUpdatedForHearingEnvelope);
+
+        verify(properties).replace(any(), objectNodeCaptor.capture());
+        final JsonNode updatedCourtApplication = objectNodeCaptor.getValue().get(0);
+        assertThat(updatedCourtApplication.get("restrictFromCourtList").asBoolean(), is(true));
+        assertThat(updatedCourtApplication.get("restrictCourtApplicationType").asBoolean(), is(true));
+        assertThat(updatedCourtApplication.get("applicant").get("restrictFromCourtList").asBoolean(), is(true));
+        assertThat(updatedCourtApplication.get("respondents").get(0).get("restrictFromCourtList").asBoolean(), is(true));
+        assertThat(updatedCourtApplication.get("respondents").get(1).get("restrictFromCourtList").asBoolean(), is(false));
+        assertThat(updatedCourtApplication.get("subject").get("restrictFromCourtList").asBoolean(), is(true));
+        assertThat(updatedCourtApplication.get("subject").get("id").asText(), is(subjectId.toString()));
+    }
+
+    @Test
+    public void shouldNotCarryRestrictionOntoNewPartyWhenCourtApplicationIsUpdated() throws Exception {
+        final List<CourtApplication> existingCourtApplications = singletonList(CourtApplication.courtApplication()
+                .withId(ID)
+                .withApplicationType(APPLICATION_TYPE)
+                .withApplicant(party(randomUUID(), false))
+                .withSubject(party(randomUUID(), true))
+                .build());
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        final JsonNode existingCourtApplicationsProperties = new ObjectMapper().readTree(mapper.writeValueAsString(existingCourtApplications));
+        given(properties.get(COURT_APPLICATIONS)).willReturn(existingCourtApplicationsProperties);
+
+        given(courtApplicationUpdatedForHearingEnvelope.payload()).willReturn(CourtApplicationUpdatedForHearing.courtApplicationUpdatedForHearing()
+                .withHearingId(HEARING_ID)
+                .withCourtApplication(CourtApplication.courtApplication()
+                        .withId(ID)
+                        .withApplicationType(APPLICATION_TYPE)
+                        .withApplicant(party(randomUUID(), false))
+                        .withSubject(party(randomUUID(), false))
+                        .build())
+                .build());
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor = ArgumentCaptor.forClass(ArrayNode.class);
+
+        courtApplicationEventListener.courtApplicationUpdated(courtApplicationUpdatedForHearingEnvelope);
+
+        verify(properties).replace(any(), objectNodeCaptor.capture());
+        assertThat(objectNodeCaptor.getValue().get(0).get("subject").get("restrictFromCourtList").asBoolean(), is(false));
+    }
+
+    @Test
+    public void shouldKeepCourtListRestrictionsWhenCourtApplicationIsAddedAgain() throws Exception {
+        final UUID subjectId = randomUUID();
+        final List<CourtApplication> existingCourtApplications = singletonList(CourtApplication.courtApplication()
+                .withId(ID)
+                .withApplicationType(APPLICATION_TYPE)
+                .withRestrictFromCourtList(true)
+                .withApplicant(party(randomUUID(), false))
+                .withSubject(party(subjectId, true))
+                .build());
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        final JsonNode existingCourtApplicationsProperties = new ObjectMapper().readTree(mapper.writeValueAsString(existingCourtApplications));
+        given(properties.get(COURT_APPLICATIONS)).willReturn(existingCourtApplicationsProperties);
+
+        given(courtApplicationAddedForHearingsEnvelope.payload()).willReturn(CourtApplicationAddedForHearing.courtApplicationAddedForHearing()
+                .withHearingId(HEARING_ID)
+                .withCourtApplication(CourtApplication.courtApplication()
+                        .withId(ID)
+                        .withApplicationType(APPLICATION_TYPE)
+                        .withRestrictFromCourtList(false)
+                        .withApplicant(party(randomUUID(), false))
+                        .withSubject(party(subjectId, false))
+                        .build())
+                .build());
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor = ArgumentCaptor.forClass(ArrayNode.class);
+
+        courtApplicationEventListener.courtApplicationAdded(courtApplicationAddedForHearingsEnvelope);
+
+        verify(properties).replace(any(), objectNodeCaptor.capture());
+        final JsonNode addedCourtApplication = objectNodeCaptor.getValue().get(0);
+        assertThat(addedCourtApplication.get("restrictFromCourtList").asBoolean(), is(true));
+        assertThat(addedCourtApplication.get("subject").get("restrictFromCourtList").asBoolean(), is(true));
+    }
+
+    private ApplicantRespondent party(final UUID id, final boolean restrictFromCourtList) {
+        return ApplicantRespondent.applicantRespondent()
+                .withId(id)
+                .withFirstName(FIRST_NAME)
+                .withLastName(LAST_NAME)
+                .withIsRespondent(false)
+                .withRestrictFromCourtList(restrictFromCourtList)
+                .build();
+    }
 
     @Test
     public void shouldHandleLaaReferenceUpdate() throws Exception {

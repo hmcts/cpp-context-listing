@@ -183,6 +183,50 @@ class YouthCourtListRestrictionIT extends AbstractIT {
     }
 
     @Test
+    void shouldKeepUnder18SubjectRestrictedFromCourtListWhenCourtApplicationIsUpdated() throws IOException {
+        final HearingsData hearingsData = hearingsDataForYoungCourtApplicationSubject();
+        final UpdatedHearingData allocation = listAndAllocateHearingWithRestrictedUnder18Subject(hearingsData);
+        final CourtApplicationData courtApplicationData = hearingsData.getHearingData().get(0).getCourtApplications().get(0);
+
+        // the update event always carries restrictFromCourtList as false for every party
+        new CourtApplicationSteps(hearingsData).publishUntilCourtApplicationSubjectRestricted(allocation.getCourtCentreId(),
+                courtApplicationData.getSubject().getId(), ItClock.today().minusYears(16).toString());
+    }
+
+    @Test
+    void shouldRestrictNewUnder18SubjectFromCourtListWhenCourtApplicationIsUpdated() throws IOException {
+        final HearingsData hearingsData = hearingsDataForYoungCourtApplicationSubject();
+        final UpdatedHearingData allocation = listAndAllocateHearingWithRestrictedUnder18Subject(hearingsData);
+
+        new CourtApplicationSteps(hearingsData).publishUntilCourtApplicationSubjectRestricted(allocation.getCourtCentreId(),
+                UUID.randomUUID(), ItClock.today().minusYears(15).toString());
+    }
+
+    private UpdatedHearingData listAndAllocateHearingWithRestrictedUnder18Subject(final HearingsData hearingsData) throws IOException {
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final CourtApplicationData courtApplicationData = hearingData.getCourtApplications().get(0);
+        final UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForAllocation(hearingData.getId());
+        stubGetReferenceDataCourtRoom(updatedHearingDataForAllocation.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingDataForAllocation.getCourtRoomId());
+
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        stubGetAvailableHearingSlotsWithQueryParams(updateHearingSteps.getUpdatedHearingData());
+        stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
+        updateHearingSteps.whenHearingIsUpdatedForListing();
+        updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
+
+        pollForHearing(updatedHearingDataForAllocation.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[0].id", equalTo(hearingData.getId().toString())),
+                withJsonPath("$.hearings[0].courtApplications[0].subject.id", equalTo(courtApplicationData.getSubject().getId().toString())),
+                withJsonPath("$.hearings[0].courtApplications[0].subject.restrictFromCourtList", equalTo(true))
+        });
+        return updatedHearingDataForAllocation;
+    }
+
+    @Test
     void shouldRestrictUnder18SubjectFromCourtListWhenCourtApplicationIsAddedToAllocatedHearing() throws IOException {
         final HearingsData hearingsData = hearingsDataWithAdultDefendants();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);

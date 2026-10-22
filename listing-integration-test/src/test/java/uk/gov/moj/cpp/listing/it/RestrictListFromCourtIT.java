@@ -129,6 +129,20 @@ class RestrictListFromCourtIT extends AbstractIT {
     }
 
     @Test
+    void shouldKeepCourtApplicationRestrictedWhenCourtApplicationIsUpdatedForHearingId() {
+        HearingsData hearingsData = HearingsData.hearingsData();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
+        restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getCourtApplicationDataToBeRestricted(hearingsData));
+        restrictCourtListSteps.verifyCourtApplicationOrApplicantOrRespondentListingRestrictedInHearing(true, true, false, false);
+
+        new CourtApplicationSteps(hearingsData).publishUntilCourtApplicationReflected(true);
+    }
+
+    @Test
     void shouldRestrictCourtApplicationTypeFromCourtForHearingId() {
         HearingsData hearingsData = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
