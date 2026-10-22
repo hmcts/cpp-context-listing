@@ -15,6 +15,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
 import static uk.gov.justice.core.courts.ProsecutionCase.prosecutionCase;
@@ -8163,6 +8164,287 @@ class HearingAggregateTest {
         assertThat(event.getCourtApplicationApplicantIds(), hasItem(applicantId));
         assertThat(event.getCourtApplicationRespondentIds(), hasSize(1));
         assertThat(event.getCourtApplicationRespondentIds(), hasItem(respondentId));
+    }
+
+    @Test
+    void shouldEnrichAllCourtApplicationIdsInHearingWhenCaseIsRestricted() {
+        final UUID caseId = randomUUID();
+        final UUID linkedApplicationId = randomUUID();
+        final UUID unlinkedApplicationId = randomUUID();
+        listHearingWithCasesAndApplications(asList(caseId), asList(
+                courtApplicationLinkedTo(linkedApplicationId, asList(caseId)),
+                courtApplicationLinkedTo(unlinkedApplicationId, null)));
+
+        final CourtListRestricted event = restrictCaseFromCourtList(caseId, emptyList(), true);
+
+        assertThat(event.getCaseIds(), hasItem(caseId));
+        assertThat(event.getCourtApplicationIds(), hasSize(2));
+        assertThat(event.getCourtApplicationIds(), hasItems(linkedApplicationId, unlinkedApplicationId));
+        assertThat(event.getRestrictCourtList(), is(true));
+    }
+
+    @Test
+    void shouldNotEnrichCourtApplicationIdsWhenHearingHasNoApplications() {
+        final UUID caseId = randomUUID();
+        listHearingWithCasesAndApplications(asList(caseId), new ArrayList<>());
+
+        final CourtListRestricted event = restrictCaseFromCourtList(caseId, emptyList(), true);
+
+        assertThat(event.getCourtApplicationIds(), hasSize(0));
+    }
+
+    @Test
+    void shouldNotDuplicateCourtApplicationIdWhenAlreadyRequested() {
+        final UUID caseId = randomUUID();
+        final UUID applicationId = randomUUID();
+        listHearingWithCasesAndApplications(asList(caseId), asList(courtApplicationLinkedTo(applicationId, asList(caseId))));
+
+        final CourtListRestricted event = restrictCaseFromCourtList(caseId, asList(applicationId), true);
+
+        assertThat(event.getCourtApplicationIds(), hasSize(1));
+        assertThat(event.getCourtApplicationIds(), hasItem(applicationId));
+    }
+
+    @Test
+    void shouldEnrichAllCourtApplicationIdsWhenOnlyRestrictedCaseIsUnrestricted() {
+        final UUID caseId = randomUUID();
+        final UUID applicationId = randomUUID();
+        listHearingWithCasesAndApplications(asList(caseId), asList(courtApplicationLinkedTo(applicationId, null)));
+        restrictCaseFromCourtList(caseId, emptyList(), true);
+
+        final CourtListRestricted event = restrictCaseFromCourtList(caseId, emptyList(), false);
+
+        assertThat(event.getCourtApplicationIds(), hasItem(applicationId));
+        assertThat(event.getRestrictCourtList(), is(false));
+    }
+
+    @Test
+    void shouldNotUnrestrictCourtApplicationsWhileAnotherCaseInHearingIsRestricted() {
+        final UUID caseId = randomUUID();
+        final UUID otherCaseId = randomUUID();
+        final UUID applicationId = randomUUID();
+        listHearingWithCasesAndApplications(asList(caseId, otherCaseId), asList(courtApplicationLinkedTo(applicationId, asList(caseId))));
+        restrictCaseFromCourtList(caseId, emptyList(), true);
+        restrictCaseFromCourtList(otherCaseId, emptyList(), true);
+
+        final CourtListRestricted firstUnrestrict = restrictCaseFromCourtList(caseId, emptyList(), false);
+        assertThat(firstUnrestrict.getCourtApplicationIds(), hasSize(0));
+
+        final CourtListRestricted lastUnrestrict = restrictCaseFromCourtList(otherCaseId, emptyList(), false);
+        assertThat(lastUnrestrict.getCourtApplicationIds(), hasItem(applicationId));
+    }
+
+    @Test
+    void shouldRestrictCourtApplicationAddedAfterCaseInHearingWasRestricted() {
+        final UUID caseId = randomUUID();
+        listHearingWithCasesAndApplications(asList(caseId), new ArrayList<>());
+        restrictCaseFromCourtList(caseId, emptyList(), true);
+        final CourtApplication courtApplication = courtApplicationLinkedToCases(asList(randomUUID()));
+
+        final List<Object> events = hearing.addCourtApplication(hearingId, courtApplication).collect(Collectors.toList());
+
+        assertThat(events, hasSize(2));
+        assertThat(events.get(0), CoreMatchers.instanceOf(CourtApplicationAddedForHearing.class));
+        assertThat(events.get(1), CoreMatchers.instanceOf(CourtListRestricted.class));
+        final CourtListRestricted courtListRestricted = (CourtListRestricted) events.get(1);
+        assertThat(courtListRestricted.getHearingId(), is(hearingId));
+        assertThat(courtListRestricted.getRestrictCourtList(), is(true));
+        assertThat(courtListRestricted.getCourtApplicationIds(), hasSize(1));
+        assertThat(courtListRestricted.getCourtApplicationIds(), hasItem(courtApplication.getId()));
+        assertThat(courtListRestricted.getCaseIds(), is(nullValue()));
+    }
+
+    @Test
+    void shouldNotRestrictCourtApplicationAddedWhenNoCaseInHearingIsRestricted() {
+        final UUID caseId = randomUUID();
+        listHearingWithCasesAndApplications(asList(caseId), new ArrayList<>());
+        restrictCaseFromCourtList(caseId, emptyList(), true);
+        restrictCaseFromCourtList(caseId, emptyList(), false);
+
+        final List<Object> events = hearing.addCourtApplication(hearingId, courtApplicationLinkedToCases(asList(caseId)))
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(CourtApplicationAddedForHearing.class));
+    }
+
+    @Test
+    void shouldNotRestrictCourtApplicationAddedAfterRestrictedCaseWasEjected() {
+        final UUID caseId = randomUUID();
+        listHearingWithCasesAndApplications(asList(caseId), new ArrayList<>());
+        restrictCaseFromCourtList(caseId, emptyList(), true);
+        hearing.ejectCase(hearingId, caseId, "removal reason").collect(Collectors.toList());
+
+        final List<Object> events = hearing.addCourtApplication(hearingId, courtApplicationLinkedToCases(asList(caseId)))
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(CourtApplicationAddedForHearing.class));
+    }
+
+    @Test
+    void shouldUnrestrictCourtApplicationsWhenOtherRestrictedCaseInHearingWasEjected() {
+        final UUID caseId = randomUUID();
+        final UUID ejectedCaseId = randomUUID();
+        final UUID applicationId = randomUUID();
+        listHearingWithCasesAndApplications(asList(caseId, ejectedCaseId), asList(courtApplicationLinkedTo(applicationId, asList(caseId))));
+        restrictCaseFromCourtList(caseId, emptyList(), true);
+        restrictCaseFromCourtList(ejectedCaseId, emptyList(), true);
+        hearing.ejectCase(hearingId, ejectedCaseId, "removal reason").collect(Collectors.toList());
+
+        final CourtListRestricted unrestrict = restrictCaseFromCourtList(caseId, emptyList(), false);
+
+        assertThat(unrestrict.getCourtApplicationIds(), hasItem(applicationId));
+    }
+
+    @Test
+    void shouldNotUnrestrictDirectlyRestrictedCourtApplicationWhenCaseIsUnrestricted() {
+        final UUID caseId = randomUUID();
+        final UUID directlyRestrictedApplicationId = randomUUID();
+        final UUID otherApplicationId = randomUUID();
+        listHearingWithCasesAndApplications(asList(caseId), asList(
+                courtApplicationLinkedTo(directlyRestrictedApplicationId, null),
+                courtApplicationLinkedTo(otherApplicationId, null)));
+        restrictCourtApplicationFromCourtList(directlyRestrictedApplicationId, true);
+        restrictCaseFromCourtList(caseId, emptyList(), true);
+
+        final CourtListRestricted event = restrictCaseFromCourtList(caseId, emptyList(), false);
+
+        assertThat(event.getRestrictCourtList(), is(false));
+        assertThat(event.getCourtApplicationIds(), hasSize(1));
+        assertThat(event.getCourtApplicationIds(), hasItem(otherApplicationId));
+    }
+
+    @Test
+    void shouldNotUnrestrictDirectlyRestrictedApplicationWhenCaseAddedLaterIsUnrestricted() {
+        final UUID applicationId = randomUUID();
+        listHearingWithCasesAndApplications(emptyList(), asList(courtApplicationLinkedTo(applicationId, null)));
+        restrictCourtApplicationFromCourtList(applicationId, true);
+
+        final UUID caseId = randomUUID();
+        hearing.addCasesToUnAllocatedHearing(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                .withId(caseId)
+                .withDefendants(asList(Defendant.defendant()
+                        .withId(randomUUID())
+                        .withOffences(asList(Offence.offence().withId(randomUUID()).build()))
+                        .build()))
+                .build()), hearingId).collect(Collectors.toList());
+        restrictCaseFromCourtList(caseId, emptyList(), true);
+
+        final CourtListRestricted event = restrictCaseFromCourtList(caseId, emptyList(), false);
+
+        assertThat(event.getCaseIds(), hasItem(caseId));
+        assertThat(event.getRestrictCourtList(), is(false));
+        assertThat(event.getCourtApplicationIds(), not(hasItem(applicationId)));
+    }
+
+    @Test
+    void shouldUnrestrictCourtApplicationWithCaseOnceItsDirectRestrictionWasLifted() {
+        final UUID caseId = randomUUID();
+        final UUID applicationId = randomUUID();
+        listHearingWithCasesAndApplications(asList(caseId), asList(courtApplicationLinkedTo(applicationId, null)));
+        restrictCourtApplicationFromCourtList(applicationId, true);
+        restrictCourtApplicationFromCourtList(applicationId, false);
+        restrictCaseFromCourtList(caseId, emptyList(), true);
+
+        final CourtListRestricted event = restrictCaseFromCourtList(caseId, emptyList(), false);
+
+        assertThat(event.getCourtApplicationIds(), hasItem(applicationId));
+    }
+
+    @Test
+    void shouldUnrestrictCourtApplicationAddedAfterCaseWasRestrictedWhenCaseIsUnrestricted() {
+        final UUID caseId = randomUUID();
+        listHearingWithCasesAndApplications(asList(caseId), new ArrayList<>());
+        restrictCaseFromCourtList(caseId, emptyList(), true);
+        final CourtApplication courtApplication = courtApplicationLinkedToCases(asList(randomUUID()));
+        hearing.addCourtApplication(hearingId, courtApplication).collect(Collectors.toList());
+
+        final CourtListRestricted event = restrictCaseFromCourtList(caseId, emptyList(), false);
+
+        assertThat(event.getCourtApplicationIds(), hasItem(courtApplication.getId()));
+    }
+
+    private CourtApplication courtApplicationLinkedToCases(final List<UUID> linkedCaseIds) {
+        return CourtApplication.courtApplication()
+                .withId(randomUUID())
+                .withApplicationType(STRING.next())
+                .withLinkedCaseIds(linkedCaseIds)
+                .withApplicant(applicationParty(randomUUID(), null, null))
+                .withRespondents(emptyList())
+                .build();
+    }
+
+    private void listHearingWithCasesAndApplications(final List<UUID> caseIds, final List<uk.gov.justice.listing.events.CourtApplication> courtApplications) {
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withListedCases(caseIds.stream()
+                                .map(caseId -> uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(caseId)
+                                        .withDefendants(asList(Defendant.defendant()
+                                                .withId(randomUUID())
+                                                .withOffences(asList(Offence.offence().withId(randomUUID()).build()))
+                                                .build()))
+                                        .build())
+                                .collect(Collectors.toList()))
+                        .withCourtApplications(courtApplications)
+                        .build())
+                .build());
+    }
+
+    private uk.gov.justice.listing.events.CourtApplication courtApplicationLinkedTo(final UUID applicationId, final List<UUID> linkedCaseIds) {
+        return uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                .withId(applicationId)
+                .withLinkedCaseIds(linkedCaseIds)
+                .withApplicant(ApplicantRespondent.applicantRespondent().withId(randomUUID()).build())
+                .build();
+    }
+
+    private CourtListRestricted restrictCourtApplicationFromCourtList(final UUID courtApplicationId, final boolean restrict) {
+        final uk.gov.moj.cpp.listing.domain.RestrictCourtList restrictCourtList = uk.gov.moj.cpp.listing.domain.RestrictCourtList.restrictCourtList()
+                .withHearingId(hearingId)
+                .withCaseIds(emptyList())
+                .withDefendantIds(emptyList())
+                .withOffenceIds(emptyList())
+                .withCourtApplicationApplicantIds(emptyList())
+                .withCourtApplicatonIds(asList(courtApplicationId))
+                .withCourtApplicatonRespondentIds(emptyList())
+                .withCourtApplicationSubjectIds(emptyList())
+                .withRestrictFromCourtList(restrict)
+                .build();
+
+        final List<Object> events = hearing.restrictDetailsFromCourt(hearingId, restrictCourtList)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(CourtListRestricted.class));
+        return (CourtListRestricted) events.get(0);
+    }
+
+    private CourtListRestricted restrictCaseFromCourtList(final UUID caseId, final List<UUID> courtApplicationIds, final boolean restrict) {
+        final uk.gov.moj.cpp.listing.domain.RestrictCourtList restrictCourtList = uk.gov.moj.cpp.listing.domain.RestrictCourtList.restrictCourtList()
+                .withHearingId(hearingId)
+                .withCaseIds(asList(caseId))
+                .withDefendantIds(emptyList())
+                .withOffenceIds(emptyList())
+                .withCourtApplicationApplicantIds(emptyList())
+                .withCourtApplicatonIds(courtApplicationIds)
+                .withCourtApplicatonRespondentIds(emptyList())
+                .withCourtApplicationSubjectIds(emptyList())
+                .withRestrictFromCourtList(restrict)
+                .build();
+
+        final List<Object> events = hearing.restrictDetailsFromCourt(hearingId, restrictCourtList)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(CourtListRestricted.class));
+        return (CourtListRestricted) events.get(0);
     }
 
     @Test

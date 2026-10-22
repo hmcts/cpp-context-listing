@@ -82,6 +82,54 @@ class RestrictListFromCourtIT extends AbstractIT {
     }
 
     @Test
+    void shouldRestrictCourtApplicationInHearingWhenCaseIsRestrictedForHearingId() {
+        HearingsData hearingsData = HearingsData.hearingsData();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
+        restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getCaseDataToBeRestricted(hearingsData, true));
+        restrictCourtListSteps.verifyCourtApplicationOrApplicantOrRespondentListingRestrictedInHearing(true, false, false, false);
+        restrictCourtListSteps.verifyPublicCourtListRestrictedEventWithCourtApplication(true);
+    }
+
+    @Test
+    void shouldUnRestrictCourtApplicationInHearingWhenCaseIsUnrestrictedForHearingId() {
+        HearingsData hearingsData = HearingsData.hearingsData();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
+        restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getCaseDataToBeRestricted(hearingsData, true));
+        restrictCourtListSteps.verifyCourtApplicationOrApplicantOrRespondentListingRestrictedInHearing(true, false, false, false);
+
+        restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getCaseDataToBeRestricted(hearingsData, false));
+        restrictCourtListSteps.verifyCourtApplicationOrApplicantOrRespondentListingRestrictedInHearing(false, false, false, false);
+        restrictCourtListSteps.verifyPublicCourtListRestrictedEventWithCourtApplication(false);
+    }
+
+    @Test
+    void shouldRestrictCourtApplicationAddedToHearingAfterCaseIsRestrictedForHearingId() {
+        HearingsData hearingsData = HearingsData.hearingsData();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
+        restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getCaseDataToBeRestricted(hearingsData, true));
+        restrictCourtListSteps.verifyPublicCourtListRestrictedEventWithCourtApplication(true);
+
+        final UUID courtApplicationId = randomUUID();
+        final String adultDateOfBirth = ItClock.today().minusYears(30).toString();
+        new CourtApplicationSteps(hearingsData).whenCourtApplicationWithYouthSubjectIsAddedToHearing(courtApplicationId, randomUUID(), adultDateOfBirth);
+
+        restrictCourtListSteps.verifyPublicCourtListRestrictedEventForAddedCourtApplication(courtApplicationId);
+        restrictCourtListSteps.verifyCourtApplicationListingRestrictedInHearing(courtApplicationId, true);
+    }
+
+    @Test
     void shouldKeepCourtApplicationRestrictedWhenCourtApplicationIsUpdatedForHearingId() {
         HearingsData hearingsData = HearingsData.hearingsData();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);

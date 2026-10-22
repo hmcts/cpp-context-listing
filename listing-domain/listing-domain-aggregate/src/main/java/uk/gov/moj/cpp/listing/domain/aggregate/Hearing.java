@@ -203,7 +203,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = 2971669648937137986L;
+    private static final long serialVersionUID = 2971669648937137987L;
 
     private static final String SUMMONS_APPROVED_RESULT_TYPE_ID = "0f44eeb9-2c81-430d-9a60-bbdaf8c4a093";
     private static final String SUMMONS_REJECTED_RESULT_TYPE_ID = "d8837a45-8281-49b3-8349-49b423193148";
@@ -229,6 +229,8 @@ public class Hearing implements Aggregate {
     private List<LocalDate> nonSittingDays;
     private List<HearingDay> hearingDays;
     private List<UUID> confirmedCourtApplicationIds = new ArrayList<>();
+    private Set<UUID> restrictedCaseIds = new HashSet<>();
+    private Set<UUID> directlyRestrictedCourtApplicationIds = new HashSet<>();
     private LocalDate weekCommencingStartDate;
     private LocalDate weekCommencingEndDate;
     private Integer weekCommencingDurationInWeeks;
@@ -318,6 +320,7 @@ public class Hearing implements Aggregate {
                 when(HearingsUpdateCompleted.class).apply(this::onHearingsUpdateCompleted),
                 when(HearingResultStatusUpdated.class).apply(this::onHearingResultStatusUpdated),
                 when(CourtApplicationAddedForHearing.class).apply(this::onCourtApplicationAddedForHearing),
+                when(CourtListRestricted.class).apply(this::onCourtListRestricted),
                 otherwiseDoNothing());
     }
 
@@ -1681,7 +1684,19 @@ public class Hearing implements Aggregate {
                 .withHearingId(hearingId)
                 .withCourtApplication(NewDomainToEventConverter.buildCourtApplications(courtApplication))
                 .build()));
-        return concat(courtApplicationAddedEvents, emitYouthCourtListRestrictions());
+        return concat(concat(courtApplicationAddedEvents, emitCourtListRestrictedForApplicationInHearingWithRestrictedCase(hearingId, courtApplication.getId())),
+                emitYouthCourtListRestrictions());
+    }
+
+    private Stream<Object> emitCourtListRestrictedForApplicationInHearingWithRestrictedCase(final UUID hearingId, final UUID courtApplicationId) {
+        if (isHearingInThePast() || getRestrictedCaseIdsInHearing().isEmpty()) {
+            return Stream.empty();
+        }
+        return apply(Stream.of(CourtListRestricted.courtListRestricted()
+                .withHearingId(hearingId)
+                .withCourtApplicationIds(singletonList(courtApplicationId))
+                .withRestrictCourtList(true)
+                .build()));
     }
 
     public Stream<Object> updateCourtApplication(final UUID hearingId, final CourtApplication courtApplication) {
@@ -1791,7 +1806,7 @@ public class Hearing implements Aggregate {
                     .withDefendantIds(restrictCourtList.getDefendantIds())
                     .withOffenceIds(restrictCourtList.getOffenceIds())
                     .withCourtApplicationApplicantIds(mergePartyIds(restrictCourtList.getCourtApplicationApplicantIds(), getApplicantIdsByMasterDefendantIds(masterDefendantIds)))
-                    .withCourtApplicationIds(restrictCourtList.getCourtApplicationIds())
+                    .withCourtApplicationIds(mergePartyIds(restrictCourtList.getCourtApplicationIds(), getCourtApplicationIdsForCaseRestriction(restrictCourtList.getCaseIds(), restrictCourtList.getRestrictFromCourtList())))
                     .withCourtApplicationRespondentIds(mergePartyIds(restrictCourtList.getCourtApplicationRespondentIds(), getRespondentIdsByMasterDefendantIds(masterDefendantIds)))
                     .withCourtApplicationSubjectIds(mergePartyIds(restrictCourtList.getCourtApplicationSubjectIds(), getSubjectIdsByMasterDefendantIds(masterDefendantIds)))
                     .withRestrictCourtList(restrictCourtList.getRestrictFromCourtList())
@@ -1813,6 +1828,83 @@ public class Hearing implements Aggregate {
                 .map(uk.gov.justice.listing.events.Defendant::getMasterDefendantId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+    }
+
+    // Restricting a case restricts every court application in the hearing; un-restricting only
+    // releases them once no other case in the hearing is still restricted, and never releases an
+    // application the user redacted directly
+    private List<UUID> getCourtApplicationIdsForCaseRestriction(final List<UUID> caseIds, final Boolean restrictCourtList) {
+        if (isNull(currentHearingEventState) || isNull(currentHearingEventState.getCourtApplications()) || isEmpty(caseIds)) {
+            return emptyList();
+        }
+        final boolean unrestrict = !TRUE.equals(restrictCourtList);
+        if (unrestrict && isAnotherCaseInHearingRestricted(caseIds)) {
+            return emptyList();
+        }
+        return currentHearingEventState.getCourtApplications().stream()
+                .map(uk.gov.justice.listing.events.CourtApplication::getId)
+                .filter(courtApplicationId -> !unrestrict || !getDirectlyRestrictedCourtApplicationIds().contains(courtApplicationId))
+                .collect(toList());
+    }
+
+    private boolean isAnotherCaseInHearingRestricted(final List<UUID> caseIds) {
+        return getRestrictedCaseIdsInHearing().stream()
+                .anyMatch(caseId -> !caseIds.contains(caseId));
+    }
+
+    private Set<UUID> getRestrictedCaseIdsInHearing() {
+        if (isNull(currentHearingEventState) || isNull(currentHearingEventState.getListedCases())) {
+            return new HashSet<>();
+        }
+        // An ejected case can no longer be un-restricted from the UI, so it must not hold applications restricted
+        return currentHearingEventState.getListedCases().stream()
+                .filter(listedCase -> !toBoolean(listedCase.getIsEjected()))
+                .map(uk.gov.justice.listing.events.ListedCase::getId)
+                .filter(getRestrictedCaseIds()::contains)
+                .collect(Collectors.toSet());
+    }
+
+    private void onCourtListRestricted(final CourtListRestricted courtListRestricted) {
+        final boolean restrict = TRUE.equals(courtListRestricted.getRestrictCourtList());
+        if (isEmpty(courtListRestricted.getCaseIds())) {
+            onCourtApplicationListRestricted(courtListRestricted.getCourtApplicationIds(), restrict);
+            return;
+        }
+        if (restrict) {
+            getRestrictedCaseIds().addAll(courtListRestricted.getCaseIds());
+        } else {
+            getRestrictedCaseIds().removeAll(courtListRestricted.getCaseIds());
+        }
+    }
+
+    // An application-only restriction is a direct redaction unless a case in the hearing is already
+    // restricted - then it is the one emitted for an application added to that hearing, which
+    // follows the case (and the application is already redacted through the case anyway)
+    private void onCourtApplicationListRestricted(final List<UUID> courtApplicationIds, final boolean restrict) {
+        if (isEmpty(courtApplicationIds)) {
+            return;
+        }
+        if (!restrict) {
+            getDirectlyRestrictedCourtApplicationIds().removeAll(courtApplicationIds);
+        } else if (getRestrictedCaseIdsInHearing().isEmpty()) {
+            getDirectlyRestrictedCourtApplicationIds().addAll(courtApplicationIds);
+        }
+    }
+
+    // Null when deserialised from a snapshot taken before this field existed
+    private Set<UUID> getRestrictedCaseIds() {
+        if (isNull(restrictedCaseIds)) {
+            restrictedCaseIds = new HashSet<>();
+        }
+        return restrictedCaseIds;
+    }
+
+    // Null when deserialised from a snapshot taken before this field existed
+    private Set<UUID> getDirectlyRestrictedCourtApplicationIds() {
+        if (isNull(directlyRestrictedCourtApplicationIds)) {
+            directlyRestrictedCourtApplicationIds = new HashSet<>();
+        }
+        return directlyRestrictedCourtApplicationIds;
     }
 
     private List<UUID> getSubjectIdsByMasterDefendantIds(final Set<UUID> masterDefendantIds) {
