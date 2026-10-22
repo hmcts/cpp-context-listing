@@ -21,6 +21,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.10-cct-1981-r-SNAPSHOT</version>
@@ -76,6 +77,9 @@
 =======
         <version>17.104.15</version>
 >>>>>>> 059c914d0f (updating poms for branch'dev/release-17.104.15' with non-snapshot versions)
+=======
+        <version>17.104.16-SNAPSHOT</version>
+>>>>>>> be42e7b357 (Updating develop poms back to pre merge state)
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
