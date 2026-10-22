@@ -286,6 +286,14 @@ public class RestrictCourtListSteps extends AbstractIT {
         assertThat(jsonResponse, notNullValue());
     }
 
+    public void verifyCourtApplicationListingRestrictedInHearing(final UUID courtApplicationId, final Boolean restrictCourtListingOfCourtApplication) {
+        final String hearingId = hearingsData.getHearingData().get(0).getId().toString();
+        pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), false, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].courtApplications[?(@.id == '" + courtApplicationId + "')].restrictFromCourtList",
+                        hasItem(restrictCourtListingOfCourtApplication))
+        });
+    }
+
     public void verifyPublicCourtListRestrictedEvent(final Boolean restrictCourtList) {
         final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerCourtListRestricted,
                 isJson(allOf(withJsonPath("$.restrictCourtList", equalTo(restrictCourtList)),

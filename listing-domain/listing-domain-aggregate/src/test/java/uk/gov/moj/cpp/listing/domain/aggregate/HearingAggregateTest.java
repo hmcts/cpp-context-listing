@@ -8269,6 +8269,35 @@ class HearingAggregateTest {
     }
 
     @Test
+    void shouldNotRestrictCourtApplicationAddedAfterRestrictedCaseWasEjected() {
+        final UUID caseId = randomUUID();
+        listHearingWithCasesAndApplications(asList(caseId), new ArrayList<>());
+        restrictCaseFromCourtList(caseId, emptyList(), true);
+        hearing.ejectCase(hearingId, caseId, "removal reason").collect(Collectors.toList());
+
+        final List<Object> events = hearing.addCourtApplication(hearingId, courtApplicationLinkedToCases(asList(caseId)))
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(CourtApplicationAddedForHearing.class));
+    }
+
+    @Test
+    void shouldUnrestrictCourtApplicationsWhenOtherRestrictedCaseInHearingWasEjected() {
+        final UUID caseId = randomUUID();
+        final UUID ejectedCaseId = randomUUID();
+        final UUID applicationId = randomUUID();
+        listHearingWithCasesAndApplications(asList(caseId, ejectedCaseId), asList(courtApplicationLinkedTo(applicationId, asList(caseId))));
+        restrictCaseFromCourtList(caseId, emptyList(), true);
+        restrictCaseFromCourtList(ejectedCaseId, emptyList(), true);
+        hearing.ejectCase(hearingId, ejectedCaseId, "removal reason").collect(Collectors.toList());
+
+        final CourtListRestricted unrestrict = restrictCaseFromCourtList(caseId, emptyList(), false);
+
+        assertThat(unrestrict.getCourtApplicationIds(), hasItem(applicationId));
+    }
+
+    @Test
     void shouldNotUnrestrictDirectlyRestrictedCourtApplicationWhenCaseIsUnrestricted() {
         final UUID caseId = randomUUID();
         final UUID directlyRestrictedApplicationId = randomUUID();

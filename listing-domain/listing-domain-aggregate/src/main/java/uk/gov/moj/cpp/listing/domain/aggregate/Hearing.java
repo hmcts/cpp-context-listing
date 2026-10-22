@@ -203,7 +203,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = 2971669648937137986L;
+    private static final long serialVersionUID = 2971669648937137987L;
 
     private static final String SUMMONS_APPROVED_RESULT_TYPE_ID = "0f44eeb9-2c81-430d-9a60-bbdaf8c4a093";
     private static final String SUMMONS_REJECTED_RESULT_TYPE_ID = "d8837a45-8281-49b3-8349-49b423193148";
@@ -1856,7 +1856,9 @@ public class Hearing implements Aggregate {
         if (isNull(currentHearingEventState) || isNull(currentHearingEventState.getListedCases())) {
             return new HashSet<>();
         }
+        // An ejected case can no longer be un-restricted from the UI, so it must not hold applications restricted
         return currentHearingEventState.getListedCases().stream()
+                .filter(listedCase -> !toBoolean(listedCase.getIsEjected()))
                 .map(uk.gov.justice.listing.events.ListedCase::getId)
                 .filter(getRestrictedCaseIds()::contains)
                 .collect(Collectors.toSet());

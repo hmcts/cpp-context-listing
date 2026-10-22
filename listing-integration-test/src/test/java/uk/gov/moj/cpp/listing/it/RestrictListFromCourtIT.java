@@ -126,6 +126,7 @@ class RestrictListFromCourtIT extends AbstractIT {
         new CourtApplicationSteps(hearingsData).whenCourtApplicationWithYouthSubjectIsAddedToHearing(courtApplicationId, randomUUID(), adultDateOfBirth);
 
         restrictCourtListSteps.verifyPublicCourtListRestrictedEventForAddedCourtApplication(courtApplicationId);
+        restrictCourtListSteps.verifyCourtApplicationListingRestrictedInHearing(courtApplicationId, true);
     }
 
     @Test
