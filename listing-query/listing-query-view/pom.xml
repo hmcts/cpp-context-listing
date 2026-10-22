@@ -19,6 +19,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.10-cct-1981-r-SNAPSHOT</version>
@@ -65,6 +66,9 @@
 =======
         <version>17.104.15-SNAPSHOT</version>
 >>>>>>> beab6c4838 (Updating develop poms back to pre merge state)
+=======
+        <version>17.104.16-SNAPSHOT</version>
+>>>>>>> 17767803af (updating poms for 17.104.16-SNAPSHOT development)
     </parent>
 
     <artifactId>listing-query-view</artifactId>
