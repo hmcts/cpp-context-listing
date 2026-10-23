@@ -4,6 +4,7 @@ import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 
 import uk.gov.justice.services.test.utils.core.random.Generator;
@@ -21,6 +22,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import uk.gov.justice.services.messaging.JsonObjects;
+import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -294,6 +296,54 @@ public class SittingsPojoBuilderTest {
         assertThat(sittingsMap.get(0).getHearings().get(0).getCourtApplicationDetails().get().getApplicant().getString("lastName"), is("Applicant"));
         assertThat(sittingsMap.get(0).getHearings().get(0).getCourtApplicationDetails().get().getSubject(), is(subject));
 
+    }
+
+    @Test
+    public void shouldCarryLinkedCasesFromTheListedCaseIntoTheHearingJson() {
+        final UUID courtRoomId = randomUUID();
+        final UUID judicialId = randomUUID();
+        final String linkedCaseUrn = STRING.next();
+        final UUID linkedCaseId = randomUUID();
+
+        final JsonObjectBuilder listedCase = buildCaseDetailsJsonWithDefendant("First", "Last", "CASEREF1")
+                .add("linkedCases", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("caseId", linkedCaseId.toString())
+                                .add("caseUrn", linkedCaseUrn)));
+
+        final JsonArray hearingsJson = buildHearingsJsonForListedCase(listedCase, courtRoomId, judicialId);
+
+        assertThat(hearingsJson, hasSize(1));
+        final JsonArray linkedCases = hearingsJson.getJsonObject(0).getJsonArray("linkedCases");
+        assertThat(linkedCases, hasSize(1));
+        assertThat(linkedCases.getJsonObject(0).getString("caseUrn"), is(linkedCaseUrn));
+        assertThat(linkedCases.getJsonObject(0).getString("caseId"), is(linkedCaseId.toString()));
+    }
+
+    @Test
+    public void shouldLeaveLinkedCasesOutOfTheHearingJsonWhenTheCaseHasNone() {
+        final JsonArray withoutKey = buildHearingsJsonForListedCase(
+                buildCaseDetailsJsonWithDefendant("First", "Last", "CASEREF2"), randomUUID(), randomUUID());
+        final JsonArray withEmptyList = buildHearingsJsonForListedCase(
+                buildCaseDetailsJsonWithDefendant("First", "Last", "CASEREF3").add("linkedCases", JsonObjects.createArrayBuilder()),
+                randomUUID(), randomUUID());
+
+        assertThat(withoutKey.getJsonObject(0).containsKey("linkedCases"), is(false));
+        assertThat(withEmptyList.getJsonObject(0).containsKey("linkedCases"), is(false));
+    }
+
+    private JsonArray buildHearingsJsonForListedCase(final JsonObjectBuilder listedCase, final UUID courtRoomId, final UUID judicialId) {
+        final LocalDate startDate = LocalDate.parse("2019-12-11");
+        final JsonObject caseHearings = JsonObjects.createObjectBuilder(
+                        buildCaseHearingsWithHearingDays("2019-12-11", "2019-12-11T10:00:00.000Z", "2019-12-11T11:00:00.000Z", courtRoomId, judicialId))
+                .add("listedCases", JsonObjects.createArrayBuilder().add(listedCase))
+                .add("type", JsonObjects.createObjectBuilder().add("id", randomUUID().toString()).add("description", "Trial"))
+                .build();
+        final FlatHearing flatHearing = new FlatHearing(startDate, caseHearings.getJsonArray("judiciary"), Optional.of(courtRoomId), caseHearings, false);
+
+        final List<Sitting> sittings = SittingsPojoBuilder.assignFlatHearingsToSittings(Arrays.asList(flatHearing), startDate, "2019-12-11");
+
+        return SittingsJsonGenerator.buildSittingsJson(sittings).build().getJsonObject(0).getJsonArray("hearings");
     }
 
     private FlatHearing buildFlatHearing(final String startDate, final UUID courtRoomId, final UUID judicialId) {

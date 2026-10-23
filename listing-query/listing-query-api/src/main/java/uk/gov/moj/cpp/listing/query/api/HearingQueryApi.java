@@ -4,6 +4,7 @@ import static java.util.Objects.isNull;
 import static java.util.UUID.fromString;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static uk.gov.justice.services.core.annotation.Component.QUERY_API;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
@@ -24,20 +25,24 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.NoteUUIDService.ListingNotesCollection;
 import uk.gov.moj.cpp.listing.common.xhibit.ReferenceDataLoader;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
+import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.query.api.service.AlphabeticalCourtListService;
 import uk.gov.moj.cpp.listing.query.api.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.query.document.generator.JudgeListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.document.generator.JudiciaryNameMapper;
 import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
+import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -89,6 +94,9 @@ public class HearingQueryApi {
     private static final String WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
     private static final String WEEK_COMMENCING_END_DATE = "weekCommencingEndDate";
     private static final String SITTINGS = "sittings";
+    private static final String SITTING_DATE = "sittingDate";
+    private static final String SITTING_NOTE = "sittingNote";
+    private static final String LINKED_CASES = "linkedCases";
     private static final String JUDICIARY = "judiciary";
     private static final String JUDICIAL_ID = "judicialId";
     private static final String JUDICIARY_NAME = "judiciaryName";
@@ -128,6 +136,9 @@ public class HearingQueryApi {
 
     @Inject
     private ProgressionService progressionService;
+
+    @Inject
+    private NotesService notesService;
 
     @Inject
     private JsonObjectToObjectConverter jsonObjectToObjectConverter;
@@ -233,6 +244,19 @@ public class HearingQueryApi {
 
     @Handles("listing.search.daily.list.payload")
     public JsonEnvelope getDailyList(final JsonEnvelope query) {
+        return buildCourtListPayload(query, false, "listing.search.daily.list.payload");
+    }
+
+    /**
+     * Same court list as {@link #getDailyList}, with the additional data that the PDDA lists need: linked cases,
+     * sitting notes, judge name parts and the remaining court centre address details.
+     */
+    @Handles("listing.search.pdda.list.payload")
+    public JsonEnvelope getPddaList(final JsonEnvelope query) {
+        return buildCourtListPayload(query, true, "listing.search.pdda.list.payload");
+    }
+
+    private JsonEnvelope buildCourtListPayload(final JsonEnvelope query, final boolean additionalData, final String responseActionName) {
         final JsonObject payload = query.payloadAsJsonObject();
         final String courtCentreId = payload.getString(COURT_CENTRE_ID);
         final String documentType = payload.getString("publishCourtListType");
@@ -263,14 +287,16 @@ public class HearingQueryApi {
         final String address2 = courtCentreJson.getString("address2", null);
         final String welshAddress1 = courtCentreJson.getString("welshAddress1", null);
         final String welshAddress2 = courtCentreJson.getString("welshAddress2", null);
+        final Map<String, String> additionalAddressFields = additionalData ? additionalAddressFields(courtCentreJson) : Map.of();
 
         final JsonObject responsePayload = response.payloadAsJsonObject();
         final Map<String, JsonObject> judiciariesById = resolveJudiciariesById(responsePayload, query);
         final Map<String, String> prosecutorOrganisationNamesById = resolveProsecutorOrganisationNames(responsePayload, query);
+        final Map<String, String> sittingNotes = additionalData ? resolveSittingNotes(responsePayload) : Map.of();
         final JsonObjectBuilder enrichedBuilder = JsonObjects.createObjectBuilder();
         responsePayload.forEach((key, value) -> {
             if (COURT_LISTS.equals(key)) {
-                enrichedBuilder.add(COURT_LISTS, enrichCourtListsWithAddress(responsePayload.getJsonArray(COURT_LISTS), address1, address2, welshAddress1, welshAddress2, judiciariesById, prosecutorOrganisationNamesById));
+                enrichedBuilder.add(COURT_LISTS, enrichCourtListsWithAddress(responsePayload.getJsonArray(COURT_LISTS), address1, address2, welshAddress1, welshAddress2, additionalAddressFields, judiciariesById, prosecutorOrganisationNamesById, sittingNotes, additionalData));
             } else {
                 enrichedBuilder.add(key, value);
             }
@@ -281,7 +307,7 @@ public class HearingQueryApi {
                 enrichedBuilder.add(WEEK_COMMENCING_END_DATE, weekCommencingEndDate);
             }
         } else {
-            enrichedBuilder.add("sittingDate", startDate);
+            enrichedBuilder.add(SITTING_DATE, startDate);
         }
         enrichedBuilder.add("publishedAt", LocalDate.now().toString());
         enrichedBuilder.add("documentType", documentType);
@@ -293,10 +319,10 @@ public class HearingQueryApi {
             enrichedBuilder.add("welshCourtCentreName", welshCourtCentreName);
         }
 
-        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.daily.list.payload"), enrichedBuilder.build());
+        return envelopeFrom(metadataFrom(query.metadata()).withName(responseActionName), enrichedBuilder.build());
     }
 
-    private JsonArray enrichCourtListsWithAddress(final JsonArray courtLists, final String address1, final String address2, final String welshAddress1, final String welshAddress2, final Map<String, JsonObject> judiciariesById, final Map<String, String> prosecutorOrganisationNamesById) {
+    private JsonArray enrichCourtListsWithAddress(final JsonArray courtLists, final String address1, final String address2, final String welshAddress1, final String welshAddress2, final Map<String, String> additionalAddressFields, final Map<String, JsonObject> judiciariesById, final Map<String, String> prosecutorOrganisationNamesById, final Map<String, String> sittingNotes, final boolean additionalData) {
         final JsonArrayBuilder enrichedCourtListsBuilder = createArrayBuilder();
         courtLists.getValuesAs(JsonObject.class).forEach(courtList -> {
             final JsonObject crestCourtSite = courtList.getJsonObject(CREST_COURT_SITE);
@@ -314,12 +340,13 @@ public class HearingQueryApi {
             if (welshAddress2 != null) {
                 enrichedSiteBuilder.add("welshCourtCentreAddress2", welshAddress2);
             }
+            additionalAddressFields.forEach(enrichedSiteBuilder::add);
             final JsonObjectBuilder enrichedCourtListBuilder = JsonObjects.createObjectBuilder();
             courtList.forEach((key, value) -> {
                 if (CREST_COURT_SITE.equals(key)) {
                     enrichedCourtListBuilder.add(CREST_COURT_SITE, enrichedSiteBuilder.build());
                 } else if (SITTINGS.equals(key)) {
-                    enrichedCourtListBuilder.add(SITTINGS, enrichSittings(courtList.getJsonArray(SITTINGS), judiciariesById, prosecutorOrganisationNamesById));
+                    enrichedCourtListBuilder.add(SITTINGS, enrichSittings(courtList.getJsonArray(SITTINGS), judiciariesById, prosecutorOrganisationNamesById, sittingNotes, additionalData));
                 } else {
                     enrichedCourtListBuilder.add(key, value);
                 }
@@ -411,32 +438,103 @@ public class HearingQueryApi {
         return authorityId != null ? prosecutorOrganisationNamesById.get(authorityId) : null;
     }
 
-    private JsonArray enrichSittings(final JsonArray sittings, final Map<String, JsonObject> judiciariesById, final Map<String, String> prosecutorOrganisationNamesById) {
+    private static Map<String, String> additionalAddressFields(final JsonObject courtCentreJson) {
+        final Map<String, String> fields = new LinkedHashMap<>();
+        putIfNotBlank(fields, "courtCentreAddress3", courtCentreJson.getString("address3", null));
+        putIfNotBlank(fields, "courtCentreAddress4", courtCentreJson.getString("address4", null));
+        putIfNotBlank(fields, "courtCentreAddress5", courtCentreJson.getString("address5", null));
+        putIfNotBlank(fields, "courtCentrePostcode", courtCentreJson.getString("postcode", null));
+        putIfNotBlank(fields, "welshCourtCentreAddress3", courtCentreJson.getString("welshAddress3", null));
+        putIfNotBlank(fields, "welshCourtCentreAddress4", courtCentreJson.getString("welshAddress4", null));
+        putIfNotBlank(fields, "welshCourtCentreAddress5", courtCentreJson.getString("welshAddress5", null));
+        return fields;
+    }
+
+    private static void putIfNotBlank(final Map<String, String> fields, final String key, final String value) {
+        if (isNotBlank(value)) {
+            fields.put(key, value);
+        }
+    }
+
+    /**
+     * Sitting notes are free text per court room and day (listing_notes), so one batched lookup covers every sitting.
+     */
+    private Map<String, String> resolveSittingNotes(final JsonObject responsePayload) {
+        if (!responsePayload.containsKey(COURT_LISTS)) {
+            return Map.of();
+        }
+
+        final List<ListingNotesCollection> noteKeys = responsePayload.getJsonArray(COURT_LISTS).getValuesAs(JsonObject.class).stream()
+                .filter(courtList -> courtList.containsKey(SITTINGS))
+                .flatMap(courtList -> courtList.getJsonArray(SITTINGS).getValuesAs(JsonObject.class).stream())
+                .filter(sitting -> sitting.containsKey(COURT_ROOM_ID) && sitting.containsKey(SITTING_DATE))
+                .map(sitting -> new ListingNotesCollection(fromString(sitting.getString(COURT_ROOM_ID)), LocalDate.parse(sitting.getString(SITTING_DATE))))
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (noteKeys.isEmpty()) {
+            return Map.of();
+        }
+
+        return notesService.findNotes(noteKeys).stream()
+                .filter(notes -> isNotBlank(notes.getNote()))
+                .collect(Collectors.toMap(
+                        notes -> sittingNoteKey(notes.getCourtRoomId().toString(), notes.getDate().toString()),
+                        Notes::getNote,
+                        (first, second) -> first));
+    }
+
+    private static String sittingNoteKey(final String courtRoomId, final String sittingDate) {
+        return courtRoomId + "|" + sittingDate;
+    }
+
+    private static void addJudiciaryNameParts(final JsonObjectBuilder builder, final JsonObject judge) {
+        final String titleJudicialPrefix = judge.getString("titleJudicialPrefix", "");
+        final String welshTitleJudicialPrefix = judge.getString("titleJudiciaryPrefixWelsh", "");
+        addIfNotBlank(builder, "judiciaryTitle", isNotBlank(titleJudicialPrefix) ? titleJudicialPrefix : judge.getString("titlePrefix", ""));
+        addIfNotBlank(builder, "judiciaryForenames", judge.getString("forenames", ""));
+        addIfNotBlank(builder, "judiciarySurname", judge.getString("surname", ""));
+        addIfNotBlank(builder, "judiciaryTitleSuffix", judge.getString("titleSuffix", ""));
+        addIfNotBlank(builder, "welshJudiciaryTitle", isNotBlank(welshTitleJudicialPrefix) ? welshTitleJudicialPrefix : judge.getString("titlePrefixWelsh", ""));
+        addIfNotBlank(builder, "welshJudiciaryTitleSuffix", judge.getString("titleSuffixWelsh", ""));
+    }
+
+    private static void addIfNotBlank(final JsonObjectBuilder builder, final String key, final String value) {
+        if (isNotBlank(value)) {
+            builder.add(key, value);
+        }
+    }
+
+    private JsonArray enrichSittings(final JsonArray sittings, final Map<String, JsonObject> judiciariesById, final Map<String, String> prosecutorOrganisationNamesById, final Map<String, String> sittingNotes, final boolean additionalData) {
         final JsonArrayBuilder enrichedSittingsBuilder = createArrayBuilder();
         sittings.getValuesAs(JsonObject.class).forEach(sitting -> {
             final JsonObjectBuilder enrichedSittingBuilder = JsonObjects.createObjectBuilder();
             sitting.forEach((key, value) -> {
                 if (JUDICIARY.equals(key)) {
-                    enrichedSittingBuilder.add(JUDICIARY, enrichJudiciaryWithNames(sitting.getJsonArray(JUDICIARY), judiciariesById));
+                    enrichedSittingBuilder.add(JUDICIARY, enrichJudiciaryWithNames(sitting.getJsonArray(JUDICIARY), judiciariesById, additionalData));
                 } else if (HEARINGS.equals(key)) {
-                    enrichedSittingBuilder.add(HEARINGS, enrichHearingsWithProsecutorOrganisationNames(sitting.getJsonArray(HEARINGS), prosecutorOrganisationNamesById));
+                    enrichedSittingBuilder.add(HEARINGS, enrichHearingsWithProsecutorOrganisationNames(sitting.getJsonArray(HEARINGS), prosecutorOrganisationNamesById, additionalData));
                 } else {
                     enrichedSittingBuilder.add(key, value);
                 }
             });
+            final String sittingNote = sittingNotes.get(sittingNoteKey(sitting.getString(COURT_ROOM_ID, null), sitting.getString(SITTING_DATE, null)));
+            if (sittingNote != null) {
+                enrichedSittingBuilder.add(SITTING_NOTE, sittingNote);
+            }
             enrichedSittingsBuilder.add(enrichedSittingBuilder.build());
         });
         return enrichedSittingsBuilder.build();
     }
 
-    private JsonArray enrichHearingsWithProsecutorOrganisationNames(final JsonArray hearings, final Map<String, String> prosecutorOrganisationNamesById) {
+    private JsonArray enrichHearingsWithProsecutorOrganisationNames(final JsonArray hearings, final Map<String, String> prosecutorOrganisationNamesById, final boolean additionalData) {
         final JsonArrayBuilder enrichedHearingsBuilder = createArrayBuilder();
         hearings.getValuesAs(JsonObject.class)
-                .forEach(hearing -> enrichedHearingsBuilder.add(enrichHearingWithProsecutorOrganisationName(hearing, prosecutorOrganisationNamesById)));
+                .forEach(hearing -> enrichedHearingsBuilder.add(enrichHearingWithProsecutorOrganisationName(hearing, prosecutorOrganisationNamesById, additionalData)));
         return enrichedHearingsBuilder.build();
     }
 
-    private JsonObject enrichHearingWithProsecutorOrganisationName(final JsonObject hearing, final Map<String, String> prosecutorOrganisationNamesById) {
+    private JsonObject enrichHearingWithProsecutorOrganisationName(final JsonObject hearing, final Map<String, String> prosecutorOrganisationNamesById, final boolean additionalData) {
         final boolean hasProsecutor = hearing.containsKey(PROSECUTOR);
         final String authorityId = getAuthorityId(hearing);
         final String prosecutorId = hasProsecutor ? getProsecutorId(hearing.getJsonObject(PROSECUTOR)) : null;
@@ -444,7 +542,7 @@ public class HearingQueryApi {
 
         final JsonObjectBuilder enrichedHearingBuilder = JsonObjects.createObjectBuilder();
         hearing.forEach((key, value) -> {
-            if (!PROSECUTOR.equals(key)) {
+            if (!PROSECUTOR.equals(key) && (additionalData || !LINKED_CASES.equals(key))) {
                 enrichedHearingBuilder.add(key, value);
             }
         });
@@ -460,7 +558,7 @@ public class HearingQueryApi {
         return prosecutor.containsKey(PROSECUTOR_ID) ? prosecutor.getString(PROSECUTOR_ID) : null;
     }
 
-    private JsonArray enrichJudiciaryWithNames(final JsonArray judiciaryArray, final Map<String, JsonObject> judiciariesById) {
+    private JsonArray enrichJudiciaryWithNames(final JsonArray judiciaryArray, final Map<String, JsonObject> judiciariesById, final boolean additionalData) {
         final JsonArrayBuilder enrichedJudiciaryBuilder = createArrayBuilder();
         judiciaryArray.getValuesAs(JsonObject.class).forEach(judiciary -> {
             final JsonObjectBuilder enrichedJudiciaryEntryBuilder = JsonObjects.createObjectBuilder();
@@ -474,6 +572,9 @@ public class HearingQueryApi {
                 final String welshJudiciaryName = judiciaryNameMapper.getWelshName(judge);
                 if (welshJudiciaryName != null) {
                     enrichedJudiciaryEntryBuilder.add(WELSH_JUDICIARY_NAME, welshJudiciaryName);
+                }
+                if (additionalData) {
+                    addJudiciaryNameParts(enrichedJudiciaryEntryBuilder, judge);
                 }
             }
             enrichedJudiciaryBuilder.add(enrichedJudiciaryEntryBuilder.build());
