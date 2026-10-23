@@ -4930,7 +4930,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    void shouldNotEmitCourtListRestrictedForCaseRemovedFromGroupCasesWhenHearingIsMarkedAsDuplicate() {
+    void shouldNotEmitAnyEventForCaseRemovedFromGroupCasesWhenHearingIsMarkedAsDuplicate() {
         final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
         givenAllocatedHearingWithAdultDefendant(hearingStartDate);
         hearing.apply(HearingMarkedAsDuplicate.hearingMarkedAsDuplicate().withHearingId(hearingId).build());
@@ -4940,8 +4940,21 @@ class HearingAggregateTest {
         final List<Object> resultEvents = hearing.removeCaseFromGroupCases(hearingId, randomUUID(), removedCase, null)
                 .collect(Collectors.toList());
 
-        assertThat(resultEvents, hasSize(1));
-        assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CaseRemovedFromGroupCases.class));
+        assertThat(resultEvents, hasSize(0));
+    }
+
+    @Test
+    void shouldNotEmitAnyEventForCaseRemovedFromGroupCasesWhenHearingIsDeleted() {
+        final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
+        givenAllocatedHearingWithAdultDefendant(hearingStartDate);
+        hearing.apply(HearingDeleted.hearingDeleted().withHearingIdToBeDeleted(hearingId).build());
+        final ListedCase removedCase = domainListedCase(randomUUID(),
+                domainDefendant(randomUUID(), hearingStartDate.minusYears(16).toString()));
+
+        final List<Object> resultEvents = hearing.removeCaseFromGroupCases(hearingId, randomUUID(), removedCase, null)
+                .collect(Collectors.toList());
+
+        assertThat(resultEvents, hasSize(0));
     }
 
     @Test
