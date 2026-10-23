@@ -8,9 +8,9 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.ListingService;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersParser;
+import uk.gov.moj.cpp.listing.common.xhibit.courtlist.ListingService;
+import uk.gov.moj.cpp.listing.common.xhibit.courtlist.PublishCourtListRequestParameters;
+import uk.gov.moj.cpp.listing.common.xhibit.courtlist.PublishCourtListRequestParametersParser;
 
 import java.io.StringReader;
 import java.time.DayOfWeek;

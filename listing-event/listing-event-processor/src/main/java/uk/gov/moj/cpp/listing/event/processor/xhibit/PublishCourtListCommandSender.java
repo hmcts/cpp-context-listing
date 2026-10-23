@@ -24,7 +24,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.MetadataBuilder;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.event.processor.util.HearingObjectsListingToCoreConverter;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
+import uk.gov.moj.cpp.listing.common.xhibit.courtlist.PublishCourtListRequestParameters;
 import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
 import java.util.HashMap;

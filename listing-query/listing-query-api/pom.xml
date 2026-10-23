@@ -85,14 +85,6 @@
         </dependency>
         <dependency>
             <groupId>uk.gov.moj.cpp.listing</groupId>
-            <artifactId>listing-event-processor</artifactId>
-            <version>${project.version}</version>
-            <classifier>classes</classifier>
-            <!-- provided: listing-service assembles the single WAR that contains both the event processor and the query API -->
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>uk.gov.moj.cpp.listing</groupId>
             <artifactId>listing-domain-common</artifactId>
             <version>${project.version}</version>
         </dependency>

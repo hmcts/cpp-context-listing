@@ -19,9 +19,9 @@ import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.ListingService;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersParser;
+import uk.gov.moj.cpp.listing.common.xhibit.courtlist.ListingService;
+import uk.gov.moj.cpp.listing.common.xhibit.courtlist.PublishCourtListRequestParameters;
+import uk.gov.moj.cpp.listing.common.xhibit.courtlist.PublishCourtListRequestParametersParser;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;

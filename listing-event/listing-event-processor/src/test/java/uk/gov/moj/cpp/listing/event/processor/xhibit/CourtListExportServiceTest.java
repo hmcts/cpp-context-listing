@@ -15,10 +15,10 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.listing.common.xhibit.XhibitService;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListFileGenerator;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadata;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadataGenerator;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
+import uk.gov.moj.cpp.listing.common.xhibit.courtlist.CourtListFileGenerator;
+import uk.gov.moj.cpp.listing.common.xhibit.courtlist.CourtListMetadata;
+import uk.gov.moj.cpp.listing.common.xhibit.courtlist.CourtListMetadataGenerator;
+import uk.gov.moj.cpp.listing.common.xhibit.courtlist.PublishCourtListRequestParameters;
 
 import java.io.InputStream;
 import java.time.LocalDate;

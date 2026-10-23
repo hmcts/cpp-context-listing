@@ -4,10 +4,10 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getMessage;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.xhibit.XhibitService;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListFileGenerator;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadata;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadataGenerator;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
+import uk.gov.moj.cpp.listing.common.xhibit.courtlist.CourtListFileGenerator;
+import uk.gov.moj.cpp.listing.common.xhibit.courtlist.CourtListMetadata;
+import uk.gov.moj.cpp.listing.common.xhibit.courtlist.CourtListMetadataGenerator;
+import uk.gov.moj.cpp.listing.common.xhibit.courtlist.PublishCourtListRequestParameters;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
