@@ -85,6 +85,14 @@ rule "Query - API - listing.search.daily.list.payload"
   then
     $outcome.setSuccess(true);
 end
+rule "Query - API - listing.search.pdda.list.payload"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.search.pdda.list.payload");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.SYSTEM_USERS));
+  then
+    $outcome.setSuccess(true);
+end
 rule "Query - API - listing.search.hearing"
   when
     $outcome: Outcome();

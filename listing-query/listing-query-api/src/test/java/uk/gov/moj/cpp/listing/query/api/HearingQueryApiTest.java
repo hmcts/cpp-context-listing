@@ -57,14 +57,18 @@ import uk.gov.moj.cpp.listing.query.api.service.AlphabeticalCourtListService;
 import uk.gov.moj.cpp.listing.query.api.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.query.api.util.FileUtil;
 import uk.gov.moj.cpp.listing.query.document.generator.JudgeListTemplateAssembler;
+import uk.gov.moj.cpp.listing.common.NoteUUIDService.ListingNotesCollection;
+import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.query.document.generator.JudiciaryNameMapper;
 import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
+import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
 import java.io.File;
 import java.io.StringReader;
 import java.lang.reflect.Method;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +76,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
@@ -148,6 +153,9 @@ public class HearingQueryApiTest {
 
     @Mock
     private JudiciaryNameMapper judiciaryNameMapper;
+
+    @Mock
+    private NotesService notesService;
 
     @Captor
     private ArgumentCaptor<JsonEnvelope> requesterCaptor;
@@ -1751,6 +1759,260 @@ public class HearingQueryApiTest {
                 .getJsonArray("hearings").getJsonObject(0)
                 .getJsonArray("courtApplications").getJsonObject(0);
         assertThat(resultApplication.containsKey("applicationTypeCode"), is(false));
+    }
+
+    @Test
+    void shouldAddJudiciaryNamePartsFromReferenceData() {
+        final String judicialId = randomUUID().toString();
+        final JsonObject judge = createObjectBuilder()
+                .add("id", judicialId)
+                .add("titleJudicialPrefix", "His Honour Judge")
+                .add("titlePrefix", "Mr")
+                .add("forenames", "Mark J")
+                .add("surname", "Williams")
+                .add("titleSuffix", "KC")
+                .add("titleJudiciaryPrefixWelsh", "Ei Anrhydedd Barnwr")
+                .add("titlePrefixWelsh", "Mr Cymraeg")
+                .add("titleSuffixWelsh", "CB")
+                .build();
+
+        final JsonObject enrichedJudiciary = dailyListWithOneJudge(judicialId, judge, createObjectBuilder().build())
+                .getJsonArray("courtLists").getJsonObject(0)
+                .getJsonArray("sittings").getJsonObject(0)
+                .getJsonArray("judiciary").getJsonObject(0);
+
+        assertThat(enrichedJudiciary.getString("judiciaryTitle"), is("His Honour Judge"));
+        assertThat(enrichedJudiciary.getString("judiciaryForenames"), is("Mark J"));
+        assertThat(enrichedJudiciary.getString("judiciarySurname"), is("Williams"));
+        assertThat(enrichedJudiciary.getString("judiciaryTitleSuffix"), is("KC"));
+        assertThat(enrichedJudiciary.getString("welshJudiciaryTitle"), is("Ei Anrhydedd Barnwr"));
+        assertThat(enrichedJudiciary.getString("welshJudiciaryTitleSuffix"), is("CB"));
+    }
+
+    @Test
+    void shouldFallBackToTitlePrefixAndOmitBlankJudiciaryNameParts() {
+        final String judicialId = randomUUID().toString();
+        final JsonObject judge = createObjectBuilder()
+                .add("id", judicialId)
+                .add("titleJudicialPrefix", "")
+                .add("titlePrefix", "Mr")
+                .add("surname", "Williams")
+                .add("titleSuffix", "")
+                .build();
+
+        final JsonObject enrichedJudiciary = dailyListWithOneJudge(judicialId, judge, createObjectBuilder().build())
+                .getJsonArray("courtLists").getJsonObject(0)
+                .getJsonArray("sittings").getJsonObject(0)
+                .getJsonArray("judiciary").getJsonObject(0);
+
+        assertThat(enrichedJudiciary.getString("judiciaryTitle"), is("Mr"));
+        assertThat(enrichedJudiciary.getString("judiciarySurname"), is("Williams"));
+        assertThat(enrichedJudiciary.containsKey("judiciaryForenames"), is(false));
+        assertThat(enrichedJudiciary.containsKey("judiciaryTitleSuffix"), is(false));
+        assertThat(enrichedJudiciary.containsKey("welshJudiciaryTitle"), is(false));
+        assertThat(enrichedJudiciary.containsKey("welshJudiciaryTitleSuffix"), is(false));
+    }
+
+    @Test
+    void shouldAddCourtCentreAddressLinesThreeToFivePostcodeAndWelshEquivalents() {
+        final String judicialId = randomUUID().toString();
+        final JsonObject courtCentre = createObjectBuilder()
+                .add("address3", "Address three")
+                .add("address4", "Address four")
+                .add("address5", "Address five")
+                .add("postcode", "CF10 1ET")
+                .add("welshAddress3", "Cyfeiriad tri")
+                .add("welshAddress4", "Cyfeiriad pedwar")
+                .add("welshAddress5", "Cyfeiriad pump")
+                .build();
+
+        final JsonObject site = dailyListWithOneJudge(judicialId, createObjectBuilder().add("id", judicialId).build(), courtCentre)
+                .getJsonArray("courtLists").getJsonObject(0).getJsonObject("crestCourtSite");
+
+        assertThat(site.getString("courtCentreAddress3"), is("Address three"));
+        assertThat(site.getString("courtCentreAddress4"), is("Address four"));
+        assertThat(site.getString("courtCentreAddress5"), is("Address five"));
+        assertThat(site.getString("courtCentrePostcode"), is("CF10 1ET"));
+        assertThat(site.getString("welshCourtCentreAddress3"), is("Cyfeiriad tri"));
+        assertThat(site.getString("welshCourtCentreAddress4"), is("Cyfeiriad pedwar"));
+        assertThat(site.getString("welshCourtCentreAddress5"), is("Cyfeiriad pump"));
+    }
+
+    @Test
+    void shouldOmitCourtCentreAddressDetailsThatReferenceDataDoesNotHold() {
+        final String judicialId = randomUUID().toString();
+        final JsonObject courtCentre = createObjectBuilder().add("address3", "").add("postcode", "CF10 1ET").build();
+
+        final JsonObject site = dailyListWithOneJudge(judicialId, createObjectBuilder().add("id", judicialId).build(), courtCentre)
+                .getJsonArray("courtLists").getJsonObject(0).getJsonObject("crestCourtSite");
+
+        assertThat(site.getString("courtCentrePostcode"), is("CF10 1ET"));
+        assertThat(site.containsKey("courtCentreAddress3"), is(false));
+        assertThat(site.containsKey("courtCentreAddress4"), is(false));
+        assertThat(site.containsKey("welshCourtCentreAddress3"), is(false));
+    }
+
+    @Test
+    void shouldAddSittingNoteForTheSittingsCourtRoomAndDate() {
+        final String courtCentreId = randomUUID().toString();
+        final UUID roomWithNote = randomUUID();
+        final UUID roomWithoutNote = randomUUID();
+        final String sittingDate = "2026-05-07";
+
+        final JsonObject payload = dailyListWithSittings(courtCentreId, List.of(
+                sittingFor(roomWithNote, sittingDate), sittingFor(roomWithoutNote, sittingDate)),
+                createObjectBuilder().build());
+        when(notesService.findNotes(any(List.class))).thenReturn(List.of(
+                new Notes(randomUUID(), roomWithNote, LocalDate.parse(sittingDate), "Court 1 sits late"),
+                new Notes(randomUUID(), roomWithoutNote, LocalDate.parse(sittingDate), "")));
+
+        final JsonObject result = hearingQueryApi.getPddaList(dailyListQuery(courtCentreId, "2026-05-07")).payloadAsJsonObject();
+
+        final JsonArray sittings = result.getJsonArray("courtLists").getJsonObject(0).getJsonArray("sittings");
+        assertThat(sittings.getJsonObject(0).getString("sittingNote"), is("Court 1 sits late"));
+        assertThat(sittings.getJsonObject(1).containsKey("sittingNote"), is(false));
+
+        final ArgumentCaptor<List<ListingNotesCollection>> keys = ArgumentCaptor.forClass(List.class);
+        verify(notesService).findNotes(keys.capture());
+        assertThat(keys.getValue().size(), is(2));
+        assertThat(payload.containsKey("courtLists"), is(true));
+    }
+
+    @Test
+    void shouldNotLookUpSittingNotesWhenNoSittingHasACourtRoom() {
+        final String courtCentreId = randomUUID().toString();
+        dailyListWithSittings(courtCentreId, List.of(createObjectBuilder().add("sittingDate", "2026-05-07").build()), createObjectBuilder().build());
+
+        final JsonObject result = hearingQueryApi.getPddaList(dailyListQuery(courtCentreId, "2026-05-07")).payloadAsJsonObject();
+
+        verify(notesService, never()).findNotes(any(List.class));
+        assertThat(result.getJsonArray("courtLists").getJsonObject(0).getJsonArray("sittings").getJsonObject(0).containsKey("sittingNote"), is(false));
+    }
+
+    private JsonObject sittingFor(final UUID courtRoomId, final String sittingDate) {
+        return createObjectBuilder().add("courtRoomId", courtRoomId.toString()).add("sittingDate", sittingDate).build();
+    }
+
+    private JsonEnvelope dailyListQuery(final String courtCentreId, final String startDate) {
+        return envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("listing.search.daily.list.payload"),
+                createObjectBuilder().add("courtCentreId", courtCentreId).add("startDate", startDate).add("publishCourtListType", "FINAL").build());
+    }
+
+    /**
+     * Stubs the court list, court centre reference data and (optionally) judiciary reference data, and returns the
+     * court list payload that the query layer would have returned, for the given sittings.
+     */
+    private JsonObject dailyListWithSittings(final String courtCentreId, final List<JsonObject> sittings, final JsonObject courtCentre) {
+        final JsonArrayBuilder sittingsBuilder = createArrayBuilder();
+        sittings.forEach(sittingsBuilder::add);
+        final JsonObject courtListPayload = createObjectBuilder()
+                .add("courtCentreId", courtCentreId)
+                .add("courtLists", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("crestCourtSite", createObjectBuilder()
+                                        .add("crestCourtSiteId", "415")
+                                        .add("crestCourtSiteName", "Kingston Crown Court")
+                                        .add("courtType", "CROWN")
+                                        .build())
+                                .add("sittings", sittingsBuilder.build())
+                                .build())
+                        .build())
+                .build();
+        when(hearingQueryView.retrieveCourtList(any(JsonEnvelope.class))).thenReturn(envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("listing.courtlist"), courtListPayload));
+        when(referenceDataService.isHearingLanguageWelsh(any(), eq(courtCentreId))).thenReturn(Optional.of(false));
+        when(referenceDataService.getCourtCentreById(any(UUID.class), any(JsonEnvelope.class))).thenReturn(envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("referencedata.query.courtroom"), courtCentre));
+        return courtListPayload;
+    }
+
+    private JsonObject dailyListWithOneJudge(final String judicialId, final JsonObject judge, final JsonObject courtCentre) {
+        final String courtCentreId = randomUUID().toString();
+        final JsonObject sitting = createObjectBuilder()
+                .add("sittingDate", "2026-05-07")
+                .add("judiciary", createArrayBuilder().add(createObjectBuilder().add("judicialId", judicialId).build()).build())
+                .build();
+        dailyListWithSittings(courtCentreId, List.of(sitting), courtCentre);
+        when(referenceDataService.getJudiciariesByIdList(eq(List.of(fromString(judicialId))), any(JsonEnvelope.class))).thenReturn(envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("referencedata.query.judiciaries"),
+                createObjectBuilder().add("judiciaries", createArrayBuilder().add(judge).build()).build()));
+        return hearingQueryApi.getPddaList(dailyListQuery(courtCentreId, "2026-05-07")).payloadAsJsonObject();
+    }
+
+    @Test
+    void shouldReturnLinkedCasesAndTheOtherAdditionalDataOnlyInThePddaListPayload() {
+        final String courtCentreId = randomUUID().toString();
+        final String judicialId = randomUUID().toString();
+        final UUID courtRoomId = randomUUID();
+        final String sittingDate = "2026-05-07";
+        stubCourtListWithEveryAdditionalItem(courtCentreId, judicialId, courtRoomId, sittingDate);
+        when(notesService.findNotes(any(List.class))).thenReturn(List.of(new Notes(randomUUID(), courtRoomId, LocalDate.parse(sittingDate), "Court 1 sits late")));
+
+        final JsonEnvelope result = hearingQueryApi.getPddaList(dailyListQuery(courtCentreId, sittingDate));
+
+        assertThat(result.metadata().name(), is("listing.search.pdda.list.payload"));
+        final JsonObject courtList = result.payloadAsJsonObject().getJsonArray("courtLists").getJsonObject(0);
+        final JsonObject sitting = courtList.getJsonArray("sittings").getJsonObject(0);
+        assertThat(sitting.getString("sittingNote"), is("Court 1 sits late"));
+        assertThat(sitting.getJsonArray("judiciary").getJsonObject(0).getString("judiciarySurname"), is("Williams"));
+        assertThat(courtList.getJsonObject("crestCourtSite").getString("courtCentrePostcode"), is("CF10 1ET"));
+        assertThat(sitting.getJsonArray("hearings").getJsonObject(0).getJsonArray("linkedCases").getJsonObject(0).getString("caseUrn"), is("LINKEDURN001"));
+    }
+
+    @Test
+    void shouldLeaveTheDailyListPayloadWithoutAnyOfTheAdditionalData() {
+        final String courtCentreId = randomUUID().toString();
+        final String judicialId = randomUUID().toString();
+        final UUID courtRoomId = randomUUID();
+        final String sittingDate = "2026-05-07";
+        stubCourtListWithEveryAdditionalItem(courtCentreId, judicialId, courtRoomId, sittingDate);
+
+        final JsonEnvelope result = hearingQueryApi.getDailyList(dailyListQuery(courtCentreId, sittingDate));
+
+        assertThat(result.metadata().name(), is("listing.search.daily.list.payload"));
+        final JsonObject courtList = result.payloadAsJsonObject().getJsonArray("courtLists").getJsonObject(0);
+        final JsonObject sitting = courtList.getJsonArray("sittings").getJsonObject(0);
+        final JsonObject judiciary = sitting.getJsonArray("judiciary").getJsonObject(0);
+        final JsonObject hearing = sitting.getJsonArray("hearings").getJsonObject(0);
+        final JsonObject site = courtList.getJsonObject("crestCourtSite");
+        assertThat(sitting.containsKey("sittingNote"), is(false));
+        assertThat(hearing.containsKey("linkedCases"), is(false));
+        assertThat(hearing.getString("applicationReference"), is("APP1"));
+        Arrays.asList("judiciaryTitle", "judiciaryForenames", "judiciarySurname", "judiciaryTitleSuffix", "welshJudiciaryTitle", "welshJudiciaryTitleSuffix")
+                .forEach(key -> assertThat(key, judiciary.containsKey(key), is(false)));
+        Arrays.asList("courtCentreAddress3", "courtCentreAddress4", "courtCentreAddress5", "courtCentrePostcode", "welshCourtCentreAddress3", "welshCourtCentreAddress4", "welshCourtCentreAddress5")
+                .forEach(key -> assertThat(key, site.containsKey(key), is(false)));
+        assertThat(site.getString("courtCentreAddress1"), is("Address one"));
+        verify(notesService, never()).findNotes(any(List.class));
+    }
+
+    /**
+     * A court list whose single sitting has a judge, a court room and a hearing with linked cases, and reference data
+     * that holds every additional item, so a test can see which of them each endpoint returns.
+     */
+    private void stubCourtListWithEveryAdditionalItem(final String courtCentreId, final String judicialId, final UUID courtRoomId, final String sittingDate) {
+        final JsonObject hearing = createObjectBuilder()
+                .add("applicationReference", "APP1")
+                .add("linkedCases", createArrayBuilder().add(createObjectBuilder().add("caseId", randomUUID().toString()).add("caseUrn", "LINKEDURN001")))
+                .build();
+        final JsonObject sitting = createObjectBuilder()
+                .add("courtRoomId", courtRoomId.toString())
+                .add("sittingDate", sittingDate)
+                .add("judiciary", createArrayBuilder().add(createObjectBuilder().add("judicialId", judicialId)))
+                .add("hearings", createArrayBuilder().add(hearing))
+                .build();
+        final JsonObject courtCentre = createObjectBuilder()
+                .add("address1", "Address one")
+                .add("address3", "Address three")
+                .add("postcode", "CF10 1ET")
+                .add("welshAddress3", "Cyfeiriad tri")
+                .build();
+        dailyListWithSittings(courtCentreId, List.of(sitting), courtCentre);
+        when(referenceDataService.getJudiciariesByIdList(eq(List.of(fromString(judicialId))), any(JsonEnvelope.class))).thenReturn(envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("referencedata.query.judiciaries"),
+                createObjectBuilder().add("judiciaries", createArrayBuilder().add(createObjectBuilder()
+                        .add("id", judicialId).add("surname", "Williams").add("forenames", "Mark J").add("titleJudicialPrefix", "His Honour Judge"))).build()));
     }
 
     private JsonObject returnAsJsonObject(final String expectedJsonPath) {
