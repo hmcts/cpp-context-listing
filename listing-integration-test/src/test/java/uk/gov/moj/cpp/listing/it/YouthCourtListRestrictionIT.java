@@ -1,10 +1,12 @@
 package uk.gov.moj.cpp.listing.it;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.util.UUID.randomUUID;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingByWeekCommencing;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataForYoungCourtApplicationRespondent;
@@ -12,6 +14,7 @@ import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataForYoun
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataForYoungDefendants;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataForWeekCommencingWithYoungDefendants;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAdultDefendants;
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.singleHearingDataForYoungDefendants;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedDefendantData.updatedDefendantDataWithUnder18DateOfBirth;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocation;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithWeekCommencingDate;
@@ -22,15 +25,18 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoom;
 
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.moj.cpp.listing.steps.CourtApplicationSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateDefendantSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.WeekCommencingHearingSteps;
+import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 import uk.gov.moj.cpp.listing.it.util.ItClock;
@@ -339,5 +345,32 @@ class YouthCourtListRestrictionIT extends AbstractIT {
                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].id", equalTo(defendantId)),
                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].restrictFromCourtList", equalTo(true))
         });
+    }
+
+    @Test
+    void shouldRestrictUnder18DefendantFromCourtListWhenUnallocatedHearingIsFullyExtendedIntoAllocatedHearing() {
+        final UUID allocatedHearingId = randomUUID();
+        final CaseAndDefendantData allocatedHearingCaseAndDefendantData = new CaseAndDefendantData(allocatedHearingId, null, STRING.next(), randomUUID(), null,
+                JurisdictionType.CROWN.name(), JurisdictionType.CROWN.name(), null, null);
+        new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(allocatedHearingCaseAndDefendantData)).whenCaseIsSubmittedForListing();
+
+        // the youth is on an unallocated fixed-date hearing, so it has not been restricted yet
+        final HearingsData unallocatedHearingsData = singleHearingDataForYoungDefendants();
+        final HearingData unallocatedHearing = unallocatedHearingsData.getHearingData().get(0);
+        final ListedCaseData youthCase = unallocatedHearing.getListedCases().get(0);
+        final String youthDefendantId = youthCase.getDefendants().get(0).getDefendantId().toString();
+        final ListCourtHearingSteps unallocatedListCourtHearingSteps = new ListCourtHearingSteps(unallocatedHearingsData);
+        unallocatedListCourtHearingSteps.whenCaseIsSubmittedForListing();
+        unallocatedListCourtHearingSteps.verifyHearingIsCreated(allocatedHearingId, 1);
+        unallocatedListCourtHearingSteps.verifyHearingIsCreated(unallocatedHearing.getId(), unallocatedHearing.getListedCases().size());
+
+        unallocatedListCourtHearingSteps.extendWholeHearing(unallocatedHearing.getId(), allocatedHearingId, unallocatedHearing.getListedCases());
+
+        final String allocatedHearingUrl = String.format("%s/%s", getBaseUri(),
+                MessageFormat.format(readConfig().getProperty("listing.search.hearing"), allocatedHearingId));
+        pollForHearing(allocatedHearingUrl, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath("$.listedCases[?(@.id == '" + youthCase.getCaseId() + "')].defendants[?(@.id == '" + youthDefendantId + "')].restrictFromCourtList",
+                        hasItem(true))
+        }, "application/vnd.listing.search.hearing+json");
     }
 }

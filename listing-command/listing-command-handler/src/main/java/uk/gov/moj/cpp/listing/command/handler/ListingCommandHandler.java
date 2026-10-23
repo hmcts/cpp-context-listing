@@ -780,7 +780,8 @@ public class ListingCommandHandler {
                         final Stream<Object> updatedHearing = hearing.updatedListedCasesInHearing(allocatedHearing, unAllocatedHearingPersisted, unAllocatedHearingPersisted.getListedCases());
                         final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unAllocatedHearingPersisted, fullExtension, extendHearingForHearingEnriched.getSendNotificationToParties());
                         final Stream<Object> addCaseEvent = hearing.addCasesToUnAllocatedHearing(unAllocatedHearingPersisted.getListedCases(), unAllocatedHearingId);
-                        return Stream.of(addCaseEvent, updatedHearing, allocationEvents).flatMap(i -> i);
+                        final Stream<Object> emitYouthCourtListRestrictionsEvents = hearing.emitYouthCourtListRestrictions();
+                        return Stream.of(addCaseEvent, updatedHearing, allocationEvents, emitYouthCourtListRestrictionsEvents).flatMap(i -> i);
                     });
                 } else {
                     LOGGER.info("incoming list cases : {} cannot be added in allocated hearing as same case id : {} ", unAllocatedHearingCasesId, allocatedHearingCasesId);

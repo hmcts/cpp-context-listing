@@ -1717,7 +1717,7 @@ public class Hearing implements Aggregate {
 
     private Stream<Object> emitYouthCourtListRestrictionForNewUnder18Subject(final UUID courtApplicationId,
                                                                             final ApplicantRespondent previousSubject) {
-        if (!canAllocate() && !isAllocated()) {
+        if (!canRestrictYouths()) {
             return Stream.empty();
         }
         final LocalDate effectiveHearingDate = getEffectiveHearingDate();
@@ -2224,10 +2224,16 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> emitYouthCourtListRestrictions() {
-        if (canAllocate() || isAllocated()) {
+        if (canRestrictYouths()) {
             return emitYouthCourtListRestrictions(getEffectiveHearingDate());
         }
         return Stream.empty();
+    }
+
+    // A fixed-date hearing is checked once it can be allocated; a week-commencing hearing has no court room
+    // until it is allocated, so it is checked as soon as it has a week-commencing date
+    private boolean canRestrictYouths() {
+        return canAllocate() || isAllocated() || nonNull(this.weekCommencingStartDate);
     }
 
     private Stream<Object> emitYouthCourtListRestrictions(final LocalDate effectiveHearingDate) {
@@ -3983,7 +3989,7 @@ public class Hearing implements Aggregate {
     // The removed case is listed on its own again, rebuilt from progression with every restriction flag false,
     // so restrict its under-18 defendants - gated like every other youth path, after which allocation does it
     private Stream<Object> emitYouthCourtListRestrictionsForRemovedCase(final UUID hearingId, final uk.gov.justice.listing.events.ListedCase removedCase) {
-        if ((!canAllocate() && !isAllocated()) || isNull(removedCase.getDefendants())) {
+        if (!canRestrictYouths() || isNull(removedCase.getDefendants())) {
             return Stream.empty();
         }
         final LocalDate effectiveHearingDate = getEffectiveHearingDate();

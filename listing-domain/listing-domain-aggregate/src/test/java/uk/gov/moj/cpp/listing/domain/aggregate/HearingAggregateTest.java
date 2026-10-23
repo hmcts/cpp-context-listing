@@ -4891,6 +4891,59 @@ class HearingAggregateTest {
         assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CaseRemovedFromGroupCases.class));
     }
 
+    @Test
+    void shouldEmitCourtListRestrictedForUnder18DefendantWhenCasesAddedForUnallocatedWeekCommencingHearing() {
+        final LocalDate weekCommencingStartDate = LocalDate.now().plusDays(30);
+        givenUnallocatedWeekCommencingHearing(weekCommencingStartDate);
+        final UUID under18DefendantId = randomUUID();
+
+        final List<Object> resultEvents = hearing.addCasesForHearing(
+                        singletonList(prosecutionCaseWithDefendant(under18DefendantId, weekCommencingStartDate.minusYears(16).toString())), null)
+                .collect(Collectors.toList());
+
+        assertThat(resultEvents, hasSize(2));
+        assertThat(resultEvents.get(0), CoreMatchers.instanceOf(AddedCasesForHearing.class));
+        assertThat(resultEvents.get(1), CoreMatchers.instanceOf(CourtListRestricted.class));
+        final CourtListRestricted courtListRestricted = (CourtListRestricted) resultEvents.get(1);
+        assertThat(courtListRestricted.getRestrictCourtList(), is(true));
+        assertThat(courtListRestricted.getDefendantIds(), hasSize(1));
+        assertThat(courtListRestricted.getDefendantIds(), hasItem(under18DefendantId));
+    }
+
+    @Test
+    void shouldEmitCourtListRestrictedForUnder18DefendantsOfCaseRemovedFromGroupCasesForUnallocatedWeekCommencingHearing() {
+        final LocalDate weekCommencingStartDate = LocalDate.now().plusDays(30);
+        givenUnallocatedWeekCommencingHearing(weekCommencingStartDate);
+        final UUID under18DefendantId = randomUUID();
+        final ListedCase removedCase = domainListedCase(randomUUID(),
+                domainDefendant(under18DefendantId, weekCommencingStartDate.minusYears(16).toString()));
+
+        final List<Object> resultEvents = hearing.removeCaseFromGroupCases(hearingId, randomUUID(), removedCase, null)
+                .collect(Collectors.toList());
+
+        assertThat(resultEvents, hasSize(2));
+        assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CaseRemovedFromGroupCases.class));
+        assertThat(resultEvents.get(1), CoreMatchers.instanceOf(CourtListRestricted.class));
+        final CourtListRestricted courtListRestricted = (CourtListRestricted) resultEvents.get(1);
+        assertThat(courtListRestricted.getDefendantIds(), hasSize(1));
+        assertThat(courtListRestricted.getDefendantIds(), hasItem(under18DefendantId));
+    }
+
+    // No court room, court schedule or fixed start date, so the hearing can't be allocated yet
+    private void givenUnallocatedWeekCommencingHearing(final LocalDate weekCommencingStartDate) {
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withWeekCommencingStartDate(weekCommencingStartDate)
+                        .withListedCases(new ArrayList<>())
+                        .build())
+                .build());
+    }
+
     private ProsecutionCase prosecutionCaseWithDefendant(final UUID defendantId, final String dateOfBirth) {
         return ProsecutionCase.prosecutionCase()
                 .withId(randomUUID())
