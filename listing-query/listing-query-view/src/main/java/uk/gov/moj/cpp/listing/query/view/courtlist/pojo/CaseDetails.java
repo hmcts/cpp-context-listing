@@ -11,6 +11,8 @@ public class CaseDetails {
 
     private JsonObject prosecutor;
 
+    private JsonArray linkedCases;
+
     public JsonObject getCaseIdentifier() {
         return caseIdentifier;
     }
@@ -33,5 +35,13 @@ public class CaseDetails {
 
     public void setProsecutor(final JsonObject prosecutor) {
         this.prosecutor = prosecutor;
+    }
+
+    public JsonArray getLinkedCases() {
+        return linkedCases;
+    }
+
+    public void setLinkedCases(final JsonArray linkedCases) {
+        this.linkedCases = linkedCases;
     }
 }
