@@ -307,7 +307,7 @@ public class HearingQueryApi {
                 enrichedBuilder.add(WEEK_COMMENCING_END_DATE, weekCommencingEndDate);
             }
         } else {
-            enrichedBuilder.add("sittingDate", startDate);
+            enrichedBuilder.add(SITTING_DATE, startDate);
         }
         enrichedBuilder.add("publishedAt", LocalDate.now().toString());
         enrichedBuilder.add("documentType", documentType);
