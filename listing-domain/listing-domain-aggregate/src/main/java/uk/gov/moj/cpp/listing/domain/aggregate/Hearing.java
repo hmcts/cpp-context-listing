@@ -3989,7 +3989,8 @@ public class Hearing implements Aggregate {
     // The removed case is listed on its own again, rebuilt from progression with every restriction flag false,
     // so restrict its under-18 defendants - gated like every other youth path, after which allocation does it
     private Stream<Object> emitYouthCourtListRestrictionsForRemovedCase(final UUID hearingId, final uk.gov.justice.listing.events.ListedCase removedCase) {
-        if (!canRestrictYouths() || isNull(removedCase.getDefendants())) {
+        // The handler runs this for every hearing of the master case, so skip ones that are gone or already held
+        if (this.duplicate || this.deleted || isHearingInThePast() || !canRestrictYouths() || isNull(removedCase.getDefendants())) {
             return Stream.empty();
         }
         final LocalDate effectiveHearingDate = getEffectiveHearingDate();

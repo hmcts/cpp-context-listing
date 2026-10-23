@@ -4929,6 +4929,35 @@ class HearingAggregateTest {
         assertThat(courtListRestricted.getDefendantIds(), hasItem(under18DefendantId));
     }
 
+    @Test
+    void shouldNotEmitCourtListRestrictedForCaseRemovedFromGroupCasesWhenHearingIsMarkedAsDuplicate() {
+        final LocalDate hearingStartDate = LocalDate.now().plusDays(30);
+        givenAllocatedHearingWithAdultDefendant(hearingStartDate);
+        hearing.apply(HearingMarkedAsDuplicate.hearingMarkedAsDuplicate().withHearingId(hearingId).build());
+        final ListedCase removedCase = domainListedCase(randomUUID(),
+                domainDefendant(randomUUID(), hearingStartDate.minusYears(16).toString()));
+
+        final List<Object> resultEvents = hearing.removeCaseFromGroupCases(hearingId, randomUUID(), removedCase, null)
+                .collect(Collectors.toList());
+
+        assertThat(resultEvents, hasSize(1));
+        assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CaseRemovedFromGroupCases.class));
+    }
+
+    @Test
+    void shouldNotEmitCourtListRestrictedForCaseRemovedFromGroupCasesWhenHearingIsInThePast() {
+        final LocalDate hearingStartDate = LocalDate.now().minusDays(10);
+        givenAllocatedHearingWithAdultDefendant(hearingStartDate);
+        final ListedCase removedCase = domainListedCase(randomUUID(),
+                domainDefendant(randomUUID(), hearingStartDate.minusYears(16).toString()));
+
+        final List<Object> resultEvents = hearing.removeCaseFromGroupCases(hearingId, randomUUID(), removedCase, null)
+                .collect(Collectors.toList());
+
+        assertThat(resultEvents, hasSize(1));
+        assertThat(resultEvents.get(0), CoreMatchers.instanceOf(CaseRemovedFromGroupCases.class));
+    }
+
     // No court room, court schedule or fixed start date, so the hearing can't be allocated yet
     private void givenUnallocatedWeekCommencingHearing(final LocalDate weekCommencingStartDate) {
         hearing.apply(HearingListed.hearingListed()
