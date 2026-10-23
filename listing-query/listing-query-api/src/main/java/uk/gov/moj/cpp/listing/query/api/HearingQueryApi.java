@@ -244,7 +244,7 @@ public class HearingQueryApi {
     public JsonEnvelope getDailyList(final JsonEnvelope query) {
         final JsonObject payload = query.payloadAsJsonObject();
         final String courtCentreId = payload.getString(COURT_CENTRE_ID);
-        final String documentType = payload.getString("publishCourtListType");
+        final String documentType = payload.getString(PUBLISH_COURT_LIST_TYPE);
 
         final String weekCommencingStartDate = payload.getString(WEEK_COMMENCING_START_DATE, null);
         final boolean isWeekCommencing = weekCommencingStartDate != null;
@@ -255,7 +255,7 @@ public class HearingQueryApi {
         final JsonObjectBuilder requestPayloadBuilder = JsonObjects.createObjectBuilder()
                 .add(COURT_CENTRE_ID, courtCentreId)
                 .add(START_DATE, startDate)
-                .add("publishCourtListType", documentType);
+                .add(PUBLISH_COURT_LIST_TYPE, documentType);
         if (endDate != null) {
             requestPayloadBuilder.add(END_DATE, endDate);
         }
