@@ -7,6 +7,10 @@
       "type": "array",
       "minItems": 1,
       "items": { "type": "string" }
+    },
+    "reserveIfExpired": {
+      "type": "boolean",
+      "description": "LPT-2611: ask courtscheduler to re-book a booking whose hold expired, under the same id, if the session it was on still has room. Absent or false: read only."
     }
   },
   "required": ["bookingIds"],

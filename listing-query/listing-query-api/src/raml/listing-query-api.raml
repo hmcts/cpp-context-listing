@@ -552,9 +552,10 @@ protocols: [ HTTP, HTTPS ]
     description: |
       Returns { "bookings": [ { "bookingId", "safeToShare", "status" } ] }.
       status is RESERVED (a reservation still holds capacity), SHARED (already shared),
-      LEGACY (a draft saved before reserve-a-slot shipped), NONE (the hold expired and
-      was purged), or UNKNOWN (courtscheduler could not be reached - the check failed
-      open, so safeToShare is true).
+      NOT_FOUND (the hold expired and was purged), REBOOKED (it had expired, the request
+      set reserveIfExpired, and courtscheduler took it again on the same session because
+      it still had room), or UNKNOWN (courtscheduler could not be reached - the check
+      failed open, so safeToShare is true). Only NOT_FOUND is unsafe to share.
       ...
       (mapping):
           requestType: application/vnd.listing.query.booking.status+json

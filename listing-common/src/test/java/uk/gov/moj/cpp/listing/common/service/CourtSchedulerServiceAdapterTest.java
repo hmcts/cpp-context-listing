@@ -666,9 +666,11 @@ class CourtSchedulerServiceAdapterTest {
 
         final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(request("bk-1", "bk-2", "bk-3"));
 
-        final ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
-        verify(hearingSlotsService).getBookingStatus(params.capture());
-        assertThat(params.getValue().get("bookingIds"), is("bk-1,bk-2,bk-3"));
+        final ArgumentCaptor<JsonObject> body = ArgumentCaptor.forClass(JsonObject.class);
+        verify(hearingSlotsService).postBookingStatus(body.capture());
+        assertThat(body.getValue().getJsonArray("bookingIds").getValuesAs(javax.json.JsonString.class).stream()
+                .map(javax.json.JsonString::getString).toList(), is(List.of("bk-1", "bk-2", "bk-3")));
+        assertThat("no flag sent: read only", body.getValue().getBoolean("reserveIfExpired"), is(false));
 
         assertThat(result.getJsonArray("bookings").size(), is(3));
         assertThat(result.getJsonArray("bookings").getJsonObject(1).getString("status"), is("SHARED"));
@@ -677,7 +679,7 @@ class CourtSchedulerServiceAdapterTest {
 
     @Test
     public void shouldReportUnknownAndSafeWhenCourtschedulerThrows() {
-        when(hearingSlotsService.getBookingStatus(any())).thenThrow(new RuntimeException("connection refused"));
+        when(hearingSlotsService.postBookingStatus(any())).thenThrow(new RuntimeException("connection refused"));
 
         final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(request("bk-1", "bk-2"));
 
@@ -720,6 +722,53 @@ class CourtSchedulerServiceAdapterTest {
         assertThat(result.getJsonArray("bookings").getJsonObject(0).getBoolean("safeToShare"), is(false));
     }
 
+    // LPT-2611: with reserveIfExpired the UI asks courtscheduler to re-book an expired booking whose
+    // session still has room. That can book capacity, so it goes as a POST; without the flag the
+    // read-only GET is unchanged.
+    @Test
+    public void shouldPostTheBookingIdsAndTheFlagWhenAskedToReserveIfExpired() {
+        final JsonObject downstream = javax.json.Json.createReader(new java.io.StringReader(
+                "{\"bookings\":[{\"bookingId\":\"bk-1\",\"safeToShare\":true,\"status\":\"REBOOKED\"}]}")).readObject();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(downstream);
+        when(hearingSlotsService.postBookingStatus(any(JsonObject.class))).thenReturn(response);
+
+        final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(reserveIfExpired(request("bk-1")));
+
+        final ArgumentCaptor<JsonObject> body = ArgumentCaptor.forClass(JsonObject.class);
+        verify(hearingSlotsService).postBookingStatus(body.capture());
+        assertThat(body.getValue().getJsonArray("bookingIds").getString(0), is("bk-1"));
+        assertThat(body.getValue().getBoolean("reserveIfExpired"), is(true));
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getString("status"), is("REBOOKED"));
+    }
+
+    @Test
+    public void shouldPostTheFlagAsFalseWhenTheCallerSetsItFalse() {
+        givenCourtschedulerReturns(HttpStatus.SC_OK, javax.json.Json.createObjectBuilder()
+                .add("bookings", javax.json.Json.createArrayBuilder()).build());
+
+        courtSchedulerServiceAdapter.getBookingStatus(javax.json.Json.createObjectBuilder(request("bk-1"))
+                .add("reserveIfExpired", false).build());
+
+        final ArgumentCaptor<JsonObject> body = ArgumentCaptor.forClass(JsonObject.class);
+        verify(hearingSlotsService).postBookingStatus(body.capture());
+        assertThat(body.getValue().getBoolean("reserveIfExpired"), is(false));
+    }
+
+    @Test
+    public void shouldReportUnknownAndSafeWhenTheReservingPostFails() {
+        when(hearingSlotsService.postBookingStatus(any(JsonObject.class))).thenThrow(new RuntimeException("connection refused"));
+
+        final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(reserveIfExpired(request("bk-1")));
+
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getString("status"), is("UNKNOWN"));
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getBoolean("safeToShare"), is(true));
+    }
+
+    private static JsonObject reserveIfExpired(final JsonObject request) {
+        return javax.json.Json.createObjectBuilder(request).add("reserveIfExpired", true).build();
+    }
+
     private static JsonObject request(final String... bookingIds) {
         final javax.json.JsonArrayBuilder list = javax.json.Json.createArrayBuilder();
         for (final String id : bookingIds) {
@@ -735,6 +784,6 @@ class CourtSchedulerServiceAdapterTest {
         if (HttpStatus.SC_OK == status) {
             when(response.getEntity()).thenReturn(body);
         }
-        when(hearingSlotsService.getBookingStatus(anyMap())).thenReturn(response);
+        when(hearingSlotsService.postBookingStatus(any(JsonObject.class))).thenReturn(response);
     }
 }

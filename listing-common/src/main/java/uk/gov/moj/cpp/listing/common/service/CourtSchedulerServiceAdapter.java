@@ -369,7 +369,9 @@ public class CourtSchedulerServiceAdapter {
      * Reports, for each booking id, whether the draft carrying it is still safe to share, and why.
      * A pure pass-through of courtscheduler's answer: {@code RESERVED} (a reservation still holds
      * capacity), {@code SHARED} (already shared — the confirmed row carries this booking id),
-     * or {@code NOT_FOUND} (no row under this booking id in either shape, so the hold is gone).
+     * {@code NOT_FOUND} (no row under this booking id in either shape, so the hold is gone), or,
+     * when the request sets {@code reserveIfExpired}, {@code REBOOKED} (the hold had expired and
+     * courtscheduler took it again on the same session).
      * Listing never re-maps or collapses these.
      *
      * <p><b>Fails open</b>, deliberately the opposite of {@link #getCourtScheduleDraftStatus}.
@@ -390,12 +392,12 @@ public class CourtSchedulerServiceAdapter {
                     .build();
         }
 
-        final Map<String, String> params = new HashMap<>();
-        params.put("bookingIds", String.join(",", bookingIds));
-
         final Response response;
         try {
-            response = hearingSlotsService.getBookingStatus(params);
+            response = hearingSlotsService.postBookingStatus(javax.json.Json.createObjectBuilder()
+                    .add("bookingIds", javax.json.Json.createArrayBuilder(bookingIds))
+                    .add("reserveIfExpired", reserveIfExpired(requestPayload))
+                    .build());
         } catch (Exception ex) {
             LOGGER.warn("courtscheduler getBookingStatus threw {} for {} ids - failing open with UNKNOWN",
                     ex.getClass().getSimpleName(), bookingIds.size());
@@ -418,6 +420,14 @@ public class CourtSchedulerServiceAdapter {
                 .add("safeToShare", true)
                 .add("status", "UNKNOWN")));
         return javax.json.Json.createObjectBuilder().add(BOOKINGS, bookings).build();
+    }
+
+    /**
+     * LPT-2611: the UI's pre-share gate asks courtscheduler to re-book an expired booking whose
+     * session still has room. A booking it re-books comes back {@code REBOOKED}, safe to share.
+     */
+    private static boolean reserveIfExpired(final JsonObject requestPayload) {
+        return requestPayload != null && requestPayload.getBoolean("reserveIfExpired", false);
     }
 
     private static List<String> extractBookingIds(final JsonObject requestPayload) {

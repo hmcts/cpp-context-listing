@@ -792,13 +792,13 @@ public class CourtSchedulerServiceStub {
                 ));
     }
 
-    /** Path segment for courtscheduler's booking-status lookup: GET /unconfirmedBooking/status?bookingIds=... */
+    /** Path of courtscheduler's booking-status check: POST /unconfirmedBooking/status. */
     private static final String UNCONFIRMED_BOOKING_STATUS = "/unconfirmedBooking/status";
-    public static final String COURTSCHEDULER_GET_BOOKING_STATUS_TYPE = "application/vnd.courtscheduler.get.booking-status+json";
+    public static final String COURTSCHEDULER_QUERY_BOOKING_STATUS_TYPE = "application/vnd.courtscheduler.query.booking.status+json";
 
     /**
-     * Stub a successful 200 response from GET /unconfirmedBooking/status (courtscheduler's
-     * reserve-a-slot booking-status lookup) for any {@code bookingIds} query param. The supplied
+     * Stub a successful 200 response from POST /unconfirmedBooking/status (courtscheduler's
+     * reserve-a-slot booking-status check) for any request body. The supplied
      * {@code bookingsJsonArray} is the raw JSON array of per-booking entries (e.g.
      * {@code [{"bookingId":"bk-1","safeToShare":true,"status":"RESERVED"}]}); it is wrapped here in
      * the {@code {"bookings": [...]}} envelope that {@code CourtSchedulerServiceAdapter.getBookingStatus}
@@ -806,8 +806,8 @@ public class CourtSchedulerServiceStub {
      */
     public static void stubBookingStatus(final String bookingsJsonArray) {
         final String body = "{\"bookings\":" + bookingsJsonArray + "}";
-        stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + UNCONFIRMED_BOOKING_STATUS)))
-                .withHeader("Accept", containing(COURTSCHEDULER_GET_BOOKING_STATUS_TYPE))
+        stubFor(post(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + UNCONFIRMED_BOOKING_STATUS)))
+                .withHeader(CONTENT_TYPE, containing(COURTSCHEDULER_QUERY_BOOKING_STATUS_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(body)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -815,14 +815,14 @@ public class CourtSchedulerServiceStub {
     }
 
     /**
-     * Stub GET /unconfirmedBooking/status to return a 500. Exercises the listing adapter's
+     * Stub POST /unconfirmedBooking/status to return a 500. Exercises the listing adapter's
      * fail-open path: on a courtscheduler outage, {@code getBookingStatus} must answer
      * {@code status=UNKNOWN, safeToShare=true} for every requested id rather than propagate the
      * failure - blocking every share in the building during a courtscheduler blip would be worse
      * than letting an advisory check pass.
      */
     public static void stubBookingStatusServerError() {
-        stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + UNCONFIRMED_BOOKING_STATUS)))
+        stubFor(post(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + UNCONFIRMED_BOOKING_STATUS)))
                 .willReturn(aResponse().withStatus(500)
                         .withBody("internal server error")
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
