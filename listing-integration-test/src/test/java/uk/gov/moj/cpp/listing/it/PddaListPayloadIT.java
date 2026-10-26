@@ -36,7 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Integration tests for {@code application/vnd.listing.search.pdda.list.payload+json}, requested from the daily list
+ * Integration tests for {@code application/vnd.listing.search.crown.list.payload+json}, requested from the daily list
  * resource: the daily list plus linked cases, sitting notes, judge name parts and further court centre address details.
  */
 public class PddaListPayloadIT extends AbstractIT {
