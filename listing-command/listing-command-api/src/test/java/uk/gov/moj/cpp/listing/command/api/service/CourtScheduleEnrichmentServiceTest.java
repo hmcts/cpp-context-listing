@@ -6711,6 +6711,61 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
+    void promoteCrownBookingReferenceToBookedSlot_anchorsAMultiDayReShareOnItsEarliestSession() {
+        // The by-ids lookup has no ORDER BY. On STE15 a Mon-Wed run came back Tue, Wed, Mon and
+        // was anchored on Tuesday, so it was listed Tue-Thu. The anchor must be the earliest day
+        // whatever order courtscheduler answers in.
+        final UUID bookingReference = UUID.randomUUID();
+        final UUID monday = UUID.randomUUID();
+        final UUID tuesday = UUID.randomUUID();
+        final UUID wednesday = UUID.randomUUID();
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withBookingReference(bookingReference)
+                .withEstimatedMinutes(1080)
+                .withListedStartDateTime(ZonedDateTime.parse("2028-05-08T10:00:00Z"))
+                .build();
+
+        when(courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingReference.toString()))
+                .thenReturn(List.of());
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", tuesday.toString()))
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", wednesday.toString()))
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", monday.toString())))
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(
+                crownSession(tuesday, "2028-05-09"),
+                crownSession(wednesday, "2028-05-10"),
+                crownSession(monday, "2028-05-08"));
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(
+                hearing, envelopeCarrying(bookingReference, monday, tuesday, wednesday));
+
+        assertThat(result.getBookedSlots().size(), is(1));
+        final RotaSlot slot = result.getBookedSlots().get(0);
+        assertThat(slot.getCourtScheduleId(), is(monday.toString()));
+        assertThat(slot.getStartTime(), is(ZonedDateTime.parse("2028-05-08T10:00:00Z")));
+    }
+
+    private CourtSchedule crownSession(final UUID courtScheduleId, final String sessionDate) {
+        final CourtSchedule cs = new CourtSchedule();
+        cs.setCourtScheduleId(courtScheduleId.toString());
+        cs.setCourtHouseId(UUID.randomUUID().toString());
+        cs.setCourtRoomId(UUID.randomUUID().toString());
+        cs.setSessionDate(LocalDate.parse(sessionDate));
+        cs.setOuCode("C01CY00");
+        cs.setDraft(false);
+        return cs;
+    }
+
+    @Test
     void promoteCrownBookingReferenceToBookedSlot_stillThrowsWhenTheCommandCarriesNothingForThisBooking() {
         // The fallback is the carried copy of THIS reference only. Sessions carried for another
         // booking must not be borrowed: a genuinely lost booking still fails loudly.

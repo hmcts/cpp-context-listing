@@ -1411,8 +1411,14 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         }
 
         // Crown picks a single anchor session; multi-day is expanded downstream by
-        // handleCrownMultiDayEnrichment from this slot, so the first resolved session is the anchor.
-        final CourtSchedule session = sessions.get(0);
+        // handleCrownMultiDayEnrichment from this slot, so the anchor must be the run's FIRST day.
+        // Neither lookup guarantees order - the by-ids one has no ORDER BY and came back in id
+        // order on STE15, anchoring a Mon-Wed run on Tuesday and listing it Tue-Thu - so take the
+        // earliest session rather than the first returned.
+        final CourtSchedule session = sessions.stream()
+                .min(Comparator.comparing(CourtSchedule::getSessionDate,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .orElseThrow();
         final String courtScheduleId = session.getCourtScheduleId();
         final ZonedDateTime slotStartTime = nonNull(session.getHearingStartTime())
                 ? ZonedDateTime.parse(session.getHearingStartTime())
