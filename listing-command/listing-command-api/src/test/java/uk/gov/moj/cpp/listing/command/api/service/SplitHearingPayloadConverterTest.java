@@ -308,12 +308,54 @@ class SplitHearingPayloadConverterTest {
     }
 
     @Test
+    void shouldNotCarryListingsVirtualMarkerIntoProgressionsNonDefaultDays() {
+        final JsonObject noSession = json("""
+                {
+                  "courtCentreId": "cc-1", "jurisdictionType": "CROWN",
+                  "nonDefaultDays": [
+                    { "virtual": true, "duration": 1080, "startTime": "2026-09-10T09:00:00.000Z" }
+                  ],
+                  "prosecutionCases": [{ "caseId": "c", "defendants": [{ "defendantId": "d", "offences": [] }] }]
+                }
+                """);
+
+        final JsonObject hearing = listNewHearing(toProgressionSplitRequest(noSession, COURT_CENTRE_NAME, null, null));
+
+        final JsonObject day = hearing.getJsonArray("nonDefaultDays").getJsonObject(0);
+        assertThat(day.containsKey("virtual"), is(false));
+        assertThat(day.getInt("duration"), is(1080));
+        assertThat(day.getString("startTime"), is("2026-09-10T09:00:00.000Z"));
+    }
+
+    @Test
+    void shouldLeaveAVirtualDayThatNamesNoSessionAsANonDefaultDay() {
+        final JsonObject noSession = json("""
+                {
+                  "courtCentreId": "cc-1", "jurisdictionType": "CROWN",
+                  "nonDefaultDays": [
+                    { "virtual": true, "duration": 1080, "startTime": "2026-09-10T09:00:00.000Z" }
+                  ],
+                  "prosecutionCases": [{ "caseId": "c", "defendants": [{ "defendantId": "d", "offences": [] }] }]
+                }
+                """);
+
+        final JsonObject hearing = listNewHearing(toProgressionSplitRequest(noSession, COURT_CENTRE_NAME, null, null));
+
+        assertThat(hearing.containsKey("bookedSlots"), is(false));
+        assertThat(hearing.getJsonArray("nonDefaultDays"), hasSize(1));
+        assertThat(hearing.getJsonArray("nonDefaultDays").getJsonObject(0).getInt("duration"), is(1080));
+        assertThat(hearing.getInt("estimatedMinutes"), is(1080));
+        assertThat(hearing.getString("earliestStartDateTime"), is("2026-09-10T09:00:00.000Z"));
+    }
+
+    @Test
     void shouldPassRealNonDefaultDaysThroughAndKeepThemOutOfBookedSlots() {
         final JsonObject mixed = json("""
                 {
                   "courtCentreId": "cc-1", "jurisdictionType": "CROWN",
                   "nonDefaultDays": [
-                    { "virtual": true, "duration": 720, "startTime": "2026-09-10T09:00:00.000Z" },
+                    { "virtual": true, "duration": 720, "startTime": "2026-09-10T09:00:00.000Z",
+                      "courtScheduleId": "11111111-1111-1111-1111-111111111111" },
                     { "startTime": "2026-09-11T10:30:00.000Z", "duration": 120 }
                   ],
                   "prosecutionCases": [{ "caseId": "c", "defendants": [{ "defendantId": "d", "offences": [] }] }]

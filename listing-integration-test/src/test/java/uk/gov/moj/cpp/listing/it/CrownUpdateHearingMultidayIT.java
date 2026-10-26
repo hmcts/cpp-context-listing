@@ -2,9 +2,13 @@ package uk.gov.moj.cpp.listing.it;
 
 import static java.time.DayOfWeek.MONDAY;
 import static java.time.temporal.TemporalAdjusters.nextOrSame;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasNoJsonPath;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMultiDaySearchAndBookFailure;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMultiDaySearchAndBookForHearing;
@@ -13,6 +17,7 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentres;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 
@@ -59,6 +64,10 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
             "application/vnd.listing.command.update-hearing-for-listing+json";
     private static final String UPDATE_HEARING_FOR_LISTING_ENDPOINT_KEY =
             "listing.command.update-hearing-for-listing";
+    private static final String MEDIA_TYPE_UPDATE_HEARINGS_FOR_LISTING =
+            "application/vnd.listing.command.update-hearings-for-listing+json";
+    private static final String UPDATE_HEARINGS_FOR_LISTING_ENDPOINT_KEY =
+            "listing.command.update-hearings-for-listing";
     private static final int MULTI_DAY_TOTAL_DURATION_MINUTES = 1080;
     private static final int SINGLE_COURT_DAY_MINUTES = 360;
 
@@ -207,6 +216,53 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         seedSteps.verifyPublicEVentHearingChangesSaved(hearingId);
     }
 
+    /**
+     * SPRDT-1446: Court Calendar unallocates a CROWN hearing through the bulk update-hearings-for-listing
+     * endpoint with endDate == startDate, no courtroom and ONE virtual nonDefaultDay carrying the
+     * chosen draft session and the hearing's whole duration. That whole duration must reach
+     * crown.search.and.book: clamped to one court day (the PR #119 regression), courtscheduler takes
+     * its single-day idempotent path and leaves every FINAL session booked.
+     */
+    @Test
+    void shouldSendTheWholeBlockToCourtScheduler_whenCourtCalendarUnallocatesAMultiDayHearing() throws Exception {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final UUID draftCourtScheduleId = UUID.randomUUID();
+        final LocalDate startDate = ItClock.today().plusDays(30).with(nextOrSame(MONDAY));
+        final ZonedDateTime sessionStart = startDate.atTime(9, 0).atZone(ZoneOffset.UTC);
+
+        final List<String> draftScheduleIds = new ArrayList<>();
+        draftScheduleIds.add(draftCourtScheduleId.toString());
+        draftScheduleIds.add(UUID.randomUUID().toString());
+        draftScheduleIds.add(UUID.randomUUID().toString());
+
+        stubMultiDaySearchAndBookForHearing(hearingId.toString(), draftScheduleIds, courtHouseId, null, startDate, true);
+        uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForSchedules(
+                hearingId.toString(), draftScheduleIds, sessionStart, 360);
+        givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+        givenARealHearingExists(hearingId);
+        final UUID unusedCourtRoomId = UUID.randomUUID();
+        givenReferenceDataStubsForUpdateHearing(courtCentreId, unusedCourtRoomId);
+        // The bulk endpoint resolves every hearing's court centre in one reference-data call.
+        stubGetReferenceDataCourtCentres(new CourtCentreData(
+                courtCentreId, LocalTime.of(10, 30), "6:30", unusedCourtRoomId, "Test Court Centre"));
+
+        final String payload = loadAndSubstitute(
+                "test-data/CROWN/update-hearing-for-listing/update-hearings-for-listing-crown-court-calendar-unallocate-multiday.json",
+                basePlaceholders(hearingId, courtCentreId, unusedCourtRoomId, draftCourtScheduleId, startDate, startDate, sessionStart));
+
+        final javax.ws.rs.core.Response response = AbstractIT.restClient.postCommand(
+                String.format("%s/%s", getBaseUri(), readConfig().getProperty(UPDATE_HEARINGS_FOR_LISTING_ENDPOINT_KEY)),
+                MEDIA_TYPE_UPDATE_HEARINGS_FOR_LISTING,
+                payload,
+                getLoggedInHeader());
+        assertThat(response.getStatus(), is(202));
+
+        verifyMultiDaySearchAndBookCalledForHearing(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
+        awaitUnallocatedProjection(hearingId, startDate, draftScheduleIds.size());
+    }
+
     @Test
     @ExpectedServerErrors("courtscheduler crown.search.and.book stub returns 422 -> resize rejection surfaced as CrownMultiDayExtensionException (NO_AVAILABILITY)")
     void shouldReturn422WithErrorCodeAndUnavailableDates_whenCourtschedulerRejectsResize() throws Exception {
@@ -277,6 +333,25 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
                         uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload()
                                 .isJson(com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath(
                                         "$.startDate", org.hamcrest.CoreMatchers.is(expectedStartDate.toString()))));
+    }
+
+    /** Awaits the unallocation projection: unallocated, room-less, one draft day per booked session. */
+    private void awaitUnallocatedProjection(final UUID hearingId, final LocalDate expectedStartDate, final int expectedDays) {
+        final String url = String.format("%s/%s", getBaseUri(),
+                MessageFormat.format(readConfig().getProperty("listing.search.hearing"), hearingId.toString()));
+        uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults(
+                uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder
+                        .requestParams(url, "application/vnd.listing.search.hearing+json")
+                        .withHeader(uk.gov.justice.services.common.http.HeaderConstants.USER_ID, getLoggedInUser())
+                        .build())
+                .until(
+                        uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status().is(javax.ws.rs.core.Response.Status.OK),
+                        uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload()
+                                .isJson(allOf(
+                                        withJsonPath("$.startDate", is(expectedStartDate.toString())),
+                                        withJsonPath("$.allocated", is(false)),
+                                        hasNoJsonPath("$.courtRoomId"),
+                                        withJsonPath("$.hearingDays", hasSize(expectedDays)))));
     }
 
     private static void givenReferenceDataStubsForUpdateHearing(final UUID courtCentreId, final UUID courtRoomId) {

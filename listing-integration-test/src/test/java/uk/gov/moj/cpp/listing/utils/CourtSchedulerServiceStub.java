@@ -41,6 +41,7 @@ import java.util.UUID;
 import javax.json.JsonObject;
 import org.awaitility.Awaitility;
 
+import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.VerificationException;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
@@ -231,7 +232,7 @@ public class CourtSchedulerServiceStub {
         if (hearingStartTime != null) {
             session.append(",\"hearingStartTime\":\"").append(hearingStartTime).append("\"");
         }
-        session.append(",\"isDraft\":").append(isDraft).append("}");
+        session.append(draftFields(isDraft)).append("}");
         final String body = "{\"courtSchedules\":[" + session + "]}";
 
         stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + SESSIONS_PATH)))
@@ -607,6 +608,21 @@ public class CourtSchedulerServiceStub {
                         .withBody(body)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
+    }
+
+    /**
+     * Stubs the courtscheduler get-hearing-ids endpoint for an exact set of query parameters (e.g.
+     * status=DRAFT + businessType + session window), so a test can prove which court-schedule sessions a
+     * court-calendar search was routed to: only a request carrying every given parameter gets the body.
+     */
+    public static void stubGetHearingIdsWithBody(final Map<String, String> queryParams, final String body) {
+        final MappingBuilder mapping = get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
+                .withHeader("Accept", containing("application/vnd.courtscheduler.get.hearing.ids+json"));
+        queryParams.forEach((name, value) -> mapping.withQueryParam(name, WireMock.equalTo(value)));
+        stubFor(mapping.willReturn(aResponse().withStatus(OK.getStatusCode())
+                .withBody(body)
+                .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+        ));
     }
 
     public static void stubGetHearingIds(final Instant exactHearingStartDateTime) {
@@ -1517,8 +1533,8 @@ public class CourtSchedulerServiceStub {
             if (i > 0) {
                 schedulesJson.append(",");
             }
-            schedulesJson.append("{\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\",")
-                    .append("\"isDraft\":").append(isDraft).append("}");
+            schedulesJson.append("{\"courtScheduleId\":\"").append(courtScheduleIds.get(i)).append("\"")
+                    .append(draftFields(isDraft)).append("}");
         }
         stubCourtSchedulesByIdResponse("{\"courtSchedules\":[" + schedulesJson + "]}");
     }
@@ -1570,9 +1586,19 @@ public class CourtSchedulerServiceStub {
             }
             schedulesJson.append(",\"sessionDate\":\"").append(session.sessionDate()).append("\"")
                     .append(",\"hearingStartTime\":\"").append(session.hearingStartTime()).append("\"")
-                    .append(",\"isDraft\":").append(session.isDraft()).append("}");
+                    .append(draftFields(session.isDraft())).append("}");
         }
         stubCourtSchedulesByIdResponse("{\"courtSchedules\":[" + schedulesJson + "]}");
+    }
+
+    /**
+     * The draft flag of a search-by-id session, under both wire names. Listing's command side maps the
+     * response onto {@code uk.gov.moj.cpp.listing.domain.CourtSchedule}, whose Jackson property is
+     * {@code draft} ({@code isDraft()}/{@code setDraft()}), so an {@code isDraft} key alone is ignored there
+     * and every session reads as non-draft. The query-side draft-status parser accepts either name.
+     */
+    private static String draftFields(final boolean isDraft) {
+        return ",\"isDraft\":" + isDraft + ",\"draft\":" + isDraft;
     }
 
     private static void stubCourtSchedulesByIdResponse(final String body) {
@@ -1603,18 +1629,25 @@ public class CourtSchedulerServiceStub {
     }
 
     /**
-     * Stub a successful move-hearing-to-past-date response carrying one or more booked past sessions.
+     * Stub a successful move-hearing-to-past-date response carrying one or more booked past sessions,
+     * for the default 10:00-17:00 UTC window that {@code MoveHearingToPastDateSteps} submits.
      * Body mirrors courtscheduler's REAL wire shape - {@code MoveHearingToPastDateResponse}:
-     * {@code {hearingId, source:"MOVE_TO_PAST_DATE", sessions:[CourtSchedule...]}} with the sessions
-     * ordered by date (first = the day the hearing now starts on). Each session mirrors courtscheduler's
-     * CourtSchedule: courtScheduleId, courtRoomId, courtHouseId, sessionDate, session start/end times
-     * - and NO per-hearing durationInMinutes (listing derives the per-day duration from the hearing's
-     * own estimatedMinutes). A flat body is NOT what courtscheduler returns.
+     * {@code {hearingId, source:"MOVE_TO_PAST_DATE", sessions:[...]}} with the sessions ordered by date
+     * (first = the day the hearing now starts on). Like courtscheduler, each session echoes the SUBMITTED
+     * start/end time-of-day as sessionStartTime/sessionEndTime and carries the window's
+     * durationInMinutes. A flat body is NOT what courtscheduler returns.
      */
     /** courtHouseId every stubbed move-to-past-date session reports (a court-schedule's centre). */
     public static final String MOVE_TO_PAST_DATE_COURT_HOUSE_ID = "2b6c0f3e-5c1a-4d0e-9a7b-0f1e2d3c4b5a";
 
     public static void stubMoveHearingToPastDate(final String hearingId, final List<MoveToPastDateStubSession> sessions) {
+        stubMoveHearingToPastDate(hearingId, sessions, LocalTime.of(10, 0), LocalTime.of(17, 0));
+    }
+
+    /** As {@link #stubMoveHearingToPastDate(String, List)} for an explicit submitted window (UTC time-of-day). */
+    public static void stubMoveHearingToPastDate(final String hearingId, final List<MoveToPastDateStubSession> sessions,
+                                                 final LocalTime submittedStart, final LocalTime submittedEnd) {
+        final long durationInMinutes = java.time.Duration.between(submittedStart, submittedEnd).toMinutes();
         final StringBuilder sessionsJson = new StringBuilder("[");
         for (int i = 0; i < sessions.size(); i++) {
             final MoveToPastDateStubSession session = sessions.get(i);
@@ -1626,8 +1659,9 @@ public class CourtSchedulerServiceStub {
                     .append("\"courtRoomId\":\"").append(session.courtRoomId()).append("\",")
                     .append("\"courtHouseId\":\"").append(MOVE_TO_PAST_DATE_COURT_HOUSE_ID).append("\",")
                     .append("\"sessionDate\":\"").append(session.sessionDate()).append("\",")
-                    .append("\"sessionStartTime\":\"").append(session.sessionDate()).append("T09:00:00.000+00:00\",")
-                    .append("\"sessionEndTime\":\"").append(session.sessionDate()).append("T17:00:00.000+00:00\",")
+                    .append("\"sessionStartTime\":\"").append(session.sessionDate()).append('T').append(submittedStart).append(":00.000Z\",")
+                    .append("\"sessionEndTime\":\"").append(session.sessionDate()).append('T').append(submittedEnd).append(":00.000Z\",")
+                    .append("\"durationInMinutes\":").append(durationInMinutes).append(',')
                     .append("\"maxDuration\":360,\"availableDuration\":0,\"isDraft\":false")
                     .append('}');
         }
@@ -1701,7 +1735,7 @@ public class CourtSchedulerServiceStub {
                 .withHeader(CONTENT_TYPE, containing(MOVE_HEARING_TO_PAST_DATE_TYPE)));
     }
 
-    // --- change-court-room-for-multiday-hearing stubs (CROWN-only: POST /hearings/{hearingId}) ---
+    // --- change-court-room-for-multiday-hearing stubs (CROWN and MAGISTRATES: POST /hearings/{hearingId}) ---
 
     private static final String CHANGE_COURT_ROOM_MULTIDAY_TYPE =
             "application/vnd.courtscheduler.change-court-room-for-multiday-hearing+json";

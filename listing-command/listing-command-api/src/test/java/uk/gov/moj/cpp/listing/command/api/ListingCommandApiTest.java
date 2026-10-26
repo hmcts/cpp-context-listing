@@ -821,15 +821,54 @@ public class ListingCommandApiTest {
         verify(sender, never()).send(any());
     }
 
+    /**
+     * SPRDT-1447: the moved day's duration is endDateTime - startDateTime, sent to courtscheduler and
+     * carried on the enrichment, so the handler's endTime (startTime + duration) is the submitted
+     * endDateTime. The hearing's previous estimatedMinutes must not be used.
+     */
+    @Test
+    void shouldUseTheSubmittedWindowNotTheHearingEstimateAsTheMovedDayDuration() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
+        final UUID courtScheduleId = randomUUID();
+        final LocalDate startDate = LocalDate.now().minusDays(7);
+        final ZonedDateTime startInstant = ZonedDateTime.parse(startDate + "T10:30:00Z");
+        final ZonedDateTime endInstant = ZonedDateTime.parse(startDate + "T10:50:00Z");
+
+        givenMovePayload(hearingId, courtCentreId, courtRoomId, startInstant.toString(), endInstant.toString());
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        final JsonObject hearing = Json.createObjectBuilder()
+                .add("id", hearingId.toString())
+                .add("jurisdictionType", "MAGISTRATES")
+                .add("estimatedMinutes", 90)
+                .build();
+        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 20, "MAGISTRATES"))
+                .willReturn(new MoveHearingToPastDateResult(courtScheduleId, courtRoomId.toString(), startDate,
+                        startDate + "T10:30:00.000Z", startDate + "T10:50:00.000Z", 20));
+        final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
+
+        listingCommandApi.handleMoveHearingToPastDate(envelope);
+
+        verify(courtSchedulerServiceAdapter).moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 20, "MAGISTRATES");
+        verify(sender).send(captor.capture());
+        final JsonObject sent = (JsonObject) captor.getValue().payload();
+        assertThat(sent.getInt("durationInMinutes"), is(20));
+        assertThat(sent.getString("sessionStartTime"), is(startDate + "T10:30:00.000Z"));
+        assertThat(sent.getString("sessionEndTime"), is(startDate + "T10:50:00.000Z"));
+        assertThat(sent.getJsonArray("sessions").getJsonObject(0).getInt("durationInMinutes"), is(20));
+    }
+
     @Test
     public void shouldMoveMagistratesHearingToPastDateEnrichWithSlotDetailsAndSend() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID courtRoomId = randomUUID();
         final UUID courtScheduleId = randomUUID();
-        final LocalDate startDate = LocalDate.parse("2026-05-01");
-        final ZonedDateTime startInstant = ZonedDateTime.parse("2026-05-01T10:00:00Z");
-        final ZonedDateTime endInstant = ZonedDateTime.parse("2026-05-01T17:00:00Z");
+        final LocalDate startDate = LocalDate.now().minusDays(7);
+        final ZonedDateTime startInstant = ZonedDateTime.parse(startDate + "T10:00:00Z");
+        final ZonedDateTime endInstant = ZonedDateTime.parse(startDate + "T17:00:00Z");
 
         givenMovePayload(hearingId, courtCentreId, courtRoomId, startInstant.toString(), endInstant.toString());
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
@@ -842,15 +881,15 @@ public class ListingCommandApiTest {
         given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
 
         final MoveHearingToPastDateResult slot = new MoveHearingToPastDateResult(courtScheduleId,
-                "9d324f4f-6c3b-451f-ac1e-f459db781153", startDate, "2026-05-01T09:00:00Z", "2026-05-01T17:00:00Z", 30);
-        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 30, "MAGISTRATES"))
+                "9d324f4f-6c3b-451f-ac1e-f459db781153", startDate, startDate + "T09:00:00Z", startDate + "T17:00:00Z", 30);
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 420, "MAGISTRATES"))
                 .willReturn(slot);
 
         final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
 
         listingCommandApi.handleMoveHearingToPastDate(envelope);
 
-        verify(courtSchedulerServiceAdapter).moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 30, "MAGISTRATES");
+        verify(courtSchedulerServiceAdapter).moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 420, "MAGISTRATES");
         verify(sender, times(1)).send(captor.capture());
         final JsonObject sent = (JsonObject) captor.getValue().payload();
         assertThat(sent.getString("hearingId"), is(hearingId.toString()));
@@ -858,7 +897,8 @@ public class ListingCommandApiTest {
         assertThat(sent.getString("courtScheduleId"), is(courtScheduleId.toString()));
         assertThat(sent.getString("sessionDate"), is(startDate.toString()));
         assertThat(sent.getString("endDate"), is(startDate.toString()));
-        assertThat(sent.getInt("durationInMinutes"), is(30));
+        // the submitted 10:00-17:00 window (420), not the hearing's old estimatedMinutes (30)
+        assertThat(sent.getInt("durationInMinutes"), is(420));
         assertThat(sent.getJsonArray("sessions").size(), is(1));
         assertThat(sent.getJsonArray("sessions").getJsonObject(0).getString("courtScheduleId"), is(courtScheduleId.toString()));
     }
@@ -977,35 +1017,40 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    void shouldNotRejectMultiDayCrownRangeAsMultiDayNotAllowed() {
-        // Regression guard: main rejects any endDate after startDate (MULTI_DAY_NOT_ALLOWED). Team
-        // deliberately does NOT port that check - SPRDT-1333's multi-day CROWN payback must keep working.
+    void shouldRejectMultiDayCrownRequestWindowWithMultiDayNotAllowed() {
+        // Ported from main (D-C/Q5): the request window is a single calendar day for BOTH
+        // jurisdictions. Multi-day CROWN payback comes from the hearing's estimate (duration path),
+        // not from a multi-day startDateTime/endDateTime range.
+        assertMultiDayRequestWindowRejected("CROWN");
+    }
+
+    @Test
+    void shouldRejectMultiDayMagistratesRequestWindowWithMultiDayNotAllowed() {
+        assertMultiDayRequestWindowRejected("MAGISTRATES");
+    }
+
+    private void assertMultiDayRequestWindowRejected(final String jurisdictionType) {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID courtRoomId = randomUUID();
-        final UUID courtScheduleId = randomUUID();
         final String start = LocalDate.now().minusDays(7).toString();
         final String end = LocalDate.now().minusDays(5).toString();
-        final ZonedDateTime startInstant = ZonedDateTime.parse(start + "T10:00:00Z");
-        final ZonedDateTime endInstant = ZonedDateTime.parse(end + "T17:00:00Z");
 
-        givenMovePayload(hearingId, courtCentreId, courtRoomId, startInstant.toString(), endInstant.toString());
-        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        givenMovePayload(hearingId, courtCentreId, courtRoomId, start + "T10:00:00Z", end + "T17:00:00Z");
 
         final JsonObject hearing = Json.createObjectBuilder()
                 .add("id", hearingId.toString())
-                .add("jurisdictionType", "CROWN")
+                .add("jurisdictionType", jurisdictionType)
+                .add("estimatedMinutes", 1080)
                 .build();
         given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
 
-        final MoveHearingToPastDateResult slot = new MoveHearingToPastDateResult(courtScheduleId,
-                courtRoomId.toString(), LocalDate.parse(start), start + "T09:00:00Z", start + "T17:00:00Z", null);
-        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, null, "CROWN"))
-                .willReturn(slot);
-
-        listingCommandApi.handleMoveHearingToPastDate(envelope);
-
-        verify(sender, times(1)).send(any());
+        final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
+                () -> listingCommandApi.handleMoveHearingToPastDate(envelope));
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getErrorCode(), is("MULTI_DAY_NOT_ALLOWED"));
+        verify(courtSchedulerServiceAdapter, never()).moveHearingToPastDate(any(), any(), any(), any(), any(), any(), any());
+        verify(sender, never()).send(any());
     }
 
     @Test
@@ -1013,7 +1058,7 @@ public class ListingCommandApiTest {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID courtRoomId = randomUUID();
-        final LocalDate startDate = LocalDate.parse("2026-05-01");
+        final LocalDate startDate = LocalDate.now().minusDays(7);
 
         givenMovePayload(hearingId, courtCentreId, courtRoomId, startDate + "T10:00:00Z", startDate + "T17:00:00Z");
 
@@ -1039,7 +1084,7 @@ public class ListingCommandApiTest {
 
     /**
      * Regression test: courtscheduler can return 200 OK with an empty sessions[] (a genuine
-     * multi-day-range search that matched nothing - exploratory, prior allocation left intact,
+     * multi-day, duration-sized search that matched nothing - exploratory, prior allocation left intact,
      * NOT an error at the adapter layer). Before this fix, command-api would still try to enrich
      * and send a command built from zero sessions, producing a broken
      * listing.command.move-hearing-to-past-date-enriched (missing courtScheduleId/sessionDate on
@@ -1052,18 +1097,19 @@ public class ListingCommandApiTest {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID courtRoomId = randomUUID();
-        final LocalDate startDate = LocalDate.parse("2026-05-01");
+        final LocalDate startDate = LocalDate.now().minusDays(7);
         final ZonedDateTime startInstant = ZonedDateTime.parse(startDate + "T10:00:00Z");
-        final ZonedDateTime endInstant = ZonedDateTime.parse(startDate.plusDays(3) + "T17:00:00Z");
+        final ZonedDateTime endInstant = ZonedDateTime.parse(startDate + "T17:00:00Z");
 
         givenMovePayload(hearingId, courtCentreId, courtRoomId, startInstant.toString(), endInstant.toString());
 
         final JsonObject hearing = Json.createObjectBuilder()
                 .add("id", hearingId.toString())
                 .add("jurisdictionType", "CROWN")
+                .add("estimatedMinutes", 1080)
                 .build();
         given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
-        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, null, "CROWN"))
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 420, "CROWN"))
                 .willReturn(new MoveHearingToPastDateResult(java.util.List.of()));
 
         final MoveHearingToPastDateException thrown = assertThrows(MoveHearingToPastDateException.class,
@@ -1094,14 +1140,14 @@ public class ListingCommandApiTest {
 
         final MoveHearingToPastDateResult slot = new MoveHearingToPastDateResult(courtScheduleId,
                 "9d324f4f-6c3b-451f-ac1e-f459db781153", startDate, startDate + "T09:00:00Z", startDate + "T17:00:00Z", null);
-        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, null, "CROWN"))
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 420, "CROWN"))
                 .willReturn(slot);
 
         final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
 
         listingCommandApi.handleMoveHearingToPastDate(envelope);
 
-        verify(courtSchedulerServiceAdapter).moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, null, "CROWN");
+        verify(courtSchedulerServiceAdapter).moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 420, "CROWN");
         verify(sender, times(1)).send(captor.capture());
         final JsonObject sent = (JsonObject) captor.getValue().payload();
         assertThat(sent.getString("hearingId"), is(hearingId.toString()));
@@ -1110,21 +1156,18 @@ public class ListingCommandApiTest {
         assertThat(sent.getString("courtScheduleId"), is(courtScheduleId.toString()));
         assertThat(sent.getString("courtRoomId"), is("9d324f4f-6c3b-451f-ac1e-f459db781153"));
         assertThat(sent.getString("sessionDate"), is(startDate.toString()));
-        assertThat(sent.containsKey("durationInMinutes"), is(false));
+        // no hearing estimate needed: the duration is the submitted window
+        assertThat(sent.getInt("durationInMinutes"), is(420));
     }
 
     /**
-     * Multi-day CROWN via the duration-driven day-count path: a single-day request (startDateTime and
-     * endDateTime on the same calendar date) still lets the hearing's estimatedMinutes drive
-     * courtscheduler's day-count (unaffected by the new explicit-range capability, which only kicks in
-     * when endDateTime's DATE is genuinely after startDateTime's). courtscheduler books N consecutive
-     * past sessions (its CourtSchedule carries no per-hearing duration). The enrichment must carry
-     * EVERY session so the handler re-issues N hearing days, with the hearing's estimatedMinutes spread
-     * evenly per day, endDate = last session, and the flat single-day fields mirroring the first
-     * session - never the hearing's old day details.
+     * If courtscheduler returns several booked sessions, the enrichment must carry EVERY session so the
+     * handler re-issues one hearing day per session, each with the submitted window's duration
+     * (endDateTime - startDateTime, never the hearing's estimatedMinutes), endDate = last session, and
+     * the flat single-day fields mirroring the first session - never the hearing's old day details.
      */
     @Test
-    void shouldEnrichCrownMultiDayMoveWithEverySessionAndPerDayDuration() {
+    void shouldEnrichEveryBookedSessionWithTheSubmittedWindowDuration() {
         final UUID hearingId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID courtRoomId = randomUUID();
@@ -1160,24 +1203,24 @@ public class ListingCommandApiTest {
                         startDate.plusDays(1) + "T09:00:00Z", startDate.plusDays(1) + "T17:00:00Z", null, false),
                 new MoveHearingToPastDateResult.BookedSession(schedule3, bookedRoomId.toString(), courtCentreId, startDate.plusDays(2),
                         startDate.plusDays(2) + "T09:00:00Z", startDate.plusDays(2) + "T17:00:00Z", null, false)));
-        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 1080, "CROWN"))
+        given(courtSchedulerServiceAdapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 420, "CROWN"))
                 .willReturn(slot);
 
         final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
 
         listingCommandApi.handleMoveHearingToPastDate(envelope);
 
-        verify(courtSchedulerServiceAdapter).moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 1080, "CROWN");
+        verify(courtSchedulerServiceAdapter).moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, startInstant, endInstant, 420, "CROWN");
         verify(sender, times(1)).send(captor.capture());
         final JsonObject sent = (JsonObject) captor.getValue().payload();
-        // flat fields = first session, duration = 1080 / 3
+        // flat fields = first session, duration = the submitted 10:00-17:00 window, not 1080 / 3
         assertThat(sent.getString("courtScheduleId"), is(schedule1.toString()));
         assertThat(sent.getString("sessionDate"), is(startDate.toString()));
         assertThat(sent.getString("courtRoomId"), is(bookedRoomId.toString()));
         assertThat(sent.getString("sessionStartTime"), is(startDate + "T09:00:00Z"));
-        assertThat(sent.getInt("durationInMinutes"), is(360));
+        assertThat(sent.getInt("durationInMinutes"), is(420));
         assertThat(sent.getString("endDate"), is(startDate.plusDays(2).toString()));
-        // every session carried, in order, each with the per-day duration
+        // every session carried, in order, each with the submitted window duration
         final javax.json.JsonArray sessions = sent.getJsonArray("sessions");
         assertThat(sessions.size(), is(3));
         assertThat(sessions.getJsonObject(0).getString("courtScheduleId"), is(schedule1.toString()));
@@ -1185,7 +1228,7 @@ public class ListingCommandApiTest {
         assertThat(sessions.getJsonObject(2).getString("courtScheduleId"), is(schedule3.toString()));
         assertThat(sessions.getJsonObject(2).getString("sessionDate"), is(startDate.plusDays(2).toString()));
         assertThat(sessions.getJsonObject(2).getString("courtCentreId"), is(courtCentreId.toString()));
-        assertThat(sessions.getJsonObject(1).getInt("durationInMinutes"), is(360));
+        assertThat(sessions.getJsonObject(1).getInt("durationInMinutes"), is(420));
         assertThat(sessions.getJsonObject(1).getBoolean("isDraft"), is(false));
     }
 
@@ -1664,7 +1707,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    void shouldRejectChangeCourtRoomForMultidayHearingWhenNotCrown() {
+    void shouldRejectChangeCourtRoomForMultidayHearingWhenJurisdictionIsUnsupported() {
         final UUID hearingId = randomUUID();
 
         given(envelope.payloadAsJsonObject()).willReturn(payload);
@@ -1672,7 +1715,6 @@ public class ListingCommandApiTest {
 
         final JsonObject hearing = Json.createObjectBuilder()
                 .add("id", hearingId.toString())
-                .add("jurisdictionType", "MAGISTRATES")
                 .add("hearingDays", Json.createArrayBuilder()
                         .add(Json.createObjectBuilder().add("hearingDate", "2026-07-14"))
                         .add(Json.createObjectBuilder().add("hearingDate", "2026-07-15")))
@@ -1683,9 +1725,59 @@ public class ListingCommandApiTest {
                 () -> listingCommandApi.handleChangeCourtRoomForMultidayHearing(envelope));
 
         assertThat(thrown.getHttpStatus(), is(422));
-        assertThat(thrown.getErrorCode(), is("NOT_CROWN_HEARING"));
+        assertThat(thrown.getErrorCode(), is("UNSUPPORTED_JURISDICTION"));
         verify(courtSchedulerServiceAdapter, never()).changeCourtRoomForMultidayHearing(any(), any());
         verify(sender, never()).send(any());
+    }
+
+    @Test
+    void shouldChangeCourtRoomForMultidayMagistratesHearing() {
+        final UUID hearingId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final UUID requestedCourtRoomId = randomUUID();
+        final UUID targetCourtScheduleId = randomUUID();
+        final LocalDate d1 = LocalDate.parse("2026-07-14");
+        final LocalDate d2 = LocalDate.parse("2026-07-15");
+
+        final JsonObject hearing = Json.createObjectBuilder()
+                .add("id", hearingId.toString())
+                .add("jurisdictionType", "MAGISTRATES")
+                .add("hearingDays", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder().add("hearingDate", d1.toString()))
+                        .add(Json.createObjectBuilder().add("hearingDate", d2.toString())))
+                .build();
+        given(hearingLookupService.findHearing(hearingId, envelope)).willReturn(Optional.of(hearing));
+
+        final JsonArray nonDefaultDays = Json.createArrayBuilder()
+                .add(Json.createObjectBuilder()
+                        .add("startTime", d2 + "T10:00:00Z")
+                        .add("duration", 360)
+                        .add("courtCentreId", courtCentreId.toString())
+                        .add("roomId", requestedCourtRoomId.toString())
+                        .add("courtScheduleId", targetCourtScheduleId.toString())
+                        .add("virtual", true))
+                .build();
+
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(payload.getString("hearingId")).willReturn(hearingId.toString());
+        given(payload.getJsonArray("nonDefaultDays")).willReturn(nonDefaultDays);
+        given(payload.getBoolean("sendNotificationToParties", true)).willReturn(true);
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(courtSchedulerServiceAdapter.changeCourtRoomForMultidayHearing(eq(hearingId), any()))
+                .willReturn(List.of(new ChangedDaySession(targetCourtScheduleId, "mags-room-2", d2, d2 + "T10:00:00Z", 360)));
+
+        listingCommandApi.handleChangeCourtRoomForMultidayHearing(envelope);
+
+        verify(courtSchedulerServiceAdapter).changeCourtRoomForMultidayHearing(eq(hearingId),
+                eq(List.of(new RequestedChangeDay(d2, targetCourtScheduleId, 360))));
+        final ArgumentCaptor<Envelope> captor = forClass(Envelope.class);
+        verify(sender, times(1)).send(captor.capture());
+        final JsonObject sent = (JsonObject) captor.getValue().payload();
+        assertThat(sent.getString("hearingId"), is(hearingId.toString()));
+        final JsonArray changedDays = sent.getJsonArray("changedDays");
+        assertThat(changedDays.size(), is(1));
+        assertThat(changedDays.getJsonObject(0).getString("courtRoomId"), is("mags-room-2"));
+        assertThat(changedDays.getJsonObject(0).getString("courtScheduleId"), is(targetCourtScheduleId.toString()));
     }
 
     @Test

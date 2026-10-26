@@ -44,10 +44,11 @@ public final class SplitHearingPayloadConverter {
     private static final String OFFENCES = "offences";
     private static final String OFFENCE_ID = "offenceId";
     private static final String COURT_CENTRE_ID = "courtCentreId";
+    private static final String COURT_SCHEDULE_ID = "courtScheduleId";
 
     // Copied field-for-field from a virtual nonDefaultDay onto a bookedSlot; `virtual` is dropped.
     private static final List<String> BOOKED_SLOT_FIELDS = List.of(
-            START_TIME, DURATION, "courtScheduleId", "session", "oucode",
+            START_TIME, DURATION, COURT_SCHEDULE_ID, "session", "oucode",
             "courtRoomId", COURT_CENTRE_ID, "roomId");
 
     private static final List<String> PASS_THROUGH_FIELDS = List.of(
@@ -73,9 +74,10 @@ public final class SplitHearingPayloadConverter {
         if (!bookedSlots.isEmpty()) {
             listNewHearing.add(BOOKED_SLOTS, bookedSlots);
         }
-        listNewHearing.add("estimatedMinutes", estimatedMinutes(bookedSlots, hearingTypeDefaultMinutes));
+        final JsonArray virtualDays = virtualDays(splitHearing);
+        listNewHearing.add("estimatedMinutes", estimatedMinutes(virtualDays, hearingTypeDefaultMinutes));
 
-        earliestStartDateTime(bookedSlots)
+        earliestStartDateTime(virtualDays)
                 .ifPresent(value -> listNewHearing.add("earliestStartDateTime", value));
         copyIfPresent(splitHearing, "endDate", listNewHearing, "endDate");
 
@@ -101,7 +103,7 @@ public final class SplitHearingPayloadConverter {
     private static JsonArray bookedSlots(final JsonObject splitHearing) {
         final JsonArrayBuilder slots = createArrayBuilder();
         for (final JsonObject day : nonDefaultDays(splitHearing)) {
-            if (!isVirtual(day)) {
+            if (!isVirtual(day) || !isBooked(day)) {
                 continue;
             }
             final JsonObjectBuilder slot = createObjectBuilder();
@@ -118,10 +120,48 @@ public final class SplitHearingPayloadConverter {
         return slots.build();
     }
 
+    /**
+     * The days progression receives as {@code nonDefaultDays}: every genuinely non-virtual day, plus
+     * any virtual day that names no session. A virtual day carries a booking only when it has a
+     * {@code courtScheduleId} - without one there is nothing to reshape onto a booked slot, and
+     * emitting it as one produces a slot whose id is null, which listing then dereferences unguarded
+     * when it converts slots to hearing days. Left here, the day keeps its duration and start time
+     * and the crown search-and-book branch finds the session instead.
+     */
     private static JsonArray realNonDefaultDays(final JsonObject splitHearing) {
         final JsonArrayBuilder days = createArrayBuilder();
         nonDefaultDays(splitHearing).stream()
-                .filter(day -> !isVirtual(day))
+                .filter(day -> !isVirtual(day) || !isBooked(day))
+                .map(SplitHearingPayloadConverter::withoutVirtualFlag)
+                .forEach(days::add);
+        return days.build();
+    }
+
+    /**
+     * {@code virtual} is listing's own marker for a day that stands in for a booked session; it is
+     * not part of progression's nonDefaultDay shape, whose schema rejects unknown keys. The booked
+     * slot path drops it for the same reason.
+     */
+    private static JsonObject withoutVirtualFlag(final JsonObject day) {
+        if (!day.containsKey(VIRTUAL)) {
+            return day;
+        }
+        final JsonObjectBuilder stripped = createObjectBuilder();
+        day.entrySet().stream()
+                .filter(entry -> !VIRTUAL.equals(entry.getKey()))
+                .forEach(entry -> stripped.add(entry.getKey(), entry.getValue()));
+        return stripped.build();
+    }
+
+    private static boolean isBooked(final JsonObject day) {
+        return day.containsKey(COURT_SCHEDULE_ID) && !day.isNull(COURT_SCHEDULE_ID);
+    }
+
+    /** Every virtual day, booked or not - what the new hearing is asked to sit for. */
+    private static JsonArray virtualDays(final JsonObject splitHearing) {
+        final JsonArrayBuilder days = createArrayBuilder();
+        nonDefaultDays(splitHearing).stream()
+                .filter(SplitHearingPayloadConverter::isVirtual)
                 .forEach(days::add);
         return days.build();
     }
@@ -138,11 +178,11 @@ public final class SplitHearingPayloadConverter {
         return day.containsKey(VIRTUAL) && !day.isNull(VIRTUAL) && day.getBoolean(VIRTUAL);
     }
 
-    private static int estimatedMinutes(final JsonArray bookedSlots, final Integer hearingTypeDefaultMinutes) {
-        if (bookedSlots.isEmpty()) {
+    private static int estimatedMinutes(final JsonArray days, final Integer hearingTypeDefaultMinutes) {
+        if (days.isEmpty()) {
             return isNull(hearingTypeDefaultMinutes) ? 0 : hearingTypeDefaultMinutes;
         }
-        return bookedSlots.getValuesAs(JsonObject.class).stream()
+        return days.getValuesAs(JsonObject.class).stream()
                 .filter(slot -> slot.containsKey(DURATION) && !slot.isNull(DURATION))
                 .mapToInt(slot -> slot.getInt(DURATION))
                 .sum();
@@ -155,8 +195,8 @@ public final class SplitHearingPayloadConverter {
      * over several non-consecutive days, and nothing requires the front end to send them in order -
      * taking the first of the array would then start the hearing on the wrong day.
      */
-    private static java.util.Optional<JsonValue> earliestStartDateTime(final JsonArray bookedSlots) {
-        return bookedSlots.getValuesAs(JsonObject.class).stream()
+    private static java.util.Optional<JsonValue> earliestStartDateTime(final JsonArray days) {
+        return days.getValuesAs(JsonObject.class).stream()
                 .filter(slot -> slot.containsKey(START_TIME) && !slot.isNull(START_TIME))
                 .min(comparing(slot -> ZonedDateTime.parse(slot.getString(START_TIME)).toInstant()))
                 .map(slot -> slot.get(START_TIME));

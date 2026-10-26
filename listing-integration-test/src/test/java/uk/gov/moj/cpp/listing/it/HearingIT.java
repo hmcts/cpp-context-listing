@@ -849,7 +849,8 @@ class HearingIT extends AbstractIT {
     @Test
     void shouldNotAllocateCrownHearingWhenCourtScheduleSessionIsDraft() {
         final HearingsData hearingsData = HearingsData.hearingsDataForBookedSlot();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        // The bookingReference the command resolves is generated on submit; the steps stub it as a draft session.
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData).withDraftCrownSessions();
 
         // Stub fetchCourtSchedulesByIds to return isDraft=true
         final String courtScheduleId = hearingsData.getHearingData().get(0).getBookedSlots().get(0).getCourtScheduleId();

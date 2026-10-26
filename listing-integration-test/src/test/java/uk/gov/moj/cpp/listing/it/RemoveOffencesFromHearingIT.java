@@ -2,8 +2,6 @@ package uk.gov.moj.cpp.listing.it;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.gov.moj.cpp.listing.it.util.HearingHelper.pollForHearingByIdWithJmsDelay;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.singleHearingsDataWithAllocationDataAndJudiciary;
@@ -21,7 +19,6 @@ import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceData;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -92,12 +89,6 @@ class RemoveOffencesFromHearingIT extends AbstractIT {
         final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, null);
         steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly();
 
-        var thrown = assertThrows(
-                NoSuchElementException.class,
-                steps::verifyEventOffenceAddedInActiveMQ,
-                "Expected steps.verifyEventOffenceAddedInActiveMQ() to throw, but it didn't"
-        );
-
-        assertTrue(thrown.getMessage().contains("No JMS message received"));
+        steps.verifyNoEventOffenceAddedInActiveMQ();
     }
 }
