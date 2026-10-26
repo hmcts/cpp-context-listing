@@ -365,6 +365,8 @@ class YouthCourtListRestrictionIT extends AbstractIT {
         unallocatedListCourtHearingSteps.verifyHearingIsCreated(unallocatedHearing.getId(), unallocatedHearing.getListedCases().size());
 
         unallocatedListCourtHearingSteps.extendWholeHearing(unallocatedHearing.getId(), allocatedHearingId, unallocatedHearing.getListedCases());
+        // the moved cases only reach the allocated hearing's view once progression replies with hearing-extended
+        unallocatedListCourtHearingSteps.verifyPublicEventHearingConfirmedAndExtendHearingFromProgression(allocatedHearingId, unallocatedHearing.getId());
 
         final String allocatedHearingUrl = String.format("%s/%s", getBaseUri(),
                 MessageFormat.format(readConfig().getProperty("listing.search.hearing"), allocatedHearingId));
