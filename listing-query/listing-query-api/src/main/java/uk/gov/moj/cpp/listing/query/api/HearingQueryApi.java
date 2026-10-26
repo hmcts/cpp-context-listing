@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.query.api;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
@@ -477,7 +478,7 @@ public class HearingQueryApi {
         }
 
         return notesService.findNotes(noteKeys).stream()
-                .filter(notes -> isNotBlank(notes.getNote()))
+                .filter(notes -> nonNull(notes.getCourtRoomId()) && nonNull(notes.getDate()) && isNotBlank(notes.getNote()))
                 .collect(Collectors.toMap(
                         notes -> sittingNoteKey(notes.getCourtRoomId().toString(), notes.getDate().toString()),
                         Notes::getNote,
@@ -563,7 +564,8 @@ public class HearingQueryApi {
         judiciaryArray.getValuesAs(JsonObject.class).forEach(judiciary -> {
             final JsonObjectBuilder enrichedJudiciaryEntryBuilder = JsonObjects.createObjectBuilder();
             judiciary.forEach(enrichedJudiciaryEntryBuilder::add);
-            final JsonObject judge = judiciariesById.get(judiciary.getString(JUDICIAL_ID, null));
+            final String judicialId = judiciary.getString(JUDICIAL_ID, null);
+            final JsonObject judge = isNull(judicialId) ? null : judiciariesById.get(judicialId);
             if (judge != null) {
                 final String judiciaryName = judiciaryNameMapper.getName(judge);
                 if (judiciaryName != null) {

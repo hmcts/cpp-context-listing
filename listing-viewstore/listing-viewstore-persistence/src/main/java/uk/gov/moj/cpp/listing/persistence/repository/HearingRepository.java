@@ -91,6 +91,38 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
     private HearingJdbcRepository hearingJdbcRepository;
 
     /**
+     * The hearings that list any of the given cases (an ejected case is no longer listed). It lets a caller read the
+     * stored case JSON, for example to see whether a case is restricted from the court list.
+     * <p>
+     * A native query like the other hearing searches: the {@code Hearing} entity maps columns that are not on the
+     * table (the flat hearing fields), so an entity query cannot select it.
+     *
+     * @param caseIds case ids as text, which is how the ids are compared in the other searches
+     */
+    @Query(value = "select h.id, h.properties, " +
+            "h.court_centre_id, " +
+            "h.court_room_id, " +
+            "h.type_id, " +
+            "h.start_date, " +
+            "h.end_date, " +
+            "h.is_vacated_trial, " +
+            "h.jurisdiction_type, " +
+            "h.unscheduled, " +
+            "h.week_commencing_start_date, " +
+            "h.week_commencing_end_date, " +
+            "h.allocated, " +
+            "h.type_of_list_id, " +
+            "h.estimated_minutes, " +
+            "1 as totalCount, " +
+            "h.is_possible_disqualification, " + NULL_FLAT_HEARING_FIELDS +
+            " from hearing h " +
+            "where h.id in (select lc.hearing_id from listed_cases lc " +
+            "  where cast(lc.case_id as varchar) in (:caseIds) " +
+            "  and (lc.is_ejected is null or lc.is_ejected = false))"
+            , isNative = true)
+    public abstract List<Hearing> findHearingsListingCases(@QueryParam("caseIds") final Set<String> caseIds);
+
+    /**
      * Find {@link Hearing}s based on the following parameters
      *
      * @param allocated        property to search for - mandatory.
