@@ -1717,7 +1717,7 @@ public class Hearing implements Aggregate {
 
     private Stream<Object> emitYouthCourtListRestrictionForNewUnder18Subject(final UUID courtApplicationId,
                                                                             final ApplicantRespondent previousSubject) {
-        if (!canAllocate() && !isAllocated()) {
+        if (!canRestrictYouths()) {
             return Stream.empty();
         }
         final LocalDate effectiveHearingDate = getEffectiveHearingDate();
@@ -2224,10 +2224,16 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> emitYouthCourtListRestrictions() {
-        if (canAllocate() || isAllocated()) {
+        if (canRestrictYouths()) {
             return emitYouthCourtListRestrictions(getEffectiveHearingDate());
         }
         return Stream.empty();
+    }
+
+    // A fixed-date hearing is checked once it can be allocated; a week-commencing hearing has no court room
+    // until it is allocated, so it is checked as soon as it has a week-commencing date
+    private boolean canRestrictYouths() {
+        return canAllocate() || isAllocated() || nonNull(this.weekCommencingStartDate);
     }
 
     private Stream<Object> emitYouthCourtListRestrictions(final LocalDate effectiveHearingDate) {
@@ -3542,12 +3548,13 @@ public class Hearing implements Aggregate {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
-        return apply(Stream.of(AddedCasesForHearing.addedCasesForHearing()
+        final Stream<Object> addedCasesEvents = apply(Stream.of(AddedCasesForHearing.addedCasesForHearing()
                 .withUnAllocatedListedCases(prosecutionCases.stream()
                         .map(prosecutionCase -> buildListedCase(prosecutionCase, shadowListedOffences))
                         .collect(Collectors.toList()))
                 .withHearingId(hearingId)
                 .build()));
+        return concat(addedCasesEvents, emitYouthCourtListRestrictions());
     }
 
     public Stream<Object> raiseHearingDaysWithoutCourtCentreCorrected(final UUID hearingId, final List<uk.gov.justice.listing.events.HearingDay> hearingDays) {
@@ -3969,11 +3976,42 @@ public class Hearing implements Aggregate {
     public Stream<Object> removeCaseFromGroupCases(final UUID hearingId, final UUID groupId,
                                                    final ListedCase removedCase,
                                                    final ListedCase newGroupMaster) {
-        return apply(Stream.of(CaseRemovedFromGroupCases.caseRemovedFromGroupCases()
+        if (this.duplicate || this.deleted) {
+            return Stream.empty();
+        }
+        final uk.gov.justice.listing.events.ListedCase removedListedCase = NewDomainToEventConverter.buildListedCase(removedCase);
+        final Stream<Object> caseRemovedEvents = apply(Stream.of(CaseRemovedFromGroupCases.caseRemovedFromGroupCases()
                 .withHearingId(hearingId)
                 .withGroupId(groupId)
-                .withRemovedCase(NewDomainToEventConverter.buildListedCase(removedCase))
+                .withRemovedCase(removedListedCase)
                 .withNewGroupMaster(nonNull(newGroupMaster) ? NewDomainToEventConverter.buildListedCase(newGroupMaster) : null)
+                .build()));
+        return concat(caseRemovedEvents, emitYouthCourtListRestrictionsForRemovedCase(hearingId, removedListedCase));
+    }
+
+    // The removed case is listed on its own again, rebuilt from progression with every restriction flag false,
+    // so restrict its under-18 defendants - gated like every other youth path, after which allocation does it
+    private Stream<Object> emitYouthCourtListRestrictionsForRemovedCase(final UUID hearingId, final uk.gov.justice.listing.events.ListedCase removedCase) {
+        // The handler runs this for every hearing of the master case, so skip ones already held
+        if (isHearingInThePast() || !canRestrictYouths() || isNull(removedCase.getDefendants())) {
+            return Stream.empty();
+        }
+        final LocalDate effectiveHearingDate = getEffectiveHearingDate();
+        final List<UUID> under18DefendantIds = removedCase.getDefendants().stream()
+                .filter(defendant -> isUnder18OnHearingDate(defendant.getDateOfBirth(), effectiveHearingDate))
+                .map(uk.gov.justice.listing.events.Defendant::getId)
+                .collect(toList());
+        if (under18DefendantIds.isEmpty()) {
+            return Stream.empty();
+        }
+
+        LOGGER.info("Auto-restricting {} under-18 defendant(s) of case {} removed from group cases for hearing {}",
+                under18DefendantIds.size(), removedCase.getId(), hearingId);
+
+        return apply(Stream.of(CourtListRestricted.courtListRestricted()
+                .withHearingId(hearingId)
+                .withRestrictCourtList(true)
+                .withDefendantIds(under18DefendantIds)
                 .build()));
     }
 
