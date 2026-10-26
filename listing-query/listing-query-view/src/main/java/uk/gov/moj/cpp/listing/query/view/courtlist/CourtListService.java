@@ -28,6 +28,9 @@ public class CourtListService {
     private RangeSearchQuery rangeSearchQuery;
 
     @Inject
+    private LinkedCaseRestrictionService linkedCaseRestrictionService;
+
+    @Inject
     private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
 
     public JsonObject retrieveUnPublishedCourtList(final UUID courtCentreId,
@@ -44,7 +47,10 @@ public class CourtListService {
 
         final JsonEnvelope rangeSearchResponse = rangeSearchQuery.rangeSearchHearings(rangeSearchQueryEnvelope);
 
-        return rangeSearchConverter.generateCourtListQueryPayload(courtCentreId, rangeSearchResponse.payloadAsJsonObject(), startDate, endDate);
+        // a restricted case must not be named as the linked case of another case's hearing
+        final JsonObject hearings = linkedCaseRestrictionService.withoutRestrictedLinkedCases(rangeSearchResponse.payloadAsJsonObject());
+
+        return rangeSearchConverter.generateCourtListQueryPayload(courtCentreId, hearings, startDate, endDate);
     }
 
     public JsonObject emptyCourtList(final UUID courtCentreId) {

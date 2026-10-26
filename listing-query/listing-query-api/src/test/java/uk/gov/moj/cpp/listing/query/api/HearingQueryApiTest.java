@@ -1889,6 +1889,46 @@ public class HearingQueryApiTest {
         assertThat(result.getJsonArray("courtLists").getJsonObject(0).getJsonArray("sittings").getJsonObject(0).containsKey("sittingNote"), is(false));
     }
 
+    @Test
+    void shouldSkipANoteWithNoCourtRoomOrDateInsteadOfFailingTheWholeList() {
+        final String courtCentreId = randomUUID().toString();
+        final UUID room = randomUUID();
+        final String sittingDate = "2026-05-07";
+        dailyListWithSittings(courtCentreId, List.of(sittingFor(room, sittingDate)), createObjectBuilder().build());
+        when(notesService.findNotes(any(List.class))).thenReturn(List.of(
+                new Notes(randomUUID(), null, LocalDate.parse(sittingDate), "No room"),
+                new Notes(randomUUID(), room, null, "No date"),
+                new Notes(randomUUID(), room, LocalDate.parse(sittingDate), "Kept")));
+
+        final JsonObject sitting = hearingQueryApi.getPddaList(dailyListQuery(courtCentreId, sittingDate)).payloadAsJsonObject()
+                .getJsonArray("courtLists").getJsonObject(0).getJsonArray("sittings").getJsonObject(0);
+
+        assertThat(sitting.getString("sittingNote"), is("Kept"));
+    }
+
+    @Test
+    void shouldLeaveAJudiciaryEntryWithNoJudicialIdAsItIsInsteadOfFailing() {
+        final String courtCentreId = randomUUID().toString();
+        final String judicialId = randomUUID().toString();
+        final JsonObject sitting = createObjectBuilder()
+                .add("sittingDate", "2026-05-07")
+                .add("judiciary", createArrayBuilder()
+                        .add(createObjectBuilder().add("judicialId", judicialId))
+                        .add(createObjectBuilder().add("isBenchChairman", false)))
+                .build();
+        dailyListWithSittings(courtCentreId, List.of(sitting), createObjectBuilder().build());
+        when(referenceDataService.getJudiciariesByIdList(eq(List.of(fromString(judicialId))), any(JsonEnvelope.class))).thenReturn(envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("referencedata.query.judiciaries"),
+                createObjectBuilder().add("judiciaries", createArrayBuilder().add(createObjectBuilder().add("id", judicialId).add("surname", "Williams"))).build()));
+
+        final JsonArray judiciary = hearingQueryApi.getDailyList(dailyListQuery(courtCentreId, "2026-05-07")).payloadAsJsonObject()
+                .getJsonArray("courtLists").getJsonObject(0).getJsonArray("sittings").getJsonObject(0).getJsonArray("judiciary");
+
+        assertThat(judiciary.size(), is(2));
+        assertThat(judiciary.getJsonObject(1).containsKey("judicialId"), is(false));
+        assertThat(judiciary.getJsonObject(1).containsKey("judiciaryName"), is(false));
+    }
+
     private JsonObject sittingFor(final UUID courtRoomId, final String sittingDate) {
         return createObjectBuilder().add("courtRoomId", courtRoomId.toString()).add("sittingDate", sittingDate).build();
     }
