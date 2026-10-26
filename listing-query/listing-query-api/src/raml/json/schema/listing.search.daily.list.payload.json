@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "id": "http://justice.gov.uk/listing/query/listing.search.daily.list.payload.json",
+  "description": "Court list returned for application/vnd.listing.search.daily.list.payload+json and application/vnd.listing.search.crown.list.payload+json. The properties marked PDDA only are returned only for the PDDA media type; the daily list media type never contains them.",
   "type": "object",
   "properties": {
     "courtCentreId":            { "type": "string" },
@@ -40,7 +41,14 @@
               "courtCentreAddress1":      { "type": "string" },
               "courtCentreAddress2":      { "type": "string" },
               "welshCourtCentreAddress1": { "type": "string" },
-              "welshCourtCentreAddress2": { "type": "string" }
+              "welshCourtCentreAddress2": { "type": "string" },
+              "courtCentreAddress3":      { "type": "string", "description": "PDDA only" },
+              "courtCentreAddress4":      { "type": "string", "description": "PDDA only" },
+              "courtCentreAddress5":      { "type": "string", "description": "PDDA only" },
+              "courtCentrePostcode":      { "type": "string", "description": "PDDA only" },
+              "welshCourtCentreAddress3": { "type": "string", "description": "PDDA only" },
+              "welshCourtCentreAddress4": { "type": "string", "description": "PDDA only" },
+              "welshCourtCentreAddress5": { "type": "string", "description": "PDDA only" }
             },
             "required": ["crestCourtSiteId", "crestCourtSiteName", "courtType"]
           },
@@ -54,6 +62,7 @@
                 "courtRoomName":      { "type": "string" },
                 "welshCourtRoomName": { "type": "string" },
                 "weekCommencing":     { "type": "boolean" },
+                "sittingNote":        { "type": "string", "description": "PDDA only" },
                 "judiciary": {
                   "type": "array",
                   "items": {
@@ -64,6 +73,12 @@
                       "judicialId":       { "type": "string" },
                       "judiciaryName":    { "type": "string" },
                       "welshJudiciaryName": { "type": "string" },
+                      "judiciaryTitle":     { "type": "string", "description": "PDDA only" },
+                      "judiciaryForenames": { "type": "string", "description": "PDDA only" },
+                      "judiciarySurname":   { "type": "string", "description": "PDDA only" },
+                      "judiciaryTitleSuffix": { "type": "string", "description": "PDDA only" },
+                      "welshJudiciaryTitle": { "type": "string", "description": "PDDA only" },
+                      "welshJudiciaryTitleSuffix": { "type": "string", "description": "PDDA only" },
                       "judicialRoleType": {
                         "type": "object",
                         "properties": {
@@ -104,6 +119,17 @@
                         "type": "object",
                         "properties": {
                           "organisationName": { "type": "string" }
+                        }
+                      },
+                      "linkedCases": {
+                        "description": "PDDA only. Cases linked to this hearing's case; a linked case that is restricted from the court list is not included.",
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "caseId":  { "type": "string" },
+                            "caseUrn": { "type": "string" }
+                          }
                         }
                       },
                       "defendants": {

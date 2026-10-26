@@ -283,13 +283,16 @@ protocols: [ HTTP, HTTPS ]
           application/vnd.listing.search.court.list+json:
 
 /dailylistpayload:
-  description: get exhibit daily list as JSON payload
+  description: get exhibit daily list as JSON payload. With Accept application/vnd.listing.search.crown.list.payload+json the same list is returned with the additional data that the PDDA lists need (linked cases, sitting notes, judge name parts and further court centre address details)
   get:
     description: |
       ...
       (mapping):
           responseType: application/vnd.listing.search.daily.list.payload+json
           name: listing.search.daily.list.payload
+      (mapping):
+          responseType: application/vnd.listing.search.crown.list.payload+json
+          name: listing.search.pdda.list.payload
       ...
     queryParameters:
         courtCentreId:
@@ -321,6 +324,9 @@ protocols: [ HTTP, HTTPS ]
         body:
           application/vnd.listing.search.daily.list.payload+json:
             example: !include json/listing.search.daily.list.payload.json
+            schema: !include json/schema/listing.search.daily.list.payload.json
+          application/vnd.listing.search.crown.list.payload+json:
+            example: !include json/listing.search.pdda.list.payload.json
             schema: !include json/schema/listing.search.daily.list.payload.json
 
 /courtlistpayload:

@@ -48,6 +48,9 @@ public class CourtListServiceTest {
     @Mock
     private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
 
+    @Mock
+    private LinkedCaseRestrictionService linkedCaseRestrictionService;
+
     @InjectMocks
     private CourtListService courtListService;
 
@@ -69,7 +72,9 @@ public class CourtListServiceTest {
         when(rangeSearchQueryRequestFactory.buildRangeSearchQueryEnvelope(courtCentreId, publishCourtListType, startDate, queryEnvelope)).thenReturn(rangeSearchQueryEnvelope);
         when(rangeSearchQuery.rangeSearchHearings(rangeSearchQueryEnvelope)).thenReturn(rangeSearchResponse);
         when(rangeSearchResponse.payloadAsJsonObject()).thenReturn(rangeSearchResponsePayload);
-        when(rangeSearchConverter.generateCourtListQueryPayload(courtCentreId, rangeSearchResponsePayload, startDate, endDate)).thenReturn(courtListResponse);
+        final JsonObject withoutRestrictedLinkedCases = mock(JsonObject.class);
+        when(linkedCaseRestrictionService.withoutRestrictedLinkedCases(rangeSearchResponsePayload)).thenReturn(withoutRestrictedLinkedCases);
+        when(rangeSearchConverter.generateCourtListQueryPayload(courtCentreId, withoutRestrictedLinkedCases, startDate, endDate)).thenReturn(courtListResponse);
 
         final JsonObject response = courtListService.retrieveUnPublishedCourtList(courtCentreId, publishCourtListType, startDate, endDate, queryEnvelope);
 

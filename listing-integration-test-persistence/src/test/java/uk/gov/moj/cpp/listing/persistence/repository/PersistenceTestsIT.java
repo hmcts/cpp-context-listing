@@ -139,6 +139,28 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
     }
 
     @Test
+    public void shouldFindTheHearingsThatListTheGivenCases() {
+        final List<Hearing> saved = givenHearingsExistWithPCPAndWOFD();
+        final UUID firstCaseId = saved.get(0).getListedCases().iterator().next().getCaseId();
+        final UUID secondCaseId = saved.get(1).getListedCases().iterator().next().getCaseId();
+
+        final List<Hearing> forOneCase = hearingRepository.findHearingsListingCases(new HashSet<>(asList(firstCaseId.toString())));
+        final List<Hearing> forTwoCases = hearingRepository.findHearingsListingCases(new HashSet<>(asList(firstCaseId.toString(), secondCaseId.toString())));
+
+        assertThat(forOneCase.size(), is(1));
+        assertThat(forOneCase.get(0).getId(), is(saved.get(0).getId()));
+        assertThat(forTwoCases.stream().map(Hearing::getId).collect(java.util.stream.Collectors.toList()),
+                containsInAnyOrder(saved.get(0).getId(), saved.get(1).getId()));
+    }
+
+    @Test
+    public void shouldNotFindHearingsForACaseNoHearingLists() {
+        givenHearingsExistWithPCPAndWOFD();
+
+        assertThat(hearingRepository.findHearingsListingCases(new HashSet<>(asList(randomUUID().toString()))), is(empty()));
+    }
+
+    @Test
     public void shouldSaveAndFindHearingWhereQueryFindsResultsByWeekCommencingDateRange() {
         //given hearing with fixed date
         givenHearingsExist();
