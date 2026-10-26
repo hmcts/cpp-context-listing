@@ -42,7 +42,7 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     private static final String ACTION_QUERY_RANGE_SEARCH = "listing.range.search.hearings";
     private static final String ACTION_QUERY_SEARCH = "listing.search.hearings";
     private static final String ACTION_QUERY_UNSCHEDULED_SEARCH = "listing.unscheduled.search.hearings";
-    private static final String ACTION_SEARCH_PDDA_LIST_PAYLOAD = "listing.search.pdda.list.payload";
+    private static final String ACTION_SEARCH_CROWN_LIST_PAYLOAD = "listing.search.pdda.list.payload";
     private static final String RANDOM_GROUP = "Random group";
     private static final String ACTION_ALLOCATED_AND_UNALLOCATED_HEARINGS = "listing.allocated.and.unallocated.hearings";
     private static final String ACTION_SEARCH_CASE_BY_PERSON_DEFENDANT_AND_HEARING_DATE = "listing.get.cases-by-person-defendant";
@@ -166,12 +166,12 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
 
     @Test
     public void shouldAllowOnlyListingOfficersAndSystemUsersToGetPddaListPayload() {
-        assertAccessAsExpected(ACTION_SEARCH_PDDA_LIST_PAYLOAD, LISTING_OFFICERS, SYSTEM_USERS);
+        assertAccessAsExpected(ACTION_SEARCH_CROWN_LIST_PAYLOAD, LISTING_OFFICERS, SYSTEM_USERS);
     }
 
     @Test
     public void shouldNotAllowUnauthorisedUserToGetPddaListPayload() {
-        final Action action = createActionFor(ACTION_SEARCH_PDDA_LIST_PAYLOAD);
+        final Action action = createActionFor(ACTION_SEARCH_CROWN_LIST_PAYLOAD);
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
     }

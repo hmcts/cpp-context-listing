@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "id": "http://justice.gov.uk/listing/query/listing.search.daily.list.payload.json",
-  "description": "Court list returned for application/vnd.listing.search.daily.list.payload+json and application/vnd.listing.search.pdda.list.payload+json. The properties marked PDDA only are returned only for the PDDA media type; the daily list media type never contains them.",
+  "description": "Court list returned for application/vnd.listing.search.daily.list.payload+json and application/vnd.listing.search.crown.list.payload+json. The properties marked PDDA only are returned only for the PDDA media type; the daily list media type never contains them.",
   "type": "object",
   "properties": {
     "courtCentreId":            { "type": "string" },
