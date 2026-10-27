@@ -11,12 +11,12 @@
           "bookingId": { "type": "string" },
           "safeToShare": {
             "type": "boolean",
-            "description": "False only when the hold expired and was purged and was not re-booked. True for a live reservation, a re-booked one, an already-shared booking, and an unreachable courtscheduler."
+            "description": "The decision: whether a share may go ahead with this booking. True for RESERVED, REBOOKED, SHARED, SURPLUS and UNLISTED - progression places SURPLUS and UNLISTED from its own record - and for UNKNOWN, where the check failed open. Act on this, not on status."
           },
           "status": {
             "type": "string",
-            "enum": ["RESERVED", "SHARED", "NOT_FOUND", "REBOOKED", "UNKNOWN"],
-            "description": "REBOOKED means the hold had expired and, because the request set reserveIfExpired and the session still had room, courtscheduler took it again under the same booking id. UNKNOWN means courtscheduler could not be reached and the check failed open; courtscheduler itself never emits it."
+            "enum": ["RESERVED", "SHARED", "REBOOKED", "SURPLUS", "UNLISTED", "EXPIRED", "RELEASED", "NOT_FOUND", "UNKNOWN"],
+            "description": "Where the booking is. With a hold or listing: RESERVED, SHARED, or REBOOKED (the hold had expired and, because the request set reserveIfExpired and the session still had room, courtscheduler took it again under the same id). With nothing held, why: SURPLUS (a share merged its line onto another booking's session), UNLISTED (its listing was freed, e.g. by a re-share), EXPIRED (the hold lapsed and could not be re-booked), RELEASED (dropped from the draft, or released without a reason) or NOT_FOUND (nothing recorded). UNKNOWN means courtscheduler could not be reached and the check failed open; courtscheduler itself never emits it."
           }
         },
         "required": ["bookingId", "safeToShare", "status"],

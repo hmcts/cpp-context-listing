@@ -367,12 +367,11 @@ public class CourtSchedulerServiceAdapter {
 
     /**
      * Reports, for each booking id, whether the draft carrying it is still safe to share, and why.
-     * A pure pass-through of courtscheduler's answer: {@code RESERVED} (a reservation still holds
-     * capacity), {@code SHARED} (already shared — the confirmed row carries this booking id),
-     * {@code NOT_FOUND} (no row under this booking id in either shape, so the hold is gone), or,
-     * when the request sets {@code reserveIfExpired}, {@code REBOOKED} (the hold had expired and
-     * courtscheduler took it again on the same session).
-     * Listing never re-maps or collapses these.
+     * A pure pass-through of courtscheduler's answer. {@code safeToShare} is the decision;
+     * {@code status} says where the booking is: {@code RESERVED}, {@code SHARED}, {@code REBOOKED}
+     * (re-held under {@code reserveIfExpired}), or, with nothing held, why - {@code SURPLUS},
+     * {@code UNLISTED}, {@code EXPIRED}, {@code RELEASED} or {@code NOT_FOUND}. See courtscheduler's
+     * {@code /unconfirmedBooking/status}. Listing never re-maps or collapses these.
      *
      * <p><b>Fails open</b>, deliberately the opposite of {@link #getCourtScheduleDraftStatus}.
      * This gates a clerk's share, so a courtscheduler outage must not block every share in the
