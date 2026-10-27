@@ -1676,10 +1676,11 @@ public class Hearing implements Aggregate {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
-        return apply(Stream.of(CourtApplicationAddedForHearing.courtApplicationAddedForHearing()
+        final Stream<Object> courtApplicationAddedEvents = apply(Stream.of(CourtApplicationAddedForHearing.courtApplicationAddedForHearing()
                 .withHearingId(hearingId)
                 .withCourtApplication(NewDomainToEventConverter.buildCourtApplications(courtApplication))
                 .build()));
+        return concat(courtApplicationAddedEvents, emitYouthCourtListRestrictions());
     }
 
     public Stream<Object> updateCourtApplication(final UUID hearingId, final CourtApplication courtApplication) {
