@@ -54,7 +54,8 @@ public class CrownDailyListExParteCivilCaseIT extends AbstractIT {
         civilCasesHearingsData = HearingsData.hearingsDataWithExParteOffence();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(civilCasesHearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(UNALLOCATED);
+        // the allocation below is rejected until the hearing is in the viewstore
+        listCourtHearingSteps.verifyHearingIsInViewStore();
 
         allocation = updatedHearingDataForCrownAllocation(civilCasesHearingsData.getHearingData().get(0).getId());
         stubListHearingInCourtSessionsWithMultipleSchedules(
