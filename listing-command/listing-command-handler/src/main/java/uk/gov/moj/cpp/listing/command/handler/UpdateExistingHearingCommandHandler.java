@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
+import static java.util.Objects.isNull;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
 import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
 
@@ -16,6 +17,7 @@ import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.domain.PtphDetail;
 import uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate;
 import javax.inject.Inject;
 import javax.json.JsonObject;
@@ -56,9 +58,20 @@ public class UpdateExistingHearingCommandHandler {
         final List<UUID> shadowListedOffences = updateExistingHearing.getShadowListedOffences();
         final String hearingDay = seedingHearing.getSittingDay();
 
-        updateSeedAggregateEventStream(command, seedingHearingId, (SeedHearingAggregate seedHearingAggregate) ->
-                seedHearingAggregate.requestUpdateExistingHearing(seedingHearingId, existingHearingHearingId, hearingDay, prosecutionCases, shadowListedOffences));
+        // LPT-2405: tier / list type resolved in the command API from the stored hearing
+        final PtphDetail ptphDetail = buildPtphDetail(updateExistingHearing.getTier(),
+                updateExistingHearing.getListType(), updateExistingHearing.getKeyReason());
 
+        updateSeedAggregateEventStream(command, seedingHearingId, (SeedHearingAggregate seedHearingAggregate) ->
+                seedHearingAggregate.requestUpdateExistingHearing(seedingHearingId, existingHearingHearingId, hearingDay, prosecutionCases, shadowListedOffences, ptphDetail));
+
+    }
+
+    private PtphDetail buildPtphDetail(final String tier, final String listType, final String keyReason) {
+        if (isNull(tier) && isNull(listType) && isNull(keyReason)) {
+            return null;
+        }
+        return new PtphDetail(tier, listType, keyReason);
     }
 
     private void updateSeedAggregateEventStream(final JsonEnvelope command, final UUID seedHearingId,
