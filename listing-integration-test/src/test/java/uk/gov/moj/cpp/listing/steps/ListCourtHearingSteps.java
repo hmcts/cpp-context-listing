@@ -5,6 +5,7 @@ import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -1069,60 +1070,60 @@ public class ListCourtHearingSteps extends AbstractIT {
 
     public void verifyHearingListedFromAPIForStandaloneApplication(final boolean isAllocated) {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final String hearingIdFilter = getHearingFilter(hearingData.getId().toString());
 
         pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
-                withJsonPath("$.hearings[0].id",
-                        equalTo(hearingData.getId().toString())),
-                withJsonPath("$.hearings[0].jurisdictionType",
-                        equalTo(hearingData.getJurisdictionType())),
-                withJsonPath("$.hearings[0].courtCentreId",
-                        equalTo(hearingData.getCourtCentreId().toString())),
-                withJsonPath("$.hearings[0].type.id",
-                        equalTo(hearingData.getHearingTypeData().getTypeId().toString())),
-                withJsonPath("$.hearings[0].type.description",
-                        equalTo(hearingData.getHearingTypeData().getTypeDescription())),
-                withJsonPath("$.hearings[0].startDate",
-                        equalTo(hearingData.getHearingStartDate().toString())),
-                withJsonPath("$.hearings[0].courtApplications[0].applicationType",
-                        equalTo(hearingData.getCourtApplications().get(0).getType())),
-                withJsonPath("$.hearings[0].courtApplications[0].id",
-                        equalTo(hearingData.getCourtApplications().get(0).getId().toString())),
-                withJsonPath("$.hearings[0].courtApplications[0].parentApplicationId",
-                        equalTo(hearingData.getCourtApplications().get(0).getParentApplicationId().toString())),
-                withJsonPath("$.hearings[0].courtApplications[0].applicant.lastName",
-                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getLastName())),
-                withJsonPath("$.hearings[0].courtApplications[0].applicant.firstName",
-                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getFirstName())),
-                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].firstName",
-                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getFirstName())),
-                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].lastName",
-                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getLastName())),
-                withJsonPath("$.hearings[0].courtApplications[0].applicationParticulars",
-                        equalTo(hearingData.getCourtApplications().get(0).getApplicationParticulars())),
-                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.address1",
-                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress1())),
-                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.address2",
-                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress2().get())),
-                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.address3",
-                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress3().get())),
-                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.address4",
-                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress4().get())),
-                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.address5",
-                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress5().get())),
-                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.postcode",
-                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getPostcode().get())),
-                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.address1",
-                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress1())),
-                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.address2",
-                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress2().get())),
-                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.address3",
-                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress3().get())),
-                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.address4",
-                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress4().get())),
-                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.address5",
-                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress5().get())),
-                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.postcode",
-                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getPostcode().get()))
+                withJsonPath(hearingIdFilter, hasSize(1)),
+                withJsonPath(hearingIdFilter + ".jurisdictionType",
+                        hasItem(hearingData.getJurisdictionType())),
+                withJsonPath(hearingIdFilter + ".courtCentreId",
+                        hasItem(hearingData.getCourtCentreId().toString())),
+                withJsonPath(hearingIdFilter + ".type.id",
+                        hasItem(hearingData.getHearingTypeData().getTypeId().toString())),
+                withJsonPath(hearingIdFilter + ".type.description",
+                        hasItem(hearingData.getHearingTypeData().getTypeDescription())),
+                withJsonPath(hearingIdFilter + ".startDate",
+                        hasItem(hearingData.getHearingStartDate().toString())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].applicationType",
+                        hasItem(hearingData.getCourtApplications().get(0).getType())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].id",
+                        hasItem(hearingData.getCourtApplications().get(0).getId().toString())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].parentApplicationId",
+                        hasItem(hearingData.getCourtApplications().get(0).getParentApplicationId().toString())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].applicant.lastName",
+                        hasItem(hearingData.getCourtApplications().get(0).getApplicant().getLastName())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].applicant.firstName",
+                        hasItem(hearingData.getCourtApplications().get(0).getApplicant().getFirstName())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].respondents[0].firstName",
+                        hasItem(hearingData.getCourtApplications().get(0).getRespondent().getFirstName())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].respondents[0].lastName",
+                        hasItem(hearingData.getCourtApplications().get(0).getRespondent().getLastName())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].applicationParticulars",
+                        hasItem(hearingData.getCourtApplications().get(0).getApplicationParticulars())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].applicant.address.address1",
+                        hasItem(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress1())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].applicant.address.address2",
+                        hasItem(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress2().get())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].applicant.address.address3",
+                        hasItem(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress3().get())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].applicant.address.address4",
+                        hasItem(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress4().get())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].applicant.address.address5",
+                        hasItem(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress5().get())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].applicant.address.postcode",
+                        hasItem(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getPostcode().get())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].respondents[0].address.address1",
+                        hasItem(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress1())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].respondents[0].address.address2",
+                        hasItem(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress2().get())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].respondents[0].address.address3",
+                        hasItem(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress3().get())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].respondents[0].address.address4",
+                        hasItem(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress4().get())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].respondents[0].address.address5",
+                        hasItem(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress5().get())),
+                withJsonPath(hearingIdFilter + ".courtApplications[0].respondents[0].address.postcode",
+                        hasItem(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getPostcode().get()))
         });
     }
 
@@ -2025,28 +2026,10 @@ public class ListCourtHearingSteps extends AbstractIT {
                                                 .withProsecutionAuthorityCode(STRING.next()).build())
                                         .withIsSJP(false)
                                         .withCaseStatus("ACTIVE")
-                                        .withOffences(singletonList(Offence.offence().withId(hearingData.getCourtApplications().get(0).getOffenceId())
-                                                .withOffenceDefinitionId(randomUUID())
-                                                .withOffenceCode(STRING.next())
-                                                .withOffenceTitle(STRING.next())
-                                                .withWording(STRING.next())
-                                                .withCount(OFFENCE_COUNT)
-                                                .withOrderIndex(OFFENCE_ORDER_INDEX)
-                                                .withOffenceLegislation(OFFENCE_LEGISLATION)
-                                                .withStartDate(ItClock.today().toString())
-                                                .build()))
+                                        .withOffences(getStandaloneApplicationOffences(hearingData.getCourtApplications().get(0).getOffenceId()))
                                         .build()))
                                 .withApplicant(getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
-                                .withRespondents(singletonList(CourtApplicationParty.courtApplicationParty()
-                                        .withId(hearingData.getCourtApplications().get(0).getRespondent().getId())
-                                        .withPersonDetails(Person.person().withLastName(hearingData.getCourtApplications().get(0).getRespondent().getLastName())
-                                                .withFirstName(hearingData.getCourtApplications().get(0).getRespondent().getFirstName())
-                                                .withGender(Gender.FEMALE)
-                                                .withAddress(getAddress(hearingData.getCourtApplications().get(0).getRespondent().getAddress()))
-                                                .build())
-                                        .withSummonsRequired(false)
-                                        .withNotificationRequired(false)
-                                        .build()))
+                                .withRespondents(singletonList(getStandaloneApplicationRespondent(hearingData.getCourtApplications().get(0).getRespondent())))
                                 .withSubject(hearingData.getCourtApplications().get(0).getSubject() != null
                                         ? ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getSubject())
                                         : ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
@@ -2062,6 +2045,41 @@ public class ListCourtHearingSteps extends AbstractIT {
                         .withIsGroupProceedings(false)
                         .build())).build();
 
+    }
+
+    // A respondent with a masterDefendantId is sent as a master defendant (listed as PERSON_DEFENDANT), otherwise as a person (PERSON)
+    private CourtApplicationParty getStandaloneApplicationRespondent(final CourtApplicationPartyData respondent) {
+        if (nonNull(respondent.getMasterDefendantId())) {
+            return getApplicant(respondent);
+        }
+        return CourtApplicationParty.courtApplicationParty()
+                .withId(respondent.getId())
+                .withPersonDetails(Person.person().withLastName(respondent.getLastName())
+                        .withFirstName(respondent.getFirstName())
+                        .withGender(Gender.FEMALE)
+                        .withAddress(getAddress(respondent.getAddress()))
+                        .build())
+                .withSummonsRequired(false)
+                .withNotificationRequired(false)
+                .build();
+    }
+
+    // A standalone application without an offenceId is listed with no offences (e.g. a bail variation application)
+    private List<Offence> getStandaloneApplicationOffences(final UUID offenceId) {
+        if (isNull(offenceId))
+        {
+            return emptyList();
+        }
+        return singletonList(Offence.offence().withId(offenceId)
+                .withOffenceDefinitionId(randomUUID())
+                .withOffenceCode(STRING.next())
+                .withOffenceTitle(STRING.next())
+                .withWording(STRING.next())
+                .withCount(OFFENCE_COUNT)
+                .withOrderIndex(OFFENCE_ORDER_INDEX)
+                .withOffenceLegislation(OFFENCE_LEGISLATION)
+                .withStartDate(ItClock.today().toString())
+                .build());
     }
 
     private HearingType getHearingType(final HearingData hearingData) {
