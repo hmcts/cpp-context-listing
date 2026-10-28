@@ -1325,6 +1325,15 @@ public class UpdateHearingSteps extends AbstractIT {
         });
     }
 
+    public void verifyNoJudiciaryAssignedWithSourceWhenQueryingFromAPI(final String expectedJudiciaryAssignmentSource) {
+        final String hearingIdFilter = getHearingFilter(updatedHearingData.getHearingId().toString());
+        pollForHearing(updatedHearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(hearingIdFilter + ".judiciary[*]", hasSize(0)),
+                withJsonPath(hearingIdFilter + ".judiciaryAssignmentSource",
+                        hasItem(expectedJudiciaryAssignmentSource))
+        });
+    }
+
     public void verifyHearingAllocatedAndJudiciaryAssignedWithManualSourceWhenQueryingFromAPI() {
 
         final String hearingId = updatedHearingData.getHearingId().toString();
