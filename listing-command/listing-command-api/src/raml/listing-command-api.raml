@@ -86,18 +86,6 @@ protocols: [ HTTP, HTTPS ]
       requestType: application/vnd.listing.command.update-hearing-for-listing+json
         name: listing.command.update-hearing-for-listing
       (mapping):
-        requestType: application/vnd.listing.command.update-defendants-for-hearing+json
-        name: listing.command.update-defendants-for-hearing
-      (mapping):
-        requestType: application/vnd.listing.command.delete-offences-for-hearing+json
-        name: listing.command.delete-offences-for-hearing
-      (mapping):
-        requestType: application/vnd.listing.command.update-offences-for-hearing+json
-        name: listing.command.update-offences-for-hearing
-      (mapping):
-        requestType: application/vnd.listing.command.add-offences-for-hearing+json
-        name: listing.command.add-offences-for-hearing
-      (mapping):
         requestType: application/vnd.listing.command.extend-hearing-for-hearing+json
         name: listing.command.extend-hearing-for-hearing
       (mapping):
@@ -129,18 +117,6 @@ protocols: [ HTTP, HTTPS ]
       application/vnd.listing.command.update-hearing-for-listing+json:
         example: !include json/listing.command.update-hearing-for-listing.json
         schema: !include json/schema/listing.command.update-hearing-for-listing.json
-      application/vnd.listing.command.update-defendants-for-hearing+json:
-        example: !include json/listing.command.update-defendants-for-hearing.json
-        schema: !include json/schema/listing.command.update-defendants-for-hearing.json
-      application/vnd.listing.command.delete-offences-for-hearing+json:
-        example: !include json/listing.command.delete-offences-for-hearing.json
-        schema: !include json/schema/listing.command.delete-offences-for-hearing.json
-      application/vnd.listing.command.add-offences-for-hearing+json:
-        example: !include json/listing.command.add-offences-for-hearing.json
-        schema: !include json/schema/listing.command.add-offences-for-hearing.json
-      application/vnd.listing.command.update-offences-for-hearing+json:
-        example: !include json/listing.command.update-offences-for-hearing.json
-        schema: !include json/schema/listing.command.update-offences-for-hearing.json
       application/vnd.listing.command.extend-hearing-for-hearing+json:
         example: !include json/listing.command.extend-hearing-for-hearing.json
         schema: !include json/schema/listing.command.extend-hearing-for-hearing.json
