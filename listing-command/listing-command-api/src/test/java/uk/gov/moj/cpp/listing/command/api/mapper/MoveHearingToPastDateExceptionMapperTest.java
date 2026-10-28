@@ -72,7 +72,7 @@ class MoveHearingToPastDateExceptionMapperTest {
         assertThat(response.getEntity().toString(), containsString("\"message\":\"unexpected failure\""));
     }
 
-    // --- validations ported from main (rule 3): INVALID_DATE / INVALID_DATE_RANGE / START_DATE_TOO_OLD ---
+    // --- validations ported from main (rule 3): INVALID_DATE / INVALID_DATE_RANGE / MULTI_DAY_NOT_ALLOWED / START_DATE_TOO_OLD ---
 
     @Test
     void invalidDate_returns422_withErrorCodeAndMessage() {
@@ -98,6 +98,19 @@ class MoveHearingToPastDateExceptionMapperTest {
 
         assertThat(response.getStatus(), is(422));
         assertThat(response.getEntity().toString(), containsString("\"errorCode\":\"INVALID_DATE_RANGE\""));
+    }
+
+    @Test
+    void multiDayNotAllowed_returns422_withErrorCodeAndMessage() {
+        final JsonObject body = createObjectBuilder()
+                .add("errorCode", "MULTI_DAY_NOT_ALLOWED")
+                .add("message", "Hearings can only be moved to a single date")
+                .build();
+
+        final Response response = mapper.toResponse(new MoveHearingToPastDateException(422, body, "rejected"));
+
+        assertThat(response.getStatus(), is(422));
+        assertThat(response.getEntity().toString(), containsString("\"errorCode\":\"MULTI_DAY_NOT_ALLOWED\""));
     }
 
     @Test

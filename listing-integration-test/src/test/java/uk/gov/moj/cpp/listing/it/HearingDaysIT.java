@@ -96,6 +96,10 @@ public class HearingDaysIT extends AbstractIT {
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         final HearingData hearingData = hearingsData.getHearingData().get(0);
+        // The handler's SPLIT-vs-PARTIAL_ALLOCATION decision reads `allocated` from the VIEW-STORE hearing
+        // (ExtendHearingUtils.getOperationType). The court-centre search above can match before the
+        // allocation projection lands; wait for the exact field the guard branches on.
+        pollForHearingByIdWithJmsDelay(USER_ID_VALUE, hearingData.getId(), withJsonPath("$.allocated", equalTo(true)));
 
         UpdateHearingSteps updateHearingStepsSplit = new UpdateHearingSteps();
 
@@ -181,6 +185,10 @@ public class HearingDaysIT extends AbstractIT {
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         final HearingData hearingData = hearingsData.getHearingData().get(0);
+        // The handler's SPLIT-vs-PARTIAL_ALLOCATION decision reads `allocated` from the VIEW-STORE hearing
+        // (ExtendHearingUtils.getOperationType). The court-centre search above can match before the
+        // allocation projection lands; wait for the exact field the guard branches on.
+        pollForHearingByIdWithJmsDelay(USER_ID_VALUE, hearingData.getId(), withJsonPath("$.allocated", equalTo(true)));
 
         UpdateHearingSteps updateHearingStepsSplit = new UpdateHearingSteps();
 

@@ -5,6 +5,7 @@ import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -217,6 +218,9 @@ public class ListCourtHearingSteps extends AbstractIT {
 
     private NotesSteps notesSteps = new NotesSteps();
 
+    /** Draft state the CROWN bookingReference resolution reports on submit; see {@link #withDraftCrownSessions()}. */
+    private boolean crownSessionsDraft;
+
     public ListCourtHearingSteps(final HearingsData hearingsData) {
         this.hearingsData = hearingsData;
 
@@ -229,6 +233,16 @@ public class ListCourtHearingSteps extends AbstractIT {
         publicMessageConsumerHearingChangesSaved = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_CHANGES_SAVED);
         publicMessageConsumerCourtApplicationAddedForHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
+    }
+
+    /**
+     * Makes the courtscheduler session that each CROWN bookingReference resolves to a DRAFT session. The
+     * resolution stub is registered when the case is submitted, id-scoped at priority 2, so a draft stub a
+     * test registers itself beforehand never answers that lookup.
+     */
+    public ListCourtHearingSteps withDraftCrownSessions() {
+        this.crownSessionsDraft = true;
+        return this;
     }
 
     public ListCourtHearingSteps(final HearingsData hearingsData, final Boolean split) {
@@ -446,7 +460,7 @@ public class ListCourtHearingSteps extends AbstractIT {
      * keeping the enriched hearing consistent with the listed values.
      * No-op for MAGISTRATES, unallocated hearings (no booking reference) or hearings without a court centre.
      */
-    private static void stubCrownBookingReferenceResolution(final HearingData hearingData, final UUID bookingReference) {
+    private static void stubCrownBookingReferenceResolution(final HearingData hearingData, final UUID bookingReference, final boolean isDraft) {
         if (bookingReference == null
                 || hearingData.getCourtCentreId() == null
                 || !"CROWN".equals(hearingData.getJurisdictionType())) {
@@ -460,7 +474,7 @@ public class ListCourtHearingSteps extends AbstractIT {
                 : startTime.toLocalDate();
         stubSearchCourtSchedulesByIdSession(
                 bookingReference.toString(), hearingData.getCourtCentreId(), hearingData.getCourtRoomId(),
-                sessionDate, startTime, false);
+                sessionDate, startTime, isDraft);
         stubListHearingInCourtSessionsForCourtSchedule(hearingData.getId().toString(), bookingReference.toString(), startTime);
     }
 
@@ -567,19 +581,23 @@ public class ListCourtHearingSteps extends AbstractIT {
                 request, getLoggedInHeader());
     }
 
+    /**
+     * Waits until the first hearing is in the view store. The two filter matchers alone match vacuously
+     * (an indefinite json-path with no result matcher matches an empty result), so the hearing-id
+     * {@code hasSize(1)} matcher is what makes this a real wait. Without it, a follow-up command whose
+     * handler reads the view store (update-hearing-for-listing, update-related-hearing) can run before
+     * the hearing-listed projection: NotFound, redelivered to the DLQ, and the update is lost.
+     *
+     * <p>A week-commencing hearing has no hearing days, so the plain court-centre range search never
+     * returns it; it is looked up through the week-commencing range search instead.</p>
+     */
     public void verifyHearingListedFromAPI(final boolean isAllocated) {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
-
-        final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
-        final DefendantData defendant = listedCaseData.getDefendants().get(0);
-
-        final com.jayway.jsonpath.JsonPath lastNameFilter = getJsonPathQueryForDefendantLastName(hearingData, listedCaseData, defendant, defendant.getLastName());
-        final com.jayway.jsonpath.JsonPath caseReferenceFilter = getJsonPathQueryForCaseReference(hearingData, listedCaseData, defendant, listedCaseData.getCaseReference());
-
-        pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
-                withJsonPath(caseReferenceFilter),
-                withJsonPath(lastNameFilter)
-        });
+        if (hearingData.getWeekCommencingStartDate() != null) {
+            pollForWeekCommencingHearingListed(hearingData, isAllocated);
+        } else {
+            pollForHearing(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), hearingListedMatchers(hearingData));
+        }
         sleepToBeRefactored();
     }
 
@@ -588,18 +606,31 @@ public class ListCourtHearingSteps extends AbstractIT {
      */
     public void verifyHearingListedFromAPIWithJmsDelay(final boolean isAllocated) {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
+        if (hearingData.getWeekCommencingStartDate() != null) {
+            pollForWeekCommencingHearingListed(hearingData, isAllocated);
+        } else {
+            // Use JMS-aware polling to handle asynchronous message processing
+            pollForHearingWithJmsDelay(hearingData.getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), hearingListedMatchers(hearingData));
+        }
+    }
 
+    private void pollForWeekCommencingHearingListed(final HearingData hearingData, final boolean isAllocated) {
+        pollForHearingByWeekCommencing(hearingData.getCourtCentreId().toString(), isAllocated, "1970-01-01", "2100-12-31",
+                getLoggedInUser().toString(), hearingListedMatchers(hearingData));
+    }
+
+    private static Matcher[] hearingListedMatchers(final HearingData hearingData) {
         final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
         final DefendantData defendant = listedCaseData.getDefendants().get(0);
 
         final com.jayway.jsonpath.JsonPath lastNameFilter = getJsonPathQueryForDefendantLastName(hearingData, listedCaseData, defendant, defendant.getLastName());
         final com.jayway.jsonpath.JsonPath caseReferenceFilter = getJsonPathQueryForCaseReference(hearingData, listedCaseData, defendant, listedCaseData.getCaseReference());
 
-        // Use JMS-aware polling to handle asynchronous message processing
-        pollForHearingWithJmsDelay(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
+        return new Matcher[]{
+                withJsonPath(getHearingFilter(hearingData.getId().toString()), hasSize(1)),
                 withJsonPath(caseReferenceFilter),
                 withJsonPath(lastNameFilter)
-        });
+        };
     }
 
     public void verifyFirstListedDefendantYouthStatusWithJmsDelay(final boolean isAllocated, final boolean expectedIsYouth) {
@@ -1650,7 +1681,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         // follow-up list call to POST /hearings) to echo this hearing's own centre/room so the
         // resolved session matches the listed values.
         final UUID bookingReference = isAllocated ? randomUUID() : null;
-        stubCrownBookingReferenceResolution(hearingData, bookingReference);
+        stubCrownBookingReferenceResolution(hearingData, bookingReference, crownSessionsDraft);
 
         return ListCourtHearing.listCourtHearing()
                 .withAdjournedFromDate(ItClock.today().toString())
@@ -2019,28 +2050,10 @@ public class ListCourtHearingSteps extends AbstractIT {
                                                 .withProsecutionAuthorityCode(STRING.next()).build())
                                         .withIsSJP(false)
                                         .withCaseStatus("ACTIVE")
-                                        .withOffences(singletonList(Offence.offence().withId(hearingData.getCourtApplications().get(0).getOffenceId())
-                                                .withOffenceDefinitionId(randomUUID())
-                                                .withOffenceCode(STRING.next())
-                                                .withOffenceTitle(STRING.next())
-                                                .withWording(STRING.next())
-                                                .withCount(OFFENCE_COUNT)
-                                                .withOrderIndex(OFFENCE_ORDER_INDEX)
-                                                .withOffenceLegislation(OFFENCE_LEGISLATION)
-                                                .withStartDate(ItClock.today().toString())
-                                                .build()))
+                                        .withOffences(getStandaloneApplicationOffences(hearingData.getCourtApplications().get(0).getOffenceId()))
                                         .build()))
                                 .withApplicant(getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
-                                .withRespondents(singletonList(CourtApplicationParty.courtApplicationParty()
-                                        .withId(hearingData.getCourtApplications().get(0).getRespondent().getId())
-                                        .withPersonDetails(Person.person().withLastName(hearingData.getCourtApplications().get(0).getRespondent().getLastName())
-                                                .withFirstName(hearingData.getCourtApplications().get(0).getRespondent().getFirstName())
-                                                .withGender(Gender.FEMALE)
-                                                .withAddress(getAddress(hearingData.getCourtApplications().get(0).getRespondent().getAddress()))
-                                                .build())
-                                        .withSummonsRequired(false)
-                                        .withNotificationRequired(false)
-                                        .build()))
+                                .withRespondents(singletonList(getStandaloneApplicationRespondent(hearingData.getCourtApplications().get(0).getRespondent())))
                                 .withSubject(hearingData.getCourtApplications().get(0).getSubject() != null
                                         ? ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getSubject())
                                         : ListCourtHearingSteps.this.getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
@@ -2056,6 +2069,41 @@ public class ListCourtHearingSteps extends AbstractIT {
                         .withIsGroupProceedings(false)
                         .build())).build();
 
+    }
+
+    // A respondent with a masterDefendantId is sent as a master defendant (listed as PERSON_DEFENDANT), otherwise as a person (PERSON)
+    private CourtApplicationParty getStandaloneApplicationRespondent(final CourtApplicationPartyData respondent) {
+        if (nonNull(respondent.getMasterDefendantId())) {
+            return getApplicant(respondent);
+        }
+        return CourtApplicationParty.courtApplicationParty()
+                .withId(respondent.getId())
+                .withPersonDetails(Person.person().withLastName(respondent.getLastName())
+                        .withFirstName(respondent.getFirstName())
+                        .withGender(Gender.FEMALE)
+                        .withAddress(getAddress(respondent.getAddress()))
+                        .build())
+                .withSummonsRequired(false)
+                .withNotificationRequired(false)
+                .build();
+    }
+
+    // A standalone application without an offenceId is listed with no offences (e.g. a bail variation application)
+    private List<Offence> getStandaloneApplicationOffences(final UUID offenceId) {
+        if (isNull(offenceId))
+        {
+            return emptyList();
+        }
+        return singletonList(Offence.offence().withId(offenceId)
+                .withOffenceDefinitionId(randomUUID())
+                .withOffenceCode(STRING.next())
+                .withOffenceTitle(STRING.next())
+                .withWording(STRING.next())
+                .withCount(OFFENCE_COUNT)
+                .withOrderIndex(OFFENCE_ORDER_INDEX)
+                .withOffenceLegislation(OFFENCE_LEGISLATION)
+                .withStartDate(ItClock.today().toString())
+                .build());
     }
 
     private HearingType getHearingType(final HearingData hearingData) {
@@ -2082,7 +2130,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         // CROWN: resolve the bookingReference (= courtScheduleId) via GET /sessions?ids= (was search.court-schedules-by-id);
         // stub it to echo this hearing's own centre/room so the resolved session matches the listed values.
         final UUID bookingReference = randomUUID();
-        stubCrownBookingReferenceResolution(hearingData, bookingReference);
+        stubCrownBookingReferenceResolution(hearingData, bookingReference, false);
 
         return ListCourtHearing.listCourtHearing()
                 .withAdjournedFromDate(ItClock.today().toString())

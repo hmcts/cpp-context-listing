@@ -1,0 +1,29 @@
+{
+    "hearings": [
+        {
+            "hearingId": "%%HEARING_ID_TO_UPDATE%%",
+            "courtCentreId": "%%COURT_CENTRE_ID%%",
+            "type": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "Plea"
+            },
+            "judiciary": [],
+            "jurisdictionType": "CROWN",
+            "startDate": "%%START_DATE%%",
+            "endDate": "%%START_DATE%%",
+            "nonSittingDays": [],
+            "nonDefaultDays": [
+                {
+                    "startTime": "%%START_TIME%%",
+                    "courtCentreId": "%%COURT_CENTRE_ID%%",
+                    "duration": 1080,
+                    "courtScheduleId": "%%STARTING_COURT_SCHEDULE_ID%%",
+                    "virtual": true
+                }
+            ],
+            "hasVideoLink": false,
+            "hearingLanguage": "ENGLISH",
+            "publicListNote": ""
+        }
+    ]
+}

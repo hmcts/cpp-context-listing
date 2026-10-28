@@ -1,12 +1,27 @@
 package uk.gov.moj.cpp.listing.it.util;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import uk.gov.justice.services.messaging.JsonObjects;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
+import javax.json.JsonString;
+import javax.management.ObjectName;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +33,12 @@ import org.slf4j.LoggerFactory;
  * but stale JMS messages in Artemis still reference deleted events. When the event
  * processor tries to replay these stale messages, it gets a null payload, creating
  * poison messages that block the entire event processing pipeline.
+ * <p>
+ * Every call is a Jolokia bulk POST whose body is built with {@link JsonObjects} and whose MBean
+ * names are built with {@link ObjectName#quote(String)}. The service's own subscriptions are named
+ * with escaped dots ({@code listing\.event\.listener\.listing\.event}); hand-built URLs and
+ * {@code String.format} JSON bodies produced "Invalid escape sequence" / "Invalid JSON request"
+ * errors for them, so the quiesce always gave up and the purge never removed anything.
  */
 public class ArtemisQueuePurger {
 
@@ -42,13 +63,22 @@ public class ArtemisQueuePurger {
     private static final long QUIESCE_POLL_INTERVAL_MILLIS = 100;
     /** Consecutive polls with unreadable DeliveringCounts before giving up loudly. */
     private static final int QUIESCE_MAX_UNREADABLE_POLLS = 3;
-    /** Sentinel: the delivering count could not be read, NOT the same as quiesced. */
+    /** Sentinel: the count could not be read, NOT the same as quiesced. */
     private static final long DELIVERING_COUNT_UNKNOWN = -1;
 
     private static final List<String> EVENT_TOPICS = List.of(
             "jms.topic.listing.event",
             "jms.topic.public.event"
     );
+
+    private static final List<String> PIPELINE_COMMAND_QUEUES = List.of(
+            "jms.queue.listing.controller.command",
+            "jms.queue.listing.handler.command"
+    );
+
+    /** Non-durable subscriptions created by test JMS consumers are named by a bare UUID. */
+    private static final Pattern TEST_CONSUMER_QUEUE =
+            Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
     /**
      * Waits (bounded) for the listing event processor to finish any in-flight projection before the
@@ -59,8 +89,9 @@ public class ArtemisQueuePurger {
      * event still has in flight, producing {@code JsonValue.NULL} / {@code StreamStatusLockingException}
      * noise (and the occasional hang) in the server log.</p>
      *
-     * <p>The signal is each listing/public subscriber queue's {@code DeliveringCount} (messages dispatched
-     * to the MDB but not yet acked). When it reaches zero, no projection is mid-flight. This is a pure
+     * <p>The signal is the {@code DeliveringCount} of the service's own listing/public subscriptions
+     * (messages dispatched to the MDB but not yet acked; test-consumer subscriptions are excluded). When
+     * it reaches zero, no projection is mid-flight. This is a pure
      * <em>consume-side</em> read — it never drains the event-store publish relay itself; the publish side
      * is handled separately by {@code DatabaseCleaner#awaitPublishQueuesEmpty}, which
      * {@code AbstractIT#setUp} runs immediately before this wait so events the relay releases are then
@@ -100,163 +131,156 @@ public class ArtemisQueuePurger {
                 + "truncation may race in-flight projections", QUIESCE_MAX_WAIT_MILLIS);
     }
 
-    private static long totalDeliveringCount() {
-        long total = 0;
-        for (final String topic : EVENT_TOPICS) {
-            final List<String> subscriberQueues = getSubscriberQueuesOrNull(topic);
-            if (subscriberQueues == null) {
-                return DELIVERING_COUNT_UNKNOWN;
-            }
-            for (final String subscriberQueue : subscriberQueues) {
-                final long count = readDeliveringCount(topic, subscriberQueue);
-                if (count == DELIVERING_COUNT_UNKNOWN) {
-                    return DELIVERING_COUNT_UNKNOWN;
-                }
-                total += count;
-            }
-        }
-        return total;
-    }
-
-    private static long readDeliveringCount(final String topicAddress, final String subscriberQueue) {
-        try {
-            final String url = JOLOKIA_BASE + "read/org.apache.activemq.artemis:address=%22"
-                    + topicAddress.replace(".", "%2E")
-                    + "%22,broker=%22default%22,component=addresses,queue=%22"
-                    + subscriberQueue.replace(".", "%2E")
-                    + "%22,routing-type=%22multicast%22,subcomponent=queues/DeliveringCount";
-            final String value = extractValue(httpGet(url));
-            return Long.parseLong(value.trim());
-        } catch (final Exception e) {
-            LOGGER.warn("Failed to read DeliveringCount for {}: {}", subscriberQueue, e.getMessage());
+    /**
+     * Messages still anywhere in listing's own async pipeline: both listing command queues plus the
+     * service's durable subscriptions on the listing/public event topics. Uses {@code MessageCount}
+     * (routed-but-not-yet-dispatched messages count too), unlike the {@code DeliveringCount} the
+     * setUp quiesce reads. Test-consumer subscriptions (UUID-named) are excluded: they legitimately
+     * hold messages the test has not read yet. Returns {@value #DELIVERING_COUNT_UNKNOWN} when any
+     * count is unreadable.
+     */
+    public static long pipelineMessageCount() {
+        final Map<String, List<String>> subscriberQueues = subscriberQueuesOrNull();
+        if (subscriberQueues == null) {
             return DELIVERING_COUNT_UNKNOWN;
         }
+        final List<JsonObject> reads = new ArrayList<>();
+        PIPELINE_COMMAND_QUEUES.forEach(queue -> reads.add(read(queueMBean(queue, queue, "anycast"), "MessageCount")));
+        subscriberQueues.forEach((topic, queues) -> queues.stream()
+                .filter(queue -> !TEST_CONSUMER_QUEUE.matcher(queue).matches())
+                .forEach(queue -> reads.add(read(queueMBean(topic, queue, "multicast"), "MessageCount"))));
+        return sumOrUnknown(reads);
+    }
+
+    private static long totalDeliveringCount() {
+        final Map<String, List<String>> subscriberQueues = subscriberQueuesOrNull();
+        if (subscriberQueues == null) {
+            return DELIVERING_COUNT_UNKNOWN;
+        }
+        // Only the service's own subscriptions. A test-consumer subscription lives for the whole test
+        // class (JmsResourceManagementExtension closes it in afterAll and drains it in beforeEach, i.e.
+        // BEFORE this setUp): an event from the previous test's async tail that lands in it after the
+        // drain sits "delivering" in an idle consumer until the next drain, which would hold this wait
+        // for the full budget although no projection is in flight.
+        final List<JsonObject> reads = new ArrayList<>();
+        subscriberQueues.forEach((topic, queues) -> queues.stream()
+                .filter(queue -> !TEST_CONSUMER_QUEUE.matcher(queue).matches())
+                .forEach(queue -> reads.add(read(queueMBean(topic, queue, "multicast"), "DeliveringCount"))));
+        return sumOrUnknown(reads);
     }
 
     /**
      * Purges all listing-related Artemis queues (anycast queues, DLQ, and event topic subscriber queues).
      */
     public static void purgeAllListingQueues() {
+        final List<JsonObject> purges = new ArrayList<>();
+        final List<String> names = new ArrayList<>();
         for (final String queue : ANYCAST_QUEUES) {
-            purgeAnycastQueue(queue);
+            purges.add(removeAllMessages(queueMBean(queue, queue, "anycast")));
+            names.add(queue);
         }
-        purgeTopicSubscribers("jms.topic.listing.event");
-        purgeTopicSubscribers("jms.topic.public.event");
-    }
-
-    private static void purgeAnycastQueue(final String queueName) {
-        final String mbean = String.format(
-                "org.apache.activemq.artemis:address=\"%s\",broker=\"default\",component=addresses,queue=\"%s\",routing-type=\"anycast\",subcomponent=queues",
-                queueName, queueName);
-        executeRemoveAllMessages(mbean, queueName);
-    }
-
-    private static void purgeTopicSubscribers(final String topicAddress) {
-        final List<String> subscriberQueues = getSubscriberQueues(topicAddress);
-        for (final String subscriberQueue : subscriberQueues) {
-            final String mbean = String.format(
-                    "org.apache.activemq.artemis:address=\"%s\",broker=\"default\",component=addresses,queue=\"%s\",routing-type=\"multicast\",subcomponent=queues",
-                    topicAddress, subscriberQueue);
-            executeRemoveAllMessages(mbean, subscriberQueue);
+        final Map<String, List<String>> subscriberQueues = subscriberQueuesOrNull();
+        if (subscriberQueues != null) {
+            subscriberQueues.forEach((topic, queues) -> queues.forEach(queue -> {
+                purges.add(removeAllMessages(queueMBean(topic, queue, "multicast")));
+                names.add(queue);
+            }));
         }
-    }
-
-    private static List<String> getSubscriberQueues(final String topicAddress) {
-        final List<String> subscriberQueues = getSubscriberQueuesOrNull(topicAddress);
-        return subscriberQueues == null ? List.of() : subscriberQueues;
-    }
-
-    /**
-     * As {@link #getSubscriberQueues(String)} but returns {@code null} on failure so the
-     * quiesce path can distinguish "no subscribers" from "cannot see the broker" — the purge
-     * path degrades to an empty list, but for quiesce that conflation silently disables the
-     * whole wait.
-     */
-    private static List<String> getSubscriberQueuesOrNull(final String topicAddress) {
         try {
-            final String url = JOLOKIA_BASE + "read/org.apache.activemq.artemis:address=%22"
-                    + topicAddress.replace(".", "%2E")
-                    + "%22,broker=%22default%22,component=addresses/QueueNames";
-            final String response = httpGet(url);
-            return parseQueueNames(response);
-        } catch (final Exception e) {
-            LOGGER.warn("Failed to get subscriber queues for {}: {}", topicAddress, e.getMessage());
+            final JsonArray responses = bulk(purges);
+            for (int i = 0; i < responses.size(); i++) {
+                final JsonObject response = responses.getJsonObject(i);
+                if (response.getInt("status", 0) != 200) {
+                    LOGGER.warn("Failed to purge queue {}: {}", names.get(i), response.getString("error", "?"));
+                } else if (response.getJsonNumber("value") != null && response.getJsonNumber("value").longValue() != 0) {
+                    LOGGER.info("Purged {} messages from {}", response.getJsonNumber("value").longValue(), names.get(i));
+                }
+            }
+        } catch (final IOException e) {
+            LOGGER.warn("Failed to purge listing queues: {}", e.getMessage());
+        }
+    }
+
+    /** Subscriber queue names per event topic, or {@code null} when the broker cannot be read. */
+    private static Map<String, List<String>> subscriberQueuesOrNull() {
+        final List<JsonObject> reads = new ArrayList<>();
+        EVENT_TOPICS.forEach(topic -> reads.add(read(
+                "org.apache.activemq.artemis:address=" + ObjectName.quote(topic) + ",broker=\"default\",component=addresses",
+                "QueueNames")));
+        try {
+            final JsonArray responses = bulk(reads);
+            final Map<String, List<String>> queuesByTopic = new LinkedHashMap<>();
+            for (int i = 0; i < responses.size(); i++) {
+                final JsonObject response = responses.getJsonObject(i);
+                if (response.getInt("status", 0) != 200) {
+                    LOGGER.warn("Failed to get subscriber queues for {}: {}", EVENT_TOPICS.get(i), response.getString("error", "?"));
+                    return null;
+                }
+                queuesByTopic.put(EVENT_TOPICS.get(i), response.getJsonArray("value").getValuesAs(JsonString.class)
+                        .stream().map(JsonString::getString).toList());
+            }
+            return queuesByTopic;
+        } catch (final IOException e) {
+            LOGGER.warn("Failed to get subscriber queues: {}", e.getMessage());
             return null;
         }
     }
 
-    private static void executeRemoveAllMessages(final String mbean, final String displayName) {
+    private static long sumOrUnknown(final List<JsonObject> reads) {
         try {
-            final String body = String.format("{\"type\":\"exec\",\"mbean\":\"%s\",\"operation\":\"removeAllMessages\"}", mbean);
-            final String response = httpPost(JOLOKIA_BASE, body);
-            if (response.contains("\"status\":200")) {
-                final String value = extractValue(response);
-                if (!"0".equals(value)) {
-                    LOGGER.info("Purged {} messages from {}", value, displayName);
+            long total = 0;
+            final JsonArray responses = bulk(reads);
+            for (int i = 0; i < responses.size(); i++) {
+                final JsonObject response = responses.getJsonObject(i);
+                if (response.getInt("status", 0) != 200 || response.getJsonNumber("value") == null) {
+                    LOGGER.warn("Failed to read queue count: {}", response.getString("error", "?"));
+                    return DELIVERING_COUNT_UNKNOWN;
                 }
+                total += response.getJsonNumber("value").longValue();
             }
-        } catch (final Exception e) {
-            LOGGER.warn("Failed to purge queue {}: {}", displayName, e.getMessage());
+            return total;
+        } catch (final IOException e) {
+            LOGGER.warn("Failed to read queue counts: {}", e.getMessage());
+            return DELIVERING_COUNT_UNKNOWN;
         }
     }
 
-    private static String httpGet(final String urlStr) throws Exception {
-        final HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
-        conn.setRequestProperty("Authorization", "Basic " + AUTH);
-        conn.setConnectTimeout(3000);
-        conn.setReadTimeout(3000);
-        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-            final StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                sb.append(line);
-            }
-            return sb.toString();
-        } finally {
-            conn.disconnect();
-        }
+    private static String queueMBean(final String address, final String queue, final String routingType) {
+        return "org.apache.activemq.artemis:address=" + ObjectName.quote(address)
+                + ",broker=\"default\",component=addresses,queue=" + ObjectName.quote(queue)
+                + ",routing-type=\"" + routingType + "\",subcomponent=queues";
     }
 
-    private static String httpPost(final String urlStr, final String body) throws Exception {
-        final HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
+    private static JsonObject read(final String mbean, final String attribute) {
+        return JsonObjects.createObjectBuilder().add("type", "read").add("mbean", mbean).add("attribute", attribute).build();
+    }
+
+    private static JsonObject removeAllMessages(final String mbean) {
+        return JsonObjects.createObjectBuilder().add("type", "exec").add("mbean", mbean).add("operation", "removeAllMessages").build();
+    }
+
+    /** One HTTP round trip for any number of Jolokia requests; responses come back in request order. */
+    private static JsonArray bulk(final List<JsonObject> requests) throws IOException {
+        if (requests.isEmpty()) {
+            return JsonObjects.createArrayBuilder().build();
+        }
+        final JsonArrayBuilder body = JsonObjects.createArrayBuilder();
+        requests.forEach(body::add);
+        final HttpURLConnection conn = (HttpURLConnection) new URL(JOLOKIA_BASE).openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Authorization", "Basic " + AUTH);
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setConnectTimeout(3000);
         conn.setReadTimeout(3000);
         conn.setDoOutput(true);
-        conn.getOutputStream().write(body.getBytes(StandardCharsets.UTF_8));
-        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-            final StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                sb.append(line);
-            }
-            return sb.toString();
+        try (OutputStream out = conn.getOutputStream()) {
+            out.write(body.build().toString().getBytes(StandardCharsets.UTF_8));
+        }
+        try (InputStream in = conn.getInputStream();
+             JsonReader reader = JsonObjects.createReader(new StringReader(new String(in.readAllBytes(), StandardCharsets.UTF_8)))) {
+            return reader.readArray();
         } finally {
             conn.disconnect();
         }
-    }
-
-    private static List<String> parseQueueNames(final String json) {
-        // Simple JSON array extraction: find "value":["name1","name2"]
-        final int start = json.indexOf("\"value\":[");
-        if (start < 0) return List.of();
-        final int arrayStart = json.indexOf('[', start);
-        final int arrayEnd = json.indexOf(']', arrayStart);
-        if (arrayStart < 0 || arrayEnd < 0) return List.of();
-        final String arrayContent = json.substring(arrayStart + 1, arrayEnd);
-        if (arrayContent.isBlank()) return List.of();
-        return java.util.Arrays.stream(arrayContent.split(","))
-                .map(s -> s.trim().replace("\"", "").replace("\\\\", "\\"))
-                .toList();
-    }
-
-    private static String extractValue(final String json) {
-        final int idx = json.indexOf("\"value\":");
-        if (idx < 0) return "?";
-        final int start = idx + 8;
-        final int end = json.indexOf(',', start);
-        return end > 0 ? json.substring(start, end).trim() : json.substring(start).replace("}", "").trim();
     }
 }
