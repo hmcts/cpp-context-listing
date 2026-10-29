@@ -73,8 +73,8 @@ import org.junit.jupiter.api.Test;
  * validation (FUTURE_DATE_NOT_ALLOWED including today, INVALID_DATE, INVALID_DATE_RANGE,
  * MULTI_DAY_NOT_ALLOWED, START_DATE_TOO_OLD) is ported from main and applied by LISTING ITSELF,
  * uniformly for BOTH jurisdictions, before courtscheduler is ever called. The request window is a
- * single calendar day (D-C/Q5); SPRDT-1333's multi-day CROWN payback comes from the hearing's
- * duration estimate, not from a multi-day request range. courtscheduler is WireMock here, so the pay-back
+ * single calendar day (D-C/Q5). The moved day's duration and end time are the submitted window
+ * (endDateTime - startDateTime), never the hearing's previous estimate (SPRDT-1447). courtscheduler is WireMock here, so the pay-back
  * of the prior allocation is asserted in courtscheduler's own MoveHearingToPastDateIT; these tests
  * prove listing validates up front, asks for the move (CROWN jurisdiction on the request), and
  * re-dates the hearing from the response, for single- and multi-day.
@@ -89,6 +89,8 @@ class MoveHearingToPastDateIT extends AbstractIT {
     /** 3 x 360-minute days - the same multi-day CROWN seeding shape as ChangeCourtRoomForMultidayHearingIT. */
     private static final int MULTI_DAY_TOTAL_DURATION_MINUTES = 1080;
     private static final int DAY_DURATION_MINUTES = 360;
+    /** The 10:00-17:00 UTC window MoveHearingToPastDateSteps submits by default. */
+    private static final int SUBMITTED_WINDOW_MINUTES = 420;
 
     /**
      * Lists a real hearing through the full flow (command → events → viewstore projection) and only
@@ -145,6 +147,30 @@ class MoveHearingToPastDateIT extends AbstractIT {
         verifyMoveHearingToPastDateCalled(moveSteps.getHearingId());
         moveSteps.verifyCourtScheduleStored(courtScheduleId);
         moveSteps.verifyStartAndEndDateUpdated(pastDate, pastDate);
+    }
+
+    /**
+     * SPRDT-1447: the moved day takes its duration and end time from the submitted window
+     * (endDateTime - startDateTime), not from the hearing's previous estimatedMinutes. 47 minutes is
+     * chosen so it cannot coincide with the seeded hearing's estimate.
+     */
+    @Test
+    void shouldMoveMagistratesHearingToPastDateWithTheSubmittedEndTimeAndDuration() {
+        final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
+
+        final LocalDate pastDate = ItClock.today().minusDays(1);
+        final LocalTime start = LocalTime.of(10, 30);
+        final LocalTime end = LocalTime.of(11, 17);
+        final String courtScheduleId = randomUUID().toString();
+        stubMoveHearingToPastDate(moveSteps.getHearingId(),
+                List.of(new MoveToPastDateStubSession(courtScheduleId, COURT_ROOM_ID, pastDate)), start, end);
+
+        final Response response = moveSteps.whenHearingIsMovedToPastDateWindow("MAGS", pastDate, start, end);
+
+        assertThat(response.getStatus(), is(ACCEPTED.getStatusCode()));
+        verifyMoveHearingToPastDateCalled(moveSteps.getHearingId());
+        moveSteps.verifyCourtScheduleStored(courtScheduleId);
+        moveSteps.verifyMovedHearingDayTimes(pastDate, start, end, 47);
     }
 
     @Test
@@ -370,8 +396,8 @@ class MoveHearingToPastDateIT extends AbstractIT {
         // end date follows the LAST booked past session (3 consecutive days from pastDay1)
         moveSteps.verifyStartAndEndDateUpdated(pastDay1, pastDay1.plusDays(2));
         // The hearing keeps THREE days - one per session courtscheduler booked - each on its own past
-        // date with its own courtScheduleId and a third of the hearing's 1080 minutes; the future block
-        // is gone entirely.
+        // date with its own courtScheduleId and the submitted 10:00-17:00 window as its duration (not a
+        // share of the hearing's 1080-minute estimate); the future block is gone entirely.
         pollWithDefaults(requestParams(searchHearingUrl(hearing.hearingId), MEDIA_TYPE_SEARCH_HEARING)
                 .withHeader(USER_ID, getLoggedInUser()).build())
                 .until(
@@ -382,17 +408,18 @@ class MoveHearingToPastDateIT extends AbstractIT {
                                 withJsonPath("$.hearingDays[?(@.hearingDate=='" + pastDay1 + "')].courtScheduleId", hasItem(pastScheduleD1)),
                                 withJsonPath("$.hearingDays[?(@.hearingDate=='" + pastDay1.plusDays(1) + "')].courtScheduleId", hasItem(pastScheduleD2)),
                                 withJsonPath("$.hearingDays[?(@.hearingDate=='" + pastDay1.plusDays(2) + "')].courtScheduleId", hasItem(pastScheduleD3)),
-                                withJsonPath("$.hearingDays[*].durationMinutes", everyItem(is(DAY_DURATION_MINUTES))),
+                                withJsonPath("$.hearingDays[*].durationMinutes", everyItem(is(SUBMITTED_WINDOW_MINUTES))),
                                 withJsonPath("$.hearingDays[*].isDraft", everyItem(is(false))),
-                                // endTime = 09:00 start + 360 mins, not the session's 17:00 closing time
-                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + pastDay1 + "')].endTime", hasItem(startsWith(pastDay1 + "T15:00"))),
+                                // endTime = the submitted endDateTime (10:00 start + 420 mins)
+                                withJsonPath("$.hearingDays[?(@.hearingDate=='" + pastDay1 + "')].endTime", hasItem(startsWith(pastDay1 + "T17:00"))),
                                 // hearing-level room follows the room courtscheduler booked the run in
                                 withJsonPath("$.courtRoomId", is(COURT_ROOM_ID)),
                                 withJsonPath("$.hearingDays[*].courtScheduleId", not(hasItem(hearing.scheduleD1.toString()))),
                                 withJsonPath("$.hearingDays[*].courtScheduleId", not(hasItem(hearing.scheduleD2.toString()))),
                                 withJsonPath("$.hearingDays[*].courtScheduleId", not(hasItem(hearing.scheduleD3.toString()))),
                                 withJsonPath("$.hearingDays[*].hearingDate", not(hasItem(hearing.day1.toString()))),
-                                withJsonPath("$.estimatedMinutes", is(MULTI_DAY_TOTAL_DURATION_MINUTES))
+                                // the aggregate re-derives estimatedMinutes as the sum of the re-issued days
+                                withJsonPath("$.estimatedMinutes", is(3 * SUBMITTED_WINDOW_MINUTES))
                         )));
     }
 
