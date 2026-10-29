@@ -716,6 +716,49 @@ public class UpdateHearingSteps extends AbstractIT {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
+    public void whenHearingUpdatedWithoutJudiciaryAssignmentSource() {
+        stubOrganisationUnit(updatedHearingData.getCourtCentreId());
+        stubGetReferenceDataCourtCentres(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court"));
+        stubGetReferenceDataCourtCentreById(updatedHearingData.getCourtCentreId());
+        stubGetReferenceDataHearingTypes(updatedHearingData.getHearingTypData().getTypeId());
+        final String updateHearingUrl = String.format("%s/%s", getBaseUri(), readConfig().getProperty(LISTING_COMMAND_UPDATE_HEARINGS_FOR_LISTING));
+
+        final JsonObject updatedHearingDataJson = withoutJudiciaryAssignmentSource(prepareJsonForUpdatedHearingData(updatedHearingData)
+                .add("hearingId", updatedHearingData.getHearingId().toString()).build());
+
+        request = createObjectBuilder().add(FIELD_HEARINGS, createArrayBuilder().add(updatedHearingDataJson)).build().toString();
+
+        final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_UPDATE_HEARINGS_FOR_LISTING, request, getLoggedInHeader());
+
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    public void whenHearingUpdatedForListingWithoutJudiciaryAssignmentSource() {
+        stubOrganisationUnit(updatedHearingData.getCourtCentreId());
+        stubGetReferenceDataCourtCentre(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court"));
+        stubGetReferenceDataCourtCentreById(updatedHearingData.getCourtCentreId());
+        stubGetReferenceDataHearingTypes(updatedHearingData.getHearingTypData().getTypeId());
+        final String updateHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING), updatedHearingData.getHearingId()));
+
+        request = withoutJudiciaryAssignmentSource(prepareJsonForUpdatedHearingData(updatedHearingData).build()).toString();
+
+        final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
+                request, getLoggedInHeader());
+
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    private static JsonObject withoutJudiciaryAssignmentSource(final JsonObject updatedHearingDataJson) {
+        final JsonObjectBuilder builder = createObjectBuilder();
+        updatedHearingDataJson.forEach((name, value) -> {
+            if (!FIELD_JUDICIARY_ASSIGNMENT_SOURCE.equals(name)) {
+                builder.add(name, value);
+            }
+        });
+        return builder.build();
+    }
+
     public void whenHearingIsUpdatedForListingHmiEnabled() {
         stubGetReferenceDataCourtCentre(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court"));
         stubGetReferenceDataCourtCentreById(updatedHearingData.getCourtCentreId());

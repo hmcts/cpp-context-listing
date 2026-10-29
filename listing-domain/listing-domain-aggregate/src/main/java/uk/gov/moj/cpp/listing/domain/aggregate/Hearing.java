@@ -984,6 +984,18 @@ public class Hearing implements Aggregate {
         }
     }
 
+    public Stream<Object> updateJudiciary(final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciary, final UUID hearingId,
+                                          final String judiciaryAssignmentSource, final List<uk.gov.moj.cpp.listing.domain.HearingDay> newHearingDays,
+                                          final boolean isJudiciaryFromCourtSchedule) {
+
+        // need to revisit when we do judiciary assignment for CROWN
+        // Judiciary filled from the court scheduler (user cleared it) is applied like a session change: AUTO, even over MANUAL
+        if (MAGISTRATES.equals(this.jurisdictionType) && (isJudiciaryFromCourtSchedule || hasCourtSessionChanged(newHearingDays))) {
+            return assignJudiciaryOnCourtSessionChange(judiciary, hearingId);
+        }
+        return assignJudiciary(judiciary, hearingId, judiciaryAssignmentSource);
+    }
+
     public Stream<Object> assignJudiciary(final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciary, final UUID hearingId, final String judiciaryAssignmentSource) {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
@@ -1014,15 +1026,7 @@ public class Hearing implements Aggregate {
         }
     }
 
-    public Stream<Object> updateJudiciary(final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciary, final UUID hearingId,
-                                          final String judiciaryAssignmentSource, final List<uk.gov.moj.cpp.listing.domain.HearingDay> newHearingDays) {
 
-      // need to revisit when we do judiciary assignment for CROWN
-        if (MAGISTRATES.equals(this.jurisdictionType) && hasCourtSessionChanged(newHearingDays)) {
-            return assignJudiciaryOnCourtSessionChange(judiciary, hearingId);
-        }
-        return assignJudiciary(judiciary, hearingId, judiciaryAssignmentSource);
-    }
 
     private boolean hasCourtSessionChanged(final List<uk.gov.moj.cpp.listing.domain.HearingDay> newHearingDays) {
         if (isEmpty(newHearingDays)) {
@@ -1059,7 +1063,7 @@ public class Hearing implements Aggregate {
         if (!isManuallyAssigned(getJudiciaryAssignmentSource())) {
             return assignJudiciary(judiciary, hearingId, JudiciaryAssignmentSource.AUTO.toString());
         }
-        LOGGER.info("Court session changed for manually assigned hearing with id {} - resetting judiciary to AUTO", hearingId);
+        LOGGER.info("Court session judiciary applied to manually assigned hearing with id {} - resetting judiciary to AUTO", hearingId);
         // Always emit, even if the judiciary is unchanged, so the assignment source flips MANUAL -> AUTO
         return apply(Stream.of(JudiciaryChangedForHearing.judiciaryChangedForHearing()
                 .withJudiciary(convertToEvents(judiciary))
