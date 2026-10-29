@@ -26,6 +26,7 @@ import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearin
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocationWithNonDefaultDaysWithoutCourtRoomSelection;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocationWithoutJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForReallocationToNewCourtSessions;
+import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithEmptyJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithNoCourtRoom;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithVideoLink;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithoutVideoLink;
@@ -346,6 +347,29 @@ class HearingIT extends AbstractIT {
         stubListHearingInCourtSessionsWithMultipleSchedulesWithJudiciaries(reallocationSteps.getUpdatedHearingData(), courtSchedulerJudiciary);
         reallocationSteps.whenHearingUpdated();
         reallocationSteps.verifyJudiciaryAssignedWithSourceWhenQueryingFromAPI(courtSchedulerJudiciary, "AUTO");
+    }
+
+    @Test
+    void shouldRemoveManuallyAssignedJudiciaryWhenJudiciaryIsChangedToEmptyWithNoSource() throws IOException {
+        final HearingsData hearingsData = hearingsData();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        // Allocate the hearing with a manually chosen judiciary
+        final UpdatedHearingData allocation = updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
+        stubGetReferenceDataCourtRoom(allocation.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, allocation.getCourtRoomId());
+
+        final UpdateHearingSteps allocationSteps = new UpdateHearingSteps(hearingsData, allocation);
+        stubGetAvailableHearingSlotsWithQueryParams(allocationSteps.getUpdatedHearingData());
+        stubListHearingInCourtSessionsWithMultipleSchedules(allocationSteps.getUpdatedHearingData());
+        allocationSteps.whenHearingUpdated();
+        allocationSteps.verifyJudiciaryAssignedWithSourceWhenQueryingFromAPI(allocation.getJudiciary(), "MANUAL");
+
+        // All judiciary deleted from the UI
+        final UpdateHearingSteps changeJudiciarySteps = new UpdateHearingSteps(hearingsData, updatedHearingDataWithEmptyJudiciary(allocation, null));
+        changeJudiciarySteps.whenJudiciaryIsChangedForHearings();
+        changeJudiciarySteps.verifyNoJudiciaryAssignedWithSourceWhenQueryingFromAPI("AUTO");
     }
 
     @Test

@@ -246,6 +246,13 @@ public class UpdatedHearingData {
                 allocated.getHasVideoLink(), allocated.getPublicListNote(), false, null, null, JOH_RESOURCE);
     }
 
+    public static UpdatedHearingData updatedHearingDataWithEmptyJudiciary(final UpdatedHearingData allocated, final String judiciaryAssignmentSource) {
+        return new UpdatedHearingData(allocated.getHearingId(), allocated.getCourtCentreId(), allocated.getName(), allocated.getCourtRoomId(), allocated.getHearingTypData(),
+                allocated.getStartDate(), allocated.getEndDate(), allocated.getNonDefaultDays(),
+                allocated.getNonSittingDays(), allocated.getHearingLanguage(), Collections.emptyList(), allocated.getJurisdictionType(), null, null, null,
+                allocated.getHasVideoLink(), allocated.getPublicListNote(), false, null, null, judiciaryAssignmentSource);
+    }
+
     private static UpdatedHearingData updatedHearingDataForAllocation(final UUID hearingId, final List<JudicialRoleData> judiciary) {
         return updatedHearingDataForAllocationWithVirtual(hearingId, judiciary, null);
     }

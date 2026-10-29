@@ -988,6 +988,10 @@ public class Hearing implements Aggregate {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
+        // Empty judiciary always clears the hearing (source resets to AUTO), even if it was manually assigned
+        if (isEmpty(judiciary)) {
+            return removeJudiciary(hearingId);
+        }
         if (!isEligibleToAutoAssignJudiciary(judiciaryAssignmentSource)) {
             LOGGER.info("Judiciary for hearing with id {} was manually assigned - ignoring auto update", hearingId);
             return Stream.empty();
@@ -1017,7 +1021,7 @@ public class Hearing implements Aggregate {
         if (MAGISTRATES.equals(this.jurisdictionType) && hasCourtSessionChanged(newHearingDays)) {
             return assignJudiciaryOnCourtSessionChange(judiciary, hearingId);
         }
-        return isNotEmpty(judiciary) ? assignJudiciary(judiciary, hearingId, judiciaryAssignmentSource) : removeJudiciary(hearingId);
+        return assignJudiciary(judiciary, hearingId, judiciaryAssignmentSource);
     }
 
     private boolean hasCourtSessionChanged(final List<uk.gov.moj.cpp.listing.domain.HearingDay> newHearingDays) {

@@ -8100,6 +8100,41 @@ class HearingAggregateTest {
     }
 
     @Test
+    public void shouldRemoveJudiciaryWhenAggregateJudiciaryAssignmentSourceIsManualAndRequestHasEmptyJudiciaryWithAutoSource() {
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL")
+                .collect(Collectors.toList());
+
+        final List<Object> events = hearing.assignJudiciary(emptyList(), hearingId, "AUTO")
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryRemovedFromHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldRemoveJudiciaryWhenAggregateJudiciaryAssignmentSourceIsManualAndRequestHasEmptyJudiciaryWithNoSource() {
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL")
+                .collect(Collectors.toList());
+
+        final List<Object> events = hearing.assignJudiciary(emptyList(), hearingId, null)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryRemovedFromHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldNotRaiseEventWhenRequestHasEmptyJudiciaryAndNoJudiciaryIsAssigned() {
+        final List<Object> events = hearing.assignJudiciary(emptyList(), hearingId, "AUTO")
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
     public void shouldUpdateJudiciaryWhenAggregateJudiciaryAssignmentSourceIsAutoAndRequestHasNoJudiciaryAssignmentSource() {
         hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO")
                 .collect(Collectors.toList());
