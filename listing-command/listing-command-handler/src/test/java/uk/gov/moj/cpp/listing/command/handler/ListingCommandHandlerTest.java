@@ -934,7 +934,7 @@ class ListingCommandHandlerTest {
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.changeType(HEARING_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(null), any())).thenReturn(mock(Stream.class));
+        when(hearing.updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(null), any(), eq(false))).thenReturn(mock(Stream.class));
         when(hearing.assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre)).thenReturn(mock(Stream.class));
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
@@ -958,7 +958,7 @@ class ListingCommandHandlerTest {
         verify(hearing, times(2)).changeStartDate(START_DATE, HEARING_ID_1);
         verify(hearing, times(2)).changeType(HEARING_TYPE, HEARING_ID_1);
         verify(hearing, times(2)).changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1);
-        verify(hearing, times(2)).updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(null), any());
+        verify(hearing, times(2)).updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(null), any(), eq(false));
        /* verify(hearing, times(2)).assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS1, multiDayNonDefaultDay,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre);*/
         verify(hearing, times(2)).removeWeekCommencingDates(HEARING_ID_1);
@@ -1011,7 +1011,7 @@ class ListingCommandHandlerTest {
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.changeType(HEARING_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any())).thenReturn(mock(Stream.class));
+        when(hearing.updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any(), eq(false))).thenReturn(mock(Stream.class));
         when(hearing.assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre)).thenReturn(mock(Stream.class));
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
@@ -1037,7 +1037,7 @@ class ListingCommandHandlerTest {
         verify(hearing).changeStartDate(START_DATE, HEARING_ID_1);
         verify(hearing).changeType(HEARING_TYPE, HEARING_ID_1);
         verify(hearing).changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1);
-        verify(hearing).updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any());
+        verify(hearing).updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any(), eq(false));
         verify(hearing).applyRescheduledCheck(any());
        /* verify(hearing).assignHearingDays(START_DATE, endDate, NON_SITTING_DAYS1, allNonDefault,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre);*/
@@ -1095,7 +1095,7 @@ class ListingCommandHandlerTest {
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.changeType(HEARING_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any())).thenReturn(mock(Stream.class));
+        when(hearing.updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any(), eq(false))).thenReturn(mock(Stream.class));
         when(hearing.assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre)).thenReturn(mock(Stream.class));
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
@@ -1110,9 +1110,31 @@ class ListingCommandHandlerTest {
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
         final ArgumentCaptor<List<HearingDay>> hearingDaysCaptor = ArgumentCaptor.forClass(List.class);
-        verify(hearing).updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), hearingDaysCaptor.capture());
+        verify(hearing).updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), hearingDaysCaptor.capture(), eq(false));
         assertThat(hearingDaysCaptor.getValue().stream().map(hearingDay -> hearingDay.getCourtScheduleId().orElse(null)).toList(),
                 contains(courtScheduleId1, courtScheduleId2));
+    }
+
+    @Test
+    public void listingCommandHandlerShouldPassJudiciaryFromCourtScheduleFlagToJudiciaryUpdate() throws Exception {
+        final JsonEnvelope commandEnvelope = withJudiciaryFromCourtSchedule(updateHearingForListingCommandEnvelope(LocalDate.parse("2018-06-05")));
+
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(JsonObjects.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
+
+        listingCommandHandler.updateHearingForListing(commandEnvelope);
+
+        verify(hearing).updateJudiciary(any(), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any(), eq(true));
+    }
+
+    private JsonEnvelope withJudiciaryFromCourtSchedule(final JsonEnvelope envelope) {
+        final JsonObject payload = envelope.payloadAsJsonObject();
+        final JsonObjectBuilder updateHearingForListing = createObjectBuilder();
+        payload.getJsonObject("updateHearingForListing").forEach(updateHearingForListing::add);
+        updateHearingForListing.add("isJudiciaryFromCourtSchedule", true);
+        final JsonObjectBuilder newPayload = createObjectBuilder();
+        payload.forEach(newPayload::add);
+        newPayload.add("updateHearingForListing", updateHearingForListing);
+        return createEnvelope("listing.command.update-hearing-for-listing", newPayload.build());
     }
 
     private JsonEnvelope withHearingDays(final JsonEnvelope envelope, final UUID... courtScheduleIds) {
@@ -1207,7 +1229,7 @@ class ListingCommandHandlerTest {
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.changeType(HEARING_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeJurisdictionType(JurisdictionType.MAGISTRATES, HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any())).thenReturn(mock(Stream.class));
+        when(hearing.updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any(), eq(false))).thenReturn(mock(Stream.class));
         when(hearing.assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre)).thenReturn(mock(Stream.class));
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
@@ -1227,7 +1249,7 @@ class ListingCommandHandlerTest {
         verify(hearing).changeStartDate(START_DATE, HEARING_ID_1);
         verify(hearing).changeType(HEARING_TYPE, HEARING_ID_1);
         verify(hearing).changeJurisdictionType(JurisdictionType.MAGISTRATES, HEARING_ID_1);
-        verify(hearing).updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any());
+        verify(hearing).updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any(), eq(false));
         verify(hearing).applyRescheduledCheck(any());
       /*  verify(hearing).assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS1, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre);*/
@@ -1296,7 +1318,7 @@ class ListingCommandHandlerTest {
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.changeType(HEARING_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeJurisdictionType(JurisdictionType.MAGISTRATES, HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any())).thenReturn(mock(Stream.class));
+        when(hearing.updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any(), eq(false))).thenReturn(mock(Stream.class));
         when(hearing.assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre)).thenReturn(mock(Stream.class));
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
@@ -1361,7 +1383,7 @@ class ListingCommandHandlerTest {
         when(hearing.changeType(HEARING_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1, of(PANEL))).thenReturn(mock(Stream.class));
-        when(hearing.updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any())).thenReturn(mock(Stream.class));
+        when(hearing.updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any(), eq(false))).thenReturn(mock(Stream.class));
         when(hearing.assignHearingDays(null, null, NON_SITTING_DAYS, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre)).thenReturn(mock(Stream.class));
         when(hearing.changeWeekCommencingDate(WEEK_COMMENCING_START_DATE, WEEK_COMMENCING_END_DATE, WEEK_COMMENCING_DURATION, HEARING_ID_1)).thenReturn(mock(Stream.class));
@@ -1381,7 +1403,7 @@ class ListingCommandHandlerTest {
         verify(hearing).removeStartDate(HEARING_ID_1, false);
         verify(hearing).changeType(HEARING_TYPE, HEARING_ID_1);
         verify(hearing).changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1);
-        verify(hearing).updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any());
+        verify(hearing).updateJudiciary(eq(judicialRoles), eq(HEARING_ID_1), eq(JUDICIARY_ASSIGNMENT_SOURCE), any(), eq(false));
        /* verify(hearing).assignHearingDays(null, null, NON_SITTING_DAYS1, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre);*/
         verify(hearing).changeWeekCommencingDate(WEEK_COMMENCING_START_DATE, WEEK_COMMENCING_END_DATE, WEEK_COMMENCING_DURATION, HEARING_ID_1);

@@ -576,6 +576,7 @@ public class ListingCommandHandler {
         final List<LocalDate> nonSittingDays = isNotEmpty(updateHearingForListing.getNonSittingDays()) ? updateHearingForListing.getNonSittingDays() : emptyList();
         final List<JudicialRole> judiciary = convertJudicialRolesCoreToDomain(updateHearingForListing.getJudiciary());
         final String judiciaryAssignmentSource = nonNull(updateHearingForListing.getJudiciaryAssignmentSource()) ? updateHearingForListing.getJudiciaryAssignmentSource().toString() : null;
+        final boolean isJudiciaryFromCourtSchedule = Boolean.TRUE.equals(updateHearingForListing.getIsJudiciaryFromCourtSchedule());
 
         // Fields that may not have a value
         final UUID courtRoomId = getCourtRoomId(updateHearingForListing);
@@ -646,7 +647,7 @@ public class ListingCommandHandler {
             final String ouCode = organisationUnitJsonObject.getString(OUCODE);
 
             // Must run before court room / hearing day events so the aggregate still holds the old court sessions
-            final Stream<Object> judiciaryEvents = getJudiciaryEvents(hearingId, judiciary, hearing, judiciaryAssignmentSource, hearingDays);
+            final Stream<Object> judiciaryEvents = getJudiciaryEvents(hearingId, judiciary, hearing, judiciaryAssignmentSource, isJudiciaryFromCourtSchedule, hearingDays);
 
             //Capture old courtRoomId before it is updated
             final UUID oldCourtRoomId = hearing.getCurrentHearingEventState() == null ? null: hearing.getCurrentHearingEventState().getCourtRoomId();
@@ -705,8 +706,8 @@ public class ListingCommandHandler {
     }
 
     private Stream<Object> getJudiciaryEvents(final UUID hearingId, final List<JudicialRole> judiciary, final Hearing hearing, final String judiciaryAssignmentSource,
-                                              final List<uk.gov.justice.listing.commands.HearingDay> hearingDays) {
-        return hearing.updateJudiciary(judiciary, hearingId, judiciaryAssignmentSource, convertHearingDaysCommandToDomain(hearingDays));
+                                              final boolean isJudiciaryFromCourtSchedule, final List<uk.gov.justice.listing.commands.HearingDay> hearingDays) {
+        return hearing.updateJudiciary(judiciary, hearingId, judiciaryAssignmentSource, convertHearingDaysCommandToDomain(hearingDays), isJudiciaryFromCourtSchedule);
     }
 
     private UUID getCourtRoomId(final UpdateHearingForListing updateHearingForListing) {

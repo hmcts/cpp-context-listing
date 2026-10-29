@@ -8239,7 +8239,7 @@ class HearingAggregateTest {
         final JudicialRole judicialRole = buildDomainJudicialRole();
         givenManualJudiciaryInCourtSession(judicialRole, randomUUID());
 
-        final List<Object> events = hearing.updateJudiciary(singletonList(judicialRole), hearingId, "MANUAL", singletonList(buildDomainHearingDay(randomUUID())))
+        final List<Object> events = hearing.updateJudiciary(singletonList(judicialRole), hearingId, "MANUAL", singletonList(buildDomainHearingDay(randomUUID())), false)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(1));
@@ -8252,7 +8252,7 @@ class HearingAggregateTest {
     public void shouldReplaceManualJudiciaryWithCourtSchedulerJudiciaryWhenCourtSessionChanged() {
         givenManualJudiciaryInCourtSession(buildDomainJudicialRole(), randomUUID());
 
-        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null, singletonList(buildDomainHearingDay(randomUUID())))
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null, singletonList(buildDomainHearingDay(randomUUID())), false)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(1));
@@ -8264,7 +8264,7 @@ class HearingAggregateTest {
     public void shouldRemoveManualJudiciaryWhenCourtSessionChangedAndCourtSchedulerHasNoJudiciary() {
         givenManualJudiciaryInCourtSession(buildDomainJudicialRole(), randomUUID());
 
-        final List<Object> events = hearing.updateJudiciary(emptyList(), hearingId, null, singletonList(buildDomainHearingDay(randomUUID())))
+        final List<Object> events = hearing.updateJudiciary(emptyList(), hearingId, null, singletonList(buildDomainHearingDay(randomUUID())), false)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(1));
@@ -8277,7 +8277,7 @@ class HearingAggregateTest {
         givenHearingDaysWithCourtScheduleId(randomUUID());
         hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO").collect(Collectors.toList());
 
-        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null, singletonList(buildDomainHearingDay(randomUUID())))
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null, singletonList(buildDomainHearingDay(randomUUID())), false)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(1));
@@ -8290,7 +8290,61 @@ class HearingAggregateTest {
         final UUID courtScheduleId = randomUUID();
         givenManualJudiciaryInCourtSession(buildDomainJudicialRole(), courtScheduleId);
 
-        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO", singletonList(buildDomainHearingDay(courtScheduleId)))
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO", singletonList(buildDomainHearingDay(courtScheduleId)), false)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldReplaceManualJudiciaryWithAutoWhenJudiciaryIsFromCourtScheduleInSameCourtSession() {
+        final UUID courtScheduleId = randomUUID();
+        givenManualJudiciaryInCourtSession(buildDomainJudicialRole(), courtScheduleId);
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null, singletonList(buildDomainHearingDay(courtScheduleId)), true)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryChangedForHearing.class));
+        assertThat(((JudiciaryChangedForHearing) events.get(0)).getJudiciaryAssignmentSource(), is(JudiciaryAssignmentSource.AUTO));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldResetManualJudiciaryToAutoWhenJudiciaryFromCourtScheduleIsUnchanged() {
+        final UUID courtScheduleId = randomUUID();
+        final JudicialRole judicialRole = buildDomainJudicialRole();
+        givenManualJudiciaryInCourtSession(judicialRole, courtScheduleId);
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(judicialRole), hearingId, null, singletonList(buildDomainHearingDay(courtScheduleId)), true)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryChangedForHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldAssignAutoJudiciaryWhenJudiciaryIsFromCourtScheduleAndNoJudiciaryAssigned() {
+        final UUID courtScheduleId = randomUUID();
+        givenHearingDaysWithCourtScheduleId(courtScheduleId);
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null, singletonList(buildDomainHearingDay(courtScheduleId)), true)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryAssignedToHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldKeepManualJudiciaryWhenCrownHearingJudiciaryIsFromCourtSchedule() {
+        final UUID courtScheduleId = randomUUID();
+        givenHearingDaysWithCourtScheduleId(courtScheduleId, uk.gov.justice.core.courts.JurisdictionType.CROWN);
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL").collect(Collectors.toList());
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null, singletonList(buildDomainHearingDay(courtScheduleId)), true)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(0));
@@ -8301,7 +8355,7 @@ class HearingAggregateTest {
     public void shouldKeepManualJudiciaryWhenIncomingHearingDaysHaveNoCourtScheduleId() {
         givenManualJudiciaryInCourtSession(buildDomainJudicialRole(), randomUUID());
 
-        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO", singletonList(buildDomainHearingDay(null)))
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO", singletonList(buildDomainHearingDay(null)), false)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(0));
@@ -8313,7 +8367,7 @@ class HearingAggregateTest {
         final UUID courtScheduleId = randomUUID();
         givenManualJudiciaryInCourtSession(buildDomainJudicialRole(), courtScheduleId);
 
-        final List<Object> events = hearing.updateJudiciary(emptyList(), hearingId, null, singletonList(buildDomainHearingDay(courtScheduleId)))
+        final List<Object> events = hearing.updateJudiciary(emptyList(), hearingId, null, singletonList(buildDomainHearingDay(courtScheduleId)), false)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(1));
@@ -8322,7 +8376,7 @@ class HearingAggregateTest {
 
     @Test
     public void shouldKeepManualJudiciarySourceOnFirstAllocationIntoCourtSession() {
-        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL", singletonList(buildDomainHearingDay(randomUUID())))
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL", singletonList(buildDomainHearingDay(randomUUID())), false)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(1));
@@ -8335,7 +8389,7 @@ class HearingAggregateTest {
         givenHearingDaysWithCourtScheduleId(randomUUID(), uk.gov.justice.core.courts.JurisdictionType.CROWN);
         hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL").collect(Collectors.toList());
 
-        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO", singletonList(buildDomainHearingDay(randomUUID())))
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO", singletonList(buildDomainHearingDay(randomUUID())), false)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(0));
@@ -8348,7 +8402,7 @@ class HearingAggregateTest {
         givenManualJudiciaryInCourtSessions(asList(buildEventHearingDay(courtScheduleId1, false), buildEventHearingDay(randomUUID(), false)));
 
         final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null,
-                        asList(buildDomainHearingDay(courtScheduleId1), buildDomainHearingDay(randomUUID())))
+                        asList(buildDomainHearingDay(courtScheduleId1), buildDomainHearingDay(randomUUID())), false)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(1));
@@ -8361,7 +8415,7 @@ class HearingAggregateTest {
         final UUID courtScheduleId1 = randomUUID();
         givenManualJudiciaryInCourtSessions(asList(buildEventHearingDay(courtScheduleId1, false), buildEventHearingDay(randomUUID(), false)));
 
-        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO", singletonList(buildDomainHearingDay(courtScheduleId1)))
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO", singletonList(buildDomainHearingDay(courtScheduleId1)), false)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(0));
@@ -8374,7 +8428,7 @@ class HearingAggregateTest {
         givenManualJudiciaryInCourtSession(buildDomainJudicialRole(), courtScheduleId1);
 
         final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO",
-                        asList(buildDomainHearingDay(courtScheduleId1), buildDomainHearingDay(randomUUID())))
+                        asList(buildDomainHearingDay(courtScheduleId1), buildDomainHearingDay(randomUUID())), false)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(0));
@@ -8388,7 +8442,7 @@ class HearingAggregateTest {
         givenManualJudiciaryInCourtSessions(asList(buildEventHearingDay(courtScheduleId1, false), buildEventHearingDay(courtScheduleId2, false)));
 
         final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO",
-                        asList(buildDomainHearingDay(courtScheduleId1), buildDomainHearingDay(courtScheduleId2, true)))
+                        asList(buildDomainHearingDay(courtScheduleId1), buildDomainHearingDay(courtScheduleId2, true)), false)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(0));
@@ -8401,7 +8455,7 @@ class HearingAggregateTest {
         givenManualJudiciaryInCourtSessions(asList(buildEventHearingDay(courtScheduleId1, false), buildEventHearingDay(randomUUID(), true)));
 
         final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO",
-                        asList(buildDomainHearingDay(courtScheduleId1), buildDomainHearingDay(randomUUID())))
+                        asList(buildDomainHearingDay(courtScheduleId1), buildDomainHearingDay(randomUUID())), false)
                 .collect(Collectors.toList());
 
         assertThat(events, hasSize(0));
