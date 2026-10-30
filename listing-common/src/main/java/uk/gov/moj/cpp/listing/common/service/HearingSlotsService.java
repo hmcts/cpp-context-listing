@@ -61,6 +61,8 @@ public class HearingSlotsService {
     private static final String COURTSCHEDULER_MAGS_SEARCH_BOOK = "application/vnd.courtscheduler.mags.search.and.book+json";
     private static final String COURTSCHEDULER_CROWN_SEARCH_BOOK = "application/vnd.courtscheduler.crown.search.and.book+json";
     private static final String COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE = "application/vnd.courtscheduler.validate.session.availability+json";
+    private static final String UNCONFIRMED_BOOKING_STATUS_RESOURCE = "/unconfirmedBooking/status";
+    private static final String COURTSCHEDULER_QUERY_BOOKING_STATUS_TYPE = "application/vnd.courtscheduler.query.booking.status+json";
 
     private static final String COURTSCHEDULER_MOVE_TO_PAST_DATE = "application/vnd.courtscheduler.move-hearing-to-past-date+json";
 
@@ -83,6 +85,17 @@ public class HearingSlotsService {
 
     public Response validateSessionAvailability(final JsonObject payload) {
         return post(VALIDATE_SESSION_AVAILABILITY_RESOURCE, COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE, payload, true);
+    }
+
+    /**
+     * Asks courtscheduler whether each booking id is still safe to share. With
+     * {@code reserveIfExpired} (LPT-2611) a booking that would answer NOT_FOUND is re-booked if its
+     * session still has room. No Accept header: the endpoint produces only its vendor type.
+     *
+     * @param payload {"bookingIds": [...], "reserveIfExpired": true}
+     */
+    public Response postBookingStatus(final JsonObject payload) {
+        return post(UNCONFIRMED_BOOKING_STATUS_RESOURCE, COURTSCHEDULER_QUERY_BOOKING_STATUS_TYPE, payload, false);
     }
 
     public Response searchBookSlots(final Map<String, String> params) {

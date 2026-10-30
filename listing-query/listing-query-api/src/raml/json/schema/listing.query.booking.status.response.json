@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/query/listing.query.booking.status.response.json",
+  "type": "object",
+  "properties": {
+    "bookings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "bookingId": { "type": "string" },
+          "safeToShare": {
+            "type": "boolean",
+            "description": "The decision: whether a share may go ahead with this booking. True for RESERVED, REBOOKED, SHARED, SURPLUS and UNLISTED - progression places SURPLUS and UNLISTED from its own record - and for UNKNOWN, where the check failed open. Act on this, not on status."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["RESERVED", "SHARED", "REBOOKED", "SURPLUS", "UNLISTED", "EXPIRED", "RELEASED", "NOT_FOUND", "UNKNOWN"],
+            "description": "Where the booking is. With a hold or listing: RESERVED, SHARED, or REBOOKED (the hold had expired and, because the request set reserveIfExpired and the session still had room, courtscheduler took it again under the same id). With nothing held, why: SURPLUS (a share merged its line onto another booking's session), UNLISTED (its listing was freed, e.g. by a re-share), EXPIRED (the hold lapsed and could not be re-booked), RELEASED (dropped from the draft, or released without a reason) or NOT_FOUND (nothing recorded). UNKNOWN means courtscheduler could not be reached and the check failed open; courtscheduler itself never emits it."
+          }
+        },
+        "required": ["bookingId", "safeToShare", "status"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["bookings"],
+  "additionalProperties": false
+}

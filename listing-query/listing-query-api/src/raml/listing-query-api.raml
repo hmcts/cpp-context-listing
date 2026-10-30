@@ -543,6 +543,39 @@ protocols: [ HTTP, HTTPS ]
                   example:  !include json/listing.query.court.schedule.draft.status.response.json
                   schema:  !include  json/schema/listing.query.court.schedule.draft.status.response.json
 
+/bookingStatus:
+  description: |
+    Reports, for each supplied bookingId, whether the draft carrying it is still safe
+    to share, and why. A pass-through of courtscheduler's POST /unconfirmedBooking/status;
+    hearing makes the same check itself inside the share.
+  post:
+    description: |
+      Returns { "bookings": [ { "bookingId", "safeToShare", "status" } ] }. safeToShare is
+      the decision; status says where the booking is. With a hold or listing: RESERVED,
+      SHARED, or REBOOKED (it had expired, the request set reserveIfExpired, and
+      courtscheduler took it again on the same session because it still had room). With
+      nothing held, why: SURPLUS (a share merged its line onto another booking's session),
+      UNLISTED (its listing was freed, e.g. by a re-share), EXPIRED (lapsed and could not be
+      re-booked), RELEASED (dropped from the draft, or released without a reason) or
+      NOT_FOUND (nothing recorded). UNKNOWN: courtscheduler could not be reached - the check
+      failed open, so safeToShare is true. Unsafe to share: EXPIRED, RELEASED, NOT_FOUND.
+      ...
+      (mapping):
+          requestType: application/vnd.listing.query.booking.status+json
+          name: listing.query.booking.status
+      ...
+    body:
+        application/vnd.listing.query.booking.status+json:
+          example:  !include json/listing.query.booking.status.json
+          schema:  !include  json/schema/listing.query.booking.status.json
+    responses:
+        200:
+            description: OK
+            body:
+                application/vnd.listing.query.booking.status.response+json:
+                  example:  !include json/listing.query.booking.status.response.json
+                  schema:  !include  json/schema/listing.query.booking.status.response.json
+
 /hearings/unscheduled:
    get:
       description: |

@@ -89,6 +89,9 @@ public class CourtSchedulerServiceAdapter {
     // fields, aligning the outbound contract with main (see the review artifact this reconciles).
     private static final String START_TIME = "startTime";
     private static final String END_TIME = "endTime";
+    private static final String BOOKINGS = "bookings";
+    // move-hearing-to-past-date (MAGS) wire-field constants; JURISDICTION reuses the field declared above
+    private static final String START_DATE = "startDate";
     private static final String SESSIONS = "sessions";
     private static final String COURT_HOUSE_ID = "courtHouseId";
     private static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
@@ -273,6 +276,9 @@ public class CourtSchedulerServiceAdapter {
                             + " (hearingId=" + hearingId + ")");
         }
         if (status == HttpStatus.SC_BAD_REQUEST) {
+            LOGGER.error("{} courtscheduler rejected the Crown fallback for hearingId={} (status={}) — "
+                            + "this hearing will NOT be listed",
+                    CrownFallbackInvalidRequestException.LOG_MARKER, hearingId, status);
             throw new CrownFallbackInvalidRequestException(
                     "Crown fallback rejected by courtscheduler (status=" + status + ") for hearingId=" + hearingId
                             + ": " + (response.hasEntity() ? response.getEntity().toString() : ""));
@@ -357,6 +363,81 @@ public class CourtSchedulerServiceAdapter {
 
     private static ZonedDateTime zonedDateTimeOrNull(final JsonObject body, final String key) {
         return hasValue(body, key) ? ZonedDateTime.parse(body.getString(key)) : null;
+    }
+
+    /**
+     * Reports, for each booking id, whether the draft carrying it is still safe to share, and why.
+     * A pure pass-through of courtscheduler's answer. {@code safeToShare} is the decision;
+     * {@code status} says where the booking is: {@code RESERVED}, {@code SHARED}, {@code REBOOKED}
+     * (re-held under {@code reserveIfExpired}), or, with nothing held, why - {@code SURPLUS},
+     * {@code UNLISTED}, {@code EXPIRED}, {@code RELEASED} or {@code NOT_FOUND}. See courtscheduler's
+     * {@code /unconfirmedBooking/status}. Listing never re-maps or collapses these.
+     *
+     * <p><b>Fails open</b>, deliberately the opposite of {@link #getCourtScheduleDraftStatus}.
+     * This gates a clerk's share, so a courtscheduler outage must not block every share in the
+     * building for what is an advisory check. On failure each requested id is reported
+     * {@code UNKNOWN} with {@code safeToShare=true} — reported rather than silently claiming a
+     * live hold, so the UI can say "could not check" rather than implying it checked.
+     * {@code UNKNOWN} is listing's alone; courtscheduler never emits it.
+     *
+     * @param requestPayload JSON object with a bookingIds array
+     * @return {"bookings":[{"bookingId":…,"safeToShare":…,"status":…}]}
+     */
+    public JsonObject getBookingStatus(final JsonObject requestPayload) {
+        final List<String> bookingIds = extractBookingIds(requestPayload);
+        if (bookingIds.isEmpty()) {
+            return javax.json.Json.createObjectBuilder()
+                    .add(BOOKINGS, javax.json.Json.createArrayBuilder())
+                    .build();
+        }
+
+        final Response response;
+        try {
+            response = hearingSlotsService.postBookingStatus(javax.json.Json.createObjectBuilder()
+                    .add("bookingIds", javax.json.Json.createArrayBuilder(bookingIds))
+                    .add("reserveIfExpired", reserveIfExpired(requestPayload))
+                    .build());
+        } catch (Exception ex) {
+            LOGGER.warn("courtscheduler getBookingStatus threw {} for {} ids - failing open with UNKNOWN",
+                    ex.getClass().getSimpleName(), bookingIds.size());
+            return unknownFor(bookingIds);
+        }
+
+        if (response == null || HttpStatus.SC_OK != response.getStatus()) {
+            LOGGER.warn("courtscheduler getBookingStatus returned status {} for {} ids - failing open with UNKNOWN",
+                    response == null ? "null" : response.getStatus(), bookingIds.size());
+            return unknownFor(bookingIds);
+        }
+
+        return objectToJsonObjectConverter.convert(response.getEntity());
+    }
+
+    private static JsonObject unknownFor(final List<String> bookingIds) {
+        final javax.json.JsonArrayBuilder bookings = javax.json.Json.createArrayBuilder();
+        bookingIds.forEach(bookingId -> bookings.add(javax.json.Json.createObjectBuilder()
+                .add("bookingId", bookingId)
+                .add("safeToShare", true)
+                .add("status", "UNKNOWN")));
+        return javax.json.Json.createObjectBuilder().add(BOOKINGS, bookings).build();
+    }
+
+    /**
+     * LPT-2611: the UI's pre-share gate asks courtscheduler to re-book an expired booking whose
+     * session still has room. A booking it re-books comes back {@code REBOOKED}, safe to share.
+     */
+    private static boolean reserveIfExpired(final JsonObject requestPayload) {
+        return requestPayload != null && requestPayload.getBoolean("reserveIfExpired", false);
+    }
+
+    private static List<String> extractBookingIds(final JsonObject requestPayload) {
+        if (requestPayload == null || !requestPayload.containsKey("bookingIds")) {
+            return Collections.emptyList();
+        }
+        return requestPayload.getJsonArray("bookingIds").getValuesAs(javax.json.JsonString.class)
+                .stream()
+                .map(javax.json.JsonString::getString)
+                .filter(org.apache.commons.lang3.StringUtils::isNotBlank)
+                .toList();
     }
 
     public Response validateSessionAvailability(final JsonObject requestPayload) {

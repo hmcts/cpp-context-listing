@@ -652,4 +652,138 @@ class CourtSchedulerServiceAdapterTest {
                 .add("courtScheduleIdList", list)
                 .build();
     }
+
+    // ─── getBookingStatus ────────────────────────────────────────────────────
+
+    @Test
+    public void shouldForwardBookingIdsAndReturnCourtschedulerAnswersVerbatim() {
+        final JsonObject downstream = javax.json.Json.createReader(new java.io.StringReader(
+                "{\"bookings\":[" +
+                "{\"bookingId\":\"bk-1\",\"safeToShare\":true,\"status\":\"RESERVED\"}," +
+                "{\"bookingId\":\"bk-2\",\"safeToShare\":true,\"status\":\"SHARED\"}," +
+                "{\"bookingId\":\"bk-3\",\"safeToShare\":false,\"status\":\"NOT_FOUND\"}]}")).readObject();
+        givenCourtschedulerReturns(HttpStatus.SC_OK, downstream);
+
+        final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(request("bk-1", "bk-2", "bk-3"));
+
+        final ArgumentCaptor<JsonObject> body = ArgumentCaptor.forClass(JsonObject.class);
+        verify(hearingSlotsService).postBookingStatus(body.capture());
+        assertThat(body.getValue().getJsonArray("bookingIds").getValuesAs(javax.json.JsonString.class).stream()
+                .map(javax.json.JsonString::getString).toList(), is(List.of("bk-1", "bk-2", "bk-3")));
+        assertThat("no flag sent: read only", body.getValue().getBoolean("reserveIfExpired"), is(false));
+
+        assertThat(result.getJsonArray("bookings").size(), is(3));
+        assertThat(result.getJsonArray("bookings").getJsonObject(1).getString("status"), is("SHARED"));
+        assertThat(result.getJsonArray("bookings").getJsonObject(2).getBoolean("safeToShare"), is(false));
+    }
+
+    @Test
+    public void shouldReportUnknownAndSafeWhenCourtschedulerThrows() {
+        when(hearingSlotsService.postBookingStatus(any())).thenThrow(new RuntimeException("connection refused"));
+
+        final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(request("bk-1", "bk-2"));
+
+        assertThat(result.getJsonArray("bookings").size(), is(2));
+        for (int i = 0; i < 2; i++) {
+            assertThat(result.getJsonArray("bookings").getJsonObject(i).getString("status"), is("UNKNOWN"));
+            assertThat(result.getJsonArray("bookings").getJsonObject(i).getBoolean("safeToShare"), is(true));
+        }
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getString("bookingId"), is("bk-1"));
+    }
+
+    @Test
+    public void shouldReportUnknownAndSafeWhenCourtschedulerReturnsNonOk() {
+        givenCourtschedulerReturns(HttpStatus.SC_INTERNAL_SERVER_ERROR, javax.json.Json.createObjectBuilder().build());
+
+        final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(request("bk-1"));
+
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getString("status"), is("UNKNOWN"));
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getBoolean("safeToShare"), is(true));
+    }
+
+    @Test
+    public void shouldReturnAnEmptyListAndNotCallCourtschedulerWhenNoIdsAreSupplied() {
+        final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(
+                javax.json.Json.createObjectBuilder().add("bookingIds", javax.json.Json.createArrayBuilder()).build());
+
+        assertThat(result.getJsonArray("bookings").size(), is(0));
+        org.mockito.Mockito.verifyNoInteractions(hearingSlotsService);
+    }
+
+    @Test
+    public void shouldPassCourtschedulerStatusThroughUnchanged() {
+        final JsonObject downstream = javax.json.Json.createReader(new java.io.StringReader(
+                "{\"bookings\":[{\"bookingId\":\"gone-1\",\"safeToShare\":false,\"status\":\"NOT_FOUND\"}]}")).readObject();
+        givenCourtschedulerReturns(HttpStatus.SC_OK, downstream);
+
+        final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(request("gone-1"));
+
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getString("status"), is("NOT_FOUND"));
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getBoolean("safeToShare"), is(false));
+    }
+
+    // LPT-2611: with reserveIfExpired the UI asks courtscheduler to re-book an expired booking whose
+    // session still has room. That can book capacity, so it goes as a POST; without the flag the
+    // read-only GET is unchanged.
+    @Test
+    public void shouldPostTheBookingIdsAndTheFlagWhenAskedToReserveIfExpired() {
+        final JsonObject downstream = javax.json.Json.createReader(new java.io.StringReader(
+                "{\"bookings\":[{\"bookingId\":\"bk-1\",\"safeToShare\":true,\"status\":\"REBOOKED\"}]}")).readObject();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(downstream);
+        when(hearingSlotsService.postBookingStatus(any(JsonObject.class))).thenReturn(response);
+
+        final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(reserveIfExpired(request("bk-1")));
+
+        final ArgumentCaptor<JsonObject> body = ArgumentCaptor.forClass(JsonObject.class);
+        verify(hearingSlotsService).postBookingStatus(body.capture());
+        assertThat(body.getValue().getJsonArray("bookingIds").getString(0), is("bk-1"));
+        assertThat(body.getValue().getBoolean("reserveIfExpired"), is(true));
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getString("status"), is("REBOOKED"));
+    }
+
+    @Test
+    public void shouldPostTheFlagAsFalseWhenTheCallerSetsItFalse() {
+        givenCourtschedulerReturns(HttpStatus.SC_OK, javax.json.Json.createObjectBuilder()
+                .add("bookings", javax.json.Json.createArrayBuilder()).build());
+
+        courtSchedulerServiceAdapter.getBookingStatus(javax.json.Json.createObjectBuilder(request("bk-1"))
+                .add("reserveIfExpired", false).build());
+
+        final ArgumentCaptor<JsonObject> body = ArgumentCaptor.forClass(JsonObject.class);
+        verify(hearingSlotsService).postBookingStatus(body.capture());
+        assertThat(body.getValue().getBoolean("reserveIfExpired"), is(false));
+    }
+
+    @Test
+    public void shouldReportUnknownAndSafeWhenTheReservingPostFails() {
+        when(hearingSlotsService.postBookingStatus(any(JsonObject.class))).thenThrow(new RuntimeException("connection refused"));
+
+        final JsonObject result = courtSchedulerServiceAdapter.getBookingStatus(reserveIfExpired(request("bk-1")));
+
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getString("status"), is("UNKNOWN"));
+        assertThat(result.getJsonArray("bookings").getJsonObject(0).getBoolean("safeToShare"), is(true));
+    }
+
+    private static JsonObject reserveIfExpired(final JsonObject request) {
+        return javax.json.Json.createObjectBuilder(request).add("reserveIfExpired", true).build();
+    }
+
+    private static JsonObject request(final String... bookingIds) {
+        final javax.json.JsonArrayBuilder list = javax.json.Json.createArrayBuilder();
+        for (final String id : bookingIds) {
+            list.add(id);
+        }
+        return javax.json.Json.createObjectBuilder()
+                .add("bookingIds", list)
+                .build();
+    }
+
+    private void givenCourtschedulerReturns(final int status, final JsonObject body) {
+        when(response.getStatus()).thenReturn(status);
+        if (HttpStatus.SC_OK == status) {
+            when(response.getEntity()).thenReturn(body);
+        }
+        when(hearingSlotsService.postBookingStatus(any(JsonObject.class))).thenReturn(response);
+    }
 }
