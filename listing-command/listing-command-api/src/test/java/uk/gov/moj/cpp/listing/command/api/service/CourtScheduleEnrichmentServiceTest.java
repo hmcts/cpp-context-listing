@@ -732,7 +732,11 @@ class CourtScheduleEnrichmentServiceTest {
 
         final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
 
-        verify(hearingSlotsService).multiDaySearchAndBook(anyMap());
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, String>> bookParams = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(bookParams.capture());
+        // SPRDT-1572: progression-originated listing keeps the soft no-availability fallback
+        assertNull(bookParams.getValue().get("failOnNoAvailability"));
         verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
         assertThat(result.getHearingDays().size(), is(3));
         result.getHearingDays().forEach(day -> assertThat(day.getCourtRoomId(), is(courtRoomId)));
@@ -3783,6 +3787,8 @@ class CourtScheduleEnrichmentServiceTest {
         assertThat(bookParams.getValue().get("durationInMinutes"), is("720"));
         assertThat(bookParams.getValue().get("courtScheduleId"), is(anchorCsId.toString()));
         assertThat(bookParams.getValue().get("hearingDate"), is(day1.toString()));
+        // SPRDT-1572: unallocation keeps the soft no-availability fallback
+        assertNull(bookParams.getValue().get("failOnNoAvailability"));
 
         // Two draft days rebuilt — the multiday shape survives
         assertThat(result.getHearingDays().size(), is(2));
@@ -6222,6 +6228,45 @@ class CourtScheduleEnrichmentServiceTest {
         assertThat(params.get("endDate"), is(startDate.plusDays(1).toString()));
         assertThat(params.get("courtRoomId"), is(mainRoomId.toString()));
         assertThat(params.get("earliestHearingTime"), org.hamcrest.Matchers.notNullValue());
+        assertThat("SPRDT-1572: a Court Calendar allocation opts in to the no-availability rejection",
+                params.get("failOnNoAvailability"), is("true"));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_update_doesNotOptInToNoAvailabilityRejection_whenNoCourtRoom() {
+        // SPRDT-1572: a courtroom-less multi-day update is a Court Calendar UNALLOCATION shape, not an
+        // allocation — it must keep the soft fallback (empty sessions -> days marked draft).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final UUID anchorCsId = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final LocalDate startDate = LocalDate.of(2026, 3, 2);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtHouseId)
+                .withStartDate(startDate)
+                .withEndDate(startDate.plusDays(1))
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withStartTime(ZonedDateTime.parse("2026-03-02T09:00:00Z"))
+                                .withCourtScheduleId(anchorCsId.toString())
+                                .withDuration(720)
+                                .withVirtual(true)
+                                .build()))
+                .build();
+
+        final CourtSchedule cs1 = buildCourtSchedule(anchorCsId, UUID.randomUUID(), courtHouseId, startDate, true);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, UUID.randomUUID(), courtHouseId, startDate.plusDays(1), true);
+        mockMultiDaySearchAndBook(anchorCsId, courtScheduleId2, cs1, cs2);
+
+        courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, String>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(paramsCaptor.capture());
+        assertNull(paramsCaptor.getValue().get("failOnNoAvailability"));
     }
 
     @Test

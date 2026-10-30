@@ -810,6 +810,16 @@ class HearingSlotsServiceTest {
     }
 
     @Test
+    void buildTypedJsonBodyShouldConvertFailOnNoAvailabilityToBoolean() {
+        Map<String, String> params = new HashMap<>();
+        params.put("failOnNoAvailability", "true");
+
+        javax.json.JsonObject result = HearingSlotsService.buildTypedJsonBody(params);
+
+        assertThat(result.getBoolean("failOnNoAvailability"), is(true));
+    }
+
+    @Test
     void buildTypedJsonBodyShouldConvertIsPoliceToBooleanFalse() {
         Map<String, String> params = new HashMap<>();
         params.put("isPolice", "false");

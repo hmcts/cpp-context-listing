@@ -15,6 +15,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.joining;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.ACCEPTED;
@@ -64,6 +65,7 @@ public class CourtSchedulerServiceStub {
     private static final String HEARINGS_PATH = "/hearings";
     /** Content-type used by the new POST /hearings/{id} crown search-and-book endpoint. */
     private static final String CROWN_SEARCH_AND_BOOK_TYPE = "application/vnd.courtscheduler.crown.search.and.book+json";
+    private static final String FAIL_ON_NO_AVAILABILITY_TRUE = "\"failOnNoAvailability\":true";
     /** Content-type used by the new POST /hearings/{id} mags search-and-book endpoint. */
     private static final String MAGS_SEARCH_AND_BOOK_TYPE = "application/vnd.courtscheduler.mags.search.and.book+json";
     /** Kept for backward-compat constant name; body of crown-fallback stub now uses CROWN_SEARCH_AND_BOOK_TYPE. */
@@ -505,6 +507,31 @@ public class CourtSchedulerServiceStub {
                 .willReturn(aResponse().withStatus(statusCode)
                         .withBody(body.toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    /**
+     * SPRDT-1572: courtscheduler's 422 NO_AVAILABILITY for a multi-day MOVE / fresh-book miss, matched
+     * ONLY when listing opts in with {@code "failOnNoAvailability":true} — a request without the flag
+     * falls through to the default stubs, so a 422 proves listing sent it.
+     */
+    public static void stubCrownSearchAndBookNoAvailabilityWhenOptedIn(final String hearingId,
+                                                                      final List<String> unavailableDates) {
+        final String dates = unavailableDates.stream().map(d -> "\"" + d + "\"").collect(joining(","));
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId)))
+                .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                .withRequestBody(containing(FAIL_ON_NO_AVAILABILITY_TRUE))
+                .atPriority(1)
+                .willReturn(aResponse().withStatus(422)
+                        .withBody("{\"errorCode\":\"NO_AVAILABILITY\",\"unavailableDates\":[" + dates + "]}")
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    /** SPRDT-1572: the hearing's crown.search.and.book call did NOT opt in to the 422 (soft-fallback callers). */
+    public static void verifyCrownSearchAndBookDidNotOptInToNoAvailability(final String hearingId) {
+        WireMock.verify(0, WireMock.postRequestedFor(urlPathMatching(
+                        COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId))
+                .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                .withRequestBody(containing("failOnNoAvailability")));
     }
 
     public static void stubValidateSessionAvailabilityFailure() {

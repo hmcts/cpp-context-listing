@@ -10,8 +10,10 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCrownSearchAndBookNoAvailabilityWhenOptedIn;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMultiDaySearchAndBookFailure;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMultiDaySearchAndBookForHearing;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyCrownSearchAndBookDidNotOptInToNoAvailability;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyMultiDaySearchAndBookCalledForHearing;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
@@ -261,6 +263,8 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
 
         verifyMultiDaySearchAndBookCalledForHearing(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
         awaitUnallocatedProjection(hearingId, startDate, draftScheduleIds.size());
+        // SPRDT-1572: unallocation keeps the soft no-availability fallback — it never opts in to the 422
+        verifyCrownSearchAndBookDidNotOptInToNoAvailability(hearingId.toString());
     }
 
     @Test
@@ -295,6 +299,44 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         assertThat(body, containsString("\"errorCode\":\"NO_AVAILABILITY\""));
         assertThat(body, containsString("\"unavailableDates\""));
         verifyMultiDaySearchAndBookCalledForHearing(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
+    }
+
+    /**
+     * SPRDT-1572: Court Calendar converts an allocated single-day hearing to two days in the same
+     * courtroom, but the room has no same-business-type session on the second day. Courtscheduler's
+     * MOVE / fresh-book search comes back empty — the allocation opts in with failOnNoAvailability, so
+     * that miss is a 422 NO_AVAILABILITY the user sees, instead of a silent 202 with draft-marked days.
+     * The stub only answers 422 when the flag is present, so the 422 proves listing sent it.
+     */
+    @Test
+    @ExpectedServerErrors("courtscheduler crown.search.and.book stub returns 422 for the opted-in conversion -> CrownMultiDayExtensionException (NO_AVAILABILITY)")
+    void shouldReturn422NoAvailability_whenSingleDayIsConvertedToMultiDayWithNoMatchingSessions() throws Exception {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID anchorCourtScheduleId = UUID.randomUUID();
+        final LocalDate startDate = ItClock.today().plusDays(30).with(nextOrSame(MONDAY));
+        final LocalDate endDate = ItClock.plusWorkingDays(startDate, 1);
+        final ZonedDateTime sessionStart = startDate.atTime(10, 30).atZone(ZoneOffset.UTC);
+
+        stubCrownSearchAndBookNoAvailabilityWhenOptedIn(hearingId.toString(), asList(endDate.toString()));
+        givenReferenceDataStubsForUpdateHearing(courtCentreId, courtRoomId);
+        givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+
+        final String payload = loadAndSubstitute(
+                "test-data/CROWN/update-hearing-for-listing/update-hearing-for-listing-crown-convert-singleday-to-multiday.json",
+                basePlaceholders(hearingId, courtCentreId, courtRoomId, anchorCourtScheduleId, startDate, endDate, sessionStart));
+
+        final javax.ws.rs.core.Response response = AbstractIT.restClient.postCommand(
+                buildUpdateHearingUrl(hearingId),
+                MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
+                payload,
+                getLoggedInHeader());
+
+        assertThat(response.getStatus(), is(422));
+        final String body = response.readEntity(String.class);
+        assertThat(body, containsString("\"errorCode\":\"NO_AVAILABILITY\""));
+        assertThat(body, containsString(endDate.toString()));
     }
 
     /**

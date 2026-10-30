@@ -375,7 +375,7 @@ public class HearingSlotsService {
 
     /**
      * Builds a typed JSON body from a params map. Converts "durationInMinutes" values to JSON numbers
-     * and "isPolice" values to JSON booleans; all other entries are added as strings.
+     * and "isPolice" / "failOnNoAvailability" values to JSON booleans; all other entries are added as strings.
      * Null values are silently omitted.
      */
     static JsonObject buildTypedJsonBody(final Map<String, String> params) {
@@ -390,7 +390,7 @@ public class HearingSlotsService {
                 } catch (NumberFormatException e) {
                     bodyBuilder.add(key, value);
                 }
-            } else if ("isPolice".equals(key)) {
+            } else if ("isPolice".equals(key) || "failOnNoAvailability".equals(key)) {
                 bodyBuilder.add(key, Boolean.parseBoolean(value));
             } else {
                 bodyBuilder.add(key, value);

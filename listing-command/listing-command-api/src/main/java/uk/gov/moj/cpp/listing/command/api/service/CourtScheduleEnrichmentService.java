@@ -365,7 +365,10 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     anchorDate != null ? anchorDate.toString() : LocalDate.now().toString(),
                     hearing.getEndDate() != null ? hearing.getEndDate().toString() : null,
                     mainCourtRoomId,
-                    userStartTimeIso);
+                    userStartTimeIso,
+                    // SPRDT-1572: only a Court Calendar ALLOCATION wants a no-availability miss
+                    // rejected; a courtroom-less update (unallocation) keeps the soft fallback below.
+                    carriesCourtRoom(hearing));
 
             if (isEmpty(bookedSessions)) {
                 LOGGER.warn("CROWN multi-day update: no sessions found for hearingId {} — marking days draft so allocation stays closed.", hearing.getHearingId());
@@ -1398,7 +1401,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     }
 
     private List<CourtSchedule> multiDaySearchAndBook(final String courtScheduleId, final Integer durationInMinutes, final String hearingId, final String courtCentreId, final String hearingDate) {
-        return multiDaySearchAndBook(courtScheduleId, durationInMinutes, hearingId, courtCentreId, hearingDate, null, null, null);
+        return multiDaySearchAndBook(courtScheduleId, durationInMinutes, hearingId, courtCentreId, hearingDate, null, null, null, false);
     }
 
     /**
@@ -1409,12 +1412,17 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
      * 422 with an errorCode (NO_AVAILABILITY listing the unavailable dates, INVALID_DATE_RANGE) is
      * a rejected extension and is surfaced to the caller as {@link CrownMultiDayExtensionException},
      * which the command API maps back to the UI.
+     *
+     * <p>SPRDT-1572: {@code failOnNoAvailability} asks courtscheduler to reject a multi-day MOVE /
+     * fresh-book that finds no consecutive run with the same 422 NO_AVAILABILITY, instead of an empty
+     * sessions list. Sent only when true, so callers that rely on the empty-list fallback are unchanged.
      */
     @SuppressWarnings("java:S107")
     private List<CourtSchedule> multiDaySearchAndBook(final String courtScheduleId, final Integer durationInMinutes,
                                                       final String hearingId, final String courtCentreId,
                                                       final String hearingDate, final String endDate,
-                                                      final String courtRoomId, final String earliestHearingTime) {
+                                                      final String courtRoomId, final String earliestHearingTime,
+                                                      final boolean failOnNoAvailability) {
         final Map<String, String> params = new HashMap<>();
         params.put(COURT_SCHEDULE_ID, courtScheduleId);
         params.put(DURATION_MINUTES, String.valueOf(durationInMinutes));
@@ -1429,6 +1437,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         }
         if (nonNull(earliestHearingTime)) {
             params.put("earliestHearingTime", earliestHearingTime);
+        }
+        if (failOnNoAvailability) {
+            params.put("failOnNoAvailability", Boolean.TRUE.toString());
         }
         final Response response = hearingSlotsService.multiDaySearchAndBook(params);
 
