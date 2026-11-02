@@ -1866,7 +1866,7 @@ public class HearingQueryApiTest {
                 new Notes(randomUUID(), roomWithNote, LocalDate.parse(sittingDate), "Court 1 sits late"),
                 new Notes(randomUUID(), roomWithoutNote, LocalDate.parse(sittingDate), "")));
 
-        final JsonObject result = hearingQueryApi.getPddaList(dailyListQuery(courtCentreId, "2026-05-07")).payloadAsJsonObject();
+        final JsonObject result = hearingQueryApi.getCrownList(dailyListQuery(courtCentreId, "2026-05-07")).payloadAsJsonObject();
 
         final JsonArray sittings = result.getJsonArray("courtLists").getJsonObject(0).getJsonArray("sittings");
         assertThat(sittings.getJsonObject(0).getString("sittingNote"), is("Court 1 sits late"));
@@ -1883,7 +1883,7 @@ public class HearingQueryApiTest {
         final String courtCentreId = randomUUID().toString();
         dailyListWithSittings(courtCentreId, List.of(createObjectBuilder().add("sittingDate", "2026-05-07").build()), createObjectBuilder().build());
 
-        final JsonObject result = hearingQueryApi.getPddaList(dailyListQuery(courtCentreId, "2026-05-07")).payloadAsJsonObject();
+        final JsonObject result = hearingQueryApi.getCrownList(dailyListQuery(courtCentreId, "2026-05-07")).payloadAsJsonObject();
 
         verify(notesService, never()).findNotes(any(List.class));
         assertThat(result.getJsonArray("courtLists").getJsonObject(0).getJsonArray("sittings").getJsonObject(0).containsKey("sittingNote"), is(false));
@@ -1900,7 +1900,7 @@ public class HearingQueryApiTest {
                 new Notes(randomUUID(), room, null, "No date"),
                 new Notes(randomUUID(), room, LocalDate.parse(sittingDate), "Kept")));
 
-        final JsonObject sitting = hearingQueryApi.getPddaList(dailyListQuery(courtCentreId, sittingDate)).payloadAsJsonObject()
+        final JsonObject sitting = hearingQueryApi.getCrownList(dailyListQuery(courtCentreId, sittingDate)).payloadAsJsonObject()
                 .getJsonArray("courtLists").getJsonObject(0).getJsonArray("sittings").getJsonObject(0);
 
         assertThat(sitting.getString("sittingNote"), is("Kept"));
@@ -1977,11 +1977,11 @@ public class HearingQueryApiTest {
         when(referenceDataService.getJudiciariesByIdList(eq(List.of(fromString(judicialId))), any(JsonEnvelope.class))).thenReturn(envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("referencedata.query.judiciaries"),
                 createObjectBuilder().add("judiciaries", createArrayBuilder().add(judge).build()).build()));
-        return hearingQueryApi.getPddaList(dailyListQuery(courtCentreId, "2026-05-07")).payloadAsJsonObject();
+        return hearingQueryApi.getCrownList(dailyListQuery(courtCentreId, "2026-05-07")).payloadAsJsonObject();
     }
 
     @Test
-    void shouldReturnLinkedCasesAndTheOtherAdditionalDataOnlyInThePddaListPayload() {
+    void shouldReturnLinkedCasesAndTheOtherAdditionalDataOnlyInTheCrownListPayload() {
         final String courtCentreId = randomUUID().toString();
         final String judicialId = randomUUID().toString();
         final UUID courtRoomId = randomUUID();
@@ -1989,9 +1989,9 @@ public class HearingQueryApiTest {
         stubCourtListWithEveryAdditionalItem(courtCentreId, judicialId, courtRoomId, sittingDate);
         when(notesService.findNotes(any(List.class))).thenReturn(List.of(new Notes(randomUUID(), courtRoomId, LocalDate.parse(sittingDate), "Court 1 sits late")));
 
-        final JsonEnvelope result = hearingQueryApi.getPddaList(dailyListQuery(courtCentreId, sittingDate));
+        final JsonEnvelope result = hearingQueryApi.getCrownList(dailyListQuery(courtCentreId, sittingDate));
 
-        assertThat(result.metadata().name(), is("listing.search.pdda.list.payload"));
+        assertThat(result.metadata().name(), is("listing.search.crown.list.payload"));
         final JsonObject courtList = result.payloadAsJsonObject().getJsonArray("courtLists").getJsonObject(0);
         final JsonObject sitting = courtList.getJsonArray("sittings").getJsonObject(0);
         assertThat(sitting.getString("sittingNote"), is("Court 1 sits late"));

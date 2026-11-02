@@ -37,7 +37,7 @@ import java.time.LocalTime;
  * resource and returns the daily list plus linked cases, sitting notes, judge name parts and further court centre
  * address details.
  */
-public class PddaListPayloadSteps extends AbstractIT {
+public class CrownListPayloadSteps extends AbstractIT {
 
     private static final String CROWN_MEDIA_TYPE = "application/vnd.listing.search.crown.list.payload+json";
     private static final String DAILY_MEDIA_TYPE = "application/vnd.listing.search.daily.list.payload+json";
@@ -52,7 +52,7 @@ public class PddaListPayloadSteps extends AbstractIT {
     private final UpdatedHearingData updatedHearingData;
     private final NotesSteps notesSteps = new NotesSteps();
 
-    public PddaListPayloadSteps(final HearingsData hearingsData, final UpdatedHearingData updatedHearingData) {
+    public CrownListPayloadSteps(final HearingsData hearingsData, final UpdatedHearingData updatedHearingData) {
         this.updatedHearingData = updatedHearingData;
         final CourtCentreData courtCentreData = new CourtCentreData(
                 updatedHearingData.getCourtCentreId(),
@@ -70,7 +70,7 @@ public class PddaListPayloadSteps extends AbstractIT {
         stubGetProsecutorPoliceFlag(hearingsData.getHearingData().get(0).getListedCases().get(0).getAuthorityId());
     }
 
-    public void verifyPddaListContainsTheDailyListDataAndJudiciaryNameParts(final String publishCourtListType) {
+    public void verifyCrownListContainsTheDailyListDataAndJudiciaryNameParts(final String publishCourtListType) {
         pollWithDelayForJms(request(CROWN_MEDIA_TYPE, publishCourtListType))
                 .until(
                         status().is(OK),
@@ -90,7 +90,7 @@ public class PddaListPayloadSteps extends AbstractIT {
                         )));
     }
 
-    public void verifyPddaListContainsCourtCentreAddressDetails(final String publishCourtListType) {
+    public void verifyCrownListContainsCourtCentreAddressDetails(final String publishCourtListType) {
         pollWithDelayForJms(request(CROWN_MEDIA_TYPE, publishCourtListType))
                 .until(
                         status().is(OK),
@@ -110,7 +110,7 @@ public class PddaListPayloadSteps extends AbstractIT {
         notesSteps.createNoteForListing(updatedHearingData.getCourtRoomId(), updatedHearingData.getStartDate(), noteDescription);
     }
 
-    public void verifyPddaListContainsSittingNote(final String publishCourtListType, final String noteDescription) {
+    public void verifyCrownListContainsSittingNote(final String publishCourtListType, final String noteDescription) {
         pollWithDelayForJms(request(CROWN_MEDIA_TYPE, publishCourtListType))
                 .until(
                         status().is(OK),
@@ -120,7 +120,7 @@ public class PddaListPayloadSteps extends AbstractIT {
     /**
      * Polls briefly, so that a caller can re-publish the link event and call this again until the read model has it.
      */
-    public void verifyPddaListContainsLinkedCases(final String publishCourtListType, final String... linkedCaseUrns) {
+    public void verifyCrownListContainsLinkedCases(final String publishCourtListType, final String... linkedCaseUrns) {
         pollWithDefaults(request(CROWN_MEDIA_TYPE, publishCourtListType))
                 .until(
                         status().is(OK),

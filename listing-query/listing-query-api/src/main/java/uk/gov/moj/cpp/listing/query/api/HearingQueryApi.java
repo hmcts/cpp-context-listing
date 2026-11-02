@@ -249,12 +249,12 @@ public class HearingQueryApi {
     }
 
     /**
-     * Same court list as {@link #getDailyList}, with the additional data that the PDDA lists need: linked cases,
+     * Same court list as {@link #getDailyList}, with the additional data that the Crown lists need: linked cases,
      * sitting notes, judge name parts and the remaining court centre address details.
      */
-    @Handles("listing.search.pdda.list.payload")
-    public JsonEnvelope getPddaList(final JsonEnvelope query) {
-        return buildCourtListPayload(query, true, "listing.search.pdda.list.payload");
+    @Handles("listing.search.crown.list.payload")
+    public JsonEnvelope getCrownList(final JsonEnvelope query) {
+        return buildCourtListPayload(query, true, "listing.search.crown.list.payload");
     }
 
     private JsonEnvelope buildCourtListPayload(final JsonEnvelope query, final boolean additionalData, final String responseActionName) {
