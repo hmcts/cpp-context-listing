@@ -43,6 +43,9 @@ import uk.gov.moj.cpp.listing.utils.WebDavStub;
 
 import java.io.StringReader;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -254,6 +257,16 @@ public class PublishCourtListSteps extends CommonHearingSteps {
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='Defendants']" +
                 "/*[local-name()='Defendant']/*[local-name()='PersonalDetails']/*[local-name()='Name']/*[local-name()='CitizenNameRequestedName']/text()", sentXml);
 
+    }
+
+    // Works for WARN, FIRM and DRAFT/FINAL lists: the application's party listed in XHIBIT is the only cs:Defendant,
+    // other application parties (e.g. a PERSON_DEFENDANT respondent) are not listed as defendants
+    public void verifySentPublishedCourtListHasOnlyOneDefendantAndExcludes(final String excludedPartyLastName) throws Exception {
+        final String sentXml = getSentXml();
+        final XpathEngine simpleXpathEngine = XMLUnit.newXpathEngine();
+        assertEquals("1", simpleXpathEngine.evaluate("count(//*[local-name()='Defendant'])", XMLUnit.buildControlDocument(sentXml)));
+        assertEquals("0", simpleXpathEngine.evaluate("count(//*[local-name()='Defendant']//*[local-name()='CitizenNameSurname'][text()='" + excludedPartyLastName + "'])",
+                XMLUnit.buildControlDocument(sentXml)));
     }
 
     private void verifyCourtHeader() throws Exception {
@@ -471,6 +484,23 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         assertThat(jsonResponse.getBoolean("weekCommencing"), is(weekCommencing));
         assertThat(jsonResponse.getBoolean("sendNotificationToParties"), is(sendNotificationToParties));
         assertThat(jsonResponse.getList("courtLists"), Matchers.hasSize(courtListItems));
+    }
+
+    // Court application hearings are published without defendants (only case hearings carry defendants)
+    @SuppressWarnings("unchecked")
+    public void verifyPublicEventApplicationHearingHasNoDefendants(final String courtCentreId) {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerPublishCourtList,
+                containsString(courtCentreId));
+        assertNotNull(jsonResponse, "No public publish-court-list event found for courtCentreId=" + courtCentreId);
+        LOGGER.info("jsonResponse from publicMessageConsumerPublishCourtList: {}", jsonResponse.prettify());
+
+        final List<Map<String, Object>> hearings = new ArrayList<>();
+        jsonResponse.<Map<String, Object>>getList("courtLists")
+                .forEach(courtList -> hearings.addAll((List<Map<String, Object>>) courtList.get("hearings")));
+
+        assertThat(hearings, Matchers.hasSize(1));
+        assertThat(hearings.get(0).containsKey("caseIdentifier"), is(false));
+        assertThat(hearings.get(0).containsKey("defendants"), is(false));
     }
 
     public void verifyDefendantNameIsMasked() throws Exception {

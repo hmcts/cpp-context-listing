@@ -4,7 +4,9 @@ import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.everyItem;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
@@ -107,6 +109,35 @@ public class DailyListPayloadSteps extends AbstractIT {
                                         is(updatedHearingData.getHearingTypData().getTypeId().toString())),
                                 withJsonPath("$.courtLists[0].sittings[0].hearings[0].prosecutor.organisationName",
                                         is(EXPECTED_PROSECUTOR_ORGANISATION_NAME))
+                        )));
+    }
+
+    // Standalone court application without offences (e.g. a bail variation) - the hearing and its
+    // PERSON_DEFENDANT parties must still be on the daily list even though none of them has an offence
+    public void verifyDailyListPayloadContainsApplicationWithoutOffences(final UUID courtCentreId,
+                                                                        final LocalDate startDate,
+                                                                        final String publishCourtListType,
+                                                                        final String subjectFirstName,
+                                                                        final String subjectLastName) {
+        final String url = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.daily.list.payload"),
+                        courtCentreId,
+                        startDate,
+                        publishCourtListType));
+
+        pollWithDelayForJms(requestParams(url, MEDIA_TYPE).withHeader(USER_ID, getLoggedInUser()).build())
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.courtCentreId", is(courtCentreId.toString())),
+                                withJsonPath("$.courtLists[*].sittings[*].hearings[?(@.applicationReference)].subject.lastName",
+                                        hasItem(subjectLastName)),
+                                withJsonPath("$.courtLists[*].sittings[*].hearings[?(@.applicationReference)].defendants[*].firstName",
+                                        hasItem(subjectFirstName)),
+                                withJsonPath("$.courtLists[*].sittings[*].hearings[?(@.applicationReference)].defendants[*].lastName",
+                                        hasItem(subjectLastName)),
+                                withJsonPath("$.courtLists[*].sittings[*].hearings[?(@.subject.lastName == '" + subjectLastName + "')].defendants[*].offences",
+                                        everyItem(empty()))
                         )));
     }
 
