@@ -1019,7 +1019,7 @@ public class HearingQueryApiTest {
     }
 
     @Test
-    void shouldRemoveOnlyTheDefendantWithoutOffenceButKeepMixedHearing() {
+    void shouldKeepHearingsAndDefendantsWithoutOffences() {
         final String courtCentreId = randomUUID().toString();
         final String startDate = "2026-05-07";
         final String publishCourtListType = "FINAL";
@@ -1106,13 +1106,19 @@ public class HearingQueryApiTest {
                 .getJsonArray("sittings").getJsonObject(0)
                 .getJsonArray("hearings");
 
-        assertThat(remainingHearings.size(), is(2));
-        assertThat(remainingHearings.getJsonObject(0).getString("startTime"), is("2026-05-07T11:00:00"));
-        assertThat(remainingHearings.getJsonObject(1).getString("startTime"), is("2026-05-07T12:00:00"));
+        assertThat(remainingHearings.size(), is(3));
+        assertThat(remainingHearings.getJsonObject(0).getString("startTime"), is("2026-05-07T10:00:00"));
+        assertThat(remainingHearings.getJsonObject(1).getString("startTime"), is("2026-05-07T11:00:00"));
+        assertThat(remainingHearings.getJsonObject(2).getString("startTime"), is("2026-05-07T12:00:00"));
 
-        final JsonArray mixedHearingDefendants = remainingHearings.getJsonObject(1).getJsonArray("defendants");
-        assertThat(mixedHearingDefendants.size(), is(1));
+        final JsonArray hearingWithoutOffenceDefendants = remainingHearings.getJsonObject(0).getJsonArray("defendants");
+        assertThat(hearingWithoutOffenceDefendants.size(), is(1));
+        assertThat(hearingWithoutOffenceDefendants.getJsonObject(0), is(defendantWithoutOffence));
+
+        final JsonArray mixedHearingDefendants = remainingHearings.getJsonObject(2).getJsonArray("defendants");
+        assertThat(mixedHearingDefendants.size(), is(2));
         assertThat(mixedHearingDefendants.getJsonObject(0), is(defendantWithOffence));
+        assertThat(mixedHearingDefendants.getJsonObject(1), is(defendantWithoutOffence));
     }
 
     @Test
