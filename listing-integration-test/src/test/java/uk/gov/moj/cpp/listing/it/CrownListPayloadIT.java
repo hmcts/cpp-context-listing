@@ -18,7 +18,7 @@ import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
-import uk.gov.moj.cpp.listing.steps.PddaListPayloadSteps;
+import uk.gov.moj.cpp.listing.steps.CrownListPayloadSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
@@ -39,9 +39,9 @@ import org.slf4j.LoggerFactory;
  * Integration tests for {@code application/vnd.listing.search.crown.list.payload+json}, requested from the daily list
  * resource: the daily list plus linked cases, sitting notes, judge name parts and further court centre address details.
  */
-public class PddaListPayloadIT extends AbstractIT {
+public class CrownListPayloadIT extends AbstractIT {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PddaListPayloadIT.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CrownListPayloadIT.class);
 
     private static final String PUBLIC_EVENT_PROGRESSION_CASE_LINKED = "public.progression.case-linked";
     private static final UUID LINKED_CASE_ID_1 = randomUUID();
@@ -52,7 +52,7 @@ public class PddaListPayloadIT extends AbstractIT {
     private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     private final ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
 
-    private PddaListPayloadSteps pddaListPayloadSteps;
+    private CrownListPayloadSteps crownListPayloadSteps;
     private HearingsData hearingsData;
 
     @BeforeEach
@@ -76,32 +76,32 @@ public class PddaListPayloadIT extends AbstractIT {
         updateHearingSteps.whenHearingIsUpdatedForListing();
         updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPIWithJmsDelay();
 
-        pddaListPayloadSteps = new PddaListPayloadSteps(hearingsData, updatedHearingData);
+        crownListPayloadSteps = new CrownListPayloadSteps(hearingsData, updatedHearingData);
     }
 
     @Test
     void shouldReturnTheDailyListDataAndJudiciaryNamePartsForDraft() {
-        pddaListPayloadSteps.verifyPddaListContainsTheDailyListDataAndJudiciaryNameParts("DRAFT");
+        crownListPayloadSteps.verifyCrownListContainsTheDailyListDataAndJudiciaryNameParts("DRAFT");
     }
 
     @Test
     void shouldReturnTheDailyListDataAndJudiciaryNamePartsForFinal() {
-        pddaListPayloadSteps.verifyPddaListContainsTheDailyListDataAndJudiciaryNameParts("FINAL");
+        crownListPayloadSteps.verifyCrownListContainsTheDailyListDataAndJudiciaryNameParts("FINAL");
     }
 
     @Test
     void shouldReturnCourtCentreAddressDetails() {
-        pddaListPayloadSteps.verifyPddaListContainsCourtCentreAddressDetails("DRAFT");
+        crownListPayloadSteps.verifyCrownListContainsCourtCentreAddressDetails("DRAFT");
     }
 
     @Test
     void shouldReturnTheSittingNoteForTheSittingsCourtRoomAndDate() {
         final String note = "Court sits late today " + STRING.next();
 
-        pddaListPayloadSteps.createSittingNote(note);
+        crownListPayloadSteps.createSittingNote(note);
 
-        pddaListPayloadSteps.verifyPddaListContainsSittingNote("DRAFT", note);
-        pddaListPayloadSteps.verifyDailyListHasNoAdditionalData("DRAFT");
+        crownListPayloadSteps.verifyCrownListContainsSittingNote("DRAFT", note);
+        crownListPayloadSteps.verifyDailyListHasNoAdditionalData("DRAFT");
     }
 
     @Test
@@ -112,16 +112,16 @@ public class PddaListPayloadIT extends AbstractIT {
         final JmsMessageProducerClient publicEventProgressionCaseLinked = publicEvents.createPublicProducer();
 
         // The case aggregate drops the link when it does not yet know the hearing, so re-publish until it is reflected
-        publishUntilReflected(LOGGER, "pdda-linked-cases", "cases-linked event for hearing " + hearingId,
+        publishUntilReflected(LOGGER, "crown-linked-cases", "cases-linked event for hearing " + hearingId,
                 () -> publishCasesLinkedEvent(publicEventProgressionCaseLinked, createCaseLinkedEvent(caseId, caseUrn)),
-                () -> pddaListPayloadSteps.verifyPddaListContainsLinkedCases("DRAFT", LINKED_CASE_URN_1, LINKED_CASE_URN_2));
+                () -> crownListPayloadSteps.verifyCrownListContainsLinkedCases("DRAFT", LINKED_CASE_URN_1, LINKED_CASE_URN_2));
 
-        pddaListPayloadSteps.verifyDailyListHasNoAdditionalData("DRAFT");
+        crownListPayloadSteps.verifyDailyListHasNoAdditionalData("DRAFT");
     }
 
     @Test
     void shouldLeaveTheAdditionalDataOutOfTheDailyListPayload() {
-        pddaListPayloadSteps.verifyDailyListHasNoAdditionalData("DRAFT");
+        crownListPayloadSteps.verifyDailyListHasNoAdditionalData("DRAFT");
     }
 
     private CaseLinked createCaseLinkedEvent(final UUID caseId, final String caseUrn) {
