@@ -4,9 +4,13 @@
         <groupId>uk.gov.moj.cpp.listing</groupId>
         <artifactId>listing-parent</artifactId>
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         <version>17.104.16</version>
 >>>>>>> 47fa6ce0ad (updating poms for branch'dev/release-17.104.16' with non-snapshot versions)
+=======
+        <version>17.104.17-SNAPSHOT</version>
+>>>>>>> b8e5cfb284 (Updating develop poms back to pre merge state)
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
