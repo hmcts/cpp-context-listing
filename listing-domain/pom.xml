@@ -23,6 +23,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
 =======
         <version>17.104.10-cct-1981-r-SNAPSHOT</version>
@@ -81,6 +82,9 @@
 =======
         <version>17.104.16-SNAPSHOT</version>
 >>>>>>> be42e7b357 (Updating develop poms back to pre merge state)
+=======
+        <version>17.104.17-SNAPSHOT</version>
+>>>>>>> 3503395b22 (updating poms for 17.104.17-SNAPSHOT development)
     </parent>
 
     <artifactId>listing-domain</artifactId>
