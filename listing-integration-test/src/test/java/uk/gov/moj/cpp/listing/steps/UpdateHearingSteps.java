@@ -141,6 +141,7 @@ public class UpdateHearingSteps extends AbstractIT {
     private static final String FIELD_PUBLIC_LIST_NOTE = "publicListNote";
     private static final String FIELD_USER_ID = "userId";
     public static final String PANEL = "panel";
+    private static final String FIELD_JUDICIARY_ASSIGNMENT_SOURCE = "judiciaryAssignmentSource";
 
     public static final String FIELD_HEARING_TYPE_ID = "id";
     public static final String FIELD_HEARING_TYPE_DESCRIPTION = "description";
@@ -264,6 +265,7 @@ public class UpdateHearingSteps extends AbstractIT {
                 .add(FIELD_HEARING_LANGUAGE, updatedHearingData.getHearingLanguage())
                 .add(FIELD_COURT_CENTRE_ID, updatedHearingData.getCourtCentreId().toString())
                 .add(FIELD_JUDICIARY, prepareJsonJudiciary(updatedHearingData.getJudiciary()))
+                .add(FIELD_JUDICIARY_ASSIGNMENT_SOURCE, "MANUAL")
                 .add(FIELD_NON_DEFAULT_DAYS, prepareJsonNonDefaultDays(updatedHearingData.getNonDefaultDays()))
                 .add(FIELD_SEND_NOTIFICATION_TO_PARTIES, updatedHearingData.isSendNotificationToParties())
                 .add(FIELD_NON_SITTING_DAYS, prepareJsonStringArray(updatedHearingData.getNonSittingDays()));
@@ -415,6 +417,10 @@ public class UpdateHearingSteps extends AbstractIT {
 
         builder.add(FIELD_HEARINGS, prepareJsonHearingIdArray(updatedHearingData.getHearingId()))
                 .add(FIELD_JUDICIARY, prepareJsonJudiciary(updatedHearingData.getJudiciary()));
+
+        if (nonNull(updatedHearingData.getJudiciaryAssignmentSource())){
+            builder.add(FIELD_JUDICIARY_ASSIGNMENT_SOURCE, updatedHearingData.getJudiciaryAssignmentSource());
+        }
 
         return builder.build().toString();
     }
@@ -686,6 +692,71 @@ public class UpdateHearingSteps extends AbstractIT {
         final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_UPDATE_HEARINGS_FOR_LISTING, request, getLoggedInHeader());
 
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    public void whenHearingUpdated() {
+        stubOrganisationUnit(updatedHearingData.getCourtCentreId());
+        stubGetReferenceDataCourtCentres(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court"));
+        stubGetReferenceDataCourtCentreById(updatedHearingData.getCourtCentreId());
+        stubGetReferenceDataHearingTypes(updatedHearingData.getHearingTypData().getTypeId());
+        final String updateHearingUrl = String.format("%s/%s", getBaseUri(), readConfig().getProperty(LISTING_COMMAND_UPDATE_HEARINGS_FOR_LISTING));
+
+        final JsonObjectBuilder updatedHearingDataJsonBuilder = prepareJsonForUpdatedHearingData(updatedHearingData)
+                .add("hearingId", updatedHearingData.getHearingId().toString());
+
+        final JsonArrayBuilder updatedHearingsDataJsonArrBuilder = createArrayBuilder();
+        updatedHearingsDataJsonArrBuilder.add(updatedHearingDataJsonBuilder.build());
+        final JsonObjectBuilder updatedHearingsJsonObjBuilder = createObjectBuilder();
+        updatedHearingsJsonObjBuilder.add(FIELD_HEARINGS, updatedHearingsDataJsonArrBuilder.build());
+
+        request = updatedHearingsJsonObjBuilder.build().toString();
+
+        final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_UPDATE_HEARINGS_FOR_LISTING, request, getLoggedInHeader());
+
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    public void whenHearingUpdatedWithoutJudiciaryAssignmentSource() {
+        stubOrganisationUnit(updatedHearingData.getCourtCentreId());
+        stubGetReferenceDataCourtCentres(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court"));
+        stubGetReferenceDataCourtCentreById(updatedHearingData.getCourtCentreId());
+        stubGetReferenceDataHearingTypes(updatedHearingData.getHearingTypData().getTypeId());
+        final String updateHearingUrl = String.format("%s/%s", getBaseUri(), readConfig().getProperty(LISTING_COMMAND_UPDATE_HEARINGS_FOR_LISTING));
+
+        final JsonObject updatedHearingDataJson = withoutJudiciaryAssignmentSource(prepareJsonForUpdatedHearingData(updatedHearingData)
+                .add("hearingId", updatedHearingData.getHearingId().toString()).build());
+
+        request = createObjectBuilder().add(FIELD_HEARINGS, createArrayBuilder().add(updatedHearingDataJson)).build().toString();
+
+        final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_UPDATE_HEARINGS_FOR_LISTING, request, getLoggedInHeader());
+
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    public void whenHearingUpdatedForListingWithoutJudiciaryAssignmentSource() {
+        stubOrganisationUnit(updatedHearingData.getCourtCentreId());
+        stubGetReferenceDataCourtCentre(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court"));
+        stubGetReferenceDataCourtCentreById(updatedHearingData.getCourtCentreId());
+        stubGetReferenceDataHearingTypes(updatedHearingData.getHearingTypData().getTypeId());
+        final String updateHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING), updatedHearingData.getHearingId()));
+
+        request = withoutJudiciaryAssignmentSource(prepareJsonForUpdatedHearingData(updatedHearingData).build()).toString();
+
+        final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
+                request, getLoggedInHeader());
+
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    private static JsonObject withoutJudiciaryAssignmentSource(final JsonObject updatedHearingDataJson) {
+        final JsonObjectBuilder builder = createObjectBuilder();
+        updatedHearingDataJson.forEach((name, value) -> {
+            if (!FIELD_JUDICIARY_ASSIGNMENT_SOURCE.equals(name)) {
+                builder.add(name, value);
+            }
+        });
+        return builder.build();
     }
 
     public void whenHearingIsUpdatedForListingHmiEnabled() {
@@ -1258,6 +1329,71 @@ public class UpdateHearingSteps extends AbstractIT {
                         hasItem(updatedHearingData.getJudiciary().get(0).getIsBenchChairman().get())),
                 withJsonPath(hearingIdFilter + ".judiciary[0].isDeputy",
                         hasItem(updatedHearingData.getJudiciary().get(0).getIsDeputy().get())),
+                withJsonPath(hearingIdFilter + ".courtRoomId",
+                        hasItem(updatedHearingData.getCourtRoomId().toString())),
+                withJsonPath(hearingIdFilter + ".type.description",
+                        hasItem(updatedHearingData.getHearingTypData().getTypeDescription())),
+                withJsonPath(hearingIdFilter + ".jurisdictionType",
+                        hasItem(updatedHearingData.getJurisdictionType())),
+                withJsonPath(hearingIdFilter + ".hearingLanguage",
+                        hasItem(updatedHearingData.getHearingLanguage())),
+                withJsonPath(hearingIdFilter + ".endDate",
+                        hasItem(updatedHearingData.getEndDate())),
+                withJsonPath(hearingIdFilter + ".startDate",
+                        hasItem(updatedHearingData.getStartDate())),
+                withJsonPath(hearingIdFilter + ".hearingDays[0].startTime",
+                        hasItem(fromString(updatedHearingData.getNonDefaultDays().get(0).getStartTime()).format(ZONED_DATE_TIME_FORMAT))),
+                withJsonPath(hearingIdFilter + ".hearingDays[0].durationMinutes",
+                        hasItem(updatedHearingData.getNonDefaultDays().get(0).getDuration().get())),
+                withJsonPath(hearingIdFilter + ".hearingDays[0].endTime",
+                        hasItem(fromString(updatedHearingData.getNonDefaultDays().get(0).getStartTime())
+                                .plusMinutes(updatedHearingData.getNonDefaultDays().get(0).getDuration().get())
+                                .format(ZONED_DATE_TIME_FORMAT))),
+                withJsonPath(hearingIdFilter + ".nonSittingDays[0]",
+                        hasItem(updatedHearingData.getNonSittingDays().get(0))),
+                withJsonPath(hearingIdFilter + ".nonDefaultDays[0].startTime",
+                        hasItem(fromString(updatedHearingData.getNonDefaultDays().get(0).getStartTime()).format(ZONED_DATE_TIME_FORMAT)))
+        });
+    }
+
+
+    public void verifyJudiciaryAssignedWithSourceWhenQueryingFromAPI(final List<JudicialRoleData> expectedJudiciary, final String expectedJudiciaryAssignmentSource) {
+        final String hearingIdFilter = getHearingFilter(updatedHearingData.getHearingId().toString());
+        pollForHearing(updatedHearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(hearingIdFilter + ".judiciary[*]", hasSize(expectedJudiciary.size())),
+                withJsonPath(hearingIdFilter + ".judiciary[0].judicialId",
+                        hasItem(expectedJudiciary.get(0).getJudicialId().toString())),
+                withJsonPath(hearingIdFilter + ".judiciaryAssignmentSource",
+                        hasItem(expectedJudiciaryAssignmentSource))
+        });
+    }
+
+    public void verifyNoJudiciaryAssignedWithSourceWhenQueryingFromAPI(final String expectedJudiciaryAssignmentSource) {
+        final String hearingIdFilter = getHearingFilter(updatedHearingData.getHearingId().toString());
+        pollForHearing(updatedHearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(hearingIdFilter + ".judiciary[*]", hasSize(0)),
+                withJsonPath(hearingIdFilter + ".judiciaryAssignmentSource",
+                        hasItem(expectedJudiciaryAssignmentSource))
+        });
+    }
+
+    public void verifyHearingAllocatedAndJudiciaryAssignedWithManualSourceWhenQueryingFromAPI() {
+
+        final String hearingId = updatedHearingData.getHearingId().toString();
+        final String hearingIdFilter = getHearingFilter(hearingId);
+        pollForHearing(updatedHearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(hearingIdFilter + ".judiciary[0].judicialId",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getJudicialId().toString())),
+                withJsonPath(hearingIdFilter + ".judiciary[0].judicialRoleType.judiciaryType",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType())),
+                withJsonPath(hearingIdFilter + ".judiciary[0].isBenchChairman",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getIsBenchChairman().get())),
+                withJsonPath(hearingIdFilter + ".judiciary[0].isDeputy",
+                        hasItem(updatedHearingData.getJudiciary().get(0).getIsDeputy().get())),
+
+                withJsonPath(hearingIdFilter + ".judiciaryAssignmentSource",
+                        hasItem(updatedHearingData.getJudiciaryAssignmentSource())),
+
                 withJsonPath(hearingIdFilter + ".courtRoomId",
                         hasItem(updatedHearingData.getCourtRoomId().toString())),
                 withJsonPath(hearingIdFilter + ".type.description",
