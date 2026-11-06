@@ -4,6 +4,10 @@
     <parent>
         <artifactId>listing-parent</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
+<<<<<<< HEAD
+=======
+        <version>17.104.17</version>
+>>>>>>> 9a3a8ac724 (updating poms for branch'dev/release-17.104.17' with non-snapshot versions)
     </parent>
 
     <artifactId>listing-json</artifactId>
