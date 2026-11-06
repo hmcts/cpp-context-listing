@@ -89,8 +89,6 @@ public class CourtSchedulerServiceAdapter {
     // fields, aligning the outbound contract with main (see the review artifact this reconciles).
     private static final String START_TIME = "startTime";
     private static final String END_TIME = "endTime";
-    // move-hearing-to-past-date (MAGS) wire-field constants; JURISDICTION reuses the field declared above
-    private static final String START_DATE = "startDate";
     private static final String SESSIONS = "sessions";
     private static final String COURT_HOUSE_ID = "courtHouseId";
     private static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";

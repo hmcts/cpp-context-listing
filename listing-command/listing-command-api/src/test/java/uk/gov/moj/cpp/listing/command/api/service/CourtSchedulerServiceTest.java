@@ -7,18 +7,26 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.core.dispatcher.SystemUserProvider;
+import uk.gov.moj.cpp.listing.common.service.ProvisionalBookingService;
+import uk.gov.moj.cpp.listing.domain.CourtSchedule;
 import uk.gov.moj.cpp.listing.domain.exception.DataValidationException;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.json.Json;
+import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -57,6 +65,12 @@ class CourtSchedulerServiceTest {
     private CloseableHttpResponse httpResponse;
     @Mock
     private StatusLine statusLine;
+    @Mock
+    private ProvisionalBookingService provisionalBookingService;
+    @Mock
+    private ObjectToJsonObjectConverter objectToJsonObjectConverter;
+    @Mock
+    private JsonObjectToObjectConverter jsonObjectToObjectConverter;
     @Captor
     private ArgumentCaptor<HttpGet> httpGetCaptor;
 
@@ -231,5 +245,56 @@ class CourtSchedulerServiceTest {
             HttpGet capturedGet = httpGetCaptor.getValue();
             assertThat(capturedGet.getURI().toString(), is(BASE_URI + COURTSCHEDULES_RESOURCE + "?additionalParam=value&courtScheduleIds=id1%2Cid2"));
         }
+    }
+
+    @Test
+    public void shouldReturnTheSessionsCourtschedulerHoldsForTheBooking() {
+        final JsonObject slot = Json.createObjectBuilder().add("courtScheduleId", UUID.randomUUID().toString()).build();
+        final JsonObject body = Json.createObjectBuilder().add("provisionalSlots", Json.createArrayBuilder().add(slot)).build();
+        final CourtSchedule session = new CourtSchedule();
+        givenTheBookingLookupAnswers(body);
+        when(jsonObjectToObjectConverter.convert(slot, CourtSchedule.class)).thenReturn(session);
+
+        assertThat(courtSchedulerService.getCourtSchedulesByProvisionalBookingId("bk-1"), is(List.of(session)));
+    }
+
+    /** courtscheduler answers an unknown booking id with 200 and no slots: that is "no booking". */
+    @Test
+    public void shouldReturnNoSessionsWhenCourtschedulerHoldsNoneForTheBooking() {
+        final JsonObject body = Json.createObjectBuilder().add("provisionalSlots", Json.createArrayBuilder()).build();
+        givenTheBookingLookupAnswers(body);
+
+        assertThat(courtSchedulerService.getCourtSchedulesByProvisionalBookingId("bk-1"), is(List.of()));
+    }
+
+    /**
+     * ProvisionalBookingService reports an error status, a timeout or no connection as a 500. None
+     * of those says the booking is gone, so the lookup must fail and be retried rather than answer
+     * "no booking", which ends in [LISTING-LOST] for a hearing a retry would have listed.
+     */
+    @Test
+    public void shouldFailRatherThanReportNoBookingWhenCourtschedulerDoesNotAnswer() {
+        final Response failed = mock(Response.class);
+        when(failed.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        when(provisionalBookingService.getSlots(any())).thenReturn(failed);
+
+        org.junit.jupiter.api.Assertions.assertThrows(CourtSchedulerUnavailableException.class,
+                () -> courtSchedulerService.getCourtSchedulesByProvisionalBookingId("bk-1"));
+    }
+
+    @Test
+    public void shouldFailRatherThanReportNoBookingWhenThereIsNoResponseAtAll() {
+        when(provisionalBookingService.getSlots(any())).thenReturn(null);
+
+        org.junit.jupiter.api.Assertions.assertThrows(CourtSchedulerUnavailableException.class,
+                () -> courtSchedulerService.getCourtSchedulesByProvisionalBookingId("bk-1"));
+    }
+
+    private void givenTheBookingLookupAnswers(final JsonObject body) {
+        final Response response = mock(Response.class);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(body);
+        when(provisionalBookingService.getSlots(any())).thenReturn(response);
+        when(objectToJsonObjectConverter.convert(body)).thenReturn(body);
     }
 }

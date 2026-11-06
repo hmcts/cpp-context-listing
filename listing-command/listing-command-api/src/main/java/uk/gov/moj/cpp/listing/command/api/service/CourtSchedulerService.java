@@ -123,21 +123,30 @@ public class CourtSchedulerService {
                 .execute(httpRequest);
     }
 
+    /**
+     * The sessions courtscheduler holds under this booking id. An empty list is courtscheduler's own
+     * answer that it holds none: it answers an unknown booking id with 200 and no slots.
+     *
+     * @throws CourtSchedulerUnavailableException when courtscheduler gave no answer at all, so the
+     *                                            listing fails and is retried instead of being treated
+     *                                            as a booking that is gone
+     */
     public List<CourtSchedule> getCourtSchedulesByProvisionalBookingId(final String bookingId) {
         final Map<String, String> paramsMap = new HashMap<>();
         paramsMap.put("bookingIds", bookingId);
         final Response slotsResponse = provisionalBookingService.getSlots(paramsMap);
         final List<CourtSchedule> courtScheduleList = new ArrayList<>();
 
-        // "Not a provisional booking" is an ordinary answer here, not an error: a CROWN
-        // bookingReference may still be a courtScheduleId (the shape used before the results UI
-        // began writing the minted bookingId), and the caller falls back to resolving it that way.
-        // Returning an empty list lets that fallback run; throwing - which an unchecked status or a
-        // missing provisionalSlots array previously did, via NPE - makes the whole listing 500.
+        // Only a 200 is an answer. ProvisionalBookingService reports any other status, a timeout or
+        // no connection as a 500, and none of those says the booking is gone. Reading them as "no
+        // booking" logged [LISTING-LOST] during a courtscheduler outage, for hearings a retry would
+        // have listed.
         if (slotsResponse == null || HttpStatus.SC_OK != slotsResponse.getStatus()) {
-            LOGGER.info("getCourtSchedulesByProvisionalBookingId: no provisional booking for {} (status {})",
-                    bookingId, slotsResponse == null ? "no response" : slotsResponse.getStatus());
-            return courtScheduleList;
+            final Object status = slotsResponse == null ? "no response" : slotsResponse.getStatus();
+            LOGGER.error("courtscheduler did not answer the lookup of booking {} (status {}); failing so the listing is retried",
+                    bookingId, status);
+            throw new CourtSchedulerUnavailableException(
+                    "courtscheduler did not answer the lookup of booking " + bookingId + " (status " + status + ")");
         }
 
         final JsonObject resultJson = objectToJsonObjectConverter.convert(slotsResponse.getEntity());

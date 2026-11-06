@@ -60,6 +60,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.Response;
 
 import org.apache.http.HttpStatus;
@@ -75,7 +76,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     private static final String BOOKING_REFERENCES_WITH_COURT_SCHEDULE_IDS = "bookingReferencesWithCourtScheduleIds";
     // Optional body key for the list.hearings-in-sessions request (hearingSlots[].bookingId) — the
     // bookingId courtscheduler minted at slot-pick time, sent so it can release the matching hold
-    // once the hearing is confirmed on the list (BUG-3 Task 2).
+    // once the hearing is confirmed on the list.
     private static final String BOOKING_ID = "bookingId";
     // Query-param name for the GET /sessions search-by-id call (distinct from the body key above).
     private static final String IDS_PARAM = "ids";
@@ -135,8 +136,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             }
         });
         final JsonArray courtScheduleIds = slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(hearingDaysWithCourScheduleId);
-        // UpdateHearingForListing carries no bookingReference field — the amend/update.hearing.slots
-        // path is out of scope for BUG-3 Task 2 (NEW-5's hold release already covers it there).
+        // UpdateHearingForListing carries no bookingReference field, so the update path sends no
+        // bookingId and courtscheduler has no hold to release here.
         final JsonObject updateSlotsPayload = getUpdateSlotsPayload(updateHearingForListing.getHearingId(), courtScheduleIds, null);
         final Response response = hearingSlotsService.listHearingInCourtSessions(updateSlotsPayload);
         final List<HearingDay> enrichedHearingDays = combineSearchAndBookResponseAndListResponse(response, hearingDaysWithCourScheduleId);
@@ -425,8 +426,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 LOGGER.info("CROWN multi-day update: isDraft=true sessions for hearingId {}. Listing in court sessions for slot deduction, allocation decided by aggregate.", hearing.getHearingId());
             }
 
-            // UpdateHearingForListing carries no bookingReference — see the getUpdateSlotsPayload call
-            // site above for why this path is out of scope for BUG-3 Task 2.
+            // UpdateHearingForListing carries no bookingReference, so no bookingId is sent - see the
+            // getUpdateSlotsPayload call site above.
             enrichmentResult = listHearingSessionsAndExtractData(hearing.getHearingId(), expandedDays, null);
         } else {
             final List<String> courtScheduleIds = hearing.getHearingDays().stream()
@@ -448,8 +449,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 LOGGER.info("CROWN single-day update: isDraft=true sessions for hearingId {}. Listing in court sessions for slot deduction, allocation decided by aggregate.", hearing.getHearingId());
             }
 
-            // UpdateHearingForListing carries no bookingReference — see the getUpdateSlotsPayload call
-            // site above for why this path is out of scope for BUG-3 Task 2.
+            // UpdateHearingForListing carries no bookingReference, so no bookingId is sent - see the
+            // getUpdateSlotsPayload call site above.
             enrichmentResult = listHearingSessionsAndExtractData(hearing.getHearingId(), sanityCheckedDays, null);
         }
 
@@ -1086,11 +1087,11 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     }
 
     private static JsonObject getUpdateSlotsPayload(final UUID hearingId, final JsonArray courtScheduleIds, final UUID bookingReference) {
-        final javax.json.JsonObjectBuilder hearingSlotBuilder = createObjectBuilder()
+        final JsonObjectBuilder hearingSlotBuilder = createObjectBuilder()
                 .add(HEARING_ID, hearingId.toString())
                 .add(COURT_SCHEDULE_IDS, courtScheduleIds);
         // Omit rather than send null — JsonObjectBuilder.add rejects nulls, and courtscheduler
-        // treats an absent bookingId as "this caller never reserved" (BUG-3 Task 2).
+        // treats an absent bookingId as "this caller never reserved".
         if (nonNull(bookingReference)) {
             hearingSlotBuilder.add(BOOKING_ID, bookingReference.toString());
         }
@@ -1363,9 +1364,6 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return hearing;
         }
 
-        // bookingReference is the bookingId courtscheduler minted when the clerk picked the slot —
-        // the same identity magistrates has always carried — so it resolves through the provisional
-        // booking endpoint.
         final String bookingReference = hearing.getBookingReference().toString();
 
         // bookingReference is the bookingId courtscheduler minted when the clerk picked the slot, so it
