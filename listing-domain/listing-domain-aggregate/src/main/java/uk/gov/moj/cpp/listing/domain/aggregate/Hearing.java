@@ -5,6 +5,7 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Comparator.comparing;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -12,6 +13,7 @@ import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.concat;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
@@ -110,6 +112,7 @@ import uk.gov.justice.listing.events.HearingResultStatusUpdated;
 import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.HearingsUpdateCompleted;
+import uk.gov.justice.listing.events.JudiciaryAssignmentSource;
 import uk.gov.justice.listing.events.JudicialRoleType;
 import uk.gov.justice.listing.events.JudiciaryAssignedToHearing;
 import uk.gov.justice.listing.events.JudiciaryChangedForHearing;
@@ -243,6 +246,7 @@ public class Hearing implements Aggregate {
     private Integer numberOfGroupCases;
 
     private boolean isSummonsApprovedExists = false;
+    private String judiciaryAssignmentSource = JudiciaryAssignmentSource.AUTO.toString();
 
     @Override
     public Object apply(final Object event) {
@@ -981,21 +985,41 @@ public class Hearing implements Aggregate {
         }
     }
 
-    public Stream<Object> assignJudiciary(final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciary, final UUID hearingId) {
+    public Stream<Object> updateJudiciary(final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciary, final UUID hearingId,
+                                          final String judiciaryAssignmentSource, final List<uk.gov.moj.cpp.listing.domain.HearingDay> newHearingDays,
+                                          final boolean isJudiciaryFromCourtSchedule) {
+
+        // need to revisit when we do judiciary assignment for CROWN
+        // Judiciary filled from the court scheduler (user cleared it) is applied like a session change: AUTO, even over MANUAL
+        if (MAGISTRATES.equals(this.jurisdictionType) && (isJudiciaryFromCourtSchedule || hasCourtSessionChanged(newHearingDays))) {
+            return assignJudiciaryOnCourtSessionChange(judiciary, hearingId);
+        }
+        return assignJudiciary(judiciary, hearingId, judiciaryAssignmentSource);
+    }
+
+    public Stream<Object> assignJudiciary(final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciary, final UUID hearingId, final String judiciaryAssignmentSource) {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
-
-
+        // Empty judiciary always clears the hearing (source resets to AUTO), even if it was manually assigned
+        if (isEmpty(judiciary)) {
+            return removeJudiciary(hearingId);
+        }
+        if (!isEligibleToAutoAssignJudiciary(judiciaryAssignmentSource)) {
+            LOGGER.info("Judiciary for hearing with id {} was manually assigned - ignoring auto update", hearingId);
+            return Stream.empty();
+        }
         if (notCurrentlyAssigned(this.judiciary) || this.judiciary.isEmpty()) {
             return apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
                     .withJudiciary(convertToEvents(judiciary))
                     .withHearingId(hearingId)
+                    .withJudiciaryAssignmentSource(JudiciaryAssignmentSource.valueFor(judiciaryAssignmentSource).orElse(null))
                     .build()));
         } else if (hasChanged(this.judiciary, judiciary)) {
             return apply(Stream.of(JudiciaryChangedForHearing.judiciaryChangedForHearing()
                     .withJudiciary(convertToEvents(judiciary))
                     .withHearingId(hearingId)
+                    .withJudiciaryAssignmentSource(JudiciaryAssignmentSource.valueFor(judiciaryAssignmentSource).orElse(null))
                     .build()));
         } else {
             LOGGER.info("Incoming judiciary {} is the same as current judiciary {} for hearing with id {} - Ignore", judiciary, this.judiciary, hearingId);
@@ -1003,6 +1027,59 @@ public class Hearing implements Aggregate {
         }
     }
 
+
+
+    private boolean hasCourtSessionChanged(final List<uk.gov.moj.cpp.listing.domain.HearingDay> newHearingDays) {
+        if (isEmpty(newHearingDays)) {
+            return false;
+        }
+        // Cancelled days are ignored on both sides - cancelling a day is not a reallocation
+        final Set<UUID> incomingCourtScheduleIds = newHearingDays.stream()
+                .filter(hearingDay -> !hearingDay.getIsCancelled().orElse(false))
+                .map(hearingDay -> hearingDay.getCourtScheduleId().orElse(null))
+                .filter(Objects::nonNull)
+                .collect(toSet());
+        final Set<UUID> currentCourtScheduleIds = isEmpty(this.hearingDays) ? emptySet() : this.hearingDays.stream()
+                .filter(hearingDay -> !hearingDay.isCancelled())
+                .map(HearingDay::getCourtScheduleId)
+                .filter(Objects::nonNull)
+                .collect(toSet());
+        // A first allocation (no current court session) is not a reallocation
+        if (currentCourtScheduleIds.isEmpty() || incomingCourtScheduleIds.isEmpty()) {
+            return false;
+        }
+        // Only removing days (shorten) or only adding days (extend) is not a reallocation - a session must be both left and joined
+        final boolean courtSessionLeft = !incomingCourtScheduleIds.containsAll(currentCourtScheduleIds);
+        final boolean courtSessionJoined = !currentCourtScheduleIds.containsAll(incomingCourtScheduleIds);
+        return courtSessionLeft && courtSessionJoined;
+    }
+
+    private Stream<Object> assignJudiciaryOnCourtSessionChange(final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciary, final UUID hearingId) {
+        if (this.duplicate || this.deleted) {
+            return Stream.empty();
+        }
+        if (isEmpty(judiciary)) {
+            return removeJudiciary(hearingId);
+        }
+        if (!isManuallyAssigned(getJudiciaryAssignmentSource())) {
+            return assignJudiciary(judiciary, hearingId, JudiciaryAssignmentSource.AUTO.toString());
+        }
+        LOGGER.info("Court session judiciary applied to manually assigned hearing with id {} - resetting judiciary to AUTO", hearingId);
+        // Always emit, even if the judiciary is unchanged, so the assignment source flips MANUAL -> AUTO
+        return apply(Stream.of(JudiciaryChangedForHearing.judiciaryChangedForHearing()
+                .withJudiciary(convertToEvents(judiciary))
+                .withHearingId(hearingId)
+                .withJudiciaryAssignmentSource(JudiciaryAssignmentSource.AUTO)
+                .build()));
+    }
+
+    private boolean isEligibleToAutoAssignJudiciary(final String judiciaryAssignmentSource) {
+        return !isManuallyAssigned(getJudiciaryAssignmentSource()) || isManuallyAssigned(judiciaryAssignmentSource);
+    }
+
+    private boolean isManuallyAssigned(final String judiciaryAssignmentSource) {
+        return JudiciaryAssignmentSource.MANUAL.toString().equals(judiciaryAssignmentSource);
+    }
 
     public Stream<Object> removeJudiciary(final UUID hearingId) {
         if (this.duplicate || this.deleted) {
@@ -2695,7 +2772,9 @@ public class Hearing implements Aggregate {
 
     private void onJudiciaryAssignedToHearing(final JudiciaryAssignedToHearing event) {
         withJudiary(event.getJudiciary());
-
+        if (nonNull(event.getJudiciaryAssignmentSource())) {
+            this.judiciaryAssignmentSource = event.getJudiciaryAssignmentSource().toString();
+        }
     }
 
     private void onJurisdictionChangedForHearing(final JurisdictionChangedForHearing event) {
@@ -2710,11 +2789,18 @@ public class Hearing implements Aggregate {
 
     private void onJudiciaryChangedForHearing(final JudiciaryChangedForHearing event) {
         withJudiary(event.getJudiciary());
+        List<uk.gov.justice.listing.events.JudicialRole> judiciary = event.getJudiciary();
+        if (nonNull(judiciary) && judiciary.isEmpty()) {
+            this.judiciaryAssignmentSource = JudiciaryAssignmentSource.AUTO.toString();
+        } else if (nonNull(event.getJudiciaryAssignmentSource())) {
+            this.judiciaryAssignmentSource = event.getJudiciaryAssignmentSource().toString();
+        }
     }
 
     @SuppressWarnings({"squid:S1172"})
     private void onJudiciaryRemovedFromHearing(final JudiciaryRemovedFromHearing event) {
         this.judiciary = emptyList();
+        this.judiciaryAssignmentSource = JudiciaryAssignmentSource.AUTO.toString();
     }
 
     private void onCourtRoomAssignedToHearing(final CourtRoomAssignedToHearing event) {
@@ -3836,6 +3922,10 @@ public class Hearing implements Aggregate {
 
     public boolean getIsSummonsApprovedExists() {
         return isSummonsApprovedExists;
+    }
+
+    public String getJudiciaryAssignmentSource() {
+        return judiciaryAssignmentSource;
     }
 
     public Boolean isNotificationRelatedAllocatedFieldsUpdated(final List<uk.gov.justice.listing.commands.HearingDay> updatedHearingDays) {
