@@ -3,19 +3,7 @@
     <parent>
         <artifactId>listing-domain</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
         <version>17.104.5-DD-41473-SNAPSHOT</version>
-=======
-        <version>17.104.16</version>
->>>>>>> 47fa6ce0ad (updating poms for branch'dev/release-17.104.16' with non-snapshot versions)
-=======
-        <version>17.104.17-SNAPSHOT</version>
->>>>>>> b8e5cfb284 (Updating develop poms back to pre merge state)
-=======
-        <version>17.104.18-SNAPSHOT</version>
->>>>>>> b766986119 (updating poms for 17.104.18-SNAPSHOT development)
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
