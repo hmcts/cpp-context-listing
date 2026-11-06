@@ -89,6 +89,8 @@ public class CourtSchedulerServiceAdapter {
     // fields, aligning the outbound contract with main (see the review artifact this reconciles).
     private static final String START_TIME = "startTime";
     private static final String END_TIME = "endTime";
+    // move-hearing-to-past-date (MAGS) wire-field constants; JURISDICTION reuses the field declared above
+    private static final String START_DATE = "startDate";
     private static final String SESSIONS = "sessions";
     private static final String COURT_HOUSE_ID = "courtHouseId";
     private static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
@@ -273,6 +275,9 @@ public class CourtSchedulerServiceAdapter {
                             + " (hearingId=" + hearingId + ")");
         }
         if (status == HttpStatus.SC_BAD_REQUEST) {
+            LOGGER.error("{} courtscheduler rejected the Crown fallback for hearingId={} (status={}) — "
+                            + "this hearing will NOT be listed",
+                    CrownFallbackInvalidRequestException.LOG_MARKER, hearingId, status);
             throw new CrownFallbackInvalidRequestException(
                     "Crown fallback rejected by courtscheduler (status=" + status + ") for hearingId=" + hearingId
                             + ": " + (response.hasEntity() ? response.getEntity().toString() : ""));
