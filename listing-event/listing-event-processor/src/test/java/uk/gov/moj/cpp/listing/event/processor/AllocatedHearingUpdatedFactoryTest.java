@@ -157,6 +157,21 @@ public class AllocatedHearingUpdatedFactoryTest {
         assertThat(seedingHearing.getSeedingHearingId(), is(SEEDING_HEARING_ID));
         assertThat(seedingHearing.getJurisdictionType(), is(uk.gov.justice.core.courts.JurisdictionType.CROWN));
         assertThat(listedHearing.getCourtApplicationIds().get(0), is(COURT_APPLICATION_ID));
+        assertThat(listedHearing.getNumberOfGroupCases(), is(nullValue()));
+    }
+
+    @Test
+    public void shouldMapNumberOfGroupCasesOnAllocatedHearingUpdatedV2() throws Exception {
+        final AllocatedHearingUpdatedForListingV2 allocatedHearingUpdatedForListingV2 = AllocatedHearingUpdatedForListingV2.allocatedHearingUpdatedForListingV2()
+                .withValuesFrom(allocatedHearingUpdatedForListingV2())
+                .withNumberOfGroupCases(2)
+                .build();
+        final JsonEnvelope envelope = mock(JsonEnvelope.class);
+        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name("test Court Centre").build());
+
+        final HearingUpdated actual = allocatedHearingUpdatedFactory.createV2(allocatedHearingUpdatedForListingV2, envelope);
+
+        assertThat(actual.getUpdatedHearing().getNumberOfGroupCases(), is(2));
     }
 
     @Test

@@ -1008,6 +1008,10 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
     @Query(value = "select h.*, 0 as totalCount , " + NULL_FLAT_HEARING_FIELDS + " FROM hearing h where h.id in (:hearingIds)", isNative = true)
     public abstract List<Hearing> findAllCourtSchedulerHearingByIds(@QueryParam("hearingIds") final List<UUID> hearingIds);
 
+    @Query(value = "select h.*, 0 as totalCount , " + NULL_FLAT_HEARING_FIELDS + " FROM hearing h where h.id in " +
+            "(select lc.hearing_id from listed_cases lc where lc.case_id in (:caseIds))", isNative = true)
+    public abstract List<Hearing> findHearingsByListedCaseIds(@QueryParam("caseIds") final List<UUID> caseIds);
+
     public List<Hearing> findAllocatedHearingsForCourtCalendar(final UUID courtCentreId,
                                                                final UUID courtRoomId,
                                                                final UUID authorityCode,

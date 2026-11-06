@@ -121,7 +121,29 @@ public class CaseRemovedFromGroupCasesEventProcessorTest {
                         withJsonPath("$.removedCase.isCivil", is(true)),
                         withJsonPath("$.removedCase.isGroupMember", is(false)),
                         withJsonPath("$.removedCase.isGroupMaster", is(false)),
-                        withoutJsonPath("$.newGroupMaster")))));
+                        withoutJsonPath("$.newGroupMaster"),
+                        withoutJsonPath("$.numberOfGroupCases")))));
+    }
+
+    @Test
+    public void processPublicEventCaseRemovedFromGroup_PassesNumberOfGroupCasesThrough() {
+        final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("public.progression.case-removed-from-group-cases"),
+                JsonObjects.createObjectBuilder()
+                        .add("groupId", GROUP_ID.toString())
+                        .add("masterCaseId", MASTER_CASE_ID.toString())
+                        .add("removedCase", objectToJsonObjectConverter.convert(getProsecutionCase(GROUP_ID, CASE_ID, Boolean.FALSE, Boolean.FALSE)))
+                        .add("numberOfGroupCases", 2)
+                        .build());
+
+        processor.processPublicProgressionCaseRemovedFromGroupCases(event);
+
+        verify(this.sender).send(this.envelopeArgumentCaptor.capture());
+
+        assertThat(envelopeArgumentCaptor.getValue(),
+                jsonEnvelope(metadata().withName("listing.command.remove-case-from-group-cases"), payloadIsJson(allOf(
+                        withJsonPath("$.groupId", is(GROUP_ID.toString())),
+                        withJsonPath("$.removedCase.id", is(CASE_ID.toString())),
+                        withJsonPath("$.numberOfGroupCases", is(2))))));
     }
 
     private ProsecutionCase getProsecutionCase(final UUID groupId, final UUID caseId, final Boolean isGroupMember, final Boolean isGroupMaster) {

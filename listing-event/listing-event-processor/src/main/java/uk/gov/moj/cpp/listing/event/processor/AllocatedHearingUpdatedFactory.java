@@ -44,6 +44,7 @@ public class AllocatedHearingUpdatedFactory extends PublicHearingFactory {
     private ConfirmedHearing buildConfirmedHearingV2(final AllocatedHearingUpdatedForListingV2 hearingUpdatedForListing, final List<uk.gov.justice.listing.events.JudicialRole> judicialRoles, final Type type, final JsonEnvelope envelope) {
         final ConfirmedHearing.Builder builder = ConfirmedHearing.confirmedHearing()
                 .withId(hearingUpdatedForListing.getHearingId())
+                .withNumberOfGroupCases(hearingUpdatedForListing.getNumberOfGroupCases())
                 .withCourtCentre(buildCourtCentre(hearingUpdatedForListing.getCourtCentreId(), hearingUpdatedForListing.getCourtRoomId(), envelope))
                 .withHearingDays(hearingUpdatedForListing.getHearingDays().stream()
                         .map(this::buildHearingDay)
