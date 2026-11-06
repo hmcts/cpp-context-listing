@@ -22,6 +22,7 @@ import java.util.UUID;
 import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
+import javax.json.JsonNumber;
 import javax.json.JsonObject;
 
 import org.apache.commons.lang3.StringUtils;
@@ -39,6 +40,7 @@ public class SittingsPojoBuilder {
     private static final String HAS_VIDEO_LINK = "hasVideoLink";
     private static final String WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
     private static final String WEEK_COMMENCING_END_DATE = "weekCommencingEndDate";
+    private static final String SEQUENCE = "sequence";
 
     private SittingsPojoBuilder() {
         throw new IllegalStateException("Utility class");
@@ -212,6 +214,10 @@ public class SittingsPojoBuilder {
         hearing.setStartTime(getHearingStartTime(caseHearingsJson, jsonObjectByHearingDate, jsonObjectByStartDate));
         hearing.setEndTime(getHearingEndTime(jsonObjectByStartDate, caseHearingsJson, jsonObjectByHearingDate));
         hearing.setWeekCommencing(flatHearing.isWeekCommencing());
+        hearing.setSequence(jsonObjectByHearingDate
+                .filter(hearingDay -> hearingDay.get(SEQUENCE) instanceof JsonNumber)
+                .map(hearingDay -> hearingDay.getInt(SEQUENCE))
+                .orElse(null));
 
         hearing.setHearingType(caseHearingsJson.getJsonObject("type"));
 
