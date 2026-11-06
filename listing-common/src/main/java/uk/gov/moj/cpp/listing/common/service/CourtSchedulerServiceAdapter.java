@@ -273,6 +273,9 @@ public class CourtSchedulerServiceAdapter {
                             + " (hearingId=" + hearingId + ")");
         }
         if (status == HttpStatus.SC_BAD_REQUEST) {
+            LOGGER.error("{} courtscheduler rejected the Crown fallback for hearingId={} (status={}) — "
+                            + "this hearing will NOT be listed",
+                    CrownFallbackInvalidRequestException.LOG_MARKER, hearingId, status);
             throw new CrownFallbackInvalidRequestException(
                     "Crown fallback rejected by courtscheduler (status=" + status + ") for hearingId=" + hearingId
                             + ": " + (response.hasEntity() ? response.getEntity().toString() : ""));

@@ -123,17 +123,43 @@ public class CourtSchedulerService {
                 .execute(httpRequest);
     }
 
+    /**
+     * The sessions courtscheduler holds under this booking id. An empty list is courtscheduler's own
+     * answer that it holds none: it answers an unknown booking id with 200 and no slots.
+     *
+     * @throws CourtSchedulerUnavailableException when courtscheduler gave no answer at all, so the
+     *                                            listing fails and is retried instead of being treated
+     *                                            as a booking that is gone
+     */
     public List<CourtSchedule> getCourtSchedulesByProvisionalBookingId(final String bookingId) {
         final Map<String, String> paramsMap = new HashMap<>();
         paramsMap.put("bookingIds", bookingId);
         final Response slotsResponse = provisionalBookingService.getSlots(paramsMap);
-        final JsonObject resultJson = objectToJsonObjectConverter.convert(slotsResponse.getEntity());
-
         final List<CourtSchedule> courtScheduleList = new ArrayList<>();
 
-        final JsonArray provisionalSlots = resultJson.getJsonArray("provisionalSlots");
-        for (int i = 0; i < provisionalSlots.size(); i++) {
+        // Only a 200 is an answer. ProvisionalBookingService reports any other status, a timeout or
+        // no connection as a 500, and none of those says the booking is gone. Reading them as "no
+        // booking" logged [LISTING-LOST] during a courtscheduler outage, for hearings a retry would
+        // have listed.
+        if (slotsResponse == null || HttpStatus.SC_OK != slotsResponse.getStatus()) {
+            final Object status = slotsResponse == null ? "no response" : slotsResponse.getStatus();
+            LOGGER.error("courtscheduler did not answer the lookup of booking {} (status {}); failing so the listing is retried",
+                    bookingId, status);
+            throw new CourtSchedulerUnavailableException(
+                    "courtscheduler did not answer the lookup of booking " + bookingId + " (status " + status + ")");
+        }
 
+        final JsonObject resultJson = objectToJsonObjectConverter.convert(slotsResponse.getEntity());
+        if (resultJson == null) {
+            return courtScheduleList;
+        }
+
+        final JsonArray provisionalSlots = resultJson.getJsonArray("provisionalSlots");
+        if (provisionalSlots == null) {
+            return courtScheduleList;
+        }
+
+        for (int i = 0; i < provisionalSlots.size(); i++) {
             courtScheduleList.add(jsonObjectConverter.convert(provisionalSlots.getJsonObject(i), CourtSchedule.class));
         }
         return courtScheduleList;
