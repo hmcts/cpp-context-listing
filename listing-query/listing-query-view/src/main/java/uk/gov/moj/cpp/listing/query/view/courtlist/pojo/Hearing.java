@@ -33,6 +33,16 @@ public class Hearing {
 
     private String publicListNote;
 
+    private Integer sequence;
+
+    public Integer getSequence() {
+        return sequence;
+    }
+
+    public void setSequence(final Integer sequence) {
+        this.sequence = sequence;
+    }
+
     public LocalDateTime getStartTime() {
         return startTime;
     }

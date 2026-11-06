@@ -23,6 +23,48 @@
           ],
           "hearings": [
             {
+              "startTime": "2019-12-16T09:21:11",
+              "hearingType": {
+                "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
+                "description": "Sentence"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": false,
+              "endTime": "2019-12-16T09:51:11",
+              "applicationReference": "41TL769069",
+              "applicant": {
+                "id": "cb9ee4d4-369f-422e-8a5f-fa2af408247b",
+                "lastName": "BENINI",
+                "firstName": "Olga",
+                "isRespondent": false,
+                "restrictFromCourtList": false,
+                "courtApplicationPartyType": "PERSON_DEFENDANT"
+              },
+              "respondents": [
+                {
+                  "id": "a1ac08ac-99e9-4507-ad84-77ec9b674e06",
+                  "lastName": "MARIE",
+                  "firstName": "Eula",
+                  "isRespondent": true,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON"
+                }
+              ],
+              "defendants": [
+                {
+                  "id": "cb9ee4d4-369f-422e-8a5f-fa2af408247b",
+                  "lastName": "BENINI",
+                  "firstName": "Olga",
+                  "isRespondent": false,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON_DEFENDANT",
+                  "offences": [],
+                  "courtProceedingsInitiated": "2019-12-16T09:21:11Z"
+                }
+              ],
+              "hasVideoLink": false
+            },
+            {
               "startTime": "2019-12-16T09:22",
               "hearingType": {
                 "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
@@ -61,48 +103,6 @@
                   "custodyTimeLimit": "2020-01-13",
                   "specificRequirements": "Esihez ojwir kuhgebti piwum farmapsel woruh nofri jipte zid ozsic iveulies ma odseil bemki idtotni paoweim kuh.",
                   "restrictFromCourtList": false
-                }
-              ],
-              "hasVideoLink": false
-            },
-            {
-              "startTime": "2019-12-16T09:21:11",
-              "hearingType": {
-                "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
-                "description": "Sentence"
-              },
-              "restrictFromCourtList": false,
-              "weekCommencing": false,
-              "endTime": "2019-12-16T09:51:11",
-              "applicationReference": "41TL769069",
-              "applicant": {
-                "id": "cb9ee4d4-369f-422e-8a5f-fa2af408247b",
-                "lastName": "BENINI",
-                "firstName": "Olga",
-                "isRespondent": false,
-                "restrictFromCourtList": false,
-                "courtApplicationPartyType": "PERSON_DEFENDANT"
-              },
-              "respondents": [
-                {
-                  "id": "a1ac08ac-99e9-4507-ad84-77ec9b674e06",
-                  "lastName": "MARIE",
-                  "firstName": "Eula",
-                  "isRespondent": true,
-                  "restrictFromCourtList": false,
-                  "courtApplicationPartyType": "PERSON"
-                }
-              ],
-              "defendants": [
-                {
-                  "id": "cb9ee4d4-369f-422e-8a5f-fa2af408247b",
-                  "lastName": "BENINI",
-                  "firstName": "Olga",
-                  "isRespondent": false,
-                  "restrictFromCourtList": false,
-                  "courtApplicationPartyType": "PERSON_DEFENDANT",
-                  "offences": [],
-                  "courtProceedingsInitiated": "2019-12-16T09:21:11Z"
                 }
               ],
               "hasVideoLink": false

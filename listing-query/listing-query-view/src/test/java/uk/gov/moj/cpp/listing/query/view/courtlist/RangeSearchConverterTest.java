@@ -3,6 +3,8 @@ package uk.gov.moj.cpp.listing.query.view.courtlist;
 import static java.util.UUID.fromString;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -18,13 +20,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import uk.gov.justice.services.messaging.JsonObjects;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -104,6 +109,95 @@ public class RangeSearchConverterTest {
 
         assertThat(generatedCourtList, is(notNullValue()));
         compareJson(generatedCourtList, expectedCourtList);
+    }
+
+    /**
+     * Uses a SIT range search response for a crown court centre that sits at three CREST court sites: its main
+     * site (code A) plus two other buildings where the crown court uses courtrooms (codes B and C). All three
+     * sites belong to the same crown court (same oucode and CREST court id); the site name is the building name.
+     * Hearings arrive interleaved across courtrooms; the court list must be ordered main site first, then the other
+     * sites alphabetically, courtrooms by CREST number, and hearings by start time then listing sequence.
+     */
+    @Test
+    public void shouldOrderMultiSiteCourtListByMainSiteThenSiteNameThenCrestCourtRoomNumberThenHearingTime() throws Exception {
+        final JsonObject rangeSearchResponse = getJsonFile("courtlist/8.derby-multi-site-ordering/range-search-response.json");
+        final UUID derbyCourtCentreId = fromString("6131bd34-33d9-3d1e-8152-8b5a2084f1bd");
+        final UUID derbyCourtroom02 = fromString("f9f15b42-6594-38c5-a245-22d752a1e2c5");
+        final UUID derbyCourtroom03 = fromString("f6730a11-9d77-39f5-9424-5a6ad56c010e");
+        final UUID derbyCourtroom04 = fromString("4b0bd538-bb01-31af-b3e6-a32c8977fe49");
+        final UUID mansfieldCourtroom03 = fromString("02529e93-35cf-3fc3-8406-d306c5b6bd0c");
+
+        when(commonXhibitReferenceDataService.getCrestCourtSitesForCrownCourtCentre(derbyCourtCentreId)).thenReturn(Arrays.asList(
+                derbyCourtSite("B", "6439", "MANSFIELD MAGISTRATES' COURT"),
+                derbyCourtSite("A", "169", "DERBY"),
+                derbyCourtSite("C", "6440", "Chesterfield Justice Centre")));
+        stubDerbyCourtRoom(derbyCourtCentreId, derbyCourtroom02, "A", "Court 2", "Courtroom 02");
+        stubDerbyCourtRoom(derbyCourtCentreId, derbyCourtroom03, "A", "Court 3", "Courtroom 03");
+        stubDerbyCourtRoom(derbyCourtCentreId, derbyCourtroom04, "A", "Court 4", "Courtroom 04");
+        stubDerbyCourtRoom(derbyCourtCentreId, mansfieldCourtroom03, "B", "Court 3", "Courtroom 03 (Mansfield)");
+        when(commonXhibitReferenceDataService.getDefaultCrestCourtSiteCode(derbyCourtCentreId)).thenReturn("A");
+
+        final JsonObject courtList = rangeSearchConverter.generateCourtListQueryPayload(
+                derbyCourtCentreId, rangeSearchResponse, LocalDate.parse("2026-10-29"), "2026-10-29");
+
+        final JsonArray courtLists = courtList.getJsonArray("courtLists");
+        assertThat(courtLists.getValuesAs(JsonObject.class).stream()
+                        .map(site -> site.getJsonObject("crestCourtSite").getString("crestCourtSiteName"))
+                        .collect(Collectors.toList()),
+                contains("DERBY", "Chesterfield Justice Centre", "MANSFIELD MAGISTRATES' COURT"));
+        assertThat(courtRoomNames(courtLists.getJsonObject(0)),
+                contains("Courtroom 02", "Courtroom 03", "Courtroom 04"));
+        assertThat(courtRoomNames(courtLists.getJsonObject(1)), is(empty()));
+        assertThat(courtRoomNames(courtLists.getJsonObject(2)), contains("Courtroom 03 (Mansfield)"));
+
+        // hearings inside each courtroom are ordered by start time, then listing sequence
+        final JsonArray derbySittings = courtLists.getJsonObject(0).getJsonArray("sittings");
+        assertThat(caseReferences(derbySittings.getJsonObject(0)),
+                contains("28DI2579895", "28DI9692967", "28DI2415677", "JO141726468"));
+        assertThat(caseReferences(derbySittings.getJsonObject(1)),
+                contains("23GD1989149", "WT128656796", "XK372148857"));
+        assertThat(caseReferences(derbySittings.getJsonObject(2)),
+                contains("FU161718924", "VY372114558"));
+        // the range search returns the 10:30 Mansfield hearing before the 10:00 ones
+        assertThat(caseReferences(courtLists.getJsonObject(2).getJsonArray("sittings").getJsonObject(0)),
+                contains("28DI2415677", "28DI9692967", "NP270285741", "JB294556945"));
+    }
+
+    private List<String> caseReferences(final JsonObject sitting) {
+        return sitting.getJsonArray("hearings").getValuesAs(JsonObject.class).stream()
+                .map(hearing -> hearing.getJsonObject("caseIdentifier").getString("caseReference"))
+                .collect(Collectors.toList());
+    }
+
+    private void stubDerbyCourtRoom(final UUID courtCentreId, final UUID courtRoomId, final String crestCourtSiteCode,
+                                    final String crestCourtRoomName, final String displayName) {
+        when(commonXhibitReferenceDataService.getCourtRoom(eq(courtCentreId), eq(courtRoomId))).thenReturn(Optional.of(
+                new CourtRoomMapping.Builder()
+                        .withCrestCourtSiteCode(crestCourtSiteCode)
+                        .withCrestCourtRoomName(crestCourtRoomName)
+                        .build()));
+        when(commonXhibitReferenceDataService.getCourtRoomDisplayName(eq(courtCentreId), eq(courtRoomId))).thenReturn(Optional.of(displayName));
+    }
+
+    private List<String> courtRoomNames(final JsonObject courtSiteCourtList) {
+        return courtSiteCourtList.getJsonArray("sittings").getValuesAs(JsonObject.class).stream()
+                .map(sitting -> sitting.getString("courtRoomName"))
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    private JsonObject derbyCourtSite(final String crestCourtSiteCode, final String crestCourtSiteId, final String crestCourtSiteName) {
+        return JsonObjects.createObjectBuilder()
+                .add("oucode", "C30DE00")
+                .add("crestCourtId", "419")
+                .add("crestCourtName", "DERBY")
+                .add("crestCourtShortName", "DERBY")
+                .add("crestCourtFullName", "DERBY")
+                .add("crestCourtSiteId", crestCourtSiteId)
+                .add("crestCourtSiteCode", crestCourtSiteCode)
+                .add("crestCourtSiteName", crestCourtSiteName)
+                .add("courtType", "CROWN_COURT")
+                .build();
     }
 
     private Optional<CourtRoomMapping> courtRoom(final String crestCourtSiteCode) {

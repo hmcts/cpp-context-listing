@@ -1,0 +1,1577 @@
+{
+  "notes": [],
+  "results": 13,
+  "pageCount": 1,
+  "hearings": [
+    {
+      "id": "053962eb-a690-4eb3-8f3f-14b2d596c53f",
+      "type": {
+        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+        "description": "First hearing"
+      },
+      "endDate": "2026-10-29",
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2026-10-29",
+      "typeOfList": {
+        "id": "fbed768b-ee95-4434-87c8-e81cbc8d24c8",
+        "description": "Date and time to be fixed"
+      },
+      "courtRoomId": "f6730a11-9d77-39f5-9424-5a6ad56c010e",
+      "hearingDays": [
+        {
+          "endTime": "2026-10-29T16:00:00.000Z",
+          "sequence": 1,
+          "startTime": "2026-10-29T10:00:00.000Z",
+          "courtRoomId": "f6730a11-9d77-39f5-9424-5a6ad56c010e",
+          "hearingDate": "2026-10-29",
+          "isCancelled": false,
+          "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+          "durationMinutes": 360
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "b4fc325a-0580-40af-8f66-cc28938d5d83",
+          "markers": [
+            {
+              "id": "a2e35285-d573-406d-af63-a638cb8176a9",
+              "markerTypeid": "e7eff972-189c-4957-8b1e-cb45213aa64e",
+              "markerTypeCode": "HT",
+              "markerTypeDescription": "Human Trafficking"
+            }
+          ],
+          "defendants": [
+            {
+              "id": "ea28eb30-2743-4ef0-ba96-c95263cb924d",
+              "address": {
+                "address1": "9999A9999AAAA",
+                "address2": "Hellen Mews",
+                "address3": "New Aaron",
+                "address4": "Avon",
+                "postcode": "DA61 7ND"
+              },
+              "isYouth": true,
+              "lastName": "Bergstrom",
+              "offences": [
+                {
+                  "id": "432e4eb6-49d0-4b15-94df-dcac380a2300",
+                  "startDate": "2019-11-28",
+                  "offenceCode": "SX03209",
+                  "shadowListed": false,
+                  "offenceWording": "Theft of pedal cycle.",
+                  "statementOfOffence": {
+                    "title": "Care worker cause mentally disordered person to watch a sexual act - SOA 2003",
+                    "welshTitle": "Care worker cause mentally disordered person to watch a sexual act - SOA 2003",
+                    "legislation": "Contrary to section 41 of the Sexual Offences Act 2003."
+                  },
+                  "reportingRestrictions": [
+                    {
+                      "id": "22f6b868-cced-4f7d-86e2-d70bb1857b6c",
+                      "label": "Complainant's anonymity protected by virtue of Section 1 of the Sexual Offences Amendment Act 1992",
+                      "orderedDate": "2026-10-13"
+                    },
+                    {
+                      "id": "ee55b9af-3b55-442e-bd9a-c03cb5f800f1",
+                      "label": "Section 49 of the Children and Young Persons Act 1933 applies",
+                      "orderedDate": "2026-10-28"
+                    }
+                  ],
+                  "restrictFromCourtList": false
+                },
+                {
+                  "id": "67966b10-9013-4e67-9df9-0db24f8a5437",
+                  "startDate": "2019-11-28",
+                  "offenceCode": "PT00018",
+                  "shadowListed": false,
+                  "offenceWording": "Aggravated vehicle taking - ( driver did not take ) and vehicle damage of £5000 or over.",
+                  "statementOfOffence": {
+                    "title": "Provide money / property for use in acts of terrorism",
+                    "welshTitle": "Provide money / property for use in acts of terrorism",
+                    "legislation": "Contrary to sections 15(3) and 22 of the Terrorism Act 2000."
+                  },
+                  "reportingRestrictions": [
+                    {
+                      "id": "d29d9e73-2531-46dd-91bc-78122a24a92c",
+                      "label": "Section 49 of the Children and Young Persons Act 1933 applies",
+                      "orderedDate": "2026-10-28"
+                    }
+                  ],
+                  "restrictFromCourtList": false
+                },
+                {
+                  "id": "8fdf64b9-a0aa-48a3-8f4b-c0d0c3028db9",
+                  "startDate": "2019-11-28",
+                  "offenceCode": "SX03010A",
+                  "shadowListed": false,
+                  "offenceWording": "Attempt to cause a male aged 13 or over to engage in sexual activity - no penetration.",
+                  "statementOfOffence": {
+                    "title": "Attempt to cause a male aged 13 or over to engage in sexual activity - no penetration",
+                    "welshTitle": "Attempt to cause a male aged 13 or over to engage in sexual activity - no penetration",
+                    "legislation": "Contrary to section 1(1) of the Criminal Attempts Act 1981."
+                  },
+                  "reportingRestrictions": [
+                    {
+                      "id": "2380acb5-6e96-4ae5-bbc6-05061c9d1049",
+                      "label": "Complainant's anonymity protected by virtue of Section 1 of the Sexual Offences Amendment Act 1992",
+                      "orderedDate": "2026-10-13"
+                    },
+                    {
+                      "id": "7ee45761-30ef-4fcf-a692-3b8055dc2bab",
+                      "label": "Section 49 of the Children and Young Persons Act 1933 applies",
+                      "orderedDate": "2026-10-28"
+                    }
+                  ],
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Reina",
+              "bailStatus": {
+                "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                "code": "B",
+                "description": "Conditional bail"
+              },
+              "dateOfBirth": "2011-11-11",
+              "masterDefendantId": "9775eb42-1b19-4358-8157-c348729deb9b",
+              "restrictFromCourtList": true,
+              "nationalityDescription": "Unknown",
+              "courtProceedingsInitiated": "2026-10-13T10:41:46.419Z"
+            }
+          ],
+          "caseIdentifier": {
+            "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+            "authorityCode": "DERPF",
+            "caseReference": "23GD1989149"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+      "isVacatedTrial": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "publicListNote": "TEST NOTE",
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "CROWN",
+      "courtApplications": [],
+      "vacatedTrialReasonId": "",
+      "sendNotificationToParties": false
+    },
+    {
+      "id": "170230ab-34b0-4285-8659-233ad60c321d",
+      "type": {
+        "id": "fb90d7d1-a591-4deb-92a0-4e3d0d469bce",
+        "description": "Trial - no witnesses"
+      },
+      "endDate": "2026-10-29",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "c240605f-3d00-3bd4-bbf6-fa25b3e788a1",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2026-10-29",
+      "courtRoomId": "f9f15b42-6594-38c5-a245-22d752a1e2c5",
+      "hearingDays": [
+        {
+          "endTime": "2026-10-29T10:50:00.000Z",
+          "sequence": 1,
+          "startTime": "2026-10-29T10:00:00.000Z",
+          "courtRoomId": "f9f15b42-6594-38c5-a245-22d752a1e2c5",
+          "hearingDate": "2026-10-29",
+          "isCancelled": false,
+          "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+          "durationMinutes": 50
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "a88dbca2-82c8-4c1d-91ab-2b98b36b64c2",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "dfdf3c47-28f6-473a-840e-39a371884476",
+              "address": {
+                "address1": "799",
+                "address2": "StreetDescription",
+                "address3": "Locality2O",
+                "postcode": "LU1 3NT"
+              },
+              "isYouth": false,
+              "lastName": "Murray",
+              "offences": [
+                {
+                  "id": "11f4cd7c-8796-4d31-a347-fa7be3234f14",
+                  "count": 0,
+                  "startDate": "2019-11-28",
+                  "orderIndex": 3,
+                  "offenceCode": "TH68023",
+                  "shadowListed": false,
+                  "offenceWording": "Robbery",
+                  "seedingHearing": {
+                    "sittingDay": "2026-10-20",
+                    "jurisdictionType": "CROWN",
+                    "seedingHearingId": "88b7400f-41da-4b8d-ab28-6abfce644f2c"
+                  },
+                  "statementOfOffence": {
+                    "title": "Robbery",
+                    "welshTitle": "Ysbeilio/Lladrad",
+                    "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                    "welshLegislation": "Yn groes i adran 8(1) Deddf Dwyn 1968."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Vicky",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "2001-09-21",
+              "masterDefendantId": "dfdf3c47-28f6-473a-840e-39a371884476",
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-10-20T14:11:50.018Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+            "authorityCode": "DERPF",
+            "caseReference": "28DI2579895"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+      "isSlotsBooked": false,
+      "isVacatedTrial": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "publicListNote": "test note",
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 50,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2026-10-20",
+      "courtApplications": [],
+      "estimatedDuration": "50 MINUTES",
+      "courtCentreDetails": {
+        "id": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:00:00"
+      },
+      "vacatedTrialReasonId": "",
+      "sendNotificationToParties": false
+    },
+    {
+      "id": "3052ab77-3788-492f-8a3e-67a0602ffeca",
+      "type": {
+        "id": "fb90d7d1-a591-4deb-92a0-4e3d0d469bce",
+        "description": "Trial - no witnesses"
+      },
+      "endDate": "2026-10-29",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "c240605f-3d00-3bd4-bbf6-fa25b3e788a1",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2026-10-29",
+      "courtRoomId": "f9f15b42-6594-38c5-a245-22d752a1e2c5",
+      "hearingDays": [
+        {
+          "endTime": "2026-10-29T10:50:00.000Z",
+          "sequence": 2,
+          "startTime": "2026-10-29T10:00:00.000Z",
+          "courtRoomId": "f9f15b42-6594-38c5-a245-22d752a1e2c5",
+          "hearingDate": "2026-10-29",
+          "isCancelled": false,
+          "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+          "durationMinutes": 50
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "1dcd9987-1ce8-4d38-8ab9-10848152e389",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "f312281b-ec3d-41b6-9067-f6d1555f9ffb",
+              "address": {
+                "address1": "799",
+                "address2": "StreetDescription",
+                "address3": "Locality2O",
+                "postcode": "LU1 3NT"
+              },
+              "isYouth": false,
+              "lastName": "Frami",
+              "offences": [
+                {
+                  "id": "c9300875-af41-44b8-a26b-684f93bc1499",
+                  "count": 0,
+                  "startDate": "2019-11-28",
+                  "orderIndex": 3,
+                  "offenceCode": "TH68023",
+                  "shadowListed": false,
+                  "offenceWording": "Robbery",
+                  "seedingHearing": {
+                    "sittingDay": "2026-10-20",
+                    "jurisdictionType": "CROWN",
+                    "seedingHearingId": "bbb96910-ccca-45f6-bbf8-fb9e73d48162"
+                  },
+                  "statementOfOffence": {
+                    "title": "Robbery",
+                    "welshTitle": "Ysbeilio/Lladrad",
+                    "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                    "welshLegislation": "Yn groes i adran 8(1) Deddf Dwyn 1968."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Ben",
+              "bailStatus": {
+                "id": "549336f9-2a07-3767-960f-107da761a698",
+                "code": "S",
+                "description": "Remanded to youth detention accommodation"
+              },
+              "dateOfBirth": "2001-03-20",
+              "masterDefendantId": "f312281b-ec3d-41b6-9067-f6d1555f9ffb",
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-10-20T12:32:06.341Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+            "authorityCode": "DERPF",
+            "caseReference": "28DI9692967"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+      "isSlotsBooked": false,
+      "isVacatedTrial": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 50,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2026-10-20",
+      "courtApplications": [],
+      "estimatedDuration": "50 MINUTES",
+      "courtCentreDetails": {
+        "id": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:00:00"
+      },
+      "vacatedTrialReasonId": "",
+      "sendNotificationToParties": false
+    },
+    {
+      "id": "314e4ab3-a82b-4b85-a6fd-47a613b9abe1",
+      "type": {
+        "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
+        "description": "Sentence"
+      },
+      "endDate": "2026-10-29",
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2026-10-29",
+      "courtRoomId": "f6730a11-9d77-39f5-9424-5a6ad56c010e",
+      "hearingDays": [
+        {
+          "endTime": "2026-10-29T10:45:00.000Z",
+          "sequence": 2,
+          "startTime": "2026-10-29T10:00:00.000Z",
+          "courtRoomId": "f6730a11-9d77-39f5-9424-5a6ad56c010e",
+          "hearingDate": "2026-10-29",
+          "isCancelled": false,
+          "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+          "durationMinutes": 45
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "12c5dbfb-25b4-4bc3-97df-1878d15106cc",
+          "markers": [],
+          "caseStatus": "ACTIVE",
+          "defendants": [
+            {
+              "id": "ae68cc02-2739-4bd6-99ca-9d653eda7e5f",
+              "address": {
+                "address1": "59 Meadow Lane",
+                "address2": "Meadow Lane",
+                "address3": "Loughborough",
+                "address4": "Leicestershire",
+                "postcode": "NW1 5BR"
+              },
+              "isYouth": false,
+              "lastName": "Daniel",
+              "offences": [
+                {
+                  "id": "8dba4a3f-5b2c-4bb4-bab0-1fdeab252a0a",
+                  "count": 0,
+                  "startDate": "2026-07-22",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68023",
+                  "shadowListed": false,
+                  "offenceWording": "Robbery",
+                  "seedingHearing": {
+                    "sittingDay": "2026-10-20",
+                    "jurisdictionType": "MAGISTRATES",
+                    "seedingHearingId": "d89ea8e8-3c2c-4f90-be7a-021fe88ec90f"
+                  },
+                  "statementOfOffence": {
+                    "title": "Robbery",
+                    "welshTitle": "Ysbeilio/Lladrad",
+                    "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                    "welshLegislation": "Yn groes i adran 8(1) Deddf Dwyn 1968."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Val",
+              "bailStatus": {
+                "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                "code": "B",
+                "description": "Conditional bail"
+              },
+              "dateOfBirth": "1994-10-20",
+              "masterDefendantId": "ae68cc02-2739-4bd6-99ca-9d653eda7e5f",
+              "proceedingsConcluded": false,
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-10-20T09:45:29.546Z"
+            },
+            {
+              "id": "748e457e-fde9-4364-9d89-551772ef6bf8",
+              "address": {
+                "address1": "25 Park Avenue",
+                "address2": "Park Avenue",
+                "address3": "Birmingham",
+                "address4": "West Midlands",
+                "postcode": "NW1 5BR"
+              },
+              "isYouth": false,
+              "lastName": "Willms",
+              "offences": [
+                {
+                  "id": "59cdf1d8-18c8-42d1-aae7-940a6a7e7a5a",
+                  "count": 0,
+                  "startDate": "2026-07-22",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68023",
+                  "shadowListed": false,
+                  "offenceWording": "Robbery",
+                  "seedingHearing": {
+                    "sittingDay": "2026-10-20",
+                    "jurisdictionType": "MAGISTRATES",
+                    "seedingHearingId": "d89ea8e8-3c2c-4f90-be7a-021fe88ec90f"
+                  },
+                  "statementOfOffence": {
+                    "title": "Robbery",
+                    "welshTitle": "Ysbeilio/Lladrad",
+                    "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                    "welshLegislation": "Yn groes i adran 8(1) Deddf Dwyn 1968."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Issac",
+              "bailStatus": {
+                "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                "code": "B",
+                "description": "Conditional bail"
+              },
+              "dateOfBirth": "1971-10-20",
+              "masterDefendantId": "748e457e-fde9-4364-9d89-551772ef6bf8",
+              "proceedingsConcluded": true,
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-10-20T09:45:29.547Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+            "authorityCode": "DERPF",
+            "caseReference": "WT128656796"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "publicListNote": "",
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 120,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2026-10-20",
+      "courtApplications": [],
+      "estimatedDuration": "2 HOURS",
+      "courtCentreDetails": {
+        "id": "89592405-c29b-3706-b1d3-b1dd3a08b227",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:00:00"
+      },
+      "sendNotificationToParties": false
+    },
+    {
+      "id": "7cf1df67-04f0-4b81-9033-488e40efc5e6",
+      "type": {
+        "id": "511fe0a3-1391-4954-8158-6b10eed0dad9",
+        "description": "Plea"
+      },
+      "endDate": "2026-10-29",
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2026-10-29",
+      "courtRoomId": "f6730a11-9d77-39f5-9424-5a6ad56c010e",
+      "hearingDays": [
+        {
+          "endTime": "2026-10-29T18:00:00.000Z",
+          "sequence": 3,
+          "startTime": "2026-10-29T10:00:00.000Z",
+          "courtRoomId": "f6730a11-9d77-39f5-9424-5a6ad56c010e",
+          "hearingDate": "2026-10-29",
+          "isCancelled": false,
+          "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+          "durationMinutes": 480
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "2dbc7ef0-2116-4145-9fc0-7bf5c37a2f58",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "2ea7fa7a-2a1f-40ca-9da4-934428b0ebbe",
+              "address": {
+                "address1": "46 Queensway",
+                "address2": "Queensway",
+                "address3": "Paddington",
+                "address4": "Greater London",
+                "address5": "London",
+                "postcode": "NW1 5BR"
+              },
+              "isYouth": false,
+              "lastName": "Cassin",
+              "offences": [
+                {
+                  "id": "07e89011-5dda-44ed-8644-533bb815e381",
+                  "count": 0,
+                  "startDate": "2026-08-27",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68013A",
+                  "shadowListed": false,
+                  "offenceWording": "Attempt theft to vehicle",
+                  "seedingHearing": {
+                    "sittingDay": "2026-10-26",
+                    "jurisdictionType": "MAGISTRATES",
+                    "seedingHearingId": "9232f404-497d-487d-a434-3bfa911ed809"
+                  },
+                  "statementOfOffence": {
+                    "title": "Attempt theft of motor vehicle",
+                    "welshTitle": "Ymgais i ddwyn cerbyd modur",
+                    "legislation": "Contrary to section 1(1)    of the Criminal Attempts Act 1981.",
+                    "welshLegislation": "Yn groes i adran 1(1) Deddf Ymgeisiau i Droseddu 1981."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Elli",
+              "bailStatus": {
+                "id": "eaf18bf8-9569-3656-a4ab-64299f9bd513",
+                "code": "U",
+                "description": "Unconditional bail"
+              },
+              "dateOfBirth": "2005-10-26",
+              "masterDefendantId": "2ea7fa7a-2a1f-40ca-9da4-934428b0ebbe",
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-10-26T09:42:36.792Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+            "authorityCode": "CITYPF",
+            "caseReference": "XK372148857"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 480,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2026-10-26",
+      "courtApplications": [],
+      "estimatedDuration": "8 HOURS",
+      "courtCentreDetails": {
+        "id": "89592405-c29b-3706-b1d3-b1dd3a08b227",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:00:00"
+      },
+      "sendNotificationToParties": false
+    },
+    {
+      "id": "83fccd12-b4d8-45d6-9caa-331253611e87",
+      "type": {
+        "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+        "description": "Trial"
+      },
+      "endDate": "2026-10-29",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "c240605f-3d00-3bd4-bbf6-fa25b3e788a1",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2026-10-29",
+      "courtRoomId": "f9f15b42-6594-38c5-a245-22d752a1e2c5",
+      "hearingDays": [
+        {
+          "endTime": "2026-10-29T10:50:00.000Z",
+          "sequence": 3,
+          "startTime": "2026-10-29T10:00:00.000Z",
+          "courtRoomId": "f9f15b42-6594-38c5-a245-22d752a1e2c5",
+          "hearingDate": "2026-10-29",
+          "isCancelled": false,
+          "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+          "durationMinutes": 50
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "254f9a25-ed0a-4956-95ea-0da61d764b82",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "b2be9403-31c8-4ec6-a54f-8256a3760d5e",
+              "address": {
+                "address1": "799",
+                "address2": "StreetDescription",
+                "address3": "Locality2O",
+                "postcode": "LU1 3NT"
+              },
+              "isYouth": false,
+              "lastName": "Wolf",
+              "offences": [
+                {
+                  "id": "d3e84d95-f0bb-43ea-a153-aa375191d111",
+                  "count": 0,
+                  "startDate": "2019-11-28",
+                  "orderIndex": 3,
+                  "offenceCode": "TH68023",
+                  "shadowListed": false,
+                  "offenceWording": "Robbery",
+                  "seedingHearing": {
+                    "sittingDay": "2026-10-20",
+                    "jurisdictionType": "CROWN",
+                    "seedingHearingId": "4b2c65df-903f-4dac-a2c4-cc5e8a6e43e7"
+                  },
+                  "statementOfOffence": {
+                    "title": "Robbery",
+                    "welshTitle": "Ysbeilio/Lladrad",
+                    "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                    "welshLegislation": "Yn groes i adran 8(1) Deddf Dwyn 1968."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Claud",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "2001-05-20",
+              "masterDefendantId": "b2be9403-31c8-4ec6-a54f-8256a3760d5e",
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-10-20T13:14:16.490Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+            "authorityCode": "DERPF",
+            "caseReference": "28DI2415677"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+      "isSlotsBooked": false,
+      "isVacatedTrial": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 50,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2026-10-20",
+      "courtApplications": [],
+      "estimatedDuration": "50 MINUTES",
+      "courtCentreDetails": {
+        "id": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:00:00"
+      },
+      "vacatedTrialReasonId": "",
+      "sendNotificationToParties": false
+    },
+    {
+      "id": "8fff92be-342c-4dc0-8cd3-7d4cb827a530",
+      "type": {
+        "id": "511fe0a3-1391-4954-8158-6b10eed0dad9",
+        "description": "Plea"
+      },
+      "endDate": "2026-10-30",
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2026-10-29",
+      "courtRoomId": "4b0bd538-bb01-31af-b3e6-a32c8977fe49",
+      "hearingDays": [
+        {
+          "endTime": "2026-10-29T17:00:00.000Z",
+          "sequence": 1,
+          "startTime": "2026-10-29T10:30:00.000Z",
+          "courtRoomId": "4b0bd538-bb01-31af-b3e6-a32c8977fe49",
+          "hearingDate": "2026-10-29",
+          "isCancelled": false,
+          "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+          "durationMinutes": 360
+        },
+        {
+          "endTime": "2026-10-30T17:00:00.000Z",
+          "sequence": 0,
+          "startTime": "2026-10-30T10:30:00.000Z",
+          "courtRoomId": "4b0bd538-bb01-31af-b3e6-a32c8977fe49",
+          "hearingDate": "2026-10-30",
+          "isCancelled": false,
+          "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+          "durationMinutes": 360
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "140d339b-f2db-4e60-a8fd-f03397311b5f",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "40d73c88-1aa9-4b78-a52e-3cf25809dde5",
+              "address": {
+                "address1": "1 High Street",
+                "address2": "High Street",
+                "address3": "Cambridge",
+                "address4": "Cambridgeshire",
+                "postcode": "CB2 1TN"
+              },
+              "isYouth": false,
+              "lastName": "Stiedemann",
+              "offences": [
+                {
+                  "id": "175473b8-52a1-4cb1-91fb-2412a85669fc",
+                  "count": 0,
+                  "startDate": "2026-08-26",
+                  "orderIndex": 2,
+                  "offenceCode": "LM98002",
+                  "shadowListed": false,
+                  "offenceWording": "Develop / produce an anti-personnel mine",
+                  "seedingHearing": {
+                    "sittingDay": "2026-10-26",
+                    "jurisdictionType": "CROWN",
+                    "seedingHearingId": "61416527-a9d3-4eb0-bd9e-1042426d4935"
+                  },
+                  "statementOfOffence": {
+                    "title": "Develop / produce an anti-personnel mine",
+                    "welshTitle": "Develop / produce an anti-personnel mine",
+                    "legislation": "Contrary to section 2(1)(b) and (8) of the Landmines Act 1998."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Gordon",
+              "bailStatus": {
+                "id": "eaf18bf8-9569-3656-a4ab-64299f9bd513",
+                "code": "U",
+                "description": "Unconditional bail"
+              },
+              "dateOfBirth": "1987-10-25",
+              "masterDefendantId": "40d73c88-1aa9-4b78-a52e-3cf25809dde5",
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-10-25T18:47:14.365Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+            "authorityCode": "CITYPF",
+            "caseReference": "FU161718924"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+      "isSlotsBooked": false,
+      "isVacatedTrial": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "publicListNote": "",
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 480,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2026-10-25",
+      "courtApplications": [],
+      "estimatedDuration": "8 HOURS",
+      "courtCentreDetails": {
+        "id": "89592405-c29b-3706-b1d3-b1dd3a08b227",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:00:00"
+      },
+      "vacatedTrialReasonId": "",
+      "sendNotificationToParties": false
+    },
+    {
+      "id": "9df1b546-29a8-48b7-b7b4-be516acb217a",
+      "type": {
+        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+        "description": "First hearing"
+      },
+      "endDate": "2026-10-29",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "c44f5b7b-23cb-4b8c-8baa-df21f957b7e5",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2026-10-29",
+      "courtRoomId": "02529e93-35cf-3fc3-8406-d306c5b6bd0c",
+      "hearingDays": [
+        {
+          "endTime": "2026-10-29T10:50:00.000Z",
+          "sequence": 1,
+          "startTime": "2026-10-29T10:30:00.000Z",
+          "courtRoomId": "02529e93-35cf-3fc3-8406-d306c5b6bd0c",
+          "hearingDate": "2026-10-29",
+          "isCancelled": false,
+          "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+          "durationMinutes": 20
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "24d013f5-0adf-4d5f-8689-0e2c1f3daa01",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "cc463348-65ea-4f8a-b6ef-546a75aec3d0",
+              "address": {
+                "address1": "5 Prince Street",
+                "address2": "Prince Street",
+                "address3": "City Centre",
+                "address4": "Greater Manchester",
+                "address5": "Manchester",
+                "postcode": "NW1 5BR"
+              },
+              "isYouth": true,
+              "lastName": "Gibson",
+              "offences": [
+                {
+                  "id": "bf2b0a2b-03f0-42f2-85e8-2913bc50bc08",
+                  "count": 0,
+                  "startDate": "2026-08-20",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68013A",
+                  "shadowListed": false,
+                  "offenceWording": "Attempt theft to vehicle",
+                  "statementOfOffence": {
+                    "title": "Attempt theft of motor vehicle",
+                    "welshTitle": "Ymgais i ddwyn cerbyd modur",
+                    "legislation": "Contrary to section 1(1)    of the Criminal Attempts Act 1981.",
+                    "welshLegislation": "Yn groes i adran 1(1) Deddf Ymgeisiau i Droseddu 1981."
+                  },
+                  "reportingRestrictions": [
+                    {
+                      "id": "9d3be501-92a7-4f81-83f4-41f2f911846b",
+                      "label": "Section 49 of the Children and Young Persons Act 1933 applies",
+                      "orderedDate": "2026-10-19"
+                    }
+                  ],
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Leida",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "2012-10-19",
+              "masterDefendantId": "cc463348-65ea-4f8a-b6ef-546a75aec3d0",
+              "hearingLanguageNeeds": "ENGLISH",
+              "restrictFromCourtList": true,
+              "courtProceedingsInitiated": "2026-10-19T14:42:50.940Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+            "authorityCode": "CITYPF",
+            "caseReference": "JB294556945"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+      "isSlotsBooked": false,
+      "isVacatedTrial": false,
+      "nonDefaultDays": [
+        {
+          "roomId": "02529e93-35cf-3fc3-8406-d306c5b6bd0c",
+          "duration": 20,
+          "startTime": "2026-10-29T10:30:00.000Z",
+          "courtRoomId": 1624,
+          "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd"
+        }
+      ],
+      "nonSittingDays": [],
+      "publicListNote": "",
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "CROWN",
+      "courtApplications": [],
+      "courtCentreDetails": {
+        "id": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:00:00"
+      },
+      "isGroupProceedings": false,
+      "numberOfGroupCases": 1,
+      "vacatedTrialReasonId": "",
+      "sendNotificationToParties": false
+    },
+    {
+      "id": "a2d6401e-e933-408e-b3b4-711117771b2c",
+      "type": {
+        "id": "fb90d7d1-a591-4deb-92a0-4e3d0d469bce",
+        "description": "Trial - no witnesses"
+      },
+      "endDate": "2026-10-29",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "c44f5b7b-23cb-4b8c-8baa-df21f957b7e5",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2026-10-29",
+      "courtRoomId": "02529e93-35cf-3fc3-8406-d306c5b6bd0c",
+      "hearingDays": [
+        {
+          "endTime": "2026-10-29T10:30:00.000Z",
+          "sequence": 1,
+          "startTime": "2026-10-29T10:00:00.000Z",
+          "courtRoomId": "02529e93-35cf-3fc3-8406-d306c5b6bd0c",
+          "hearingDate": "2026-10-29",
+          "isCancelled": false,
+          "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+          "durationMinutes": 30
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "254f9a25-ed0a-4956-95ea-0da61d764b82",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "b2be9403-31c8-4ec6-a54f-8256a3760d5e",
+              "address": {
+                "address1": "799",
+                "address2": "StreetDescription",
+                "address3": "Locality2O",
+                "postcode": "LU1 3NT"
+              },
+              "isYouth": false,
+              "lastName": "Wolf",
+              "offences": [
+                {
+                  "id": "0dad2a8d-9294-480d-8840-3283ec1ba00e",
+                  "count": 0,
+                  "startDate": "2019-11-28",
+                  "orderIndex": 3,
+                  "offenceCode": "TH68023",
+                  "shadowListed": false,
+                  "offenceWording": "Robbery",
+                  "seedingHearing": {
+                    "sittingDay": "2026-10-20",
+                    "jurisdictionType": "CROWN",
+                    "seedingHearingId": "4b2c65df-903f-4dac-a2c4-cc5e8a6e43e7"
+                  },
+                  "statementOfOffence": {
+                    "title": "Robbery",
+                    "welshTitle": "Ysbeilio/Lladrad",
+                    "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                    "welshLegislation": "Yn groes i adran 8(1) Deddf Dwyn 1968."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Claud",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "2001-05-20",
+              "masterDefendantId": "b2be9403-31c8-4ec6-a54f-8256a3760d5e",
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-10-20T13:14:16.490Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+            "authorityCode": "DERPF",
+            "caseReference": "28DI2415677"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 30,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2026-10-20",
+      "courtApplications": [],
+      "estimatedDuration": "30 MINUTES",
+      "courtCentreDetails": {
+        "id": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:00:00"
+      },
+      "sendNotificationToParties": false
+    },
+    {
+      "id": "d1e7b2da-e4fd-4fc0-8071-d0c09768ab6c",
+      "type": {
+        "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+        "description": "Trial"
+      },
+      "endDate": "2026-10-29",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "c44f5b7b-23cb-4b8c-8baa-df21f957b7e5",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2026-10-29",
+      "courtRoomId": "02529e93-35cf-3fc3-8406-d306c5b6bd0c",
+      "hearingDays": [
+        {
+          "endTime": "2026-10-29T10:50:00.000Z",
+          "sequence": 2,
+          "startTime": "2026-10-29T10:00:00.000Z",
+          "courtRoomId": "02529e93-35cf-3fc3-8406-d306c5b6bd0c",
+          "hearingDate": "2026-10-29",
+          "isCancelled": false,
+          "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+          "durationMinutes": 50
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "1dcd9987-1ce8-4d38-8ab9-10848152e389",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "f312281b-ec3d-41b6-9067-f6d1555f9ffb",
+              "address": {
+                "address1": "799",
+                "address2": "StreetDescription",
+                "address3": "Locality2O",
+                "postcode": "LU1 3NT"
+              },
+              "isYouth": false,
+              "lastName": "Frami",
+              "offences": [
+                {
+                  "id": "335e5eb9-b2c8-4dec-8d5a-a3a2215fb2e7",
+                  "count": 0,
+                  "startDate": "2019-11-28",
+                  "orderIndex": 3,
+                  "offenceCode": "SX03191",
+                  "shadowListed": false,
+                  "offenceWording": "Contrary to section 16(1)(a)-(d), (e)(i), (2) and (5) of the Sexual Oﬀences Act 2003",
+                  "seedingHearing": {
+                    "sittingDay": "2026-10-20",
+                    "jurisdictionType": "CROWN",
+                    "seedingHearingId": "bbb96910-ccca-45f6-bbf8-fb9e73d48162"
+                  },
+                  "statementOfOffence": {
+                    "title": "Adult abuse of position of trust - sexual activity with a girl 13-17 cared for in s.21 premises - SOA 2003",
+                    "welshTitle": "Adult abuse of position of trust - sexual activity with a girl 13-17 cared for in s.21 premises - SOA 2003",
+                    "legislation": "Contrary to section 16(1)(a)-(d), (e)(i), (2) and (5) of the Sexual Offences Act 2003."
+                  },
+                  "reportingRestrictions": [
+                    {
+                      "id": "a71c09c5-dbf9-4665-8f6d-b7a3aad873b1",
+                      "label": "Complainant's anonymity protected by virtue of Section 1 of the Sexual Offences Amendment Act 1992",
+                      "orderedDate": "2026-10-20"
+                    }
+                  ],
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Ben",
+              "bailStatus": {
+                "id": "549336f9-2a07-3767-960f-107da761a698",
+                "code": "S",
+                "description": "Remanded to youth detention accommodation"
+              },
+              "dateOfBirth": "2001-03-20",
+              "masterDefendantId": "f312281b-ec3d-41b6-9067-f6d1555f9ffb",
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-10-20T12:32:06.341Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+            "authorityCode": "DERPF",
+            "caseReference": "28DI9692967"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 50,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2026-10-20",
+      "courtApplications": [],
+      "estimatedDuration": "50 MINUTES",
+      "courtCentreDetails": {
+        "id": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:00:00"
+      },
+      "sendNotificationToParties": false
+    },
+    {
+      "id": "d9bead14-483f-4a7b-8f87-ebc24cc50f41",
+      "type": {
+        "id": "511fe0a3-1391-4954-8158-6b10eed0dad9",
+        "description": "Plea"
+      },
+      "endDate": "2026-10-30",
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2026-10-29",
+      "courtRoomId": "4b0bd538-bb01-31af-b3e6-a32c8977fe49",
+      "hearingDays": [
+        {
+          "endTime": "2026-10-29T17:00:00.000Z",
+          "sequence": 2,
+          "startTime": "2026-10-29T10:30:00.000Z",
+          "courtRoomId": "4b0bd538-bb01-31af-b3e6-a32c8977fe49",
+          "hearingDate": "2026-10-29",
+          "isCancelled": false,
+          "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+          "durationMinutes": 360
+        },
+        {
+          "endTime": "2026-10-30T17:00:00.000Z",
+          "sequence": 0,
+          "startTime": "2026-10-30T10:30:00.000Z",
+          "courtRoomId": "4b0bd538-bb01-31af-b3e6-a32c8977fe49",
+          "hearingDate": "2026-10-30",
+          "isCancelled": false,
+          "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+          "durationMinutes": 360
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "f2477d1d-e61a-4514-ba1a-bf0039cc13d5",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "97dbd32f-a027-4440-b23b-4ad9e89f1529",
+              "address": {
+                "address1": "72 Albert Road",
+                "address2": "Albert Road",
+                "address3": "Southsea",
+                "address4": "Hampshire",
+                "address5": "Portsmouth",
+                "postcode": "NW1 5BR"
+              },
+              "isYouth": false,
+              "lastName": "McKenzie",
+              "offences": [
+                {
+                  "id": "5fcb74d5-160a-411e-be91-7fb6e04a6e29",
+                  "count": 0,
+                  "startDate": "2026-08-26",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68013A",
+                  "shadowListed": false,
+                  "offenceWording": "Attempt theft to vehicle",
+                  "seedingHearing": {
+                    "sittingDay": "2026-10-25",
+                    "jurisdictionType": "MAGISTRATES",
+                    "seedingHearingId": "fd03148f-fdc0-442a-a69c-3f5cfec47d60"
+                  },
+                  "statementOfOffence": {
+                    "title": "Attempt theft of motor vehicle",
+                    "welshTitle": "Ymgais i ddwyn cerbyd modur",
+                    "legislation": "Contrary to section 1(1)    of the Criminal Attempts Act 1981.",
+                    "welshLegislation": "Yn groes i adran 1(1) Deddf Ymgeisiau i Droseddu 1981."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Kennith",
+              "bailStatus": {
+                "id": "eaf18bf8-9569-3656-a4ab-64299f9bd513",
+                "code": "U",
+                "description": "Unconditional bail"
+              },
+              "dateOfBirth": "1983-10-25",
+              "masterDefendantId": "97dbd32f-a027-4440-b23b-4ad9e89f1529",
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-10-25T16:49:05.058Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+            "authorityCode": "CITYPF",
+            "caseReference": "VY372114558"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+      "isSlotsBooked": false,
+      "isVacatedTrial": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "publicListNote": "",
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 480,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2026-10-25",
+      "courtApplications": [],
+      "estimatedDuration": "8 HOURS",
+      "courtCentreDetails": {
+        "id": "89592405-c29b-3706-b1d3-b1dd3a08b227",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:00:00"
+      },
+      "vacatedTrialReasonId": "",
+      "sendNotificationToParties": false
+    },
+    {
+      "id": "e231d30c-aadd-4c6f-a287-74e852fe3af7",
+      "type": {
+        "id": "633224da-6db3-4df5-8097-62cee52f7a61",
+        "description": "Bail Application"
+      },
+      "endDate": "2026-10-29",
+      "resulted": true,
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "c240605f-3d00-3bd4-bbf6-fa25b3e788a1",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2026-10-29",
+      "courtRoomId": "f9f15b42-6594-38c5-a245-22d752a1e2c5",
+      "hearingDays": [
+        {
+          "endTime": "2026-10-29T18:00:00.000Z",
+          "sequence": 4,
+          "startTime": "2026-10-29T10:00:00.000Z",
+          "courtRoomId": "f9f15b42-6594-38c5-a245-22d752a1e2c5",
+          "hearingDate": "2026-10-29",
+          "isCancelled": false,
+          "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+          "durationMinutes": 480
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "9b2296ab-43d5-448b-8a27-5649e4ac3a56",
+          "markers": [],
+          "caseStatus": "ACTIVE",
+          "defendants": [
+            {
+              "id": "e9cd2a47-3bda-4b08-a39b-eb3976756dc1",
+              "address": {
+                "address1": "59 Meadow Lane",
+                "address2": "Meadow Lane",
+                "address3": "Loughborough",
+                "address4": "Leicestershire",
+                "postcode": "NW1 5BR"
+              },
+              "isYouth": false,
+              "lastName": "Orn",
+              "offences": [
+                {
+                  "id": "1ed59148-050f-49b7-9986-4ae3a750044f",
+                  "count": 0,
+                  "startDate": "2026-08-26",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68010",
+                  "shadowListed": false,
+                  "offenceWording": "Attempt theft from a shop",
+                  "statementOfOffence": {
+                    "title": "Theft from a shop",
+                    "welshTitle": "Dwyn o siop - siop-ladrad",
+                    "legislation": "Contrary to section 1(1) and 7 of the Theft Act 1968.",
+                    "welshLegislation": "Yn groes i adran 1(1) a 7 Deddf Dwyn 1968."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Sunny",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "1978-10-25",
+              "masterDefendantId": "e9cd2a47-3bda-4b08-a39b-eb3976756dc1",
+              "proceedingsConcluded": false,
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-10-25T18:40:09.543Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+            "authorityCode": "DERPF",
+            "caseReference": "JO141726468"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+      "isSlotsBooked": false,
+      "isVacatedTrial": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 480,
+      "jurisdictionType": "CROWN",
+      "courtApplications": [
+        {
+          "id": "9bce8750-de78-4509-9da8-0704c907ad7f",
+          "subject": {
+            "id": "478820e1-8dfc-43cb-9949-cce0c56dec42",
+            "address": {
+              "address1": "59 Meadow Lane",
+              "address2": "Meadow Lane",
+              "address3": "Loughborough",
+              "address4": "Leicestershire",
+              "postcode": "NW1 5BR"
+            },
+            "lastName": "Orn",
+            "firstName": "Sunny",
+            "dateOfBirth": "1978-10-25",
+            "isRespondent": false,
+            "masterDefendantId": "e9cd2a47-3bda-4b08-a39b-eb3976756dc1",
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PERSON_DEFENDANT"
+          },
+          "offences": [],
+          "applicant": {
+            "id": "478820e1-8dfc-43cb-9949-cce0c56dec42",
+            "address": {
+              "address1": "59 Meadow Lane",
+              "address2": "Meadow Lane",
+              "address3": "Loughborough",
+              "address4": "Leicestershire",
+              "postcode": "NW1 5BR"
+            },
+            "lastName": "Orn",
+            "firstName": "Sunny",
+            "dateOfBirth": "1978-10-25",
+            "isRespondent": false,
+            "masterDefendantId": "e9cd2a47-3bda-4b08-a39b-eb3976756dc1",
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PERSON_DEFENDANT"
+          },
+          "respondents": [
+            {
+              "id": "d6c7b151-190e-45e8-a1a5-e25f316a7f83",
+              "address": {
+                "address1": "Criminal Justice Department",
+                "address2": "Derbyshire Constabulary",
+                "address3": "Butterley Hall",
+                "address4": "Ripley",
+                "address5": "Derby",
+                "postcode": "DE5 3RS"
+              },
+              "lastName": "DERPF",
+              "isRespondent": true,
+              "restrictFromCourtList": false,
+              "courtApplicationPartyType": "PROSECUTING_AUTHORITY"
+            }
+          ],
+          "linkedCaseIds": [
+            "9b2296ab-43d5-448b-8a27-5649e4ac3a56"
+          ],
+          "applicationType": "Application within criminal proceedings",
+          "applicationReference": "JO141726468",
+          "restrictFromCourtList": false,
+          "restrictCourtApplicationType": false
+        }
+      ],
+      "courtCentreDetails": {
+        "id": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:00:00"
+      },
+      "vacatedTrialReasonId": "",
+      "sendNotificationToParties": false
+    },
+    {
+      "id": "ed21ade5-9ccb-461f-b287-56d18ac07d1e",
+      "type": {
+        "id": "cb428693-e886-4809-868e-e5f874d459d5",
+        "description": "Preliminary Hearing"
+      },
+      "endDate": "2026-10-29",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "c44f5b7b-23cb-4b8c-8baa-df21f957b7e5",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2026-10-29",
+      "courtRoomId": "02529e93-35cf-3fc3-8406-d306c5b6bd0c",
+      "hearingDays": [
+        {
+          "endTime": "2026-10-29T10:30:00.000Z",
+          "sequence": 3,
+          "startTime": "2026-10-29T10:00:00.000Z",
+          "courtRoomId": "02529e93-35cf-3fc3-8406-d306c5b6bd0c",
+          "hearingDate": "2026-10-29",
+          "isCancelled": false,
+          "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+          "durationMinutes": 30
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "b03a5806-8b36-4f94-864b-010caf91692a",
+          "isCivil": false,
+          "markers": [],
+          "defendants": [
+            {
+              "id": "05bf27dd-5665-4b13-9272-c1603215e8a7",
+              "address": {
+                "address1": "London",
+                "postcode": "AA11 1AA"
+              },
+              "lastName": "Bot41617",
+              "offences": [
+                {
+                  "id": "507c7709-9666-420b-a1fe-aa71a0c72b68",
+                  "count": 0,
+                  "startDate": "2026-10-04",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68023A",
+                  "shadowListed": false,
+                  "offenceWording": "On or in 04 Oct 2026 at London attempted to rob Jockey of Shop  of a value unknown .",
+                  "committingCourt": {
+                    "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                    "courtHouseCode": "LY",
+                    "courtHouseName": "Lavender Hill Magistrates' Court",
+                    "courtHouseShortName": "Lavender Hill Magistrates' Court"
+                  },
+                  "statementOfOffence": {
+                    "title": "Attempt robbery",
+                    "welshTitle": "Ymgais i ysbeilio (robbery)",
+                    "legislation": "Contrary to section 1(1) of the Criminal Attempts Act 1981.",
+                    "welshLegislation": "Yn groes i adran 1(1) Deddf Ymgeisiau i Droseddu 1981."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "SamJeanene",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "masterDefendantId": "05bf27dd-5665-4b13-9272-c1603215e8a7",
+              "restrictFromCourtList": false,
+              "nationalityDescription": "British",
+              "courtProceedingsInitiated": "2026-10-19T13:54:03.588Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+            "authorityCode": "DERPF",
+            "caseReference": "NP270285741"
+          },
+          "trialReceiptType": "Either way case",
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "6131bd34-33d9-3d1e-8152-8b5a2084f1bd",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 30,
+      "jurisdictionType": "CROWN",
+      "courtApplications": [],
+      "courtCentreDetails": {
+        "id": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:00:00"
+      },
+      "isGroupProceedings": false,
+      "numberOfGroupCases": 1,
+      "sendNotificationToParties": false
+    }
+  ]
+}
