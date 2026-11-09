@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
+import uk.gov.moj.cpp.listing.common.xhibit.CourtRoomNumbers;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.DailyCourtListStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.DailyListStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.SittingStructure;
@@ -74,7 +75,7 @@ public class DailyListMapper extends AbstractCourtListMapper {
                 sittings.getSitting().add(courtServicesMapper.generateSittingStructure(sittingJson, 1));
             }
         }
-        sittings.getSitting().sort(Comparator.comparing(SittingStructure::getCourtRoomNumber));
+        sittings.getSitting().sort(Comparator.comparingInt((SittingStructure sittingStructure) -> CourtRoomNumbers.sortKey(sittingStructure.getCourtRoomNumber())));
         return sittings;
     }
 

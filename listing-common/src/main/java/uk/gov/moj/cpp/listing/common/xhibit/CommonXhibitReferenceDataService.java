@@ -159,9 +159,15 @@ public class CommonXhibitReferenceDataService {
                 .orElseThrow(() -> new InvalidReferenceDataException(format("Cannot find hearing type %s", cppHearingTypeId)));
     }
 
+    /**
+     * CREST courtroom number (e.g. "Court 3" -> 3), or {@link CourtRoomNumbers#UNMAPPED_COURT_ROOM_NUMBER} when the
+     * room has no CREST mapping or its CREST name does not end in a number.
+     */
     public int getCourtRoomNumber(final UUID courtCentreId, final UUID courtRoomId) {
-        final CourtRoomMapping courtRoomMapping = getCourtRoomMappingBy(courtCentreId, courtRoomId);
-        return courtRoomNumberForCourtRoom(courtRoomMapping.getCrestCourtRoomName());
+        return referenceDataCache.getCourtRoomMappingByCourtCentreAndCourtRoom(courtCentreId, courtRoomId)
+                .map(CourtRoomMapping::getCrestCourtRoomName)
+                .flatMap(CourtRoomNumbers::trailingNumber)
+                .orElse(CourtRoomNumbers.UNMAPPED_COURT_ROOM_NUMBER);
     }
 
     public JsonObject getJudiciary(final UUID judiciaryId) {
@@ -230,12 +236,6 @@ public class CommonXhibitReferenceDataService {
     public Optional<CourtRoomMappingsList> getCourtRoomMappingsList(final UUID courtCentreId) {
 
         return Optional.of(new CourtRoomMappingsList(referenceDataCache.getCourtRoomMappingsMapCache(courtCentreId).getCpXhibitCourtRoomMappings()));
-    }
-
-    private int courtRoomNumberForCourtRoom(final String courtRoomName) {
-        final String[] splitName = courtRoomName.split(" ");
-
-        return Integer.parseInt(splitName[splitName.length-1]);
     }
 
     private CourtLocation createCrownCourtLocation(final CourtMapping courtMapping) {

@@ -6,7 +6,6 @@ import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -17,7 +16,6 @@ import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMapping;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.FlatHearing;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -313,7 +311,7 @@ class CourtListsBuilderTest {
     }
 
     @Test
-    void shouldOrderCourtSitesMainSiteFirstThenAlphabeticallyAndCourtRoomsByCrestNumber() {
+    void shouldOrderCourtSitesBySiteCodeAndCourtRoomsByCrestNumber() {
         when(referenceDataService.getCrestCourtSitesForCrownCourtCentre(COURT_CENTRE_ID))
                 .thenReturn(asList(
                         courtSite("B", "MANSFIELD MAGISTRATES' COURT", "DERBY"),
@@ -345,13 +343,13 @@ class CourtListsBuilderTest {
                 .buildCourtListsArray(COURT_CENTRE_ID);
 
         assertThat(courtSiteNames(courtLists),
-                contains("DERBY", "Chesterfield Justice Centre", "MANSFIELD MAGISTRATES' COURT"));
+                contains("DERBY", "MANSFIELD MAGISTRATES' COURT", "Chesterfield Justice Centre"));
         assertThat(courtRoomNames(courtLists.getJsonObject(0)),
                 contains("Courtroom 01", "Courtroom 02", "Courtroom 03", "Courtroom 06", "Courtroom 10"));
         assertThat(courtRoomNames(courtLists.getJsonObject(1)),
-                contains("Courtroom 01 (Chesterfield)"));
-        assertThat(courtRoomNames(courtLists.getJsonObject(2)),
                 contains("Courtroom 03 (Mansfield)", "Courtroom 04 (Mansfield)"));
+        assertThat(courtRoomNames(courtLists.getJsonObject(2)),
+                contains("Courtroom 01 (Chesterfield)"));
     }
 
     @Test
@@ -389,7 +387,7 @@ class CourtListsBuilderTest {
     }
 
     @Test
-    void shouldOrderNonMainSitesAlphabeticallyByNameNotBySiteCode() {
+    void shouldOrderNonMainSitesBySiteCodeNotByName() {
         // Real CAMBRIDGE (crestCourtId 410) sites
         final List<JsonObject> sites = new ArrayList<>(asList(
                 courtSite("D", "PETERBOROUGH MAGISTRATES COURT", "CAMBRIDGE"),
@@ -400,7 +398,7 @@ class CourtListsBuilderTest {
         sites.sort(CourtListsBuilder.COURT_SITE_ORDER);
 
         assertThat(siteNames(sites),
-                contains("CAMBRIDGE", "HUNTINGDON LAW COURTS", "PETERBOROUGH", "PETERBOROUGH MAGISTRATES COURT"));
+                contains("CAMBRIDGE", "PETERBOROUGH", "HUNTINGDON LAW COURTS", "PETERBOROUGH MAGISTRATES COURT"));
     }
 
     @Test
@@ -415,42 +413,18 @@ class CourtListsBuilderTest {
     }
 
     @Test
-    void shouldOrderCourtSitesAlphabeticallyWhenNoMainSiteCanBeIdentified() {
+    void shouldOrderCourtSitesBySiteCodeWhenNoMainSiteCanBeIdentified() {
         final List<JsonObject> sites = new ArrayList<>(asList(
-                courtSite("B", "Zeta Site", "DERBY"),
-                courtSite("C", "Alpha Site", "DERBY")));
+                courtSite("C", "Alpha Site", "DERBY"),
+                courtSite("B", "Zeta Site", "DERBY")));
 
         sites.sort(CourtListsBuilder.COURT_SITE_ORDER);
 
-        assertThat(siteNames(sites), contains("Alpha Site", "Zeta Site"));
+        assertThat(siteNames(sites), contains("Zeta Site", "Alpha Site"));
     }
 
     private List<String> siteNames(final List<JsonObject> sites) {
         return sites.stream().map(site -> site.getString("crestCourtSiteName")).collect(Collectors.toList());
-    }
-
-    @Test
-    void shouldParseTrailingCourtRoomNumber() {
-        assertThat(CourtListsBuilder.trailingNumber("Court 3"), is(of(3)));
-        assertThat(CourtListsBuilder.trailingNumber("Court 10"), is(of(10)));
-        assertThat(CourtListsBuilder.trailingNumber("Court -99"), is(of(99)));
-        assertThat(CourtListsBuilder.trailingNumber("Annex"), is(empty()));
-        assertThat(CourtListsBuilder.trailingNumber(null), is(empty()));
-        assertThat(CourtListsBuilder.trailingNumber("Court 7  "), is(of(7)));
-        assertThat(CourtListsBuilder.trailingNumber("Court 1A"), is(empty()));
-        assertThat(CourtListsBuilder.trailingNumber("   "), is(empty()));
-        assertThat(CourtListsBuilder.trailingNumber("Court 99999999999"), is(empty()));
-    }
-
-    @Test
-    void shouldParseTrailingNumberOfVeryLongCourtRoomNameQuickly() {
-        final String longDigitsThenText = "1".repeat(100_000) + " x" + " ".repeat(100_000);
-        final String longNameEndingInNumber = " ".repeat(100_000) + "Court 4";
-
-        assertTimeout(Duration.ofSeconds(1), () -> {
-            assertThat(CourtListsBuilder.trailingNumber(longDigitsThenText), is(empty()));
-            assertThat(CourtListsBuilder.trailingNumber(longNameEndingInNumber), is(of(4)));
-        });
     }
 
     // ─── helpers ────────────────────────────────────────────────────────────────

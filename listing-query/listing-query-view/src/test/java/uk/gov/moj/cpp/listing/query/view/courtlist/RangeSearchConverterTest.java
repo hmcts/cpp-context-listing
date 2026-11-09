@@ -116,10 +116,10 @@ public class RangeSearchConverterTest {
      * site (code A) plus two other buildings where the crown court uses courtrooms (codes B and C). All three
      * sites belong to the same crown court (same oucode and CREST court id); the site name is the building name.
      * Hearings arrive interleaved across courtrooms; the court list must be ordered main site first, then the other
-     * sites alphabetically, courtrooms by CREST number, and hearings by start time then listing sequence.
+     * sites by CREST site code, courtrooms by CREST number, and hearings by start time then listing sequence.
      */
     @Test
-    public void shouldOrderMultiSiteCourtListByMainSiteThenSiteNameThenCrestCourtRoomNumberThenHearingTime() throws Exception {
+    public void shouldOrderMultiSiteCourtListBySiteCodeThenCrestCourtRoomNumberThenHearingTime() throws Exception {
         final JsonObject rangeSearchResponse = getJsonFile("courtlist/8.derby-multi-site-ordering/range-search-response.json");
         final UUID derbyCourtCentreId = fromString("6131bd34-33d9-3d1e-8152-8b5a2084f1bd");
         final UUID derbyCourtroom02 = fromString("f9f15b42-6594-38c5-a245-22d752a1e2c5");
@@ -144,11 +144,11 @@ public class RangeSearchConverterTest {
         assertThat(courtLists.getValuesAs(JsonObject.class).stream()
                         .map(site -> site.getJsonObject("crestCourtSite").getString("crestCourtSiteName"))
                         .collect(Collectors.toList()),
-                contains("DERBY", "Chesterfield Justice Centre", "MANSFIELD MAGISTRATES' COURT"));
+                contains("DERBY", "MANSFIELD MAGISTRATES' COURT", "Chesterfield Justice Centre"));
         assertThat(courtRoomNames(courtLists.getJsonObject(0)),
                 contains("Courtroom 02", "Courtroom 03", "Courtroom 04"));
-        assertThat(courtRoomNames(courtLists.getJsonObject(1)), is(empty()));
-        assertThat(courtRoomNames(courtLists.getJsonObject(2)), contains("Courtroom 03 (Mansfield)"));
+        assertThat(courtRoomNames(courtLists.getJsonObject(1)), contains("Courtroom 03 (Mansfield)"));
+        assertThat(courtRoomNames(courtLists.getJsonObject(2)), is(empty()));
 
         // hearings inside each courtroom are ordered by start time, then listing sequence
         final JsonArray derbySittings = courtLists.getJsonObject(0).getJsonArray("sittings");
@@ -159,7 +159,7 @@ public class RangeSearchConverterTest {
         assertThat(caseReferences(derbySittings.getJsonObject(2)),
                 contains("FU161718924", "VY372114558"));
         // the range search returns the 10:30 Mansfield hearing before the 10:00 ones
-        assertThat(caseReferences(courtLists.getJsonObject(2).getJsonArray("sittings").getJsonObject(0)),
+        assertThat(caseReferences(courtLists.getJsonObject(1).getJsonArray("sittings").getJsonObject(0)),
                 contains("28DI2415677", "28DI9692967", "NP270285741", "JB294556945"));
     }
 

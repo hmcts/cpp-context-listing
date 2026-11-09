@@ -9,6 +9,7 @@ import static java.util.stream.Collectors.toList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
+import uk.gov.moj.cpp.listing.common.xhibit.CourtRoomNumbers;
 import uk.gov.moj.cpp.listing.common.xhibit.ThreadLocalCommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMapping;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.FlatHearing;
@@ -38,20 +39,17 @@ public class CourtListsBuilder {
     private static final String CREST_COURT_SITE_NAME = "crestCourtSiteName";
     private static final String CREST_COURT_NAME = "crestCourtName";
     private static final String MAIN_CREST_COURT_SITE_CODE = "A";
-    private static final int MAX_COURT_ROOM_NUMBER_DIGITS = 9;
-    private static final int UNMAPPED_COURT_ROOM_NUMBER = Integer.MAX_VALUE;
+    private static final int UNMAPPED_COURT_ROOM_SORT_KEY = CourtRoomNumbers.sortKey(CourtRoomNumbers.UNMAPPED_COURT_ROOM_NUMBER);
     private static final Logger LOGGER = LoggerFactory.getLogger(CourtListsBuilder.class);
 
     /**
      * Ordering of a crown court centre's CREST court sites:
      * 1. the main site first - CREST site code "A", or, failing that, the site whose CREST site name matches
      *    the CREST court name;
-     * 2. the remaining sites alphabetically by site name (case-insensitive);
-     * 3. CREST site code as a tie-break.
+     * 2. the remaining sites by CREST site code (A, B, C...), as the XHIBIT feed lists them.
      */
     static final Comparator<JsonObject> COURT_SITE_ORDER =
             Comparator.<JsonObject, Integer>comparing(CourtListsBuilder::courtSiteRank)
-                    .thenComparing(courtSite -> stringOrEmpty(courtSite, CREST_COURT_SITE_NAME), String.CASE_INSENSITIVE_ORDER)
                     .thenComparing(courtSite -> stringOrEmpty(courtSite, CREST_COURT_SITE_CODE));
 
     /**
@@ -144,45 +142,17 @@ public class CourtListsBuilder {
     private int crestCourtRoomNumber(final UUID courtCentreId, final Sitting sitting) {
         final Optional<UUID> courtRoomId = sitting.getSittingKey().getCourtRoomId();
         if (courtRoomId.isEmpty()) {
-            return UNMAPPED_COURT_ROOM_NUMBER;
+            return UNMAPPED_COURT_ROOM_SORT_KEY;
         }
         try {
             return threadLocalCommonXhibitReferenceDataService.get().getCourtRoom(courtCentreId, courtRoomId.get())
                     .map(CourtRoomMapping::getCrestCourtRoomName)
-                    .flatMap(CourtListsBuilder::trailingNumber)
-                    .orElse(UNMAPPED_COURT_ROOM_NUMBER);
+                    .flatMap(CourtRoomNumbers::trailingNumber)
+                    .orElse(UNMAPPED_COURT_ROOM_SORT_KEY);
         } catch (final RuntimeException e) {
             LOGGER.warn("Cannot resolve CREST court room number for courtCentreId={}, courtRoomId={}", courtCentreId, courtRoomId.get());
-            return UNMAPPED_COURT_ROOM_NUMBER;
+            return UNMAPPED_COURT_ROOM_SORT_KEY;
         }
-    }
-
-    /**
-     * The number at the end of a CREST courtroom name (e.g. "Court 10" -> 10), ignoring trailing whitespace.
-     * A single backwards scan (linear time, no regex backtracking). Empty when there is no trailing number or
-     * it is too long to be a courtroom number.
-     */
-    static Optional<Integer> trailingNumber(final String courtRoomName) {
-        if (courtRoomName == null) {
-            return Optional.empty();
-        }
-        int end = courtRoomName.length();
-        while (end > 0 && Character.isWhitespace(courtRoomName.charAt(end - 1))) {
-            end--;
-        }
-        int start = end;
-        while (start > 0 && isAsciiDigit(courtRoomName.charAt(start - 1))) {
-            start--;
-        }
-        final int digits = end - start;
-        if (digits == 0 || digits > MAX_COURT_ROOM_NUMBER_DIGITS) {
-            return Optional.empty();
-        }
-        return Optional.of(Integer.parseInt(courtRoomName.substring(start, end)));
-    }
-
-    private static boolean isAsciiDigit(final char character) {
-        return character >= '0' && character <= '9';
     }
 
     private static int courtSiteRank(final JsonObject courtSite) {

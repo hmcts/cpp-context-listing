@@ -75,7 +75,7 @@ import org.junit.jupiter.api.Test;
  *
  * Hearings are listed, allocated and sequenced through the real commands in a scrambled order. The
  * generated court list must be ordered:
- * - main CREST site (code A) first, then the remaining sites alphabetically by site name;
+ * - main CREST site (code A) first, then the remaining sites by CREST site code;
  * - courtrooms within a site by CREST courtroom number (Court 2 before Court 10);
  * - hearings within a courtroom by start time, then listing sequence.
  */
@@ -128,13 +128,13 @@ public class CrownCourtListOrderingIT extends AbstractIT {
                         status().is(OK),
                         payload().isJson(allOf(
                                 withJsonPath("$.courtLists[*].crestCourtSite.crestCourtSiteName",
-                                        contains("DERBY", "Chesterfield Justice Centre", "MANSFIELD MAGISTRATES' COURT")),
+                                        contains("DERBY", "MANSFIELD MAGISTRATES' COURT", "Chesterfield Justice Centre")),
                                 withJsonPath("$.courtLists[0].sittings[*].courtRoomName",
                                         contains("Courtroom 02", "Courtroom 10")),
                                 withJsonPath("$.courtLists[1].sittings[*].courtRoomName",
-                                        contains("Courtroom 01 (Chesterfield)")),
-                                withJsonPath("$.courtLists[2].sittings[*].courtRoomName",
                                         contains("Courtroom 03 (Mansfield)")),
+                                withJsonPath("$.courtLists[2].sittings[*].courtRoomName",
+                                        contains("Courtroom 01 (Chesterfield)")),
                                 withJsonPath("$.courtLists[*].sittings[*].hearings[*].caseIdentifier.caseReference",
                                         hasItems(allHearings.stream().map(ListedHearing::firstCaseReference).toArray(String[]::new)))
                         )));
@@ -142,9 +142,9 @@ public class CrownCourtListOrderingIT extends AbstractIT {
         final String payload = response.getPayload();
         assertThat(hearingsIn(payload, 0, 0, allHearings), contains(mainCourt2.name));
         assertThat(hearingsIn(payload, 0, 1, allHearings), contains(mainCourt10.name));
-        assertThat(hearingsIn(payload, 1, 0, allHearings), contains(siteCCourt1.name));
-        assertThat(hearingsIn(payload, 2, 0, allHearings), contains(siteBFirst.name, siteBSecond.name, siteBLate.name));
-        assertThat(distinctInOrder(JsonPath.read(payload, "$.courtLists[2].sittings[0].hearings[*].startTime")),
+        assertThat(hearingsIn(payload, 1, 0, allHearings), contains(siteBFirst.name, siteBSecond.name, siteBLate.name));
+        assertThat(hearingsIn(payload, 2, 0, allHearings), contains(siteCCourt1.name));
+        assertThat(distinctInOrder(JsonPath.read(payload, "$.courtLists[1].sittings[0].hearings[*].startTime")),
                 contains(hearingDate + "T10:00", hearingDate + "T10:30"));
     }
 
