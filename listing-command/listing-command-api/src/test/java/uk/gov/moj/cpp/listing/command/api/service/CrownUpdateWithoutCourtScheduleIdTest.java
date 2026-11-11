@@ -254,6 +254,37 @@ class CrownUpdateWithoutCourtScheduleIdTest {
         assertThat(capture(Lookup.SEARCH).get("ouCode"), is("C01XX00"));
     }
 
+    @Test
+    void listSideBooksOneCrownBlockAnchoredOnTheFirstDayInsteadOfTheMagsLoop() {
+        // SPRDT-1539 list side: a multi-day CROWN list payload with a room and no courtScheduleId.
+        givenConverters();
+        givenFinalSessionsOn(TUE);
+        givenBookedBlock(TUE, WED, THU);
+        givenListedInSessions();
+        final uk.gov.justice.listing.commands.HearingListingNeeds hearing = uk.gov.justice.listing.commands.HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withListedStartDateTime(ZonedDateTime.parse(TUE + "T10:00:00Z"))
+                .withCourtCentre(uk.gov.justice.core.courts.CourtCentre.courtCentre()
+                        .withId(courtCentreId).withRoomId(courtRoomId).withCode(OU_CODE).build())
+                .withHearingDays(List.of(TUE, WED, THU).stream()
+                        .map(day -> HearingDay.hearingDay().withHearingDate(day)
+                                .withStartTime(ZonedDateTime.parse(day + "T10:00:00Z")).withDurationMinutes(360).build())
+                        .toList())
+                .build();
+
+        final uk.gov.justice.listing.commands.HearingListingNeeds result = service.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        final Map<String, String> lookup = capture(Lookup.SEARCH);
+        assertThat(lookup.get("sessionStartDate"), is(TUE.toString()));
+        assertThat(lookup.get("sessionEndDate"), is(TUE.toString()));
+        final Map<String, String> booking = capture(Lookup.BOOK);
+        assertThat(booking.get("courtScheduleId"), is(sessionIds.get(TUE).toString()));
+        assertThat(booking.get("durationInMinutes"), is("1080"));
+        assertThat(result.getHearingDays().stream().map(HearingDay::getCourtScheduleId).toList(),
+                contains(sessionIds.get(TUE), sessionIds.get(WED), sessionIds.get(THU)));
+    }
+
     // ─── fixtures ──────────────────────────────────────────────────────────────
 
     private enum Lookup { SEARCH, BOOK }

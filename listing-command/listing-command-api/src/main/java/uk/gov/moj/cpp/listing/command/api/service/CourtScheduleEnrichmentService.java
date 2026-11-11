@@ -1091,18 +1091,97 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     }
 
     private String resolveOuCode(final UpdateHearingForListing hearing, final JsonEnvelope envelope) {
-        if (nonNull(hearing.getSelectedCourtCentre()) && !isBlank(hearing.getSelectedCourtCentre().getOuCode())) {
-            return hearing.getSelectedCourtCentre().getOuCode();
+        final String payloadOuCode = nonNull(hearing.getSelectedCourtCentre()) ? hearing.getSelectedCourtCentre().getOuCode() : null;
+        return resolveOuCode(payloadOuCode, hearing.getCourtCentreId(), envelope);
+    }
+
+    /** The payload's ouCode when it carries one, else the court centre's ouCode from reference data. */
+    private String resolveOuCode(final String payloadOuCode, final UUID courtCentreId, final JsonEnvelope envelope) {
+        if (!isBlank(payloadOuCode)) {
+            return payloadOuCode;
         }
-        if (isNull(envelope) || isNull(hearing.getCourtCentreId())) {
+        if (isNull(envelope) || isNull(courtCentreId)) {
             return null;
         }
         try {
-            return courtCentreFactory.getCourtCentre(hearing.getCourtCentreId(), envelope).getOucode();
+            return courtCentreFactory.getCourtCentre(courtCentreId, envelope).getOucode();
         } catch (final RuntimeException e) {
-            LOGGER.error("[CROWN-NOID] reference-data lookup of courtCentreId {} failed: {}", hearing.getCourtCentreId(), e.getMessage());
+            LOGGER.error("[CROWN-NOID] reference-data lookup of courtCentreId {} failed: {}", courtCentreId, e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * SPRDT-1539 (list side): a CROWN list payload with a courtroom and no courtScheduleId lands here
+     * when the single-day Crown fallback could not take it first — a multi-day hearing, or one whose
+     * date only exists after HearingDays enrichment. It books through Crown search-and-book only,
+     * never the MAGS search-and-book (NCFL-only matcher), and fails open exactly like
+     * list-court-hearing's Crown fallback: when nothing can be booked the hearing is listed
+     * unallocated, because these commands come from progression's event processor, not a person.
+     * <ul>
+     *   <li>single day: the Crown single-day search-and-book (CROWN_FB_LIST);</li>
+     *   <li>multi-day: one crown.search.and.book block anchored on the FINAL Crown AD session in the
+     *       hearing's courtroom on its first day, sized by the aggregated duration.</li>
+     * </ul>
+     */
+    private EnrichmentResult handleCrownListWithoutCourtScheduleIds(final HearingListingNeeds hearing, final JsonEnvelope envelope) {
+        final List<HearingDay> days = isEmpty(hearing.getHearingDays()) ? List.of() : hearing.getHearingDays();
+        final EnrichmentResult unallocated = new EnrichmentResult(new ArrayList<>(days), new ArrayList<>());
+        final List<LocalDate> dates = days.stream()
+                .map(CourtScheduleEnrichmentService::dateOf)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .toList();
+        final int aggregatedDuration = calculateAggregatedDuration(hearing);
+        LOGGER.info("[CROWN-NOID] CROWN list without courtScheduleId - hearingId: {}, dates: {}, aggregatedDuration: {}, courtRoomId: {}",
+                hearing.getId(), dates, aggregatedDuration, hearing.getCourtCentre().getRoomId());
+        if (dates.isEmpty()) {
+            LOGGER.warn("[CROWN-NOID] list: no hearing date for hearingId {}; listed unallocated.", hearing.getId());
+            return unallocated;
+        }
+
+        if (aggregatedDuration <= HearingDurationEnrichmentService.MINUTES_IN_DAY && dates.size() == 1) {
+            final HearingListingNeeds booked = applyCrownFallback(hearing, CrownFallbackSource.LIST_COURT_HEARING);
+            return new EnrichmentResult(new ArrayList<>(booked.getHearingDays()), new ArrayList<>());
+        }
+
+        final LocalDate startDate = dates.get(0);
+        final CourtCentre courtCentre = hearing.getCourtCentre();
+        final String courtRoomId = courtCentre.getRoomId().toString();
+        final String ouCode = resolveOuCode(courtCentre.getCode(), courtCentre.getId(), envelope);
+        if (isBlank(ouCode)) {
+            LOGGER.error("[CROWN-NOID] list: no ouCode for courtCentreId {} (hearingId {}); listed unallocated.", courtCentre.getId(), hearing.getId());
+            return unallocated;
+        }
+        final String anchorCourtScheduleId;
+        try {
+            anchorCourtScheduleId = findFinalCrownAdSessionIdsInRoom(ouCode, courtRoomId, startDate, startDate, 1).get(startDate);
+        } catch (final IllegalStateException e) {
+            LOGGER.error("[CROWN-NOID] list: FINAL session lookup failed for hearingId {}; listed unallocated: {}", hearing.getId(), e.getMessage());
+            return unallocated;
+        }
+        if (isBlank(anchorCourtScheduleId)) {
+            LOGGER.warn("[CROWN-NOID] list: no FINAL Crown AD session in courtroom {} on {} for hearingId {}; listed unallocated.",
+                    courtRoomId, startDate, hearing.getId());
+            return unallocated;
+        }
+
+        final List<CourtSchedule> sessions;
+        try {
+            sessions = multiDaySearchAndBook(anchorCourtScheduleId, aggregatedDuration, hearing.getId().toString(),
+                    courtCentre.getId().toString(), startDate.toString());
+        } catch (final CrownMultiDayExtensionException e) {
+            LOGGER.error("[CROWN-NOID] list: crown search-and-book rejected for hearingId {}; listed unallocated: {}", hearing.getId(), e.getMessage());
+            return unallocated;
+        }
+        if (isEmpty(sessions)) {
+            LOGGER.warn("[CROWN-NOID] list: no consecutive Crown run from {} in courtroom {} for hearingId {}; listed unallocated.",
+                    startDate, courtRoomId, hearing.getId());
+            return unallocated;
+        }
+        final List<HearingDay> expandedDays = buildHearingDaysFromMultiDaySessions(sessions, aggregatedDuration);
+        return listHearingSessionsAndExtractData(hearing.getId(), expandedDays);
     }
 
     /** The user's start time on the given date: a genuine nonDefaultDay first, else that date's hearing day. */
@@ -1250,7 +1329,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             // Crown without courtScheduleIds: go directly to searchAndBook, skip provisional booking
             else if (JurisdictionType.CROWN.equals(hearing.getJurisdictionType()) && isCandidateForAllocation(hearing)) {
                 LOGGER.info("CROWN hearing without courtScheduleIds, searching and booking for hearingId: {}", hearing.getId());
-                enrichmentResult = handleAllocationCandidate(hearing, envelope);
+                enrichmentResult = handleCrownListWithoutCourtScheduleIds(hearing, envelope);
             }
             // Case 3: Has booking reference (provisional booking) — MAGS only at this point
             else if (nonNull(hearing.getBookingReference())) {
