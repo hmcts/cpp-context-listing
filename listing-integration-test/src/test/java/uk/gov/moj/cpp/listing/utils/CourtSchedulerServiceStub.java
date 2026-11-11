@@ -1320,10 +1320,9 @@ public class CourtSchedulerServiceStub {
                 "  ]\n" +
                 "}";
 
-        // Request body now carries the params (hearingId, courtCentreId, hearingDate, etc.)
-        // Match on hearingId in request body + content-type; stub scoped to this hearing
-        stubFor(post(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId)))
+        stubFor(post(urlPathEqualTo(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId))
                 .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE))
+                .atPriority(1)
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1355,9 +1354,10 @@ public class CourtSchedulerServiceStub {
                 "  ]\n" +
                 "}";
 
-        stubFor(post(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId)))
+        stubFor(post(urlPathEqualTo(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId))
                 .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE))
                 .withRequestBody(containing("\"businessType\":\"" + businessType + "\""))
+                .atPriority(1)
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1388,8 +1388,9 @@ public class CourtSchedulerServiceStub {
                 "  ]\n" +
                 "}";
 
-        stubFor(post(urlPathMatching(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId)))
+        stubFor(post(urlPathEqualTo(CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId))
                 .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE))
+                .atPriority(1)
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1419,8 +1420,9 @@ public class CourtSchedulerServiceStub {
                 "  ]\n" +
                 "}";
 
-        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId)))
+        stubFor(post(urlPathEqualTo(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId))
                 .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE))
+                .atPriority(1)
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1450,8 +1452,9 @@ public class CourtSchedulerServiceStub {
                 "  ]\n" +
                 "}";
 
-        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId)))
+        stubFor(post(urlPathEqualTo(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId))
                 .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE))
+                .atPriority(1)
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -1459,10 +1462,50 @@ public class CourtSchedulerServiceStub {
     }
 
     /**
+     * Stub POST /hearings/{hearingId} (crown.search.and.book) for the CROWN multi-day block path,
+     * plus the follow-up POST /hearings (list.hearings-in-sessions) that enrichment always makes
+     * after a successful search-and-book. Both stubs share the same generated courtScheduleId.
+     * Used when {@code totalDuration > MINUTES_IN_DAY} and {@code blockShaped=true}.
+     */
+    public static void stubCrownMultiDaySearchAndBookSuccess(final String hearingId,
+                                                              final String courtCentreId,
+                                                              final String courtRoomId) {
+        final String courtScheduleId = UUID.randomUUID().toString();
+        final String sessionDate = ItClock.today().toString();
+        final String hearingStartTimeStr = sessionDate + "T09:00:00Z";
+
+        final String searchBookPayload = format(
+                "{\"sessions\":[{\"courtScheduleId\":\"%s\",\"courtHouseId\":\"%s\"," +
+                        "\"courtRoomId\":\"%s\",\"sessionDate\":\"%s\"," +
+                        "\"hearingStartTime\":\"%s\",\"isDraft\":false}]}",
+                courtScheduleId, courtCentreId, courtRoomId, sessionDate, hearingStartTimeStr);
+
+        stubFor(post(urlPathEqualTo(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId))
+                .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                .atPriority(1)
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(searchBookPayload)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+
+        final String listPayload = format(
+                "{\"hearings\":[{\"hearingId\":\"%s\",\"courtScheduleId\":\"%s\"," +
+                        "\"hearingStartTime\":\"%s\",\"duration\":360}]}",
+                hearingId, courtScheduleId, hearingStartTimeStr);
+
+        stubFor(WireMock.post(WireMock.urlPathEqualTo(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH))
+                .withHeader(CONTENT_TYPE, containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
+                .withRequestBody(containing(courtScheduleId))
+                .atPriority(2)
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(listPayload)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    /**
      * Registers low-priority catch-all stubs for all court-scheduler endpoints.
      * These prevent 60s timeouts when the enrichment service makes calls that
-     * don't match any specific stub. Individual test stubs (default priority 5)
-     * take precedence over these (priority 10).
+     * don't match any specific stub. Individual test stubs use atPriority(1)
+     * to guarantee they take precedence over these (priority 10).
      */
     public static void stubCourtSchedulerCatchAll() {
         // POST /hearings/{id} — mags.search.and.book (was GET /searchlist/hearingslots)
