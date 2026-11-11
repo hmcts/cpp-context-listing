@@ -3,12 +3,14 @@ package uk.gov.moj.cpp.listing.command.api.service;
 import uk.gov.justice.services.messaging.JsonObjects;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -17,11 +19,16 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.command.api.util.FileUtil.givenPayload;
 
+import uk.gov.justice.core.courts.JudicialRole;
+import uk.gov.justice.core.courts.JudicialRoleType;
+import uk.gov.justice.listing.commands.HearingDay;
+import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.RotaSlot;
@@ -56,6 +63,8 @@ import java.util.Optional;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.inject.Inject;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
@@ -288,6 +297,85 @@ class CourtScheduleEnrichmentServiceTest {
             assertThat("hearingStartTime should not be sent for multi-day search",
                     qp.containsKey(CourtScheduleEnrichmentService.HEARING_START_TIME), is(false));
         }
+    }
+
+    @Test
+    void enrichUpdateShouldUseCourtScheduleJudiciaryAndSetFlagWhenRequestJudiciaryIsEmpty() {
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID judiciaryId = UUID.randomUUID();
+        givenListHearingInCourtSessionsResponse(courtScheduleId, JsonObjects.createArrayBuilder()
+                .add(JsonObjects.createObjectBuilder()
+                        .add("judiciaryId", judiciaryId.toString())
+                        .add("judiciaryType", "MAGISTRATE")
+                        .add("benchChairman", true))
+                .build());
+
+        final UpdateHearingForListing enriched = courtScheduleEnrichmentService.enrichWithCourtSchedules(updateHearingForListing(courtScheduleId, List.of()), null);
+
+        assertThat(enriched.getJudiciary(), hasSize(1));
+        assertThat(enriched.getJudiciary().get(0).getJudicialId(), is(judiciaryId));
+        assertThat(enriched.getIsJudiciaryFromCourtSchedule(), is(true));
+    }
+
+    @Test
+    void enrichUpdateShouldKeepRequestJudiciaryAndNotSetFlagWhenRequestJudiciaryIsPresent() {
+        final UUID courtScheduleId = UUID.randomUUID();
+        final JudicialRole requestJudicialRole = JudicialRole.judicialRole()
+                .withJudicialId(UUID.randomUUID())
+                .withJudicialRoleType(JudicialRoleType.judicialRoleType().withJudiciaryType("MAGISTRATE").build())
+                .build();
+        givenListHearingInCourtSessionsResponse(courtScheduleId, JsonObjects.createArrayBuilder()
+                .add(JsonObjects.createObjectBuilder()
+                        .add("judiciaryId", UUID.randomUUID().toString())
+                        .add("judiciaryType", "MAGISTRATE"))
+                .build());
+
+        final UpdateHearingForListing enriched = courtScheduleEnrichmentService.enrichWithCourtSchedules(updateHearingForListing(courtScheduleId, List.of(requestJudicialRole)), null);
+
+        assertThat(enriched.getJudiciary(), is(List.of(requestJudicialRole)));
+        assertThat(enriched.getIsJudiciaryFromCourtSchedule(), is(nullValue()));
+    }
+
+    @Test
+    void enrichUpdateShouldNotSetFlagWhenRequestJudiciaryIsEmptyAndCourtScheduleHasNoJudiciary() {
+        final UUID courtScheduleId = UUID.randomUUID();
+        givenListHearingInCourtSessionsResponse(courtScheduleId, JsonObjects.createArrayBuilder().build());
+
+        final UpdateHearingForListing enriched = courtScheduleEnrichmentService.enrichWithCourtSchedules(updateHearingForListing(courtScheduleId, List.of()), null);
+
+        assertThat(enriched.getJudiciary(), hasSize(0));
+        assertThat(enriched.getIsJudiciaryFromCourtSchedule(), is(nullValue()));
+    }
+
+    private UpdateHearingForListing updateHearingForListing(final UUID courtScheduleId, final List<JudicialRole> judiciary) {
+        return UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(UUID.randomUUID())
+                .withJudiciary(judiciary)
+                .withHearingDays(List.of(HearingDay.hearingDay()
+                        .withCourtScheduleId(courtScheduleId)
+                        .withHearingDate(LocalDate.now())
+                        .build()))
+                .build();
+    }
+
+    private void givenListHearingInCourtSessionsResponse(final UUID courtScheduleId, final JsonArray judiciaries) {
+        final JsonObject listResponse = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("judiciaries", judiciaries)))
+                .build();
+        final ListUpdateHearing listUpdateHearing = new ListUpdateHearing();
+        listUpdateHearing.setCourtScheduleId(courtScheduleId.toString());
+        listUpdateHearing.setHearingStartTime(ZonedDateTime.now().toString());
+        listUpdateHearing.setDuration(60);
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(any())).thenReturn(JsonObjects.createArrayBuilder().build());
+        when(hearingSlotsService.listHearingInCourtSessions(any())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listResponse)).thenReturn(listResponse);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class))).thenReturn(listUpdateHearing);
     }
 
     // ─── CROWN needsCourtScheduleEnrichment tests ────────────────────────
