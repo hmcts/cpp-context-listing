@@ -86,6 +86,8 @@ class CourtScheduleEnrichmentServiceTest {
     private SlotsToJsonStringConverter slotsToJsonStringConverter;
     @Mock
     private uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
+    @Mock
+    private HearingLookupService hearingLookupService;
 
     @Test
     void searchAndBookShouldReturnBookedHearingSlots() {

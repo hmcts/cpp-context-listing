@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.command.api.service;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,6 +38,8 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 import java.util.UUID;
 
 import javax.json.JsonArrayBuilder;
@@ -85,10 +88,13 @@ class CrownUpdateWithoutCourtScheduleIdTest {
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
     @Mock
     private CourtCentreFactory courtCentreFactory;
+    @Mock
+    private HearingLookupService hearingLookupService;
 
     private final UUID hearingId = UUID.randomUUID();
     private final UUID courtCentreId = UUID.randomUUID();
     private final UUID courtRoomId = UUID.randomUUID();
+    private final UUID otherCourtRoomId = UUID.randomUUID();
     private final Map<LocalDate, UUID> sessionIds = Map.of(
             TUE, UUID.randomUUID(), WED, UUID.randomUUID(), THU, UUID.randomUUID(), FRI, UUID.randomUUID());
 
@@ -285,6 +291,130 @@ class CrownUpdateWithoutCourtScheduleIdTest {
                 contains(sessionIds.get(TUE), sessionIds.get(WED), sessionIds.get(THU)));
     }
 
+    // ─── option 1: an allocated block keeps its per-day courtrooms ─────────────
+
+    @Test
+    void resizesTheHeldBlockWithoutAnAnchorOrPreCheckAndKeepsPerDayCourtrooms() {
+        // Tue..Thu allocated in the main room with Wednesday moved to another room through
+        // change-court-room-for-multiday-hearing; the update extends the block to Friday.
+        givenConverters();
+        givenStoredHearing("CROWN", true, courtRoomId, roomsByDate(TUE, courtRoomId, WED, otherCourtRoomId, THU, courtRoomId));
+        givenBookedBlockInRooms(roomsByDate(TUE, courtRoomId, WED, otherCourtRoomId, THU, courtRoomId, FRI, courtRoomId));
+        givenListedInSessions();
+        final JsonEnvelope envelope = mock(JsonEnvelope.class);
+
+        final UpdateHearingForListing result = service.enrichWithCourtSchedules(spiUpdate(TUE, FRI, List.of()), envelope);
+
+        verify(hearingLookupService).findHearing(hearingId, envelope);
+        verify(hearingSlotsService, never()).search(anyMap());
+        final Map<String, String> booking = capture(Lookup.BOOK);
+        assertThat("no anchor (dropped from the request body)", booking.get("courtScheduleId"), nullValue());
+        assertThat(booking.get("hearingDate"), is(TUE.toString()));
+        assertThat(booking.get("endDate"), is(FRI.toString()));
+        assertThat(booking.get("durationInMinutes"), is("1440"));
+        assertThat(booking.get("courtRoomId"), is(courtRoomId.toString()));
+        assertThat(result.getHearingDays().stream().map(HearingDay::getHearingDate).toList(), contains(TUE, WED, THU, FRI));
+        assertThat(result.getHearingDays().stream().map(HearingDay::getCourtRoomId).toList(),
+                contains(courtRoomId, otherCourtRoomId, courtRoomId, courtRoomId));
+    }
+
+    @Test
+    void resizesTheHeldBlockWithoutLookingUpSessionsWhenTheWindowIsUnchanged() {
+        givenConverters();
+        givenStoredHearing("CROWN", true, courtRoomId, roomsByDate(TUE, otherCourtRoomId, WED, courtRoomId, THU, courtRoomId));
+        givenBookedBlockInRooms(roomsByDate(TUE, otherCourtRoomId, WED, courtRoomId, THU, courtRoomId));
+        givenListedInSessions();
+
+        final UpdateHearingForListing result = service.enrichWithCourtSchedules(spiUpdate(TUE, THU, List.of()), mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, never()).search(anyMap());
+        assertThat("no anchor", capture(Lookup.BOOK).get("courtScheduleId"), nullValue());
+        assertThat(result.getHearingDays().stream().map(HearingDay::getCourtRoomId).toList(),
+                contains(otherCourtRoomId, courtRoomId, courtRoomId));
+    }
+
+    @Test
+    void rejectsWith422WhenCourtschedulerReturnsNothingForTheHeldBlock() {
+        givenConverters();
+        givenStoredHearing("CROWN", true, courtRoomId, roomsByDate(TUE, courtRoomId, WED, courtRoomId));
+        givenBookedBlock();
+
+        final CrownMultiDayExtensionException rejection = assertThrows(CrownMultiDayExtensionException.class,
+                () -> service.enrichWithCourtSchedules(spiUpdate(TUE, THU, List.of()), mock(JsonEnvelope.class)));
+
+        assertThat(rejection.getUnavailableDates(), contains(TUE.toString(), WED.toString(), THU.toString()));
+        verify(hearingSlotsService, never()).search(anyMap());
+    }
+
+    @Test
+    void movesAnAllocatedMagistratesHearingIntoTheCrownRoomWithAnAnchor() {
+        // The SPI journey: the stored hearing is an allocated MAGISTRATES hearing in the same room id.
+        givenConverters();
+        givenStoredHearing("MAGISTRATES", true, courtRoomId, roomsByDate(TUE, courtRoomId));
+        givenFinalSessionsOn(TUE, WED, THU);
+        givenBookedBlock(TUE, WED, THU);
+        givenListedInSessions();
+
+        service.enrichWithCourtSchedules(spiUpdate(TUE, THU, List.of()), mock(JsonEnvelope.class));
+
+        assertThat(capture(Lookup.BOOK).get("courtScheduleId"), is(sessionIds.get(TUE).toString()));
+    }
+
+    @Test
+    void movesEveryDayToANewMainCourtroomWithAnAnchor() {
+        givenConverters();
+        givenStoredHearing("CROWN", true, otherCourtRoomId, roomsByDate(TUE, otherCourtRoomId, WED, otherCourtRoomId, THU, otherCourtRoomId));
+        givenFinalSessionsOn(TUE, WED, THU);
+        givenBookedBlock(TUE, WED, THU);
+        givenListedInSessions();
+
+        final UpdateHearingForListing result = service.enrichWithCourtSchedules(spiUpdate(TUE, THU, List.of()), mock(JsonEnvelope.class));
+
+        assertThat(capture(Lookup.SEARCH).get("courtRoomId"), is(courtRoomId.toString()));
+        assertThat(capture(Lookup.BOOK).get("courtScheduleId"), is(sessionIds.get(TUE).toString()));
+        result.getHearingDays().forEach(day -> assertThat(day.getCourtRoomId(), is(courtRoomId)));
+    }
+
+    @Test
+    void movesWithAnAnchorWhenTheUpdateChangesTheFirstDay() {
+        givenConverters();
+        givenStoredHearing("CROWN", true, courtRoomId, roomsByDate(WED, courtRoomId, THU, courtRoomId));
+        givenFinalSessionsOn(TUE, WED, THU);
+        givenBookedBlock(TUE, WED, THU);
+        givenListedInSessions();
+
+        service.enrichWithCourtSchedules(spiUpdate(TUE, THU, List.of()), mock(JsonEnvelope.class));
+
+        assertThat(capture(Lookup.SEARCH).get("sessionStartDate"), is(TUE.toString()));
+        assertThat(capture(Lookup.BOOK).get("courtScheduleId"), is(sessionIds.get(TUE).toString()));
+    }
+
+    @Test
+    void movesAnUnallocatedCrownHearingOntoFinalSessionsWithAnAnchor() {
+        givenConverters();
+        givenStoredHearing("CROWN", false, courtRoomId, roomsByDate(TUE, courtRoomId, WED, courtRoomId, THU, courtRoomId));
+        givenFinalSessionsOn(TUE, WED, THU);
+        givenBookedBlock(TUE, WED, THU);
+        givenListedInSessions();
+
+        service.enrichWithCourtSchedules(spiUpdate(TUE, THU, List.of()), mock(JsonEnvelope.class));
+
+        assertThat(capture(Lookup.BOOK).get("courtScheduleId"), is(sessionIds.get(TUE).toString()));
+    }
+
+    @Test
+    void booksAsANewBlockWhenTheViewstoreLookupFails() {
+        givenConverters();
+        when(hearingLookupService.findHearing(eq(hearingId), any())).thenThrow(new IllegalStateException("viewstore down"));
+        givenFinalSessionsOn(TUE, WED, THU);
+        givenBookedBlock(TUE, WED, THU);
+        givenListedInSessions();
+
+        service.enrichWithCourtSchedules(spiUpdate(TUE, THU, List.of()), mock(JsonEnvelope.class));
+
+        assertThat(capture(Lookup.BOOK).get("courtScheduleId"), is(sessionIds.get(TUE).toString()));
+    }
+
     // ─── fixtures ──────────────────────────────────────────────────────────────
 
     private enum Lookup { SEARCH, BOOK }
@@ -397,6 +527,47 @@ class CrownUpdateWithoutCourtScheduleIdTest {
         when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(response);
         when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
                 .thenReturn(JsonObjects.createArrayBuilder().build());
+    }
+
+    private static Map<LocalDate, UUID> roomsByDate(final Object... dateRoomPairs) {
+        final Map<LocalDate, UUID> rooms = new TreeMap<>();
+        for (int i = 0; i < dateRoomPairs.length; i += 2) {
+            rooms.put((LocalDate) dateRoomPairs[i], (UUID) dateRoomPairs[i + 1]);
+        }
+        return rooms;
+    }
+
+    /** The listing.search.hearing projection of the hearing as stored before the update. */
+    private void givenStoredHearing(final String jurisdiction, final boolean allocated, final UUID mainCourtRoomId,
+                                    final Map<LocalDate, UUID> heldRoomByDate) {
+        final JsonArrayBuilder days = JsonObjects.createArrayBuilder();
+        heldRoomByDate.forEach((date, room) -> days.add(JsonObjects.createObjectBuilder()
+                .add("hearingDate", date.toString())
+                .add("courtScheduleId", sessionIds.get(date).toString())
+                .add("courtCentreId", courtCentreId.toString())
+                .add("courtRoomId", room.toString())
+                .add("isCancelled", false)));
+        when(hearingLookupService.findHearing(eq(hearingId), any())).thenReturn(Optional.of(JsonObjects.createObjectBuilder()
+                .add("id", hearingId.toString())
+                .add("jurisdictionType", jurisdiction)
+                .add("allocated", allocated)
+                .add("courtCentreId", courtCentreId.toString())
+                .add("courtRoomId", mainCourtRoomId.toString())
+                .add("hearingDays", days)
+                .build()));
+    }
+
+    private void givenBookedBlockInRooms(final Map<LocalDate, UUID> roomByDate) {
+        final JsonArrayBuilder sessions = JsonObjects.createArrayBuilder();
+        roomByDate.forEach((date, room) -> sessions.add(JsonObjects.createObjectBuilder()
+                .add("courtScheduleId", sessionIds.get(date).toString())
+                .add("courtRoomId", room.toString())
+                .add("courtHouseId", courtCentreId.toString())
+                .add("sessionDate", date.toString())));
+        final Response response = mock(Response.class);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(JsonObjects.createObjectBuilder().add("sessions", sessions).build());
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(response);
     }
 
     private JsonObject sessionJson(final LocalDate date) {

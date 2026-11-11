@@ -51,9 +51,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -61,6 +63,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 import javax.ws.rs.core.Response;
 
 import org.apache.http.HttpStatus;
@@ -110,6 +113,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     private SlotsToJsonStringConverter slotsToJsonStringConverter;
     @Inject
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
+    @Inject
+    private HearingLookupService hearingLookupService;
 
     public HearingListingNeeds enrichWithCourtSchedules(final HearingListingNeeds hearingEnrichedWithDurations, final JsonEnvelope envelope) {
         return checkAndUpdateListingCourtScheduler(hearingEnrichedWithDurations, envelope);
@@ -892,11 +897,21 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
      * <ul>
      *   <li>startDate on a Saturday or Sunday: 422 NO_AVAILABILITY naming that date — a Crown hearing
      *       does not start at a weekend, and the date is not moved to the next weekday.</li>
-     *   <li>endDate after startDate: ONE anchored {@code crown.search.and.book} block over the window's
+     *   <li>endDate after startDate: ONE {@code crown.search.and.book} block over the window's
      *       weekdays. Weekend dates are skipped (never booked, no error); a non-sitting weekday is
-     *       booked and then dropped from the hearing, as on every other Crown block route. Every
-     *       weekday that must sit needs a FINAL Crown AD session in the courtroom, checked before
-     *       anything is booked — otherwise 422 NO_AVAILABILITY naming the missing dates.</li>
+     *       booked and then dropped from the hearing, as on every other Crown block route.
+     *       <ul>
+     *         <li>The hearing is an allocated CROWN block in the same centre and main courtroom and
+     *             the update keeps its first day: a resize in place. No anchor is sent, so
+     *             courtscheduler extends or shrinks the block it holds; untouched days keep their
+     *             sessions and per-day courtrooms (rooms changed through
+     *             change-court-room-for-multiday-hearing survive), and a new tail day with no
+     *             session is courtscheduler's 422 NO_AVAILABILITY.</li>
+     *         <li>Otherwise a fresh booking or a move into the main courtroom, anchored on its FINAL
+     *             session on startDate. Every weekday that must sit needs a FINAL Crown AD session
+     *             in the courtroom, checked before anything is booked — otherwise 422
+     *             NO_AVAILABILITY naming the missing dates.</li>
+     *       </ul></li>
      *   <li>otherwise (single day): the Crown single-day search-and-book; courtscheduler re-books
      *       (MOVE) a hearing that already holds a booking, and answers 422 when nothing is bookable.
      *       No bookable session for a hearing that holds none: the hearing proceeds unallocated.</li>
@@ -946,6 +961,28 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 .filter(day -> !nonSittingDays.contains(day))
                 .toList();
         final String courtRoomId = hearing.getCourtRoomId().toString();
+        final int bookingMinutes = windowWeekdays.size() * HearingDurationEnrichmentService.MINUTES_IN_DAY;
+        final String earliestHearingTime = userStartTimeOn(hearing, startDate);
+
+        final NavigableMap<LocalDate, String> heldSessionIdByDate = heldCrownSessionsWhenMainRoomUnchanged(hearing, envelope);
+        if (!heldSessionIdByDate.isEmpty() && startDate.equals(heldSessionIdByDate.firstKey())) {
+            // A resize of the block the hearing holds. No anchor: an anchor read from the viewstore
+            // can name a session a just-made room change has already released, and courtscheduler
+            // takes an anchor it does not hold as a MOVE that rebooks every day in that session's
+            // room. Without one it resizes in place whenever the block still starts on startDate,
+            // and checks the availability of the new tail days itself.
+            LOGGER.info("[CROWN-NOID] block: hearingId {} holds {} day(s) {}..{} with main courtroom {}; resize in place to {}..{} = {} minutes, no anchor, earliestHearingTime {}",
+                    hearingId, heldSessionIdByDate.size(), heldSessionIdByDate.firstKey(), heldSessionIdByDate.lastKey(),
+                    courtRoomId, startDate, lastWeekday, bookingMinutes, earliestHearingTime);
+            final List<CourtSchedule> resizedSessions = multiDaySearchAndBook(null, bookingMinutes, hearingId.toString(),
+                    hearing.getCourtCentreId().toString(), startDate.toString(), lastWeekday.toString(),
+                    courtRoomId, earliestHearingTime);
+            if (isEmpty(resizedSessions)) {
+                throw crownNoAvailability(hearingId, mustSitWeekdays,
+                        "courtscheduler returned no sessions for the block hearing " + hearingId + " holds");
+            }
+            return toUpdateFromBookedBlock(hearing, startDate, nonSittingDays, resizedSessions);
+        }
 
         final String ouCode = resolveOuCode(hearing, envelope);
         if (isBlank(ouCode)) {
@@ -974,8 +1011,6 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
         // Every weekday of the window is booked (a non-sitting weekday too — it is dropped from the
         // hearing below and never pays its slot back); weekend dates are not part of the block.
-        final int bookingMinutes = windowWeekdays.size() * HearingDurationEnrichmentService.MINUTES_IN_DAY;
-        final String earliestHearingTime = userStartTimeOn(hearing, startDate);
         LOGGER.info("[CROWN-NOID] block: hearingId {} anchor {} on {}, {} weekday(s) {}..{} = {} minutes, courtRoomId {}, earliestHearingTime {}",
                 hearingId, finalSessionIdByDate.get(startDate), startDate, windowWeekdays.size(), startDate, lastWeekday,
                 bookingMinutes, courtRoomId, earliestHearingTime);
@@ -996,7 +1031,15 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             throw crownNoAvailability(hearingId, mustSitWeekdays,
                     "courtscheduler found no consecutive Crown run in courtroom " + courtRoomId);
         }
+        return toUpdateFromBookedBlock(hearing, startDate, nonSittingDays, bookedSessions);
+    }
 
+    /** The update carrying one hearing day per sitting session of the booked block, each in its session's courtroom. */
+    private UpdateHearingForListing toUpdateFromBookedBlock(final UpdateHearingForListing hearing,
+                                                           final LocalDate startDate,
+                                                           final List<LocalDate> nonSittingDays,
+                                                           final List<CourtSchedule> bookedSessions) {
+        final UUID hearingId = hearing.getHearingId();
         final LocalDate bookedBlockStartDate = bookedSessions.stream()
                 .map(CourtSchedule::getSessionDate)
                 .filter(Objects::nonNull)
@@ -1044,6 +1087,54 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         LOGGER.info("[CROWN-NOID] block: hearingId {} booked {} sitting day(s): {}", hearingId, enrichedHearingDays.size(),
                 enrichedHearingDays.stream().map(HearingDay::getHearingDate).toList());
         return hearingBuilder.build();
+    }
+
+    /**
+     * The sessions the hearing holds, keyed by date, read from the listing viewstore — only when the
+     * stored hearing is an allocated CROWN hearing whose court centre and main courtroom the update
+     * keeps. Empty otherwise: no envelope, hearing not found or lookup failure, another jurisdiction
+     * (the SPI journey starts from a MAGISTRATES hearing), unallocated (a draft block is moved onto
+     * FINAL sessions, not resized), or a new centre or main courtroom (that moves every day).
+     */
+    private NavigableMap<LocalDate, String> heldCrownSessionsWhenMainRoomUnchanged(final UpdateHearingForListing hearing,
+                                                                                   final JsonEnvelope envelope) {
+        final NavigableMap<LocalDate, String> heldSessionIdByDate = new TreeMap<>();
+        if (isNull(envelope) || isNull(hearing.getHearingId())) {
+            return heldSessionIdByDate;
+        }
+        final Optional<JsonObject> storedHearing;
+        try {
+            storedHearing = hearingLookupService.findHearing(hearing.getHearingId(), envelope);
+        } catch (final RuntimeException e) {
+            LOGGER.warn("[CROWN-NOID] viewstore lookup of hearingId {} failed; booking as a new block: {}",
+                    hearing.getHearingId(), e.getMessage());
+            return heldSessionIdByDate;
+        }
+        if (storedHearing.isEmpty()) {
+            return heldSessionIdByDate;
+        }
+        final JsonObject stored = storedHearing.get();
+        final boolean sameBlockOwner = "CROWN".equals(stored.getString("jurisdictionType", null))
+                && stored.getBoolean("allocated", false)
+                && hearing.getCourtCentreId().toString().equals(stored.getString(COURT_CENTRE_ID, null))
+                && hearing.getCourtRoomId().toString().equals(stored.getString(COURT_ROOM_ID, null));
+        final JsonArray storedDays = stored.containsKey("hearingDays") && !stored.isNull("hearingDays")
+                ? stored.getJsonArray("hearingDays") : null;
+        if (!sameBlockOwner || storedDays == null) {
+            return heldSessionIdByDate;
+        }
+        for (final JsonValue value : storedDays) {
+            if (value.getValueType() != JsonValue.ValueType.OBJECT) {
+                continue;
+            }
+            final JsonObject day = (JsonObject) value;
+            final String rawDate = day.getString(HEARING_DATE, null);
+            final String courtScheduleId = day.getString(COURT_SCHEDULE_ID, null);
+            if (rawDate != null && !isBlank(courtScheduleId) && !day.getBoolean("isCancelled", false)) {
+                heldSessionIdByDate.put(LocalDate.parse(rawDate.length() > 10 ? rawDate.substring(0, 10) : rawDate), courtScheduleId);
+            }
+        }
+        return heldSessionIdByDate;
     }
 
     /**
