@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
+import uk.gov.moj.cpp.listing.common.xhibit.CourtRoomNumbers;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.CourtHouseStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.FirmCourtListStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.FirmListStructure;
@@ -92,7 +93,7 @@ public class FirmListMapper extends AbstractCourtListMapper {
                 } else {
                     sittingList.getSitting().add(courtServicesMapper.generateSittingStructure(sitting, 1));
                 }
-                sittingList.getSitting().sort(Comparator.comparing(SittingStructure::getCourtRoomNumber));
+                sittingList.getSitting().sort(Comparator.comparingInt((SittingStructure sittingStructure) -> CourtRoomNumbers.sortKey(sittingStructure.getCourtRoomNumber())));
 
 
                 buildFirmCourtListStructureAndReserveList(firmCourtListStructureSittingMap, sitting, sittingList, firmCourtListStructure, sittingDate);
@@ -139,7 +140,7 @@ public class FirmListMapper extends AbstractCourtListMapper {
             firmCourtListStructureSittingMap.put(key, firmCourtListStructure);
         }
         if (!addedToReserveList) {
-            firmCourtListStructureSittingMap.get(key).getSittings().getSitting().sort(Comparator.comparing(SittingStructure::getCourtRoomNumber));
+            firmCourtListStructureSittingMap.get(key).getSittings().getSitting().sort(Comparator.comparingInt((SittingStructure sittingStructure) -> CourtRoomNumbers.sortKey(sittingStructure.getCourtRoomNumber())));
         }
         if (firmCourtListStructureSittingMap.get(key).getSittings() == null) {
             final FirmCourtListStructure.Sittings firmCourtListStructureSittings = objectFactory.createFirmCourtListStructureSittings();

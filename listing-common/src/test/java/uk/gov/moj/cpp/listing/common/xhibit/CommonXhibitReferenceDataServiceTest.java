@@ -246,6 +246,17 @@ public class CommonXhibitReferenceDataServiceTest {
     }
 
     @Test
+    public void shouldTreatCourtRoomWhoseCrestNameDoesNotEndInNumberAsUnmapped() {
+        final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
+
+        when(referenceDataCache.getCourtRoomMappingByCourtCentreAndCourtRoom(courtCentreId, courtRoomId))
+                .thenReturn(Optional.of(new CourtRoomMapping.Builder().withCrestCourtRoomName("Court 1A").build()));
+
+        assertEquals(CourtRoomNumbers.UNMAPPED_COURT_ROOM_NUMBER, commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, courtRoomId));
+    }
+
+    @Test
     public void shouldGetXhibitHearingType() {
         final UUID cppHearingTypeId = randomUUID();
 

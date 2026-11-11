@@ -1,0 +1,60 @@
+{
+  "cpXhibitCourtRoomMappings": [
+    {
+      "id": "6e2f1602-0000-4000-8000-000000000000",
+      "courtRoomUUID": "f9f15b42-6594-38c5-a245-22d752a1e2c5",
+      "oucode": "C30DE00",
+      "courtRoomId": 1602,
+      "crestCourtId": "419",
+      "crestCourtSiteId": "169",
+      "crestCourtSiteCode": "A",
+      "crestCourtRoomName": "Court 2",
+      "courtType": "CROWN_COURT",
+      "crestCourtSiteName": "DERBY",
+      "crestCourtShortName": "DERBY",
+      "crestCourtFullName": "DERBY"
+    },
+    {
+      "id": "6e2f1610-0000-4000-8000-000000000000",
+      "courtRoomUUID": "3d6a1c52-9f4e-4b0a-8a6e-1b2c3d4e5f10",
+      "oucode": "C30DE00",
+      "courtRoomId": 1610,
+      "crestCourtId": "419",
+      "crestCourtSiteId": "169",
+      "crestCourtSiteCode": "A",
+      "crestCourtRoomName": "Court 10",
+      "courtType": "CROWN_COURT",
+      "crestCourtSiteName": "DERBY",
+      "crestCourtShortName": "DERBY",
+      "crestCourtFullName": "DERBY"
+    },
+    {
+      "id": "6e2f1624-0000-4000-8000-000000000000",
+      "courtRoomUUID": "02529e93-35cf-3fc3-8406-d306c5b6bd0c",
+      "oucode": "C30DE00",
+      "courtRoomId": 1624,
+      "crestCourtId": "419",
+      "crestCourtSiteId": "6439",
+      "crestCourtSiteCode": "B",
+      "crestCourtRoomName": "Court 3",
+      "courtType": "CROWN_COURT",
+      "crestCourtSiteName": "MANSFIELD MAGISTRATES' COURT",
+      "crestCourtShortName": "DERBY",
+      "crestCourtFullName": "DERBY"
+    },
+    {
+      "id": "6e2f1631-0000-4000-8000-000000000000",
+      "courtRoomUUID": "7c1e5a90-2b3d-4e6f-9a8b-0c1d2e3f4a51",
+      "oucode": "C30DE00",
+      "courtRoomId": 1631,
+      "crestCourtId": "419",
+      "crestCourtSiteId": "6440",
+      "crestCourtSiteCode": "C",
+      "crestCourtRoomName": "Court 1",
+      "courtType": "CROWN_COURT",
+      "crestCourtSiteName": "Chesterfield Justice Centre",
+      "crestCourtShortName": "DERBY",
+      "crestCourtFullName": "DERBY"
+    }
+  ]
+}
