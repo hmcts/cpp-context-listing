@@ -276,6 +276,33 @@ public class CourtSchedulerServiceStub {
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
     }
 
+    /**
+     * SPRDT-1539: the single-day crown.search.and.book answer for ONE hearing, booking the given
+     * session in the given room on the given date. Path-scoped to the hearingId so it cannot leak
+     * into other ITs. A CROWN list payload with a courtroom and no courtScheduleId (a standalone
+     * application listed at a Crown centre) books through this call.
+     */
+    public static void stubCrownFallbackSearchAndBookForHearing(final String hearingId,
+                                                                final String courtScheduleId,
+                                                                final UUID courtRoomId,
+                                                                final LocalDate sessionDate,
+                                                                final ZonedDateTime sessionStartTime) {
+        final String body = format(
+                "{\"hearingId\":\"%s\",\"courtScheduleId\":\"%s\",\"courtRoomId\":\"%s\"," +
+                        "\"sessionDate\":\"%s\",\"sessionStartTime\":\"%s\",\"sessionEndTime\":\"%s\"," +
+                        "\"durationInMinutes\":360,\"isDraft\":false,\"businessType\":\"CR\"," +
+                        "\"source\":\"CROWN_FB_LIST\",\"overbooked\":false,\"sessions\":[]}",
+                hearingId, courtScheduleId, courtRoomId, sessionDate,
+                sessionStartTime.withZoneSameInstant(java.time.ZoneOffset.UTC).toInstant(),
+                sessionDate + "T16:30:00Z");
+        stubFor(post(urlPathMatching(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId))
+                .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                .atPriority(1)
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(body)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
     /** Stub 404 "no session found" on POST /hearings/{id} (crown.search.and.book, single-day)
      * — listing-side translates to CrownFallbackNoSessionException. */
     public static void stubCrownFallbackSearchAndBookNotFound() {
@@ -542,6 +569,96 @@ public class CourtSchedulerServiceStub {
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(body.toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    /** One session of a stubbed crown.search.and.book block answer: its own date and courtroom. */
+    public record CrownBlockStubSession(String courtScheduleId, UUID courtRoomId, LocalDate sessionDate) {
+    }
+
+    /**
+     * SPRDT-1539: the crown.search.and.book block answer for ONE hearing, each session on its own
+     * date and in its own courtroom — the shape of a resize that keeps per-day rooms, and of a block
+     * that skips a weekend. Paired with {@link #stubListHearingInCourtSessionsForSessions}.
+     */
+    public static void stubCrownBlockSearchAndBookForHearing(final String hearingId,
+                                                             final UUID courtHouseId,
+                                                             final List<CrownBlockStubSession> sessions,
+                                                             final LocalTime londonStartTime) {
+        final StringBuilder body = new StringBuilder("{\"sessions\":[");
+        for (int i = 0; i < sessions.size(); i++) {
+            if (i > 0) {
+                body.append(",");
+            }
+            final CrownBlockStubSession session = sessions.get(i);
+            body.append("{")
+                    .append("\"courtScheduleId\":\"").append(session.courtScheduleId()).append("\",")
+                    .append("\"courtHouseId\":\"").append(courtHouseId).append("\",")
+                    .append("\"courtRoomId\":\"").append(session.courtRoomId()).append("\",")
+                    .append("\"sessionDate\":\"").append(session.sessionDate()).append("\",")
+                    .append("\"hearingStartTime\":\"").append(ItClock.utc(session.sessionDate(), londonStartTime)).append("\",")
+                    .append("\"isDraft\":false")
+                    .append("}");
+        }
+        body.append("]}");
+        stubFor(post(urlPathMatching(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId))
+                .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                .atPriority(1)
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(body.toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    /** list.hearings-in-sessions for ONE hearing: one entry per session, at its own date's start time. */
+    public static void stubListHearingInCourtSessionsForSessions(final String hearingId,
+                                                                 final List<CrownBlockStubSession> sessions,
+                                                                 final LocalTime londonStartTime,
+                                                                 final int duration) {
+        final StringBuilder hearings = new StringBuilder("{\"hearings\":[");
+        for (int i = 0; i < sessions.size(); i++) {
+            if (i > 0) {
+                hearings.append(",");
+            }
+            final CrownBlockStubSession session = sessions.get(i);
+            hearings.append("{")
+                    .append("\"hearingId\":\"").append(hearingId).append("\",")
+                    .append("\"courtScheduleId\":\"").append(session.courtScheduleId()).append("\",")
+                    .append("\"hearingStartTime\":\"").append(ItClock.utc(session.sessionDate(), londonStartTime)).append("\",")
+                    .append("\"duration\":").append(duration)
+                    .append("}");
+        }
+        hearings.append("]}");
+        stubFor(WireMock.post(WireMock.urlPathEqualTo(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH))
+                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
+                .withRequestBody(containing(hearingId))
+                .atPriority(1)
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(hearings.toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    /** SPRDT-1539: crown.search.and.book was called for the hearing with no anchor courtScheduleId and the given window. */
+    public static void verifyCrownBlockSearchAndBookCalledWithoutAnchorForHearing(final String hearingId, final LocalDate hearingDate,
+                                                                                  final LocalDate endDate, final int durationInMinutes) {
+        Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
+            try {
+                WireMock.verify(WireMock.postRequestedFor(urlPathMatching(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId))
+                        .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                        .withRequestBody(WireMock.notMatching(".*\"courtScheduleId\".*"))
+                        .withRequestBody(matchingJsonPath("$.hearingDate", WireMock.equalTo(hearingDate.toString())))
+                        .withRequestBody(matchingJsonPath("$.endDate", WireMock.equalTo(endDate.toString())))
+                        .withRequestBody(matchingJsonPath("$.durationInMinutes", WireMock.equalTo(String.valueOf(durationInMinutes)))));
+                return true;
+            } catch (VerificationException e) {
+                return false;
+            }
+        });
+    }
+
+    /** SPRDT-1539: no FINAL-session lookup (GET /hearingslots?status=FINAL) was made for the courtroom. */
+    public static void verifyFinalCrownSessionLookupNeverMadeForCourtRoom(final UUID courtRoomId) {
+        WireMock.verify(0, WireMock.getRequestedFor(WireMock.urlPathEqualTo(COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS))
+                .withQueryParam("courtRoomId", WireMock.equalTo(courtRoomId.toString()))
+                .withQueryParam("status", WireMock.equalTo("FINAL")));
     }
 
     /** SPRDT-1539 regression guard: a CROWN update never posts the MAGS search-and-book for the hearing. */

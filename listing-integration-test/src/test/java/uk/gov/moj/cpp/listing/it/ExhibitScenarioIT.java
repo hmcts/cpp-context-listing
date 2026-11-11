@@ -10,6 +10,7 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STR
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.buildPublishCourtListCommandPayload;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataForWeekCommencing;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDateWithParameters;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCrownFallbackSearchAndBookForHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
@@ -756,6 +757,8 @@ class ExhibitScenarioIT extends AbstractIT {
         // Setup listing steps and stubs
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(standaloneApplicationData);
         stubProvisionalBooking(crownCourtCentreId, crownCourtRoomUUID, courtScheduleId, hearingDate, hearingStartTime);
+        // SPRDT-1539: the CROWN list payload books through the single-day crown.search.and.book.
+        stubCrownFallbackSearchAndBookForHearing(standaloneHearing.getId().toString(), courtScheduleId, crownCourtRoomUUID, hearingDate, hearingStartTime);
         stubListHearingInCourtSessions(standaloneHearing.getId().toString(), courtScheduleId, hearingStartTime);
         
         // Submit standalone application for listing
@@ -818,6 +821,8 @@ class ExhibitScenarioIT extends AbstractIT {
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(applicationWithoutOffencesData);
         stubProvisionalBooking(crownCourtCentreId, crownCourtRoomUUID, courtScheduleId, hearingDate, hearingStartTime);
+        // SPRDT-1539: the CROWN list payload books through the single-day crown.search.and.book.
+        stubCrownFallbackSearchAndBookForHearing(applicationHearing.getId().toString(), courtScheduleId, crownCourtRoomUUID, hearingDate, hearingStartTime);
         stubListHearingInCourtSessions(applicationHearing.getId().toString(), courtScheduleId, hearingStartTime);
 
         listCourtHearingSteps.whenCaseIsSubmittedForListingStandaloneApplication();

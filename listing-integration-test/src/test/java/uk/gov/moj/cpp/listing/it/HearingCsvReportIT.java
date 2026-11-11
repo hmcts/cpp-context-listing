@@ -16,6 +16,9 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STR
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingDataWithJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.randomJudicialRole;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCrownBlockSearchAndBookForHearing;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubFinalCrownAdSessionsInCourtRoom;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForSessions;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
@@ -32,12 +35,18 @@ import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.it.util.ItClock;
+import uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.CrownBlockStubSession;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -62,7 +71,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class HearingCsvReportIT extends AbstractIT {
 
     private static final String LISTING_QUERY_DOWNLOAD_CSV_REPORT = "listing.query.download-hearing-csv-report";
+    private static final LocalTime COURT_START_TIME = LocalTime.of(10, 30);
     private HearingsData data;
+    private LocalDate blockStartDate;
 
     @BeforeEach
     public void initialize() {
@@ -93,18 +104,36 @@ public class HearingCsvReportIT extends AbstractIT {
         stubGetReferenceDataXhibitCourtRoomMappings(data.getHearingData().get(0).getCourtRoomId());
 
         var first  = data.getHearingData().get(0);
+        // A CROWN hearing over four court days. Crown courts do not sit at weekends, so the window
+        // starts on a working day and spans four of them (SPRDT-1539: a weekend start is rejected,
+        // and the block holds weekdays only). The update carries no courtScheduleId, so listing
+        // books it through crown.search.and.book — stubbed here with one session per weekday.
+        blockStartDate = ItClock.nextWorkingDay();
+        final LocalDate blockEndDate = ItClock.plusWorkingDays(blockStartDate, 3);
+        final List<CrownBlockStubSession> sessions = new ArrayList<>();
+        final Map<LocalDate, String> finalSessionIdByDate = new LinkedHashMap<>();
+        for (LocalDate day = blockStartDate; !day.isAfter(blockEndDate); day = day.plusDays(1)) {
+            if (!isWeekend(day)) {
+                final String courtScheduleId = UUID.randomUUID().toString();
+                sessions.add(new CrownBlockStubSession(courtScheduleId, first.getCourtRoomId(), day));
+                finalSessionIdByDate.put(day, courtScheduleId);
+            }
+        }
+        stubFinalCrownAdSessionsInCourtRoom(first.getCourtRoomId(), first.getCourtCentreId(), finalSessionIdByDate);
+        stubCrownBlockSearchAndBookForHearing(first.getId().toString(), first.getCourtCentreId(), sessions, COURT_START_TIME);
+        stubListHearingInCourtSessionsForSessions(first.getId().toString(), sessions, COURT_START_TIME, 360);
         // The update below replaces the hearing's judiciary with a fresh random judge — that is
         // the id the CSV report will resolve, so it needs its own judiciaries stub.
         var updatedJudicialRole = randomJudicialRole("DISTRICT_JUDGE");
         stubGetReferenceDataJudiciaries(updatedJudicialRole.getJudicialId());
-        var updatedHearingDataWithoutNonDefaultDaysShouldPreservePrevRoomChange = new uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData(
+        var updatedHearingDataOverFourCourtDays = new uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData(
                 first.getId(),
                 first.getCourtCentreId(),
                 first.getName(),
                 first.getCourtRoomId(),
                 first.getHearingTypeData(),
-                first.getHearingStartDate().toString(),
-                first.getHearingEndDate().plusDays(3).toString(),
+                blockStartDate.toString(),
+                blockEndDate.toString(),
                 emptyList(),
                 emptyList(),
                 "ENGLISH",
@@ -123,9 +152,9 @@ public class HearingCsvReportIT extends AbstractIT {
         );
 
 
-        final UpdateHearingSteps updateHearingStepsWithoutNonDefaultDaysShouldPreservePrevRoomChange = new UpdateHearingSteps(data, updatedHearingDataWithoutNonDefaultDaysShouldPreservePrevRoomChange);
-        updateHearingStepsWithoutNonDefaultDaysShouldPreservePrevRoomChange.whenHearingIsUpdatedForListing();
-        updateHearingStepsWithoutNonDefaultDaysShouldPreservePrevRoomChange.verifyHearingUpdatedWhenQueryingFromAPICourtCalendar();
+        final UpdateHearingSteps updateHearingStepsOverFourCourtDays = new UpdateHearingSteps(data, updatedHearingDataOverFourCourtDays);
+        updateHearingStepsOverFourCourtDays.whenHearingIsUpdatedForListing();
+        updateHearingStepsOverFourCourtDays.verifyHearingUpdatedWhenQueryingFromAPICourtCalendar();
 
     }
 
@@ -186,11 +215,15 @@ public class HearingCsvReportIT extends AbstractIT {
         assertThat(csvContent, containsString("RestrictionApplied"));
         assertThat(csvContent, containsString("C - Description"));
         assertThat(csvContent, Matchers.stringContainsInOrder("1 of 4","2 of 4","3 of 4","4 of 4"));
-        final LocalTime utcTime = ZonedDateTime.of(ItClock.today(), LocalTime.of(10, 30), ZoneId.of("Europe/London"))
+        final LocalTime utcTime = ZonedDateTime.of(blockStartDate, COURT_START_TIME, ZoneId.of("Europe/London"))
                 .withZoneSameInstant(ZoneOffset.UTC).toLocalTime();
         final String expectedUtcTime = String.format("T%02d:%02d:00Z", utcTime.getHour(), utcTime.getMinute());
         assertThat(csvContent, Matchers.stringContainsInOrder(expectedUtcTime));
 
+    }
+
+    private static boolean isWeekend(final LocalDate date) {
+        return date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY;
     }
 
     private String getDownloadUrl(final UUID courtCentreId, final LocalDate startDate, final int numberOfWeeks){
