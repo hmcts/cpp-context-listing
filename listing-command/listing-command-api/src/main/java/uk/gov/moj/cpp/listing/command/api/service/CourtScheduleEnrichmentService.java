@@ -1337,7 +1337,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     /**
      * Per-day rooms are not honoured on this route: a nonDefaultDay naming a room other than the
      * command's courtroom is booked in the command's courtroom (per-day rooms go through
-     * change-court-room-for-multiday-hearing).
+     * change-court-room-for-multiday-hearing). Room identity is the UUID {@code roomId}; the
+     * nonDefaultDay's {@code courtRoomId} is the legacy integer room number and is not compared.
      */
     private static void warnOnNonDefaultDayRoomsOutsideMainRoom(final UpdateHearingForListing hearing) {
         if (isEmpty(hearing.getNonDefaultDays()) || isNull(hearing.getCourtRoomId())) {
@@ -1345,11 +1346,9 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         }
         final String mainRoom = hearing.getCourtRoomId().toString();
         hearing.getNonDefaultDays().stream()
-                .filter(nd -> (!isBlank(nd.getRoomId()) && !mainRoom.equals(nd.getRoomId()))
-                        || (nonNull(nd.getCourtRoomId()) && !mainRoom.equals(nd.getCourtRoomId().toString())))
+                .filter(nd -> !isBlank(nd.getRoomId()) && !mainRoom.equalsIgnoreCase(nd.getRoomId()))
                 .forEach(nd -> LOGGER.warn("[CROWN-NOID] hearingId {}: nonDefaultDay {} names courtroom {} but the update books courtroom {}",
-                        hearing.getHearingId(), nd.getStartTime(),
-                        !isBlank(nd.getRoomId()) ? nd.getRoomId() : nd.getCourtRoomId(), mainRoom));
+                        hearing.getHearingId(), nd.getStartTime(), nd.getRoomId(), mainRoom));
     }
 
     private static CrownMultiDayExtensionException crownNoAvailability(final UUID hearingId, final List<LocalDate> dates,
