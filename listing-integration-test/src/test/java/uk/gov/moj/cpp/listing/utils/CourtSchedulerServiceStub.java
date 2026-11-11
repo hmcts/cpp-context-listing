@@ -474,6 +474,44 @@ public class CourtSchedulerServiceStub {
                 ));
     }
 
+    /**
+     * Stub the GET /hearingslots search made by listing.search.judiciary (CHD-3323) to return one
+     * session for the given courtScheduleId. Scoped by courtRoomId and sessionStartDate so it never
+     * answers other tests (WireMock stubs persist across IT classes in a suite).
+     */
+    public static void stubJudiciarySearchHearingSlots(final String courtRoomId,
+                                                       final String sessionDate,
+                                                       final String courtScheduleId,
+                                                       final String courtSession) {
+        final String body = "{\"hearingSlots\":[{\"courtScheduleId\":\"" + courtScheduleId + "\"," +
+                "\"courtSession\":\"" + courtSession + "\",\"judiciaries\":[]}]}";
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
+                .withQueryParam("courtRoomId", matching(courtRoomId))
+                .withQueryParam("sessionStartDate", matching(sessionDate))
+                .withQueryParam("showOverbookedSlots", matching("true"))
+                .withHeader("Accept", containing(COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(body)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    /**
+     * Stub the GET /hearingslots search made by listing.search.judiciary to fail, so the query
+     * falls back to placing judiciary by hearing start time.
+     */
+    public static void stubJudiciarySearchHearingSlotsServerError(final String courtRoomId, final String sessionDate) {
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
+                .withQueryParam("courtRoomId", matching(courtRoomId))
+                .withQueryParam("sessionStartDate", matching(sessionDate))
+                .withQueryParam("showOverbookedSlots", matching("true"))
+                .withHeader("Accept", containing(COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
+                .willReturn(aResponse().withStatus(500)
+                        .withBody("internal server error")
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
     public static void stubGetAvailableHearingSlots(boolean isEmpty) {
         stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
                 .withQueryParam("sessionStartDate", matching("2017-10-11"))

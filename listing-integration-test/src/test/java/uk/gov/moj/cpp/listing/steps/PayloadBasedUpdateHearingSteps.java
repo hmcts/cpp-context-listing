@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.steps;
 
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasNoJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
@@ -8,6 +9,7 @@ import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -36,6 +38,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -285,14 +288,41 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
             throw new IllegalStateException("No payload values available. Call a 'when' method first.");
         }
 
+        // no courtScheduleId resolved by Court Scheduler and a 10:00 UK start time, so placed in AM by start time
+        final String courtRoomId = payloadValues.courtRoomId;
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                MessageFormat.format(readConfig().getProperty("listing.search.judiciary"), payloadValues.courtCentreId, payloadValues.courtRoomId, payloadValues.hearingDate));
+                MessageFormat.format(readConfig().getProperty("listing.search.judiciary"), payloadValues.courtCentreId, courtRoomId, payloadValues.hearingDate));
 
         pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_JUDICIARY_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(
-                                withJsonPath("$.judicialIds", hasItem(payloadValues.judicialId))
+                                withJsonPath("$.courtHouseId", is(payloadValues.courtCentreId)),
+                                withJsonPath("$.courtRoomId", is(courtRoomId)),
+                                withJsonPath("$.courtSessionDate", is(payloadValues.hearingDate)),
+                                withJsonPath("$.amCourtSession.judiciaries", hasItem(payloadValues.judicialId))
+                        ))
+                );
+    }
+
+    /**
+     * Verify listing.search.judiciary places all the given judicial ids in one court session only.
+     */
+    public void verifyJudiciarySearchInCourtSession(final String courtCentreId, final String courtRoomId, final String searchDate,
+                                                    final String courtSession, final String absentCourtSession,
+                                                    final List<String> judicialIds) {
+        final String searchJudiciaryUrl = String.format("%s/%s", getBaseUri(),
+                MessageFormat.format(readConfig().getProperty("listing.search.judiciary"), courtCentreId, courtRoomId, searchDate));
+
+        pollWithDefaults(requestParams(searchJudiciaryUrl, MEDIA_TYPE_SEARCH_JUDICIARY_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.courtHouseId", is(courtCentreId)),
+                                withJsonPath("$.courtRoomId", is(courtRoomId)),
+                                withJsonPath("$.courtSessionDate", is(searchDate)),
+                                withJsonPath("$." + courtSession + ".judiciaries", containsInAnyOrder(judicialIds.toArray())),
+                                hasNoJsonPath("$." + absentCourtSession)
                         ))
                 );
     }

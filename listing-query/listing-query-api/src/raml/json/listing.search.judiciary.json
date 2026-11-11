@@ -1,6 +1,17 @@
 {
-  "judicialIds": [
-    "c8430232-24db-3fc4-8026-934e160fbc20",
-    "c7c3d1db-aad1-31ad-b53d-7b9670080def"
-  ]
+  "courtHouseId": "11111111-1111-4111-8111-111111111111",
+  "courtRoomId": "22222222-2222-4222-8222-222222222222",
+  "courtSessionDate": "2026-11-11",
+  "amCourtSession": {
+    "judiciaries": [
+      "aaaaaaaa-0000-4000-8000-000000000001",
+      "aaaaaaaa-0000-4000-8000-000000000002"
+    ]
+  },
+  "pmCourtSession": {
+    "judiciaries": [
+      "aaaaaaaa-0000-4000-8000-000000000001",
+      "aaaaaaaa-0000-4000-8000-000000000003"
+    ]
+  }
 }

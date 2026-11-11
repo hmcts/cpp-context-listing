@@ -45,6 +45,7 @@ import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.entity.query.CaseByDefendant;
+import uk.gov.moj.cpp.listing.persistence.entity.query.JudiciaryHearingDay;
 import uk.gov.moj.cpp.listing.persistence.repository.CaseByDefendantRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtApplicationRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
@@ -63,6 +64,8 @@ import uk.gov.moj.cpp.listing.query.view.hearing.ApplicationTypeFilter;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
 import uk.gov.moj.cpp.listing.query.view.service.JsonNodeReader;
+import uk.gov.moj.cpp.listing.query.view.service.JudiciarySessionService;
+import uk.gov.moj.cpp.listing.query.view.service.JudiciarySessionService.JudiciarySessions;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 import uk.gov.moj.cpp.listing.query.view.service.csv.HearingCsvReportService;
 
@@ -143,6 +146,12 @@ public class HearingQueryView {
     private static final String URN = "urn";
     private static final String WOFD_HEARING_TYPE_ID = "638ced9d-3f95-4e99-b27b-47fa5a2c6add";
     private static final String PCB_HEARING_TYPE_ID = "3a2d160f-363b-4360-96e1-0007a400a64c";
+    private static final String OU_CODE = "ouCode";
+    private static final String COURT_HOUSE_ID = "courtHouseId";
+    private static final String COURT_SESSION_DATE = "courtSessionDate";
+    private static final String AM_COURT_SESSION = "amCourtSession";
+    private static final String PM_COURT_SESSION = "pmCourtSession";
+    private static final String JUDICIARIES = "judiciaries";
 
 
     @Inject
@@ -194,6 +203,9 @@ public class HearingQueryView {
 
     @Inject
     private HearingCsvReportService hearingCsvReportService;
+
+    @Inject
+    private JudiciarySessionService judiciarySessionService;
 
     public static final String TYPE = "type";
 
@@ -829,19 +841,37 @@ public class HearingQueryView {
 
     @Handles("listing.search.judiciary")
     public JsonEnvelope searchJudiciary(final JsonEnvelope query) {
-        final UUID courtCentreId = fromString(query.payloadAsJsonObject().getString(COURT_CENTRE_ID));
-        final UUID courtRoomId = fromString(query.payloadAsJsonObject().getString(COURT_ROOM_ID));
-        final String searchDate = query.payloadAsJsonObject().getString(SEARCH_DATE);
+        final JsonObject payload = query.payloadAsJsonObject();
+        final String courtCentreId = payload.getString(COURT_CENTRE_ID);
+        final String courtRoomId = payload.getString(COURT_ROOM_ID);
+        final String searchDate = payload.getString(SEARCH_DATE);
+        final Optional<String> ouCode = ofNullable(payload.getString(OU_CODE, null));
 
-        final List<String> judicialIds = repository.findDistinctJudicialIdsByCourtCentreAndRoomAndSearchDate(courtCentreId, courtRoomId,  LocalDate.parse(searchDate));
+        final List<JudiciaryHearingDay> judiciaryHearingDays = repository.findJudiciaryHearingDaysByCourtCentreAndRoomAndSearchDate(
+                fromString(courtCentreId), fromString(courtRoomId), LocalDate.parse(searchDate));
 
-        final JsonArray judicialIdArray = judicialIds.stream()
+        final JsonObjectBuilder responseBuilder = createObjectBuilder()
+                .add(COURT_HOUSE_ID, courtCentreId)
+                .add(COURT_ROOM_ID, courtRoomId)
+                .add(COURT_SESSION_DATE, searchDate);
+
+        if (!judiciaryHearingDays.isEmpty()) {
+            final JudiciarySessions judiciarySessions = judiciarySessionService.splitIntoSessions(
+                    judiciaryHearingDays, ouCode, courtRoomId, LocalDate.parse(searchDate));
+            addCourtSession(responseBuilder, AM_COURT_SESSION, judiciarySessions.amJudicialIds());
+            addCourtSession(responseBuilder, PM_COURT_SESSION, judiciarySessions.pmJudicialIds());
+        }
+
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.judiciary"), responseBuilder.build());
+    }
+
+    private static void addCourtSession(final JsonObjectBuilder responseBuilder, final String courtSession, final List<String> judicialIds) {
+        if (judicialIds.isEmpty()) {
+            return;
+        }
+        final JsonArray judiciaries = judicialIds.stream()
                 .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add)
                 .build();
-        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.judiciary"),
-                createObjectBuilder()
-                        .add("judicialIds", judicialIdArray)
-                        .build()
-        );
+        responseBuilder.add(courtSession, createObjectBuilder().add(JUDICIARIES, judiciaries));
     }
 }

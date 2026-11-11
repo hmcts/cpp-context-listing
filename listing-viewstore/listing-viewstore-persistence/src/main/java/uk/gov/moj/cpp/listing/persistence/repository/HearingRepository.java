@@ -3,10 +3,13 @@ package uk.gov.moj.cpp.listing.persistence.repository;
 import static uk.gov.moj.cpp.listing.persistence.repository.courtlist.HearingJdbcRepository.NULL_FLAT_HEARING_FIELDS;
 
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.entity.query.JudiciaryHearingDay;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.HearingJdbcRepository;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Set;
@@ -1009,24 +1012,67 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
     public abstract List<Hearing> findAllCourtSchedulerHearingByIds(@QueryParam("hearingIds") final List<UUID> hearingIds);
 
 
-    @Query(value = "SELECT DISTINCT judiciary->>'judicialId' " +
+    /**
+     * One row per allocated, non-vacated hearing day x judicial id in the room on the date. The
+     * courtScheduleId comes from the properties->'hearingDays' element for that same date and room,
+     * not hearingDays[0], so multi-day hearings resolve the session of the searched day.
+     */
+    @Query(value = "SELECT DISTINCT CAST(h.id AS varchar) AS hearing_id, " +
+            "  hearing_day->>'courtScheduleId' AS court_schedule_id, " +
+            "  hd.start_time AS start_time, " +
+            "  judiciary->>'judicialId' AS judicial_id " +
             "FROM hearing h " +
-            "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id " +
-            "LEFT JOIN LATERAL jsonb_array_elements(" +
+            "JOIN hearing_days hd ON hd.hearing_id = h.id " +
+            "LEFT JOIN LATERAL (" +
+            "  SELECT day FROM jsonb_array_elements(" +
+            "    CASE " +
+            "      WHEN jsonb_typeof(h.properties->'hearingDays') = 'array' THEN h.properties->'hearingDays' " +
+            "      ELSE CAST('[]' AS jsonb) " +
+            "    END" +
+            "  ) AS day " +
+            "  WHERE LEFT(day->>'hearingDate', 10) = to_char(hd.hearing_date, 'YYYY-MM-DD') " +
+            "    AND day->>'courtRoomId' = CAST(hd.court_room_id AS varchar) " +
+            "    AND day->>'courtScheduleId' IS NOT NULL " +
+            "  LIMIT 1" +
+            ") AS hearing_days_json(hearing_day) ON true " +
+            "CROSS JOIN LATERAL jsonb_array_elements(" +
             "  CASE " +
             "    WHEN jsonb_typeof(h.properties->'judiciary') = 'array' THEN h.properties->'judiciary' " +
             "    ELSE CAST('[]' AS jsonb) " +
             "  END" +
-            ") AS judiciary ON true " +
+            ") AS judiciary " +
             "WHERE hd.court_centre_id = :courtCentreId " +
             "  AND hd.court_room_id = :courtRoomId " +
             "  AND hd.hearing_date = :searchDate " +
+            "  AND h.allocated = true " +
+            "  AND (h.is_vacated_trial IS NULL OR h.is_vacated_trial != true) " +
             "  AND judiciary->>'judicialId' IS NOT NULL",
             isNative = true)
-    public abstract List<String> findDistinctJudicialIdsByCourtCentreAndRoomAndSearchDate(
+    abstract List<Object[]> findJudiciaryHearingDayRows(
             @QueryParam("courtCentreId") final UUID courtCentreId,
             @QueryParam("courtRoomId") final UUID courtRoomId,
             @QueryParam("searchDate") final LocalDate searchDate);
+
+    public List<JudiciaryHearingDay> findJudiciaryHearingDaysByCourtCentreAndRoomAndSearchDate(final UUID courtCentreId,
+                                                                                               final UUID courtRoomId,
+                                                                                               final LocalDate searchDate) {
+        return findJudiciaryHearingDayRows(courtCentreId, courtRoomId, searchDate).stream()
+                .map(row -> new JudiciaryHearingDay((String) row[0], (String) row[1], toInstant(row[2]), (String) row[3]))
+                .toList();
+    }
+
+    private static Instant toInstant(final Object startTime) {
+        if (startTime instanceof Timestamp timestamp) {
+            return timestamp.toInstant();
+        }
+        if (startTime instanceof OffsetDateTime offsetDateTime) {
+            return offsetDateTime.toInstant();
+        }
+        if (startTime instanceof Instant instant) {
+            return instant;
+        }
+        return null;
+    }
 
     public List<Hearing> findAllocatedHearingsForCourtCalendar(final UUID courtCentreId,
                                                                final UUID courtRoomId,

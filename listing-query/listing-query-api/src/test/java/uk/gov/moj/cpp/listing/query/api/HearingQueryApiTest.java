@@ -1757,22 +1757,76 @@ public class HearingQueryApiTest {
 
 
     @Test
-    void shouldSearchJudiciary() {
-        final JsonEnvelope query = envelopeFrom(
-                metadataBuilder()
-                        .withId(fromString(randomUUID().toString()))
-                        .withName("listing.search.judiciary"),
-                createObjectBuilder()
-                        .add(COURT_CENTRE_ID, randomUUID().toString())
-                        .add(COURT_ROOM_ID, randomUUID().toString())
-                        .add(SEARCH_DATE, LocalDate.now().toString())
-                        .build());
+    void shouldSearchJudiciaryWithOuCodeResolvedFromReferenceData() {
+        final UUID courtCentreId = randomUUID();
+        final JsonEnvelope query = judiciarySearchQuery(courtCentreId);
+        final JsonEnvelope courtCentre = envelopeFrom(metadataBuilder().withId(randomUUID()).withName("referencedata.query.courtroom"),
+                createObjectBuilder().add("id", courtCentreId.toString()).add("oucode", "B01LY00").build());
         final JsonEnvelope response = mock(JsonEnvelope.class);
+        final ArgumentCaptor<JsonEnvelope> viewQueryCaptor = ArgumentCaptor.forClass(JsonEnvelope.class);
 
-        when(hearingQueryView.searchJudiciary(query)).thenReturn(response);
+        when(referenceDataService.getCourtCentreById(courtCentreId, query)).thenReturn(courtCentre);
+        when(hearingQueryView.searchJudiciary(viewQueryCaptor.capture())).thenReturn(response);
+
         final JsonEnvelope returnedEnvelope = hearingQueryApi.searchJudiciary(query);
 
         assertThat(returnedEnvelope, is(response));
+        final JsonObject viewPayload = viewQueryCaptor.getValue().payloadAsJsonObject();
+        assertThat(viewPayload.getString("ouCode"), is("B01LY00"));
+        assertThat(viewPayload.getString(COURT_CENTRE_ID), is(courtCentreId.toString()));
+        assertThat(viewPayload.getString(SEARCH_DATE), is(query.payloadAsJsonObject().getString(SEARCH_DATE)));
+        assertThat(viewQueryCaptor.getValue().metadata().name(), is("listing.search.judiciary"));
+    }
+
+    @Test
+    void shouldSearchJudiciaryWithoutOuCodeWhenReferenceDataHasNoOucode() {
+        final UUID courtCentreId = randomUUID();
+        final JsonEnvelope query = judiciarySearchQuery(courtCentreId);
+        final JsonEnvelope courtCentre = envelopeFrom(metadataBuilder().withId(randomUUID()).withName("referencedata.query.courtroom"),
+                createObjectBuilder().add("id", courtCentreId.toString()).build());
+        final JsonEnvelope response = mock(JsonEnvelope.class);
+
+        when(referenceDataService.getCourtCentreById(courtCentreId, query)).thenReturn(courtCentre);
+        when(hearingQueryView.searchJudiciary(query)).thenReturn(response);
+
+        assertThat(hearingQueryApi.searchJudiciary(query), is(response));
+    }
+
+    @Test
+    void shouldSearchJudiciaryWithoutOuCodeWhenCourtCentreNotFound() {
+        final UUID courtCentreId = randomUUID();
+        final JsonEnvelope query = judiciarySearchQuery(courtCentreId);
+        final JsonEnvelope courtCentre = envelopeFrom(metadataBuilder().withId(randomUUID()).withName("referencedata.query.courtroom"), JsonValue.NULL);
+        final JsonEnvelope response = mock(JsonEnvelope.class);
+
+        when(referenceDataService.getCourtCentreById(courtCentreId, query)).thenReturn(courtCentre);
+        when(hearingQueryView.searchJudiciary(query)).thenReturn(response);
+
+        assertThat(hearingQueryApi.searchJudiciary(query), is(response));
+    }
+
+    @Test
+    void shouldSearchJudiciaryWithoutOuCodeWhenReferenceDataFails() {
+        final UUID courtCentreId = randomUUID();
+        final JsonEnvelope query = judiciarySearchQuery(courtCentreId);
+        final JsonEnvelope response = mock(JsonEnvelope.class);
+
+        when(referenceDataService.getCourtCentreById(courtCentreId, query)).thenThrow(new IllegalStateException("reference data unavailable"));
+        when(hearingQueryView.searchJudiciary(query)).thenReturn(response);
+
+        assertThat(hearingQueryApi.searchJudiciary(query), is(response));
+    }
+
+    private JsonEnvelope judiciarySearchQuery(final UUID courtCentreId) {
+        return envelopeFrom(
+                metadataBuilder()
+                        .withId(randomUUID())
+                        .withName("listing.search.judiciary"),
+                createObjectBuilder()
+                        .add(COURT_CENTRE_ID, courtCentreId.toString())
+                        .add(COURT_ROOM_ID, randomUUID().toString())
+                        .add(SEARCH_DATE, LocalDate.now().toString())
+                        .build());
     }
 
     private JsonObject returnAsJsonObject(final String expectedJsonPath) {

@@ -16,6 +16,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -47,6 +48,7 @@ import uk.gov.moj.cpp.listing.persistence.entity.CaseIdentifier;
 import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
 import uk.gov.moj.cpp.listing.persistence.entity.Defendant;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.entity.query.JudiciaryHearingDay;
 import uk.gov.moj.cpp.listing.persistence.entity.HearingDays;
 import uk.gov.moj.cpp.listing.persistence.entity.LinkedCase;
 import uk.gov.moj.cpp.listing.persistence.entity.ListedCases;
@@ -95,6 +97,9 @@ import org.junit.runner.RunWith;
  * */
 @RunWith(CdiTestRunner.class)
 public class PersistenceTestsIT extends BaseTransactionalTest implements PersistenceTestsInt {
+
+    // second judiciary entry hardcoded in test-data/sample-multiday-hearing.json
+    private static final String TEMPLATE_JUDICIAL_ID = "d1a22d9e-088b-4af4-acb5-bc6e78aaf5ea";
 
     private static final String WOFD_HEARING_TYPE_ID = "638ced9d-3f95-4e99-b27b-47fa5a2c6add";
     private static final String PCB_HEARING_TYPE_ID = "3a2d160f-363b-4360-96e1-0007a400a64c";
@@ -1757,18 +1762,115 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
     }
 
     @Test
-    public void shouldFindDistinctJudicialIdsByCourtCentreAndRoomAndSearchDate() {
+    public void shouldFindJudiciaryHearingDaysForAllocatedNotVacatedHearingsInRoomOnSearchDate() {
         //given
-        givenHearingsExistWithPCPAndWOFD();
+        final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
+        final LocalDate searchDate = LocalDate.of(2030, 1, 15);
+        final ZonedDateTime previousDay = ZonedDateTime.of(searchDate.minusDays(1), LocalTime.of(10, 0), UTC);
+        final ZonedDateTime searchDay = ZonedDateTime.of(searchDate, LocalTime.of(10, 0), UTC);
+        final ZonedDateTime nextDay = ZonedDateTime.of(searchDate.plusDays(1), LocalTime.of(10, 0), UTC);
+        final String previousDayCourtScheduleId = randomUUID().toString();
+        final String searchDayCourtScheduleId = randomUUID().toString();
+        final String nextDayCourtScheduleId = randomUUID().toString();
+
+        final UUID multiDayHearingId = givenJudiciaryHearing(courtCentreId, courtRoomId, ALLOCATED, NOT_VACATED, JUDICIAL_ID, true,
+                previousDay, searchDay, nextDay, previousDayCourtScheduleId, searchDayCourtScheduleId, nextDayCourtScheduleId);
+        final UUID withoutCourtScheduleHearingId = givenJudiciaryHearing(courtCentreId, courtRoomId, ALLOCATED, NOT_VACATED, OTHER_JUDICIAL_ID, true,
+                previousDay, searchDay, nextDay, null, null, null);
+        givenJudiciaryHearing(courtCentreId, courtRoomId, ALLOCATED, TRUE, JUDICIAL_ID, true,
+                previousDay, searchDay, nextDay, null, searchDayCourtScheduleId, null);
+        givenJudiciaryHearing(courtCentreId, courtRoomId, UNALLOCATED, NOT_VACATED, JUDICIAL_ID, true,
+                previousDay, searchDay, nextDay, null, searchDayCourtScheduleId, null);
+        givenJudiciaryHearing(courtCentreId, courtRoomId, ALLOCATED, NOT_VACATED, JUDICIAL_ID, false,
+                previousDay, searchDay, nextDay, null, searchDayCourtScheduleId, null);
 
         //when
-        final List<String> judicialIds = hearingRepository.findDistinctJudicialIdsByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, START_SEARCH_DATE);
+        final List<JudiciaryHearingDay> judiciaryHearingDays = hearingRepository.findJudiciaryHearingDaysByCourtCentreAndRoomAndSearchDate(courtCentreId, courtRoomId, searchDate);
 
         //then
-        assertThat(judicialIds.size(), is(2));
-        assertThat(judicialIds.contains("0ab98bfb-fc34-44c4-a573-3801343cf123"), is(true));
-        assertThat(judicialIds.contains("d1a22d9e-088b-4af4-acb5-bc6e78aaf5ea"), is(true));
+        assertThat(judiciaryHearingDays.size(), is(4));
+        assertThat(judiciaryHearingDays.stream().map(JudiciaryHearingDay::hearingId).collect(toSet()),
+                containsInAnyOrder(multiDayHearingId.toString(), withoutCourtScheduleHearingId.toString()));
+        assertThat(judiciaryHearingDays.stream().map(JudiciaryHearingDay::startTime).collect(toSet()),
+                containsInAnyOrder(searchDay.toInstant()));
 
+        final List<JudiciaryHearingDay> multiDayHearingDays = judiciaryHearingDays.stream()
+                .filter(day -> day.hearingId().equals(multiDayHearingId.toString())).toList();
+        assertThat(multiDayHearingDays.stream().map(JudiciaryHearingDay::judicialId).toList(),
+                containsInAnyOrder(JUDICIAL_ID, TEMPLATE_JUDICIAL_ID));
+        assertThat(multiDayHearingDays.stream().map(JudiciaryHearingDay::courtScheduleId).collect(toSet()),
+                containsInAnyOrder(searchDayCourtScheduleId));
+
+        final List<JudiciaryHearingDay> withoutCourtScheduleDays = judiciaryHearingDays.stream()
+                .filter(day -> day.hearingId().equals(withoutCourtScheduleHearingId.toString())).toList();
+        assertThat(withoutCourtScheduleDays.stream().map(JudiciaryHearingDay::judicialId).toList(),
+                containsInAnyOrder(OTHER_JUDICIAL_ID, TEMPLATE_JUDICIAL_ID));
+        assertThat(withoutCourtScheduleDays.stream().allMatch(day -> day.courtScheduleId() == null), is(true));
+    }
+
+    @Test
+    public void shouldFindNoJudiciaryHearingDaysInOtherRoom() {
+        //given
+        final UUID courtCentreId = randomUUID();
+        final LocalDate searchDate = LocalDate.of(2030, 1, 15);
+        final ZonedDateTime searchDay = ZonedDateTime.of(searchDate, LocalTime.of(10, 0), UTC);
+        givenJudiciaryHearing(courtCentreId, randomUUID(), ALLOCATED, NOT_VACATED, JUDICIAL_ID, true,
+                searchDay, searchDay.plusDays(1), searchDay.plusDays(2), randomUUID().toString(), null, null);
+
+        //when
+        final List<JudiciaryHearingDay> judiciaryHearingDays = hearingRepository.findJudiciaryHearingDaysByCourtCentreAndRoomAndSearchDate(courtCentreId, randomUUID(), searchDate);
+
+        //then
+        assertThat(judiciaryHearingDays.isEmpty(), is(true));
+    }
+
+    private UUID givenJudiciaryHearing(final UUID courtCentreId, final UUID courtRoomId, final Boolean allocated, final Boolean vacated,
+                                       final String judicialId, final boolean withJudiciary,
+                                       final ZonedDateTime day1, final ZonedDateTime day2, final ZonedDateTime day3,
+                                       final String day1CourtScheduleId, final String day2CourtScheduleId, final String day3CourtScheduleId) {
+        final UUID hearingId = randomUUID();
+        final Hearing hearing = getHearingJson(hearingRepositoryContext()
+                .withHearingId(hearingId)
+                .withCourtCentreId(courtCentreId)
+                .withCourtRoomId(courtRoomId)
+                .withAllocated(allocated)
+                .withVacated(vacated)
+                .withAuthorityId(AUTHORITY_ID)
+                .withHearingType(HEARING_TYPE)
+                .withJurisdictionType(JURISDICTION_TYPE)
+                .withJudicialId(judicialId)
+                .withStartDate(day1.toLocalDate())
+                .withEndDate(day3.toLocalDate())
+                .withHearingDateDay1(day1)
+                .withStartTimeDay1(day1)
+                .withEndTimeDay1(day1.plusHours(2))
+                .withCancelledDay1(false)
+                .withHearingDateDay2(day2)
+                .withStartTimeDay2(day2)
+                .withEndTimeDay2(day2.plusHours(2))
+                .withCancelledDay2(false)
+                .withHearingDateDay3(day3)
+                .withStartTimeDay3(day3)
+                .withEndTimeDay3(day3.plusHours(2))
+                .withCancelledDay3(false)
+                .withFileLocation(TEST_DATA_SAMPLE_MULTIDAY_HEARING_JSON)
+                .withMultidayHearing(true)
+                .build());
+
+        final List<String> courtScheduleIds = asList(day1CourtScheduleId, day2CourtScheduleId, day3CourtScheduleId);
+        final JsonNode hearingDays = hearing.getProperties().get("hearingDays");
+        for (int day = 0; day < courtScheduleIds.size(); day++) {
+            if (courtScheduleIds.get(day) != null) {
+                ((ObjectNode) hearingDays.get(day)).put("courtScheduleId", courtScheduleIds.get(day));
+            }
+        }
+        if (!withJudiciary) {
+            ((ObjectNode) hearing.getProperties()).remove("judiciary");
+        }
+
+        hearingRepository.save(hearing);
+        return hearingId;
     }
 
     private void assertFoundAsExpected(final PublishedCourtList expectedPublishedCourtList, final PublishedCourtListPrimaryKey primaryKey) {
