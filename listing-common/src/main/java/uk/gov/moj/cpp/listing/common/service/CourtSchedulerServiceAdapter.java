@@ -12,6 +12,7 @@ import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestEx
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
@@ -94,6 +95,7 @@ public class CourtSchedulerServiceAdapter {
     private static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
     // no-session normalisation (422 NO_SESSION_FOUND) constants
     public static final String NO_SESSION_FOUND = "NO_SESSION_FOUND";
+    private static final String NO_AVAILABILITY = "NO_AVAILABILITY";
     // Fixed user-facing copy (ported from main) replacing whatever diagnostic message courtscheduler
     // itself supplies, on both the legacy-404 normalisation and a genuine 422 NO_SESSION_FOUND passthrough.
     public static final String NO_SESSION_FOUND_MESSAGE =
@@ -276,6 +278,18 @@ public class CourtSchedulerServiceAdapter {
             throw new CrownFallbackInvalidRequestException(
                     "Crown fallback rejected by courtscheduler (status=" + status + ") for hearingId=" + hearingId
                             + ": " + (response.hasEntity() ? response.getEntity().toString() : ""));
+        }
+        if (status == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
+            // SPRDT-1539: a hearing that already holds a booking is MOVED by courtscheduler's single-day
+            // path; when nothing is bookable it answers 422 NO_AVAILABILITY and keeps the old booking.
+            // That is a rejection for the caller, not a "no session" to fail open on.
+            final JsonObject errorBody = response.hasEntity() && response.getEntity() instanceof JsonObject jsonBody
+                    ? jsonBody
+                    : (response.hasEntity() ? objectToJsonObjectConverter.convert(response.getEntity()) : null);
+            if (errorBody != null && NO_AVAILABILITY.equals(errorBody.getString(ERROR_CODE, null))) {
+                throw new CrownMultiDayExtensionException(status, errorBody,
+                        "Crown single-day search-and-book rejected (" + NO_AVAILABILITY + ") for hearingId " + hearingId);
+            }
         }
         if (status != HttpStatus.SC_OK) {
             LOGGER.error("Crown fallback search-and-book returned unexpected status {} for hearingId {}", status, hearingId);
