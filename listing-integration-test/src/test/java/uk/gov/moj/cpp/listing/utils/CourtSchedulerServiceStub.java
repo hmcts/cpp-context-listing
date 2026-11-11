@@ -507,6 +507,72 @@ public class CourtSchedulerServiceStub {
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
     }
 
+    /**
+     * SPRDT-1539: GET /hearingslots answering the FINAL Crown AD session pre-check a CROWN update
+     * without courtScheduleId runs before it books — scoped to ONE courtroom and status=FINAL so
+     * suite-wide WireMock state cannot leak into other ITs. One session per supplied date.
+     */
+    public static void stubFinalCrownAdSessionsInCourtRoom(final UUID courtRoomId,
+                                                           final UUID courtHouseId,
+                                                           final java.util.Map<LocalDate, String> courtScheduleIdByDate) {
+        final StringBuilder body = new StringBuilder("{\"results\":").append(courtScheduleIdByDate.size())
+                .append(",\"pageCount\":1,\"hearingSlots\":[");
+        final java.util.List<LocalDate> dates = new java.util.ArrayList<>(courtScheduleIdByDate.keySet());
+        java.util.Collections.sort(dates);
+        for (int i = 0; i < dates.size(); i++) {
+            if (i > 0) {
+                body.append(",");
+            }
+            final LocalDate date = dates.get(i);
+            body.append("{")
+                    .append("\"courtScheduleId\":\"").append(courtScheduleIdByDate.get(date)).append("\",")
+                    .append("\"courtHouseId\":\"").append(courtHouseId).append("\",")
+                    .append("\"courtRoomId\":\"").append(courtRoomId).append("\",")
+                    .append("\"sessionDate\":\"").append(date).append("\",")
+                    .append("\"courtSession\":\"AD\",")
+                    .append("\"isDraft\":false")
+                    .append("}");
+        }
+        body.append("]}");
+
+        stubFor(get(WireMock.urlPathEqualTo(COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS))
+                .withQueryParam("courtRoomId", WireMock.equalTo(courtRoomId.toString()))
+                .withQueryParam("status", WireMock.equalTo("FINAL"))
+                .atPriority(1)
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(body.toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    /** SPRDT-1539 regression guard: a CROWN update never posts the MAGS search-and-book for the hearing. */
+    public static void verifyMagsSearchAndBookNeverCalledForHearing(final String hearingId) {
+        WireMock.verify(0, WireMock.postRequestedFor(urlPathMatching(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId))
+                .withHeader(CONTENT_TYPE, containing(MAGS_SEARCH_AND_BOOK_TYPE)));
+    }
+
+    /** SPRDT-1539: verify crown.search.and.book was called for the hearing with the given anchor, minutes and endDate. */
+    public static void verifyCrownBlockSearchAndBookCalledForHearing(final String hearingId, final String anchorCourtScheduleId,
+                                                                     final int durationInMinutes, final LocalDate endDate) {
+        Awaitility.await().atMost(15, SECONDS).pollInterval(POLL_INTERVAL).until(() -> {
+            try {
+                WireMock.verify(WireMock.postRequestedFor(urlPathMatching(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId))
+                        .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                        .withRequestBody(matchingJsonPath("$.courtScheduleId", WireMock.equalTo(anchorCourtScheduleId)))
+                        .withRequestBody(matchingJsonPath("$.durationInMinutes", WireMock.equalTo(String.valueOf(durationInMinutes))))
+                        .withRequestBody(matchingJsonPath("$.endDate", WireMock.equalTo(endDate.toString()))));
+                return true;
+            } catch (VerificationException e) {
+                return false;
+            }
+        });
+    }
+
+    /** SPRDT-1539: no crown.search.and.book call was made for the hearing (rejected before booking). */
+    public static void verifyCrownSearchAndBookNeverCalledForHearing(final String hearingId) {
+        WireMock.verify(0, WireMock.postRequestedFor(urlPathMatching(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId))
+                .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE)));
+    }
+
     public static void stubValidateSessionAvailabilityFailure() {
         stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + VALIDATE_SESSION_AVAILABILITY)))
                 .withHeader("Content-Type", containing(COURTSCHEDULER_VALIDATE_SESSION_AVAILABILITY_TYPE))
