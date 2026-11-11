@@ -174,8 +174,11 @@ class CrownUpdateWithoutCourtScheduleIdTest {
         givenConverters();
         givenFinalSessionsOn(TUE, THU, FRI);
 
+        final UpdateHearingForListing update = spiUpdate(TUE, SUN, List.of(FRI));
+        final JsonEnvelope envelope = mock(JsonEnvelope.class);
+
         final CrownMultiDayExtensionException rejection = assertThrows(CrownMultiDayExtensionException.class,
-                () -> service.enrichWithCourtSchedules(spiUpdate(TUE, SUN, List.of(FRI)), mock(JsonEnvelope.class)));
+                () -> service.enrichWithCourtSchedules(update, envelope));
 
         assertThat(rejection.getHttpStatus(), is(HttpStatus.SC_UNPROCESSABLE_ENTITY));
         assertThat(rejection.getErrorCode(), is("NO_AVAILABILITY"));
@@ -188,8 +191,11 @@ class CrownUpdateWithoutCourtScheduleIdTest {
         givenConverters();
         givenFinalSessionsOn(WED, THU);
 
+        final UpdateHearingForListing update = spiUpdate(TUE, SUN, List.of(FRI));
+        final JsonEnvelope envelope = mock(JsonEnvelope.class);
+
         final CrownMultiDayExtensionException rejection = assertThrows(CrownMultiDayExtensionException.class,
-                () -> service.enrichWithCourtSchedules(spiUpdate(TUE, SUN, List.of(FRI)), mock(JsonEnvelope.class)));
+                () -> service.enrichWithCourtSchedules(update, envelope));
 
         assertThat(rejection.getUnavailableDates(), contains(TUE.toString()));
         verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
@@ -200,8 +206,11 @@ class CrownUpdateWithoutCourtScheduleIdTest {
         givenConverters();
         givenFinalSessionsOn();
 
+        final UpdateHearingForListing update = spiUpdate(TUE, SUN, List.of(FRI));
+        final JsonEnvelope envelope = mock(JsonEnvelope.class);
+
         final CrownMultiDayExtensionException rejection = assertThrows(CrownMultiDayExtensionException.class,
-                () -> service.enrichWithCourtSchedules(spiUpdate(TUE, SUN, List.of(FRI)), mock(JsonEnvelope.class)));
+                () -> service.enrichWithCourtSchedules(update, envelope));
 
         assertThat(rejection.getUnavailableDates(), contains(TUE.toString(), WED.toString(), THU.toString()));
     }
@@ -212,8 +221,11 @@ class CrownUpdateWithoutCourtScheduleIdTest {
         givenFinalSessionsOn(TUE, WED, THU, FRI);
         givenBookedBlock();
 
+        final UpdateHearingForListing update = spiUpdate(TUE, SUN, List.of(FRI));
+        final JsonEnvelope envelope = mock(JsonEnvelope.class);
+
         final CrownMultiDayExtensionException rejection = assertThrows(CrownMultiDayExtensionException.class,
-                () -> service.enrichWithCourtSchedules(spiUpdate(TUE, SUN, List.of(FRI)), mock(JsonEnvelope.class)));
+                () -> service.enrichWithCourtSchedules(update, envelope));
 
         assertThat(rejection.getUnavailableDates(), contains(TUE.toString(), WED.toString(), THU.toString()));
         verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
@@ -221,8 +233,11 @@ class CrownUpdateWithoutCourtScheduleIdTest {
 
     @Test
     void rejectsAWeekendStartDateWith422BeforeLookingAnythingUp() {
+        final UpdateHearingForListing update = spiUpdate(SAT, SAT.plusDays(5), List.of());
+        final JsonEnvelope envelope = mock(JsonEnvelope.class);
+
         final CrownMultiDayExtensionException rejection = assertThrows(CrownMultiDayExtensionException.class,
-                () -> service.enrichWithCourtSchedules(spiUpdate(SAT, SAT.plusDays(5), List.of()), mock(JsonEnvelope.class)));
+                () -> service.enrichWithCourtSchedules(update, envelope));
 
         assertThat(rejection.getErrorCode(), is("NO_AVAILABILITY"));
         assertThat(rejection.getUnavailableDates(), contains(SAT.toString()));
@@ -233,8 +248,11 @@ class CrownUpdateWithoutCourtScheduleIdTest {
 
     @Test
     void rejectsASingleDayWeekendStartDateWith422() {
+        final UpdateHearingForListing update = spiUpdate(SUN, SUN, List.of());
+        final JsonEnvelope envelope = mock(JsonEnvelope.class);
+
         final CrownMultiDayExtensionException rejection = assertThrows(CrownMultiDayExtensionException.class,
-                () -> service.enrichWithCourtSchedules(spiUpdate(SUN, SUN, List.of()), mock(JsonEnvelope.class)));
+                () -> service.enrichWithCourtSchedules(update, envelope));
 
         assertThat(rejection.getUnavailableDates(), contains(SUN.toString()));
         verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any());
@@ -339,8 +357,11 @@ class CrownUpdateWithoutCourtScheduleIdTest {
         givenStoredHearing("CROWN", true, courtRoomId, roomsByDate(TUE, courtRoomId, WED, courtRoomId));
         givenBookedBlock();
 
+        final UpdateHearingForListing update = spiUpdate(TUE, THU, List.of());
+        final JsonEnvelope envelope = mock(JsonEnvelope.class);
+
         final CrownMultiDayExtensionException rejection = assertThrows(CrownMultiDayExtensionException.class,
-                () -> service.enrichWithCourtSchedules(spiUpdate(TUE, THU, List.of()), mock(JsonEnvelope.class)));
+                () -> service.enrichWithCourtSchedules(update, envelope));
 
         assertThat(rejection.getUnavailableDates(), contains(TUE.toString(), WED.toString(), THU.toString()));
         verify(hearingSlotsService, never()).search(anyMap());

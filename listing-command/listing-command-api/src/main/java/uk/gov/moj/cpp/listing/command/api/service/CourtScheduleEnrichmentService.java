@@ -83,6 +83,17 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
     private static final String IS_DRAFT = "isDraft";
     private static final String COURT_SCHEDULES = "courtSchedules";
     private static final String SESSION_START_TIME = "sessionStartTime";
+    private static final String CROWN_JURISDICTION = "CROWN";
+    private static final String HEARING_DAYS = "hearingDays";
+    // Query-param names of the hearing-slots search (GET /hearingSlots).
+    private static final String OU_CODE = "ouCode";
+    private static final String SESSION_START_DATE = "sessionStartDate";
+    private static final String SESSION_END_DATE = "sessionEndDate";
+    private static final String JURISDICTION = "jurisdiction";
+    private static final String COURT_SESSION = "courtSession";
+    private static final String PANEL = "panel";
+    private static final String PAGE_SIZE = "pageSize";
+    private static final String PAGE_NUMBER = "pageNumber";
     @Inject
     private CourtSchedulerService courtSchedulerService;
     @Inject
@@ -1011,11 +1022,13 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
         // Every weekday of the window is booked (a non-sitting weekday too — it is dropped from the
         // hearing below and never pays its slot back); weekend dates are not part of the block.
+        final String anchorSessionId = finalSessionIdByDate.get(startDate);
+        final int weekdayCount = windowWeekdays.size();
         LOGGER.info("[CROWN-NOID] block: hearingId {} anchor {} on {}, {} weekday(s) {}..{} = {} minutes, courtRoomId {}, earliestHearingTime {}",
-                hearingId, finalSessionIdByDate.get(startDate), startDate, windowWeekdays.size(), startDate, lastWeekday,
+                hearingId, anchorSessionId, startDate, weekdayCount, startDate, lastWeekday,
                 bookingMinutes, courtRoomId, earliestHearingTime);
         final List<CourtSchedule> bookedSessions = multiDaySearchAndBook(
-                finalSessionIdByDate.get(startDate),
+                anchorSessionId,
                 bookingMinutes,
                 hearingId.toString(),
                 hearing.getCourtCentreId().toString(),
@@ -1114,12 +1127,12 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             return heldSessionIdByDate;
         }
         final JsonObject stored = storedHearing.get();
-        final boolean sameBlockOwner = "CROWN".equals(stored.getString("jurisdictionType", null))
+        final boolean sameBlockOwner = CROWN_JURISDICTION.equals(stored.getString("jurisdictionType", null))
                 && stored.getBoolean("allocated", false)
                 && hearing.getCourtCentreId().toString().equals(stored.getString(COURT_CENTRE_ID, null))
                 && hearing.getCourtRoomId().toString().equals(stored.getString(COURT_ROOM_ID, null));
-        final JsonArray storedDays = stored.containsKey("hearingDays") && !stored.isNull("hearingDays")
-                ? stored.getJsonArray("hearingDays") : null;
+        final JsonArray storedDays = stored.containsKey(HEARING_DAYS) && !stored.isNull(HEARING_DAYS)
+                ? stored.getJsonArray(HEARING_DAYS) : null;
         if (!sameBlockOwner || storedDays == null) {
             return heldSessionIdByDate;
         }
@@ -1146,17 +1159,17 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                                                                     final LocalDate from, final LocalDate to,
                                                                     final int weekdays) {
         final Map<String, String> params = new HashMap<>();
-        params.put("ouCode", ouCode);
+        params.put(OU_CODE, ouCode);
         params.put(COURT_ROOM_ID, courtRoomId);
-        params.put("sessionStartDate", from.toString());
-        params.put("sessionEndDate", to.toString());
+        params.put(SESSION_START_DATE, from.toString());
+        params.put(SESSION_END_DATE, to.toString());
         params.put("status", "FINAL");
-        params.put("jurisdiction", "CROWN");
-        params.put("courtSession", "AD");
-        params.put("panel", CourtSchedulerServiceAdapter.PANEL_ADULT_YOUTH);
+        params.put(JURISDICTION, CROWN_JURISDICTION);
+        params.put(COURT_SESSION, "AD");
+        params.put(PANEL, CourtSchedulerServiceAdapter.PANEL_ADULT_YOUTH);
         params.put("showOverbookedSlots", "true");
-        params.put("pageSize", String.valueOf(Math.max(50, weekdays * 10)));
-        params.put("pageNumber", "1");
+        params.put(PAGE_SIZE, String.valueOf(Math.max(50, weekdays * 10)));
+        params.put(PAGE_NUMBER, "1");
 
         final Response response = hearingSlotsService.search(params);
         if (!isSuccess(response)) {
@@ -2080,16 +2093,16 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                                            final LocalDate startDate,
                                            final int totalDurationMinutes) {
         final Map<String, String> params = new HashMap<>();
-        params.put("ouCode", ouCode);
-        params.put("sessionStartDate", startDate.toString());
-        params.put("sessionEndDate", startDate.plusMonths(6).toString());
+        params.put(OU_CODE, ouCode);
+        params.put(SESSION_START_DATE, startDate.toString());
+        params.put(SESSION_END_DATE, startDate.plusMonths(6).toString());
         params.put("status", "DRAFT");
-        params.put("jurisdiction", "CROWN");
-        params.put("courtSession", "AD");
-        params.put("panel", "ADULT");
+        params.put(JURISDICTION, CROWN_JURISDICTION);
+        params.put(COURT_SESSION, "AD");
+        params.put(PANEL, "ADULT");
         params.put(DURATION_MINUTES, String.valueOf(totalDurationMinutes));
-        params.put("pageSize", "1");
-        params.put("pageNumber", "1");
+        params.put(PAGE_SIZE, "1");
+        params.put(PAGE_NUMBER, "1");
 
         final Response response = hearingSlotsService.search(params);
         if (!isSuccess(response)) {
@@ -2335,20 +2348,20 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         LOGGER.info("getFirstAvailableSlot for hearingDay: {}", hearingDay.getHearingDate());
         final Map<String, String> queryParams = new HashMap<>();
         if (isMultiDay){
-            queryParams.put("courtSession", "AD");
+            queryParams.put(COURT_SESSION, "AD");
             queryParams.put("isSlotBased", Boolean.FALSE.toString());
         } else {
             queryParams.put(HEARING_START_TIME, hearingDay.getStartTime().toString());
         }
         queryParams.put(COURT_ROOM_ID, hearingDay.getCourtRoomId().toString());
-        queryParams.put("ouCode", getOrRetrieveOucode(updateHearingForListing, envelope));
-        queryParams.put("sessionStartDate", hearingDay.getHearingDate().toString());
-        queryParams.put("sessionEndDate", hearingDay.getHearingDate().toString());
-        queryParams.put("panel", "ADULT,YOUTH");
-        queryParams.put("jurisdiction", updateHearingForListing.getJurisdictionType().toString());
+        queryParams.put(OU_CODE, getOrRetrieveOucode(updateHearingForListing, envelope));
+        queryParams.put(SESSION_START_DATE, hearingDay.getHearingDate().toString());
+        queryParams.put(SESSION_END_DATE, hearingDay.getHearingDate().toString());
+        queryParams.put(PANEL, "ADULT,YOUTH");
+        queryParams.put(JURISDICTION, updateHearingForListing.getJurisdictionType().toString());
         queryParams.put("showOverbookedSlots",Boolean.TRUE.toString());
-        queryParams.put("pageNumber", "1");
-        queryParams.put("pageSize", "1");
+        queryParams.put(PAGE_NUMBER, "1");
+        queryParams.put(PAGE_SIZE, "1");
 
         final Response searchResponse = hearingSlotsService.search(queryParams);
 

@@ -280,16 +280,7 @@ public class CourtSchedulerServiceAdapter {
                             + ": " + (response.hasEntity() ? response.getEntity().toString() : ""));
         }
         if (status == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
-            // SPRDT-1539: a hearing that already holds a booking is MOVED by courtscheduler's single-day
-            // path; when nothing is bookable it answers 422 NO_AVAILABILITY and keeps the old booking.
-            // That is a rejection for the caller, not a "no session" to fail open on.
-            final JsonObject errorBody = response.hasEntity() && response.getEntity() instanceof JsonObject jsonBody
-                    ? jsonBody
-                    : (response.hasEntity() ? objectToJsonObjectConverter.convert(response.getEntity()) : null);
-            if (errorBody != null && NO_AVAILABILITY.equals(errorBody.getString(ERROR_CODE, null))) {
-                throw new CrownMultiDayExtensionException(status, errorBody,
-                        "Crown single-day search-and-book rejected (" + NO_AVAILABILITY + ") for hearingId " + hearingId);
-            }
+            throwIfNoAvailability(response, hearingId);
         }
         if (status != HttpStatus.SC_OK) {
             LOGGER.error("Crown fallback search-and-book returned unexpected status {} for hearingId {}", status, hearingId);
@@ -307,6 +298,28 @@ public class CourtSchedulerServiceAdapter {
                             + hearingId + " — treating as no bookable session");
         }
         return result;
+    }
+
+    /**
+     * SPRDT-1539: a hearing that already holds a booking is MOVED by courtscheduler's single-day path;
+     * when nothing is bookable it answers 422 NO_AVAILABILITY and keeps the old booking. That is a
+     * rejection for the caller, not a "no session" to fail open on. Any other 422 returns normally.
+     */
+    private void throwIfNoAvailability(final Response response, final UUID hearingId) {
+        final JsonObject errorBody = jsonBodyOrNull(response);
+        if (errorBody != null && NO_AVAILABILITY.equals(errorBody.getString(ERROR_CODE, null))) {
+            throw new CrownMultiDayExtensionException(response.getStatus(), errorBody,
+                    "Crown single-day search-and-book rejected (" + NO_AVAILABILITY + ") for hearingId " + hearingId);
+        }
+    }
+
+    private JsonObject jsonBodyOrNull(final Response response) {
+        if (!response.hasEntity()) {
+            return null;
+        }
+        return response.getEntity() instanceof JsonObject jsonBody
+                ? jsonBody
+                : objectToJsonObjectConverter.convert(response.getEntity());
     }
 
     private static CrownFallbackResult parseCrownFallbackResult(final JsonObject body) {
