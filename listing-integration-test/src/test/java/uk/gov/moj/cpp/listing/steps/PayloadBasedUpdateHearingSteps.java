@@ -300,7 +300,7 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
                                 withJsonPath("$.courtHouseId", is(payloadValues.courtCentreId)),
                                 withJsonPath("$.courtRoomId", is(courtRoomId)),
                                 withJsonPath("$.courtSessionDate", is(payloadValues.hearingDate)),
-                                withJsonPath("$.amCourtSession.judiciaries", hasItem(payloadValues.judicialId))
+                                withJsonPath("$.amCourtSession", hasItem(payloadValues.judicialId))
                         ))
                 );
     }
@@ -321,7 +321,7 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
                                 withJsonPath("$.courtHouseId", is(courtCentreId)),
                                 withJsonPath("$.courtRoomId", is(courtRoomId)),
                                 withJsonPath("$.courtSessionDate", is(searchDate)),
-                                withJsonPath("$." + courtSession + ".judiciaries", containsInAnyOrder(judicialIds.toArray())),
+                                withJsonPath("$." + courtSession, containsInAnyOrder(judicialIds.toArray())),
                                 hasNoJsonPath("$." + absentCourtSession)
                         ))
                 );

@@ -151,7 +151,6 @@ public class HearingQueryView {
     private static final String COURT_SESSION_DATE = "courtSessionDate";
     private static final String AM_COURT_SESSION = "amCourtSession";
     private static final String PM_COURT_SESSION = "pmCourtSession";
-    private static final String JUDICIARIES = "judiciaries";
 
 
     @Inject
@@ -872,6 +871,6 @@ public class HearingQueryView {
         final JsonArray judiciaries = judicialIds.stream()
                 .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add)
                 .build();
-        responseBuilder.add(courtSession, createObjectBuilder().add(JUDICIARIES, judiciaries));
+        responseBuilder.add(courtSession, judiciaries);
     }
 }

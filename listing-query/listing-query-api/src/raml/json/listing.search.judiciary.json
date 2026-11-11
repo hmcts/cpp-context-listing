@@ -2,16 +2,12 @@
   "courtHouseId": "11111111-1111-4111-8111-111111111111",
   "courtRoomId": "22222222-2222-4222-8222-222222222222",
   "courtSessionDate": "2026-11-11",
-  "amCourtSession": {
-    "judiciaries": [
-      "aaaaaaaa-0000-4000-8000-000000000001",
-      "aaaaaaaa-0000-4000-8000-000000000002"
-    ]
-  },
-  "pmCourtSession": {
-    "judiciaries": [
-      "aaaaaaaa-0000-4000-8000-000000000001",
-      "aaaaaaaa-0000-4000-8000-000000000003"
-    ]
-  }
+  "amCourtSession": [
+    "aaaaaaaa-0000-4000-8000-000000000001",
+    "aaaaaaaa-0000-4000-8000-000000000002"
+  ],
+  "pmCourtSession": [
+    "aaaaaaaa-0000-4000-8000-000000000001",
+    "aaaaaaaa-0000-4000-8000-000000000003"
+  ]
 }

@@ -1763,10 +1763,9 @@ public class HearingQueryViewTest {
         assertThat(payload.getString("courtHouseId"), is(COURT_CENTRE_ID.toString()));
         assertThat(payload.getString("courtRoomId"), is(COURT_ROOM_ID.toString()));
         assertThat(payload.getString("courtSessionDate"), is(SEARCH_DATE.toString()));
-        assertThat(payload.getJsonObject("amCourtSession").keySet(), containsInAnyOrder("judiciaries"));
-        assertThat(payload.getJsonObject("amCourtSession").getJsonArray("judiciaries").getValuesAs(JsonString.class).stream().map(JsonString::getString).toList(),
+        assertThat(payload.getJsonArray("amCourtSession").getValuesAs(JsonString.class).stream().map(JsonString::getString).toList(),
                 contains(judicialId1));
-        assertThat(payload.getJsonObject("pmCourtSession").getJsonArray("judiciaries").getValuesAs(JsonString.class).stream().map(JsonString::getString).toList(),
+        assertThat(payload.getJsonArray("pmCourtSession").getValuesAs(JsonString.class).stream().map(JsonString::getString).toList(),
                 contains(judicialId1, judicialId2));
     }
 
