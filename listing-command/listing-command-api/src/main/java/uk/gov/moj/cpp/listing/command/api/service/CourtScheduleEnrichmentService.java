@@ -908,9 +908,10 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
      * <ul>
      *   <li>startDate on a Saturday or Sunday: 422 NO_AVAILABILITY naming that date — a Crown hearing
      *       does not start at a weekend, and the date is not moved to the next weekday.</li>
-     *   <li>endDate after startDate: ONE {@code crown.search.and.book} block over the window's
-     *       weekdays. Weekend dates are skipped (never booked, no error); a non-sitting weekday is
-     *       booked and then dropped from the hearing, as on every other Crown block route.
+     *   <li>endDate after startDate and two or more weekdays in the window: ONE
+     *       {@code crown.search.and.book} block over the window's weekdays. Weekend dates are skipped
+     *       (never booked, no error); a non-sitting weekday is booked and then dropped from the
+     *       hearing, as on every other Crown block route.
      *       <ul>
      *         <li>The hearing is an allocated CROWN block in the same centre and main courtroom and
      *             the update keeps its first day: a resize in place. No anchor is sent, so
@@ -923,6 +924,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
      *             in the courtroom, checked before anything is booked — otherwise 422
      *             NO_AVAILABILITY naming the missing dates.</li>
      *       </ul></li>
+     *   <li>endDate after startDate but one weekday in the window (a Friday start ending at the
+     *       weekend): the single day below, without the weekend hearing days and nonDefaultDays.</li>
      *   <li>otherwise (single day): the Crown single-day search-and-book; courtscheduler re-books
      *       (MOVE) a hearing that already holds a booking, and answers 422 when nothing is bookable.
      *       No bookable session for a hearing that holds none: the hearing proceeds unallocated.</li>
@@ -943,9 +946,37 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     "startDate " + startDate + " is a " + startDate.getDayOfWeek() + "; a Crown hearing does not start at a weekend");
         }
         if (endDate.isAfter(startDate)) {
-            return bookCrownUpdateBlockWithoutCourtScheduleId(hearing, startDate, endDate, envelope);
+            if (weekdaysBetween(startDate, endDate).size() > 1) {
+                return bookCrownUpdateBlockWithoutCourtScheduleId(hearing, startDate, endDate, envelope);
+            }
+            // One weekday only: as a block it would reach courtscheduler as 360 minutes ending on
+            // startDate, which courtscheduler reads as a single day; its single-day path needs a
+            // source the block call never sends, so the 400 surfaced as a false 422 NO_AVAILABILITY.
+            LOGGER.info("[CROWN-NOID] window {}..{} holds one weekday for hearingId {}; booking it as a single day",
+                    startDate, endDate, hearing.getHearingId());
+            return bookCrownUpdateSingleDayWithoutCourtScheduleId(withWeekdayDaysOnly(hearing));
         }
         return bookCrownUpdateSingleDayWithoutCourtScheduleId(hearing);
+    }
+
+    /**
+     * The update without its weekend hearing days and nonDefaultDays: weekend dates are never part of
+     * a Crown hearing, and their minutes would push the single-day booking past one court day.
+     */
+    private static UpdateHearingForListing withWeekdayDaysOnly(final UpdateHearingForListing hearing) {
+        final UpdateHearingForListing.Builder builder = UpdateHearingForListing.updateHearingForListing()
+                .withValuesFrom(hearing);
+        if (nonNull(hearing.getHearingDays())) {
+            builder.withHearingDays(hearing.getHearingDays().stream()
+                    .filter(day -> isNull(dateOf(day)) || !isWeekend(dateOf(day)))
+                    .toList());
+        }
+        if (nonNull(hearing.getNonDefaultDays())) {
+            builder.withNonDefaultDays(hearing.getNonDefaultDays().stream()
+                    .filter(day -> isNull(day.getStartTime()) || !isWeekend(day.getStartTime().toLocalDate()))
+                    .toList());
+        }
+        return builder.build();
     }
 
     private UpdateHearingForListing bookCrownUpdateSingleDayWithoutCourtScheduleId(final UpdateHearingForListing hearing) {

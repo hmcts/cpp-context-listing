@@ -27,6 +27,8 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.JsonObjects;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.util.SlotsToJsonStringConverter;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource;
 import uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
@@ -434,6 +436,48 @@ class CrownUpdateWithoutCourtScheduleIdTest {
         service.enrichWithCourtSchedules(spiUpdate(TUE, THU, List.of()), mock(JsonEnvelope.class));
 
         assertThat(capture(Lookup.BOOK).get("courtScheduleId"), is(sessionIds.get(TUE).toString()));
+    }
+
+    // ─── a window with one weekday ─────────────────────────────────────────────
+
+    @Test
+    void booksAFridayToSundayWindowAsTheFridaySingleDayWithoutTheWeekendMinutes() {
+        // Fri..Sun holds one weekday. As a block it reached courtscheduler as 360 minutes ending on the
+        // Friday, which courtscheduler reads as a single day and rejects for the missing source (400),
+        // surfacing as a false 422. The SPI payload also carries Sat and Sun days of 360 minutes each.
+        final UUID bookedSessionId = UUID.randomUUID();
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new CrownFallbackResult(hearingId, bookedSessionId, courtRoomId, FRI,
+                        ZonedDateTime.parse(FRI + "T10:00:00Z"), ZonedDateTime.parse(FRI + "T16:00:00Z"),
+                        360, false, "LGT", "CROWN_FB_UPDATE", false));
+
+        final UpdateHearingForListing result = service.enrichWithCourtSchedules(spiUpdate(FRI, SUN, List.of()), mock(JsonEnvelope.class));
+
+        verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(eq(hearingId), eq(courtCentreId), eq(FRI), eq(360),
+                eq(Optional.of(courtRoomId)), any(), eq(CrownFallbackSource.UPDATE_HEARING_FOR_LISTING), any(), any(), any());
+        verify(hearingSlotsService, never()).search(anyMap());
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        assertThat(result.getHearingDays().stream().map(HearingDay::getHearingDate).toList(), contains(FRI));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedSessionId));
+        assertThat(result.getHearingDays().get(0).getCourtRoomId(), is(courtRoomId));
+        assertThat(result.getHearingDays().get(0).getDurationMinutes(), is(360));
+        assertThat("the Sunday nonDefaultDay is dropped", result.getNonDefaultDays().size(), is(1));
+    }
+
+    @Test
+    void keepsAFridayToMondayWindowOnTheBlockRoute() {
+        givenConverters();
+        givenFinalSessionsOn(FRI);
+        givenBookedBlock(FRI);
+        givenListedInSessions();
+        final LocalDate monday = FRI.plusDays(3);
+
+        service.enrichWithCourtSchedules(spiUpdate(FRI, monday, List.of(monday)), mock(JsonEnvelope.class));
+
+        final Map<String, String> booking = capture(Lookup.BOOK);
+        assertThat(booking.get("durationInMinutes"), is("720"));
+        assertThat(booking.get("endDate"), is(monday.toString()));
+        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any());
     }
 
     // ─── fixtures ──────────────────────────────────────────────────────────────
