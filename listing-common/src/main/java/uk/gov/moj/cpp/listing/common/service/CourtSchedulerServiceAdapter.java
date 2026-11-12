@@ -317,7 +317,7 @@ public class CourtSchedulerServiceAdapter {
 
     private static MoveHearingToPastDateResult parseMoveHearingToPastDateResult(final JsonObject slot) {
         return new MoveHearingToPastDateResult(
-                slot.containsKey("courtScheduleId") ? UUID.fromString(slot.getString("courtScheduleId")) : null,
+                slot.containsKey(COURT_SCHEDULE_ID) ? UUID.fromString(slot.getString(COURT_SCHEDULE_ID)) : null,
                 slot.getString(COURT_ROOM_ID, null),
                 slot.containsKey("sessionDate") ? LocalDate.parse(slot.getString("sessionDate")) : null,
                 slot.getString("sessionStartTime", null),
