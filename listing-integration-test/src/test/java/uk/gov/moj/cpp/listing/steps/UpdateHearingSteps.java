@@ -15,11 +15,13 @@ import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertNotNull;
@@ -214,6 +216,8 @@ public class UpdateHearingSteps extends AbstractIT {
     ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
 
     private String request;
+    // Hearing ids that whenMultiHearingsUpdatedForListing sends but that do not exist, so the bulk update must report both as failed.
+    private List<String> nonExistentBulkHearingIds = List.of();
 
     public UpdateHearingSteps() {
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
@@ -682,9 +686,10 @@ public class UpdateHearingSteps extends AbstractIT {
         final JsonObjectBuilder updatedHearingDataJsonBuilder = prepareJsonForUpdatedHearingData(updatedHearingData);
         final JsonObjectBuilder updatedHearingDataNonDefaultDaysJsonBuilder = prepareJsonForUpdatedHearingData(updatedHearingDataForUnallocation1);
 
+        nonExistentBulkHearingIds = List.of(randomUUID().toString(), randomUUID().toString());
         JsonArrayBuilder updatedHearingsDataJsonArrBuilder = createArrayBuilder();
-        updatedHearingsDataJsonArrBuilder.add(updatedHearingDataJsonBuilder.add("hearingId", randomUUID().toString()).build());
-        updatedHearingsDataJsonArrBuilder.add(updatedHearingDataNonDefaultDaysJsonBuilder.add("hearingId", randomUUID().toString()).build());
+        updatedHearingsDataJsonArrBuilder.add(updatedHearingDataJsonBuilder.add("hearingId", nonExistentBulkHearingIds.get(0)).build());
+        updatedHearingsDataJsonArrBuilder.add(updatedHearingDataNonDefaultDaysJsonBuilder.add("hearingId", nonExistentBulkHearingIds.get(1)).build());
         JsonObjectBuilder updatedHearingsJsonObjBuilder = createObjectBuilder();
         updatedHearingsJsonObjBuilder.add("hearings", updatedHearingsDataJsonArrBuilder.build());
 
@@ -921,9 +926,13 @@ public class UpdateHearingSteps extends AbstractIT {
     }
 
     public void verifyPublicEventHearingsUpdateCompleted() {
-        final JsonPath jsonResponse = retrieveMessage(publicEventHearingsUpdateCompleted);
+        // Every bulk update-hearings-for-listing emits hearings-update-completed, usually with failedHearingIds=[].
+        // The consumer lives for the whole test class, so a late event from an earlier test can arrive first:
+        // match on this test's own hearing ids instead of taking the first message.
+        final JsonPath jsonResponse = retrieveMessage(publicEventHearingsUpdateCompleted,
+                allOf(containsString(nonExistentBulkHearingIds.get(0)), containsString(nonExistentBulkHearingIds.get(1))));
 
-        assertThat(jsonResponse.getString("failedHearingIds").split(",").length, is(2));
+        assertThat(jsonResponse.getList("failedHearingIds"), containsInAnyOrder(nonExistentBulkHearingIds.toArray()));
     }
 
     public void verifyPublicEventVacatedTrialUpdated(final boolean allocated, final boolean isVacated) {
