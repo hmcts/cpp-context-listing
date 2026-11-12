@@ -656,6 +656,14 @@ public class ListCourtHearingSteps extends AbstractIT {
                 });
     }
 
+    // Waits for the hearing to reach the viewstore whether it was listed allocated or unallocated
+    public void verifyHearingIsInViewStore() {
+        final UUID hearingId = hearingsData.getHearingData().get(0).getId();
+        pollWithDefaults(requestParams(generateUrlForFindingAHearingById(hearingId.toString()), MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(status().is(OK),
+                        payload().isJson(withJsonPath("$.id", equalTo(hearingId.toString()))));
+    }
+
     public void verifyHearingDayCourtScheduledUpdated(final UUID updatedCourtScheduleId) {
         final UUID hearingId = hearingsData.getHearingData().get(0).getId();
         final String url = generateUrlForFindingAHearingById(hearingId.toString());
@@ -2670,6 +2678,41 @@ public class ListCourtHearingSteps extends AbstractIT {
         return new StringToJsonObjectConverter().convert(eventPayloadString);
     }
 
+    /**
+     * Lists a group hearing with the master case plus the given member cases (isGroupMember=true,
+     * isGroupMaster=false), so the hearing holds every case of the group.
+     */
+    public JsonObject preparePayloadToListCourtHearingForGroupCases(final String fileName, final Map<String, String> values, final UUID groupId,
+                                                                    final UUID masterCaseId, final List<UUID> memberCaseIds) throws IOException {
+
+        final String needString = getStringFromResource(fileName.concat("-part-defendant-listing-needs.json"));
+        final String caseString = getStringFromResource(fileName.concat("-part-cases.json"));
+        String eventPayloadString = getStringFromResource(fileName.concat(".json"))
+                .replaceAll("HEARING_ID", values.get("hearingId"))
+                .replaceAll("COURT_CENTRE_ID", values.get("courtCentreId"))
+                .replaceAll("EARLIEST_START_TIME", values.get("hearingStartTime"))
+                .replaceAll("ESTIMATED_MINUTES", values.get("estimatedMinutes"))
+                .replaceAll("HEARING_TYPE_ID", values.get("hearingTypeId"));
+
+        final List<String> cases = new ArrayList<>();
+        final List<String> needs = new ArrayList<>();
+
+        final UUID masterDefendantId = randomUUID();
+        cases.add(getGroupCase(caseString, groupId, masterCaseId, masterDefendantId, true, true, true));
+        needs.add(getGroupCaseListingNeeds(needString, masterDefendantId, masterCaseId));
+
+        for (final UUID memberCaseId : memberCaseIds) {
+            final UUID memberDefendantId = randomUUID();
+            cases.add(getGroupCase(caseString, groupId, memberCaseId, memberDefendantId, true, true, false));
+            needs.add(getGroupCaseListingNeeds(needString, memberDefendantId, memberCaseId));
+        }
+
+        eventPayloadString = eventPayloadString.replace("DEFENDANT_LISTING_NEEDS", String.join(",", needs));
+        eventPayloadString = eventPayloadString.replace("PROSECUTION_CASES", String.join(",", cases));
+
+        return new StringToJsonObjectConverter().convert(eventPayloadString);
+    }
+
     public JsonObject preparePayloadCaseRemovedFromGroupCases(final String fileName, final String casesFileName,
                                                               final UUID groupId, final UUID masterCaseId,
                                                               final UUID removedCaseId, final UUID newGroupMasterCaseId) throws IOException {
@@ -2688,6 +2731,32 @@ public class ListCourtHearingSteps extends AbstractIT {
         eventPayloadString = eventPayloadString.replace("NEW_GROUP_MASTER", newGroupMasterCaseBuilder.toString());
 
         return new StringToJsonObjectConverter().convert(eventPayloadString);
+    }
+
+    public JsonObject preparePayloadMemberCaseRemovedFromGroupCases(final String fileName, final String casesFileName,
+                                                                    final UUID groupId, final UUID masterCaseId,
+                                                                    final UUID removedCaseId, final boolean removedDefendantHasYouthFlag) throws IOException {
+
+        String removedCase = getGroupCase(getStringFromResource(casesFileName), groupId, removedCaseId, randomUUID(), true, false, false);
+        if (!removedDefendantHasYouthFlag) {
+            removedCase = removedCase.replaceAll("\"isYouth\"\\s*:\\s*(true|false)\\s*,", "");
+        }
+
+        final String eventPayloadString = getStringFromResource(fileName)
+                .replaceAll("GROUP_ID", groupId.toString())
+                .replaceAll("MASTER_CASE_ID", masterCaseId.toString())
+                .replace("REMOVED_CASE", removedCase)
+                .replace("NEW_GROUP_MASTER", "null");
+
+        // a member (not the master) is removed, so there is no new group master
+        final JsonObject eventPayload = new StringToJsonObjectConverter().convert(eventPayloadString);
+        final JsonObjectBuilder builder = createObjectBuilder();
+        eventPayload.forEach((key, value) -> {
+            if (!"newGroupMaster".equals(key)) {
+                builder.add(key, value);
+            }
+        });
+        return builder.build();
     }
 
     private String getGroupCase(final String caseString, final UUID groupId, final UUID caseId, final UUID defendantId,

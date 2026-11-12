@@ -26,6 +26,8 @@ import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearin
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocationWithNonDefaultDaysWithAdditionalFields;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocationWithNonDefaultDaysWithoutCourtRoomSelection;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocationWithoutJudiciary;
+import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForReallocationToNewCourtSessions;
+import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithEmptyJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithNoCourtRoom;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithVideoLink;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithoutVideoLink;
@@ -71,6 +73,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 import javax.json.JsonArray;
@@ -320,6 +323,111 @@ class HearingIT extends AbstractIT {
         stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
         updateHearingSteps.whenMultiHearingsUpdatedForListing(updatedHearingDataForUnallocation1);
         updateHearingSteps.verifyPublicEventHearingsUpdateCompleted();
+    }
+
+    @Test
+    void shouldUpdateHearingWithAllocationAndRaisesPublicEvent() throws IOException {
+        final HearingsData hearingsData = hearingsData();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        final UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
+
+        stubGetReferenceDataCourtRoom(updatedHearingDataForAllocation.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingDataForAllocation.getCourtRoomId());
+
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        stubGetAvailableHearingSlotsWithQueryParams(updateHearingSteps.getUpdatedHearingData());
+        stubListHearingInCourtSessionsWithMultipleSchedules(updateHearingSteps.getUpdatedHearingData());
+        updateHearingSteps.whenHearingUpdated();
+        updateHearingSteps.verifyHearingAllocatedAndJudiciaryAssignedWithManualSourceWhenQueryingFromAPI();
+        updateHearingSteps.verifyPublicEventHearingConfirmed();
+    }
+
+    @Test
+    void shouldAssignCourtSchedulerJudiciaryWithAutoSourceWhenManuallyAssignedMagsHearingIsReallocatedToNewCourtSession() throws IOException {
+        final HearingsData hearingsData = hearingsData();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        // Allocate the hearing with a manually chosen judiciary
+        final UpdatedHearingData allocation = updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
+        stubGetReferenceDataCourtRoom(allocation.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, allocation.getCourtRoomId());
+
+        final UpdateHearingSteps allocationSteps = new UpdateHearingSteps(hearingsData, allocation);
+        stubGetAvailableHearingSlotsWithQueryParams(allocationSteps.getUpdatedHearingData());
+        stubListHearingInCourtSessionsWithMultipleSchedules(allocationSteps.getUpdatedHearingData());
+        allocationSteps.whenHearingUpdated();
+        allocationSteps.verifyJudiciaryAssignedWithSourceWhenQueryingFromAPI(allocation.getJudiciary(), "MANUAL");
+
+        // Reallocate into new court sessions; the UI sends no judiciary, court scheduler returns the session's judiciary
+        final UpdatedHearingData reallocation = updatedHearingDataForReallocationToNewCourtSessions(allocation);
+        final List<JudicialRoleData> courtSchedulerJudiciary = List.of(new JudicialRoleData(Optional.of(true), Optional.of(false), randomUUID(), randomUUID(),
+                new JudicialRoleTypeData(Optional.of(randomUUID()), "MAGISTRATE")));
+
+        final UpdateHearingSteps reallocationSteps = new UpdateHearingSteps(hearingsData, reallocation);
+        stubListHearingInCourtSessionsWithMultipleSchedulesWithJudiciaries(reallocationSteps.getUpdatedHearingData(), courtSchedulerJudiciary);
+        reallocationSteps.whenHearingUpdated();
+        reallocationSteps.verifyJudiciaryAssignedWithSourceWhenQueryingFromAPI(courtSchedulerJudiciary, "AUTO");
+    }
+
+    @Test
+    void shouldRemoveManuallyAssignedJudiciaryWhenJudiciaryIsChangedToEmptyWithNoSource() throws IOException {
+        final HearingsData hearingsData = hearingsData();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        // Allocate the hearing with a manually chosen judiciary
+        final UpdatedHearingData allocation = updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
+        stubGetReferenceDataCourtRoom(allocation.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, allocation.getCourtRoomId());
+
+        final UpdateHearingSteps allocationSteps = new UpdateHearingSteps(hearingsData, allocation);
+        stubGetAvailableHearingSlotsWithQueryParams(allocationSteps.getUpdatedHearingData());
+        stubListHearingInCourtSessionsWithMultipleSchedules(allocationSteps.getUpdatedHearingData());
+        allocationSteps.whenHearingUpdated();
+        allocationSteps.verifyJudiciaryAssignedWithSourceWhenQueryingFromAPI(allocation.getJudiciary(), "MANUAL");
+
+        // All judiciary deleted from the UI
+        final UpdateHearingSteps changeJudiciarySteps = new UpdateHearingSteps(hearingsData, updatedHearingDataWithEmptyJudiciary(allocation, null));
+        changeJudiciarySteps.whenJudiciaryIsChangedForHearings();
+        changeJudiciarySteps.verifyNoJudiciaryAssignedWithSourceWhenQueryingFromAPI("AUTO");
+    }
+
+    @Test
+    void shouldAssignCourtSchedulerJudiciaryWithAutoSourceWhenManualJudiciaryIsClearedOnUpdateHearingForListing() throws IOException {
+        verifyCourtSchedulerJudiciaryAssignedWithAutoSourceWhenManualJudiciaryIsCleared(UpdateHearingSteps::whenHearingUpdatedForListingWithoutJudiciaryAssignmentSource);
+    }
+
+    @Test
+    void shouldAssignCourtSchedulerJudiciaryWithAutoSourceWhenManualJudiciaryIsClearedOnUpdateHearingsForListing() throws IOException {
+        verifyCourtSchedulerJudiciaryAssignedWithAutoSourceWhenManualJudiciaryIsCleared(UpdateHearingSteps::whenHearingUpdatedWithoutJudiciaryAssignmentSource);
+    }
+
+    private void verifyCourtSchedulerJudiciaryAssignedWithAutoSourceWhenManualJudiciaryIsCleared(final Consumer<UpdateHearingSteps> updateHearing) throws IOException {
+        final HearingsData hearingsData = hearingsData();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        // Allocate the hearing with a manually chosen judiciary
+        final UpdatedHearingData allocation = updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
+        stubGetReferenceDataCourtRoom(allocation.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, allocation.getCourtRoomId());
+
+        final UpdateHearingSteps allocationSteps = new UpdateHearingSteps(hearingsData, allocation);
+        stubGetAvailableHearingSlotsWithQueryParams(allocationSteps.getUpdatedHearingData());
+        stubListHearingInCourtSessionsWithMultipleSchedules(allocationSteps.getUpdatedHearingData());
+        allocationSteps.whenHearingUpdated();
+        allocationSteps.verifyJudiciaryAssignedWithSourceWhenQueryingFromAPI(allocation.getJudiciary(), "MANUAL");
+
+        // All judiciary cleared in the UI for the same court sessions; court scheduler returns the session's judiciary
+        final List<JudicialRoleData> courtSchedulerJudiciary = List.of(new JudicialRoleData(Optional.of(true), Optional.of(false), randomUUID(), randomUUID(),
+                new JudicialRoleTypeData(Optional.of(randomUUID()), "MAGISTRATE")));
+        final UpdateHearingSteps clearJudiciarySteps = new UpdateHearingSteps(hearingsData, updatedHearingDataWithEmptyJudiciary(allocation, null));
+        stubListHearingInCourtSessionsWithMultipleSchedulesWithJudiciaries(clearJudiciarySteps.getUpdatedHearingData(), courtSchedulerJudiciary);
+        updateHearing.accept(clearJudiciarySteps);
+        clearJudiciarySteps.verifyJudiciaryAssignedWithSourceWhenQueryingFromAPI(courtSchedulerJudiciary, "AUTO");
     }
 
     @Test
