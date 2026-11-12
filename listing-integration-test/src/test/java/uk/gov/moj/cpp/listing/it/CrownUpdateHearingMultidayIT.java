@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.it;
 
 import static java.time.DayOfWeek.MONDAY;
+import static java.time.DayOfWeek.SATURDAY;
+import static java.time.DayOfWeek.TUESDAY;
 import static java.time.temporal.TemporalAdjusters.nextOrSame;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasNoJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
@@ -10,8 +12,12 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubFinalCrownAdSessionsInCourtRoom;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMultiDaySearchAndBookFailure;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubMultiDaySearchAndBookForHearing;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyCrownBlockSearchAndBookCalledForHearing;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyCrownSearchAndBookNeverCalledForHearing;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyMagsSearchAndBookNeverCalledForHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyMultiDaySearchAndBookCalledForHearing;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
@@ -295,6 +301,150 @@ public class CrownUpdateHearingMultidayIT extends AbstractIT {
         assertThat(body, containsString("\"errorCode\":\"NO_AVAILABILITY\""));
         assertThat(body, containsString("\"unavailableDates\""));
         verifyMultiDaySearchAndBookCalledForHearing(hearingId.toString(), MULTI_DAY_TOTAL_DURATION_MINUTES);
+    }
+
+    /**
+     * SPRDT-1539: the SPI helper's update (cpp-apitests main ListingHelper.setDataForHearing) — CROWN,
+     * courtroom set, no courtScheduleId, no virtual flag, a Tuesday-to-Sunday window with Friday
+     * non-sitting and per-day durations 1 and 2 — used to post one MAGS search-and-book per day and
+     * stayed unallocated. It now books ONE anchored crown.search.and.book block over the weekdays
+     * (4 x 360 minutes, endDate = Friday), skips the weekend and drops the non-sitting Friday.
+     */
+    @Test
+    void shouldBookOneCrownBlockOverTheWeekdays_whenSpiShapedUpdateHasNoCourtScheduleId() throws Exception {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate tuesday = ItClock.today().plusDays(30).with(nextOrSame(TUESDAY));
+        final LocalDate friday = tuesday.plusDays(3);
+        final LocalDate sunday = tuesday.plusDays(5);
+        final List<String> sessionScheduleIds = List.of(UUID.randomUUID().toString(), UUID.randomUUID().toString(),
+                UUID.randomUUID().toString(), UUID.randomUUID().toString());
+        final Map<LocalDate, String> finalSessions = new HashMap<>();
+        for (int i = 0; i < sessionScheduleIds.size(); i++) {
+            finalSessions.put(tuesday.plusDays(i), sessionScheduleIds.get(i));
+        }
+        final ZonedDateTime sessionStart = tuesday.atTime(9, 0).atZone(ZoneOffset.UTC);
+
+        stubFinalCrownAdSessionsInCourtRoom(courtRoomId, courtHouseId, finalSessions);
+        stubMultiDaySearchAndBookForHearing(hearingId.toString(), sessionScheduleIds, courtHouseId, courtRoomId, tuesday, false);
+        uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForSchedules(
+                hearingId.toString(), sessionScheduleIds, sessionStart, SINGLE_COURT_DAY_MINUTES);
+        givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+        final uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps seedSteps = givenARealHearingExists(hearingId);
+        givenReferenceDataStubsForUpdateHearing(courtCentreId, courtRoomId);
+
+        final javax.ws.rs.core.Response response = AbstractIT.restClient.postCommand(
+                buildUpdateHearingUrl(hearingId),
+                MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
+                loadAndSubstitute("test-data/CROWN/update-hearing-for-listing/update-hearing-for-listing-crown-spi-shape-no-courtscheduleid.json",
+                        spiPlaceholders(hearingId, courtCentreId, courtRoomId, tuesday, sunday, friday)),
+                getLoggedInHeader());
+        assertThat(response.getStatus(), is(202));
+
+        verifyCrownBlockSearchAndBookCalledForHearing(hearingId.toString(), sessionScheduleIds.get(0), 4 * SINGLE_COURT_DAY_MINUTES, friday);
+        verifyMagsSearchAndBookNeverCalledForHearing(hearingId.toString());
+        awaitAllocatedProjection(hearingId, tuesday, tuesday.plusDays(2), 3);
+        seedSteps.verifyPublicEVentHearingChangesSaved(hearingId);
+    }
+
+    /**
+     * SPRDT-1539: the same SPI-shaped update when a weekday that must sit (Wednesday) has no FINAL
+     * Crown AD session in the courtroom is rejected synchronously with 422 NO_AVAILABILITY naming
+     * that date — before anything is booked.
+     */
+    @Test
+    @ExpectedServerErrors("CROWN update without courtScheduleId rejected by the FINAL-session pre-check -> CrownMultiDayExtensionException (NO_AVAILABILITY)")
+    void shouldReturn422NamingTheMissingWeekday_whenSpiShapedUpdateFindsNoFinalSessionOnAMustSitWeekday() throws Exception {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate tuesday = ItClock.today().plusDays(30).with(nextOrSame(TUESDAY));
+        final LocalDate wednesday = tuesday.plusDays(1);
+        final Map<LocalDate, String> finalSessions = new HashMap<>();
+        finalSessions.put(tuesday, UUID.randomUUID().toString());
+        finalSessions.put(tuesday.plusDays(2), UUID.randomUUID().toString());
+
+        stubFinalCrownAdSessionsInCourtRoom(courtRoomId, courtHouseId, finalSessions);
+        givenReferenceDataStubsForUpdateHearing(courtCentreId, courtRoomId);
+        givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+
+        final javax.ws.rs.core.Response response = AbstractIT.restClient.postCommand(
+                buildUpdateHearingUrl(hearingId),
+                MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
+                loadAndSubstitute("test-data/CROWN/update-hearing-for-listing/update-hearing-for-listing-crown-spi-shape-no-courtscheduleid.json",
+                        spiPlaceholders(hearingId, courtCentreId, courtRoomId, tuesday, tuesday.plusDays(5), tuesday.plusDays(3))),
+                getLoggedInHeader());
+
+        assertThat(response.getStatus(), is(422));
+        final String body = response.readEntity(String.class);
+        assertThat(body, containsString("\"errorCode\":\"NO_AVAILABILITY\""));
+        assertThat(body, containsString("\"unavailableDates\":[\"" + wednesday + "\"]"));
+        verifyCrownSearchAndBookNeverCalledForHearing(hearingId.toString());
+        verifyMagsSearchAndBookNeverCalledForHearing(hearingId.toString());
+    }
+
+    /** SPRDT-1539: a CROWN update without courtScheduleId may not start at a weekend — 422 before any lookup. */
+    @Test
+    @ExpectedServerErrors("CROWN update without courtScheduleId starting on a Saturday -> CrownMultiDayExtensionException (NO_AVAILABILITY)")
+    void shouldReturn422NamingTheStartDate_whenUpdateWithoutCourtScheduleIdStartsOnASaturday() throws Exception {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final LocalDate saturday = ItClock.today().plusDays(30).with(nextOrSame(SATURDAY));
+
+        givenReferenceDataStubsForUpdateHearing(courtCentreId, courtRoomId);
+        givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
+
+        final javax.ws.rs.core.Response response = AbstractIT.restClient.postCommand(
+                buildUpdateHearingUrl(hearingId),
+                MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
+                loadAndSubstitute("test-data/CROWN/update-hearing-for-listing/update-hearing-for-listing-crown-spi-shape-no-courtscheduleid.json",
+                        spiPlaceholders(hearingId, courtCentreId, courtRoomId, saturday, saturday.plusDays(5), saturday.plusDays(3))),
+                getLoggedInHeader());
+
+        assertThat(response.getStatus(), is(422));
+        final String body = response.readEntity(String.class);
+        assertThat(body, containsString("\"errorCode\":\"NO_AVAILABILITY\""));
+        assertThat(body, containsString("\"unavailableDates\":[\"" + saturday + "\"]"));
+        verifyCrownSearchAndBookNeverCalledForHearing(hearingId.toString());
+        verifyMagsSearchAndBookNeverCalledForHearing(hearingId.toString());
+    }
+
+    private static Map<String, String> spiPlaceholders(final UUID hearingId, final UUID courtCentreId, final UUID courtRoomId,
+                                                       final LocalDate startDate, final LocalDate endDate, final LocalDate nonSittingDay) {
+        final Map<String, String> placeholders = new HashMap<>();
+        placeholders.put("%%HEARING_ID_TO_UPDATE%%", hearingId.toString());
+        placeholders.put("%%COURT_CENTRE_ID%%", courtCentreId.toString());
+        placeholders.put("%%COURT_ROOM_ID%%", courtRoomId.toString());
+        placeholders.put("%%START_DATE%%", startDate.toString());
+        placeholders.put("%%END_DATE%%", endDate.toString());
+        placeholders.put("%%NON_SITTING_DAY%%", nonSittingDay.toString());
+        placeholders.put("%%START_TIME%%", startDate.atTime(10, 0).atZone(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        placeholders.put("%%END_TIME%%", endDate.atTime(9, 30).atZone(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        return placeholders;
+    }
+
+    /** Awaits the allocated projection of the SPRDT-1539 block: start, end, allocated and the sitting days. */
+    private void awaitAllocatedProjection(final UUID hearingId, final LocalDate expectedStartDate,
+                                          final LocalDate expectedEndDate, final int expectedDays) {
+        final String url = String.format("%s/%s", getBaseUri(),
+                MessageFormat.format(readConfig().getProperty("listing.search.hearing"), hearingId.toString()));
+        uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults(
+                uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder
+                        .requestParams(url, "application/vnd.listing.search.hearing+json")
+                        .withHeader(uk.gov.justice.services.common.http.HeaderConstants.USER_ID, getLoggedInUser())
+                        .build())
+                .until(
+                        uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status().is(javax.ws.rs.core.Response.Status.OK),
+                        uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload()
+                                .isJson(allOf(
+                                        withJsonPath("$.startDate", is(expectedStartDate.toString())),
+                                        withJsonPath("$.endDate", is(expectedEndDate.toString())),
+                                        withJsonPath("$.allocated", is(true)),
+                                        withJsonPath("$.hearingDays", hasSize(expectedDays)))));
     }
 
     /**
