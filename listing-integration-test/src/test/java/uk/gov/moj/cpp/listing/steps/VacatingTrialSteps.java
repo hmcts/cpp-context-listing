@@ -24,7 +24,6 @@ import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
-import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.util.UUID;
@@ -46,8 +45,11 @@ public class VacatingTrialSteps extends AbstractIT {
     private JmsMessageProducerClient publicEventHearingTrialVacated;
 
     public VacatingTrialSteps(final HearingsData hearingsData) {
-        final HearingData hearingData = hearingsData.getHearingData().get(0);
-        hearingId = hearingData.getId().toString();
+        this(hearingsData.getHearingData().get(0).getId().toString());
+    }
+
+    public VacatingTrialSteps(final String hearingId) {
+        this.hearingId = hearingId;
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
         createMessageConsumer();
     }

@@ -101,7 +101,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -109,7 +108,6 @@ import java.util.stream.Collectors;
 import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
 import javax.json.JsonString;
 import javax.json.JsonValue;
 import javax.ws.rs.NotFoundException;
@@ -1753,10 +1751,10 @@ public class HearingQueryViewTest {
                 new JudiciaryHearingDay(randomUUID().toString(), null, Instant.parse("2023-08-29T13:00:00Z"), judicialId2));
         when(hearingRepository.findJudiciaryHearingDaysByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, SEARCH_DATE))
                 .thenReturn(hearingDays);
-        when(judiciarySessionService.splitIntoSessions(hearingDays, Optional.of("B01LY00"), COURT_ROOM_ID.toString(), SEARCH_DATE))
+        when(judiciarySessionService.splitIntoSessions(hearingDays, COURT_ROOM_ID.toString(), SEARCH_DATE))
                 .thenReturn(new JudiciarySessions(List.of(judicialId1), List.of(judicialId1, judicialId2)));
 
-        final JsonEnvelope result = hearingsQueryView.searchJudiciary(judiciarySearchQuery(Optional.of("B01LY00")));
+        final JsonEnvelope result = hearingsQueryView.searchJudiciary(judiciarySearchQuery());
 
         final JsonObject payload = result.payloadAsJsonObject();
         assertThat(payload.keySet(), containsInAnyOrder("courtHouseId", "courtRoomId", "courtSessionDate", "amCourtSession", "pmCourtSession"));
@@ -1776,10 +1774,10 @@ public class HearingQueryViewTest {
                 new JudiciaryHearingDay(randomUUID().toString(), null, Instant.parse("2023-08-29T09:00:00Z"), judicialId));
         when(hearingRepository.findJudiciaryHearingDaysByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, SEARCH_DATE))
                 .thenReturn(hearingDays);
-        when(judiciarySessionService.splitIntoSessions(hearingDays, Optional.empty(), COURT_ROOM_ID.toString(), SEARCH_DATE))
+        when(judiciarySessionService.splitIntoSessions(hearingDays, COURT_ROOM_ID.toString(), SEARCH_DATE))
                 .thenReturn(new JudiciarySessions(List.of(judicialId), emptyList()));
 
-        final JsonObject payload = hearingsQueryView.searchJudiciary(judiciarySearchQuery(Optional.empty())).payloadAsJsonObject();
+        final JsonObject payload = hearingsQueryView.searchJudiciary(judiciarySearchQuery()).payloadAsJsonObject();
 
         assertThat(payload.containsKey("amCourtSession"), is(true));
         assertThat(payload.containsKey("pmCourtSession"), is(false));
@@ -1790,19 +1788,18 @@ public class HearingQueryViewTest {
         when(hearingRepository.findJudiciaryHearingDaysByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, SEARCH_DATE))
                 .thenReturn(emptyList());
 
-        final JsonObject payload = hearingsQueryView.searchJudiciary(judiciarySearchQuery(Optional.of("B01LY00"))).payloadAsJsonObject();
+        final JsonObject payload = hearingsQueryView.searchJudiciary(judiciarySearchQuery()).payloadAsJsonObject();
 
         assertThat(payload.keySet(), containsInAnyOrder("courtHouseId", "courtRoomId", "courtSessionDate"));
         verifyNoInteractions(judiciarySessionService);
     }
 
-    private JsonEnvelope judiciarySearchQuery(final Optional<String> ouCode) {
-        final JsonObjectBuilder payload = createObjectBuilder()
+    private JsonEnvelope judiciarySearchQuery() {
+        return envelopeFrom(metadataWithRandomUUID("listing.search.judiciary"), createObjectBuilder()
                 .add("courtCentreId", COURT_CENTRE_ID.toString())
                 .add("courtRoomId", COURT_ROOM_ID.toString())
-                .add("searchDate", SEARCH_DATE.toString());
-        ouCode.ifPresent(value -> payload.add("ouCode", value));
-        return envelopeFrom(metadataWithRandomUUID("listing.search.judiciary"), payload.build());
+                .add("searchDate", SEARCH_DATE.toString())
+                .build());
     }
 
 }

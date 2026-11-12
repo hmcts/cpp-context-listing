@@ -65,7 +65,6 @@ import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 import java.io.File;
 import java.io.StringReader;
 import java.lang.reflect.Method;
-import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -107,7 +106,6 @@ public class HearingQueryApiTest {
     private static final String LISTING_SEARCH_BY_ORGANISATION_DEFENDANT = "listing.get.cases-by-organisation-defendant";
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String COURT_ROOM_ID = "courtRoomId";
-    private static final String SEARCH_DATE = "searchDate";
     private static final String LIST_ID = "listId";
 
     private static final List<String> METHODS_WHICH_ARE_NOT_MERELY_PASS_THROUGH = ImmutableList.of(
@@ -475,7 +473,7 @@ public class HearingQueryApiTest {
                         .add(COURT_ROOM_ID, randomUUID().toString())
                         .add(LIST_ID, "")
                         .build());
-
+        
         final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
 
         assertThat(returnedEnvelope.payloadAsJsonObject().size(), is(0));
@@ -1753,80 +1751,6 @@ public class HearingQueryApiTest {
                 .getJsonArray("hearings").getJsonObject(0)
                 .getJsonArray("courtApplications").getJsonObject(0);
         assertThat(resultApplication.containsKey("applicationTypeCode"), is(false));
-    }
-
-
-    @Test
-    void shouldSearchJudiciaryWithOuCodeResolvedFromReferenceData() {
-        final UUID courtCentreId = randomUUID();
-        final JsonEnvelope query = judiciarySearchQuery(courtCentreId);
-        final JsonEnvelope courtCentre = envelopeFrom(metadataBuilder().withId(randomUUID()).withName("referencedata.query.courtroom"),
-                createObjectBuilder().add("id", courtCentreId.toString()).add("oucode", "B01LY00").build());
-        final JsonEnvelope response = mock(JsonEnvelope.class);
-        final ArgumentCaptor<JsonEnvelope> viewQueryCaptor = ArgumentCaptor.forClass(JsonEnvelope.class);
-
-        when(referenceDataService.getCourtCentreById(courtCentreId, query)).thenReturn(courtCentre);
-        when(hearingQueryView.searchJudiciary(viewQueryCaptor.capture())).thenReturn(response);
-
-        final JsonEnvelope returnedEnvelope = hearingQueryApi.searchJudiciary(query);
-
-        assertThat(returnedEnvelope, is(response));
-        final JsonObject viewPayload = viewQueryCaptor.getValue().payloadAsJsonObject();
-        assertThat(viewPayload.getString("ouCode"), is("B01LY00"));
-        assertThat(viewPayload.getString(COURT_CENTRE_ID), is(courtCentreId.toString()));
-        assertThat(viewPayload.getString(SEARCH_DATE), is(query.payloadAsJsonObject().getString(SEARCH_DATE)));
-        assertThat(viewQueryCaptor.getValue().metadata().name(), is("listing.search.judiciary"));
-    }
-
-    @Test
-    void shouldSearchJudiciaryWithoutOuCodeWhenReferenceDataHasNoOucode() {
-        final UUID courtCentreId = randomUUID();
-        final JsonEnvelope query = judiciarySearchQuery(courtCentreId);
-        final JsonEnvelope courtCentre = envelopeFrom(metadataBuilder().withId(randomUUID()).withName("referencedata.query.courtroom"),
-                createObjectBuilder().add("id", courtCentreId.toString()).build());
-        final JsonEnvelope response = mock(JsonEnvelope.class);
-
-        when(referenceDataService.getCourtCentreById(courtCentreId, query)).thenReturn(courtCentre);
-        when(hearingQueryView.searchJudiciary(query)).thenReturn(response);
-
-        assertThat(hearingQueryApi.searchJudiciary(query), is(response));
-    }
-
-    @Test
-    void shouldSearchJudiciaryWithoutOuCodeWhenCourtCentreNotFound() {
-        final UUID courtCentreId = randomUUID();
-        final JsonEnvelope query = judiciarySearchQuery(courtCentreId);
-        final JsonEnvelope courtCentre = envelopeFrom(metadataBuilder().withId(randomUUID()).withName("referencedata.query.courtroom"), JsonValue.NULL);
-        final JsonEnvelope response = mock(JsonEnvelope.class);
-
-        when(referenceDataService.getCourtCentreById(courtCentreId, query)).thenReturn(courtCentre);
-        when(hearingQueryView.searchJudiciary(query)).thenReturn(response);
-
-        assertThat(hearingQueryApi.searchJudiciary(query), is(response));
-    }
-
-    @Test
-    void shouldSearchJudiciaryWithoutOuCodeWhenReferenceDataFails() {
-        final UUID courtCentreId = randomUUID();
-        final JsonEnvelope query = judiciarySearchQuery(courtCentreId);
-        final JsonEnvelope response = mock(JsonEnvelope.class);
-
-        when(referenceDataService.getCourtCentreById(courtCentreId, query)).thenThrow(new IllegalStateException("reference data unavailable"));
-        when(hearingQueryView.searchJudiciary(query)).thenReturn(response);
-
-        assertThat(hearingQueryApi.searchJudiciary(query), is(response));
-    }
-
-    private JsonEnvelope judiciarySearchQuery(final UUID courtCentreId) {
-        return envelopeFrom(
-                metadataBuilder()
-                        .withId(randomUUID())
-                        .withName("listing.search.judiciary"),
-                createObjectBuilder()
-                        .add(COURT_CENTRE_ID, courtCentreId.toString())
-                        .add(COURT_ROOM_ID, randomUUID().toString())
-                        .add(SEARCH_DATE, LocalDate.now().toString())
-                        .build());
     }
 
     private JsonObject returnAsJsonObject(final String expectedJsonPath) {

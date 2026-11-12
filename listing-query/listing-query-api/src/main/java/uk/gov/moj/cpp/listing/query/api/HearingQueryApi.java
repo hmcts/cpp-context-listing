@@ -75,8 +75,6 @@ public class HearingQueryApi {
     private static final String START_DATE = "startDate";
     private static final String END_DATE = "endDate";
     private static final String OU_L2_CODE = "oucodeL2Code";
-    private static final String OUCODE = "oucode";
-    private static final String OU_CODE = "ouCode";
     private static final String FIRST_NAME = "firstName";
     private static final String LAST_NAME = "lastName";
     private static final String DOB = "dateOfBirth";
@@ -300,33 +298,7 @@ public class HearingQueryApi {
 
     @Handles("listing.search.judiciary")
     public JsonEnvelope searchJudiciary(final JsonEnvelope query) {
-        final String ouCode = findOuCode(query);
-        if (ouCode == null) {
-            return hearingQueryView.searchJudiciary(query);
-        }
-        final JsonObjectBuilder payloadBuilder = JsonObjects.createObjectBuilder();
-        query.payloadAsJsonObject().forEach(payloadBuilder::add);
-        payloadBuilder.add(OU_CODE, ouCode);
-        return hearingQueryView.searchJudiciary(envelopeFrom(query.metadata(), payloadBuilder.build()));
-    }
-
-    /**
-     * Court Scheduler needs the ouCode to resolve AM/PM sessions. Without it the view places
-     * judiciary by hearing start time, so a reference data failure must not fail the query.
-     */
-    private String findOuCode(final JsonEnvelope query) {
-        final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID);
-        try {
-            final JsonEnvelope courtCentre = referenceDataService.getCourtCentreById(fromString(courtCentreId), query);
-            if (courtCentre == null || !(courtCentre.payload() instanceof JsonObject courtCentreJson)) {
-                LOGGER.warn("Court centre {} not found in reference data, judiciary sessions will use hearing start time", courtCentreId);
-                return null;
-            }
-            return courtCentreJson.getString(OUCODE, null);
-        } catch (final RuntimeException e) {
-            LOGGER.warn("Reference data lookup failed for court centre {}, judiciary sessions will use hearing start time", courtCentreId, e);
-            return null;
-        }
+        return hearingQueryView.searchJudiciary(query);
     }
 
     private JsonArray enrichCourtListsWithAddress(final JsonArray courtLists, final String address1, final String address2, final String welshAddress1, final String welshAddress2, final Map<String, JsonObject> judiciariesById, final Map<String, String> prosecutorOrganisationNamesById) {

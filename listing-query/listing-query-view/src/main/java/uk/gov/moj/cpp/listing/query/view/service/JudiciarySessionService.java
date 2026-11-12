@@ -6,14 +6,9 @@ import static java.util.Comparator.nullsLast;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.groupingBy;
-import static uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter.COURT_ROOM_ID;
-import static uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter.HEARING_SLOTS;
-import static uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter.OU_CODE;
-import static uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter.PAGE_NUMBER;
-import static uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter.PAGE_SIZE;
-import static uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter.PANEL_ADULT_YOUTH;
-import static uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter.SESSION_END_DATE;
-import static uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter.SESSION_START_DATE;
+import static uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter.COURT_SCHEDULES;
+import static uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter.COURT_SCHEDULE_ID;
+import static uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter.COURT_SESSION;
 
 import uk.gov.justice.services.common.configuration.Value;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
@@ -31,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -51,15 +47,11 @@ public class JudiciarySessionService {
     private static final Logger LOGGER = LoggerFactory.getLogger(JudiciarySessionService.class);
 
     private static final ZoneId UK_ZONE = ZoneId.of("Europe/London");
-    private static final String PANEL = "panel";
-    private static final String SHOW_OVERBOOKED_SLOTS = "showOverbookedSlots";
-    private static final String COURT_SCHEDULE_ID = "courtScheduleId";
-    private static final String COURT_SESSION = "courtSession";
     private static final String AM = "AM";
     private static final String PM = "PM";
     private static final String ALL_DAY = "AD";
-    private static final String COURT_SCHEDULER_PAGE_NUMBER = "1";
-    private static final String COURT_SCHEDULER_PAGE_SIZE = "100";
+    // keeps the comma-separated courtScheduleIds query parameter well inside URL length limits
+    private static final int COURT_SCHEDULE_IDS_PER_REQUEST = 50;
 
     @Inject
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
@@ -69,10 +61,9 @@ public class JudiciarySessionService {
     private String pmSessionStartTime;
 
     public JudiciarySessions splitIntoSessions(final List<JudiciaryHearingDay> hearingDays,
-                                               final Optional<String> ouCode,
                                                final String courtRoomId,
                                                final LocalDate searchDate) {
-        final Map<String, String> sessionsByCourtScheduleId = findCourtSessions(hearingDays, ouCode, courtRoomId, searchDate);
+        final Map<String, String> sessionsByCourtScheduleId = findCourtSessions(hearingDays, courtRoomId, searchDate);
         final LocalTime pmStart = LocalTime.parse(pmSessionStartTime);
 
         final List<JudiciaryHearingDay> amHearingDays = new ArrayList<>();
@@ -93,42 +84,38 @@ public class JudiciarySessionService {
     }
 
     private Map<String, String> findCourtSessions(final List<JudiciaryHearingDay> hearingDays,
-                                                  final Optional<String> ouCode,
                                                   final String courtRoomId,
                                                   final LocalDate searchDate) {
-        final boolean anyCourtScheduleId = hearingDays.stream().map(JudiciaryHearingDay::courtScheduleId).anyMatch(Objects::nonNull);
-        if (!anyCourtScheduleId) {
-            return Map.of();
-        }
-        if (ouCode.isEmpty()) {
-            LOGGER.warn("No ouCode for court room {}, placing judiciary by hearing start time", courtRoomId);
-            return Map.of();
-        }
+        final List<String> courtScheduleIds = hearingDays.stream()
+                .map(JudiciaryHearingDay::courtScheduleId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
 
-        final Map<String, String> queryParams = new HashMap<>();
-        queryParams.put(OU_CODE, ouCode.get());
-        queryParams.put(COURT_ROOM_ID, courtRoomId);
-        queryParams.put(SESSION_START_DATE, searchDate.toString());
-        queryParams.put(SESSION_END_DATE, searchDate.toString());
-        queryParams.put(PANEL, PANEL_ADULT_YOUTH);
-        queryParams.put(SHOW_OVERBOOKED_SLOTS, Boolean.TRUE.toString());
-        queryParams.put(PAGE_NUMBER, COURT_SCHEDULER_PAGE_NUMBER);
-        queryParams.put(PAGE_SIZE, COURT_SCHEDULER_PAGE_SIZE);
+        final Map<String, String> sessionsByCourtScheduleId = new HashMap<>();
+        IntStream.iterate(0, from -> from < courtScheduleIds.size(), from -> from + COURT_SCHEDULE_IDS_PER_REQUEST)
+                .mapToObj(from -> courtScheduleIds.subList(from, Math.min(from + COURT_SCHEDULE_IDS_PER_REQUEST, courtScheduleIds.size())))
+                .forEach(batch -> sessionsByCourtScheduleId.putAll(findCourtSessions(batch, courtRoomId, searchDate)));
+        return sessionsByCourtScheduleId;
+    }
 
+    private Map<String, String> findCourtSessions(final Collection<String> courtScheduleIds,
+                                                  final String courtRoomId,
+                                                  final LocalDate searchDate) {
         try {
-            final Response response = courtSchedulerServiceAdapter.hearingSlotsSearch(queryParams);
-            if (response.getStatus() != Response.Status.OK.getStatusCode() ||!(response.getEntity() instanceof JsonObject payload) || !payload.containsKey(HEARING_SLOTS)) {
-                LOGGER.warn("Court Scheduler hearing slots search returned status {} for court room {} on {}, placing judiciary by hearing start time",
+            final Response response = courtSchedulerServiceAdapter.searchCourtSchedulesById(courtScheduleIds);
+            if (response.getStatus() != Response.Status.OK.getStatusCode() || !(response.getEntity() instanceof JsonObject payload) || !payload.containsKey(COURT_SCHEDULES)) {
+                LOGGER.warn("Court Scheduler court schedules search returned status {} for court room {} on {}, placing judiciary by hearing start time",
                         response.getStatus(), courtRoomId, searchDate);
                 return Map.of();
             }
             final Map<String, String> sessionsByCourtScheduleId = new HashMap<>();
-            payload.getJsonArray(HEARING_SLOTS).getValuesAs(JsonObject.class).stream()
-                    .filter(slot -> nonNull(slot.getString(COURT_SCHEDULE_ID, null)) && nonNull(slot.getString(COURT_SESSION, null)))
-                    .forEach(slot -> sessionsByCourtScheduleId.put(slot.getString(COURT_SCHEDULE_ID), slot.getString(COURT_SESSION)));
+            payload.getJsonArray(COURT_SCHEDULES).getValuesAs(JsonObject.class).stream()
+                    .filter(courtSchedule -> nonNull(courtSchedule.getString(COURT_SCHEDULE_ID, null)) && nonNull(courtSchedule.getString(COURT_SESSION, null)))
+                    .forEach(courtSchedule -> sessionsByCourtScheduleId.put(courtSchedule.getString(COURT_SCHEDULE_ID), courtSchedule.getString(COURT_SESSION)));
             return sessionsByCourtScheduleId;
         } catch (final RuntimeException e) {
-            LOGGER.warn("Court Scheduler hearing slots search failed for court room {} on {}, placing judiciary by hearing start time",
+            LOGGER.warn("Court Scheduler court schedules search failed for court room {} on {}, placing judiciary by hearing start time",
                     courtRoomId, searchDate, e);
             return Map.of();
         }

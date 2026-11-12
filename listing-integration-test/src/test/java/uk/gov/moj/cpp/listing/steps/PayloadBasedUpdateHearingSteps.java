@@ -326,6 +326,28 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
                         ))
                 );
     }
+
+    /**
+     * Verify listing.search.judiciary returns only the request echo — no hearing in the room on the
+     * date contributes judiciary.
+     */
+    public void verifyJudiciarySearchReturnsNoCourtSessions(final String courtCentreId, final String courtRoomId, final String searchDate) {
+        final String searchJudiciaryUrl = String.format("%s/%s", getBaseUri(),
+                MessageFormat.format(readConfig().getProperty("listing.search.judiciary"), courtCentreId, courtRoomId, searchDate));
+
+        pollWithDefaults(requestParams(searchJudiciaryUrl, MEDIA_TYPE_SEARCH_JUDICIARY_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.courtHouseId", is(courtCentreId)),
+                                withJsonPath("$.courtRoomId", is(courtRoomId)),
+                                withJsonPath("$.courtSessionDate", is(searchDate)),
+                                hasNoJsonPath("$.amCourtSession"),
+                                hasNoJsonPath("$.pmCourtSession")
+                        ))
+                );
+    }
+
     /**
      * Verify that judiciary was assigned to the hearing
      */

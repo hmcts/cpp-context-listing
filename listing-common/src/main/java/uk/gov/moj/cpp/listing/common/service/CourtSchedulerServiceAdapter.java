@@ -13,6 +13,7 @@ import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +48,9 @@ public class CourtSchedulerServiceAdapter {
     public static final String COURT_ROOM_ID = "courtRoomId";
     public static final String HEARING_SLOTS = "hearingSlots";
     public static final String COURT_SESSION = "courtSession";
+    public static final String COURT_SCHEDULE_ID = "courtScheduleId";
+    public static final String COURT_SCHEDULE_IDS = "courtScheduleIds";
+    public static final String COURT_SCHEDULES = "courtSchedules";
     public static final String BUSINESS_TYPE = "businessType";
     public static final String PANEL_ADULT_YOUTH = "ADULT,YOUTH";
     private static final String PANEL = "panel";
@@ -181,6 +185,13 @@ public class CourtSchedulerServiceAdapter {
         }
         LOGGER.error("hearingSlotsSearch from rota returned an error : {} with status {}", responsePayload, hearingSlotResponse.getStatus());
         return hearingSlotResponse;
+    }
+
+    /**
+     * Looks up court schedules by id. Not paginated: every known id comes back in {@code courtSchedules}.
+     */
+    public Response searchCourtSchedulesById(final Collection<String> courtScheduleIds) {
+        return hearingSlotsService.getCourtSchedulesById(Map.of(COURT_SCHEDULE_IDS, String.join(",", courtScheduleIds)));
     }
 
     public HearingIdsResponse getCourtSchedulerHearings(final String ouCode,

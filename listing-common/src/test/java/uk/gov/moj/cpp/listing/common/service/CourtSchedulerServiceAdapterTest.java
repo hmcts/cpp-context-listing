@@ -18,6 +18,7 @@ import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -220,5 +221,12 @@ public class CourtSchedulerServiceAdapterTest {
         assertThat(finalResp.getUuids().size(), is(4));
         assertThat(finalResp.getPageCount(), is(1L));
         assertThat(finalResp.getResults(), is(4L));
+    }
+
+    @Test
+    public void shouldSearchCourtSchedulesByCommaSeparatedIds() {
+        when(hearingSlotsService.getCourtSchedulesById(Map.of("courtScheduleIds", "id-1,id-2"))).thenReturn(response);
+
+        assertThat(courtSchedulerServiceAdapter.searchCourtSchedulesById(List.of("id-1", "id-2")), is(response));
     }
 }

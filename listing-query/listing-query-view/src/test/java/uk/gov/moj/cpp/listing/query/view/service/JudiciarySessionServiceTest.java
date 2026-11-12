@@ -4,11 +4,13 @@ import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
@@ -20,9 +22,12 @@ import uk.gov.moj.cpp.listing.query.view.service.JudiciarySessionService.Judicia
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.stream.IntStream;
 
 import javax.json.JsonArrayBuilder;
 import javax.ws.rs.core.Response;
@@ -42,7 +47,6 @@ class JudiciarySessionServiceTest {
 
     private static final LocalDate SEARCH_DATE = LocalDate.parse("2026-11-11");
     private static final String COURT_ROOM_ID = "22222222-2222-4222-8222-222222222222";
-    private static final Optional<String> OU_CODE = Optional.of("B01LY00");
 
     private static final String HEARING_1 = "10000000-0000-4000-8000-000000000001";
     private static final String HEARING_2 = "10000000-0000-4000-8000-000000000002";
@@ -68,7 +72,7 @@ class JudiciarySessionServiceTest {
     private JudiciarySessionService judiciarySessionService;
 
     @Captor
-    private ArgumentCaptor<Map<String, String>> queryParamsCaptor;
+    private ArgumentCaptor<Collection<String>> courtScheduleIdsCaptor;
 
     @BeforeEach
     void setUp() throws IllegalAccessException {
@@ -98,23 +102,37 @@ class JudiciarySessionServiceTest {
     }
 
     @Test
-    void shouldCallCourtSchedulerOnceWithHearingSlotsSearchParameters() {
+    void shouldLookUpEachDistinctCourtScheduleIdOnce() {
         givenCourtSchedulerSessions(Map.of(SCHEDULE_AM, "AM", SCHEDULE_PM, "PM"));
 
         split(List.of(
                 day(HEARING_1, SCHEDULE_AM, GMT_10_00, JUDGE_1),
-                day(HEARING_2, SCHEDULE_PM, GMT_13_00, JUDGE_2)));
+                day(HEARING_2, SCHEDULE_AM, GMT_10_00, JUDGE_2),
+                day(HEARING_3, SCHEDULE_PM, GMT_13_00, JUDGE_3),
+                day(HEARING_3, null, GMT_13_00, JUDGE_3)));
 
-        verify(courtSchedulerServiceAdapter).hearingSlotsSearch(queryParamsCaptor.capture());
-        final Map<String, String> queryParams = queryParamsCaptor.getValue();
-        assertThat(queryParams, hasEntry("ouCode", OU_CODE.get()));
-        assertThat(queryParams, hasEntry("courtRoomId", COURT_ROOM_ID));
-        assertThat(queryParams, hasEntry("sessionStartDate", SEARCH_DATE.toString()));
-        assertThat(queryParams, hasEntry("sessionEndDate", SEARCH_DATE.toString()));
-        assertThat(queryParams, hasEntry("panel", "ADULT,YOUTH"));
-        assertThat(queryParams, hasEntry("showOverbookedSlots", "true"));
-        assertThat(queryParams, hasEntry("pageNumber", "1"));
-        assertThat(queryParams, hasEntry("pageSize", "100"));
+        verify(courtSchedulerServiceAdapter).searchCourtSchedulesById(courtScheduleIdsCaptor.capture());
+        assertThat(courtScheduleIdsCaptor.getValue(), containsInAnyOrder(SCHEDULE_AM, SCHEDULE_PM));
+    }
+
+    @Test
+    void shouldLookUpCourtSchedulesInBatchesOfFiftyAndPlaceEveryHearingDay() {
+        final List<JudiciaryHearingDay> hearingDays = new ArrayList<>();
+        final Map<String, String> sessionsByCourtScheduleId = new HashMap<>();
+        IntStream.range(0, 120).forEach(i -> {
+            final String courtScheduleId = "c0000000-0000-4000-8000-%012d".formatted(i);
+            // start time says AM, Court Scheduler says PM: every id must be resolved for all judges to land in PM
+            hearingDays.add(day(HEARING_1, courtScheduleId, GMT_10_00, "aaaaaaaa-0000-4000-8000-%012d".formatted(i)));
+            sessionsByCourtScheduleId.put(courtScheduleId, "PM");
+        });
+        givenCourtSchedulerSessions(sessionsByCourtScheduleId);
+
+        final JudiciarySessions sessions = split(hearingDays);
+
+        verify(courtSchedulerServiceAdapter, times(3)).searchCourtSchedulesById(courtScheduleIdsCaptor.capture());
+        assertThat(courtScheduleIdsCaptor.getAllValues().stream().map(Collection::size).toList(), contains(50, 50, 20));
+        assertThat(sessions.amJudicialIds(), is(empty()));
+        assertThat(sessions.pmJudicialIds(), hasSize(120));
     }
 
     @Test
@@ -125,7 +143,7 @@ class JudiciarySessionServiceTest {
 
         assertThat(sessions.amJudicialIds(), contains(JUDGE_1));
         assertThat(sessions.pmJudicialIds(), contains(JUDGE_2));
-        verify(courtSchedulerServiceAdapter, never()).hearingSlotsSearch(any());
+        verify(courtSchedulerServiceAdapter, never()).searchCourtSchedulesById(any());
     }
 
     @Test
@@ -162,7 +180,7 @@ class JudiciarySessionServiceTest {
     void shouldFallBackOnStartTimeWhenCourtSchedulerReturnsError() {
         final Response response = mock(Response.class);
         when(response.getStatus()).thenReturn(500);
-        when(courtSchedulerServiceAdapter.hearingSlotsSearch(any())).thenReturn(response);
+        when(courtSchedulerServiceAdapter.searchCourtSchedulesById(any())).thenReturn(response);
 
         final JudiciarySessions sessions = split(List.of(day(HEARING_1, SCHEDULE_PM, GMT_10_00, JUDGE_1)));
 
@@ -172,21 +190,12 @@ class JudiciarySessionServiceTest {
 
     @Test
     void shouldFallBackOnStartTimeWhenCourtSchedulerCallThrows() {
-        when(courtSchedulerServiceAdapter.hearingSlotsSearch(any())).thenThrow(new IllegalStateException("timeout"));
+        when(courtSchedulerServiceAdapter.searchCourtSchedulesById(any())).thenThrow(new IllegalStateException("timeout"));
 
         final JudiciarySessions sessions = split(List.of(day(HEARING_1, SCHEDULE_AM, GMT_13_00, JUDGE_1)));
 
         assertThat(sessions.amJudicialIds(), is(empty()));
         assertThat(sessions.pmJudicialIds(), contains(JUDGE_1));
-    }
-
-    @Test
-    void shouldSkipCourtSchedulerAndFallBackWhenOuCodeUnknown() {
-        final JudiciarySessions sessions = judiciarySessionService.splitIntoSessions(
-                List.of(day(HEARING_1, SCHEDULE_PM, GMT_10_00, JUDGE_1)), Optional.empty(), COURT_ROOM_ID, SEARCH_DATE);
-
-        assertThat(sessions.amJudicialIds(), contains(JUDGE_1));
-        verify(courtSchedulerServiceAdapter, never()).hearingSlotsSearch(any());
     }
 
     @Test
@@ -215,7 +224,7 @@ class JudiciarySessionServiceTest {
     }
 
     private JudiciarySessions split(final List<JudiciaryHearingDay> hearingDays) {
-        return judiciarySessionService.splitIntoSessions(hearingDays, OU_CODE, COURT_ROOM_ID, SEARCH_DATE);
+        return judiciarySessionService.splitIntoSessions(hearingDays, COURT_ROOM_ID, SEARCH_DATE);
     }
 
     private static JudiciaryHearingDay day(final String hearingId, final String courtScheduleId, final Instant startTime, final String judicialId) {
@@ -223,14 +232,14 @@ class JudiciarySessionServiceTest {
     }
 
     private void givenCourtSchedulerSessions(final Map<String, String> sessionsByCourtScheduleId) {
-        final JsonArrayBuilder hearingSlots = createArrayBuilder();
-        sessionsByCourtScheduleId.forEach((courtScheduleId, courtSession) -> hearingSlots.add(createObjectBuilder()
+        final JsonArrayBuilder courtSchedules = createArrayBuilder();
+        sessionsByCourtScheduleId.forEach((courtScheduleId, courtSession) -> courtSchedules.add(createObjectBuilder()
                 .add("courtScheduleId", courtScheduleId)
                 .add("courtSession", courtSession)
-                .add("judiciaries", createArrayBuilder())));
+                .add("isDraft", false)));
         final Response response = mock(Response.class);
         when(response.getStatus()).thenReturn(200);
-        when(response.getEntity()).thenReturn(createObjectBuilder().add("hearingSlots", hearingSlots).build());
-        when(courtSchedulerServiceAdapter.hearingSlotsSearch(any())).thenReturn(response);
+        when(response.getEntity()).thenReturn(createObjectBuilder().add("courtSchedules", courtSchedules).build());
+        when(courtSchedulerServiceAdapter.searchCourtSchedulesById(any())).thenReturn(response);
     }
 }

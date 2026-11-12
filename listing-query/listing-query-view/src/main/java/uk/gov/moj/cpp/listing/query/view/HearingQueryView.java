@@ -146,7 +146,6 @@ public class HearingQueryView {
     private static final String URN = "urn";
     private static final String WOFD_HEARING_TYPE_ID = "638ced9d-3f95-4e99-b27b-47fa5a2c6add";
     private static final String PCB_HEARING_TYPE_ID = "3a2d160f-363b-4360-96e1-0007a400a64c";
-    private static final String OU_CODE = "ouCode";
     private static final String COURT_HOUSE_ID = "courtHouseId";
     private static final String COURT_SESSION_DATE = "courtSessionDate";
     private static final String AM_COURT_SESSION = "amCourtSession";
@@ -844,7 +843,6 @@ public class HearingQueryView {
         final String courtCentreId = payload.getString(COURT_CENTRE_ID);
         final String courtRoomId = payload.getString(COURT_ROOM_ID);
         final String searchDate = payload.getString(SEARCH_DATE);
-        final Optional<String> ouCode = ofNullable(payload.getString(OU_CODE, null));
 
         final List<JudiciaryHearingDay> judiciaryHearingDays = repository.findJudiciaryHearingDaysByCourtCentreAndRoomAndSearchDate(
                 fromString(courtCentreId), fromString(courtRoomId), LocalDate.parse(searchDate));
@@ -856,7 +854,7 @@ public class HearingQueryView {
 
         if (!judiciaryHearingDays.isEmpty()) {
             final JudiciarySessions judiciarySessions = judiciarySessionService.splitIntoSessions(
-                    judiciaryHearingDays, ouCode, courtRoomId, LocalDate.parse(searchDate));
+                    judiciaryHearingDays, courtRoomId, LocalDate.parse(searchDate));
             addCourtSession(responseBuilder, AM_COURT_SESSION, judiciarySessions.amJudicialIds());
             addCourtSession(responseBuilder, PM_COURT_SESSION, judiciarySessions.pmJudicialIds());
         }
