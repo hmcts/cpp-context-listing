@@ -205,6 +205,12 @@ class CourtScheduleEnrichmentServiceTest {
 
         // Assert: search() called twice (two days) and includes multi-day params
         verify(hearingSlotsService, times(2)).search(mapCaptor.capture());
+        // SPRDT-1539: a MAGISTRATES update without courtScheduleIds searches and lists; it never posts a
+        // search-and-book action, MAGS or Crown.
+        verify(hearingSlotsService, never()).searchBookSlots(anyMap());
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(
+                any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any());
 
         // Each captured map must contain the multi-day flags
         for (java.util.Map<String, String> qp : mapCaptor.getAllValues()) {
@@ -745,6 +751,41 @@ class CourtScheduleEnrichmentServiceTest {
         verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
         assertThat(result.getHearingDays().size(), is(2));
         assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(org.hamcrest.CoreMatchers.nullValue()));
+    }
+
+    @Test
+    void shouldBookMagistratesListCandidateThroughTheMagsSearchAndBookOnly() {
+        // SPRDT-1539: a MAGISTRATES list payload without courtScheduleIds books through the MAGS
+        // search-and-book and never reaches a Crown search-and-book.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final LocalDate day = LocalDate.of(2026, 11, 17);
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withValuesFrom(crownListWithoutIds(hearingId, courtCentreId, courtRoomId, day))
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .build();
+        final JsonObject magsResponse = JsonObjects.createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .add("sessions", JsonObjects.createArrayBuilder().add(JsonObjects.createObjectBuilder()
+                        .add("courtScheduleId", courtScheduleId.toString())
+                        .add("courtRoomId", courtRoomId.toString())
+                        .add("sessionStartTime", "2026-11-17T10:00:00Z")
+                        .add("draft", false)))
+                .build();
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(magsResponse);
+        when(objectToJsonObjectConverter.convert(magsResponse)).thenReturn(magsResponse);
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, times(1)).searchBookSlots(anyMap());
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(
+                any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any());
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
     }
 
     private static HearingListingNeeds crownListWithoutIds(final UUID hearingId, final UUID courtCentreId,

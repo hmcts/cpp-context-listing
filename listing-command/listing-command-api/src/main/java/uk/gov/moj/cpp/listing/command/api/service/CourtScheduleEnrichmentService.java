@@ -1593,8 +1593,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
 
         hearing.getHearingDays().forEach(hearingDay -> {
             if (isNull(hearingDay.getCourtScheduleId())) {
-                boolean isPolice = !JurisdictionType.CROWN.equals(hearing.getJurisdictionType())
-                        && isPolice(hearing, envelope);
+                // Only MAGISTRATES hearings reach here: CROWN candidates take handleCrownListWithoutCourtScheduleIds.
+                final boolean isPolice = isPolice(hearing, envelope);
                 HearingSlotSearchResponse hearingSlotSearchResponse = searchAndBookSlots(
                         hearing.getId().toString(),
                         hearing.getCourtCentre().getId().toString(),
