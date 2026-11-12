@@ -67,6 +67,7 @@ public class HearingSlotsService {
     public static final String COURTSCHEDULER_CHANGE_COURT_ROOM_MULTIDAY = "application/vnd.courtscheduler.change-court-room-for-multiday-hearing+json";
 
     private static final String CJS_CPP_UID = "CJSCPPUID";
+    private static final String CPP_ACTION = "CPP-ACTION";
     @Inject
     @Value(key = "courtscheduler.base.url", defaultValue = "http://localhost:8080/listingcourtscheduler-api/rest/courtscheduler")
     protected String baseUri;
@@ -272,6 +273,7 @@ public class HearingSlotsService {
             final HttpGet httpGet = new HttpGet(new URL(baseUri + urlPath).toString());
             httpGet.addHeader(ACCEPT, acceptHeader);
             httpGet.addHeader(CJS_CPP_UID, getUserId().toString());
+            httpGet.addHeader(CPP_ACTION, toActionName(acceptHeader));
 
             final URIBuilder uriBuilder = new URIBuilder(httpGet.getURI());
             params.forEach(uriBuilder::addParameter);
@@ -302,6 +304,10 @@ public class HearingSlotsService {
                     .entity(ex.getMessage())
                     .build();
         }
+    }
+
+    private static String toActionName(final String mediaType) {
+        return mediaType.replaceFirst("^application/vnd\\.", "").replaceFirst("\\+json$", "");
     }
 
     private Response post(final String urlPath, final String contentTypeHeader, final JsonObject payload, final boolean addAcceptJson) {
