@@ -117,7 +117,8 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
             hearingBuilder.withJudiciary(updateHearingForListing.getJudiciary());
         } else if (isNotEmpty(enrichedJudiciaries)) {
             // Use judiciary from list response, converting from domain to core model
-            hearingBuilder.withJudiciary(convertJudicialRoleDomainToCore(enrichedJudiciaries));
+            hearingBuilder.withJudiciary(convertJudicialRoleDomainToCore(enrichedJudiciaries))
+                    .withIsJudiciaryFromCourtSchedule(true);
         }
         // If neither exists, don't call withJudiciary at all (no blank lists)
         

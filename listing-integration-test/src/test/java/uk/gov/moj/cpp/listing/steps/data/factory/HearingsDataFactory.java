@@ -275,6 +275,10 @@ public class HearingsDataFactory {
         return singletonList(randomHearingStandaloneApplication(false, linkedCaseId));
     }
 
+    public static List<HearingData> hearingsDataStandaloneApplicationWithSubjectAndNoOffences() {
+        return singletonList(randomHearingStandaloneApplication(randomCourtApplicationDataWithSubjectAndNoOffences()));
+    }
+
 
     public static List<HearingData> hearingsDataForCasesWithExParte() {
         return manyRandomHearingsWithExParte(2);
@@ -1517,9 +1521,12 @@ public class HearingsDataFactory {
     }
 
     private static HearingData randomHearingStandaloneApplication(final boolean withSubject, final UUID linkedCaseId) {
-        final CourtApplicationData courtApplicationData = withSubject
+        return randomHearingStandaloneApplication(withSubject
                 ? randomCourtApplicationDataWithSubject(linkedCaseId)
-                : randomCourtApplicationData(linkedCaseId);
+                : randomCourtApplicationData(linkedCaseId));
+    }
+
+    private static HearingData randomHearingStandaloneApplication(final CourtApplicationData courtApplicationData) {
         return new HearingData(randomUUID(), getRandomCourtCenterId(), PTP_HEARING_TYPE, ItClock.today(),
                 null, HEARING_ESTIMATE_MINUTES, ESTIMATED_DURATION,
                 null, ItClock.nowUtc(), null,
@@ -1542,6 +1549,17 @@ public class HearingsDataFactory {
                 new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), CourtApplicationPartyType.PERSON_DEFENDANT, null, randomAddress(),
                         randomUUID(), ItClock.today().minusYears(30)),
                 STRING.next(), Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, STRING.next(), randomUUID());
+    }
+
+    // Subject and respondent are different PERSON_DEFENDANTs; offenceId is null so the application is listed with no offences
+    private static CourtApplicationData randomCourtApplicationDataWithSubjectAndNoOffences() {
+        return new CourtApplicationData(randomUUID(), null, randomUUID(),
+                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.FALSE, STRING.next(), CourtApplicationPartyType.PERSON, null, randomAddress()),
+                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), CourtApplicationPartyType.PERSON_DEFENDANT, null, randomAddress(),
+                        randomUUID(), ItClock.today().minusYears(25)),
+                new CourtApplicationPartyData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), CourtApplicationPartyType.PERSON_DEFENDANT, null, randomAddress(),
+                        randomUUID(), ItClock.today().minusYears(30)),
+                STRING.next(), Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, STRING.next(), null);
     }
 
     private static CourtApplicationData randomCourtApplicationData(final CourtApplicationData courtApplicationData, final UUID linkedCaseId) {

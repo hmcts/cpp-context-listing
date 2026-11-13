@@ -250,7 +250,7 @@ public class PublishCourtListCommandSenderTest {
     }
 
     @Test
-    public void shouldUseProsecutionCaseIdFromDefendantJson_WhenHearingHasNoCaseIdentifier() {
+    public void shouldPublishApplicationHearingWithoutDefendants() {
 
         final UUID courtCentreId = randomUUID();
         final UUID courtListId = randomUUID();
@@ -284,11 +284,11 @@ public class PublishCourtListCommandSenderTest {
 
         verify(sender, times(1)).send(envelopeArgumentCaptor.capture());
         final JsonObject payload = envelopeArgumentCaptor.getValue().payloadAsJsonObject();
-        final JsonObject defendant = payload.getJsonArray("courtLists").getJsonObject(0)
-                .getJsonArray("hearings").getJsonObject(0)
-                .getJsonArray("defendants").getJsonObject(0);
+        final JsonObject applicationHearing = payload.getJsonArray("courtLists").getJsonObject(0)
+                .getJsonArray("hearings").getJsonObject(0);
 
-        assertThat(defendant.getString("prosecutionCaseId"), is("72b9df0f-4c81-4b17-ad3e-cea90833a882"));
+        assertThat(applicationHearing.containsKey("defendants"), is(false));
+        assertThat(applicationHearing.getString("startTime"), is(notNullValue()));
         verify(progressionService, never()).caseExistsByCaseUrn(any(JsonEnvelope.class), any(String.class));
     }
 
