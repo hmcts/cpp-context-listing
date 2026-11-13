@@ -46,7 +46,7 @@
         <mssql.jdbc.version>7.0.0.jre8</mssql.jdbc.version>
         <commons-csv.version>1.4</commons-csv.version>
         <defence.version>17.0.94</defence.version>
-        <usersgroups.version>17.104.49</usersgroups.version>
+        <usersgroups.version>25.104.52</usersgroups.version>
 
         <sonar.coverage.exclusions>
             **/uk/gov/justice/api/mapper/**/*,
