@@ -221,6 +221,9 @@ subscriptions_descriptor:
         - name: listing.events.hearing-day-court-schedule-updated
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-day-court-schedule-updated.json
 
+        - name: listing.events.crown-hearing-migrated-to-courtschedule
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.crown-hearing-migrated-to-courtschedule.json
+
         - name: listing.events.hearing-marked-as-duplicate
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-marked-as-duplicate.json
 

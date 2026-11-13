@@ -26,6 +26,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
@@ -34,6 +35,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.json.JsonObject;
 
 @SuppressWarnings({"squid:S1312", "squid:S2629", "squid:S6813"})
 @ApplicationScoped
@@ -53,7 +56,11 @@ public class HearingSlotsService {
     private static final String COUTRT_SCHEDULER_HEARING_IDS = "application/vnd.courtscheduler.get.hearing.ids+json";
     private static final String COURTSCHEDULER_SEARCH_BOOK_COURTSCHEDULES = "application/vnd.courtscheduler.search.book.hearing.slots+json";
 
+    private static final String HEARINGS_RESOURCE = "/hearings/";
+    private static final String COURTSCHEDULER_MOVE_TO_PAST_DATE = "application/vnd.courtscheduler.move-hearing-to-past-date+json";
+
     private static final String CJS_CPP_UID = "CJSCPPUID";
+    private static final String CPP_ACTION = "CPP-ACTION";
     @Inject
     @Value(key = "courtscheduler.base.url", defaultValue = "http://localhost:8080/listingcourtscheduler-api/rest/courtscheduler")
     protected String baseUri;
@@ -115,6 +122,40 @@ public class HearingSlotsService {
 
     public Response getCourtSchedulesById(final Map<String, String> params) {
         return query(COURTSCHEDULES_RESOURCE, COURTSCHEDULER_SEARCH_COURTSCHEDULES_BY_ID, params);
+    }
+
+    public Response moveHearingToPastDate(final UUID hearingId, final JsonObject payload) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("move-hearing-to-past-date for hearing id '{}'", hearingId);
+        }
+
+        try {
+            final HttpPost httpPost = new HttpPost(new URL(baseUri + HEARINGS_RESOURCE + hearingId).toString());
+            httpPost.addHeader(CONTENT_TYPE, COURTSCHEDULER_MOVE_TO_PAST_DATE);
+            httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
+
+            final StringEntity requestEntity = new StringEntity(payload.toString());
+            httpPost.setEntity(requestEntity);
+
+            final HttpResponse httpResponse = execute(httpPost);
+            final int statusCode = httpResponse.getStatusLine().getStatusCode();
+            final String entityBodyAsString = httpResponse.getEntity() == null ? "" : EntityUtils.toString(httpResponse.getEntity());
+
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("move-hearing-to-past-date returned status {}", statusCode);
+            }
+
+            return Response
+                    .status(statusCode)
+                    .entity(entityBodyAsString.isBlank() ? null : stringToJsonObjectConverter.convert(entityBodyAsString))
+                    .build();
+        } catch (IOException ex) {
+            LOGGER.error("Exception thrown on trying to move hearing to past date", ex);
+            return Response
+                    .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+                    .entity(ex.getMessage())
+                    .build();
+        }
     }
 
     public void delete(final UUID hearingId) {
@@ -179,6 +220,7 @@ public class HearingSlotsService {
             final HttpGet httpGet = new HttpGet(new URL(baseUri + urlPath).toString());
             httpGet.addHeader(ACCEPT, acceptHeader);
             httpGet.addHeader(CJS_CPP_UID, getUserId().toString());
+            httpGet.addHeader(CPP_ACTION, toActionName(acceptHeader));
 
             final URIBuilder uriBuilder = new URIBuilder(httpGet.getURI());
             params.forEach(uriBuilder::addParameter);
@@ -209,5 +251,9 @@ public class HearingSlotsService {
                     .entity(ex.getMessage())
                     .build();
         }
+    }
+
+    private static String toActionName(final String mediaType) {
+        return mediaType.replaceFirst("^application/vnd\\.", "").replaceFirst("\\+json$", "");
     }
 }

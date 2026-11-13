@@ -97,6 +97,27 @@ public class ReferenceDataServiceTest {
     }
 
     @Test
+    public void shouldGetProsecutorById() {
+        final JsonEnvelope eventEnvelope = generateEmptyEnvelope();
+        final JsonEnvelope returnedResponseEnvelope = generateEmptyEnvelope();
+        when(requester.requestAsAdmin(any(JsonEnvelope.class))).thenReturn(returnedResponseEnvelope);
+
+        final String prosecutorId = randomUUID().toString();
+        final JsonEnvelope responseEnvelope = referenceDataService.getProsecutorById(prosecutorId, eventEnvelope);
+
+        verify(requester).requestAsAdmin(argumentCaptorForRequestEnvelope.capture());
+        final JsonEnvelope requestEnvelope = argumentCaptorForRequestEnvelope.getValue();
+        assertThat(requestEnvelope.metadata().name(), is("referencedata.query.prosecutor"));
+        final JsonObject expectedPayload = createObjectBuilder()
+                .add("id", prosecutorId)
+                .build();
+        final JsonObject payloadOfRequestEnvelope = requestEnvelope.payloadAsJsonObject();
+        assertThat(payloadOfRequestEnvelope, is(expectedPayload));
+
+        assertThat(responseEnvelope, is(returnedResponseEnvelope));
+    }
+
+    @Test
     public void shouldGetIsHearingLanguageWelsh() {
 
         final JsonEnvelope eventEnvelope = generateEmptyEnvelope();

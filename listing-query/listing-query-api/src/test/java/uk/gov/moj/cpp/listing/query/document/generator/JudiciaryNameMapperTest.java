@@ -19,6 +19,9 @@ public class JudiciaryNameMapperTest {
     private static final String TITLE_PREFIX = "titlePrefix";
     private static final String TITLE_SUFFIX = "titleSuffix";
     private static final String TITLE_JUDICIAL_PREFIX = "titleJudicialPrefix";
+    private static final String TITLE_PREFIX_WELSH = "titlePrefixWelsh";
+    private static final String TITLE_SUFFIX_WELSH = "titleSuffixWelsh";
+    private static final String TITLE_JUDICIARY_PREFIX_WELSH = "titleJudiciaryPrefixWelsh";
     private static final String SURNAME = "surname";
     private static final String ID = "id";
 
@@ -53,6 +56,20 @@ public class JudiciaryNameMapperTest {
         assertThat(judgeNameActual, is("District Judge Fine"));
     }
 
+    @Test
+    public void shouldReturnJudgeWelshNameWithJudiciaryTitlePrefix() {
+        final JsonObject judgeName = createJudiciaryWithWelshJudiciaryTitlePrefixOnly();
+        final String judgeNameActual = judiciaryNameMapper.getWelshName(judgeName);
+        assertThat(judgeNameActual, is("Ei Anrhydedd Barnwr AMAKYE"));
+    }
+
+    @Test
+    public void shouldReturnJudgeWelshNameWithTitlePrefixAndSuffix() {
+        final JsonObject judgeName = createJudiciaryWithWelshTitlePrefix();
+        final String judgeNameActual = judiciaryNameMapper.getWelshName(judgeName);
+        assertThat(judgeNameActual, is("Mrs Barnes JP"));
+    }
+
     private JsonObject createJudiciaryWithJudiciaryTitlePrefixOnly() {
         final JsonObjectBuilder judiciaryBuilder = JsonObjects.createObjectBuilder();
         judiciaryBuilder.add(SURNAME, "AMAKYE");
@@ -85,6 +102,24 @@ public class JudiciaryNameMapperTest {
         final JsonObjectBuilder judiciaryBuilder = JsonObjects.createObjectBuilder();
         judiciaryBuilder.add(SURNAME, "Fine");
         judiciaryBuilder.add(TITLE_JUDICIAL_PREFIX, "District Judge");
+        judiciaryBuilder.add(ID, randomUUID().toString());
+        return judiciaryBuilder.build();
+    }
+
+    private JsonObject createJudiciaryWithWelshJudiciaryTitlePrefixOnly() {
+        final JsonObjectBuilder judiciaryBuilder = JsonObjects.createObjectBuilder();
+        judiciaryBuilder.add(SURNAME, "AMAKYE");
+        judiciaryBuilder.add(TITLE_JUDICIARY_PREFIX_WELSH, "Ei Anrhydedd Barnwr");
+        judiciaryBuilder.add(TITLE_PREFIX_WELSH, "Mrs");
+        judiciaryBuilder.add(ID, randomUUID().toString());
+        return judiciaryBuilder.build();
+    }
+
+    private JsonObject createJudiciaryWithWelshTitlePrefix() {
+        final JsonObjectBuilder judiciaryBuilder = JsonObjects.createObjectBuilder();
+        judiciaryBuilder.add(SURNAME, "Barnes");
+        judiciaryBuilder.add(TITLE_SUFFIX_WELSH, "JP");
+        judiciaryBuilder.add(TITLE_PREFIX_WELSH, "Mrs");
         judiciaryBuilder.add(ID, randomUUID().toString());
         return judiciaryBuilder.build();
     }

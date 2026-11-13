@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/listing.command.move-hearing-to-past-date-enriched.json",
+  "type": "object",
+  "properties": {
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "jurisdiction": {
+      "type": "string",
+      "enum": ["CROWN", "MAGISTRATES"]
+    },
+    "startDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "endDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "courtCentreId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "hearingStartTime": {
+      "type": "string"
+    },
+    "hearingDays": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "sessionDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "courtScheduleId": {
+            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          },
+          "courtRoomId": {
+            "type": "string"
+          },
+          "sessionStartTime": {
+            "type": "string"
+          },
+          "sessionEndTime": {
+            "type": "string"
+          },
+          "durationInMinutes": {
+            "type": "integer"
+          },
+          "sequence": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sessionDate"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "hearingId",
+    "jurisdiction",
+    "startDate",
+    "courtCentreId",
+    "hearingDays"
+  ],
+  "additionalProperties": false
+}

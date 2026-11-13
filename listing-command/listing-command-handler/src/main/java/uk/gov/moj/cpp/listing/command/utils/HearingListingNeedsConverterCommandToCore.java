@@ -96,6 +96,19 @@ public class HearingListingNeedsConverterCommandToCore implements Converter<Hear
             builder.withNonDefaultDays(commandHearing.getNonDefaultDays());
         }
 
+        // LPT-2405: tier / list type / key reason inherited from the seeding hearing. This
+        // converter copies field by field, so anything added to the carrier schema must be
+        // copied here too or it is silently dropped between the command API and the aggregate.
+        if (commandHearing.getTier() != null) {
+            builder.withTier(commandHearing.getTier());
+        }
+        if (commandHearing.getListType() != null) {
+            builder.withListType(commandHearing.getListType());
+        }
+        if (commandHearing.getKeyReason() != null) {
+            builder.withKeyReason(commandHearing.getKeyReason());
+        }
+
         return builder.build();
     }
 }

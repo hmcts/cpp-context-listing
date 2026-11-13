@@ -113,6 +113,7 @@ curl -X POST \
 'http://localhost:8080/listing-service/command/api/rest/listing/publishCourtListsForCrownCourts'
 ```
 
+
 ``` 
 HTTP/1.1 202 Accepted
 X-Powered-By: Undertow/1

@@ -98,7 +98,7 @@ public class HearingEventListenerTest {
     private JsonObject jsonObject;
 
     @Mock
-    private JsonNode jsonNode;
+    private ObjectNode jsonNode;
 
     @Mock
     private TrialVacated trialVacated;
@@ -216,6 +216,7 @@ public class HearingEventListenerTest {
 
         hearingEventListener.hearingListed(envelope);
 
+        verify(jsonNode).put("judiciaryAssignmentSource", "AUTO");
         final Hearing hearing = new Hearing(HEARING_ID, jsonNode);
         verify(hearingSearchSyncService).syncEntity(hearing);
     }

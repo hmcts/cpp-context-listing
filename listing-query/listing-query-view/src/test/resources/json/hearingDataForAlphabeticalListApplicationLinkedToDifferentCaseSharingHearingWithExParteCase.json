@@ -1,0 +1,100 @@
+[
+  {
+    "hearingDate": "2026-06-01",
+    "hearingsByHearingDate": [
+      {
+        "hearing": {
+          "id": "a1a1a1a1-0000-4000-8000-000000000001",
+          "type": {
+            "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+            "description": "Plea and Trial Preparation"
+          },
+          "endDate": "2026-06-01",
+          "allocated": true,
+          "judiciary": [],
+          "startDate": "2026-06-01",
+          "courtRoomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+          "hearingDays": [
+            {
+              "endTime": "2026-06-01T09:01:00.000Z",
+              "sequence": 1,
+              "startTime": "2026-06-01T09:00:00.000Z",
+              "hearingDate": "2026-06-01",
+              "durationMinutes": 1
+            }
+          ],
+          "listedCases": [
+            {
+              "id": "c0c0c0c0-0000-4000-8000-000000000099",
+              "isEjected": false,
+              "markers": [],
+              "defendants": [
+                {
+                  "id": "d0d0d0d0-0000-4000-8000-000000000001",
+                  "address": {
+                    "address1": "No fixed abode"
+                  },
+                  "isYouth": false,
+                  "lastName": "Smith",
+                  "offences": [
+                    {
+                      "id": "e0e0e0e0-0000-4000-8000-000000000001",
+                      "startDate": "2026-05-01",
+                      "offenceCode": "LA83001",
+                      "offenceWording": "Ex-parte civil matter",
+                      "civilOffence": {
+                        "isExParte": true
+                      },
+                      "statementOfOffence": {
+                        "title": "Ex-parte civil offence",
+                        "welshTitle": "Ex-parte civil offence"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "John",
+                  "dateOfBirth": "1990-01-01",
+                  "masterDefendantId": "d0d0d0d0-0000-4000-8000-000000000001",
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2026-05-02T11:17:19.281Z"
+                }
+              ],
+              "caseIdentifier": {
+                "authorityId": "8f8024ca-ff7c-3829-a0d2-35d37492aebb",
+                "authorityCode": "METPF",
+                "caseReference": "TESTCASE0099EP"
+              },
+              "restrictFromCourtList": false
+            }
+          ],
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "nonDefaultDays": [],
+          "nonSittingDays": [],
+          "hearingLanguage": "ENGLISH",
+          "estimatedMinutes": 15,
+          "jurisdictionType": "MAGISTRATES",
+          "courtApplications": [
+            {
+              "id": "f1f1f1f1-0000-4000-8000-000000000003",
+              "isEjected": false,
+              "applicant": {
+                "id": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+                "lastName": "Jones",
+                "firstName": "Alice",
+                "isRespondent": false,
+                "restrictFromCourtList": false,
+                "courtApplicationPartyType": "PERSON_DEFENDANT"
+              },
+              "respondents": [],
+              "linkedCaseIds": ["aa11bb22-cc33-dd44-ee55-ff6677889900"],
+              "applicationType": "Application to vary conditions of bail",
+              "applicationReference": "TESTAPP0003DIFF",
+              "restrictFromCourtList": false,
+              "restrictCourtApplicationType": false
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

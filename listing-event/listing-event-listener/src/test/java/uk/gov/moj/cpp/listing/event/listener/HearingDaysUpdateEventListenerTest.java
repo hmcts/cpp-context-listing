@@ -20,6 +20,7 @@ import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 
 import uk.gov.justice.listing.events.HearingDay;
+import uk.gov.justice.listing.events.CrownHearingMigratedToCourtschedule;
 import uk.gov.justice.listing.events.HearingDayCourtSchedule;
 import uk.gov.justice.listing.events.HearingDayCourtScheduleUpdated;
 import uk.gov.justice.listing.events.HearingDaysWithoutCourtCentreCorrected;
@@ -155,6 +156,45 @@ public class HearingDaysUpdateEventListenerTest {
                 .build();
         when(hearingRepository.findBy(hearingId)).thenReturn(hearing);
         hearingDaysUpdateEventListener.hearingDayCourtScheduleUpdated(listenerEnvelope);
+
+        verify(hearingRepository, times(1)).save(hearing);
+        verify(hearingSearchSyncService, times(1)).sync(hearingId);
+    }
+
+    @Test
+    public void testCrownHearingMigratedToCourtSchedule() throws JsonProcessingException {
+        UUID hearingId = randomUUID();
+        UUID courtScheduleId = randomUUID();
+        LocalDate hearingDate1 = LocalDate.now();
+        LocalDate hearingDate2 = LocalDate.now().plusDays(1);
+
+        List<HearingDayCourtSchedule> hearingDayCourtSchedules =
+                of(new HearingDayCourtSchedule(courtScheduleId, hearingDate1),
+                   new HearingDayCourtSchedule(courtScheduleId, hearingDate2));
+        CrownHearingMigratedToCourtschedule event =
+                CrownHearingMigratedToCourtschedule.crownHearingMigratedToCourtschedule()
+                        .withHearingId(hearingId)
+                        .withHearingDayCourtSchedules(hearingDayCourtSchedules)
+                        .build();
+        Envelope<CrownHearingMigratedToCourtschedule> listenerEnvelope = envelopeFrom(
+                metadataWithRandomUUID("listing.events.crown-hearing-migrated-to-courtschedule"),
+                event);
+
+        List<HearingDay> hearingDays =
+                of(HearingDay.hearingDay().withHearingDate(hearingDate1).withCourtScheduleId(courtScheduleId).build(),
+                   HearingDay.hearingDay().withHearingDate(hearingDate2).withCourtScheduleId(courtScheduleId).build());
+        Set<HearingDays> dbHearingDays = Set.of(HearingDays.builder().withHearingDate(hearingDate1).build(),
+                                           HearingDays.builder().withHearingDate(hearingDate2).build());
+        uk.gov.justice.listing.events.Hearing dbHearingPayload =
+                uk.gov.justice.listing.events.Hearing.hearing().withId(hearingId).withHearingDays(hearingDays).build();
+
+        Hearing hearing = Hearing.builder()
+                .withId(hearingId)
+                .withProperties(objectMapper.valueToTree(dbHearingPayload))
+                .withHearingDays(dbHearingDays)
+                .build();
+        when(hearingRepository.findBy(hearingId)).thenReturn(hearing);
+        hearingDaysUpdateEventListener.crownHearingMigratedToCourtSchedule(listenerEnvelope);
 
         verify(hearingRepository, times(1)).save(hearing);
         verify(hearingSearchSyncService, times(1)).sync(hearingId);

@@ -71,12 +71,15 @@ public class Hearing {
 
   private final Optional<Integer> numberOfGroupCases;
 
+  /** Tier / list type inherited from the seeding hearing; null when nothing was inherited. */
+  private final PtphDetail ptphDetail;
+
   public Hearing(final Boolean allocated, final UUID courtCentreId, final Optional<UUID> courtRoomId, final Optional<LocalDate> endDate, final Integer estimatedMinutes, String estimatedDuration, final List<HearingDay> hearingDays,
                  final Optional<HearingLanguage> hearingLanguage, final UUID id, final List<JudicialRole> judiciary, final JurisdictionType jurisdictionType, final List<ListedCase> listedCases, final Optional<String> listingDirections,
                  final List<NonDefaultDay> nonDefaultDays, final List<LocalDate> nonSittingDays, final Optional<String> prosecutorDatesToAvoid, final Optional<String> reportingRestrictionReason, final Optional<Integer> sequence, final ZonedDateTime startDateTime,
                  final Type type, final List<CourtApplication> courtApplications, final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds, final Optional<Boolean> hasAdjournmentDate,
                  final Optional<LocalDate> weekCommencingStartDate, final Optional<LocalDate> weekCommencingEndDate, final Optional<Integer> weekCommencingDurationInWeeks, final Optional<Boolean> isSlotsBooked, final Optional<Boolean> isPossibleDisqualification,
-                 final Optional<Boolean> isGroupProceedings, final Optional<Integer> numberOfGroupCases){
+                 final Optional<Boolean> isGroupProceedings, final Optional<Integer> numberOfGroupCases, final PtphDetail ptphDetail){
     this.allocated = allocated;
     this.courtCentreId = courtCentreId;
     this.courtRoomId = courtRoomId;
@@ -107,6 +110,7 @@ public class Hearing {
     this.isPossibleDisqualification = isPossibleDisqualification;
     this.isGroupProceedings = isGroupProceedings;
     this.numberOfGroupCases = numberOfGroupCases;
+    this.ptphDetail = ptphDetail;
   }
 
   public Boolean getAllocated() {
@@ -227,6 +231,10 @@ public class Hearing {
     return numberOfGroupCases;
   }
 
+  public PtphDetail getPtphDetail() {
+    return ptphDetail;
+  }
+
   public static Builder hearing() {
     return new Hearing.Builder();
   }
@@ -265,12 +273,13 @@ public class Hearing {
             Objects.equals(isSlotsBooked, hearing.isSlotsBooked) &&
             Objects.equals(isPossibleDisqualification, hearing.isPossibleDisqualification) &&
             Objects.equals(isGroupProceedings, hearing.isGroupProceedings) &&
-            Objects.equals(numberOfGroupCases, hearing.numberOfGroupCases);
+            Objects.equals(numberOfGroupCases, hearing.numberOfGroupCases) &&
+            Objects.equals(ptphDetail, hearing.ptphDetail);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, estimatedDuration, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, courtApplicationPartyListingNeeds, hasAdjournmentDate, isSlotsBooked, isPossibleDisqualification,isGroupProceedings, numberOfGroupCases);
+    return Objects.hash(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, estimatedDuration, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, courtApplicationPartyListingNeeds, hasAdjournmentDate, isSlotsBooked, isPossibleDisqualification,isGroupProceedings, numberOfGroupCases, ptphDetail);
   }
 
   @Override
@@ -306,6 +315,7 @@ public class Hearing {
             ", isPossibleDisqualification=" + isPossibleDisqualification +
             ", isGroupProceedings=" + isGroupProceedings +
             ", numberOfGroupCases=" + numberOfGroupCases +
+            ", ptphDetail=" + ptphDetail +
             '}';
   }
 
@@ -369,6 +379,8 @@ public class Hearing {
     private Optional<Boolean>  isGroupProceedings;
 
     private Optional<Integer> numberOfGroupCases;
+
+    private PtphDetail ptphDetail;
 
     public Builder withIsGroupProceedings(final Optional<Boolean> isGroupProceedings) {
       this.isGroupProceedings = isGroupProceedings;
@@ -517,8 +529,13 @@ public class Hearing {
       return this;
     }
 
+    public Builder withPtphDetail(final PtphDetail ptphDetail) {
+      this.ptphDetail = ptphDetail;
+      return this;
+    }
+
     public Hearing build() {
-      return new Hearing(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, estimatedDuration, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, this.courtApplicationPartyListingNeeds, this.hasAdjournmentDate, this.weekCommencingStartDate, this.weekCommencingEndDate, this.weekCommencingDurationInWeeks, this.isSlotsBooked, this.isPossibleDisqualification, this.isGroupProceedings, this.numberOfGroupCases);
+      return new Hearing(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, estimatedDuration, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, this.courtApplicationPartyListingNeeds, this.hasAdjournmentDate, this.weekCommencingStartDate, this.weekCommencingEndDate, this.weekCommencingDurationInWeeks, this.isSlotsBooked, this.isPossibleDisqualification, this.isGroupProceedings, this.numberOfGroupCases, this.ptphDetail);
     }
   }
 }

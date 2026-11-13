@@ -1,0 +1,30 @@
+{
+  "hearings": [
+    {
+      "hearingId": "4182b7c6-6393-43f8-97ea-9a7e58b72ba4",
+      "hearingDayCourtSchedules": [
+        {
+          "hearingDate": "2026-06-22",
+          "courtScheduleId": "df44e775-d809-4836-a14d-5a9f7c2078c1"
+        }
+      ]
+    },
+    {
+      "hearingId": "7c2b9e10-4d33-4a8e-9b21-0a1f5c6d7e88",
+      "hearingDayCourtSchedules": [
+        {
+          "hearingDate": "2026-07-14",
+          "courtScheduleId": "1b9a4f02-77c1-4e0a-8d3b-2c5e9f10a644"
+        },
+        {
+          "hearingDate": "2026-07-15",
+          "courtScheduleId": "2c0b5103-88d2-4f1b-9e4c-3d6fa021b755"
+        },
+        {
+          "hearingDate": "2026-07-16",
+          "courtScheduleId": "3d1c6214-99e3-401c-af5d-4e70b132c866"
+        }
+      ]
+    }
+  ]
+}

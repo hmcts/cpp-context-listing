@@ -39,7 +39,6 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 import uk.gov.moj.cpp.listing.it.util.ItClock;
 
-
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -124,6 +123,40 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "true");
         publishCourtListSteps.verifyPublicEventForCourtListPublished(courtCentreId.toString(), publishCourtListType.toString(), true, true, 1);
+    }
+
+    @Test
+    public void shouldExcludeCivilCaseWithExParteOffenceFromPublishedFirmList() {
+        // CAD-1710
+        final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+        final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
+        final UUID courtListId = randomUUID();
+        final int courtRoomId = 231;
+        final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
+        final LocalDate startDate = ItClock.today();
+
+        final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
+                courtCentreId,
+                publishCourtListType,
+                startDate);
+
+        stubGetReferenceDataCourtCentreById(courtCentreId);
+
+        final HearingsData hearingsData = PublishCourtListSteps.loadHearingDataWithSingleExParteOffence(courtCentreId, courtRoomUUID);
+
+        stubIdMapperReturningExistingAssociation(courtListId);
+        stubOrganisationUnit(courtCentreId);
+        stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
+        stubGetReferenceDataCpCourtRooms(hearingsData.getHearingData().get(0).getCourtRoomId(), courtRoomId);
+        stubGetReferenceDataXhibitCourtRoomMappings(hearingsData.getHearingData().get(0).getCourtRoomId());
+
+        final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayload);
+        publishCourtListSteps.createMessageConsumer();
+        publishCourtListSteps.acceptCourtListXmlFiles();
+        publishCourtListSteps.sendPublishCourtListCommand();
+        publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "true");
+        final String exParteCaseReference = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseReference();
+        publishCourtListSteps.verifySentXmlDoesNotContainCaseReference(exParteCaseReference);
     }
 
     @Test

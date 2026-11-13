@@ -4,7 +4,9 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.service.ReferenceDataService;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.json.JsonArray;
@@ -18,6 +20,7 @@ public class HearingTypeFactory {
     private static final String HEARING_TYPES_ARRAY = "hearingTypes";
     private static final String HEARING_TYPE_ID = "id";
     private static final String HEARING_TYPE_DEFAULT_DURATION_MIN = "defaultDurationMin";
+    private static final String HEARING_TYPE_TRIAL_FLAG = "trialTypeFlag";
 
     @Inject
     private ReferenceDataService referenceDataService;
@@ -33,5 +36,16 @@ public class HearingTypeFactory {
         hearingTypes.getValuesAs(JsonObject.class).forEach(hearingType ->
                 hearingTypesMap.put(hearingType.getString(HEARING_TYPE_ID), hearingType.getInt(HEARING_TYPE_DEFAULT_DURATION_MIN)));
         return hearingTypesMap;
+    }
+
+    public Set<String> getTrialHearingTypeIds(final JsonEnvelope envelope) {
+        final JsonObject jsonObject = referenceDataService.getHearingTypes(envelope).payloadAsJsonObject();
+        final Set<String> trialHearingTypeIds = new HashSet<>();
+        jsonObject.getJsonArray(HEARING_TYPES_ARRAY).getValuesAs(JsonObject.class).forEach(hearingType -> {
+            if (hearingType.getBoolean(HEARING_TYPE_TRIAL_FLAG, false)) {
+                trialHearingTypeIds.add(hearingType.getString(HEARING_TYPE_ID));
+            }
+        });
+        return trialHearingTypeIds;
     }
 }

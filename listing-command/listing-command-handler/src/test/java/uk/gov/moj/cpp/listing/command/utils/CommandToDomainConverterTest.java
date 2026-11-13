@@ -30,6 +30,7 @@ import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
 import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 import uk.gov.moj.cpp.listing.domain.Offence;
+import uk.gov.moj.cpp.listing.domain.PtphDetail;
 import uk.gov.moj.cpp.listing.domain.SeedingHearing;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 
@@ -37,6 +38,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -98,6 +100,23 @@ class CommandToDomainConverterTest {
         assertThat(actual.getWeekCommencingStartDate(), is(of(LocalDate.parse(commandHearing.getWeekCommencingDate().getStartDate()))));
         assertThat(actual.getWeekCommencingDurationInWeeks().get(), is(commandHearing.getWeekCommencingDate().getDuration()));
 
+    }
+
+    @Test
+    public void shouldBuildListedCaseWithoutHearingWhenDefendantIsYouthNotSet() {
+        final ProsecutionCase prosecutionCase = commandBuilder.buildCommandHearing().getProsecutionCases().get(0);
+        final ProsecutionCase caseWithoutYouthFlag = ProsecutionCase.prosecutionCase()
+                .withValuesFrom(prosecutionCase)
+                .withDefendants(prosecutionCase.getDefendants().stream()
+                        .map(defendant -> uk.gov.justice.core.courts.Defendant.defendant().withValuesFrom(defendant).withIsYouth(null).build())
+                        .collect(java.util.stream.Collectors.toList()))
+                .build();
+
+        final ListedCase listedCase = commandToDomainConverter.buildListedCases(caseWithoutYouthFlag);
+
+        assertThat(listedCase.getId(), is(prosecutionCase.getId()));
+        assertThat(listedCase.getDefendants().size(), is(prosecutionCase.getDefendants().size()));
+        assertThat(listedCase.getDefendants().get(0).getIsYouth(), is(Optional.empty()));
     }
 
     @Test
@@ -566,5 +585,61 @@ class CommandToDomainConverterTest {
         final HearingListingNeeds commandHearing = commandBuilder.buildHearingWithListedStartDateTime();
 
         assertThat(extractStartDate(commandHearing), is(getStartDateTime(commandHearing)));
+    }
+
+    private HearingListingNeeds commandHearingWith(final String tier, final String listType, final String keyReason) {
+        return HearingListingNeeds.hearingListingNeeds()
+                .withValuesFrom(commandBuilder.buildCommandHearing())
+                .withTier(tier)
+                .withListType(listType)
+                .withKeyReason(keyReason)
+                .build();
+    }
+
+    /**
+     * LPT-2405 — inherited tier / list type reach the aggregate as a single value object.
+     */
+    @Test
+    void shouldCarryInheritedPtphDetailOntoTheDomainHearing() {
+        final uk.gov.moj.cpp.listing.domain.Hearing actual =
+                commandToDomainConverter.convert(commandHearingWith("TIER_3", "TYPE_1_FIXED", "Vulnerable witness"));
+
+        assertThat(actual.getPtphDetail(), is(new PtphDetail("TIER_3", "TYPE_1_FIXED", "Vulnerable witness")));
+    }
+
+    /**
+     * Null rather than an empty value object when nothing was inherited, so the aggregate can
+     * skip the event fields entirely.
+     */
+    @Test
+    void shouldLeavePtphDetailNullWhenNothingWasInherited() {
+        final uk.gov.moj.cpp.listing.domain.Hearing actual =
+                commandToDomainConverter.convert(commandBuilder.buildCommandHearing());
+
+        assertThat(actual.getPtphDetail(), is(nullValue()));
+    }
+
+    @Test
+    void shouldBuildPtphDetailWhenOnlyTierIsPresent() {
+        final uk.gov.moj.cpp.listing.domain.Hearing actual =
+                commandToDomainConverter.convert(commandHearingWith("TIER_2", null, null));
+
+        assertThat(actual.getPtphDetail(), is(new PtphDetail("TIER_2", null, null)));
+    }
+
+    @Test
+    void shouldBuildPtphDetailWhenOnlyListTypeIsPresent() {
+        final uk.gov.moj.cpp.listing.domain.Hearing actual =
+                commandToDomainConverter.convert(commandHearingWith(null, "TYPE_2_FLEXIBLE", null));
+
+        assertThat(actual.getPtphDetail(), is(new PtphDetail(null, "TYPE_2_FLEXIBLE", null)));
+    }
+
+    @Test
+    void shouldBuildPtphDetailWhenOnlyKeyReasonIsPresent() {
+        final uk.gov.moj.cpp.listing.domain.Hearing actual =
+                commandToDomainConverter.convert(commandHearingWith(null, null, "Vulnerable witness"));
+
+        assertThat(actual.getPtphDetail(), is(new PtphDetail(null, null, "Vulnerable witness")));
     }
 }

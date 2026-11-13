@@ -4,10 +4,10 @@
   "type": "object",
   "properties": {
     "hearingId": {
-	  "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
     },
     "prosecutionCases": {
-	  "type": "array",
+      "type": "array",
       "minItems": 1,
       "items": {
         "$ref": "http://justice.gov.uk/core/courts/prosecutionCase.json#"
@@ -22,6 +22,18 @@
     },
     "seedingHearingId": {
       "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "tier": {
+      "description": "Tier inherited from the seeding hearing's finalised PTPH detail. Opaque string owned by the hearing context.",
+      "type": "string"
+    },
+    "listType": {
+      "description": "List type inherited from the seeding hearing's finalised PTPH detail. Opaque string owned by the hearing context.",
+      "type": "string"
+    },
+    "keyReason": {
+      "description": "Key reason for a fixed-date list type, inherited from the seeding hearing.",
+      "type": "string"
     }
   },
   "required": [

@@ -142,6 +142,18 @@
         "type": "string",
         "format": "date"
       }
+    },
+    "tier": {
+      "description": "Tier inherited from the seeding hearing's finalised PTPH detail. Opaque string owned by the hearing context.",
+      "type": "string"
+    },
+    "listType": {
+      "description": "List type inherited from the seeding hearing's finalised PTPH detail. Opaque string owned by the hearing context.",
+      "type": "string"
+    },
+    "keyReason": {
+      "description": "Key reason for a fixed-date list type, inherited from the seeding hearing.",
+      "type": "string"
     }
   },
   "required": [
