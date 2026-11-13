@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.it;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForCrownAllocation;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCrownFallbackSearchAndBookForHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
@@ -149,6 +150,10 @@ public class CrownDailyListExParteCivilCaseIT extends AbstractIT {
         bookingParams.put("BOOKING_ID", randomUUID().toString());
         bookingParams.put("HEARING_START_TIME", hearingStartTime.toString());
         stubProvisionalBookingWithCustomParams(bookingParams);
+        // SPRDT-1539: a CROWN list payload with a courtroom and no courtScheduleId books through
+        // the single-day crown.search.and.book, not the MAGS search-and-book above.
+        stubCrownFallbackSearchAndBookForHearing(hearing.getId().toString(), courtScheduleId, CROWN_COURT_ROOM_ID,
+                hearingDate, hearingStartTime);
         stubListHearingInCourtSessions(hearing.getId().toString(), courtScheduleId, hearingStartTime);
 
         new ListCourtHearingSteps(applicationHearingsData).whenCaseIsSubmittedForListingStandaloneApplication();
