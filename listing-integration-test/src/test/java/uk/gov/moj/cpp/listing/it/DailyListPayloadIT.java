@@ -32,6 +32,9 @@ import org.junit.jupiter.api.Test;
 
 public class DailyListPayloadIT extends AbstractIT {
 
+    private static final UUID CROWN_COURT_CENTRE_ID = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+    private static final UUID CROWN_COURT_ROOM_ID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
+
     private DailyListPayloadSteps dailyListPayloadSteps;
     private UpdatedHearingData updatedHearingData;
 
@@ -79,35 +82,55 @@ public class DailyListPayloadIT extends AbstractIT {
         // a judge-bearing case (SittingKey = date+room+judicialId) - and the shared
         // verifyHearingListedFromAPIForStandaloneApplication helper assumes a single hearing per
         // court centre, which the case sharing a centre would break anyway.
-        final UUID crownCourtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
-        final UUID crownCourtRoomId = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
-        final String courtScheduleId = randomUUID().toString();
-
         final HearingsData standaloneApplicationData = HearingsData.hearingsDataStandaloneApplicationWithSubject();
         final HearingData standaloneHearing = standaloneApplicationData.getHearingData().get(0);
-
         final LocalDate hearingDate = ItClock.today();
-        final ZonedDateTime hearingStartTime = ItClock.nowUtc().withHour(10).withMinute(0).withSecond(0).withNano(0);
 
-        setStandaloneHearingScheduling(standaloneHearing, crownCourtCentreId, crownCourtRoomId, hearingDate, hearingStartTime);
-
-        stubGetReferenceDataHearingTypes(standaloneHearing.getHearingTypeData().getTypeId());
-        stubOrganisationUnit(crownCourtCentreId);
-        stubGetReferenceDataCourtMappings(new CourtCentreData(crownCourtCentreId, LocalTime.of(10, 0), "6:30", crownCourtRoomId, "Test Crown Court"));
-
-        final ListCourtHearingSteps standaloneApplicationSteps = new ListCourtHearingSteps(standaloneApplicationData);
-        stubProvisionalBooking(crownCourtCentreId, crownCourtRoomId, courtScheduleId, hearingDate, hearingStartTime);
-        stubListHearingInCourtSessions(standaloneHearing.getId().toString(), courtScheduleId, hearingStartTime);
-
-        standaloneApplicationSteps.whenCaseIsSubmittedForListingStandaloneApplication();
-        standaloneApplicationSteps.verifyHearingListedFromAPIForStandaloneApplication(ALLOCATED);
+        listStandaloneApplicationOnCrownCourt(standaloneApplicationData, hearingDate);
 
         final String subjectFirstName = standaloneHearing.getCourtApplications().get(0).getSubject().getFirstName();
         final String subjectLastName = standaloneHearing.getCourtApplications().get(0).getSubject().getLastName();
         final String weekCommencingEndDate = hearingDate.plusDays(2).toString();
 
         dailyListPayloadSteps.verifyWeekCommencingFirmListPayloadContainsApplicationSubject(
-                crownCourtCentreId, hearingDate, weekCommencingEndDate, subjectFirstName, subjectLastName);
+                CROWN_COURT_CENTRE_ID, hearingDate, weekCommencingEndDate, subjectFirstName, subjectLastName);
+    }
+
+    @Test
+    void shouldReturnDailyListPayloadWithApplicationHearingWithoutOffences() {
+        // A court application without offences (e.g. a bail variation): its subject and respondent are
+        // PERSON_DEFENDANTs with no offences. The hearing must stay on the daily list - it must not be
+        // dropped because its defendants have no offences.
+        final HearingsData applicationWithoutOffencesData = HearingsData.hearingsDataStandaloneApplicationWithSubjectAndNoOffences();
+        final HearingData applicationHearing = applicationWithoutOffencesData.getHearingData().get(0);
+        final LocalDate hearingDate = ItClock.today();
+
+        listStandaloneApplicationOnCrownCourt(applicationWithoutOffencesData, hearingDate);
+
+        dailyListPayloadSteps.verifyDailyListPayloadContainsApplicationWithoutOffences(
+                CROWN_COURT_CENTRE_ID, hearingDate, "DRAFT",
+                applicationHearing.getCourtApplications().get(0).getSubject().getFirstName(),
+                applicationHearing.getCourtApplications().get(0).getSubject().getLastName());
+    }
+
+    // Lists a standalone application (no case) as an allocated hearing on its own crown court centre at 10:00 today
+    private void listStandaloneApplicationOnCrownCourt(final HearingsData standaloneApplicationData, final LocalDate hearingDate) {
+        final HearingData standaloneHearing = standaloneApplicationData.getHearingData().get(0);
+        final String courtScheduleId = randomUUID().toString();
+        final ZonedDateTime hearingStartTime = ItClock.nowUtc().withHour(10).withMinute(0).withSecond(0).withNano(0);
+
+        setStandaloneHearingScheduling(standaloneHearing, CROWN_COURT_CENTRE_ID, CROWN_COURT_ROOM_ID, hearingDate, hearingStartTime);
+
+        stubGetReferenceDataHearingTypes(standaloneHearing.getHearingTypeData().getTypeId());
+        stubOrganisationUnit(CROWN_COURT_CENTRE_ID);
+        stubGetReferenceDataCourtMappings(new CourtCentreData(CROWN_COURT_CENTRE_ID, LocalTime.of(10, 0), "6:30", CROWN_COURT_ROOM_ID, "Test Crown Court"));
+
+        final ListCourtHearingSteps standaloneApplicationSteps = new ListCourtHearingSteps(standaloneApplicationData);
+        stubProvisionalBooking(CROWN_COURT_CENTRE_ID, CROWN_COURT_ROOM_ID, courtScheduleId, hearingDate, hearingStartTime);
+        stubListHearingInCourtSessions(standaloneHearing.getId().toString(), courtScheduleId, hearingStartTime);
+
+        standaloneApplicationSteps.whenCaseIsSubmittedForListingStandaloneApplication();
+        standaloneApplicationSteps.verifyHearingListedFromAPIForStandaloneApplication(ALLOCATED);
     }
 
     private void setStandaloneHearingScheduling(final HearingData hearing, final UUID courtCentreId, final UUID courtRoomId,
