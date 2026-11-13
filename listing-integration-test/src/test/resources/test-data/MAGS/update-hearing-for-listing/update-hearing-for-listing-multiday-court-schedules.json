@@ -6,7 +6,7 @@
     "nonDefaultDays": [
         {
             "startTime": "%%START_TIME_DAY_1%%",
-            "duration": 20,
+            "duration": 60,
             "courtScheduleId": "%%COURT_SCHEDULE_ID_DAY_1%%",
             "courtCentreId": "%%COURT_CENTRE_ID%%",
             "session": "PM",
@@ -16,7 +16,7 @@
         },
         {
             "startTime": "%%START_TIME_DAY_2%%",
-            "duration": 20,
+            "duration": 60,
             "courtScheduleId": "%%COURT_SCHEDULE_ID_DAY_2%%",
             "courtCentreId": "%%COURT_CENTRE_ID%%",
             "session": "PM",

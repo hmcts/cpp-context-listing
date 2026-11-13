@@ -29,8 +29,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static uk.gov.moj.cpp.listing.endpoint.UnscheduledHearingsEndpoint.pollForUnscheduledHearings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubDeleteAvailableHearingSlotsServiceForAnyHearing;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubJudiciarySearchCourtSchedulesById;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubJudiciarySearchCourtSchedulesByIdServerError;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForCourtSchedules;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
@@ -113,56 +111,32 @@ class PayloadBasedListNextHearingIT extends AbstractIT {
     }
 
     @Test
-    void shouldSearchJudiciaryInCourtSchedulerSessionOfHearingDay() {
-        // The hearing day starts 10:00 UK time (AM by start time), so finding the judiciary in PM proves
-        // the Court Scheduler session of its courtScheduleId wins over the start time
-        final PayloadGenerator.PayloadValues hearingValues = givenMagistratesHearingAllocatedWithCourtScheduleAndJudiciary();
-        stubJudiciarySearchCourtSchedulesById(hearingValues.courtScheduleId, "PM");
-
-        new PayloadBasedUpdateHearingSteps(hearingValues.hearingId, hearingValues)
-                .verifyJudiciarySearchInCourtSession(hearingValues.courtCentreId, hearingValues.courtRoomId, JUDICIARY_SEARCH_DATE,
-                        "pmCourtSession", "amCourtSession", UNALLOCATED_TO_ALLOCATED_JUDICIAL_IDS);
-    }
-
-    @Test
-    void shouldSearchJudiciaryByHearingStartTimeWhenCourtSchedulerFails() {
-        final PayloadGenerator.PayloadValues hearingValues = givenMagistratesHearingAllocatedWithCourtScheduleAndJudiciary();
-        stubJudiciarySearchCourtSchedulesByIdServerError(hearingValues.courtScheduleId);
-
-        // Court Scheduler fails, so the 10:00 UK start time places the judiciary in AM
-        new PayloadBasedUpdateHearingSteps(hearingValues.hearingId, hearingValues)
-                .verifyJudiciarySearchInCourtSession(hearingValues.courtCentreId, hearingValues.courtRoomId, JUDICIARY_SEARCH_DATE,
-                        "amCourtSession", "pmCourtSession", UNALLOCATED_TO_ALLOCATED_JUDICIAL_IDS);
-    }
-
-    @Test
     void shouldSearchJudiciaryWithoutVacatedTrial() {
         // TS-1a: an allocated hearing with judiciary contributes until its trial is vacated, then nothing
         final String searchDate = "2025-06-03";
         final PayloadGenerator.PayloadValues hearingValues = givenMagistratesHearingAllocated(
                 "update-hearing-for-listing-unallocated-to-allocated", Map.of(JUDICIARY_SEARCH_DATE, searchDate));
         final PayloadBasedUpdateHearingSteps searchSteps = new PayloadBasedUpdateHearingSteps(hearingValues.hearingId, hearingValues);
-        searchSteps.verifyJudiciarySearchInCourtSession(hearingValues.courtCentreId, hearingValues.courtRoomId, searchDate,
-                "amCourtSession", "pmCourtSession", UNALLOCATED_TO_ALLOCATED_JUDICIAL_IDS);
+        searchSteps.verifyJudiciarySearchCourtSessions(hearingValues.courtCentreId, hearingValues.courtRoomId, searchDate,
+                UNALLOCATED_TO_ALLOCATED_JUDICIAL_IDS, List.of());
 
         stubDeleteAvailableHearingSlotsServiceForAnyHearing();
         final VacatingTrialSteps vacatingTrialSteps = new VacatingTrialSteps(hearingValues.hearingId);
         vacatingTrialSteps.whenHearingIsVacatedFromWithinListing();
         vacatingTrialSteps.verifyVacatedTrialWhenQueryingFromAPI();
 
-        searchSteps.verifyJudiciarySearchReturnsNoCourtSessions(hearingValues.courtCentreId, hearingValues.courtRoomId, searchDate);
+        searchSteps.verifyJudiciarySearchCourtSessions(hearingValues.courtCentreId, hearingValues.courtRoomId, searchDate, List.of(), List.of());
     }
 
     @Test
-    void shouldSearchJudiciaryInCourtSchedulerSessionOfSearchedDayOfMultiDayHearing() {
-        // TS-1b: both days start 10:00 UK time (AM by time); day 1's session is AM and day 2's is PM,
-        // so finding the judiciary in PM on day 2 proves the searched day's session id is used
+    void shouldSearchJudiciaryInSessionOfSearchedDayOfMultiDayHearing() {
+        // TS-1b: day 1 sits 14:00-15:00 UK time (PM); day 2 sits 12:30-13:30 UK time, across 13:00, so all day (AM and PM)
         final String day1 = "2025-06-10";
         final String day2 = "2025-06-11";
         final String courtScheduleIdDay1 = UUID.randomUUID().toString();
         final String courtScheduleIdDay2 = UUID.randomUUID().toString();
-        final ZonedDateTime startDay1 = ZonedDateTime.parse(day1 + "T09:00:00Z");
-        final ZonedDateTime startDay2 = ZonedDateTime.parse(day2 + "T09:00:00Z");
+        final ZonedDateTime startDay1 = ZonedDateTime.parse(day1 + "T13:00:00Z");
+        final ZonedDateTime startDay2 = ZonedDateTime.parse(day2 + "T11:30:00Z");
 
         final PayloadBasedListCourtHearingSteps listCourtHearingSteps = new PayloadBasedListCourtHearingSteps();
         final PayloadGenerator.PayloadValues hearingValues = listCourtHearingSteps.whenListCourtHearingSubmittedWithSpiUnallocated();
@@ -171,7 +145,7 @@ class PayloadBasedListNextHearingIT extends AbstractIT {
         final Map<String, ZonedDateTime> startTimeByCourtScheduleId = new LinkedHashMap<>();
         startTimeByCourtScheduleId.put(courtScheduleIdDay1, startDay1);
         startTimeByCourtScheduleId.put(courtScheduleIdDay2, startDay2);
-        stubListHearingInCourtSessionsForCourtSchedules(hearingValues.hearingId, startTimeByCourtScheduleId);
+        stubListHearingInCourtSessionsForCourtSchedules(hearingValues.hearingId, startTimeByCourtScheduleId, 60);
 
         final Map<String, String> customValues = new HashMap<>();
         customValues.put("%%DAY_1%%", day1);
@@ -182,13 +156,11 @@ class PayloadBasedListNextHearingIT extends AbstractIT {
         customValues.put("%%COURT_SCHEDULE_ID_DAY_2%%", courtScheduleIdDay2);
         allocate(hearingValues, "update-hearing-for-listing-multiday-court-schedules", customValues);
 
-        stubJudiciarySearchCourtSchedulesById(Map.of(courtScheduleIdDay1, "AM", courtScheduleIdDay2, "PM"));
-
         final PayloadBasedUpdateHearingSteps searchSteps = new PayloadBasedUpdateHearingSteps(hearingValues.hearingId, hearingValues);
-        searchSteps.verifyJudiciarySearchInCourtSession(hearingValues.courtCentreId, hearingValues.courtRoomId, day2,
-                "pmCourtSession", "amCourtSession", UNALLOCATED_TO_ALLOCATED_JUDICIAL_IDS);
-        searchSteps.verifyJudiciarySearchInCourtSession(hearingValues.courtCentreId, hearingValues.courtRoomId, day1,
-                "amCourtSession", "pmCourtSession", UNALLOCATED_TO_ALLOCATED_JUDICIAL_IDS);
+        searchSteps.verifyJudiciarySearchCourtSessions(hearingValues.courtCentreId, hearingValues.courtRoomId, day1,
+                List.of(), UNALLOCATED_TO_ALLOCATED_JUDICIAL_IDS);
+        searchSteps.verifyJudiciarySearchCourtSessions(hearingValues.courtCentreId, hearingValues.courtRoomId, day2,
+                UNALLOCATED_TO_ALLOCATED_JUDICIAL_IDS, UNALLOCATED_TO_ALLOCATED_JUDICIAL_IDS);
     }
 
     @Test
@@ -208,10 +180,6 @@ class PayloadBasedListNextHearingIT extends AbstractIT {
         updateHearingSteps.verifyJudiciarySearch(updatedValues);
     }
 
-    private PayloadGenerator.PayloadValues givenMagistratesHearingAllocatedWithCourtScheduleAndJudiciary() {
-        return givenMagistratesHearingAllocated("update-hearing-for-listing-unallocated-to-allocated", Map.of());
-    }
-
     private PayloadGenerator.PayloadValues givenMagistratesHearingAllocated(final String updateTestCase, final Map<String, String> replacements) {
         final PayloadBasedListCourtHearingSteps listCourtHearingSteps = new PayloadBasedListCourtHearingSteps();
         final PayloadGenerator.PayloadValues hearingValues = listCourtHearingSteps.whenListCourtHearingSubmittedWithSpiUnallocated();
@@ -221,9 +189,8 @@ class PayloadBasedListNextHearingIT extends AbstractIT {
     }
 
     private void allocate(final PayloadGenerator.PayloadValues hearingValues, final String updateTestCase, final Map<String, String> customValues) {
-        // allocate into a known room with the template's three magistrates, keeping the courtScheduleId the
-        // listing steps stubbed in Court Scheduler unless the template supplies its own; an unallocated
-        // hearing has no room yet, so pick one the reference data stubs know
+        // allocate into a known room with the template's three magistrates; an unallocated hearing has no
+        // room yet, so pick one the reference data stubs know
         hearingValues.courtRoomId = getRandomCourtRoomId().toString();
         final PayloadBasedUpdateHearingSteps updateHearingSteps = new PayloadBasedUpdateHearingSteps(hearingValues.hearingId, hearingValues);
         customValues.put("%%COURT_ROOM_ID%%", hearingValues.courtRoomId);

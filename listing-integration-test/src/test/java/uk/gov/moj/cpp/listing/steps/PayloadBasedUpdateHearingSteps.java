@@ -47,7 +47,9 @@ import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.ReadContext;
 import org.apache.http.HttpStatus;
+import org.hamcrest.Matcher;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.slf4j.Logger;
@@ -288,29 +290,28 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
             throw new IllegalStateException("No payload values available. Call a 'when' method first.");
         }
 
-        // no courtScheduleId resolved by Court Scheduler and a 10:00 UK start time, so placed in AM by start time
-        final String courtRoomId = payloadValues.courtRoomId;
+        // the hearing day sits 10:00-10:20 UK time, so in AM
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                MessageFormat.format(readConfig().getProperty("listing.search.judiciary"), payloadValues.courtCentreId, courtRoomId, payloadValues.hearingDate));
+                MessageFormat.format(readConfig().getProperty("listing.search.judiciary"), payloadValues.courtCentreId, payloadValues.courtRoomId, payloadValues.hearingDate));
 
         pollWithDefaults(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_JUDICIARY_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(
                                 withJsonPath("$.courtHouseId", is(payloadValues.courtCentreId)),
-                                withJsonPath("$.courtRoomId", is(courtRoomId)),
+                                withJsonPath("$.courtRoomId", is(payloadValues.courtRoomId)),
                                 withJsonPath("$.courtSessionDate", is(payloadValues.hearingDate)),
-                                withJsonPath("$.amCourtSession", hasItem(payloadValues.judicialId))
+                                withJsonPath("$.amCourtSession.judiciaries[*].judiciaryId", hasItem(payloadValues.judicialId))
                         ))
                 );
     }
 
     /**
-     * Verify listing.search.judiciary places all the given judicial ids in one court session only.
+     * Verify listing.search.judiciary returns exactly the given judicial ids in each court session, omitting a
+     * court session without any.
      */
-    public void verifyJudiciarySearchInCourtSession(final String courtCentreId, final String courtRoomId, final String searchDate,
-                                                    final String courtSession, final String absentCourtSession,
-                                                    final List<String> judicialIds) {
+    public void verifyJudiciarySearchCourtSessions(final String courtCentreId, final String courtRoomId, final String searchDate,
+                                                   final List<String> amJudicialIds, final List<String> pmJudicialIds) {
         final String searchJudiciaryUrl = String.format("%s/%s", getBaseUri(),
                 MessageFormat.format(readConfig().getProperty("listing.search.judiciary"), courtCentreId, courtRoomId, searchDate));
 
@@ -321,31 +322,16 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
                                 withJsonPath("$.courtHouseId", is(courtCentreId)),
                                 withJsonPath("$.courtRoomId", is(courtRoomId)),
                                 withJsonPath("$.courtSessionDate", is(searchDate)),
-                                withJsonPath("$." + courtSession, containsInAnyOrder(judicialIds.toArray())),
-                                hasNoJsonPath("$." + absentCourtSession)
+                                courtSession("amCourtSession", amJudicialIds),
+                                courtSession("pmCourtSession", pmJudicialIds)
                         ))
                 );
     }
 
-    /**
-     * Verify listing.search.judiciary returns only the request echo — no hearing in the room on the
-     * date contributes judiciary.
-     */
-    public void verifyJudiciarySearchReturnsNoCourtSessions(final String courtCentreId, final String courtRoomId, final String searchDate) {
-        final String searchJudiciaryUrl = String.format("%s/%s", getBaseUri(),
-                MessageFormat.format(readConfig().getProperty("listing.search.judiciary"), courtCentreId, courtRoomId, searchDate));
-
-        pollWithDefaults(requestParams(searchJudiciaryUrl, MEDIA_TYPE_SEARCH_JUDICIARY_JSON).withHeader(USER_ID, getLoggedInUser()))
-                .until(
-                        status().is(OK),
-                        payload().isJson(allOf(
-                                withJsonPath("$.courtHouseId", is(courtCentreId)),
-                                withJsonPath("$.courtRoomId", is(courtRoomId)),
-                                withJsonPath("$.courtSessionDate", is(searchDate)),
-                                hasNoJsonPath("$.amCourtSession"),
-                                hasNoJsonPath("$.pmCourtSession")
-                        ))
-                );
+    private static Matcher<? super ReadContext> courtSession(final String courtSession, final List<String> judicialIds) {
+        return judicialIds.isEmpty()
+                ? hasNoJsonPath("$." + courtSession)
+                : withJsonPath("$." + courtSession + ".judiciaries[*].judiciaryId", containsInAnyOrder(judicialIds.toArray()));
     }
 
     /**

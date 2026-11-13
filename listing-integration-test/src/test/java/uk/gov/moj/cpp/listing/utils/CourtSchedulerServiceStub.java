@@ -30,13 +30,10 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
-import java.util.regex.Pattern;
 
 import javax.json.JsonObject;
 import org.awaitility.Awaitility;
@@ -44,7 +41,6 @@ import org.awaitility.Awaitility;
 import com.github.tomakehurst.wiremock.client.VerificationException;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
-import com.github.tomakehurst.wiremock.matching.StringValuePattern;
 
 import uk.gov.moj.cpp.listing.steps.data.JudicialRoleData;
 import uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData;
@@ -479,90 +475,6 @@ public class CourtSchedulerServiceStub {
                 ));
     }
 
-    /**
-     * Stub the search.court-schedules-by-id lookup made by listing.search.judiciary (CHD-3323) to return
-     * the court session of the given courtScheduleId. Scoped by the courtScheduleIds query param so it
-     * never answers other tests (WireMock stubs persist across IT classes in a suite), and prioritised
-     * over the unscoped by-id stubs used when listing.
-     */
-    public static void stubJudiciarySearchCourtSchedulesById(final String courtScheduleId, final String courtSession) {
-        stubJudiciarySearchCourtSchedulesById(Map.of(courtScheduleId, courtSession));
-    }
-
-    /**
-     * As {@link #stubJudiciarySearchCourtSchedulesById(String, String)}, answering a lookup of any of the
-     * courtScheduleIds (e.g. either day of a multi-day hearing) with every one of their sessions.
-     */
-    public static void stubJudiciarySearchCourtSchedulesById(final Map<String, String> courtSessionByCourtScheduleId) {
-        final String courtSchedules = courtSessionByCourtScheduleId.entrySet().stream()
-                .map(courtSchedule -> "{\"courtScheduleId\":\"" + courtSchedule.getKey() + "\"," +
-                        "\"courtSession\":\"" + courtSchedule.getValue() + "\",\"isDraft\":false}")
-                .collect(joining(","));
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + SEARCH_COURT_SCHEDULES_BY_ID)))
-                .atPriority(1)
-                .withQueryParam("courtScheduleIds", matchingAnyOf(courtSessionByCourtScheduleId.keySet()))
-                .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody("{\"courtSchedules\":[" + courtSchedules + "]}")
-                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
-                ));
-    }
-
-    /**
-     * Stub the search.court-schedules-by-id lookup made by listing.search.judiciary to fail for the given
-     * courtScheduleId, so the query falls back to placing judiciary by hearing start time.
-     */
-    public static void stubJudiciarySearchCourtSchedulesByIdServerError(final String courtScheduleId) {
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + SEARCH_COURT_SCHEDULES_BY_ID)))
-                .atPriority(1)
-                .withQueryParam("courtScheduleIds", matchingAnyOf(Set.of(courtScheduleId)))
-                .willReturn(aResponse().withStatus(500)
-                        .withBody("internal server error")
-                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
-                ));
-    }
-
-    private static StringValuePattern matchingAnyOf(final Collection<String> courtScheduleIds) {
-        return matching(".*(" + courtScheduleIds.stream().map(Pattern::quote).collect(joining("|")) + ").*");
-    }
-
-    /**
-     * Stub the GET /hearingslots search made by listing.search.judiciary (CHD-3323) to return one
-     * session for the given courtScheduleId. Scoped by courtRoomId and sessionStartDate so it never
-     * answers other tests (WireMock stubs persist across IT classes in a suite).
-     */
-    public static void stubJudiciarySearchHearingSlots(final String courtRoomId,
-                                                       final String sessionDate,
-                                                       final String courtScheduleId,
-                                                       final String courtSession) {
-        final String body = "{\"hearingSlots\":[{\"courtScheduleId\":\"" + courtScheduleId + "\"," +
-                "\"courtSession\":\"" + courtSession + "\",\"judiciaries\":[]}]}";
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
-                .withQueryParam("courtRoomId", matching(courtRoomId))
-                .withQueryParam("sessionStartDate", matching(sessionDate))
-                .withQueryParam("showOverbookedSlots", matching("true"))
-                .withHeader("Accept", containing(COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
-                .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(body)
-                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
-                ));
-    }
-
-    /**
-     * Stub the GET /hearingslots search made by listing.search.judiciary to fail, so the query
-     * falls back to placing judiciary by hearing start time.
-     */
-    public static void stubJudiciarySearchHearingSlotsServerError(final String courtRoomId, final String sessionDate) {
-        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
-                .withQueryParam("courtRoomId", matching(courtRoomId))
-                .withQueryParam("sessionStartDate", matching(sessionDate))
-                .withQueryParam("showOverbookedSlots", matching("true"))
-                .withHeader("Accept", containing(COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
-                .willReturn(aResponse().withStatus(500)
-                        .withBody("internal server error")
-                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
-                ));
-    }
-
     public static void stubGetAvailableHearingSlots(boolean isEmpty) {
         stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
                 .withQueryParam("sessionStartDate", matching("2017-10-11"))
@@ -947,14 +859,15 @@ public class CourtSchedulerServiceStub {
 
     /**
      * Scoped list-in-court-sessions stub for one hearing booked into several court sessions (one per
-     * hearing day): returns every courtScheduleId with its own start time, so the command API's
-     * missing-courtScheduleIds check passes for a multi-day update. Matches only the PUT whose body
-     * carries the first courtScheduleId.
+     * hearing day): returns every courtScheduleId with its own start time and the given duration, so the
+     * command API's missing-courtScheduleIds check passes for a multi-day update. Matches only the PUT whose
+     * body carries the first courtScheduleId.
      */
-    public static void stubListHearingInCourtSessionsForCourtSchedules(final String hearingId, final Map<String, ZonedDateTime> hearingStartTimeByCourtScheduleId) {
+    public static void stubListHearingInCourtSessionsForCourtSchedules(final String hearingId, final Map<String, ZonedDateTime> hearingStartTimeByCourtScheduleId,
+                                                                       final int durationMinutes) {
         final String hearings = hearingStartTimeByCourtScheduleId.entrySet().stream()
                 .map(day -> "{\"hearingId\":\"" + hearingId + "\",\"courtScheduleId\":\"" + day.getKey() +
-                        "\",\"hearingStartTime\":\"" + day.getValue() + "\",\"duration\":20}")
+                        "\",\"hearingStartTime\":\"" + day.getValue() + "\",\"duration\":" + durationMinutes + "}")
                 .collect(joining(","));
         final String payload = "{\"hearings\":[" + hearings + "]}";
 

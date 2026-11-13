@@ -36,7 +36,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.listing.event.PublishCourtListType.FINAL;
 import static uk.gov.justice.listing.event.PublishStatus.EXPORT_SUCCESSFUL;
@@ -73,6 +72,7 @@ import uk.gov.moj.cpp.listing.persistence.enums.CsvRecordType;
 import uk.gov.moj.cpp.listing.persistence.repository.CaseByDefendantRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtApplicationRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.JudiciarySessionRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusResult;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
@@ -86,15 +86,12 @@ import uk.gov.moj.cpp.listing.query.view.dto.csv.HearingCsvData;
 import uk.gov.moj.cpp.listing.query.view.hearing.ApplicationTypeFilter;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
-import uk.gov.moj.cpp.listing.query.view.service.JudiciarySessionService;
-import uk.gov.moj.cpp.listing.query.view.service.JudiciarySessionService.JudiciarySessions;
-import uk.gov.moj.cpp.listing.persistence.entity.query.JudiciaryHearingDay;
+import uk.gov.moj.cpp.listing.persistence.entity.query.JudiciarySession;
 import uk.gov.moj.cpp.listing.query.view.service.csv.HearingCsvReportService;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.time.LocalDate;
-import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -108,7 +105,6 @@ import java.util.stream.Collectors;
 import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
-import javax.json.JsonString;
 import javax.json.JsonValue;
 import javax.ws.rs.NotFoundException;
 
@@ -205,7 +201,7 @@ public class HearingQueryViewTest {
     @Mock
     private HearingCsvReportService hearingCsvReportService;
     @Mock
-    private JudiciarySessionService judiciarySessionService;
+    private JudiciarySessionRepository judiciarySessionRepository;
 
     @Spy
     private JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();;
@@ -1743,39 +1739,31 @@ public class HearingQueryViewTest {
     }
 
     @Test
-    void shouldSearchJudiciaryAndReturnJudiciariesInAmAndPmCourtSessions() {
-        final String judicialId1 = randomUUID().toString();
-        final String judicialId2 = randomUUID().toString();
-        final List<JudiciaryHearingDay> hearingDays = List.of(
-                new JudiciaryHearingDay(randomUUID().toString(), randomUUID().toString(), Instant.parse("2023-08-29T09:00:00Z"), judicialId1),
-                new JudiciaryHearingDay(randomUUID().toString(), null, Instant.parse("2023-08-29T13:00:00Z"), judicialId2));
-        when(hearingRepository.findJudiciaryHearingDaysByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, SEARCH_DATE))
-                .thenReturn(hearingDays);
-        when(judiciarySessionService.splitIntoSessions(hearingDays, COURT_ROOM_ID.toString(), SEARCH_DATE))
-                .thenReturn(new JudiciarySessions(List.of(judicialId1), List.of(judicialId1, judicialId2)));
+    void shouldSearchJudiciaryAndPlaceAllDayJudiciaryInAmAndPmCourtSessions() {
+        final String judicialId1 = "aaaaaaaa-0000-4000-8000-000000000001";
+        final String judicialId2 = "aaaaaaaa-0000-4000-8000-000000000002";
+        final String judicialId3 = "aaaaaaaa-0000-4000-8000-000000000003";
+        when(judiciarySessionRepository.findByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, SEARCH_DATE))
+                .thenReturn(List.of(
+                        new JudiciarySession(judicialId1, "AD"),
+                        new JudiciarySession(judicialId1, "AM"),
+                        new JudiciarySession(judicialId2, "AM"),
+                        new JudiciarySession(judicialId3, "PM")));
 
-        final JsonEnvelope result = hearingsQueryView.searchJudiciary(judiciarySearchQuery());
+        final JsonObject payload = hearingsQueryView.searchJudiciary(judiciarySearchQuery()).payloadAsJsonObject();
 
-        final JsonObject payload = result.payloadAsJsonObject();
         assertThat(payload.keySet(), containsInAnyOrder("courtHouseId", "courtRoomId", "courtSessionDate", "amCourtSession", "pmCourtSession"));
         assertThat(payload.getString("courtHouseId"), is(COURT_CENTRE_ID.toString()));
         assertThat(payload.getString("courtRoomId"), is(COURT_ROOM_ID.toString()));
         assertThat(payload.getString("courtSessionDate"), is(SEARCH_DATE.toString()));
-        assertThat(payload.getJsonArray("amCourtSession").getValuesAs(JsonString.class).stream().map(JsonString::getString).toList(),
-                contains(judicialId1));
-        assertThat(payload.getJsonArray("pmCourtSession").getValuesAs(JsonString.class).stream().map(JsonString::getString).toList(),
-                contains(judicialId1, judicialId2));
+        assertThat(judiciaryIds(payload, "amCourtSession"), contains(judicialId1, judicialId2));
+        assertThat(judiciaryIds(payload, "pmCourtSession"), contains(judicialId1, judicialId3));
     }
 
     @Test
     void shouldSearchJudiciaryAndOmitCourtSessionWithoutJudiciaries() {
-        final String judicialId = randomUUID().toString();
-        final List<JudiciaryHearingDay> hearingDays = List.of(
-                new JudiciaryHearingDay(randomUUID().toString(), null, Instant.parse("2023-08-29T09:00:00Z"), judicialId));
-        when(hearingRepository.findJudiciaryHearingDaysByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, SEARCH_DATE))
-                .thenReturn(hearingDays);
-        when(judiciarySessionService.splitIntoSessions(hearingDays, COURT_ROOM_ID.toString(), SEARCH_DATE))
-                .thenReturn(new JudiciarySessions(List.of(judicialId), emptyList()));
+        when(judiciarySessionRepository.findByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, SEARCH_DATE))
+                .thenReturn(List.of(new JudiciarySession(randomUUID().toString(), "AM")));
 
         final JsonObject payload = hearingsQueryView.searchJudiciary(judiciarySearchQuery()).payloadAsJsonObject();
 
@@ -1785,13 +1773,18 @@ public class HearingQueryViewTest {
 
     @Test
     void shouldSearchJudiciaryAndReturnOnlyRequestEchoWhenNoJudiciary() {
-        when(hearingRepository.findJudiciaryHearingDaysByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, SEARCH_DATE))
+        when(judiciarySessionRepository.findByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, SEARCH_DATE))
                 .thenReturn(emptyList());
 
         final JsonObject payload = hearingsQueryView.searchJudiciary(judiciarySearchQuery()).payloadAsJsonObject();
 
         assertThat(payload.keySet(), containsInAnyOrder("courtHouseId", "courtRoomId", "courtSessionDate"));
-        verifyNoInteractions(judiciarySessionService);
+    }
+
+    private static List<String> judiciaryIds(final JsonObject payload, final String courtSession) {
+        return payload.getJsonObject(courtSession).getJsonArray("judiciaries").getValuesAs(JsonObject.class).stream()
+                .map(judiciary -> judiciary.getString("judiciaryId"))
+                .toList();
     }
 
     private JsonEnvelope judiciarySearchQuery() {
