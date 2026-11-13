@@ -1009,25 +1009,6 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
     public abstract List<Hearing> findAllCourtSchedulerHearingByIds(@QueryParam("hearingIds") final List<UUID> hearingIds);
 
 
-    @Query(value = "SELECT DISTINCT judiciary->>'judicialId' " +
-            "FROM hearing h " +
-            "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id " +
-            "LEFT JOIN LATERAL jsonb_array_elements(" +
-            "  CASE " +
-            "    WHEN jsonb_typeof(h.properties->'judiciary') = 'array' THEN h.properties->'judiciary' " +
-            "    ELSE CAST('[]' AS jsonb) " +
-            "  END" +
-            ") AS judiciary ON true " +
-            "WHERE hd.court_centre_id = :courtCentreId " +
-            "  AND hd.court_room_id = :courtRoomId " +
-            "  AND hd.hearing_date = :searchDate " +
-            "  AND judiciary->>'judicialId' IS NOT NULL",
-            isNative = true)
-    public abstract List<String> findDistinctJudicialIdsByCourtCentreAndRoomAndSearchDate(
-            @QueryParam("courtCentreId") final UUID courtCentreId,
-            @QueryParam("courtRoomId") final UUID courtRoomId,
-            @QueryParam("searchDate") final LocalDate searchDate);
-
     public List<Hearing> findAllocatedHearingsForCourtCalendar(final UUID courtCentreId,
                                                                final UUID courtRoomId,
                                                                final UUID authorityCode,

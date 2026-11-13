@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.steps;
 
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasNoJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
@@ -8,6 +9,7 @@ import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -36,6 +38,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -44,7 +47,9 @@ import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.ReadContext;
 import org.apache.http.HttpStatus;
+import org.hamcrest.Matcher;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.slf4j.Logger;
@@ -285,6 +290,7 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
             throw new IllegalStateException("No payload values available. Call a 'when' method first.");
         }
 
+        // the hearing day sits 10:00-10:20 UK time, so in AM
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 MessageFormat.format(readConfig().getProperty("listing.search.judiciary"), payloadValues.courtCentreId, payloadValues.courtRoomId, payloadValues.hearingDate));
 
@@ -292,10 +298,42 @@ public class PayloadBasedUpdateHearingSteps extends AbstractIT {
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(
-                                withJsonPath("$.judicialIds", hasItem(payloadValues.judicialId))
+                                withJsonPath("$.courtHouseId", is(payloadValues.courtCentreId)),
+                                withJsonPath("$.courtRoomId", is(payloadValues.courtRoomId)),
+                                withJsonPath("$.courtSessionDate", is(payloadValues.hearingDate)),
+                                withJsonPath("$.amCourtSession.judiciaries[*].judiciaryId", hasItem(payloadValues.judicialId))
                         ))
                 );
     }
+
+    /**
+     * Verify listing.search.judiciary returns exactly the given judicial ids in each court session, omitting a
+     * court session without any.
+     */
+    public void verifyJudiciarySearchCourtSessions(final String courtCentreId, final String courtRoomId, final String searchDate,
+                                                   final List<String> amJudicialIds, final List<String> pmJudicialIds) {
+        final String searchJudiciaryUrl = String.format("%s/%s", getBaseUri(),
+                MessageFormat.format(readConfig().getProperty("listing.search.judiciary"), courtCentreId, courtRoomId, searchDate));
+
+        pollWithDefaults(requestParams(searchJudiciaryUrl, MEDIA_TYPE_SEARCH_JUDICIARY_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.courtHouseId", is(courtCentreId)),
+                                withJsonPath("$.courtRoomId", is(courtRoomId)),
+                                withJsonPath("$.courtSessionDate", is(searchDate)),
+                                courtSession("amCourtSession", amJudicialIds),
+                                courtSession("pmCourtSession", pmJudicialIds)
+                        ))
+                );
+    }
+
+    private static Matcher<? super ReadContext> courtSession(final String courtSession, final List<String> judicialIds) {
+        return judicialIds.isEmpty()
+                ? hasNoJsonPath("$." + courtSession)
+                : withJsonPath("$." + courtSession + ".judiciaries[*].judiciaryId", containsInAnyOrder(judicialIds.toArray()));
+    }
+
     /**
      * Verify that judiciary was assigned to the hearing
      */

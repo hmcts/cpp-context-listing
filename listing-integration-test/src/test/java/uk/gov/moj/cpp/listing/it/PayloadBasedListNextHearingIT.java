@@ -11,6 +11,7 @@ import uk.gov.moj.cpp.listing.steps.PayloadBasedListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.PayloadBasedListNextHearingSteps;
 import uk.gov.moj.cpp.listing.steps.PayloadBasedUpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.PayloadGenerator;
+import uk.gov.moj.cpp.listing.steps.VacatingTrialSteps;
 import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
@@ -18,12 +19,15 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static org.hamcrest.Matchers.hasSize;
 import static uk.gov.moj.cpp.listing.endpoint.UnscheduledHearingsEndpoint.pollForUnscheduledHearings;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubDeleteAvailableHearingSlotsServiceForAnyHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
 
@@ -32,6 +36,11 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisi
  * using JSON files from test-data folder instead of nested classes
  */
 class PayloadBasedListNextHearingIT extends AbstractIT {
+
+    // fixed date and judiciary in test-data/MAGS/update-hearing-for-listing/update-hearing-for-listing-unallocated-to-allocated.json
+    private static final String JUDICIARY_SEARCH_DATE = "2025-05-27";
+    private static final List<String> UNALLOCATED_TO_ALLOCATED_JUDICIAL_IDS = List.of(
+            "96d362ac-5b2f-4aa3-a4de-9d2969fa3404", "5ad14972-4584-48b4-ab1b-cef786093c2b", "5818a055-35da-4c62-b0aa-a98c85698378");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PayloadBasedListNextHearingIT.class);
 
@@ -97,6 +106,59 @@ class PayloadBasedListNextHearingIT extends AbstractIT {
 
         PayloadBasedListNextHearingIT.LOGGER.info("Test completed successfully - judiciary assigned to hearing {}",
                    hearingValues.hearingId);
+    }
+
+    @Test
+    void shouldSearchJudiciaryWithoutVacatedTrial() {
+        // TS-1a: an allocated hearing with judiciary contributes until its trial is vacated, then nothing
+        final String searchDate = "2025-06-03";
+        final PayloadGenerator.PayloadValues hearingValues = givenMagistratesHearingAllocated(
+                "update-hearing-for-listing-unallocated-to-allocated", Map.of(JUDICIARY_SEARCH_DATE, searchDate));
+        final PayloadBasedUpdateHearingSteps searchSteps = new PayloadBasedUpdateHearingSteps(hearingValues.hearingId, hearingValues);
+        searchSteps.verifyJudiciarySearchCourtSessions(hearingValues.courtCentreId, hearingValues.courtRoomId, searchDate,
+                UNALLOCATED_TO_ALLOCATED_JUDICIAL_IDS, List.of());
+
+        stubDeleteAvailableHearingSlotsServiceForAnyHearing();
+        final VacatingTrialSteps vacatingTrialSteps = new VacatingTrialSteps(hearingValues.hearingId);
+        vacatingTrialSteps.whenHearingIsVacatedFromWithinListing();
+        vacatingTrialSteps.verifyVacatedTrialWhenQueryingFromAPI();
+
+        searchSteps.verifyJudiciarySearchCourtSessions(hearingValues.courtCentreId, hearingValues.courtRoomId, searchDate, List.of(), List.of());
+    }
+
+    @Test
+    void shouldSearchJudiciaryForCrownCourtRoom() {
+        // TS-2: a Crown court room returns its judiciary, placed by the 10:00 UK start time in AM
+        final PayloadBasedListCourtHearingSteps listCourtHearingSteps = new PayloadBasedListCourtHearingSteps();
+        final PayloadGenerator.PayloadValues hearingValues = listCourtHearingSteps.whenListCourtHearingSubmittedWithScenario(
+                "list-court-hearing", "spi_allocated", new HashMap<>(Map.of("%%JURISDICTION_TYPE%%", "CROWN")));
+        listCourtHearingSteps.verifyHearingListedFromAPI(AbstractIT.ALLOCATED);
+
+        final PayloadBasedUpdateHearingSteps updateHearingSteps = new PayloadBasedUpdateHearingSteps(hearingValues.hearingId, hearingValues);
+        // keep the hearing in its listed room: the update template otherwise picks a different random room
+        final PayloadGenerator.PayloadValues updatedValues = updateHearingSteps.whenUpdateHearingSubmittedWithScenario(
+                "update-hearing-for-listing", "update-hearing-for-listing-assign-judiciary",
+                new HashMap<>(Map.of("MAGISTRATES", "CROWN", "%%COURT_ROOM_ID%%", hearingValues.courtRoomId)));
+        updateHearingSteps.verifyJudiciaryAssignedToHearing();
+        updateHearingSteps.verifyJudiciarySearch(updatedValues);
+    }
+
+    private PayloadGenerator.PayloadValues givenMagistratesHearingAllocated(final String updateTestCase, final Map<String, String> replacements) {
+        final PayloadBasedListCourtHearingSteps listCourtHearingSteps = new PayloadBasedListCourtHearingSteps();
+        final PayloadGenerator.PayloadValues hearingValues = listCourtHearingSteps.whenListCourtHearingSubmittedWithSpiUnallocated();
+        listCourtHearingSteps.verifyHearingListedFromAPI(AbstractIT.UNALLOCATED);
+        allocate(hearingValues, updateTestCase, new HashMap<>(replacements));
+        return hearingValues;
+    }
+
+    private void allocate(final PayloadGenerator.PayloadValues hearingValues, final String updateTestCase, final Map<String, String> customValues) {
+        // allocate into a known room with the template's three magistrates; an unallocated hearing has no
+        // room yet, so pick one the reference data stubs know
+        hearingValues.courtRoomId = getRandomCourtRoomId().toString();
+        final PayloadBasedUpdateHearingSteps updateHearingSteps = new PayloadBasedUpdateHearingSteps(hearingValues.hearingId, hearingValues);
+        customValues.put("%%COURT_ROOM_ID%%", hearingValues.courtRoomId);
+        updateHearingSteps.whenUpdateHearingSubmittedWithScenario("update-hearing-for-listing", updateTestCase, customValues);
+        updateHearingSteps.verifyHearingUpdatedFromAPI(AbstractIT.ALLOCATED);
     }
 
     @Test

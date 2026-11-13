@@ -19,6 +19,8 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -70,6 +72,7 @@ import uk.gov.moj.cpp.listing.persistence.enums.CsvRecordType;
 import uk.gov.moj.cpp.listing.persistence.repository.CaseByDefendantRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtApplicationRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.JudiciarySessionRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusResult;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
@@ -83,6 +86,7 @@ import uk.gov.moj.cpp.listing.query.view.dto.csv.HearingCsvData;
 import uk.gov.moj.cpp.listing.query.view.hearing.ApplicationTypeFilter;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
+import uk.gov.moj.cpp.listing.persistence.entity.query.JudiciarySession;
 import uk.gov.moj.cpp.listing.query.view.service.csv.HearingCsvReportService;
 
 import java.io.IOException;
@@ -196,6 +200,8 @@ public class HearingQueryViewTest {
     private ApplicationTypeFilter applicationTypeFilter;
     @Mock
     private HearingCsvReportService hearingCsvReportService;
+    @Mock
+    private JudiciarySessionRepository judiciarySessionRepository;
 
     @Spy
     private JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();;
@@ -1733,50 +1739,60 @@ public class HearingQueryViewTest {
     }
 
     @Test
-    void shouldSearchJudiciaryWhenReturnRecords() {
-        final UUID judicialId1 = randomUUID();
-        final UUID judicialId2 = randomUUID();
-        final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.search.judiciary");
+    void shouldSearchJudiciaryAndPlaceAllDayJudiciaryInAmAndPmCourtSessions() {
+        final String judicialId1 = "aaaaaaaa-0000-4000-8000-000000000001";
+        final String judicialId2 = "aaaaaaaa-0000-4000-8000-000000000002";
+        final String judicialId3 = "aaaaaaaa-0000-4000-8000-000000000003";
+        when(judiciarySessionRepository.findByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, SEARCH_DATE))
+                .thenReturn(List.of(
+                        new JudiciarySession(judicialId1, "AD"),
+                        new JudiciarySession(judicialId1, "AM"),
+                        new JudiciarySession(judicialId2, "AM"),
+                        new JudiciarySession(judicialId3, "PM")));
 
-        final JsonEnvelope query = envelopeFrom(metadataBuilder,
-                createObjectBuilder()
+        final JsonObject payload = hearingsQueryView.searchJudiciary(judiciarySearchQuery()).payloadAsJsonObject();
 
-                        .add("courtCentreId", COURT_CENTRE_ID.toString())
-                        .add("courtRoomId", COURT_ROOM_ID.toString())
-                        .add("searchDate", SEARCH_DATE.toString())
-                        .build()
-        );
-        when(hearingRepository.findDistinctJudicialIdsByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, SEARCH_DATE))
-                .thenReturn(List.of(judicialId1.toString(), judicialId2.toString()));
-
-        final JsonEnvelope result = hearingsQueryView.searchJudiciary(query);
-
-        final JsonArray judiciary = result.payloadAsJsonObject().getJsonArray("judicialIds");
-        assertThat(judiciary.size(), is(2));
-        assertThat(judiciary.getString(0), is(judicialId1.toString()));
-        assertThat(judiciary.getString(1), is(judicialId2.toString()));
+        assertThat(payload.keySet(), containsInAnyOrder("courtHouseId", "courtRoomId", "courtSessionDate", "amCourtSession", "pmCourtSession"));
+        assertThat(payload.getString("courtHouseId"), is(COURT_CENTRE_ID.toString()));
+        assertThat(payload.getString("courtRoomId"), is(COURT_ROOM_ID.toString()));
+        assertThat(payload.getString("courtSessionDate"), is(SEARCH_DATE.toString()));
+        assertThat(judiciaryIds(payload, "amCourtSession"), contains(judicialId1, judicialId2));
+        assertThat(judiciaryIds(payload, "pmCourtSession"), contains(judicialId1, judicialId3));
     }
 
     @Test
-    void shouldSearchJudiciaryWhenReturnNoRecords() {
+    void shouldSearchJudiciaryAndOmitCourtSessionWithoutJudiciaries() {
+        when(judiciarySessionRepository.findByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, SEARCH_DATE))
+                .thenReturn(List.of(new JudiciarySession(randomUUID().toString(), "AM")));
 
-        final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.search.judiciary");
+        final JsonObject payload = hearingsQueryView.searchJudiciary(judiciarySearchQuery()).payloadAsJsonObject();
 
-        final JsonEnvelope query = envelopeFrom(metadataBuilder,
-                createObjectBuilder()
+        assertThat(payload.containsKey("amCourtSession"), is(true));
+        assertThat(payload.containsKey("pmCourtSession"), is(false));
+    }
 
-                        .add("courtCentreId", COURT_CENTRE_ID.toString())
-                        .add("courtRoomId", COURT_ROOM_ID.toString())
-                        .add("searchDate", SEARCH_DATE.toString())
-                        .build()
-        );
-        when(hearingRepository.findDistinctJudicialIdsByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, SEARCH_DATE))
+    @Test
+    void shouldSearchJudiciaryAndReturnOnlyRequestEchoWhenNoJudiciary() {
+        when(judiciarySessionRepository.findByCourtCentreAndRoomAndSearchDate(COURT_CENTRE_ID, COURT_ROOM_ID, SEARCH_DATE))
                 .thenReturn(emptyList());
 
-        final JsonEnvelope result = hearingsQueryView.searchJudiciary(query);
+        final JsonObject payload = hearingsQueryView.searchJudiciary(judiciarySearchQuery()).payloadAsJsonObject();
 
-        final JsonArray judiciary = result.payloadAsJsonObject().getJsonArray("judicialIds");
-        assertThat(judiciary.size(), is(0));
+        assertThat(payload.keySet(), containsInAnyOrder("courtHouseId", "courtRoomId", "courtSessionDate"));
+    }
+
+    private static List<String> judiciaryIds(final JsonObject payload, final String courtSession) {
+        return payload.getJsonObject(courtSession).getJsonArray("judiciaries").getValuesAs(JsonObject.class).stream()
+                .map(judiciary -> judiciary.getString("judiciaryId"))
+                .toList();
+    }
+
+    private JsonEnvelope judiciarySearchQuery() {
+        return envelopeFrom(metadataWithRandomUUID("listing.search.judiciary"), createObjectBuilder()
+                .add("courtCentreId", COURT_CENTRE_ID.toString())
+                .add("courtRoomId", COURT_ROOM_ID.toString())
+                .add("searchDate", SEARCH_DATE.toString())
+                .build());
     }
 
 }
