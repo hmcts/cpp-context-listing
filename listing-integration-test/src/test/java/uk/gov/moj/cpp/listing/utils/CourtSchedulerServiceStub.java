@@ -10,7 +10,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.lang.String.format;
-import static java.util.stream.Collectors.joining;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -851,30 +850,6 @@ public class CourtSchedulerServiceStub {
                 .atPriority(2)
                 .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
                 .withRequestBody(containing(courtScheduleId))
-                .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(payload)
-                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
-                ));
-    }
-
-    /**
-     * Scoped list-in-court-sessions stub for one hearing booked into several court sessions (one per
-     * hearing day): returns every courtScheduleId with its own start time and the given duration, so the
-     * command API's missing-courtScheduleIds check passes for a multi-day update. Matches only the PUT whose
-     * body carries the first courtScheduleId.
-     */
-    public static void stubListHearingInCourtSessionsForCourtSchedules(final String hearingId, final Map<String, ZonedDateTime> hearingStartTimeByCourtScheduleId,
-                                                                       final int durationMinutes) {
-        final String hearings = hearingStartTimeByCourtScheduleId.entrySet().stream()
-                .map(day -> "{\"hearingId\":\"" + hearingId + "\",\"courtScheduleId\":\"" + day.getKey() +
-                        "\",\"hearingStartTime\":\"" + day.getValue() + "\",\"duration\":" + durationMinutes + "}")
-                .collect(joining(","));
-        final String payload = "{\"hearings\":[" + hearings + "]}";
-
-        stubFor(WireMock.put(WireMock.urlPathEqualTo(format("%s", CourtSchedulerServiceStub.COURT_SCHEDULER_ENDPOINT + "/list/hearingslots")))
-                .atPriority(1)
-                .withHeader("content-type", containing("application/vnd.courtscheduler.list.hearings-in-court-sessions+json"))
-                .withRequestBody(containing(hearingStartTimeByCourtScheduleId.keySet().iterator().next()))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)

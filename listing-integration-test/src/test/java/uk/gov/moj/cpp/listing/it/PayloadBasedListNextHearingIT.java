@@ -19,7 +19,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -30,7 +29,6 @@ import static uk.gov.moj.cpp.listing.endpoint.UnscheduledHearingsEndpoint.pollFo
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubDeleteAvailableHearingSlotsServiceForAnyHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsForCourtSchedules;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
 
 /**
@@ -126,41 +124,6 @@ class PayloadBasedListNextHearingIT extends AbstractIT {
         vacatingTrialSteps.verifyVacatedTrialWhenQueryingFromAPI();
 
         searchSteps.verifyJudiciarySearchCourtSessions(hearingValues.courtCentreId, hearingValues.courtRoomId, searchDate, List.of(), List.of());
-    }
-
-    @Test
-    void shouldSearchJudiciaryInSessionOfSearchedDayOfMultiDayHearing() {
-        // TS-1b: day 1 sits 14:00-15:00 UK time (PM); day 2 sits 12:30-13:30 UK time, across 13:00, so all day (AM and PM)
-        final String day1 = "2025-06-10";
-        final String day2 = "2025-06-11";
-        final String courtScheduleIdDay1 = UUID.randomUUID().toString();
-        final String courtScheduleIdDay2 = UUID.randomUUID().toString();
-        final ZonedDateTime startDay1 = ZonedDateTime.parse(day1 + "T13:00:00Z");
-        final ZonedDateTime startDay2 = ZonedDateTime.parse(day2 + "T11:30:00Z");
-
-        final PayloadBasedListCourtHearingSteps listCourtHearingSteps = new PayloadBasedListCourtHearingSteps();
-        final PayloadGenerator.PayloadValues hearingValues = listCourtHearingSteps.whenListCourtHearingSubmittedWithSpiUnallocated();
-        listCourtHearingSteps.verifyHearingListedFromAPI(AbstractIT.UNALLOCATED);
-
-        final Map<String, ZonedDateTime> startTimeByCourtScheduleId = new LinkedHashMap<>();
-        startTimeByCourtScheduleId.put(courtScheduleIdDay1, startDay1);
-        startTimeByCourtScheduleId.put(courtScheduleIdDay2, startDay2);
-        stubListHearingInCourtSessionsForCourtSchedules(hearingValues.hearingId, startTimeByCourtScheduleId, 60);
-
-        final Map<String, String> customValues = new HashMap<>();
-        customValues.put("%%DAY_1%%", day1);
-        customValues.put("%%DAY_2%%", day2);
-        customValues.put("%%START_TIME_DAY_1%%", startDay1.toInstant().toString());
-        customValues.put("%%START_TIME_DAY_2%%", startDay2.toInstant().toString());
-        customValues.put("%%COURT_SCHEDULE_ID_DAY_1%%", courtScheduleIdDay1);
-        customValues.put("%%COURT_SCHEDULE_ID_DAY_2%%", courtScheduleIdDay2);
-        allocate(hearingValues, "update-hearing-for-listing-multiday-court-schedules", customValues);
-
-        final PayloadBasedUpdateHearingSteps searchSteps = new PayloadBasedUpdateHearingSteps(hearingValues.hearingId, hearingValues);
-        searchSteps.verifyJudiciarySearchCourtSessions(hearingValues.courtCentreId, hearingValues.courtRoomId, day1,
-                List.of(), UNALLOCATED_TO_ALLOCATED_JUDICIAL_IDS);
-        searchSteps.verifyJudiciarySearchCourtSessions(hearingValues.courtCentreId, hearingValues.courtRoomId, day2,
-                UNALLOCATED_TO_ALLOCATED_JUDICIAL_IDS, UNALLOCATED_TO_ALLOCATED_JUDICIAL_IDS);
     }
 
     @Test

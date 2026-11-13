@@ -10,17 +10,11 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 
-import org.hibernate.query.NativeQuery;
-import org.hibernate.type.StringType;
-
 /**
  * Judiciary sitting in a court room on a date with their court session, from allocated, non-vacated hearings (CHD-3323).
  */
 @ApplicationScoped
 public class JudiciarySessionRepository {
-
-    private static final String JUDICIAL_ID = "judicial_id";
-    private static final String SESSION = "session";
 
     /*
      * The session of a hearing day comes from its UK local start and end times: PM when it starts at or after 13:00,
@@ -61,9 +55,6 @@ public class JudiciarySessionRepository {
                 .setParameter("courtCentreId", courtCentreId)
                 .setParameter("courtRoomId", courtRoomId)
                 .setParameter("searchDate", searchDate)
-                .unwrap(NativeQuery.class)
-                .addScalar(JUDICIAL_ID, StringType.INSTANCE)
-                .addScalar(SESSION, StringType.INSTANCE)
                 .getResultList();
 
         return rows.stream()
