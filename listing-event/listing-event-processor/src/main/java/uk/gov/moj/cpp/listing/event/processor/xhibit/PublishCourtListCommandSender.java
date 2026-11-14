@@ -54,6 +54,7 @@ public class PublishCourtListCommandSender {
     public static final String PUBLISH_COURT_LIST_REQUEST_ID = "publishCourtListRequestId";
     public static final String DEFENDANTS = "defendants";
     public static final String HEARINGS = "hearings";
+    private static final String APPLICATION_REFERENCE = "applicationReference";
     private static final String ERROR_MESSAGE = "errorMessage";
     private static final String RECORD_COURT_LIST_EXPORT_SUCCESSFUL = "listing.command.record-court-list-export-successful";
     private static final String RECORD_COURT_LIST_EXPORT_FAILED = "listing.command.record-court-list-export-failed";
@@ -251,8 +252,12 @@ public class PublishCourtListCommandSender {
                 builder.add(key, mapListingDefendantToCore((JsonObject) value, caseIdByDefendantId, envelope));
             } else if (ARRAY.equals(valueType)) {
                 if (DEFENDANTS.equals(key)) {
-                    final JsonArrayBuilder defendants = mapListingDefendantToCoreDefendant((JsonArray) value, caseIdByDefendantId);
-                    builder.add(key, defendants);
+                    // Court application hearings are published without defendants - their parties
+                    // (applicant/subject/respondents) are not case defendants
+                    if (!json.containsKey(APPLICATION_REFERENCE)) {
+                        final JsonArrayBuilder defendants = mapListingDefendantToCoreDefendant((JsonArray) value, caseIdByDefendantId);
+                        builder.add(key, defendants);
+                    }
                 } else if (HEARINGS.equals(key)) {
                     getCaseIdForEachHearingAndMapByDefendantsInHearing((JsonArray) value, caseIdByDefendantId, envelope);
                     builder.add(key, mapListingDefendantToCore((JsonArray) value, caseIdByDefendantId, envelope));

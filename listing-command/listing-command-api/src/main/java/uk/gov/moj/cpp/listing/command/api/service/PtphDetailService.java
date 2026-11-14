@@ -1,14 +1,7 @@
 package uk.gov.moj.cpp.listing.command.api.service;
 
-import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
-import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
-import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
-
-import uk.gov.justice.services.core.annotation.ServiceComponent;
-import uk.gov.justice.services.core.enveloper.Enveloper;
-import uk.gov.justice.services.core.requester.Requester;
-import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.service.HearingQueryClient;
 import uk.gov.moj.cpp.listing.domain.PtphDetail;
 
 import java.util.Optional;
@@ -24,43 +17,40 @@ public class PtphDetailService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PtphDetailService.class);
 
-    private static final String HEARING_QUERY_PTPH_DETAIL = "hearing.get-ptph-detail";
-    private static final String HEARING_ID = "hearingId";
     private static final String TIER = "tier";
     private static final String LIST_TYPE = "listType";
     private static final String KEY_REASON = "keyReason";
     private static final String FINALISED = "finalised";
 
     @Inject
-    @ServiceComponent(COMMAND_API)
-    private Requester requester;
+    private HearingQueryClient hearingQueryClient;
 
     /**
-     * Returns the seeding hearing's tier / list type / key reason, but only when the
-     * hearing context reports the record as finalised. A missing record arrives as a
-     * successful response with finalised=false, so it is covered by the same check.
-     * Query failures are deliberately not caught: a swallowed failure would produce a
-     * blank trial hearing indistinguishable from a legitimately blank one.
+     * Returns the seeding hearing's tier / list type / key reason, but only when the hearing
+     * context reports the record as finalised. A missing record arrives either as a 404 or as a
+     * successful response with {@code finalised=false}, so both are covered.
+     *
+     * <p>Query failures are deliberately not caught: {@link HearingQueryClient} throws, and a
+     * swallowed failure would produce a blank trial hearing indistinguishable from a legitimately
+     * blank one.
+     *
+     * <p>The envelope is no longer needed — the client authenticates as the context system user
+     * rather than propagating the caller's metadata — but is kept in the signature so callers and
+     * their tests are unaffected.
      */
     public Optional<PtphDetail> getFinalisedPtphDetail(final UUID seedingHearingId, final JsonEnvelope envelope) {
-        final JsonObject payload = createObjectBuilder().add(HEARING_ID, seedingHearingId.toString()).build();
+        final Optional<JsonObject> response = hearingQueryClient.getPtphDetail(seedingHearingId);
 
-        final Envelope<JsonObject> request = Enveloper.envelop(payload)
-                .withName(HEARING_QUERY_PTPH_DETAIL)
-                .withMetadataFrom(envelope);
-
-        final JsonEnvelope response = requester.requestAsAdmin(envelopeFrom(request.metadata(), request.payload()));
-        final JsonObject responsePayload = response.payloadAsJsonObject();
-
-        if (!responsePayload.getBoolean(FINALISED, false)) {
+        if (response.isEmpty() || !response.get().getBoolean(FINALISED, false)) {
             LOGGER.info("No finalised tier/list type for seeding hearing {}", seedingHearingId);
             return Optional.empty();
         }
 
+        final JsonObject payload = response.get();
         return Optional.of(new PtphDetail(
-                stringOrNull(responsePayload, TIER),
-                stringOrNull(responsePayload, LIST_TYPE),
-                stringOrNull(responsePayload, KEY_REASON)));
+                stringOrNull(payload, TIER),
+                stringOrNull(payload, LIST_TYPE),
+                stringOrNull(payload, KEY_REASON)));
     }
 
     private String stringOrNull(final JsonObject payload, final String field) {

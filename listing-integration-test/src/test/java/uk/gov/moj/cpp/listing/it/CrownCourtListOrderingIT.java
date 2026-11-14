@@ -210,7 +210,7 @@ public class CrownCourtListOrderingIT extends AbstractIT {
 
         return new UpdatedHearingData(hearingId, COURT_CENTRE_ID, "Derby Crown Court", room.id, HEARING_TYPE,
                 hearingDate.toString(), hearingDate.toString(), singletonList(hearingDay), emptyList(), "ENGLISH",
-                judiciary, "CROWN", null, null, null, false, null, false, null, null);
+                judiciary, "CROWN", null, null, null, false, null, false, null, null, null);
     }
 
     /**

@@ -1,9 +1,10 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
 import static java.util.Objects.nonNull;
-import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
 import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
 
@@ -102,9 +103,9 @@ public class UnscheduledListingCommandHandler {
         final UUID seedingHearingId = seedingHearing.getSeedingHearingId();
         final String hearingDay = seedingHearing.getSittingDay();
 
-        final List<uk.gov.justice.listing.events.PtphDetails> ptphDetails = toEventPtphDetails(listUnscheduledNextHearingsEnriched.getPtphDetails());
+        final Map<UUID, PtphDetail> ptphDetailsByHearingId = ptphDetailsByHearingId(listUnscheduledNextHearingsEnriched.getPtphDetails());
 
-        updateSeedHearingEventStream(command, seedingHearingId, (SeedHearingAggregate seedHearingAggregate) -> seedHearingAggregate.requestNextUnscheduledHearings(unscheduledListingNeeds, hearingDay, courtCentresDetails, ptphDetails));
+        updateSeedHearingEventStream(command, seedingHearingId, (SeedHearingAggregate seedHearingAggregate) -> seedHearingAggregate.requestNextUnscheduledHearings(unscheduledListingNeeds, hearingDay, courtCentresDetails, ptphDetailsByHearingId));
     }
 
     @Handles("listing.command.list-unscheduled-next-hearing")
@@ -119,36 +120,32 @@ public class UnscheduledListingCommandHandler {
                 .collect(Collectors.toMap(CourtCentreDetails::getId, cc -> cc));
 
         listUnscheduledHearing(command, hearingTypesIdDurationMap, commandHearing, courtCentres,
-                ptphDetailFor(listUnscheduledNextHearing.getPtphDetails(), commandHearing.getId()));
+                toDomain(listUnscheduledNextHearing.getPtphDetail()));
     }
 
     /**
-     * The command carries a sibling list keyed by hearing id, because the hearing carrier is
-     * owned by coredomain; the aggregate takes the same single value object as the scheduled path.
+     * The command carries the detail as a sibling of the hearing, because the hearing carrier is
+     * owned by coredomain; the aggregate takes the same value object as the scheduled path.
      */
-    private PtphDetail ptphDetailFor(final List<uk.gov.justice.listing.courts.PtphDetails> ptphDetails, final UUID hearingId) {
-        if (isNull(ptphDetails)) {
+    private PtphDetail toDomain(final uk.gov.justice.listing.commands.PtphDetail ptphDetail) {
+        if (isNull(ptphDetail)) {
             return null;
         }
-        return ptphDetails.stream()
-                .filter(detail -> hearingId.equals(detail.getHearingId()))
-                .findFirst()
-                .map(detail -> new PtphDetail(detail.getTier(), detail.getListType(), detail.getKeyReason()))
-                .orElse(null);
+        return new PtphDetail(ptphDetail.getTier(), ptphDetail.getListType(), ptphDetail.getKeyReason());
     }
 
-    private List<uk.gov.justice.listing.events.PtphDetails> toEventPtphDetails(final List<uk.gov.justice.listing.courts.PtphDetails> ptphDetails) {
+    /**
+     * The enriched command lists several next hearings, so its details arrive as a sibling list
+     * keyed by hearing id — only the Crown Court trials among them have an entry. Keying it here
+     * lets the aggregate look up each hearing's own detail as it raises that hearing's event.
+     */
+    private Map<UUID, PtphDetail> ptphDetailsByHearingId(final List<uk.gov.justice.listing.commands.HearingPtphDetail> ptphDetails) {
         if (isNull(ptphDetails)) {
-            return emptyList();
+            return emptyMap();
         }
         return ptphDetails.stream()
-                .map(detail -> uk.gov.justice.listing.events.PtphDetails.ptphDetails()
-                        .withHearingId(detail.getHearingId())
-                        .withTier(detail.getTier())
-                        .withListType(detail.getListType())
-                        .withKeyReason(detail.getKeyReason())
-                        .build())
-                .collect(toList());
+                .collect(toMap(uk.gov.justice.listing.commands.HearingPtphDetail::getHearingId,
+                        detail -> new PtphDetail(detail.getTier(), detail.getListType(), detail.getKeyReason())));
     }
 
     @SuppressWarnings({"squid:S3655", "squid:S1188"})

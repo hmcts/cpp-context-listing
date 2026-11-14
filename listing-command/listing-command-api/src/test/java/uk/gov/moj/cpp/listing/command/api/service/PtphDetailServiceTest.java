@@ -12,8 +12,9 @@ import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
 
-import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.service.HearingQueryClient;
+import uk.gov.moj.cpp.listing.common.service.HearingQueryException;
 import uk.gov.moj.cpp.listing.domain.PtphDetail;
 
 import java.util.Optional;
@@ -34,7 +35,7 @@ class PtphDetailServiceTest {
     private static final UUID SEEDING_HEARING_ID = randomUUID();
 
     @Mock
-    private Requester requester;
+    private HearingQueryClient hearingQueryClient;
 
     @InjectMocks
     private PtphDetailService ptphDetailService;
@@ -44,13 +45,13 @@ class PtphDetailServiceTest {
                 createObjectBuilder().build());
     }
 
-    private JsonEnvelope response(final JsonObject payload) {
-        return envelopeFrom(metadataBuilder().withId(randomUUID()).withName("hearing.get-ptph-detail").build(), payload);
+    private Optional<JsonObject> response(final JsonObject payload) {
+        return Optional.of(payload);
     }
 
     @Test
     void shouldReturnDetailWhenFinalised() {
-        when(requester.requestAsAdmin(any(JsonEnvelope.class))).thenReturn(response(createObjectBuilder()
+        when(hearingQueryClient.getPtphDetail(SEEDING_HEARING_ID)).thenReturn(response(createObjectBuilder()
                 .add("tier", "TIER_3")
                 .add("listType", "TYPE_1_FIXED")
                 .add("keyReason", "Vulnerable witness")
@@ -67,21 +68,17 @@ class PtphDetailServiceTest {
 
     @Test
     void shouldQueryHearingContextWithSeedingHearingId() {
-        when(requester.requestAsAdmin(any(JsonEnvelope.class))).thenReturn(response(createObjectBuilder()
+        when(hearingQueryClient.getPtphDetail(SEEDING_HEARING_ID)).thenReturn(response(createObjectBuilder()
                 .add("finalised", false).build()));
 
         ptphDetailService.getFinalisedPtphDetail(SEEDING_HEARING_ID, incoming());
 
-        final ArgumentCaptor<JsonEnvelope> captor = ArgumentCaptor.forClass(JsonEnvelope.class);
-        org.mockito.Mockito.verify(requester).requestAsAdmin(captor.capture());
-        assertEquals("hearing.get-ptph-detail", captor.getValue().metadata().name());
-        assertEquals(SEEDING_HEARING_ID.toString(),
-                captor.getValue().payloadAsJsonObject().getString("hearingId"));
+        org.mockito.Mockito.verify(hearingQueryClient).getPtphDetail(SEEDING_HEARING_ID);
     }
 
     @Test
     void shouldReturnEmptyWhenNotFinalised() {
-        when(requester.requestAsAdmin(any(JsonEnvelope.class))).thenReturn(response(createObjectBuilder()
+        when(hearingQueryClient.getPtphDetail(SEEDING_HEARING_ID)).thenReturn(response(createObjectBuilder()
                 .add("tier", "TIER_3")
                 .add("listType", "TYPE_2_FLEXIBLE")
                 .add("finalised", false)
@@ -93,7 +90,7 @@ class PtphDetailServiceTest {
     @Test
     void shouldReturnEmptyWhenNoRecordExists() {
         // hearing context returns finalised=false with null fields when there is no row
-        when(requester.requestAsAdmin(any(JsonEnvelope.class))).thenReturn(response(createObjectBuilder()
+        when(hearingQueryClient.getPtphDetail(SEEDING_HEARING_ID)).thenReturn(response(createObjectBuilder()
                 .add("finalised", false).build()));
 
         assertFalse(ptphDetailService.getFinalisedPtphDetail(SEEDING_HEARING_ID, incoming()).isPresent());
@@ -101,11 +98,19 @@ class PtphDetailServiceTest {
 
     @Test
     void shouldPropagateQueryFailure() {
-        when(requester.requestAsAdmin(any(JsonEnvelope.class)))
-                .thenThrow(new RuntimeException("hearing context unavailable"));
+        when(hearingQueryClient.getPtphDetail(SEEDING_HEARING_ID))
+                .thenThrow(new HearingQueryException("hearing context unavailable"));
 
-        assertThrows(RuntimeException.class,
+        assertThrows(HearingQueryException.class,
                 () -> ptphDetailService.getFinalisedPtphDetail(SEEDING_HEARING_ID, incoming()));
+    }
+
+    /** A 404 from the hearing context reaches us as an empty Optional, not an exception. */
+    @Test
+    void shouldReturnEmptyWhenTheHearingContextHasNoRecord() {
+        when(hearingQueryClient.getPtphDetail(SEEDING_HEARING_ID)).thenReturn(Optional.empty());
+
+        assertFalse(ptphDetailService.getFinalisedPtphDetail(SEEDING_HEARING_ID, incoming()).isPresent());
     }
 
     /**
@@ -115,7 +120,7 @@ class PtphDetailServiceTest {
      */
     @Test
     void shouldReadAbsentFieldsAsNullRatherThanFailing() {
-        when(requester.requestAsAdmin(any(JsonEnvelope.class))).thenReturn(response(createObjectBuilder()
+        when(hearingQueryClient.getPtphDetail(SEEDING_HEARING_ID)).thenReturn(response(createObjectBuilder()
                 .add("finalised", true)
                 .build()));
 
@@ -133,7 +138,7 @@ class PtphDetailServiceTest {
      */
     @Test
     void shouldReadExplicitJsonNullFieldsAsNull() {
-        when(requester.requestAsAdmin(any(JsonEnvelope.class))).thenReturn(response(createObjectBuilder()
+        when(hearingQueryClient.getPtphDetail(SEEDING_HEARING_ID)).thenReturn(response(createObjectBuilder()
                 .add("tier", "TIER_4")
                 .add("listType", "TYPE_2_FLEXIBLE")
                 .addNull("keyReason")

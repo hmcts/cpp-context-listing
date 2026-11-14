@@ -25,25 +25,7 @@
       "type": "array",
       "minItems": 0,
       "items": {
-        "type": "object",
-        "properties": {
-          "hearingId": {
-            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
-          },
-          "tier": {
-            "type": "string"
-          },
-          "listType": {
-            "type": "string"
-          },
-          "keyReason": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "hearingId"
-        ],
-        "additionalProperties": false
+        "$ref": "http://justice.gov.uk/listing/commands/hearing-ptph-detail.json"
       }
     }
   },

@@ -141,7 +141,7 @@ class YouthCourtListRestrictionIT extends AbstractIT {
     }
 
     @Test
-    void shouldNotAutoRestrictUnder18CourtApplicationRespondentFromCourtListWhenHearingIsAllocated() throws IOException {
+    void shouldRestrictUnder18CourtApplicationRespondentFromCourtListWhenHearingIsAllocated() throws IOException {
         final HearingsData hearingsData = hearingsDataForYoungCourtApplicationRespondent();
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -164,7 +164,7 @@ class YouthCourtListRestrictionIT extends AbstractIT {
                 withJsonPath("$.hearings[0].id", equalTo(hearingData.getId().toString())),
                 withJsonPath("$.hearings[0].courtApplications[0].id", equalTo(courtApplicationData.getId().toString())),
                 withJsonPath("$.hearings[0].courtApplications[0].respondents[0].id", equalTo(respondentId)),
-                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].restrictFromCourtList", equalTo(false))
+                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].restrictFromCourtList", equalTo(true))
         });
     }
 
