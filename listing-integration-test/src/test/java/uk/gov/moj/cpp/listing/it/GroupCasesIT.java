@@ -261,6 +261,7 @@ class GroupCasesIT extends AbstractIT {
         final JsonObject listCourtHearingJsonObject = listCourtHearingSteps
                 .preparePayloadToListCourtHearingForGroupCases(LIST_COURT_HEARING_JSON, getPayloadValues(), groupId,
                         masterCaseId, Arrays.asList(memberCase1Id, memberCase2Id));
+        stubCrownBookingInThisCourtRoom(listCourtHearingJsonObject);
         listCourtHearingSteps.listCourtHearing(withNumberOfGroupCases(listCourtHearingJsonObject, 3), courtCentreId, hearingTypeId);
 
         // listed allocated (Crown booking + room), so hearing-confirmed now carries the listed group size
@@ -275,6 +276,22 @@ class GroupCasesIT extends AbstractIT {
                 withJsonPath("$.numberOfGroupCases", equalTo(3)),
                 withJsonPath("$.listedCases", hasSize(1)),
                 withJsonPath("$.listedCases[0].id", equalTo(masterCaseId.toString()))));
+    }
+
+    /**
+     * A CROWN bookingReference resolves as a reserved booking (GET /unconfirmedBooking). Without
+     * this the suite-wide stub answers with its default Croydon session, so the hearing is booked
+     * outside this test's court centre and the court-centre search never finds it.
+     */
+    private void stubCrownBookingInThisCourtRoom(final JsonObject listCourtHearingJsonObject) {
+        final String bookingReference = listCourtHearingJsonObject.getJsonArray("hearings").getJsonObject(0).getString("bookingReference");
+        final UUID courtRoomId = fromString(COURT_ROOM_ID);
+        final ZonedDateTime startTime = ItClock.nowUtc().plusDays(5).withHour(10).withMinute(0).withSecond(0).withNano(0);
+        CourtSchedulerServiceStub.stubUnconfirmedBookingForBookingReference(
+                bookingReference, courtCentreId, courtRoomId, startTime.toLocalDate(), startTime);
+        CourtSchedulerServiceStub.stubSearchCourtSchedulesByIdSession(
+                bookingReference, courtCentreId, courtRoomId, startTime.toLocalDate(), startTime, false);
+        CourtSchedulerServiceStub.stubListHearingInCourtSessionsForCourtSchedule(hearingId.toString(), bookingReference, startTime);
     }
 
     private void assertGroupSizeAfterRemoval(final UUID masterCaseId, final UUID removedMemberCaseId,
