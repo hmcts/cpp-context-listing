@@ -16,7 +16,7 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STR
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.EXACT_HEARING_START_DATETIME;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetHearingIds;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
@@ -122,7 +122,7 @@ public class RangeSearchQueryForMagistratesIT extends AbstractIT {
         );
         JsonObject hearingsRespJsonObj = payloadToObject(res.getPayload());
         JsonArray hearingsJsonArr = hearingsRespJsonObj.getJsonArray("hearings");
-        JsonObject bookedSlotsJsonObj = payloadToObject(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON));
+        JsonObject bookedSlotsJsonObj = payloadToObject(getPayload(STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON));
         JsonArray bookedSlotsJsonArr = bookedSlotsJsonObj.getJsonArray("provisionalSlots");
         JsonArray hearingDaysJsonArr = hearingsJsonArr.getJsonObject(0).getJsonArray("hearingDays");
         assertThat(hearingDaysJsonArr.getJsonObject(0).getString("courtScheduleId"), is(bookedSlotsJsonArr.getJsonObject(0).getString("courtScheduleId")));

@@ -76,7 +76,7 @@ public class HearingEnrichmentOrchestratorTest {
                 RotaSlot.rotaSlot().withCourtScheduleId(java.util.UUID.randomUUID().toString()).build()));
         // Booking-reference resolution lives in CourtScheduleEnrichmentService; default it to a pass-through
         // so orchestrator tests exercise the routing, not the (separately unit-tested) resolution.
-        lenient().when(courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(any(HearingListingNeeds.class)))
+        lenient().when(courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(any(HearingListingNeeds.class), any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
@@ -117,6 +117,10 @@ public class HearingEnrichmentOrchestratorTest {
         assertEquals(2, result.size());
         assertTrue(result.contains(enrichedMagistratesHearing));
         assertTrue(result.contains(enrichedCrownHearing));
+        // The command's envelope carries the court schedule ids progression resolved at an
+        // earlier share - the only copy left once a re-share has freed the booking - so Crown
+        // booking resolution must be given it, as magistrates' is.
+        verify(courtScheduleEnrichmentService).promoteCrownBookingReferenceToBookedSlot(crownHearing, envelope);
     }
 
     @Test

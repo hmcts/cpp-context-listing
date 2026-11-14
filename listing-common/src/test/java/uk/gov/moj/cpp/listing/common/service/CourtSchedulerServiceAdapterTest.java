@@ -557,6 +557,41 @@ class CourtSchedulerServiceAdapterTest {
     }
 
     @Test
+    void crownFallbackSearchAndBook_shouldThrowNoSession_on422WithoutBody() {
+        when(response.getStatus()).thenReturn(HttpStatus.SC_UNPROCESSABLE_ENTITY);
+        when(response.hasEntity()).thenReturn(false);
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException.class,
+                () -> courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                        UUID.randomUUID(), UUID.randomUUID(), LocalDate.of(2026, 11, 17), 360,
+                        Optional.empty(), Optional.empty(),
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING,
+                        Optional.empty(), Optional.empty(), Optional.empty()));
+    }
+
+    @Test
+    void crownFallbackSearchAndBook_shouldThrowRejection_on422NoAvailabilityInANonJsonBody() {
+        // The body arrives as a plain object rather than a JsonObject and is converted before reading the errorCode.
+        when(response.getStatus()).thenReturn(HttpStatus.SC_UNPROCESSABLE_ENTITY);
+        when(response.hasEntity()).thenReturn(true);
+        when(response.getEntity()).thenReturn(java.util.Map.of("errorCode", "NO_AVAILABILITY"));
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        final uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException rejection =
+                org.junit.jupiter.api.Assertions.assertThrows(
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException.class,
+                        () -> courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                                UUID.randomUUID(), UUID.randomUUID(), LocalDate.of(2026, 11, 17), 360,
+                                Optional.of(UUID.randomUUID()), Optional.empty(),
+                                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.UPDATE_HEARING_FOR_LISTING,
+                                Optional.empty(), Optional.empty(), Optional.empty()));
+
+        assertThat(rejection.getErrorCode(), is("NO_AVAILABILITY"));
+    }
+
+    @Test
     void crownFallbackSearchAndBook_shouldThrowNoSession_on200WithoutCourtScheduleId() {
         // A 200 whose body carries no courtScheduleId (e.g. a differently-shaped search-and-book
         // response) is not a booking — accepting it would fabricate an all-null hearing day.

@@ -311,6 +311,105 @@ class CrownUpdateWithoutCourtScheduleIdTest {
                 contains(sessionIds.get(TUE), sessionIds.get(WED), sessionIds.get(THU)));
     }
 
+    // ─── list side fails open: the hearing is listed unallocated ──────────────
+
+    @Test
+    void listSideListsUnallocatedWhenNoOuCodeCanBeResolved() {
+        givenConverters();
+        final JsonEnvelope envelope = mock(JsonEnvelope.class);
+        when(courtCentreFactory.getCourtCentre(courtCentreId, envelope)).thenThrow(new IllegalStateException("referencedata down"));
+
+        final uk.gov.justice.listing.commands.HearingListingNeeds result = service.enrichWithCourtSchedules(crownListNeeds(null), envelope);
+
+        assertListedUnallocated(result);
+        verify(hearingSlotsService, never()).search(anyMap());
+    }
+
+    @Test
+    void listSideListsUnallocatedWhenTheFinalSessionLookupFails() {
+        givenConverters();
+        final Response failed = mock(Response.class);
+        when(failed.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        when(hearingSlotsService.search(anyMap())).thenReturn(failed);
+
+        final uk.gov.justice.listing.commands.HearingListingNeeds result = service.enrichWithCourtSchedules(crownListNeeds(OU_CODE), mock(JsonEnvelope.class));
+
+        assertListedUnallocated(result);
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+    }
+
+    @Test
+    void listSideListsUnallocatedWhenTheFirstDayHasNoFinalSession() {
+        givenConverters();
+        final Response noSlots = mock(Response.class);
+        when(noSlots.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(noSlots.getEntity()).thenReturn(JsonObjects.createObjectBuilder().build());
+        when(hearingSlotsService.search(anyMap())).thenReturn(noSlots);
+
+        final uk.gov.justice.listing.commands.HearingListingNeeds result = service.enrichWithCourtSchedules(crownListNeeds(OU_CODE), mock(JsonEnvelope.class));
+
+        assertListedUnallocated(result);
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+    }
+
+    @Test
+    void listSideListsUnallocatedWhenCourtschedulerRejectsTheBlock() {
+        givenConverters();
+        givenFinalSessionsOn(TUE);
+        final Response rejected = mock(Response.class);
+        when(rejected.getStatus()).thenReturn(HttpStatus.SC_UNPROCESSABLE_ENTITY);
+        when(rejected.hasEntity()).thenReturn(true);
+        when(rejected.getEntity()).thenReturn(JsonObjects.createObjectBuilder()
+                .add("errorCode", "NO_AVAILABILITY")
+                .add("unavailableDates", JsonObjects.createArrayBuilder().add(WED.toString()))
+                .build());
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(rejected);
+
+        final uk.gov.justice.listing.commands.HearingListingNeeds result = service.enrichWithCourtSchedules(crownListNeeds(OU_CODE), mock(JsonEnvelope.class));
+
+        assertListedUnallocated(result);
+    }
+
+    @Test
+    void listSideListsUnallocatedWhenCourtschedulerBooksNothing() {
+        givenConverters();
+        givenFinalSessionsOn(TUE);
+        givenBookedBlock();
+
+        final uk.gov.justice.listing.commands.HearingListingNeeds result = service.enrichWithCourtSchedules(crownListNeeds(OU_CODE), mock(JsonEnvelope.class));
+
+        assertListedUnallocated(result);
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any(JsonObject.class));
+    }
+
+    // ─── update side without an ouCode or with a moved block ─────────────────
+
+    @Test
+    void updateProceedsUnallocatedWhenNoOuCodeCanBeResolved() {
+        final UpdateHearingForListing withoutSelectedCentre = UpdateHearingForListing.updateHearingForListing()
+                .withValuesFrom(spiUpdate(TUE, THU, List.of()))
+                .withSelectedCourtCentre(null)
+                .build();
+
+        final UpdateHearingForListing result = service.enrichWithCourtSchedules(withoutSelectedCentre, null);
+
+        assertThat(result, is(withoutSelectedCentre));
+        verify(hearingSlotsService, never()).search(anyMap());
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+    }
+
+    @Test
+    void marksEveryDayDraftWhenTheBookedBlockStartsAfterTheRequestedStartDate() {
+        givenConverters();
+        givenFinalSessionsOn(TUE, WED, THU);
+        givenBookedBlock(WED, THU);
+
+        final UpdateHearingForListing result = service.enrichWithCourtSchedules(spiUpdate(TUE, THU, List.of()), mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().stream().map(HearingDay::getIsDraft).toList(), contains(true, true, true));
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any(JsonObject.class));
+    }
+
     // ─── option 1: an allocated block keeps its per-day courtrooms ─────────────
 
     @Test
@@ -533,6 +632,26 @@ class CrownUpdateWithoutCourtScheduleIdTest {
                                 .withDuration(2)
                                 .build()))
                 .build();
+    }
+
+    /** A multi-day CROWN list payload with a courtroom and no courtScheduleId; {@code ouCode} may be null. */
+    private uk.gov.justice.listing.commands.HearingListingNeeds crownListNeeds(final String ouCode) {
+        return uk.gov.justice.listing.commands.HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withListedStartDateTime(ZonedDateTime.parse(TUE + "T10:00:00Z"))
+                .withCourtCentre(uk.gov.justice.core.courts.CourtCentre.courtCentre()
+                        .withId(courtCentreId).withRoomId(courtRoomId).withCode(ouCode).build())
+                .withHearingDays(List.of(TUE, WED, THU).stream()
+                        .map(day -> HearingDay.hearingDay().withHearingDate(day)
+                                .withStartTime(ZonedDateTime.parse(day + "T10:00:00Z")).withDurationMinutes(360).build())
+                        .toList())
+                .build();
+    }
+
+    private static void assertListedUnallocated(final uk.gov.justice.listing.commands.HearingListingNeeds result) {
+        assertThat(result.getHearingDays().size(), is(3));
+        result.getHearingDays().forEach(day -> assertThat(day.getCourtScheduleId(), nullValue()));
     }
 
     private void givenConverters() {
