@@ -57,6 +57,17 @@
         "$ref": "http://justice.gov.uk/core/courts/judicialRole.json"
       }
     },
+    "judiciaryAssignmentSource": {
+      "type": "string",
+      "enum": [
+        "MANUAL",
+        "AUTO"
+      ]
+    },
+    "isJudiciaryFromCourtSchedule": {
+      "description": "Set by the command API when an empty request judiciary was filled from the court scheduler's session judiciary",
+      "type": "boolean"
+    },
     "hearingLanguage": {
       "$ref": "http://justice.gov.uk/core/courts/hearingLanguage.json"
     },

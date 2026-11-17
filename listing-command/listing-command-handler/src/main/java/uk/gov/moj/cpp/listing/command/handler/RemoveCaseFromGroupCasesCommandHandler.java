@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
+import javax.json.JsonObject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,7 @@ import org.slf4j.LoggerFactory;
 public class RemoveCaseFromGroupCasesCommandHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoveCaseFromGroupCasesCommandHandler.class);
+    private static final String NUMBER_OF_GROUP_CASES = "numberOfGroupCases";
 
     @Inject
     private EventSource eventSource;
@@ -58,6 +60,7 @@ public class RemoveCaseFromGroupCasesCommandHandler {
         final ProsecutionCase removedCase = jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject().getJsonObject("removedCase"), ProsecutionCase.class);
         final ProsecutionCase newGroupMaster = jsonEnvelope.payloadAsJsonObject().containsKey("newGroupMaster") ?
                 jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject().getJsonObject("newGroupMaster"), ProsecutionCase.class) : null;
+        final Integer numberOfGroupCases = getNumberOfGroupCases(jsonEnvelope.payloadAsJsonObject());
 
         final EventStream eventStream = eventSource.getStreamById(masterCaseId);
         final Case caseAggregate = aggregateService.get(eventStream, Case.class);
@@ -76,8 +79,18 @@ public class RemoveCaseFromGroupCasesCommandHandler {
             appendEventsToStream(jsonEnvelope, hearingEventStream,
                     hearingAggregate.removeCaseFromGroupCases(hearingId, groupId,
                             commandToDomainConverter.buildListedCases(removedCase),
-                            commandToDomainConverter.buildListedCases(newGroupMaster)));
+                            commandToDomainConverter.buildListedCases(newGroupMaster),
+                            numberOfGroupCases));
         }
+    }
+
+    /**
+     * Returns null, not 0, when the count is not in the payload: the Hearing aggregate treats null as
+     * "no count" and leaves the stored group size unchanged, whereas 0 would be stored as the group size.
+     */
+    private Integer getNumberOfGroupCases(final JsonObject payload) {
+        return payload.containsKey(NUMBER_OF_GROUP_CASES) && !payload.isNull(NUMBER_OF_GROUP_CASES) ?
+                payload.getInt(NUMBER_OF_GROUP_CASES) : null;
     }
 
     private void appendEventsToStream(final Envelope<?> envelope, final EventStream eventStream, final Stream<Object> events) throws EventStreamException {

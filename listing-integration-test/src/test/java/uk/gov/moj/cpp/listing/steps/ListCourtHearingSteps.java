@@ -624,6 +624,14 @@ public class ListCourtHearingSteps extends AbstractIT {
                 });
     }
 
+    // Waits for the hearing to reach the viewstore whether it was listed allocated or unallocated
+    public void verifyHearingIsInViewStore() {
+        final UUID hearingId = hearingsData.getHearingData().get(0).getId();
+        pollWithDefaults(requestParams(generateUrlForFindingAHearingById(hearingId.toString()), MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(status().is(OK),
+                        payload().isJson(withJsonPath("$.id", equalTo(hearingId.toString()))));
+    }
+
     public void verifyHearingDayCourtScheduledUpdated(final UUID updatedCourtScheduleId) {
         final UUID hearingId = hearingsData.getHearingData().get(0).getId();
         final String url = generateUrlForFindingAHearingById(hearingId.toString());
@@ -1070,61 +1078,42 @@ public class ListCourtHearingSteps extends AbstractIT {
 
     public void verifyHearingListedFromAPIForStandaloneApplication(final boolean isAllocated) {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
-        final String hearingIdFilter = getHearingFilter(hearingData.getId().toString());
 
-        pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
-                withJsonPath(hearingIdFilter, hasSize(1)),
-                withJsonPath(hearingIdFilter + ".jurisdictionType",
-                        hasItem(hearingData.getJurisdictionType())),
-                withJsonPath(hearingIdFilter + ".courtCentreId",
-                        hasItem(hearingData.getCourtCentreId().toString())),
-                withJsonPath(hearingIdFilter + ".type.id",
-                        hasItem(hearingData.getHearingTypeData().getTypeId().toString())),
-                withJsonPath(hearingIdFilter + ".type.description",
-                        hasItem(hearingData.getHearingTypeData().getTypeDescription())),
-                withJsonPath(hearingIdFilter + ".startDate",
-                        hasItem(hearingData.getHearingStartDate().toString())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].applicationType",
-                        hasItem(hearingData.getCourtApplications().get(0).getType())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].id",
-                        hasItem(hearingData.getCourtApplications().get(0).getId().toString())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].parentApplicationId",
-                        hasItem(hearingData.getCourtApplications().get(0).getParentApplicationId().toString())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].applicant.lastName",
-                        hasItem(hearingData.getCourtApplications().get(0).getApplicant().getLastName())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].applicant.firstName",
-                        hasItem(hearingData.getCourtApplications().get(0).getApplicant().getFirstName())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].respondents[0].firstName",
-                        hasItem(hearingData.getCourtApplications().get(0).getRespondent().getFirstName())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].respondents[0].lastName",
-                        hasItem(hearingData.getCourtApplications().get(0).getRespondent().getLastName())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].applicationParticulars",
-                        hasItem(hearingData.getCourtApplications().get(0).getApplicationParticulars())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].applicant.address.address1",
-                        hasItem(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress1())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].applicant.address.address2",
-                        hasItem(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress2().get())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].applicant.address.address3",
-                        hasItem(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress3().get())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].applicant.address.address4",
-                        hasItem(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress4().get())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].applicant.address.address5",
-                        hasItem(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress5().get())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].applicant.address.postcode",
-                        hasItem(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getPostcode().get())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].respondents[0].address.address1",
-                        hasItem(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress1())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].respondents[0].address.address2",
-                        hasItem(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress2().get())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].respondents[0].address.address3",
-                        hasItem(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress3().get())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].respondents[0].address.address4",
-                        hasItem(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress4().get())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].respondents[0].address.address5",
-                        hasItem(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress5().get())),
-                withJsonPath(hearingIdFilter + ".courtApplications[0].respondents[0].address.postcode",
-                        hasItem(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getPostcode().get()))
+        final String hearingFilter = getHearingFilter(hearingData.getId().toString());
+
+        final String payload = pollForHearing(hearingsData.getHearingData().get(0).getCourtCentreId().toString(), isAllocated, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(hearingFilter, hasSize(1))
         });
+
+        final List<Object> matchingHearings = com.jayway.jsonpath.JsonPath.read(payload, hearingFilter);
+        final com.jayway.jsonpath.DocumentContext hearing = com.jayway.jsonpath.JsonPath.parse(matchingHearings.get(0));
+
+        assertThat(hearing.read("$.id"), is(hearingData.getId().toString()));
+        assertThat(hearing.read("$.jurisdictionType"), is(hearingData.getJurisdictionType()));
+        assertThat(hearing.read("$.courtCentreId"), is(hearingData.getCourtCentreId().toString()));
+        assertThat(hearing.read("$.type.id"), is(hearingData.getHearingTypeData().getTypeId().toString()));
+        assertThat(hearing.read("$.type.description"), is(hearingData.getHearingTypeData().getTypeDescription()));
+        assertThat(hearing.read("$.startDate"), is(hearingData.getHearingStartDate().toString()));
+        assertThat(hearing.read("$.courtApplications[0].applicationType"), is(hearingData.getCourtApplications().get(0).getType()));
+        assertThat(hearing.read("$.courtApplications[0].id"), is(hearingData.getCourtApplications().get(0).getId().toString()));
+        assertThat(hearing.read("$.courtApplications[0].parentApplicationId"), is(hearingData.getCourtApplications().get(0).getParentApplicationId().toString()));
+        assertThat(hearing.read("$.courtApplications[0].applicant.lastName"), is(hearingData.getCourtApplications().get(0).getApplicant().getLastName()));
+        assertThat(hearing.read("$.courtApplications[0].applicant.firstName"), is(hearingData.getCourtApplications().get(0).getApplicant().getFirstName()));
+        assertThat(hearing.read("$.courtApplications[0].respondents[0].firstName"), is(hearingData.getCourtApplications().get(0).getRespondent().getFirstName()));
+        assertThat(hearing.read("$.courtApplications[0].respondents[0].lastName"), is(hearingData.getCourtApplications().get(0).getRespondent().getLastName()));
+        assertThat(hearing.read("$.courtApplications[0].applicationParticulars"), is(hearingData.getCourtApplications().get(0).getApplicationParticulars()));
+        assertThat(hearing.read("$.courtApplications[0].applicant.address.address1"), is(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress1()));
+        assertThat(hearing.read("$.courtApplications[0].applicant.address.address2"), is(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress2().get()));
+        assertThat(hearing.read("$.courtApplications[0].applicant.address.address3"), is(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress3().get()));
+        assertThat(hearing.read("$.courtApplications[0].applicant.address.address4"), is(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress4().get()));
+        assertThat(hearing.read("$.courtApplications[0].applicant.address.address5"), is(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress5().get()));
+        assertThat(hearing.read("$.courtApplications[0].applicant.address.postcode"), is(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getPostcode().get()));
+        assertThat(hearing.read("$.courtApplications[0].respondents[0].address.address1"), is(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress1()));
+        assertThat(hearing.read("$.courtApplications[0].respondents[0].address.address2"), is(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress2().get()));
+        assertThat(hearing.read("$.courtApplications[0].respondents[0].address.address3"), is(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress3().get()));
+        assertThat(hearing.read("$.courtApplications[0].respondents[0].address.address4"), is(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress4().get()));
+        assertThat(hearing.read("$.courtApplications[0].respondents[0].address.address5"), is(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress5().get()));
+        assertThat(hearing.read("$.courtApplications[0].respondents[0].address.postcode"), is(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getPostcode().get()));
     }
 
     public void verifyExistingHearingById() {
@@ -2646,6 +2635,41 @@ public class ListCourtHearingSteps extends AbstractIT {
         return new StringToJsonObjectConverter().convert(eventPayloadString);
     }
 
+    /**
+     * Lists a group hearing with the master case plus the given member cases (isGroupMember=true,
+     * isGroupMaster=false), so the hearing holds every case of the group.
+     */
+    public JsonObject preparePayloadToListCourtHearingForGroupCases(final String fileName, final Map<String, String> values, final UUID groupId,
+                                                                    final UUID masterCaseId, final List<UUID> memberCaseIds) throws IOException {
+
+        final String needString = getStringFromResource(fileName.concat("-part-defendant-listing-needs.json"));
+        final String caseString = getStringFromResource(fileName.concat("-part-cases.json"));
+        String eventPayloadString = getStringFromResource(fileName.concat(".json"))
+                .replaceAll("HEARING_ID", values.get("hearingId"))
+                .replaceAll("COURT_CENTRE_ID", values.get("courtCentreId"))
+                .replaceAll("EARLIEST_START_TIME", values.get("hearingStartTime"))
+                .replaceAll("ESTIMATED_MINUTES", values.get("estimatedMinutes"))
+                .replaceAll("HEARING_TYPE_ID", values.get("hearingTypeId"));
+
+        final List<String> cases = new ArrayList<>();
+        final List<String> needs = new ArrayList<>();
+
+        final UUID masterDefendantId = randomUUID();
+        cases.add(getGroupCase(caseString, groupId, masterCaseId, masterDefendantId, true, true, true));
+        needs.add(getGroupCaseListingNeeds(needString, masterDefendantId, masterCaseId));
+
+        for (final UUID memberCaseId : memberCaseIds) {
+            final UUID memberDefendantId = randomUUID();
+            cases.add(getGroupCase(caseString, groupId, memberCaseId, memberDefendantId, true, true, false));
+            needs.add(getGroupCaseListingNeeds(needString, memberDefendantId, memberCaseId));
+        }
+
+        eventPayloadString = eventPayloadString.replace("DEFENDANT_LISTING_NEEDS", String.join(",", needs));
+        eventPayloadString = eventPayloadString.replace("PROSECUTION_CASES", String.join(",", cases));
+
+        return new StringToJsonObjectConverter().convert(eventPayloadString);
+    }
+
     public JsonObject preparePayloadCaseRemovedFromGroupCases(final String fileName, final String casesFileName,
                                                               final UUID groupId, final UUID masterCaseId,
                                                               final UUID removedCaseId, final UUID newGroupMasterCaseId) throws IOException {
@@ -2664,6 +2688,32 @@ public class ListCourtHearingSteps extends AbstractIT {
         eventPayloadString = eventPayloadString.replace("NEW_GROUP_MASTER", newGroupMasterCaseBuilder.toString());
 
         return new StringToJsonObjectConverter().convert(eventPayloadString);
+    }
+
+    public JsonObject preparePayloadMemberCaseRemovedFromGroupCases(final String fileName, final String casesFileName,
+                                                                    final UUID groupId, final UUID masterCaseId,
+                                                                    final UUID removedCaseId, final boolean removedDefendantHasYouthFlag) throws IOException {
+
+        String removedCase = getGroupCase(getStringFromResource(casesFileName), groupId, removedCaseId, randomUUID(), true, false, false);
+        if (!removedDefendantHasYouthFlag) {
+            removedCase = removedCase.replaceAll("\"isYouth\"\\s*:\\s*(true|false)\\s*,", "");
+        }
+
+        final String eventPayloadString = getStringFromResource(fileName)
+                .replaceAll("GROUP_ID", groupId.toString())
+                .replaceAll("MASTER_CASE_ID", masterCaseId.toString())
+                .replace("REMOVED_CASE", removedCase)
+                .replace("NEW_GROUP_MASTER", "null");
+
+        // a member (not the master) is removed, so there is no new group master
+        final JsonObject eventPayload = new StringToJsonObjectConverter().convert(eventPayloadString);
+        final JsonObjectBuilder builder = createObjectBuilder();
+        eventPayload.forEach((key, value) -> {
+            if (!"newGroupMaster".equals(key)) {
+                builder.add(key, value);
+            }
+        });
+        return builder.build();
     }
 
     private String getGroupCase(final String caseString, final UUID groupId, final UUID caseId, final UUID defendantId,
