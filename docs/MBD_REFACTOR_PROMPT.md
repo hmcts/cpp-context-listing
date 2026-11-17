@@ -1,6 +1,7 @@
 # Prompt — Refactor `cpp-context-listing` (JEE / CQRS-ES framework) → Spring Boot
 
-> Status: DRAFT v0.3. Core decisions are in §14 and the remaining open items in §15.
+> Status: DRAFT v0.4. Core decisions are in §14, the remaining open items in §15, and the
+> execution plan and stages in §10.
 > v0.3 adds the reference-project blueprint (§2, §6, §11), based on a survey of
 > `cpp-context-listing-courtscheduler` done on 2026-11-17.
 > Branch: `mbd-refactor`
@@ -332,26 +333,60 @@ Delete after parity (courtscheduler's `doc/REVIEW.md` §2 is the model for docum
   `EnvelopeAndErrorShapeIntegrationTest`, `AuthorizationIntegrationTest`,
   `RequestSchemaValidationEndToEndIT` and `SmokeIntegrationTest` are the models.
 
-## 10. Delivery approach
+## 10. Execution plan and stages
 
-Incremental, vertical slices, each green on the IT suite before the next:
-1. Skeleton app, copied from courtscheduler's api module: health, logging, config fragments,
-   OpenAPI from RAML, schema filter, authz, audit, envelope, error handler, metrics.
-2. Persistence (existing Liquibase, entities, repositories) and the query endpoints. These are
-   read-only and the easiest parity win, so run the query ITs.
-3. Messaging infrastructure: envelope, inbound listener and dispatcher, publisher and outbox, dedup.
-4. Command slices by feature:
-   - listing notes;
-   - list court hearing / unscheduled;
-   - update / allocate;
-   - offences / defendants / cases;
-   - delete / next-hearing;
-   - judiciary / sequence / vacate;
-   - court-list publish & XHIBIT;
-   - migrate / duplicate / HMI.
-5. Inbound public-event handlers by source (progression, hearing).
-6. Cut-over artefacts: Dockerfile + `startup.sh`, Helm, pipeline, data-migration script, runbook,
-   deploy notes. Also write `docs/REVIEW.md` and `docs/breaking.md` in courtscheduler's format.
+The work runs in two layers:
+- **Pipeline stages (§10.1).** These are the eight `CLAUDE.md` stages. Stages 1–2 run **once** for
+  the whole refactor. Stages 3–7 run **once per phase** (§10.2), so each phase is a story with its
+  own test specs, code, review and green build. Stage 8 runs at each sandbox milestone and once
+  more at cut-over.
+- **Phases (§10.2).** These are vertical slices delivered in order. Each must be green on its IT
+  subset, with no earlier phase's ITs regressing, before the next one starts.
+
+### 10.1 Pipeline stages for this refactor
+
+| # | Stage | Agent | Runs | Inputs | Outputs (`docs/pipeline/` unless stated) | Gate / exit criteria |
+|---|---|---|---|---|---|---|
+| 1 | Requirements | `agents/requirements-analyst.md` | Once | This prompt; both RAML files; subscription and publication descriptors; the DRL files; the IT suite | `requirements.md`: contract inventory (commands, queries, events in and out, authz rules, outbound integrations); the aggregate-only state inventory (§15.2); every §15 open item answered or explicitly deferred | **Human.** Inventories reviewed; §15 items 2, 3, 5, 6, 8 and 10 resolved |
+| 2 | Architecture & Design | `agents/architecture-designer.md` | Once | `requirements.md`; courtscheduler (§2); §5–§8 | `adrs/001…008` (§7 ADRs 1–8); the target module and package layout; the OpenAPI spec(s) ported from RAML; outbox, dedup and backfill schema design; an **implementation-plan artifact** in `artifacts/` (mandatory before any code) | **Human.** ADRs accepted; plan artifact reviewed |
+| 3 | User Story | `agents/story-writer.md` | Per phase | ADRs; the phase scope from §10.2 | `user-stories/<story-id>.md`, one per phase (split further if a phase is too big to review), each with ACs derived from the contract | **Human.** Stories approved; **Jira ticket linked** (§15.1). No Stage 4 without one |
+| 4 | Test Specs | `agents/test-engineer.md` | Per phase | Stories; the existing ITs | `test-specs/<story-id>.feature`; the list of existing ITs the phase must turn green; the IT harness-change mapping table for that phase (§9) | **Human.** Specs and IT list approved |
+| 5 | Code | `agents/implementation.md` | Per phase | Specs; ADRs; plan artifact; courtscheduler classes to port | Code, unit tests, contract tests, new or adapted ITs (at least one IT per new endpoint or entry point) | **Auto.** Unit tests green; the phase's ITs green locally via `./runIntegrationTests.sh` |
+| 6 | Code Review | `agents/code-reviewer.md` | Per phase | The PR diff | Review notes; HMCTS review checklist plus courtscheduler `doc/REVIEW.md` §5 (adapted); §11 pitfalls checked | **Human.** Checklist passed |
+| 7 | Build & Test | `agents/ci-orchestrator.md` | Per phase | The merged branch | CI run: build, unit tests, full IT suite, Sonar, SBOM | **Auto.** Full suite green, no regressions |
+| 8 | Deploy Sandbox | `agents/deployer.md` | Milestones M1–M3 (§10.3) | Image, Helm values, env config | `deploy-notes.md` updated per milestone; at cut-over also the runbook, backfill script and rollback steps (§7 ADR 6) | **Human.** Smoke tests pass in sandbox |
+
+### 10.2 Phases
+
+| Phase | Scope | Depends on | Exit criteria |
+|---|---|---|---|
+| **P0 Foundations** | Gradle build alongside Maven (§6); `listing-api` skeleton copied from courtscheduler: health, JSON logging, config fragments, OpenAPI from RAML, `RequestSchemaValidationFilter`, authz with ported DRL, audit, envelope, `GlobalExceptionHandler`, metrics; Docker compose IT stack (db, WireMock, Artemis, app); `runIntegrationTests.sh` wrapper | Stage 2 | App boots in compose; `/actuator/health` up; authz, envelope, error-shape and schema-validation `*IntegrationTest`s green; unknown `Accept` → 406 |
+| **P1 Persistence + queries** | Existing Liquibase wired; entities and repositories (§11 pitfalls 1, 7); all 17 query paths, including the CSV report | P0 | All query ITs green; responses valid against the 8 response schemas |
+| **P2 Messaging infrastructure** | Envelope model; outbox table and relay; `@JmsListener` on `public.event` with dispatcher; dedup table; DLQ handling | P1, ADRs 2 and 3 | Outbox and dedup unit and IT coverage; a published event round-trips through Artemis with `CPPNAME` and the envelope intact |
+| **P3 Command slices** | One sub-phase per feature group, in this order: P3a listing notes → P3b list court hearing / unscheduled → P3c update / allocate → P3d offences / defendants / cases → P3e delete / next-hearing → P3f judiciary / sequence / vacate → P3g court-list publish & XHIBIT → P3h migrate / duplicate / HMI. Each ports the aggregate rules (with unit tests), the enrichment calls and the outbound public events | P2 | The sub-phase's command ITs green; every ported aggregate guard unit-tested; its outbound public events schema-valid |
+| **P4 Inbound event handlers** | Progression ×16, hearing ×9, `public.events.hearing.*` ×2 | P3 (handlers reuse command services) | All inbound-event ITs green; replays are idempotent |
+| **P5 Backfill + cut-over** | Additive changesets and a backfill script for aggregate-only state (§15.2); Dockerfile + `startup.sh`; Helm and pipeline; runbook; `docs/REVIEW.md` and `docs/breaking.md` in courtscheduler's format | P4 | Backfill dry-run against a copy of production-shaped data (no real case data in artefacts); full IT suite green |
+| **P6 Decommission** | Delete the JEE modules, Maven poms and framework descriptors (§8) | P5 cut-over accepted | §12 Definition of done met; no framework artefacts on the classpath |
+
+### 10.3 Milestones
+
+| Milestone | Reached after | Stage 8 run |
+|---|---|---|
+| M1 Read parity | P1 | Sandbox deploy of the query side, compared against the existing query responses |
+| M2 Full functional parity | P4 | Sandbox deploy with Artemis; end-to-end smoke tests with upstream and downstream contexts |
+| M3 Cut-over | P5 | Big-bang cut-over rehearsal in sandbox, including the rollback (restore DB snapshot + redeploy WAR) |
+
+### 10.4 Status
+
+| Item | Status |
+|---|---|
+| Stage 1 Requirements | Not started |
+| Stage 2 Architecture & Design | Not started |
+| Phases P0–P6 | Not started; blocked on Stage 2 and the implementation-plan artifact |
+| Jira epic (§15.1) | Missing; blocks Stage 4 |
+| Pipeline support files (`agents/`, `skills/`, `context/`) | Not in this repo; they must come from the HMCTS pipeline plugins before Stage 1 |
+
+Update this table as each stage gate is passed, with the date and approver.
 
 ## 11. Pitfalls already hit in courtscheduler (avoid them up front)
 
