@@ -11,6 +11,13 @@
       "items": {
         "$ref": "http://justice.gov.uk/listing/events/judicialRole.json"
       }
+    },
+    "judiciaryAssignmentSource": {
+      "type": "string",
+      "enum": [
+        "MANUAL",
+        "AUTO"
+      ]
     }
   },
   "required": [

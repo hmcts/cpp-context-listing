@@ -39,9 +39,8 @@ import uk.gov.justice.listing.events.CaseIdentifierUpdated;
 import uk.gov.justice.listing.events.CasesAddedToHearing;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
 import uk.gov.justice.listing.events.CourtListRestricted;
-import uk.gov.justice.listing.events.CrownHearingMigratedToCourtschedule;
-import uk.gov.justice.listing.events.HearingDayCourtSchedule;
 import uk.gov.justice.listing.events.CourtRoomRemovedFromHearing;
+import uk.gov.justice.listing.events.CrownHearingMigratedToCourtschedule;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdatedV2;
 import uk.gov.justice.listing.events.DefendantLegalaidStatusUpdatedForHearing;
@@ -50,6 +49,7 @@ import uk.gov.justice.listing.events.DefendantOffenceIdsV2;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
 import uk.gov.justice.listing.events.HearingDay;
+import uk.gov.justice.listing.events.HearingDayCourtSchedule;
 import uk.gov.justice.listing.events.HearingDaysChangedForHearing;
 import uk.gov.justice.listing.events.HearingDeleted;
 import uk.gov.justice.listing.events.HearingListed;
@@ -59,7 +59,11 @@ import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
 import uk.gov.justice.listing.events.HearingRequestedForListing;
 import uk.gov.justice.listing.events.HearingResultStatusUpdated;
 import uk.gov.justice.listing.events.HearingUnallocatedCourtroomRemoved;
+import uk.gov.justice.listing.events.JudiciaryAssignedToHearing;
+import uk.gov.justice.listing.events.JudiciaryAssignmentSource;
+import uk.gov.justice.listing.events.JudiciaryChangedForHearing;
 import uk.gov.justice.listing.events.JudiciaryChangedForHearingsStatus;
+import uk.gov.justice.listing.events.JudiciaryRemovedFromHearing;
 import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
 import uk.gov.justice.listing.events.NewDefendantDetailsUpdated;
@@ -84,6 +88,7 @@ import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
+import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
 import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
@@ -8182,5 +8187,504 @@ class HearingAggregateTest {
         assertThat(casesAdded.getTier(), is(nullValue()));
         assertThat(casesAdded.getListType(), is(nullValue()));
         assertThat(casesAdded.getKeyReason(), is(nullValue()));
+    }
+
+    @Test
+    public void shouldAssignJudiciaryWhenAggregateJudiciaryAssignmentSourceIsAutoByDefaultAndRequestHasNoJudiciaryAssignmentSource() {
+        final List<Object> events = hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryAssignedToHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldAssignJudiciaryWhenAggregateJudiciaryAssignmentSourceIsNullAndRequestJudiciaryAssignmentSourceIsManual() {
+        final List<Object> events = hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL")
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryAssignedToHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldUpdateJudiciaryWhenAggregateJudiciaryAssignmentSourceIsManualAndRequestJudiciaryAssignmentSourceIsManual() {
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL")
+                .collect(Collectors.toList());
+
+        final List<Object> events = hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL")
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryChangedForHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldNotChangeJudiciaryWhenAggregateJudiciaryAssignmentSourceIsManualAndRequestHasNoJudiciaryAssignmentSource() {
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL")
+                .collect(Collectors.toList());
+
+        final List<Object> events = hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldNotChangeJudiciaryWhenAggregateJudiciaryAssignmentSourceIsManualAndRequestJudiciaryAssignmentSourceIsAuto() {
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL")
+                .collect(Collectors.toList());
+
+        final List<Object> events = hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO")
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldRemoveJudiciaryWhenAggregateJudiciaryAssignmentSourceIsManualAndRequestHasEmptyJudiciaryWithAutoSource() {
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL")
+                .collect(Collectors.toList());
+
+        final List<Object> events = hearing.assignJudiciary(emptyList(), hearingId, "AUTO")
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryRemovedFromHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldRemoveJudiciaryWhenAggregateJudiciaryAssignmentSourceIsManualAndRequestHasEmptyJudiciaryWithNoSource() {
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL")
+                .collect(Collectors.toList());
+
+        final List<Object> events = hearing.assignJudiciary(emptyList(), hearingId, null)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryRemovedFromHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldNotRaiseEventWhenRequestHasEmptyJudiciaryAndNoJudiciaryIsAssigned() {
+        final List<Object> events = hearing.assignJudiciary(emptyList(), hearingId, "AUTO")
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldUpdateJudiciaryWhenAggregateJudiciaryAssignmentSourceIsAutoAndRequestHasNoJudiciaryAssignmentSource() {
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO")
+                .collect(Collectors.toList());
+
+        final List<Object> events = hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryChangedForHearing.class));
+    }
+
+    @Test
+    public void shouldUpdateJudiciaryWhenAggregateJudiciaryAssignmentSourceIsAutoAndRequestJudiciaryAssignmentSourceIsAuto() {
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO")
+                .collect(Collectors.toList());
+
+        final List<Object> events = hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO")
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryChangedForHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldUpdateJudiciaryWhenAggregateJudiciaryAssignmentSourceIsAutoAndRequestJudiciaryAssignmentSourceIsManual() {
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO")
+                .collect(Collectors.toList());
+
+        final List<Object> events = hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL")
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryChangedForHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldAssignJudiciaryWhenAggregateJudiciaryAssignmentSourceIsNullAndRequestJudiciaryAssignmentSourceIsAuto() {
+        final List<Object> events = hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO")
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryAssignedToHearing.class));
+    }
+
+
+    @Test
+    public void shouldSetAggregateJudiciaryAssignmentSourceToAutoWhenJudiciaryChangedWithEmptyJudiciary() {
+        hearing.apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
+                .withHearingId(hearingId)
+                .withJudiciaryAssignmentSource(JudiciaryAssignmentSource.valueOf("MANUAL"))
+                .withJudiciary(singletonList(buildJudicialRoleEvent()))
+                .build())).collect(Collectors.toList());
+
+        final List<Object> events = hearing.apply(Stream.of(JudiciaryChangedForHearing.judiciaryChangedForHearing()
+                .withHearingId(hearingId)
+                .withJudiciary(emptyList())
+                .build())).collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldRetainExistingAggregateJudiciaryAssignmentSourceWhenJudiciaryChangedForHearingHasNoJudiciaryAssignmentSourceAndNonEmptyJudiciary() {
+        hearing.apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
+                .withHearingId(hearingId)
+                .withJudiciaryAssignmentSource(JudiciaryAssignmentSource.valueOf("MANUAL"))
+                .withJudiciary(singletonList(buildJudicialRoleEvent()))
+                .build())).collect(Collectors.toList());
+
+        final List<Object> events = hearing.apply(Stream.of(JudiciaryChangedForHearing.judiciaryChangedForHearing()
+                .withHearingId(hearingId)
+                .withJudiciary(singletonList(buildJudicialRoleEvent()))
+                .build())).collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldSetJudiciaryAssignmentSourceToAutoWhenJudiciaryRemovedFromHearing() {
+        hearing.apply(Stream.of(JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
+                .withHearingId(hearingId)
+                .withJudiciaryAssignmentSource(JudiciaryAssignmentSource.valueOf("MANUAL"))
+                .withJudiciary(singletonList(buildJudicialRoleEvent()))
+                .build())).collect(Collectors.toList());
+
+        final List<Object> events = hearing.apply(Stream.of(JudiciaryRemovedFromHearing.judiciaryRemovedFromHearing()
+                .withHearingId(hearingId)
+                .build())).collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+
+
+    @Test
+    public void shouldResetManualJudiciaryToAutoWhenCourtSessionChangedEvenWhenJudiciaryIsUnchanged() {
+        final JudicialRole judicialRole = buildDomainJudicialRole();
+        givenManualJudiciaryInCourtSession(judicialRole, randomUUID());
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(judicialRole), hearingId, "MANUAL", singletonList(buildDomainHearingDay(randomUUID())), false)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryChangedForHearing.class));
+        assertThat(((JudiciaryChangedForHearing) events.get(0)).getJudiciaryAssignmentSource(), is(JudiciaryAssignmentSource.AUTO));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldReplaceManualJudiciaryWithCourtSchedulerJudiciaryWhenCourtSessionChanged() {
+        givenManualJudiciaryInCourtSession(buildDomainJudicialRole(), randomUUID());
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null, singletonList(buildDomainHearingDay(randomUUID())), false)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryChangedForHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldRemoveManualJudiciaryWhenCourtSessionChangedAndCourtSchedulerHasNoJudiciary() {
+        givenManualJudiciaryInCourtSession(buildDomainJudicialRole(), randomUUID());
+
+        final List<Object> events = hearing.updateJudiciary(emptyList(), hearingId, null, singletonList(buildDomainHearingDay(randomUUID())), false)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryRemovedFromHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldChangeAutoJudiciaryWhenCourtSessionChanged() {
+        givenHearingDaysWithCourtScheduleId(randomUUID());
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO").collect(Collectors.toList());
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null, singletonList(buildDomainHearingDay(randomUUID())), false)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryChangedForHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldKeepManualJudiciaryWhenCourtSessionIsUnchanged() {
+        final UUID courtScheduleId = randomUUID();
+        givenManualJudiciaryInCourtSession(buildDomainJudicialRole(), courtScheduleId);
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO", singletonList(buildDomainHearingDay(courtScheduleId)), false)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldReplaceManualJudiciaryWithAutoWhenJudiciaryIsFromCourtScheduleInSameCourtSession() {
+        final UUID courtScheduleId = randomUUID();
+        givenManualJudiciaryInCourtSession(buildDomainJudicialRole(), courtScheduleId);
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null, singletonList(buildDomainHearingDay(courtScheduleId)), true)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryChangedForHearing.class));
+        assertThat(((JudiciaryChangedForHearing) events.get(0)).getJudiciaryAssignmentSource(), is(JudiciaryAssignmentSource.AUTO));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldResetManualJudiciaryToAutoWhenJudiciaryFromCourtScheduleIsUnchanged() {
+        final UUID courtScheduleId = randomUUID();
+        final JudicialRole judicialRole = buildDomainJudicialRole();
+        givenManualJudiciaryInCourtSession(judicialRole, courtScheduleId);
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(judicialRole), hearingId, null, singletonList(buildDomainHearingDay(courtScheduleId)), true)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryChangedForHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldAssignAutoJudiciaryWhenJudiciaryIsFromCourtScheduleAndNoJudiciaryAssigned() {
+        final UUID courtScheduleId = randomUUID();
+        givenHearingDaysWithCourtScheduleId(courtScheduleId);
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null, singletonList(buildDomainHearingDay(courtScheduleId)), true)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryAssignedToHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldKeepManualJudiciaryWhenCrownHearingJudiciaryIsFromCourtSchedule() {
+        final UUID courtScheduleId = randomUUID();
+        givenHearingDaysWithCourtScheduleId(courtScheduleId, uk.gov.justice.core.courts.JurisdictionType.CROWN);
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL").collect(Collectors.toList());
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null, singletonList(buildDomainHearingDay(courtScheduleId)), true)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldKeepManualJudiciaryWhenIncomingHearingDaysHaveNoCourtScheduleId() {
+        givenManualJudiciaryInCourtSession(buildDomainJudicialRole(), randomUUID());
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO", singletonList(buildDomainHearingDay(null)), false)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldRemoveJudiciaryWhenCourtSessionIsUnchangedAndJudiciaryIsEmpty() {
+        final UUID courtScheduleId = randomUUID();
+        givenManualJudiciaryInCourtSession(buildDomainJudicialRole(), courtScheduleId);
+
+        final List<Object> events = hearing.updateJudiciary(emptyList(), hearingId, null, singletonList(buildDomainHearingDay(courtScheduleId)), false)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryRemovedFromHearing.class));
+    }
+
+    @Test
+    public void shouldKeepManualJudiciarySourceOnFirstAllocationIntoCourtSession() {
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL", singletonList(buildDomainHearingDay(randomUUID())), false)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryAssignedToHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldKeepManualJudiciaryWhenCrownHearingCourtSessionChanged() {
+        givenHearingDaysWithCourtScheduleId(randomUUID(), uk.gov.justice.core.courts.JurisdictionType.CROWN);
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL").collect(Collectors.toList());
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO", singletonList(buildDomainHearingDay(randomUUID())), false)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldResetManualJudiciaryToAutoWhenOneDayOfMultiDayHearingMovesToNewCourtSession() {
+        final UUID courtScheduleId1 = randomUUID();
+        givenManualJudiciaryInCourtSessions(asList(buildEventHearingDay(courtScheduleId1, false), buildEventHearingDay(randomUUID(), false)));
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, null,
+                        asList(buildDomainHearingDay(courtScheduleId1), buildDomainHearingDay(randomUUID())), false)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(1));
+        assertThat(events.get(0), CoreMatchers.instanceOf(JudiciaryChangedForHearing.class));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("AUTO"));
+    }
+
+    @Test
+    public void shouldKeepManualJudiciaryWhenMultiDayHearingIsShortened() {
+        final UUID courtScheduleId1 = randomUUID();
+        givenManualJudiciaryInCourtSessions(asList(buildEventHearingDay(courtScheduleId1, false), buildEventHearingDay(randomUUID(), false)));
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO", singletonList(buildDomainHearingDay(courtScheduleId1)), false)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldKeepManualJudiciaryWhenMultiDayHearingIsExtended() {
+        final UUID courtScheduleId1 = randomUUID();
+        givenManualJudiciaryInCourtSession(buildDomainJudicialRole(), courtScheduleId1);
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO",
+                        asList(buildDomainHearingDay(courtScheduleId1), buildDomainHearingDay(randomUUID())), false)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldKeepManualJudiciaryWhenHearingDayIsCancelled() {
+        final UUID courtScheduleId1 = randomUUID();
+        final UUID courtScheduleId2 = randomUUID();
+        givenManualJudiciaryInCourtSessions(asList(buildEventHearingDay(courtScheduleId1, false), buildEventHearingDay(courtScheduleId2, false)));
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO",
+                        asList(buildDomainHearingDay(courtScheduleId1), buildDomainHearingDay(courtScheduleId2, true)), false)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    @Test
+    public void shouldIgnoreCurrentCancelledHearingDayWhenDetectingCourtSessionChange() {
+        final UUID courtScheduleId1 = randomUUID();
+        givenManualJudiciaryInCourtSessions(asList(buildEventHearingDay(courtScheduleId1, false), buildEventHearingDay(randomUUID(), true)));
+
+        final List<Object> events = hearing.updateJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "AUTO",
+                        asList(buildDomainHearingDay(courtScheduleId1), buildDomainHearingDay(randomUUID())), false)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+        assertThat(hearing.getJudiciaryAssignmentSource(), is("MANUAL"));
+    }
+
+    private void givenManualJudiciaryInCourtSessions(final List<HearingDay> hearingDays) {
+        givenHearingDays(hearingDays, uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES);
+        hearing.assignJudiciary(singletonList(buildDomainJudicialRole()), hearingId, "MANUAL").collect(Collectors.toList());
+    }
+
+    private void givenManualJudiciaryInCourtSession(final JudicialRole judicialRole, final UUID courtScheduleId) {
+        givenHearingDaysWithCourtScheduleId(courtScheduleId);
+        hearing.assignJudiciary(singletonList(judicialRole), hearingId, "MANUAL").collect(Collectors.toList());
+    }
+
+    private void givenHearingDaysWithCourtScheduleId(final UUID courtScheduleId) {
+        givenHearingDaysWithCourtScheduleId(courtScheduleId, uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES);
+    }
+
+    private void givenHearingDaysWithCourtScheduleId(final UUID courtScheduleId, final uk.gov.justice.core.courts.JurisdictionType jurisdictionType) {
+        givenHearingDays(singletonList(buildEventHearingDay(courtScheduleId, false)), jurisdictionType);
+    }
+
+    private void givenHearingDays(final List<HearingDay> hearingDays, final uk.gov.justice.core.courts.JurisdictionType jurisdictionType) {
+        hearing.apply(Stream.of(uk.gov.justice.listing.events.JurisdictionChangedForHearing.jurisdictionChangedForHearing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(jurisdictionType)
+                .build())).collect(Collectors.toList());
+        hearing.apply(Stream.of(HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingId(hearingId)
+                .withHearingDays(hearingDays)
+                .build())).collect(Collectors.toList());
+    }
+
+    private HearingDay buildEventHearingDay(final UUID courtScheduleId, final boolean isCancelled) {
+        return HearingDay.hearingDay()
+                .withCourtScheduleId(courtScheduleId)
+                .withHearingDate(LocalDate.now())
+                .withStartTime(ZonedDateTime.now())
+                .withEndTime(ZonedDateTime.now().plusHours(1))
+                .withDurationMinutes(60)
+                .withSequence(0)
+                .withIsCancelled(isCancelled)
+                .build();
+    }
+
+    private uk.gov.moj.cpp.listing.domain.HearingDay buildDomainHearingDay(final UUID courtScheduleId) {
+        return buildDomainHearingDay(courtScheduleId, false);
+    }
+
+    private uk.gov.moj.cpp.listing.domain.HearingDay buildDomainHearingDay(final UUID courtScheduleId, final boolean isCancelled) {
+        return uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay()
+                .withCourtScheduleId(Optional.ofNullable(courtScheduleId))
+                .withHearingDate(LocalDate.now())
+                .withStartTime(ZonedDateTime.now())
+                .withEndTime(ZonedDateTime.now().plusHours(1))
+                .withDurationMinutes(60)
+                .withSequence(0)
+                .withIsCancelled(Optional.of(isCancelled))
+                .build();
+    }
+
+    private JudicialRole buildDomainJudicialRole() {
+        return JudicialRole.judicialRole()
+                .withIsBenchChairman(of(true))
+                .withIsDeputy(of(false))
+                .withJudicialId(randomUUID())
+                .withJudicialRoleType(JudicialRoleType.judicialRoleType()
+                        .withJudiciaryType("JUDGE")
+                        .withJudicialRoleTypeId(randomUUID())
+                        .build())
+                .build();
+    }
+
+    private uk.gov.justice.listing.events.JudicialRole buildJudicialRoleEvent() {
+        return uk.gov.justice.listing.events.JudicialRole.judicialRole()
+                .withJudicialId(randomUUID())
+                .withJudicialRoleType(uk.gov.justice.listing.events.JudicialRoleType.judicialRoleType()
+                        .withJudiciaryType("JUDGE")
+                        .withJudicialRoleTypeId(randomUUID())
+                        .build())
+                .build();
     }
 }

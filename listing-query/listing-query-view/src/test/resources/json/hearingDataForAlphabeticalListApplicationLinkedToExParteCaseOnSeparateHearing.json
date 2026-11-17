@@ -1,0 +1,56 @@
+[
+  {
+    "hearingDate": "2026-06-01",
+    "hearingsByHearingDate": [
+      {
+        "hearing": {
+          "id": "b1b1b1b1-0000-4000-8000-000000000002",
+          "type": {
+            "id": "3449743b-95d6-4836-8941-57f588b52068",
+            "description": "Application for civil proceedings"
+          },
+          "endDate": "2026-06-01",
+          "allocated": true,
+          "judiciary": [],
+          "startDate": "2026-06-01",
+          "courtRoomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+          "hearingDays": [
+            {
+              "endTime": "2026-06-01T10:30:00.000Z",
+              "sequence": 1,
+              "startTime": "2026-06-01T10:00:00.000Z",
+              "hearingDate": "2026-06-01",
+              "durationMinutes": 30
+            }
+          ],
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "nonDefaultDays": [],
+          "nonSittingDays": [],
+          "hearingLanguage": "ENGLISH",
+          "estimatedMinutes": 30,
+          "jurisdictionType": "MAGISTRATES",
+          "courtApplications": [
+            {
+              "id": "f1f1f1f1-0000-4000-8000-000000000003",
+              "isEjected": false,
+              "applicant": {
+                "id": "38af0cd0-f3b8-464d-8cf3-08c35545f6f4",
+                "lastName": "Smith",
+                "firstName": "John",
+                "isRespondent": false,
+                "restrictFromCourtList": false,
+                "courtApplicationPartyType": "PERSON_DEFENDANT"
+              },
+              "respondents": [],
+              "linkedCaseIds": ["c0c0c0c0-0000-4000-8000-000000000099"],
+              "applicationType": "Application for civil proceedings",
+              "applicationReference": "95GD5309226/APP1",
+              "restrictFromCourtList": false,
+              "restrictCourtApplicationType": false
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

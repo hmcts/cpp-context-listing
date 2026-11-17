@@ -104,4 +104,18 @@ public class ProgressionService {
         return jsonObjectToObjectConverter.convert(response.payload().getJsonObject("prosecutionCase"), uk.gov.justice.core.courts.ProsecutionCase.class);
     }
 
+    /**
+     * Empty when Progression has no such case; a failure to reach Progression is thrown.
+     */
+    public Optional<uk.gov.justice.core.courts.ProsecutionCase> findProsecutionCaseByCaseId(final JsonEnvelope envelope, final String caseId) {
+        final Metadata metadataWithActionName = metadataFrom(envelope.metadata()).withName(PROGRESSION_CASE_DETAILS).build();
+        final JsonObject requestParameter = createObjectBuilder()
+                .add(CASE_ID, caseId)
+                .build();
+        final Envelope<JsonObject> response = requester.requestAsAdmin(envelopeFrom(metadataWithActionName, requestParameter), JsonObject.class);
+        return Optional.ofNullable(response.payload())
+                .filter(payload -> payload.containsKey("prosecutionCase") && !payload.isNull("prosecutionCase"))
+                .map(payload -> jsonObjectToObjectConverter.convert(payload.getJsonObject("prosecutionCase"), uk.gov.justice.core.courts.ProsecutionCase.class));
+    }
+
 }
