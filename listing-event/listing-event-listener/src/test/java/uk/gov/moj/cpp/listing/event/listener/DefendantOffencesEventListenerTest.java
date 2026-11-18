@@ -514,6 +514,45 @@ public class DefendantOffencesEventListenerTest {
                 .build();
     }
 
+    /**
+     * The court list orders offences by count and orderIndex, so an offence edit in progression
+     * (e.g. wording or count changed) must not wipe them from the stored hearing.
+     */
+    @Test
+    public void shouldKeepOrderIndexAndCountWhenOffenceIsUpdated() throws Exception {
+        final JsonNode storedListedCases = new ObjectMapper().readTree(mapper.writeValueAsString(createListedCases()));
+
+        final OffenceUpdated offenceUpdated = OffenceUpdated.offenceUpdated()
+                .withHearingId(HEARING_ID)
+                .withCaseId(CASE_ID)
+                .withDefendantId(DEFENDANT_ID)
+                .withOffence(Offence.offence()
+                        .withId(OFFENCE_ID)
+                        .withOffenceCode(EXPECTED_OFFENCE_CODE)
+                        .withStartDate(LocalDates.to(LocalDate.now()))
+                        .withStatementOfOffence(StatementOfOffence.statementOfOffence()
+                                .withTitle(STRING.next())
+                                .withLegislation(STRING.next())
+                                .build())
+                        .withOrderIndex(2)
+                        .withCount(3)
+                        .build())
+                .build();
+
+        given(offenceUpdatedEnvelope.payload()).willReturn(offenceUpdated);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(storedListedCases);
+
+        defendantOffencesEventListener.offenceUpdated(offenceUpdatedEnvelope);
+
+        final ArgumentCaptor<ArrayNode> savedListedCases = ArgumentCaptor.forClass(ArrayNode.class);
+        verify(properties).replace(any(), savedListedCases.capture());
+        final JsonNode savedOffence = savedListedCases.getValue().get(0).get("defendants").get(0).get("offences").get(0);
+        assertThat(savedOffence.path("orderIndex").asInt(-1), equalTo(2));
+        assertThat(savedOffence.path("count").asInt(-1), equalTo(3));
+    }
+
     private List<ListedCase> createListedCases() {
         return singletonList(ListedCase.listedCase()
                 .withCaseIdentifier(CaseIdentifier.caseIdentifier()
