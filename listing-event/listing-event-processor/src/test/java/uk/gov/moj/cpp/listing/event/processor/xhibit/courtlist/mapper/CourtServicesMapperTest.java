@@ -3,12 +3,14 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 import static java.time.ZonedDateTime.parse;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersBuilder.withDefaults;
+import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -16,6 +18,7 @@ import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.domain.referencedata.HearingType;
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
+import uk.gov.moj.cpp.listing.domain.xhibit.generated.ChargeStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.CourtHouseStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.DocumentIDstructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.ListHeaderStructure;
@@ -29,14 +32,20 @@ import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.InvalidDataException;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.json.JsonObject;
+import javax.json.JsonReader;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -375,6 +384,48 @@ public class CourtServicesMapperTest {
         xmlUtils.validate(generatedXml, "xhibit/xsd/" + PublishCourtListType.FINAL.getSchemaName());
 
         assertXml(generatedXml, "xhibit/mapper/expectedFirmListWhenDefendantFirstNameAndSurNameNotProvided.xml");
+    }
+
+    /**
+     * LPT-2677: the XHIBIT feed lists charges in the order they are stored on the hearing, which
+     * drifts from the order shown in Case at a glance / Manage hearing. Charges must follow
+     * orderIndex (count 0 means "no count", so it does not take part in the ordering).
+     */
+    @Test
+    public void shouldListChargesInOrderIndexOrderRegardlessOfStoredOrder() throws Exception {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final ObjectNode sitting = (ObjectNode) objectMapper.readTree(givenPayload("/xhibit/mock-data/listing.query.sittings.json")
+                .getJsonArray("sittings").getJsonObject(0).toString());
+        final ArrayNode offences = ((ObjectNode) sitting.get("hearings").get(0).get("defendants").get(0)).putArray("offences");
+        offences.add(storedOffence(objectMapper, "Offence three", 3));
+        offences.add(storedOffence(objectMapper, "Offence one", 1));
+        offences.add(storedOffence(objectMapper, "Offence two", 2));
+
+        final SittingStructure sittingStructure = courtServicesMapper.generateSittingStructure(toJsonObject(objectMapper, sitting), 1);
+
+        final List<String> chargeStatements = sittingStructure.getHearings().getHearing().get(0)
+                .getDefendants().getDefendant().get(0)
+                .getCharges().getCharge().stream()
+                .map(ChargeStructure::getOffenceStatement)
+                .collect(Collectors.toList());
+        assertThat(chargeStatements, contains("Offence one", "Offence two", "Offence three"));
+    }
+
+    private static ObjectNode storedOffence(final ObjectMapper objectMapper, final String title, final int orderIndex) {
+        final ObjectNode offence = objectMapper.createObjectNode();
+        offence.put("id", UUID.randomUUID().toString());
+        offence.put("offenceCode", "TW01046");
+        offence.put("orderIndex", orderIndex);
+        offence.put("count", 0);
+        offence.put("restrictFromCourtList", false);
+        offence.putObject("statementOfOffence").put("title", title);
+        return offence;
+    }
+
+    private static JsonObject toJsonObject(final ObjectMapper objectMapper, final ObjectNode node) throws IOException {
+        try (JsonReader jsonReader = createReader(new StringReader(objectMapper.writeValueAsString(node)))) {
+            return jsonReader.readObject();
+        }
     }
 
     private void assertXml(final String generatedXml, final String expectedXmlResourceName) throws IOException {
