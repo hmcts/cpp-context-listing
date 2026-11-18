@@ -61,9 +61,10 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                                     final String pageNumber,
                                     final Integer availableDurationMins,
                                     final String status,
-                                    final String jurisdiction) {
+                                    final String jurisdiction,
+                                    final Boolean isWeekCommencing) {
 
-        final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, hearingStartTime, oucodeL2Code, ouCode, courtRoomId, courtRoomNumber, businessType, courtSession, isSlotBased, showOverbookedSlots, pageSize, pageNumber, availableDurationMins, status, jurisdiction);
+        final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, hearingStartTime, oucodeL2Code, ouCode, courtRoomId, courtRoomNumber, businessType, courtSession, isSlotBased, showOverbookedSlots, pageSize, pageNumber, availableDurationMins, status, jurisdiction, isWeekCommencing);
         final Response response = courtSchedulerServiceAdapter.hearingSlotsSearch(params);
         if(response.getStatusInfo().getStatusCode() != HttpStatus.SC_OK ){
             return response;
@@ -97,7 +98,8 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                                                final String pageNumber,
                                                final Integer availableDurationMins,
                                                final String status,
-                                               final String jurisdiction) {
+                                               final String jurisdiction,
+                                               final Boolean isWeekCommencing) {
         final Map<String, String> params = new HashMap<>();
         params.put(PANEL, panel);
         params.put(SESSION_START_DATE, sessionStartDate);
@@ -121,6 +123,9 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
             params.put(AVAILABLE_DURATION_MINS, String.valueOf(availableDurationMins));
         params.put(STATUS, status != null ? status : "ALL");
         params.put(JURISDICTION, jurisdiction);
+        if (isWeekCommencing != null) {
+            params.put(IS_WEEK_COMMENCING, String.valueOf(isWeekCommencing));
+        }
 
         return params.entrySet().stream().filter(entry -> entry.getValue() != null).collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     }

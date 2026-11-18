@@ -481,6 +481,10 @@ protocols: [ HTTP, HTTPS ]
             type: string
             required: true
             enum: [CROWN, MAGISTRATES]
+        isWeekCommencing:
+            description: true returns only week commencing sessions; false or absent returns only sessions that are not week commencing
+            type: boolean
+            required: false
     responses:
         200:
             description: OK

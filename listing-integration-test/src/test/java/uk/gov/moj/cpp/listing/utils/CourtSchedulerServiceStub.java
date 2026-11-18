@@ -1,8 +1,10 @@
 package uk.gov.moj.cpp.listing.utils;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
@@ -45,6 +47,7 @@ import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.VerificationException;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
+import com.github.tomakehurst.wiremock.matching.StringValuePattern;
 
 import uk.gov.moj.cpp.listing.steps.data.JudicialRoleData;
 import uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData;
@@ -75,6 +78,7 @@ public class CourtSchedulerServiceStub {
     public static final String ROTASL_GET_HEARING_SLOTS_RESPONSE_JSON_WITH_JUDICIARIES = "stub-data/rotasl.get.hearing.slots.with-judiciaries.json";
     public static final String LISTING_GET_HEARING_SLOTS_RESPONSE_JSON_WITH_JUDICIARIES_AND_SLOTTIMES = "stub-data/listing.get.hearing.slots.with-judiciaries-and-slotstarttimes.json";
     public static final String LISTING_SEARCH_HEARING_SLOTS_JSON = "stub-data/listing.search.hearing.slots.json";
+    public static final String LISTING_SEARCH_HEARING_SLOTS_WEEK_COMMENCING_JSON = "stub-data/listing.search.hearing.slots.week-commencing.json";
     public static final String LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON = "stub-data/listing.search.hearing.slots.empty.json";
     public static final String STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON = "stub-data/unconfirmedBookingSampleDataSingleCourtScheduleCountBased.json";
     public static final String STUB_DATA_UNCONFIRMED_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_JSON = "stub-data/unconfirmedBookingSampleDataMultipleCourtSchedulesCountBased.json";
@@ -582,6 +586,24 @@ public class CourtSchedulerServiceStub {
                         .withBody(getPayload(isEmpty ? CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON : CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_SLOTS_JSON))
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
+    }
+
+    public static void stubGetCrownHearingSlotsByWeekCommencing(final String ouCode, final String sessionStartDate) {
+        stubCrownHearingSlots(ouCode, sessionStartDate, equalTo("true"), LISTING_SEARCH_HEARING_SLOTS_WEEK_COMMENCING_JSON);
+        stubCrownHearingSlots(ouCode, sessionStartDate, absent(), LISTING_SEARCH_HEARING_SLOTS_JSON);
+        stubCrownHearingSlots(ouCode, sessionStartDate, equalTo("false"), LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON);
+    }
+
+    private static void stubCrownHearingSlots(final String ouCode, final String sessionStartDate, final StringValuePattern isWeekCommencing, final String responseFile) {
+        stubFor(get(urlPathEqualTo(COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS))
+                .withQueryParam("ouCode", equalTo(ouCode))
+                .withQueryParam("sessionStartDate", equalTo(sessionStartDate))
+                .withQueryParam("jurisdiction", equalTo("CROWN"))
+                .withQueryParam("isWeekCommencing", isWeekCommencing)
+                .withHeader("Accept", containing(COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(responseFile))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
     }
 
     public static void stubGetAvailableHearingSlots() {

@@ -1,0 +1,29 @@
+{
+  "results": 1,
+  "pageCount": 1,
+  "hearingSlots": [
+    {
+      "courtScheduleId": "7c1d5f0e-3b0a-4c58-9a61-2f4f5d6a9b10",
+      "listingProfileId": null,
+      "ouCode": "C05LV00",
+      "courtRoomId": "e06e1734-aa04-3ec0-b14c-400edab8b831",
+      "courtRoomNumber": 1,
+      "courtHouseName": "Liverpool Crown Court",
+      "courtRoomName": "Courtroom 01",
+      "operationalUnit": "1",
+      "businessType": "GENC",
+      "panel": "ADULT",
+      "courtSession": "AD",
+      "sessionDate": "2026-11-23",
+      "sessionStartTime": "2026-11-23T10:00:00.000+00:00",
+      "maxSlots": 0,
+      "maxDuration": 3600,
+      "availableSlots": 0,
+      "availableDuration": 2520,
+      "draft": true,
+      "isWeekCommencing": true,
+      "judiciaries": [],
+      "slotStartTimes": []
+    }
+  ]
+}
