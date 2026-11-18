@@ -85,6 +85,8 @@ import org.apache.commons.collections.MapUtils;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -675,11 +677,13 @@ public class StandardCourtListTemplateAssemblerTest {
 
     /**
      * The viewstore keeps offences in arrival order, which drifts from the order shown in Case at
-     * a glance / Manage hearing. Magistrates' hearings must list offences by orderIndex.
+     * a glance / Manage hearing. Magistrates' hearings must list offences by orderIndex — on every
+     * list that prints offences: standard and bench (numbered) and online public (titles).
      */
-    @Test
-    public void shouldListMagistratesOffencesInOrderIndexOrderRegardlessOfStoredOrder() throws Exception {
-        final List<String> offenceTitles = assembleOffenceTitlesForStoredOffences("MAGISTRATES",
+    @ParameterizedTest
+    @EnumSource(value = CourtListType.class, names = {"STANDARD", "BENCH", "ONLINE_PUBLIC"})
+    public void shouldListMagistratesOffencesInOrderIndexOrderRegardlessOfStoredOrder(final CourtListType courtListType) throws Exception {
+        final List<String> offenceTitles = assembleOffenceTitlesForStoredOffences(courtListType, "MAGISTRATES",
                 storedOffence("Offence three", 3, 0),
                 storedOffence("Offence one", 1, 0),
                 storedOffence("Offence two", 2, 0));
@@ -733,12 +737,20 @@ public class StandardCourtListTemplateAssemblerTest {
     }
 
     private List<String> assembleOffenceTitlesForStoredOffences(final String jurisdictionType, final ObjectNode... storedOffences) throws Exception {
-        return assembleOffencesForStoredOffences(jurisdictionType, storedOffences).stream()
+        return assembleOffenceTitlesForStoredOffences(STANDARD, jurisdictionType, storedOffences);
+    }
+
+    private List<String> assembleOffenceTitlesForStoredOffences(final CourtListType courtListType, final String jurisdictionType, final ObjectNode... storedOffences) throws Exception {
+        return assembleOffencesForStoredOffences(courtListType, jurisdictionType, storedOffences).stream()
                 .map(Offence::getOffenceTitle)
                 .collect(Collectors.toList());
     }
 
     private List<Offence> assembleOffencesForStoredOffences(final String jurisdictionType, final ObjectNode... storedOffences) throws Exception {
+        return assembleOffencesForStoredOffences(STANDARD, jurisdictionType, storedOffences);
+    }
+
+    private List<Offence> assembleOffencesForStoredOffences(final CourtListType courtListType, final String jurisdictionType, final ObjectNode... storedOffences) throws Exception {
         final UUID courtCentreId = fromString("f8254db1-1683-483e-afb3-b87fde5a0a26");
         final UUID courtRoomId = fromString("9e4932f7-97b2-3010-b942-ddd2624e4dd8");
         when(courtCentreFactory.getCourtCentre(eq(courtCentreId), any(JsonEnvelope.class)))
@@ -759,7 +771,7 @@ public class StandardCourtListTemplateAssemblerTest {
             hearingJsonArray = jsonReader.readArray();
         }
 
-        final Optional<JsonObject> result = assembler.assemble(buildRequestEnvelope(hearingJsonArray), courtCentreId.toString(), null, STANDARD, false, true);
+        final Optional<JsonObject> result = assembler.assemble(buildRequestEnvelope(hearingJsonArray), courtCentreId.toString(), null, courtListType, false, true);
 
         final StandardCourtList courtList = jsonObjectToObjectConverter.convert(result.get(), StandardCourtList.class);
         final Hearing listedCaseHearing = courtList.getHearingDates().get(0).getCourtRooms().get(0).getTimeslots().get(0).getHearings().get(0);
