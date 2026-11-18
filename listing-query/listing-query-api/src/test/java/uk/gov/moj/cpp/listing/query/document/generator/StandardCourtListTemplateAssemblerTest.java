@@ -16,6 +16,7 @@ import static org.apache.commons.lang3.StringUtils.SPACE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
@@ -77,6 +78,8 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.collections.MapUtils;
 import org.hamcrest.CoreMatchers;
@@ -668,6 +671,115 @@ public class StandardCourtListTemplateAssemblerTest {
 
         assertThat("an application listed within an ex-parte case's hearing must not appear, even when linked to a different, non-ex-parte case",
                 hearingsShown, is(0L));
+    }
+
+    /**
+     * The viewstore keeps offences in arrival order, which drifts from the order shown in Case at
+     * a glance / Manage hearing. Magistrates' hearings must list offences by orderIndex.
+     */
+    @Test
+    public void shouldListMagistratesOffencesInOrderIndexOrderRegardlessOfStoredOrder() throws Exception {
+        final List<String> offenceTitles = assembleOffenceTitlesForStoredOffences("MAGISTRATES",
+                storedOffence("Offence three", 3, 0),
+                storedOffence("Offence one", 1, 0),
+                storedOffence("Offence two", 2, 0));
+
+        assertThat(offenceTitles, contains("Offence one", "Offence two", "Offence three"));
+    }
+
+    /**
+     * Crown hearings follow the Manage hearing screen: count first (a count of 0 means "no count"
+     * and goes last), then orderIndex.
+     */
+    @Test
+    public void shouldListCrownOffencesByCountThenOrderIndexWithUncountedOffencesLast() throws Exception {
+        final List<String> offenceTitles = assembleOffenceTitlesForStoredOffences("CROWN",
+                storedOffence("Order 1 count 2", 1, 2),
+                storedOffence("Order 2 no count", 2, 0),
+                storedOffence("Order 3 count 1", 3, 1));
+
+        assertThat(offenceTitles, contains("Order 3 count 1", "Order 1 count 2", "Order 2 no count"));
+    }
+
+    /**
+     * Hearings already damaged in production hold offences with no orderIndex. They must still be
+     * listed — after the offences that can be ordered, keeping their stored order.
+     */
+    @Test
+    public void shouldListOffencesWithoutOrderIndexAfterOrderedOnesInStoredOrder() throws Exception {
+        final List<String> offenceTitles = assembleOffenceTitlesForStoredOffences("MAGISTRATES",
+                storedOffenceWithoutOrdering("No index A"),
+                storedOffence("Offence two", 2, 0),
+                storedOffenceWithoutOrdering("No index B"),
+                storedOffence("Offence one", 1, 0));
+
+        assertThat(offenceTitles, contains("Offence one", "Offence two", "No index A", "No index B"));
+    }
+
+    /**
+     * The court list document numbers each offence the way Case at a glance and Manage hearing do:
+     * with its orderIndex (and, for Crown, its count) — so the payload must carry both.
+     */
+    @Test
+    public void shouldCarryOrderIndexAndCountOnEachListedOffenceForTheDocumentToNumberIt() throws Exception {
+        final List<Offence> offences = assembleOffencesForStoredOffences("CROWN",
+                storedOffence("Order 4 count 2", 4, 2),
+                storedOffence("Order 7 no count", 7, 0));
+
+        assertThat(offences.get(0).getOrderIndex(), is(4));
+        assertThat(offences.get(0).getCount(), is(2));
+        assertThat(offences.get(1).getOrderIndex(), is(7));
+        assertThat(offences.get(1).getCount(), is(0));
+    }
+
+    private List<String> assembleOffenceTitlesForStoredOffences(final String jurisdictionType, final ObjectNode... storedOffences) throws Exception {
+        return assembleOffencesForStoredOffences(jurisdictionType, storedOffences).stream()
+                .map(Offence::getOffenceTitle)
+                .collect(Collectors.toList());
+    }
+
+    private List<Offence> assembleOffencesForStoredOffences(final String jurisdictionType, final ObjectNode... storedOffences) throws Exception {
+        final UUID courtCentreId = fromString("f8254db1-1683-483e-afb3-b87fde5a0a26");
+        final UUID courtRoomId = fromString("9e4932f7-97b2-3010-b942-ddd2624e4dd8");
+        when(courtCentreFactory.getCourtCentre(eq(courtCentreId), any(JsonEnvelope.class)))
+                .thenReturn(buildCourtCentreDetailsForBailVariationPayload(courtCentreId, courtRoomId));
+        when(referenceDataService.getHearingTypesIdWelshDescriptionMap(any(JsonEnvelope.class)))
+                .thenReturn(ImmutableMap.of("3b5fdf13-7033-4ce0-857d-b7ea463da91d", "Bail Variation Application"));
+
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final ArrayNode hearingData = (ArrayNode) objectMapper.readTree(FileUtil.getPayload("stubbed.hearingRepository.bailVariationWithListedCaseAndApplication.json"));
+        final ObjectNode hearing = (ObjectNode) hearingData.get(0).get("hearingsByCourtCentreId").get(0)
+                .get("hearingsByHearingDate").get(0).get("hearing");
+        hearing.put("jurisdictionType", jurisdictionType);
+        final ObjectNode defendant = (ObjectNode) hearing.get("listedCases").get(0).get("defendants").get(0);
+        defendant.putArray("offences").addAll(asList(storedOffences));
+
+        final JsonArray hearingJsonArray;
+        try (JsonReader jsonReader = createReader(new StringReader(objectMapper.writeValueAsString(hearingData)))) {
+            hearingJsonArray = jsonReader.readArray();
+        }
+
+        final Optional<JsonObject> result = assembler.assemble(buildRequestEnvelope(hearingJsonArray), courtCentreId.toString(), null, STANDARD, false, true);
+
+        final StandardCourtList courtList = jsonObjectToObjectConverter.convert(result.get(), StandardCourtList.class);
+        final Hearing listedCaseHearing = courtList.getHearingDates().get(0).getCourtRooms().get(0).getTimeslots().get(0).getHearings().get(0);
+        return listedCaseHearing.getDefendants().get(0).getOffences();
+    }
+
+    private static ObjectNode storedOffence(final String title, final int orderIndex, final int count) {
+        final ObjectNode offence = storedOffenceWithoutOrdering(title);
+        offence.put("orderIndex", orderIndex);
+        offence.put("count", count);
+        return offence;
+    }
+
+    private static ObjectNode storedOffenceWithoutOrdering(final String title) {
+        final ObjectNode offence = new ObjectMapper().createObjectNode();
+        offence.put("id", randomUUID().toString());
+        offence.put("offenceCode", "TW01046");
+        offence.put("offenceWording", "wording");
+        offence.putObject("statementOfOffence").put("title", title).put("welshTitle", title);
+        return offence;
     }
 
     private uk.gov.moj.cpp.listing.persistence.entity.Hearing loadHearingFixture(final String fileName) {

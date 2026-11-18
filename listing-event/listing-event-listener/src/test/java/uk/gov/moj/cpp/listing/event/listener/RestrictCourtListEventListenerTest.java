@@ -295,6 +295,48 @@ public class RestrictCourtListEventListenerTest {
         assertThat(actualAddress.get("postcode").asText(), equalTo(expectedAddress.getPostcode()));
     }
 
+    /**
+     * Restricting an offence rebuilds it; the court list orders offences by count and orderIndex,
+     * so the rebuild must carry both across.
+     */
+    @Test
+    public void shouldKeepOrderIndexAndCountWhenOffenceIsRestricted() throws IOException {
+        final UUID offenceId = randomUUID();
+        final List<ListedCase> storedCases = singletonList(ListedCase.listedCase()
+                .withId(randomUUID())
+                .withDefendants(singletonList(Defendant.defendant()
+                        .withId(DEFENDANTS_ID)
+                        .withOffences(singletonList(Offence.offence()
+                                .withId(offenceId)
+                                .withOffenceCode(STRING.next())
+                                .withStatementOfOffence(StatementOfOffence.statementOfOffence()
+                                        .withTitle(STRING.next())
+                                        .build())
+                                .withOrderIndex(2)
+                                .withCount(3)
+                                .build()))
+                        .build()))
+                .build());
+
+        final CourtListRestricted restrictOffence = courtListRestricted()
+                .withOffenceIds(singletonList(offenceId))
+                .withHearingId(HEARING_ID)
+                .withRestrictCourtList(true)
+                .build();
+
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(MAPPER.readTree(MAPPER.writeValueAsString(storedCases)));
+
+        target.hearingRestrictionForCourt(envelopeFrom(metadataWithRandomUUID(EVENT_NAME), restrictOffence));
+
+        verify(properties).replace(any(), objectNodeCaptor.capture());
+        assertThat(objectNodeCaptor.getValue().toString(), isJson(allOf(
+                withJsonPath("$[0].defendants[0].offences[0].restrictFromCourtList", equalTo(true)),
+                withJsonPath("$[0].defendants[0].offences[0].orderIndex", equalTo(2)),
+                withJsonPath("$[0].defendants[0].offences[0].count", equalTo(3)))));
+    }
+
     private List<ListedCase> createListedCases() {
         return singletonList(ListedCase.listedCase()
                 .withCaseIdentifier(CaseIdentifier.caseIdentifier()
