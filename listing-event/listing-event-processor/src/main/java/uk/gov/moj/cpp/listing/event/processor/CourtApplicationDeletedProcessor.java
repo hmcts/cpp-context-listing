@@ -4,6 +4,7 @@ import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 
+import uk.gov.moj.cpp.listing.common.sender.InProcess;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
@@ -23,6 +24,8 @@ public class CourtApplicationDeletedProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(CourtApplicationDeletedProcessor.class);
 
     @Inject
+
+    @InProcess // MBD refactor P1g: listing commands run in-VM
     private Sender sender;
 
     @Handles("public.progression.events.court-application-deleted")

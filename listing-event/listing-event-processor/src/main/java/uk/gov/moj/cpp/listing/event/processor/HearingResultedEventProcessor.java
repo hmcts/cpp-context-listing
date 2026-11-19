@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.event.processor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.gov.moj.cpp.listing.common.sender.InProcess;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
@@ -23,6 +24,8 @@ public class HearingResultedEventProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(HearingResultedEventProcessor.class.getName());
 
     @Inject
+
+    @InProcess // MBD refactor P1g: listing commands run in-VM
     private Sender sender;
 
     @Handles("public.events.hearing.hearing-resulted")

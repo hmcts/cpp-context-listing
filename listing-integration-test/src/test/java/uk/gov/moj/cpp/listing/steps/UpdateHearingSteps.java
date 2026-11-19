@@ -22,6 +22,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertNotNull;
@@ -48,7 +49,6 @@ import static uk.gov.moj.cpp.listing.utils.FileUtil.payloadToObject;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.VLD_LATENCY_RETRIEVE_TIMEOUT;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getCourtCenterName;
@@ -150,24 +150,11 @@ public class UpdateHearingSteps extends AbstractIT {
     public static final String FIELD_HEARING_TYPE_DESCRIPTION = "description";
     public static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
     protected static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
-    private static final String EVENT_SELECTOR_ALLOCATED_HEARING_UPDATED_FOR_LISTING = "listing.events.allocated-hearing-updated-for-listing-v2";
-    private static final String EVENT_SELECTOR_HEARING_UNALLOCATED_FOR_LISTING = "listing.events.hearing-unallocated-for-listing";
-    private static final String EVENT_SELECTOR_HEARING_START_DATE_CHANGED = "listing.events.start-date-changed-for-hearing";
-    private static final String EVENT_SELECTOR_HEARING_REQUESTED_FOR_LISTING = "listing.events.hearing-requested-for-listing";
-    private static final String EVENT_SELECTOR_COURT_ROOM_REMOVED = "listing.events.court-room-removed-from-hearing";
-    private static final String EVENT_SELECTOR_END_DATE_CHANGED = "listing.events.end-date-changed-for-hearing";
-    private static final String EVENT_SELECTOR_END_DATE_REMOVED = "listing.events.end-date-removed-from-hearing";
-    private static final String EVENT_SELECTOR_HEARING_DAYS_CHANGED = "listing.events.hearing-days-changed-for-hearing";
-    private static final String EVENT_SELECTOR_NON_DEFAULT_DAYS_CHANGED_FOR_HEARING = "listing.events.non-default-days-changed-for-hearing";
     private static final String EVENT_SELECTED_PUBLIC_HEARING_CONFIRMED = "public.listing.hearing-confirmed";
     private static final String EVENT_SELECTED_PUBLIC_HEARING_UPDATED = "public.listing.hearing-updated";
     private static final String EVENT_SELECTED_PUBLIC_VACATED_TRIAL_UPDATED = "public.listing.vacated-trial-updated";
     private static final String EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING = "public.listing.hearing-requested-for-listing";
     private static final String EVENT_SELECTED_PUBLIC_HEARING_UNALLOCATED_COURTROOM_REMOVED = "public.listing.hearing-unallocated-courtroom-removed";
-    private static final String EVENT_SELECTOR_WEEK_COMMENCING_DATES_REMOVED = "listing.events.week-commencing-date-removed-for-hearing";
-    private static final String EVENT_SELECTOR_PUBLIC_LIST_NOTE_REMOVED = "listing.events.public-list-note-removed-from-hearing";
-    private static final String EVENT_SELECTOR_START_DATE_REMOVED = "listing.events.start-date-removed-for-hearing";
-    public static final String EVENT_SELECTOR_LISTING_EVENTS_WEEK_COMMENCING_DATE_CHANGED_FOR_HEARING = "listing.events.week-commencing-date-changed-for-hearing";
     private static final String FIELD_HEARINGS = "hearings";
     private static final String LISTING_COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS = "listing.command.change-judiciary-for-hearings";
     private static final String MEDIA_TYPE_CHANGE_JUDICIARY_FOR_HEARINGS = "application/vnd.listing.command.change-judiciary-for-hearings+json";
@@ -177,7 +164,6 @@ public class UpdateHearingSteps extends AbstractIT {
     private static final String EVENT_SELECTED_PUBLIC_JUDICIARY_CHANGED_FOR_HEARING_STATUS = "public.listing.judiciary-changed-for-hearings-status";
     private static final String PUBLIC_LISTING_HEARING_UPDATE_COMPLETED = "public.listing.hearings-update-completed";
     private static final String EVENT_SELECTED_PUBLIC_HEARING_RESULTED = "public.events.hearing.hearing-resulted";
-    private static final String EVENT_SELECTOR_HEARING_RESULT_STATUS_UPDATED = "listing.events.hearing-result-status-updated";
 
     public static final String FIELD_WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
     public static final String FIELD_WEEK_COMMENCING_DURATION_IN_WEEKS = "weekCommencingDurationInWeeks";
@@ -186,31 +172,18 @@ public class UpdateHearingSteps extends AbstractIT {
     protected UpdatedHearingData updatedHearingData;
     protected HearingData hearingData;
     private List<ListedCaseData> listedCaseDatas;
-    private JmsMessageConsumerClient privateMessageConsumerAllocatedHearingUpdatedForListing;
-    private JmsMessageConsumerClient privateMessageConsumerHearingUnallocatedForListing;
-    private JmsMessageConsumerClient privateMessageConsumerStartDateChanged;
-    private JmsMessageConsumerClient privateMessageConsumerCourtRoomRemoved;
-    private JmsMessageConsumerClient privateMessageConsumerEndDateChanged;
-    private JmsMessageConsumerClient privateMessageConsumerEndDateRemoved;
-    private JmsMessageConsumerClient privateMessageConsumerHearingDaysChanged;
-    private JmsMessageConsumerClient privateMessageConsumerNonDefaultDaysChangedForHearing;
+    // MBD P1h: all private listing.events.* consumers removed (private events no longer published on listing.event)
     private JmsMessageConsumerClient publicMessageConsumerHearingConfirmed;
     private JmsMessageConsumerClient publicMessageConsumerHearingUpdated;
     private JmsMessageConsumerClient publicMessageConsumerVacatedTrialUpdated;
-    private JmsMessageConsumerClient privateMessageConsumerWeekCommencingDatesRemoved;
-    private JmsMessageConsumerClient privateMessageConsumerPublicListNoteRemoved;
     private JmsMessageConsumerClient publicMessageConsumerHearingChangesSaved;
     private JmsMessageConsumerClient publicEventHearingDaysChangedForHearing;
     private JmsMessageConsumerClient publicEventHearingsUpdateCompleted;
     private JmsMessageProducerClient publicEventMessageProducer;
-    private JmsMessageConsumerClient privateMessageConsumerStartDateRemoved;
-    private JmsMessageConsumerClient privateMessageConsumerWeekCommencingDateChanged;
-    private JmsMessageConsumerClient privateMessageConsumerHearingRequestedForListing;
     private JmsMessageConsumerClient publicMessageConsumerHearingRequested;
     private JmsMessageConsumerClient publicMessageConsumerHearingUnallocatedCourtroomRemoved;
 
     private JmsMessageConsumerClient publicMessageConsumerJudiciaryChangedForHearingStatus;
-    private JmsMessageConsumerClient privateMessageConsumerHearingResultStatusUpdated;
 
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
@@ -619,36 +592,22 @@ public class UpdateHearingSteps extends AbstractIT {
     }
 
     private void createMessageConsumers() {
-        privateMessageConsumerAllocatedHearingUpdatedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_ALLOCATED_HEARING_UPDATED_FOR_LISTING);
-        privateMessageConsumerHearingUnallocatedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_UNALLOCATED_FOR_LISTING);
-        privateMessageConsumerStartDateChanged = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_START_DATE_CHANGED);
-        privateMessageConsumerCourtRoomRemoved = privateEvents.createPrivateConsumer(EVENT_SELECTOR_COURT_ROOM_REMOVED);
-        privateMessageConsumerEndDateChanged = privateEvents.createPrivateConsumer(EVENT_SELECTOR_END_DATE_CHANGED);
-        privateMessageConsumerEndDateRemoved = privateEvents.createPrivateConsumer(EVENT_SELECTOR_END_DATE_REMOVED);
-        privateMessageConsumerHearingDaysChanged = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_DAYS_CHANGED);
-        privateMessageConsumerNonDefaultDaysChangedForHearing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_NON_DEFAULT_DAYS_CHANGED_FOR_HEARING);
         publicMessageConsumerHearingConfirmed = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_CONFIRMED);
         publicMessageConsumerHearingUpdated = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_UPDATED);
         publicMessageConsumerVacatedTrialUpdated = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_VACATED_TRIAL_UPDATED);
-        privateMessageConsumerWeekCommencingDatesRemoved = privateEvents.createPrivateConsumer(EVENT_SELECTOR_WEEK_COMMENCING_DATES_REMOVED);
-        privateMessageConsumerPublicListNoteRemoved = privateEvents.createPrivateConsumer(EVENT_SELECTOR_PUBLIC_LIST_NOTE_REMOVED);
         publicMessageConsumerHearingChangesSaved = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_CHANGES_SAVED);
         publicEventHearingDaysChangedForHearing = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING);
         publicEventHearingsUpdateCompleted = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_UPDATE_COMPLETED);
-        privateMessageConsumerStartDateRemoved = privateEvents.createPrivateConsumer(EVENT_SELECTOR_START_DATE_REMOVED);
-        privateMessageConsumerWeekCommencingDateChanged = privateEvents.createPrivateConsumer(EVENT_SELECTOR_LISTING_EVENTS_WEEK_COMMENCING_DATE_CHANGED_FOR_HEARING);
-        privateMessageConsumerHearingRequestedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_REQUESTED_FOR_LISTING);
         publicMessageConsumerHearingRequested = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING);
-        privateMessageConsumerHearingRequestedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_REQUESTED_FOR_LISTING);
         publicMessageConsumerHearingRequested = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING);
         publicMessageConsumerHearingUnallocatedCourtroomRemoved = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_UNALLOCATED_COURTROOM_REMOVED);
         publicEventMessageProducer = publicEvents.createPublicProducer();
         publicMessageConsumerJudiciaryChangedForHearingStatus = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_JUDICIARY_CHANGED_FOR_HEARING_STATUS);
-        privateMessageConsumerHearingResultStatusUpdated = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_RESULT_STATUS_UPDATED);
     }
 
     private void createMessageConsumersForDefendantSplit() {
-        privateMessageConsumerAllocatedHearingUpdatedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_ALLOCATED_HEARING_UPDATED_FOR_LISTING);
+        // MBD P1h: private allocated-hearing-updated-for-listing-v2 consumer -> public hearing-updated consumer
+        publicMessageConsumerHearingUpdated = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_UPDATED);
         publicEventMessageProducer = publicEvents.createPublicProducer();
     }
 
@@ -864,23 +823,17 @@ public class UpdateHearingSteps extends AbstractIT {
         assertNotNull(jsonResponse);
     }
 
+    /** MBD P1h: private public-list-note-removed-from-hearing wait -> query-API poll until the hearing's publicListNote is null/absent. */
     public void verifyPrivateEventPublicListNoteRemoved() {
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerPublicListNoteRemoved);
-        assertThat(jsonResponse.get("publicListNote"), is(nullValue()));
+        final String hearingId = updatedHearingData.getHearingId().toString();
+        final String hearingIdFilter = getHearingFilter(hearingId);
+        pollForHearing(updatedHearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(hearingIdFilter + ".id", hasItem(hearingId)),
+                withJsonPath(hearingIdFilter + ".publicListNote", everyItem(nullValue()))
+        });
     }
 
-    public void verifyEmptyHearingDaysChangedEventInActiveMQ() {
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingDaysChanged);
-        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
 
-        assertThat(jsonResponse.get("hearingDays"), hasSize(0));
-    }
-
-    public void verifyNonDefaultDaysChangedForHearingEvent() {
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerNonDefaultDaysChangedForHearing);
-        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
-        assertThat(jsonResponse.get("nonDefaultDays"), is(notNullValue()));
-    }
 
     public void verifyNonDefaultDaysAssignedEventNotRaised() {
         assertThat("Non-default days assigned event should not be raised when virtual flag is true",
@@ -966,56 +919,26 @@ public class UpdateHearingSteps extends AbstractIT {
         assertThat(jsonResponse.get(publicEventType + ".reportingRestrictionReason"), is(hearingData.getReportingRestrictionReason()));
     }
 
-    public void verifyHearingUpdatedWithNoEndDateResultsInUnallocationInMQ() {
-
-        final JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        verifyEndDateRemovedEvent();
-        verifyUnallocatedHearingEvent();
-        verifyEmptyHearingDaysChangedEventInActiveMQ();
-    }
-
-    public void verifyUnallocatedHearingEvent() {
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingUnallocatedForListing);
-        LOGGER.info("jsonResponse from privateMessageConsumerHearingUnallocatedForListing: {}", jsonResponse.prettify());
-        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
-    }
-
-    public void verifyEndDateRemovedEvent() {
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerEndDateRemoved);
-        LOGGER.info("jsonResponse from privateMessageConsumerEndDateRemoved: {}", jsonResponse.prettify());
-        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
-
-    }
-
-    public void verifyCourtRoomRemovedEvent() {
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerCourtRoomRemoved);
-        LOGGER.info("jsonResponse from privateMessageConsumerCourtRoomRemoved: {}", jsonResponse.prettify());
-        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
-    }
-
-    private void verifyEndDateChangedEvent() {
-        final JsonPath jsonResponse;
-        jsonResponse = retrieveMessage(privateMessageConsumerEndDateChanged);
-        LOGGER.info("jsonResponse from privateMessageConsumerEndDateChanged: {}", jsonResponse.prettify());
-        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
-        assertThat(jsonResponse.get("endDate"), is(updatedHearingData.getEndDate()));
-
-    }
-
-    private void verifyPrivateEventStartDateChangedForHearing() {
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerStartDateChanged);
-        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
-        assertThat(jsonResponse.get("startDate"), is(updatedHearingData.getStartDate()));
-    }
 
 
+
+
+
+
+
+    /**
+     * MBD P1h: private allocated-hearing-updated-for-listing-v2 wait -> public.listing.hearing-updated for this hearing
+     * (published by the processor from that event; AllocatedHearingUpdatedFactory.createV2 maps each
+     * prosecutionCaseDefendantsOffenceIds[i] 1:1 to updatedHearing.prosecutionCases[i]).
+     */
     public void verifyProsecutionCaseDefendantsOffenceIds(final int count) {
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerAllocatedHearingUpdatedForListing);
-        LOGGER.info("jsonResponse from privateMessageConsumerAllocatedHearingUpdatedForListing: {}", jsonResponse.prettify());
+        final String expectedHearingId = updatedHearingData.getHearingId().toString();
+        final JsonPath jsonResponse = retrieveMessage(publicMessageConsumerHearingUpdated, isJson(Matchers.allOf(
+                withJsonPath("$.updatedHearing.id", is(expectedHearingId)))));
+        assertNotNull("No public hearing-updated event found for hearingId=" + expectedHearingId, jsonResponse);
+        LOGGER.info("jsonResponse from publicMessageConsumerHearingUpdated: {}", jsonResponse.prettify());
 
-        assertThat(jsonResponse.getList("prosecutionCaseDefendantsOffenceIds").size(), is(count));
+        assertThat(jsonResponse.getList("updatedHearing.prosecutionCases").size(), is(count));
     }
 
     public void verifyHearingUnallocatedCourtroomRemoveds(final UUID hearingId) {
@@ -1281,16 +1204,22 @@ public class UpdateHearingSteps extends AbstractIT {
         pollUntilHearingIsPresent(searchHearingUrl, getLoggedInUser().toString(), hearingData.getId().toString());
     }
 
+    /**
+     * MBD P1h: private start-date-changed-for-hearing / end-date-changed-for-hearing / week-commencing-date-removed-for-hearing
+     * waits -> one query-API poll asserting the same state: startDate, endDate, and no weekCommencingStartDate/EndDate.
+     */
     public void verifyHearingUpdatedWhenWeekCommencingDateRemovedResultsInMQ() {
-        verifyPrivateEventStartDateChangedForHearing();
-        verifyEndDateChangedEvent();
-        verifyWeekCommencingDateRemovedEvent();
+        final String hearingId = updatedHearingData.getHearingId().toString();
+        final String hearingIdFilter = getHearingFilter(hearingId);
+        pollForHearing(updatedHearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(hearingIdFilter + ".id", hasItem(hearingId)),
+                withJsonPath(hearingIdFilter + ".startDate", hasItem(updatedHearingData.getStartDate())),
+                withJsonPath(hearingIdFilter + ".endDate", hasItem(updatedHearingData.getEndDate())),
+                withJsonPath(hearingIdFilter + ".weekCommencingStartDate", everyItem(nullValue())),
+                withJsonPath(hearingIdFilter + ".weekCommencingEndDate", everyItem(nullValue()))
+        });
     }
 
-    private void verifyWeekCommencingDateRemovedEvent() {
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerWeekCommencingDatesRemoved);
-        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
-    }
 
     public void verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI() {
 
@@ -1529,15 +1458,7 @@ public class UpdateHearingSteps extends AbstractIT {
         });
     }
 
-    public void verifyStartDateRemovedEvent() {
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerStartDateRemoved);
-        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
-    }
 
-    public void verifyWeekCommercingDateChangedEvent() {
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerWeekCommencingDateChanged);
-        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
-    }
 
     public void updateHearingForListing(final JsonObject updateHearingJsonObject, final UUID hearingId) {
         final UUID courtCentreId = getUUID(updateHearingJsonObject, "courtCentreId").orElse(null);
@@ -1658,12 +1579,15 @@ public class UpdateHearingSteps extends AbstractIT {
                 metadataWithRandomUUID(EVENT_SELECTED_PUBLIC_HEARING_RESULTED).build());
     }
 
+    /**
+     * MBD P1h: private hearing-result-status-updated wait -> query-API poll for this hearing's resulted == true
+     * (the state that event sets; verifyHearingResultedInDatabase re-checks it right after).
+     */
     public void verifyHearingResultStatusUpdatedEventRaised() {
-        final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingResultStatusUpdated);
-        LOGGER.info("jsonResponse from privateMessageConsumerHearingResultStatusUpdated: {}", jsonResponse.prettify());
-
-        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
-        assertNotNull(jsonResponse);
+        final String hearingId = updatedHearingData.getHearingId().toString();
+        pollForHearing(updatedHearingData.getCourtCentreId().toString(), ALLOCATED, getLoggedInUser().toString(), new Matcher[]{
+                withJsonPath(getHearingFilter(hearingId) + ".resulted", hasItem(true))
+        });
     }
 
     public void verifyHearingResultedInDatabase() {

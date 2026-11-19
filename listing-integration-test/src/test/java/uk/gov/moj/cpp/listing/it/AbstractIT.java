@@ -96,9 +96,10 @@ public class AbstractIT {
         setupProgressionNotesStubs();
         setupUsersGroupPermissionsForApplicationTypeStub();
         databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
+        // MBD P1h: also truncate aggregate_snapshot (migrated aggregates' state, replaces event_log)
         databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "stream_status","processed_event",
                 "stream_buffer", "hearing", "hearing_days", "listing_notes", "cache_refdata_courtroom", "court_list_publish_status", "published_court_list",
-                "event_outbox");
+                "event_outbox", "aggregate_snapshot");
     }
 
     @AfterEach

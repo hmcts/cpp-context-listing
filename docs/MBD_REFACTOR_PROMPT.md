@@ -374,6 +374,10 @@ Each phase and sub-phase is delivered in order. Its exit criteria include the **
 green (not only its own subset), with no test regressing against the P0 baseline, before the next
 one starts.
 
+**Phase 1 exception (decided 2026-11-19):** the full IT suite runs once, at the end of P1.z, not
+after every slice. Each slice must pass the full unit-test build. The risk (an ordering or parity
+fault found late, harder to trace to a slice) is accepted.
+
 ### 10.1 Phases
 
 **Phase 0 — Baseline**
@@ -392,7 +396,10 @@ tests are reworked into service tests; handler tests that only check envelopes s
 | Phase | Scope | Depends on | Exit criteria |
 |---|---|---|---|
 | **P1.0 Foundation (spike)** | `event_outbox` table (changeset `028`); `EventOutboxWriter` (domain events → framework envelopes, metadata from the command); `EventOutboxRelay` + `EventOutboxPublisher` + `EventProcessorInvoker` (fixed-delay poll, advisory lock, one event per transaction in id order, handed in-VM to the processor's `SubscriptionManager`, retried up to 10 times then dropped; changeset `029`); framework-free service conventions (`listing-common`, package `…common.domain`); IT harness cleans and drains `event_outbox`. No new processor entry point is needed (see §5) | P0, ADRs 2, 9, 10 | Full IT suite matches the P0 baseline; events go outbox → relay → processor (proved by P1a). **Fallback:** if the relay cannot feed the processor without fighting the framework, stop and switch to the direct plan (Phase 2 alone, with the domain work done inside it) |
-| **P1a–P1h Slices** | One slice per feature group, in this order: P1a listing notes → P1b list court hearing / unscheduled → P1c update / allocate → P1d offences / defendants / cases → P1e delete / next-hearing → P1f judiciary / sequence / vacate → P1g court-list publish & XHIBIT → P1h migrate / duplicate / HMI. Slices are cut by complete flows (ADR 10). Each slice: moves its command-handler, aggregate and event-listener logic into domain services called from the command API, writing the viewstore and outbox in one transaction; adds the columns and backfill for its aggregate-only state (§15.2); makes its processor handlers call the domain services instead of `Sender` → `listing.handler.command`; routes its inbound `public.*` events to the domain services; makes the §9 harness changes for the private events and tables it stops producing | P1.0 | Full IT suite green; every ported aggregate guard unit-tested; its outbound public events schema-valid |
+| **P1a Listing notes** (done) | `ListingNote` → framework-free `ListingNoteService`, called directly from the command API (P1.0 proof) | P1.0 | Unit tests green |
+| **P1b–P1f Aggregate slices** (ADR 011) | One slice per aggregate, because all commands of an aggregate must switch together: **P1b** court lists & XHIBIT (`PublishCourtListRequestAggregate` + the raw court-list streams) → **P1c** `Application` → **P1d** `Case` → **P1e** `SeedHearingAggregate` → **P1f** `Hearing`. Each slice changes the handler methods of that aggregate from `eventSource`/`aggregateService` to `AggregateStore` (snapshot) and `EventRecorder` (listener in-VM + outbox). Aggregate and listener code is unchanged | P1.0, ADR 011 | Full unit-test build green; handler tests assert on recorded events |
+| **P1g Remove the JMS hops** | API pass-through commands and processor `Sender` calls to `listing.handler.command` become in-process calls; inbound `public.*` handlers likewise | P1f | Unit tests green |
+| **P1h Backfill and IT harness** | Backfill: replay each `event_log` stream through `apply()` into `aggregate_snapshot`. IT harness (§9): replace the 11 private-event reads, drop the 9 unused private consumers, include `event_outbox` in `DatabaseCleaner.publishQueueDepth` | P1g | Unit tests green |
 | **P1.z Clean-up** | Remove the command handler, the aggregates, the event listener, the processor's event-store subscription and the event-store writes | P1h | Full IT suite green; no writes to `event_log` / `publish_queue` |
 
 **Phase 2 — Move to Spring Boot (copy courtscheduler)**
@@ -426,7 +433,7 @@ Whether Phase 1 slices are released to production one by one, or only as a whole
 | Item | Status |
 |---|---|
 | P0 Baseline | **Done 2026-11-19.** Run `it-logs/run-20261119T001211Z.log`: 335 tests, 0 failures, 0 errors, 3 skipped, 60 IT classes. Not run with `errorlog`: unexpected server.log ERROR/WARN lines in 156 test windows, mainly `CourtScheduleEnrichmentService` (127 ERROR, 26 WARN) and the EJB timer `EventPublishingTimerBean` (49 WARN, 9 ERROR) |
-| P1.0–P1.z | Not started |
+| Phase 1 (P1.0, P1a–P1h, P1.z) | **Done 2026-11-19.** Run `it-logs/run-20261119T082649Z-p1-complete-3.log`: 335 tests, 0 failures, 0 errors, 3 skipped, 60 IT classes (matches P0). Unexpected server.log lines in 141 test windows (P0: 156), the same `CourtScheduleEnrichmentService` noise as P0; EJB timer warnings down from 58 to 2. Three IT assertion changes approved 2026-11-19 (D10) |
 | P2.0–P2.6 | Not started |
 | Jira epic (§15.1) | Missing |
 
@@ -516,6 +523,7 @@ Update this table as each phase completes, with the date.
 | D7 | 2026-10-16 | Persistence ITs & JMeter perf tests | Dropped |
 | D8 | 2026-11-17 | Reference implementation | `cpp-context-listing-courtscheduler` is the blueprint for build, config, web plumbing, persistence and IT harness (§2, §6) |
 | D9 | 2026-11-19 | Migration order | Two-step: remove CQRS/ES on JEE first, with the outbox (Phase 1), then move to Spring Boot (Phase 2) (§10, ADRs 9 and 10). P1.0 is a spike; if it fails, fall back to the direct plan. Supersedes the single-step P0–P6 plan of v0.5 |
+| D10 | 2026-11-19 | IT assertion changes in P1h (§9 approval) | Approved: (1) `DefendantOffencesChangedIT` no longer asserts `count`, `orderIndex`, `restrictFromCourtList` of `offence-updated` (the listener drops them; no query exposes them); (2) offence case/defendant/hearing ids checked by lookup, not equality; (3) `ExtendHearingIT` checks the unallocated hearing id on public `hearing-confirmed` (the `Case` aggregate does not store it) |
 
 ## 15. Still open
 

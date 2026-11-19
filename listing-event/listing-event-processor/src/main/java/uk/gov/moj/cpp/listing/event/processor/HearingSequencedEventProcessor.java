@@ -4,6 +4,7 @@ import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 
+import uk.gov.moj.cpp.listing.common.sender.InProcess;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
@@ -24,6 +25,8 @@ public class HearingSequencedEventProcessor {
     public static final String PUBLIC_LISTING_EVENTS_HEARING_SEQUENCED = "public.listing.hearing-days-sequenced";
 
     @Inject
+
+    @InProcess // MBD refactor P1g: listing commands run in-VM
     private Sender sender;
 
     @Handles(LISTING_EVENTS_HEARING_SEQUENCED)

@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
+import org.junit.jupiter.api.BeforeEach;
+import uk.gov.moj.cpp.listing.common.aggregate.AggregateStore;
 import static java.util.UUID.randomUUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -45,6 +47,14 @@ public class DeleteCourtApplicationHandlerTest {
 
     @Mock
     private AggregateService aggregateService;
+
+    @Mock
+    private AggregateStore aggregateStore;
+
+    @BeforeEach
+    void bridgeMigratedAggregates() {
+        MigratedAggregateTestBridge.bridge(aggregateStore, null, eventSource, aggregateService);
+    }
 
     @Mock
     private Stream<Object> events;

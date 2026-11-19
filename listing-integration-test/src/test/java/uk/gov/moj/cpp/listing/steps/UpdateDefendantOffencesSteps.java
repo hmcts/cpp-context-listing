@@ -6,8 +6,10 @@ import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.anything;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static uk.gov.moj.cpp.listing.it.util.HearingHelper.pollForHearingByIdWithJmsDelay;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 import static uk.gov.justice.core.courts.LaaReference.laaReference;
@@ -20,8 +22,6 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMat
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.assertNoMessage;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessageString;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
@@ -57,8 +57,10 @@ import java.util.UUID;
 import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.ReadContext;
 import io.restassured.path.json.JsonPath;
 import org.awaitility.core.ConditionTimeoutException;
+import org.hamcrest.Matcher;
 import org.skyscreamer.jsonassert.Customization;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.skyscreamer.jsonassert.comparator.CustomComparator;
@@ -72,13 +74,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
 
     private static final String PUBLIC_EVENT_PROGRESSION_OFFENCES_FOR_DEFENDANT_CHANGED = "public.progression.defendant-offences-changed";
 
-    private static final String PRIVATE_EVENT_OFFENCES_TO_BE_UPDATED = "listing.events.offences-to-be-updated";
-    private static final String PRIVATE_EVENT_OFFENCES_TO_BE_DELETED = "listing.events.offences-to-be-deleted";
-    private static final String PRIVATE_EVENT_OFFENCES_TO_BE_ADDED = "listing.events.offences-to-be-added";
-
-    private static final String EVENT_SELECTOR_OFFENCES_UPDATED = "listing.events.offence-updated";
-    private static final String EVENT_SELECTOR_OFFENCES_ADDED = "listing.events.offence-added";
-    private static final String EVENT_SELECTOR_OFFENCES_DELETED = "listing.events.offence-deleted";
+    // MBD P1h: private listing.events.offences-to-be-* / offence-* selectors removed (no longer on the listing.event topic)
 
 
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
@@ -88,13 +84,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
     private JmsMessageProducerClient publicEventDefendantOffencesUpdated;
     private JmsMessageConsumerClient publicEventMessageConsumerDefendantOffencesUpdated;
 
-    private JmsMessageConsumerClient privateEventMessageOffencesToBeUpdated;
-    private JmsMessageConsumerClient privateEventMessageOffencesToBeDeleted;
-    private JmsMessageConsumerClient privateEventMessageOffencesToBeAdded;
-
-    private JmsMessageConsumerClient privateEventsMessageOffenceUpdated;
-    private JmsMessageConsumerClient privateEventsMessageOffenceDeleted;
-    private JmsMessageConsumerClient privateEventsMessageOffenceAdded;
+    // MBD P1h: private offence consumers removed; the verify*InActiveMQ methods below poll the query API instead
 
     private String request;
 
@@ -136,14 +126,6 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
 
         if (createConsumers) {
             publicEventMessageConsumerDefendantOffencesUpdated = publicEvents.createPublicConsumer(PUBLIC_EVENT_PROGRESSION_OFFENCES_FOR_DEFENDANT_CHANGED);
-
-            privateEventMessageOffencesToBeUpdated = privateEvents.createPrivateConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_UPDATED);
-            privateEventMessageOffencesToBeDeleted = privateEvents.createPrivateConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_DELETED);
-            privateEventMessageOffencesToBeAdded = privateEvents.createPrivateConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_ADDED);
-
-            privateEventsMessageOffenceUpdated = privateEvents.createPrivateConsumer(EVENT_SELECTOR_OFFENCES_UPDATED);
-            privateEventsMessageOffenceAdded = privateEvents.createPrivateConsumer(EVENT_SELECTOR_OFFENCES_ADDED);
-            privateEventsMessageOffenceDeleted = privateEvents.createPrivateConsumer(EVENT_SELECTOR_OFFENCES_DELETED);
         }
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
@@ -354,343 +336,122 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
         assertEquals(expected, jsonResponse, true);
     }
 
+    /**
+     * MBD P1h: private listing.events.offences-to-be-updated (Case) payload compare -> query-API poll: the updated offence
+     * under this hearing/case/defendant carries the same id, dates, code, wording, statementOfOffence, reportingRestrictions
+     * and laaApplnReference.
+     */
     public void verifyEventDefendantOffencesToBeUpdateInActiveMQ() {
-        JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        String jsonResponse = QueueUtil.retrieveMessageString(privateEventMessageOffencesToBeUpdated);
-        LOGGER.debug("jsonResponse from privateEventMessageOffencesToBeUpdated: {}", jsonResponse);
-
-        String expected =
-                "{\n" +
-                "  \"_metadata\": {\n" +
-                "    \"context\": {\n" +
-                "      \"user\": \"" + userId + "\"\n" +
-                "    },\n" +
-                "    \"createdAt\": \"2018-12-23T16:20:04.344Z\",\n" +
-                "    \"id\": \"" + metadataId + "\",\n" +
-                "    \"name\": \"" + PRIVATE_EVENT_OFFENCES_TO_BE_UPDATED + "\",\n" +
-                "    \"causation\": [\n" +
-                "      \"9e02a6c2-fce9-436b-b102-b8294b4d3533\",\n" +
-                "      \"542d0f32-be5b-431d-bfa0-b3a2ca8e2c63\"\n" +
-                "    ],\n" +
-                "    \"stream\": {\n" +
-                "      \"id\": \"" + caseId + "\",\n" +
-                "      \"version\": 2\n" +
-                "    }\n" +
-                "  },\n" +
-                "  \"caseId\": \"" + caseId +"\",\n" +
-                "  \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
-                "  \"hearings\": [\n" +
-                "    \"" + hearingData.getId() + "\"\n" +
-                "  ],\n" +
-                "  \"offences\": [\n" +
-                "    {\n" +
-                "      \"endDate\": \"" + updatedOffenceData.getEndDate() + "\",\n" +
-                "      \"id\": \"" + updatedOffenceData.getOffenceId() + "\",\n" +
-                "      \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() +"\",\n" +
-                "      \"offenceWording\": \"" + updatedOffenceData.getOffenceWording() + "\",\n" +
-                "      \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
-                "      \"statementOfOffence\": {\n" +
-                "         \"legislation\": \"" + updatedOffenceData.getLegislation() +"\",\n" +
-                "         \"welshLegislation\": \"" + updatedOffenceData.getLegislationWelsh() +"\",\n" +
-                "         \"title\": \"" + updatedOffenceData.getStatementOfOffenceTitle() +"\",\n" +
-                "         \"welshTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() +"\"\n" +
-                "      },\n" +
-                "       \"reportingRestrictions\": [\n" +
-                "       {\n" +
-                "       \"id\": \"" + updatedOffenceData.getReportingRestriction().get(0).getId() + "\",\n" +
-                "       \"judicialResultId\": \"" + updatedOffenceData.getReportingRestriction().get(0).getJudicialResultId().get() + "\",\n" +
-                "       \"label\": \"" + updatedOffenceData.getReportingRestriction().get(0).getLabel() + "\",\n" +
-                "       \"orderedDate\": \"" + updatedOffenceData.getReportingRestriction().get(0).getOrderedDate().get().toString() + "\"\n}\n" +
-                "      ],\n" +
-                "      \"laaApplnReference\": {" +
-                "        \"applicationReference\": \"" + updatedOffenceData.getLaaReferences().get().getApplicationReference() + "\",\n" +
-                "        \"statusCode\": \"" + updatedOffenceData.getLaaReferences().get().getStatusCode() + "\",\n" +
-                "        \"statusDate\": \"" + updatedOffenceData.getLaaReferences().get().getStatusDate().toString() + "\",\n" +
-                "        \"statusDescription\": \"" + updatedOffenceData.getLaaReferences().get().getStatusDescription() + "\",\n" +
-                "        \"statusId\": \"" + updatedOffenceData.getLaaReferences().get().getStatusId() + "\"\n}\n" +
-                "    }\n" +
-                "  ]\n" +
-                "}\n";
-
-
-        assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
+        pollUntilOffenceMatches(updatedOffenceData.getOffenceId(), updatedOffenceMatchers(updatedOffenceData.getOffenceId()));
     }
 
+    /**
+     * MBD P1h: private listing.events.offences-to-be-added (Case) payload compare -> query-API poll for the added offence
+     * (filtered by id, not by index) with the same fields.
+     */
     public void verifyEventDefendantOffencesToBeAddedInActiveMQ() {
-        JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        String jsonResponse = QueueUtil.retrieveMessageString(privateEventMessageOffencesToBeAdded);
-        LOGGER.debug("jsonResponse from privateEventMessageOffencesToBeAdded: {}", jsonResponse);
-
-        String expected =
-                "{\n" +
-                        "  \"_metadata\": {\n" +
-                        "    \"context\": {\n" +
-                        "      \"user\": \"80f5a8d8-2c64-4c38-b77c-b6582db8ae65\"\n" +
-                        "    },\n" +
-                        "    \"createdAt\": \"2018-12-23T17:21:34.476Z\",\n" +
-                        "    \"id\": \"aaf36524-b4fa-43b0-918b-921949528f69\",\n" +
-                        "    \"name\": \"listing.events.offences-to-be-added\",\n" +
-                        "    \"causation\": [\n" +
-                        "      \"4ea8bc4a-bc17-41fc-b998-d1a34aec4cbe\",\n" +
-                        "      \"527f861d-68a2-4745-8af1-0aeea23d34cc\"\n" +
-                        "    ],\n" +
-                        "    \"stream\": {\n" +
-                        "      \"id\": \"8aee5f13-e84d-46da-82cc-af41176a9293\",\n" +
-                        "      \"version\": 4\n" +
-                        "    }\n" +
-                        "  },\n" +
-                        "  \"caseId\": \"" + caseId + "\",\n" +
-                        "  \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
-                        "  \"hearings\": [\n" +
-                        "    \"" + hearingData.getId() + "\"\n" +
-                        "  ],\n" +
-                        "  \"offences\": [\n" +
-                        "    {\n" +
-                        "      \"endDate\": \"" + updatedOffenceData.getEndDate() + "\",\n" +
-                        "      \"id\": \"" + updatedOffenceData.getRandomOffenceId() + "\",\n" +
-                        "      \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() + "\",\n" +
-                        "      \"offenceWording\": \"" + updatedOffenceData.getOffenceWording() + "\",\n" +
-                        "      \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
-                        "       \"reportingRestrictions\": [\n" +
-                        "       {\n" +
-                        "       \"id\": \"" + updatedOffenceData.getReportingRestriction().get(0).getId() + "\",\n" +
-                        "       \"judicialResultId\": \"" + updatedOffenceData.getReportingRestriction().get(0).getJudicialResultId().get() + "\",\n" +
-                        "       \"label\": \"" + updatedOffenceData.getReportingRestriction().get(0).getLabel() + "\",\n" +
-                        "       \"orderedDate\": \"" + updatedOffenceData.getReportingRestriction().get(0).getOrderedDate().get().toString() + "\"\n}\n" +
-                        "      ],\n" +
-                        "      \"statementOfOffence\": {\n" +
-                        "         \"legislation\": \"" + updatedOffenceData.getLegislation() + "\",\n" +
-                        "         \"welshLegislation\": \"" + updatedOffenceData.getLegislationWelsh() + "\",\n" +
-                        "         \"title\": \"" + updatedOffenceData.getStatementOfOffenceTitle() + "\",\n" +
-                        "         \"welshTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() + "\"\n" +
-                        "      }\n" +
-                        "    }\n" +
-                        "  ]\n" +
-                        "}\n";
-
-        assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
+        pollUntilOffenceMatches(updatedOffenceData.getRandomOffenceId(), addedOffenceMatchers(updatedOffenceData.getRandomOffenceId()));
     }
 
+    /** MBD P1h: private listing.events.offences-to-be-deleted (Case) -> query-API poll: offenceIdToBeDeleted gone from the defendant. */
     public void verifyEventDefendantOffencesToBeDeletedInActiveMQ() {
-        JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        String jsonResponse = QueueUtil.retrieveMessageString(privateEventMessageOffencesToBeDeleted);
-        LOGGER.debug("jsonResponse from privateEventMessageOffencesToBeDeleted: {}", jsonResponse);
-
-        String expected =
-                "{\n" +
-                        "  \"_metadata\": {\n" +
-                        "    \"context\": {\n" +
-                        "      \"user\": \"c58f3c17-b046-4fb3-938e-93029a0ad9e6\"\n" +
-                        "    },\n" +
-                        "    \"createdAt\": \"2018-12-23T17:27:02.016Z\",\n" +
-                        "    \"id\": \"5951f96f-74a1-4faa-bd01-09b4c9d2c2b6\",\n" +
-                        "    \"name\": \"listing.events.offences-to-be-deleted\",\n" +
-                        "    \"causation\": [\n" +
-                        "      \"9268362f-9e8d-42b2-ae05-27a67c361aad\",\n" +
-                        "      \"6d2b8100-fa7c-4e11-8d23-f2f98e542df7\"\n" +
-                        "    ],\n" +
-                        "    \"stream\": {\n" +
-                        "      \"id\": \"a7c8ed80-d4cd-4648-82ae-b3dfb99dcc2f\",\n" +
-                        "      \"version\": 3\n" +
-                        "    }\n" +
-                        "  },\n" +
-                        "  \"caseId\": \"" + caseId + "\",\n" +
-                        "  \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
-                        "  \"hearings\": [\n" +
-                        "    \"" + hearingData.getId() + "\"\n" +
-                        "  ],\n" +
-                        "  \"offences\": [\n" +
-                        "    {\n" +
-                        "      \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
-                        "      \"id\": \"" + offenceIdToBeDeleted + "\"\n" +
-                        "    }\n" +
-                        "  ]\n" +
-                        "}\n";
-
-        assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
+        pollUntilOffenceDeleted();
     }
 
+    /**
+     * MBD P1h: private listing.events.offence-updated (Hearing) payload compare -> query-API poll of the updated offence.
+     * The viewstore does not keep count/orderIndex for an updated offence and keeps the ORIGINAL restrictFromCourtList,
+     * so those three event fields are not re-asserted here (listed under NEEDS APPROVAL in the P1h report).
+     */
     public void verifyEventOffenceUpdatedInActiveMQ() {
-        JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        String jsonResponse = QueueUtil.retrieveMessageString(privateEventsMessageOffenceUpdated);
-        LOGGER.debug("jsonResponse from privateEventsMessageOffenceUpdated: {}", jsonResponse);
-
-        String expected =
-                "{\n" +
-                        "  \"_metadata\": {\n" +
-                        "    \"context\": {\n" +
-                        "      \"user\": \"3a829dd7-9554-4529-bab5-296d46ac739f\"\n" +
-                        "    },\n" +
-                        "    \"createdAt\": \"2018-12-23T17:34:15.404Z\",\n" +
-                        "    \"stream\": {\n" +
-                        "      \"id\": \"c8ff5eb5-ebe7-4eef-978c-14587462fea0\",\n" +
-                        "      \"version\": 3\n" +
-                        "    },\n" +
-                        "    \"id\": \"9c4a1bca-1190-4bc8-87e9-2f8085179409\",\n" +
-                        "    \"name\": \"listing.events.offence-updated\",\n" +
-                        "    \"causation\": [\n" +
-                        "      \"22e7bd84-91c1-46f9-bc9a-352e1cc192a5\",\n" +
-                        "      \"6db87020-8fc6-4f5f-a7fb-d062ef10465a\",\n" +
-                        "      \"c8a8c850-64df-4373-a85c-f7d48901c437\",\n" +
-                        "      \"bb882fb8-6b5c-4752-9367-9945ea7689e6\"\n" +
-                        "    ]\n" +
-                        "  },\n" +
-                        "  \"caseId\": \"" + caseId + "\",\n" +
-                        "  \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
-                        "  \"hearingId\": \"" + hearingData.getId() + "\",\n" +
-                        "  \"offence\": {\n" +
-                        "      \"count\": " + updatedOffenceData.getCount() + ",\n" +
-                        "      \"endDate\": \"" + updatedOffenceData.getEndDate() + "\",\n" +
-                        "      \"id\": \"" + updatedOffenceData.getOffenceId() + "\",\n" +
-                        "      \"indictmentParticular\": \"" + updatedOffenceData.getIndictmentParticular() + "\",\n" +
-                        "      \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() + "\",\n" +
-                        "      \"offenceWording\": \"" + updatedOffenceData.getOffenceWording() + "\",\n" +
-                        "      \"orderIndex\": " + updatedOffenceData.getOrderIndex() + ",\n" +
-                        "      \"restrictFromCourtList\": false,\n" +
-                        "      \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
-                        "      \"statementOfOffence\": {\n" +
-                        "         \"legislation\": \"" + updatedOffenceData.getLegislation() +"\",\n" +
-                        "         \"welshLegislation\": \"" + updatedOffenceData.getLegislationWelsh() +"\",\n" +
-                        "         \"title\": \"" + updatedOffenceData.getStatementOfOffenceTitle() +"\",\n" +
-                        "         \"welshTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() +"\"\n" +
-                        "      },\n" +
-                        "       \"reportingRestrictions\": [\n" +
-                        "       {\n" +
-                        "       \"id\": \"" + updatedOffenceData.getReportingRestriction().get(0).getId() + "\",\n" +
-                        "       \"judicialResultId\": \"" + updatedOffenceData.getReportingRestriction().get(0).getJudicialResultId().get() + "\",\n" +
-                        "       \"label\": \"" + updatedOffenceData.getReportingRestriction().get(0).getLabel() + "\",\n" +
-                        "       \"orderedDate\": \"" + updatedOffenceData.getReportingRestriction().get(0).getOrderedDate().get().toString() + "\"\n}\n" +
-                        "      ],\n" +
-                        "      \"laaApplnReference\": {" +
-                        "        \"applicationReference\": \"" + updatedOffenceData.getLaaReferences().get().getApplicationReference() + "\",\n" +
-                        "        \"statusCode\": \"" + updatedOffenceData.getLaaReferences().get().getStatusCode() + "\",\n" +
-                        "        \"statusDate\": \"" + updatedOffenceData.getLaaReferences().get().getStatusDate().toString() + "\",\n" +
-                        "        \"statusDescription\": \"" + updatedOffenceData.getLaaReferences().get().getStatusDescription() + "\",\n" +
-                        "        \"statusId\": \"" + updatedOffenceData.getLaaReferences().get().getStatusId() + "\"\n}\n" +
-                        "  }\n" +
-                        "}\n";
-
-        assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
+        final List<Matcher<? super ReadContext>> matchers = new ArrayList<>(updatedOffenceMatchers(updatedOffenceData.getOffenceId()));
+        matchers.add(withJsonPath(offencePath(updatedOffenceData.getOffenceId()) + ".indictmentParticular", hasItem(updatedOffenceData.getIndictmentParticular())));
+        pollUntilOffenceMatches(updatedOffenceData.getOffenceId(), matchers);
     }
 
     /**
      * The aggregate must stay silent: no listing.events.offence-added after the add-offence public
      * event. Barrier first, then a short absence window (see QueueUtil.assertNoMessage).
      */
+    /**
+     * The aggregate must stay silent: no offence is added after the add-offence public event.
+     * MBD P1h: barrier + absence of private listing.events.offence-added -> barrier (now also counts event_outbox) +
+     * query-API check that the hearing still has no listed cases (so no offence was added to it).
+     */
     public void verifyNoEventOffenceAddedInActiveMQ() {
         awaitAsyncProcessingComplete();
-        assertNoMessage(privateEventsMessageOffenceAdded, anything());
+        pollForHearingByIdWithJmsDelay(USER_ID_VALUE, hearingData.getId(), allOf(
+                withJsonPath("$.id", equalTo(hearingData.getId().toString())),
+                withJsonPath("$.listedCases.length()", equalTo(0))));
     }
 
+    /** MBD P1h: private listing.events.offence-added (Hearing) payload compare -> query-API poll of the added offence. */
     public void verifyEventOffenceAddedInActiveMQ() {
-        JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        String jsonResponse = QueueUtil.retrieveMessageString(privateEventsMessageOffenceAdded);
-        LOGGER.debug("jsonResponse from privateEventsMessageOffenceAdded: {}", jsonResponse);
-
-        final LaaReferenceData laaReferenceData = updatedOffenceData.getLaaReferences().get();
-        String expected =
-                "{\n" +
-                        "  \"_metadata\": {\n" +
-                        "    \"context\": {\n" +
-                        "      \"user\": \"3a829dd7-9554-4529-bab5-296d46ac739f\"\n" +
-                        "    },\n" +
-                        "    \"createdAt\": \"2018-12-23T17:34:15.404Z\",\n" +
-                        "    \"stream\": {\n" +
-                        "      \"id\": \"c8ff5eb5-ebe7-4eef-978c-14587462fea0\",\n" +
-                        "      \"version\": 3\n" +
-                        "    },\n" +
-                        "    \"id\": \"9c4a1bca-1190-4bc8-87e9-2f8085179409\",\n" +
-                        "    \"name\": \"listing.events.offence-added\",\n" +
-                        "    \"causation\": [\n" +
-                        "      \"22e7bd84-91c1-46f9-bc9a-352e1cc192a5\",\n" +
-                        "      \"6db87020-8fc6-4f5f-a7fb-d062ef10465a\",\n" +
-                        "      \"c8a8c850-64df-4373-a85c-f7d48901c437\",\n" +
-                        "      \"bb882fb8-6b5c-4752-9367-9945ea7689e6\"\n" +
-                        "    ]\n" +
-                        "  },\n" +
-                        "  \"caseId\": \"" + caseId + "\",\n" +
-                        "  \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
-                        "  \"hearingId\": \"" + hearingData.getId() + "\",\n" +
-                        "  \"offence\": {\n" +
-                        "      \"count\": " + updatedOffenceData.getCount() + ",\n" +
-                        "      \"endDate\": \"" + updatedOffenceData.getEndDate() + "\",\n" +
-                        "      \"id\": \"" + updatedOffenceData.getRandomOffenceId() + "\",\n" +
-                        "      \"indictmentParticular\": \"" + updatedOffenceData.getIndictmentParticular() + "\",\n" +
-                        "      \"laaApplnReference\": {\n" +
-                        "         \"applicationReference\": \"" + laaReferenceData.getApplicationReference() + "\",\n" +
-                        "         \"statusCode\": \"" + laaReferenceData.getStatusCode() + "\",\n" +
-                        "         \"statusDate\": \"" + laaReferenceData.getStatusDate() + "\",\n" +
-                        "         \"statusDescription\": \"" + laaReferenceData.getStatusDescription() + "\",\n" +
-                        "         \"statusId\": \"" + laaReferenceData.getStatusId() + "\"\n" +
-                        "      },\n" +
-                        "      \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() + "\",\n" +
-                        "      \"offenceWording\": \"" + updatedOffenceData.getOffenceWording() + "\",\n" +
-                        "      \"orderIndex\": " + updatedOffenceData.getOrderIndex() + ",\n" +
-                        "      \"reportingRestrictions\": [\n" +
-                        "      {\n" +
-                        "      \"id\": \"" + updatedOffenceData.getReportingRestriction().get(0).getId() + "\",\n" +
-                        "      \"judicialResultId\": \"" + updatedOffenceData.getReportingRestriction().get(0).getJudicialResultId().get() + "\",\n" +
-                        "      \"label\": \"" + updatedOffenceData.getReportingRestriction().get(0).getLabel() + "\",\n" +
-                        "      \"orderedDate\": \"" + updatedOffenceData.getReportingRestriction().get(0).getOrderedDate().get().toString() + "\"\n}\n" +
-                        "      ],\n" +
-                        "      \"restrictFromCourtList\": false,\n" +
-                        "      \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
-                        "      \"statementOfOffence\": {\n" +
-                        "         \"legislation\": \"" + updatedOffenceData.getLegislation() + "\",\n" +
-                        "         \"title\": \"" + updatedOffenceData.getStatementOfOffenceTitle() + "\",\n" +
-                        "         \"welshLegislation\": \"" + updatedOffenceData.getLegislationWelsh() + "\",\n" +
-                        "         \"welshTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() + "\"\n" +
-                        "      }\n" +
-                        "  }\n" +
-                        "}\n";
-
-        assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
+        pollUntilOffenceMatches(updatedOffenceData.getRandomOffenceId(), addedOffenceMatchers(updatedOffenceData.getRandomOffenceId()));
     }
 
 
+    /** MBD P1h: private listing.events.offence-deleted (Hearing) -> query-API poll: offenceIdToBeDeleted gone from the defendant. */
     public void verifyEventOffenceDeletedInActiveMQ() {
-        JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+        pollUntilOffenceDeleted();
+    }
 
-        String jsonResponse = QueueUtil.retrieveMessageString(privateEventsMessageOffenceDeleted);
-        LOGGER.debug("jsonResponse from privateEventsMessageOffenceDeleted: {}", jsonResponse);
+    // ---- MBD P1h: query-API helpers replacing the private offence-event reads ----
 
-        String expected =
-                "{\n" +
-                        "  \"_metadata\": {\n" +
-                        "    \"context\": {\n" +
-                        "      \"user\": \"6acc7ca4-497c-4b23-8822-60b22e213a01\"\n" +
-                        "    },\n" +
-                        "    \"createdAt\": \"2018-12-23T17:40:59.174Z\",\n" +
-                        "    \"stream\": {\n" +
-                        "      \"id\": \"bf202d9c-f2a2-4ad1-a97a-1854593a9fa3\",\n" +
-                        "      \"version\": 2\n" +
-                        "    },\n" +
-                        "    \"id\": \"3e51039e-657f-4ccc-a750-801ccf9604b2\",\n" +
-                        "    \"name\": \"listing.events.offence-deleted\",\n" +
-                        "    \"causation\": [\n" +
-                        "      \"4df3b3cb-a6ef-47b7-84e1-097d54fbcdba\",\n" +
-                        "      \"a89dac0a-5b0a-4770-93d5-fe186b7cb751\",\n" +
-                        "      \"21eaba37-2d20-4be3-8621-d0e06de18cf0\",\n" +
-                        "      \"69a810e3-c161-4a47-b4e6-dedf8e76f330\"\n" +
-                        "    ]\n" +
-                        "  },\n" +
-                        "  \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
-                        "  \"hearingId\": \"" + hearingData.getId() + "\",\n" +
-                        "  \"offenceId\": \"" + offenceIdToBeDeleted + "\"\n" +
-                        "}\n";
+    private String defendantPath() {
+        return "$.listedCases[?(@.id == '" + caseId + "')].defendants[?(@.id == '" + defendantData.getDefendantId() + "')]";
+    }
 
-        assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
+    private String offencePath(final UUID offenceId) {
+        return defendantPath() + ".offences[?(@.id == '" + offenceId + "')]";
+    }
+
+    private List<Matcher<? super ReadContext>> updatedOffenceMatchers(final UUID offenceId) {
+        final String o = offencePath(offenceId);
+        final ReportingRestrictionData rr = updatedOffenceData.getReportingRestriction().get(0);
+        final LaaReferenceData laa = updatedOffenceData.getLaaReferences().get();
+        final List<Matcher<? super ReadContext>> matchers = new ArrayList<>();
+        matchers.add(withJsonPath(o + ".id", hasItem(offenceId.toString())));
+        matchers.add(withJsonPath(o + ".endDate", hasItem(updatedOffenceData.getEndDate().toString())));
+        matchers.add(withJsonPath(o + ".startDate", hasItem(updatedOffenceData.getStartDate().toString())));
+        matchers.add(withJsonPath(o + ".offenceCode", hasItem(updatedOffenceData.getOffenceCode())));
+        matchers.add(withJsonPath(o + ".offenceWording", hasItem(updatedOffenceData.getOffenceWording())));
+        matchers.add(withJsonPath(o + ".statementOfOffence.legislation", hasItem(updatedOffenceData.getLegislation())));
+        matchers.add(withJsonPath(o + ".statementOfOffence.welshLegislation", hasItem(updatedOffenceData.getLegislationWelsh())));
+        matchers.add(withJsonPath(o + ".statementOfOffence.title", hasItem(updatedOffenceData.getStatementOfOffenceTitle())));
+        matchers.add(withJsonPath(o + ".statementOfOffence.welshTitle", hasItem(updatedOffenceData.getStatementOfOffenceTitleWelsh())));
+        matchers.add(withJsonPath(o + ".reportingRestrictions[0].id", hasItem(rr.getId().toString())));
+        matchers.add(withJsonPath(o + ".reportingRestrictions[0].judicialResultId", hasItem(rr.getJudicialResultId().get().toString())));
+        matchers.add(withJsonPath(o + ".reportingRestrictions[0].label", hasItem(rr.getLabel())));
+        matchers.add(withJsonPath(o + ".reportingRestrictions[0].orderedDate", hasItem(rr.getOrderedDate().get().toString())));
+        matchers.add(withJsonPath(o + ".laaApplnReference.applicationReference", hasItem(laa.getApplicationReference())));
+        matchers.add(withJsonPath(o + ".laaApplnReference.statusCode", hasItem(laa.getStatusCode())));
+        matchers.add(withJsonPath(o + ".laaApplnReference.statusDate", hasItem(laa.getStatusDate().toString())));
+        matchers.add(withJsonPath(o + ".laaApplnReference.statusDescription", hasItem(laa.getStatusDescription())));
+        matchers.add(withJsonPath(o + ".laaApplnReference.statusId", hasItem(laa.getStatusId().toString())));
+        return matchers;
+    }
+
+    private List<Matcher<? super ReadContext>> addedOffenceMatchers(final UUID offenceId) {
+        final String o = offencePath(offenceId);
+        final List<Matcher<? super ReadContext>> matchers = new ArrayList<>(updatedOffenceMatchers(offenceId));
+        matchers.add(withJsonPath(o + ".count", hasItem(updatedOffenceData.getCount())));
+        matchers.add(withJsonPath(o + ".orderIndex", hasItem(updatedOffenceData.getOrderIndex())));
+        matchers.add(withJsonPath(o + ".indictmentParticular", hasItem(updatedOffenceData.getIndictmentParticular())));
+        matchers.add(withJsonPath(o + ".restrictFromCourtList", hasItem(false)));
+        return matchers;
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void pollUntilOffenceMatches(final UUID offenceId, final List<Matcher<? super ReadContext>> matchers) {
+        LOGGER.debug("Polling hearing {} until offence {} matches", hearingData.getId(), offenceId);
+        pollForHearingByIdWithJmsDelay(USER_ID_VALUE, hearingData.getId(), (Matcher) allOf((List) matchers));
+    }
+
+    private void pollUntilOffenceDeleted() {
+        pollForHearingByIdWithJmsDelay(USER_ID_VALUE, hearingData.getId(), allOf(
+                withJsonPath(defendantPath() + ".id", hasItem(defendantData.getDefendantId().toString())),
+                withJsonPath(defendantPath() + ".offences[*].id", not(hasItem(offenceIdToBeDeleted.toString())))));
     }
 
     public void verifyDefendentOffenceUpdatedOnlyFromAPI(boolean isAllocated) {

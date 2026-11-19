@@ -4,6 +4,7 @@ import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 
+import uk.gov.moj.cpp.listing.common.sender.InProcess;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
@@ -20,7 +21,7 @@ public class CaseRemovedFromGroupCasesEventProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(CaseRemovedFromGroupCasesEventProcessor.class);
 
     @Inject
-    @ServiceComponent(EVENT_PROCESSOR)
+    @InProcess // MBD refactor P1g: listing commands run in-VM
     private Sender sender;
 
     @Handles("public.progression.case-removed-from-group-cases")

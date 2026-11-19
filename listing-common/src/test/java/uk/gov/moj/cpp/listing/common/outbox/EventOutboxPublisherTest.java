@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.command.api.outbox;
+package uk.gov.moj.cpp.listing.common.outbox;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -13,7 +13,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
-import static uk.gov.moj.cpp.listing.command.api.outbox.EventOutboxPublisher.MAX_ATTEMPTS;
+import static uk.gov.moj.cpp.listing.common.outbox.EventOutboxPublisher.MAX_ATTEMPTS;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.JsonObjectEnvelopeConverter;

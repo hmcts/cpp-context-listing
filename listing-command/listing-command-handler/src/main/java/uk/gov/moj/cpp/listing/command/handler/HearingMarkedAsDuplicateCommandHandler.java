@@ -6,14 +6,13 @@ import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMet
 import uk.gov.justice.listing.courts.MarkHearingAsDuplicate;
 import uk.gov.justice.listing.courts.MarkHearingAsDuplicateForCase;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
-import uk.gov.justice.services.core.aggregate.AggregateService;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.enveloper.Enveloper;
-import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.aggregate.AggregateStore;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 
@@ -32,11 +31,11 @@ public class HearingMarkedAsDuplicateCommandHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HearingMarkedAsDuplicateCommandHandler.class);
 
-    @Inject
-    private EventSource eventSource;
 
+
+    // MBD refactor Phase 1 (ADR 011): migrated aggregates
     @Inject
-    private AggregateService aggregateService;
+    private AggregateStore aggregateStore;
 
     @Inject
     private Enveloper enveloper;
@@ -86,21 +85,15 @@ public class HearingMarkedAsDuplicateCommandHandler {
                 listingCase.markHearingAsDuplicate(hearingId, caseId));
     }
 
+    // MBD refactor P1d: Case state in aggregate_snapshot, events recorded in-process
     private void updateCaseEventStream(final JsonEnvelope command, final UUID caseId,
                                        final Function<Case, Stream<Object>> aggregatorFunction) throws EventStreamException {
-        final EventStream eventStream = eventSource.getStreamById(caseId);
-        final Case listingCase = aggregateService.get(eventStream, Case.class);
-
-        final Stream<Object> events = aggregatorFunction.apply(listingCase);
-        eventStream.append(events.map(toEnvelopeWithMetadataFrom(command)));
+        aggregateStore.update(command, caseId, Case.class, aggregatorFunction);
     }
 
     private void updateHearingEventStream(final JsonEnvelope command, final UUID hearingId,
                                           final Function<Hearing, Stream<Object>> aggregatorFunction) throws EventStreamException {
-        final EventStream eventStream = eventSource.getStreamById(hearingId);
-        final Hearing hearing = aggregateService.get(eventStream, Hearing.class);
-
-        final Stream<Object> events = aggregatorFunction.apply(hearing);
-        eventStream.append(events.map(toEnvelopeWithMetadataFrom(command)));
+        // MBD refactor P1f: Hearing state in aggregate_snapshot, events recorded in-process
+        aggregateStore.update(command, hearingId, Hearing.class, aggregatorFunction);
     }
 }

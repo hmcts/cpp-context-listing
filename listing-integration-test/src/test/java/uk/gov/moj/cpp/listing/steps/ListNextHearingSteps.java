@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.steps;
 
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.Collections.singletonList;
@@ -38,7 +39,6 @@ import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.clearAllMessages;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
@@ -146,7 +146,6 @@ public class ListNextHearingSteps extends AbstractIT {
     private static final String MEDIA_TYPE_UPDATE_RELATED_HEARING = "application/vnd.listing.related-hearing+json";
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
 
-    private static final String EVENT_SELECTOR_UPDATE_RELATED_HEARING_REQUESTED = "listing.events.update-existing-hearing-requested";
     private static final String PUBLIC_EVENT_SELECTED_UNALLOCATED_HEARING_DELETED = "public.events.listing.unallocated-hearing-deleted";
     private static final String PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_HEARING = "public.events.listing.offences-removed-from-existing-unallocated-hearing";
     private static final String PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING = "public.events.listing.offences-removed-from-existing-allocated-hearing";
@@ -158,7 +157,6 @@ public class ListNextHearingSteps extends AbstractIT {
 
 
 
-    private final JmsMessageConsumerClient privateMessageConsumerUpdateRelatedHearingRequested;
     private final JmsMessageConsumerClient publicMessageConsumerUnallocatedHearingDeleted;
     private final JmsMessageConsumerClient publicMessageConsumerOffencesRemovedFromExistingHearing;
     private final JmsMessageConsumerClient publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing;
@@ -177,7 +175,7 @@ public class ListNextHearingSteps extends AbstractIT {
         this.firstHearing = firstHearing;
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
 
-        privateMessageConsumerUpdateRelatedHearingRequested = privateEvents.createPrivateConsumer(EVENT_SELECTOR_UPDATE_RELATED_HEARING_REQUESTED);
+        // MBD P1h: private update-existing-hearing-requested consumer removed (callers now wait on hearing-added-to-case / query API)
 
         publicMessageConsumerUnallocatedHearingDeleted = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_UNALLOCATED_HEARING_DELETED);
         publicMessageConsumerOffencesRemovedFromExistingHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_HEARING);
@@ -407,15 +405,6 @@ public class ListNextHearingSteps extends AbstractIT {
                 request, getLoggedInHeader());
     }
 
-    public void verifyUpdateRelatedHearingRequestedInActiveMQ(final UUID hearingId) {
-        final JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerUpdateRelatedHearingRequested);
-        LOGGER.debug("jsonResponse from privateMessageConsumerUpdateRelatedHearingRequested: {}", jsonResponse.prettify());
-
-        assertThat(jsonResponse.get("hearingId"), is(hearingId.toString()));
-    }
 
     public void verifyHearingListedFromAPI(final HearingsData hearingsData) {
         verifyHearingListedFromAPI(hearingsData.getHearingData().get(0), false);
@@ -570,6 +559,21 @@ public class ListNextHearingSteps extends AbstractIT {
 
         assertThat(jsonResponse.get("hearingId"), is(existedHearingId.toString()));
 
+    }
+
+    /**
+     * MBD P1h: replaces the private listing.events.update-existing-hearing-requested wait. The related-hearing request
+     * leads to add-cases-to-hearing then add-hearing-to-case, whose public.listing.hearing-added-to-case names both the
+     * related hearing and the linked case (filtering on the case too skips any hearing-added-to-case from the hearing's
+     * own initial listing).
+     */
+    public void verifyPublicHearingAddedToCaseInActiveMQ(final UUID existedHearingId, final UUID caseId) {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingAddedToCase,
+                isJson(allOf(withJsonPath("$.hearingId", is(existedHearingId.toString())),
+                        withJsonPath("$.caseId", is(caseId.toString())))));
+
+        assertThat(jsonResponse.get("hearingId"), is(existedHearingId.toString()));
+        assertThat(jsonResponse.get("caseId"), is(caseId.toString()));
     }
 
     public void verifyPublicOffencesMovedToHearingInActiveMQ(final HearingsData hearingsData, final HearingsData oldHearingsData, final UUID seedingHearingId) {

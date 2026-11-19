@@ -183,11 +183,14 @@ public class DatabaseCleaner {
 
     /**
      * Rows still waiting in the event-store publish relay ({@code publish_queue} +
-     * {@code pre_publish_queue}) — one snapshot, no waiting. Used by the pipeline-idle barrier.
+     * {@code pre_publish_queue}) and the viewstore {@code event_outbox} relay — one snapshot, no waiting. Used by the pipeline-idle barrier.
      */
     public long publishQueueDepth(final String contextName) {
-        try (final Connection connection = testJdbcConnectionProvider.getEventStoreConnection(contextName)) {
-            return countRows(connection, "publish_queue") + countRows(connection, "pre_publish_queue");
+        try (final Connection connection = testJdbcConnectionProvider.getEventStoreConnection(contextName);
+             final Connection viewStoreConnection = testJdbcConnectionProvider.getViewStoreConnection(contextName)) {
+            // MBD P1h: also count the viewstore event_outbox relay (was publish_queue + pre_publish_queue only)
+            return countRows(connection, "publish_queue") + countRows(connection, "pre_publish_queue")
+                    + countRows(viewStoreConnection, "event_outbox");
         } catch (SQLException e) {
             throw new DataAccessException("Failed to open or close event-store connection", e);
         }

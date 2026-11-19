@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.command.api.note;
 import static javax.ejb.TransactionAttributeType.REQUIRED;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.command.api.outbox.EventOutboxWriter;
+import uk.gov.moj.cpp.listing.common.outbox.EventOutboxWriter;
 import uk.gov.moj.cpp.listing.common.domain.DomainEvent;
 import uk.gov.moj.cpp.listing.common.domain.note.ListingNoteService;
 

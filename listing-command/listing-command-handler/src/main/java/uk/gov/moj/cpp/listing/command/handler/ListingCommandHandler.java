@@ -98,17 +98,17 @@ import uk.gov.justice.listing.events.UpdateHearingAddCaseBdf;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.util.Clock;
-import uk.gov.justice.services.core.aggregate.AggregateService;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.enveloper.Enveloper;
-import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.listing.command.factory.CourtCentreFactory;
+import uk.gov.moj.cpp.listing.common.aggregate.AggregateStore;
+import uk.gov.moj.cpp.listing.common.outbox.EventRecorder;
 import uk.gov.moj.cpp.listing.command.factory.HearingFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.service.ReferenceDataService;
@@ -214,11 +214,14 @@ public class ListingCommandHandler {
     private static final String DURATION_IN_MINUTES = "durationInMinutes";
     private static final String CROWN_JURISDICTION = "CROWN";
 
+
+    // MBD refactor Phase 1 (ADR 011): migrated aggregates and streams
     @Inject
-    private EventSource eventSource;
+    private AggregateStore aggregateStore;
 
     @Inject
-    private AggregateService aggregateService;
+    private EventRecorder eventRecorder;
+
 
     @Inject
     private Enveloper enveloper;
@@ -668,10 +671,9 @@ public class ListingCommandHandler {
                     LOGGER.error(msg, e);
                 }
             }
-            final EventStream eventStream = eventSource.getStreamById(lastHearingId);
-            final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
-            final Stream<Object> events = hearingAggregate.hearingsUpdateCompleted(failedHearingIds);
-            appendEventsToStream(command, eventStream, events);
+            // MBD refactor P1f: Hearing state in aggregate_snapshot, events recorded in-process
+            aggregateStore.update(command, lastHearingId, Hearing.class,
+                    hearingAggregate -> hearingAggregate.hearingsUpdateCompleted(failedHearingIds));
         }
     }
 
@@ -711,8 +713,8 @@ public class ListingCommandHandler {
 
         final JsonEnvelope jsonEnvelope = envelopeFrom(command.metadata(), JsonValue.NULL);
 
-        final EventStream eventStream = eventSource.getStreamById(hearingId);
-        final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
+        // MBD refactor P1f: Hearing state in aggregate_snapshot, events recorded in-process
+        final Hearing hearingAggregate = aggregateStore.load(hearingId, Hearing.class);
 
         final uk.gov.justice.listing.events.Hearing storedHearing = hearingFactory.getHearingById(hearingId, command);
 
@@ -728,7 +730,7 @@ public class ListingCommandHandler {
 
         LOGGER.info("HearingUpdateOperationType for hearing id: {}  is {} splitHearing is {} ", updateHearingForListing.getHearingId(), operationType, splitHearing);
 
-        updateHearingEventStream(jsonEnvelope, eventStream, hearingAggregate, (Hearing hearing) -> {
+        updateHearingEventStream(jsonEnvelope, hearingId, hearingAggregate, (Hearing hearing) -> {
 
             LOGGER.info("UpdateHearingEventStream for hearing id: {} with operationType: {} ", hearingId, operationType);
 
@@ -897,10 +899,9 @@ public class ListingCommandHandler {
 
 
     private boolean isHearingDeleted(final UUID allocatedHearingId, final UUID unAllocatedHearingId) {
-        final EventStream allocatedHearingEventStream = eventSource.getStreamById(allocatedHearingId);
-        final Hearing allocatedHearing = aggregateService.get(allocatedHearingEventStream, Hearing.class);
-        final EventStream unAllocatedHearingEventStream = eventSource.getStreamById(unAllocatedHearingId);
-        final Hearing unAllocatedHearing = aggregateService.get(unAllocatedHearingEventStream, Hearing.class);
+        // MBD refactor P1f: Hearing state in aggregate_snapshot, events recorded in-process
+        final Hearing allocatedHearing = aggregateStore.load(allocatedHearingId, Hearing.class);
+        final Hearing unAllocatedHearing = aggregateStore.load(unAllocatedHearingId, Hearing.class);
         return allocatedHearing.isDuplicateOrDeleted() || unAllocatedHearing.isDuplicateOrDeleted();
     }
 
@@ -1093,10 +1094,8 @@ public class ListingCommandHandler {
 
         if (isNotEmpty(hearingIds)) {
             final UUID last = hearingIds.get(hearingIds.size() - 1);
-            final EventStream eventStream = eventSource.getStreamById(last);
-            final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
-            final Stream<Object> events = hearingAggregate.judiciaryChangedForHearingsStatus();
-            appendEventsToStream(command, eventStream, events);
+            // MBD refactor P1f: Hearing state in aggregate_snapshot, events recorded in-process
+            aggregateStore.update(command, last, Hearing.class, Hearing::judiciaryChangedForHearingsStatus);
         }
 
     }
@@ -1197,10 +1196,9 @@ public class ListingCommandHandler {
             LOGGER.info("listing.command.update-laa-reference-for-application received with payload {}", objectToJsonObjectConverter.convert(command));
         }
 
-        final EventStream eventStream = eventSource.getStreamById(command.getApplicationId());
-        final Application application = aggregateService.get(eventStream, Application.class);
-        final Stream<Object> events = application.updateLaaReference(command.getApplicationId(), command.getSubjectId(), command.getOffenceId(), command.getLaaReference());
-        appendEventsToStream(commandEnvelope, eventStream, events);
+        // MBD refactor P1c: Application state in aggregate_snapshot, events recorded in-process
+        aggregateStore.update(commandEnvelope, command.getApplicationId(), Application.class,
+                application -> application.updateLaaReference(command.getApplicationId(), command.getSubjectId(), command.getOffenceId(), command.getLaaReference()));
     }
 
     @Handles("listing.command.update-case-markers")
@@ -1459,12 +1457,8 @@ public class ListingCommandHandler {
                 courtListRequestExport.getStartDate()
         );
 
-        final Stream<Object> events = streamOf(event);
-
-        final UUID streamId = event.getCourtListId();
-        final EventStream eventStream = eventSource.getStreamById(streamId);
-
-        eventStream.append(events.map(enveloper.withMetadataFrom(commandEnvelope)));
+        // MBD refactor P1b: recorded in-process (listener + outbox), not appended to the event store
+        eventRecorder.record(commandEnvelope, event.getCourtListId(), List.of(event));
     }
 
     @Handles("listing.command.record-court-list-export-successful")
@@ -1482,12 +1476,8 @@ public class ListingCommandHandler {
                 command.getStartDate()
         );
 
-        final Stream<Object> events = streamOf(event);
-
-        final UUID streamId = event.getCourtListId();
-        final EventStream eventStream = eventSource.getStreamById(streamId);
-
-        eventStream.append(events.map(enveloper.withMetadataFrom(commandEnvelope)));
+        // MBD refactor P1b: recorded in-process (listener + outbox), not appended to the event store
+        eventRecorder.record(commandEnvelope, event.getCourtListId(), List.of(event));
     }
 
     @Handles("listing.command.record-court-list-export-failed")
@@ -1506,12 +1496,8 @@ public class ListingCommandHandler {
                 command.getStartDate()
         );
 
-        final Stream<Object> events = streamOf(event);
-
-        final UUID streamId = event.getCourtListId();
-        final EventStream eventStream = eventSource.getStreamById(streamId);
-
-        eventStream.append(events.map(enveloper.withMetadataFrom(commandEnvelope)));
+        // MBD refactor P1b: recorded in-process (listener + outbox), not appended to the event store
+        eventRecorder.record(commandEnvelope, event.getCourtListId(), List.of(event));
     }
 
     @Handles("listing.command.publish-court-list")
@@ -1519,17 +1505,16 @@ public class ListingCommandHandler {
         final PublishCourtList publishCourtList =
                 jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), PublishCourtList.class);
         final UUID publishCourtListRequestId = randomUUID();
-        final EventStream eventStream = eventSource.getStreamById(publishCourtListRequestId);
-        final PublishCourtListRequestAggregate publishCourtListRequestAggregate = aggregateService.get(eventStream, PublishCourtListRequestAggregate.class);
-        final Stream<Object> events = publishCourtListRequestAggregate.recordCourtListRequested(
-                publishCourtListRequestId,
-                publishCourtList.getCourtCentreId(),
-                publishCourtList.getStartDate(),
-                publishCourtList.getEndDate(),
-                valueOf(publishCourtList.getPublishCourtListType().toString()),
-                clock.now(),
-                publishCourtList.getSendNotificationToParties());
-        appendEventsToStream(commandEnvelope, eventStream, events);
+        // MBD refactor P1b: aggregate state in aggregate_snapshot, events recorded in-process
+        aggregateStore.update(commandEnvelope, publishCourtListRequestId, PublishCourtListRequestAggregate.class,
+                publishCourtListRequestAggregate -> publishCourtListRequestAggregate.recordCourtListRequested(
+                        publishCourtListRequestId,
+                        publishCourtList.getCourtCentreId(),
+                        publishCourtList.getStartDate(),
+                        publishCourtList.getEndDate(),
+                        valueOf(publishCourtList.getPublishCourtListType().toString()),
+                        clock.now(),
+                        publishCourtList.getSendNotificationToParties()));
     }
 
     @Handles("listing.command.record-court-list-produced")
@@ -1537,17 +1522,16 @@ public class ListingCommandHandler {
         final RecordCourtListProduced recordCourtListProduced =
                 jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), RecordCourtListProduced.class);
 
-        final EventStream eventStream = eventSource.getStreamById(recordCourtListProduced.getPublishCourtListRequestId());
-        final PublishCourtListRequestAggregate publishCourtListRequestAggregate = aggregateService.get(eventStream, PublishCourtListRequestAggregate.class);
-        final Stream<Object> events = publishCourtListRequestAggregate.recordCourtListProduced(
-                recordCourtListProduced.getPublishCourtListRequestId(),
-                recordCourtListProduced.getCourtCentreId(),
-                recordCourtListProduced.getCourtListFileId(),
-                recordCourtListProduced.getCourtListFileName(),
-                valueOf(recordCourtListProduced.getPublishCourtListType().toString()),
-                recordCourtListProduced.getProducedTime(),
-                parse(recordCourtListProduced.getPublishDate()));
-        appendEventsToStream(commandEnvelope, eventStream, events);
+        // MBD refactor P1b: aggregate state in aggregate_snapshot, events recorded in-process
+        aggregateStore.update(commandEnvelope, recordCourtListProduced.getPublishCourtListRequestId(), PublishCourtListRequestAggregate.class,
+                publishCourtListRequestAggregate -> publishCourtListRequestAggregate.recordCourtListProduced(
+                        recordCourtListProduced.getPublishCourtListRequestId(),
+                        recordCourtListProduced.getCourtCentreId(),
+                        recordCourtListProduced.getCourtListFileId(),
+                        recordCourtListProduced.getCourtListFileName(),
+                        valueOf(recordCourtListProduced.getPublishCourtListType().toString()),
+                        recordCourtListProduced.getProducedTime(),
+                        parse(recordCourtListProduced.getPublishDate())));
     }
 
     @Handles("listing.command.publish-court-lists-for-crown-courts")
@@ -1581,12 +1565,8 @@ public class ListingCommandHandler {
                 command.getStartDate()
         );
 
-        final Stream<Object> events = streamOf(event);
-
-        final UUID streamId = courtListId;
-        final EventStream eventStream = eventSource.getStreamById(streamId);
-
-        eventStream.append(events.map(toEnvelopeWithMetadataFrom(commandEnvelope)));
+        // MBD refactor P1b: recorded in-process (listener + outbox), not appended to the event store
+        eventRecorder.record(commandEnvelope, courtListId, List.of(event));
     }
 
     @Handles("listing.command.handler.modify-hearing-counsel")
@@ -1597,8 +1577,9 @@ public class ListingCommandHandler {
                 commandEnvelope.toObfuscatedDebugString());
 
         final ModifyHearingCounselCommand modifyHearingCounsels = jsonObjectConverter.convert(payload, ModifyHearingCounselCommand.class);
-        final EventStream eventStream = eventSource.getStreamById(modifyHearingCounsels.getHearingId());
-        final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
+        // MBD refactor P1f: Hearing state in aggregate_snapshot, events recorded in-process
+        // The event is built here, not by the aggregate; apply() keeps the snapshot as a replay would have.
+        aggregateStore.update(commandEnvelope, modifyHearingCounsels.getHearingId(), Hearing.class, hearingAggregate -> {
         Stream<Object> events = Stream.empty();
         if(!hearingAggregate.isDuplicateOrDeleted()) {
             final HearingCounselModified event = new HearingCounselModified(
@@ -1608,17 +1589,19 @@ public class ListingCommandHandler {
                     modifyHearingCounsels.getPayload());
             events = streamOf(event);
         }
-        eventStream.append(events.map(enveloper.withMetadataFrom(commandEnvelope)));
+        final List<Object> raised = events.collect(toList());
+        raised.forEach(hearingAggregate::apply);
+        return raised.stream();
+        });
     }
 
     @Handles("listing.command.cancel-hearing-days")
     public void cancelHearingDays(final Envelope<CancelHearingDays> envelope) throws EventStreamException {
         final CancelHearingDays payload = envelope.payload();
 
-        final EventStream eventStream = eventSource.getStreamById(payload.getHearingId());
-        final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
-        final Stream<Object> events = hearingAggregate.cancelHearingDays(payload.getHearingId(), hearingDaysCoreToDomainConverter.convert(payload.getHearingDays()));
-        appendEventsToStream(envelope, eventStream, events);
+        // MBD refactor P1f: Hearing state in aggregate_snapshot, events recorded in-process
+        aggregateStore.update(envelope, payload.getHearingId(), Hearing.class,
+                hearingAggregate -> hearingAggregate.cancelHearingDays(payload.getHearingId(), hearingDaysCoreToDomainConverter.convert(payload.getHearingDays())));
     }
 
     @Handles("listing.command.update-hearing-day-court-schedule")
@@ -1637,10 +1620,9 @@ public class ListingCommandHandler {
         for (final JsonObject hearing : payload.getJsonArray(HEARINGS).getValuesAs(JsonObject.class)) {
             final UUID hearingId = fromString(hearing.getString(HEARING_ID));
             final List<HearingDayCourtSchedule> hearingDayCourtSchedules = toHearingDayCourtSchedules(hearing);
-            final EventStream eventStream = eventSource.getStreamById(hearingId);
-            final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
-            appendEventsToStream(commandEnvelope, eventStream,
-                    hearingAggregate.raiseCrownHearingMigratedToCourtSchedule(hearingId, hearingDayCourtSchedules));
+            // MBD refactor P1f: Hearing state in aggregate_snapshot, events recorded in-process
+            aggregateStore.update(commandEnvelope, hearingId, Hearing.class,
+                    hearingAggregate -> hearingAggregate.raiseCrownHearingMigratedToCourtSchedule(hearingId, hearingDayCourtSchedules));
         }
     }
 
@@ -1662,10 +1644,9 @@ public class ListingCommandHandler {
         final UpdateCaseIdentifierWithHearings updateCpsProsecutorWithHearings = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), UpdateCaseIdentifierWithHearings.class);
 
         for (final UUID hearingId : updateCpsProsecutorWithHearings.getHearingIds()) {
-            final EventStream eventStream = eventSource.getStreamById(hearingId);
-            final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
-            final Stream<Object> events = hearingAggregate.updateCaseIdentifier(updateCpsProsecutorWithHearings.getProsecutionAuthorityId(), updateCpsProsecutorWithHearings.getProsecutionAuthorityCode(), updateCpsProsecutorWithHearings.getProsecutionCaseId());
-            appendEventsToStream(envelope, eventStream, events);
+            // MBD refactor P1f: Hearing state in aggregate_snapshot, events recorded in-process
+            aggregateStore.update(envelope, hearingId, Hearing.class,
+                    hearingAggregate -> hearingAggregate.updateCaseIdentifier(updateCpsProsecutorWithHearings.getProsecutionAuthorityId(), updateCpsProsecutorWithHearings.getProsecutionAuthorityCode(), updateCpsProsecutorWithHearings.getProsecutionCaseId()));
         }
     }
 
@@ -1737,10 +1718,6 @@ public class ListingCommandHandler {
                 .build();
     }
 
-    private void appendEventsToStream(final Envelope<?> envelope, final EventStream eventStream, final Stream<Object> events) throws EventStreamException {
-        final JsonEnvelope jsonEnvelope = envelopeFrom(envelope.metadata(), NULL);
-        eventStream.append(events.map(toEnvelopeWithMetadataFrom(jsonEnvelope)));
-    }
 
     private List<uk.gov.moj.cpp.listing.domain.SequenceHearing> convertSequenceHearingsToDomain(final SequenceHearings sequenceHearingsCommand) {
         List<uk.gov.moj.cpp.listing.domain.SequenceHearing> domainSequenceHearings = Collections.emptyList();
@@ -1862,38 +1839,30 @@ public class ListingCommandHandler {
                 .build();
     }
 
+    // MBD refactor P1f: Hearing state in aggregate_snapshot, events recorded in-process
     private void updateHearingEventStream(final JsonEnvelope command, final UUID hearingId,
                                           final Function<Hearing, Stream<Object>> aggregatorFunction) throws EventStreamException {
-        final EventStream eventStream = eventSource.getStreamById(hearingId);
-        final Hearing hearing = aggregateService.get(eventStream, Hearing.class);
-        final Stream<Object> events = aggregatorFunction.apply(hearing);
-        eventStream.append(events.map(enveloper.withMetadataFrom(command)));
+        aggregateStore.update(command, hearingId, Hearing.class, aggregatorFunction);
     }
 
-    private void updateHearingEventStream(final JsonEnvelope command, final EventStream eventStream, final Hearing hearing,
+    // MBD refactor P1f: Hearing state in aggregate_snapshot, events recorded in-process
+    private void updateHearingEventStream(final JsonEnvelope command, final UUID hearingId, final Hearing hearing,
                                           final Function<Hearing, Stream<Object>> aggregatorFunction) throws EventStreamException {
-        final Stream<Object> events = aggregatorFunction.apply(hearing);
-        eventStream.append(events.map(enveloper.withMetadataFrom(command)));
+        aggregateStore.update(command, hearingId, hearing, aggregatorFunction);
     }
 
 
 
+    // MBD refactor P1d: Case state in aggregate_snapshot, events recorded in-process
     private void updateCaseEventStream(final JsonEnvelope command, final UUID caseId,
                                        final Function<Case, Stream<Object>> aggregatorFunction) throws EventStreamException {
-        final EventStream eventStream = eventSource.getStreamById(caseId);
-        final Case listingCase = aggregateService.get(eventStream, Case.class);
-
-        final Stream<Object> events = aggregatorFunction.apply(listingCase);
-        eventStream.append(events.map(toEnvelopeWithMetadataFrom(command)));
+        aggregateStore.update(command, caseId, Case.class, aggregatorFunction);
     }
 
+    // MBD refactor P1c: Application state in aggregate_snapshot, events recorded in-process
     private void updateApplicationEventStream(final JsonEnvelope command, final UUID applicationId,
                                               final Function<Application, Stream<Object>> aggregatorFunction) throws EventStreamException {
-        final EventStream eventStream = eventSource.getStreamById(applicationId);
-        final Application application = aggregateService.get(eventStream, Application.class);
-
-        final Stream<Object> events = aggregatorFunction.apply(application);
-        eventStream.append(events.map(toEnvelopeWithMetadataFrom(command)));
+        aggregateStore.update(command, applicationId, Application.class, aggregatorFunction);
     }
 
     private List<CourtCentreDetails> getAllCrownCourtCentres(final JsonEnvelope eventEnvelope) {

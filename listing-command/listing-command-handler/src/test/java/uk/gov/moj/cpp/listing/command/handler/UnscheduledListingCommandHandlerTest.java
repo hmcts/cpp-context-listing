@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
+import uk.gov.moj.cpp.listing.common.aggregate.AggregateStore;
 import static java.time.ZonedDateTime.parse;
 import static java.util.Optional.of;
 import static java.util.UUID.fromString;
@@ -119,6 +120,14 @@ public class UnscheduledListingCommandHandlerTest {
     private EventStream eventStream;
     @Mock
     private AggregateService aggregateService;
+
+    @Mock
+    private AggregateStore aggregateStore;
+
+    @BeforeEach
+    void bridgeMigratedAggregates() {
+        MigratedAggregateTestBridge.bridge(aggregateStore, null, eventSource, aggregateService);
+    }
     @InjectMocks
     private UnscheduledListingCommandHandler unscheduledListingCommandHandler;
     @Mock

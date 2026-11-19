@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import javax.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.gov.moj.cpp.listing.common.sender.InProcess;
 import uk.gov.justice.core.courts.ConfirmedDefendant;
 import uk.gov.justice.core.courts.ConfirmedOffence;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
@@ -48,6 +49,10 @@ public class UpdateExistingHearingEventProcessor {
 
 
     @Inject
+
+
+
+    @InProcess // MBD refactor P1g: listing commands run in-VM
     private Sender sender;
 
     @Inject

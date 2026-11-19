@@ -296,7 +296,9 @@ class ExhibitScenarioIT extends AbstractIT {
         //Link hearing
         final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(anotherHearing.getHearingData().get(0));
         listNextHearingSteps.whenUpdateRelatedHearingSubmittedForListing(anotherHearing.getHearingData().get(0).getId(), hearingsData);
-        listNextHearingSteps.verifyUpdateRelatedHearingRequestedInActiveMQ(anotherHearing.getHearingData().get(0).getId());
+        // MBD P1h: private update-existing-hearing-requested wait -> public.listing.hearing-added-to-case for the related hearing + linked case
+        listNextHearingSteps.verifyPublicHearingAddedToCaseInActiveMQ(anotherHearing.getHearingData().get(0).getId(),
+                hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId());
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.FINAL;
         final LocalDate startDate = ItClock.today();
@@ -378,7 +380,9 @@ class ExhibitScenarioIT extends AbstractIT {
         //Link hearing
         final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(anotherHearing.getHearingData().get(0));
         listNextHearingSteps.whenUpdateRelatedHearingSubmittedForListing(anotherHearing.getHearingData().get(0).getId(), hearingsData);
-        listNextHearingSteps.verifyUpdateRelatedHearingRequestedInActiveMQ(anotherHearing.getHearingData().get(0).getId());
+        // MBD P1h: private update-existing-hearing-requested wait -> public.listing.hearing-added-to-case for the related hearing + linked case
+        listNextHearingSteps.verifyPublicHearingAddedToCaseInActiveMQ(anotherHearing.getHearingData().get(0).getId(),
+                hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId());
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.FINAL;
         final LocalDate startDate = ItClock.today();
@@ -460,7 +464,9 @@ class ExhibitScenarioIT extends AbstractIT {
         //Link hearing
         final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(anotherHearing.getHearingData().get(0));
         listNextHearingSteps.whenUpdateRelatedHearingSubmittedForListing(anotherHearing.getHearingData().get(0).getId(), hearingsData);
-        listNextHearingSteps.verifyUpdateRelatedHearingRequestedInActiveMQ(anotherHearing.getHearingData().get(0).getId());
+        // MBD P1h: private update-existing-hearing-requested wait -> public.listing.hearing-added-to-case for the related hearing + linked case
+        listNextHearingSteps.verifyPublicHearingAddedToCaseInActiveMQ(anotherHearing.getHearingData().get(0).getId(),
+                hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId());
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.FINAL;
         final LocalDate startDate = ItClock.today();

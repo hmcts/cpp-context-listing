@@ -12,6 +12,7 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 
+import uk.gov.moj.cpp.listing.common.sender.InProcess;
 import uk.gov.justice.listing.courts.events.CourtLists;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
@@ -77,7 +78,8 @@ public class PublishCourtListCommandSender {
     private static final Logger LOGGER = LoggerFactory.getLogger(PublishCourtListCommandSender.class);
 
     @Inject
-    @FrameworkComponent("EVENT_PROCESSOR")
+
+    @InProcess // MBD refactor P1g: listing commands run in-VM
     private Sender sender;
 
     @Inject

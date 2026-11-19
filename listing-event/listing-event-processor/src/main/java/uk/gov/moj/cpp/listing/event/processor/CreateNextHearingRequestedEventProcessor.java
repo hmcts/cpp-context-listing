@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
 import org.slf4j.Logger;
+import uk.gov.moj.cpp.listing.common.sender.InProcess;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
@@ -21,6 +22,8 @@ public class CreateNextHearingRequestedEventProcessor {
     public static final String PUBLIC_EVENT_CREATE_NEXT_HEARING_REQUESTED = "public.listing.create-next-hearing-requested";
 
     @Inject
+
+    @InProcess // MBD refactor P1g: listing commands run in-VM
     private Sender sender;
 
     @Inject

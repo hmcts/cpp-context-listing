@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
 
+import uk.gov.moj.cpp.listing.common.aggregate.AggregateStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,14 @@ class HearingResultedCommandHandlerTest {
 
     @Mock
     private AggregateService aggregateService;
+
+    @Mock
+    private AggregateStore aggregateStore;
+
+    @BeforeEach
+    void bridgeMigratedAggregates() {
+        MigratedAggregateTestBridge.bridge(aggregateStore, null, eventSource, aggregateService);
+    }
 
     @Mock
     private EventStream eventStream;

@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
+import uk.gov.moj.cpp.listing.common.aggregate.AggregateStore;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
 import static java.util.Arrays.asList;
@@ -93,6 +94,14 @@ public class RemoveCaseFromGroupCasesCommandHandlerTest {
 
     @Mock
     private AggregateService aggregateService;
+
+    @Mock
+    private AggregateStore aggregateStore;
+
+    @BeforeEach
+    void bridgeMigratedAggregates() {
+        MigratedAggregateTestBridge.bridge(aggregateStore, null, eventSource, aggregateService);
+    }
 
     @Spy
     private final Enveloper enveloper = EnveloperFactory.createEnveloperWithEvents(CaseRemovedFromGroupCases.class, MasterCaseUpdatedForGroup.class);

@@ -12,6 +12,7 @@ import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 
+import uk.gov.moj.cpp.listing.common.sender.InProcess;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.moj.cpp.listing.command.api.note.ListingNoteCommands;
 import uk.gov.moj.cpp.listing.command.api.service.SplitHearingPayloadConverter;
@@ -160,6 +161,8 @@ public class ListingCommandApi {
     public static final String OUCODE = "oucode";
 
     @Inject
+
+    @InProcess // MBD refactor P1g: listing commands run in-VM
     private Sender sender;
 
     @Inject

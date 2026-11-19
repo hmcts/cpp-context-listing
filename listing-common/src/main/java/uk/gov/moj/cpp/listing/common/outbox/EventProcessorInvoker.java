@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.command.api.outbox;
+package uk.gov.moj.cpp.listing.common.outbox;
 
 import static javax.ejb.TransactionAttributeType.REQUIRES_NEW;
 

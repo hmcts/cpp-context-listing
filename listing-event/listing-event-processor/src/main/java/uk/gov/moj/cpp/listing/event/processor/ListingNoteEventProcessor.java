@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.event.processor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.gov.moj.cpp.listing.common.sender.InProcess;
 import uk.gov.justice.listing.events.CreatedListingNote;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.core.annotation.Handles;
@@ -30,6 +31,8 @@ public class ListingNoteEventProcessor {
     private static final String PUBLIC_LISTING_NOTE_DELETED_LISTING_NOTE = "public.listing.deleted-listing-note";
 
     @Inject
+
+    @InProcess // MBD refactor P1g: listing commands run in-VM
     private Sender sender;
 
     @Inject

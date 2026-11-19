@@ -26,6 +26,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,6 +45,7 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INT
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
+import static uk.gov.moj.cpp.listing.utils.AggregateSnapshotReader.awaitCaseReferencesHearing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingByWeekCommencing;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearingWithJmsDelay;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollUntilHearingIsPresent;
@@ -58,7 +60,6 @@ import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryAp
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
@@ -171,15 +172,12 @@ public class ListCourtHearingSteps extends AbstractIT {
     private static final String MEDIA_TYPE_SEARCH_BY_PERSON_DEFENDANT_AND_HEARING_DATE = "application/vnd.listing.get.cases-by-person-defendant+json";
     private static final String MEDIA_TYPE_SEARCH_BY_ORGANISATION_DEFENDANT_AND_HEARING_DATE = "application/vnd.listing.get.cases-by-organisation-defendant+json";
 
-    private static final String EVENT_SELECTED_HEARING_UPDATED_TO_CASE = "listing.events.hearing-updated-to-case";
-    private static final String EVENT_SELECTED_HEARING_PARTIALLY_UPDATED = "listing.events.hearing-partially-updated";
     private static final String PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED = "public.listing.hearing-confirmed";
     private static final String PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED = "public.progression.events.hearing-extended";
     private static final String PUBLIC_LISTING_HEARING_LISTED = "public.listing.hearing-listed";
     private static final String PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED = "public.listing.hearing-partially-updated";
     private static final String PUBLIC_LISTING_HEARING_CHANGES_SAVED = "public.listing.hearing-changes-saved";
     private static final String PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING = "public.listing.court-application-added-for-hearing";
-    private static final String LISTING_EVENTS_HEARING_DAY_COURT_SCHEDULE_UPDATED = "listing.events.hearing-day-court-schedule-updated";
     static final String CROWN_COURT_SCHEDULE_ID = "8e837de0-743a-4a2c-9db3-b2e678c48729";
 
     protected static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -203,8 +201,11 @@ public class ListCourtHearingSteps extends AbstractIT {
     private static final boolean POSSIBLE_DISQUALIFICATION_FLAG = true;
 
     private HearingsData hearingsData;
-    private final JmsMessageConsumerClient privateMessageConsumerHearingUpdatedToCase;
-    private final JmsMessageConsumerClient privateMessageConsumerHearingDayScheduleUpdated;
+    // MBD P1h: private consumers for listing.events.hearing-updated-to-case / hearing-day-court-schedule-updated removed
+    // (private events are no longer on the listing.event topic); see verifyHearingUpdatedToCaseInActiveMQ and
+    // verifyHearingDayCourtScheduleCarriedOverToCommand.
+    /** MBD P1h: the extended hearing's hearing-confirmed public event, captured for verifyHearingUpdatedToCaseInActiveMQ. */
+    private JsonPath extendedHearingConfirmed;
     private final JmsMessageConsumerClient publicMessageConsumerHearingConfirmedForExtendHearing;
     private final JmsMessageConsumerClient publicEventHearingListed;
     private final JmsMessageConsumerClient publicMessageConsumerHearingPartiallyUpdated;
@@ -225,8 +226,6 @@ public class ListCourtHearingSteps extends AbstractIT {
     public ListCourtHearingSteps(final HearingsData hearingsData) {
         this.hearingsData = hearingsData;
 
-        privateMessageConsumerHearingUpdatedToCase = privateEvents.createPrivateConsumer(EVENT_SELECTED_HEARING_UPDATED_TO_CASE);
-        privateMessageConsumerHearingDayScheduleUpdated = privateEvents.createPrivateConsumer(LISTING_EVENTS_HEARING_DAY_COURT_SCHEDULE_UPDATED);
         publicMessageConsumerHearingConfirmedForExtendHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED);
         publicMessageProducerProgressionHearingExtendedEvent = publicEvents.createPublicProducer();
         publicEventHearingListed = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_LISTED);
@@ -247,22 +246,19 @@ public class ListCourtHearingSteps extends AbstractIT {
     }
 
     public ListCourtHearingSteps(final HearingsData hearingsData, final Boolean split) {
-        privateMessageConsumerHearingUpdatedToCase = null;
         publicMessageConsumerHearingConfirmedForExtendHearing = null;
         publicMessageConsumerHearingChangesSaved = null;
         publicMessageProducerProgressionHearingExtendedEvent = null;
-        privateMessageConsumerHearingDayScheduleUpdated = null;
         this.hearingsData = hearingsData;
 
         publicEventHearingListed = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_LISTED);
-        publicMessageConsumerHearingPartiallyUpdated = publicEvents.createPrivateConsumer(PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED);
+        // MBD P1h: was createPrivateConsumer (public event name on the private topic, latent bug) -> createPublicConsumer
+        publicMessageConsumerHearingPartiallyUpdated = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
     public ListCourtHearingSteps() {
-        privateMessageConsumerHearingUpdatedToCase = privateEvents.createPrivateConsumer(EVENT_SELECTED_HEARING_UPDATED_TO_CASE);
-        privateMessageConsumerHearingDayScheduleUpdated = privateEvents.createPrivateConsumer(LISTING_EVENTS_HEARING_DAY_COURT_SCHEDULE_UPDATED);
         publicMessageConsumerHearingConfirmedForExtendHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED);
         publicMessageProducerProgressionHearingExtendedEvent = publicEvents.createPublicProducer();
         publicEventHearingListed = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_LISTED);
@@ -2454,6 +2450,7 @@ public class ListCourtHearingSteps extends AbstractIT {
 
         final JsonPath jsonResponse1 = retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing, isJson(Matchers.allOf(
                 withJsonPath("$.confirmedHearing.id", is(unAllocatedHearingId.toString())))));
+        extendedHearingConfirmed = jsonResponse1; // MBD P1h: kept for verifyHearingUpdatedToCaseInActiveMQ
 
         assertThat(jsonResponse1.getBoolean("sendNotificationToParties"), is(true));
         assertThat(jsonResponse1.get("confirmedHearing.id"), is(unAllocatedHearingId.toString()));
@@ -2498,6 +2495,7 @@ public class ListCourtHearingSteps extends AbstractIT {
 
         final JsonPath jsonResponse1 = retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing, isJson(Matchers.allOf(
                 withJsonPath("$.confirmedHearing.id", is(unAllocatedHearingId.toString())))));
+        extendedHearingConfirmed = jsonResponse1; // MBD P1h: kept for verifyHearingUpdatedToCaseInActiveMQ
 
         assertThat(jsonResponse1.get("confirmedHearing.id"), is(unAllocatedHearingId.toString()));
         assertThat(jsonResponse1.get("confirmedHearing.prosecutionCases.size()"), is(1));
@@ -2525,12 +2523,21 @@ public class ListCourtHearingSteps extends AbstractIT {
                 metadataOf(randomUUID(), PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED).withUserId(randomUUID().toString()).build());
     }
 
+    /**
+     * MBD P1h: private listing.events.hearing-updated-to-case wait -> the extended hearing's public hearing-confirmed
+     * event (the processor builds one update-hearing-to-case command per confirmedHearing.prosecutionCases[i] from it,
+     * with id = confirmedHearing.id and existingHearingId = confirmedHearing.existingHearingId) plus a viewstore poll of
+     * each Case aggregate_snapshot until Case.getHearingIds() contains the allocated hearing (Case.onHearingUpdatedToCase
+     * only adds existingHearingId; the unallocated id is not kept in Case state). One check per case = expectedCount.
+     */
     public void verifyHearingUpdatedToCaseInActiveMQ(final UUID allocatedHearingId, final UUID unallocatedHearingId, final int expectedCount) {
+        assertNotNull(extendedHearingConfirmed, "verifyPublicEventHearingConfirmed...ExtendHearingFromProgression must run first");
+        assertThat(extendedHearingConfirmed.get("confirmedHearing.id"), is(unallocatedHearingId.toString()));
+        assertThat(extendedHearingConfirmed.get("confirmedHearing.existingHearingId"), is(allocatedHearingId.toString()));
+        final List<String> caseIds = extendedHearingConfirmed.getList("confirmedHearing.prosecutionCases.id");
+        assertThat(caseIds.size(), is(expectedCount));
         for (int i = 0; i < expectedCount; i++) {
-            final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingUpdatedToCase);
-
-            assertThat(jsonResponse.get("id"), is(unallocatedHearingId.toString()));
-            assertThat(jsonResponse.get("existingHearingId"), is(allocatedHearingId.toString()));
+            awaitCaseReferencesHearing(UUID.fromString(caseIds.get(i)), allocatedHearingId);
         }
     }
 
@@ -2548,11 +2555,19 @@ public class ListCourtHearingSteps extends AbstractIT {
         assertThat(jsonResponse.get("hearingId"), is(hearingId.toString()));
     }
 
+    /**
+     * MBD P1h: private listing.events.hearing-day-court-schedule-updated wait -> query-API poll of the hearing's
+     * hearingDays (courtScheduleId + hearingDate of the first day). Only called from a @Disabled test (HearingIT).
+     */
     public void verifyHearingDayCourtScheduleCarriedOverToCommand(LocalDate hearingDate, UUID courtScheduleId) {
-        JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingDayScheduleUpdated);
-        List<Map<String, String>> schedules = jsonResponse.getList("hearingDayCourtSchedules");
-        assertThat(schedules.get(0).get("courtScheduleId"), is(courtScheduleId.toString()));
-        assertThat(schedules.get(0).get("hearingDate"), is(hearingDate.toString()));
+        final UUID hearingId = hearingsData.getHearingData().get(0).getId();
+        final String url = generateUrlForFindingAHearingById(hearingId.toString());
+        pollWithDefaults(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(status().is(OK),
+                        payload().isJson(
+                                allOf(withJsonPath("$.id", equalTo(hearingId.toString())),
+                                        withJsonPath("$.hearingDays[0].courtScheduleId", equalTo(courtScheduleId.toString())),
+                                        withJsonPath("$.hearingDays[0].hearingDate", startsWith(hearingDate.toString())))));
     }
 
     public void verifyPublicEventHearingConfirmed() {

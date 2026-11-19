@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.event.processor;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+import uk.gov.moj.cpp.listing.common.sender.InProcess;
 import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -30,6 +31,8 @@ public class CpsProsecutorUpdatedEventProcessor {
     private Enveloper enveloper;
 
     @Inject
+
+    @InProcess // MBD refactor P1g: listing commands run in-VM
     private Sender sender;
 
     @Inject

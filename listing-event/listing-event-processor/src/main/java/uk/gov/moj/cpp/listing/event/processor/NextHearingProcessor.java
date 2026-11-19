@@ -9,6 +9,7 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 import static uk.gov.moj.cpp.listing.domain.utils.JsonUtils.addJsonValueToJsonObjectNullSafe;
 import static uk.gov.moj.cpp.listing.domain.utils.JsonUtils.addStringToJsonObjectNullSafe;
 
+import uk.gov.moj.cpp.listing.common.sender.InProcess;
 import uk.gov.justice.listing.courts.DeleteHearingCommand;
 import uk.gov.justice.listing.courts.DeleteOffenceFromExistingHearing;
 import uk.gov.justice.listing.courts.HearingUnallocated;
@@ -80,6 +81,8 @@ public class NextHearingProcessor {
     public static final String LISTING_EVENTS_NEXT_HEARING_REPLACED = "listing.events.next-hearing-replaced";
 
     @Inject
+
+    @InProcess // MBD refactor P1g: listing commands run in-VM
     private Sender sender;
 
     @Inject

@@ -265,7 +265,7 @@ public class ListNextHearingIT extends AbstractIT {
         final UUID nextHearingId = nextHearings.getHearingData().get(0).getId();
         final ListNextHearingSteps listNextHearingSteps2 = new ListNextHearingSteps(nextHearings.getHearingData().get(0));
         listNextHearingSteps2.whenUpdateRelatedHearingSubmittedForListing(nextHearingId, secondHearings);
-        listNextHearingSteps1.verifyUpdateRelatedHearingRequestedInActiveMQ(nextHearingId);
+        // MBD P1h: private update-existing-hearing-requested wait removed; the query poll below proves the same state change
         listNextHearingSteps1.verifyCasesAddedToAllocatedHearingFromApi(nextHearings, secondHearings);
 
         // Amend Reshare First Hearing

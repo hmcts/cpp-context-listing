@@ -10,13 +10,12 @@ import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.justice.listing.courts.UpdateExistingHearing;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
-import uk.gov.justice.services.core.aggregate.AggregateService;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
-import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.aggregate.AggregateStore;
 import uk.gov.moj.cpp.listing.domain.PtphDetail;
 import uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate;
 import javax.inject.Inject;
@@ -32,11 +31,11 @@ public class UpdateExistingHearingCommandHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateExistingHearingCommandHandler.class);
 
-    @Inject
-    private EventSource eventSource;
 
+
+    // MBD refactor Phase 1 (ADR 011): migrated aggregates
     @Inject
-    private AggregateService aggregateService;
+    private AggregateStore aggregateStore;
 
     @Inject
     private JsonObjectToObjectConverter jsonObjectConverter;
@@ -76,11 +75,8 @@ public class UpdateExistingHearingCommandHandler {
 
     private void updateSeedAggregateEventStream(final JsonEnvelope command, final UUID seedHearingId,
                                           final Function<SeedHearingAggregate, Stream<Object>> aggregatorFunction) throws EventStreamException {
-        final EventStream eventStream = eventSource.getStreamById(seedHearingId);
-        final SeedHearingAggregate seedHearingAggregate = aggregateService.get(eventStream, SeedHearingAggregate.class);
-
-        final Stream<Object> events = aggregatorFunction.apply(seedHearingAggregate);
-        eventStream.append(events.map(toEnvelopeWithMetadataFrom(command)));
+        // MBD refactor P1e: SeedHearingAggregate state in aggregate_snapshot, events recorded in-process
+        aggregateStore.update(command, seedHearingId, SeedHearingAggregate.class, aggregatorFunction);
     }
 
 }

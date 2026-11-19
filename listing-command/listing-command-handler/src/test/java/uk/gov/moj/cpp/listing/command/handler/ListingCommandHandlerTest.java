@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
 
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.time.ZonedDateTime.parse;
 import static java.lang.Boolean.FALSE;
@@ -254,6 +255,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import uk.gov.moj.cpp.listing.common.aggregate.AggregateStore;
+import uk.gov.moj.cpp.listing.common.outbox.EventRecorder;
+import java.util.stream.Collectors;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -434,6 +438,10 @@ class ListingCommandHandlerTest {
     @Mock
     private AggregateService aggregateService;
     @Mock
+    private AggregateStore aggregateStore;
+    @Mock
+    private EventRecorder eventRecorder;
+    @Mock
     private ReferenceDataService referenceDataService;
     @Mock
     private Stream<Object> events;
@@ -561,6 +569,7 @@ class ListingCommandHandlerTest {
     @BeforeEach
     void setup() {
         fixClock(Instant.now());
+        MigratedAggregateTestBridge.bridge(aggregateStore, eventRecorder, eventSource, aggregateService);
         EnveloperFactory.createEnveloperWithEvents(HearingAddedToCase.class,
                 HearingListed.class, TypeChangedForHearing.class, StartDateChangedForHearing.class,
                 JudiciaryAssignedToHearing.class, JudiciaryChangedForHearing.class,
@@ -2300,11 +2309,7 @@ class ListingCommandHandlerTest {
         when(uuidService.getCourtListId(courtCentreId, publishCourtListType, startDate)).thenReturn(courtListId);
         listingCommandHandler.courtListRequestExport(commandEnvelope);
 
-        assertThat(verifyAppendAndGetArgumentFrom(eventStream),
-                streamContaining(jsonEnvelope(withMetadataEnvelopedFrom(commandEnvelope)
-                                .withName("listing.event.court-list-export-requested")
-                                .withCausationIds(commandEnvelope.metadata().id()),
-                        payload().isJson(allOf(
+        assertThat(recordedEventJson(commandEnvelope, courtListId, "listing.event.court-list-export-requested"), isJson(allOf(
                                 withJsonPath("$.courtListId", equalTo(courtListId.toString())),
                                 withJsonPath("$.courtCentreId", equalTo(courtCentreId.toString())),
                                 withJsonPath("$.publishCourtListType", equalTo(publishCourtListType.name())),
@@ -2312,7 +2317,7 @@ class ListingCommandHandlerTest {
                                 withJsonPath("$.endDate", equalTo(startDate.plusDays(5).toString())),
                                 withJsonPath("$.courtListJson", equalTo(courtListJson)),
                                 withJsonPath("$.sendNotificationToParties", equalTo(true))
-                        )))));
+        )));
     }
 
     @Test
@@ -2336,15 +2341,11 @@ class ListingCommandHandlerTest {
         final JsonEnvelope commandEnvelope = createEnvelope("listing.command.record-court-list-export-failed", payload);
         listingCommandHandler.recordCourtListExportFailed(commandEnvelope);
 
-        assertThat(verifyAppendAndGetArgumentFrom(eventStream),
-                streamContaining(jsonEnvelope(withMetadataEnvelopedFrom(commandEnvelope)
-                                .withName("listing.event.publish-court-list-export-failed")
-                                .withCausationIds(commandEnvelope.metadata().id()),
-                        payload().isJson(allOf(
+        assertThat(recordedEventJson(commandEnvelope, courtListId, "listing.event.publish-court-list-export-failed"), isJson(allOf(
                                 withJsonPath("$.courtListId", equalTo(courtListId.toString())),
                                 withJsonPath("$.courtCentreId", equalTo(courtCentreId.toString())),
                                 withJsonPath("$.publishCourtListType", equalTo(publishCourtListType.name())),
-                                withJsonPath("$.startDate", equalTo(startDate.toString())))))));
+                                withJsonPath("$.startDate", equalTo(startDate.toString())))));
     }
 
     @Test
@@ -2368,22 +2369,18 @@ class ListingCommandHandlerTest {
 
         listingCommandHandler.recordCourtListExportSuccessful(commandEnvelope);
 
-        assertThat(verifyAppendAndGetArgumentFrom(eventStream),
-                streamContaining(jsonEnvelope(withMetadataEnvelopedFrom(commandEnvelope)
-                                .withName("listing.event.publish-court-list-export-successful")
-                                .withCausationIds(commandEnvelope.metadata().id()),
-                        payload().isJson(allOf(
+        assertThat(recordedEventJson(commandEnvelope, courtListId, "listing.event.publish-court-list-export-successful"), isJson(allOf(
                                 withJsonPath("$.courtListId", equalTo(courtListId.toString())),
                                 withJsonPath("$.courtCentreId", equalTo(courtCentreId.toString())),
                                 withJsonPath("$.publishCourtListType", equalTo(publishCourtListType.name())),
-                                withJsonPath("$.startDate", equalTo(startDate.toString())))))));
+                                withJsonPath("$.startDate", equalTo(startDate.toString())))));
     }
 
     @Test
     public void shouldCreatePublishCourtListRequestedEvent() throws Exception {
         final UUID courtCentreId = randomUUID();
 
-        when(aggregateService.get(eventStream, PublishCourtListRequestAggregate.class)).thenReturn(publishCourtListRequestAggregate);
+        givenTheAggregateStoreRuns(PublishCourtListRequestAggregate.class, publishCourtListRequestAggregate);
         when(publishCourtListRequestAggregate.recordCourtListRequested(any(UUID.class), any(UUID.class), any(LocalDate.class), any(LocalDate.class), any(PublishCourtListType.class), any(ZonedDateTime.class), anyBoolean()))
                 .thenReturn(Stream.of(publishCourtListRequested().build()));
 
@@ -2406,7 +2403,7 @@ class ListingCommandHandlerTest {
         final ZonedDateTime producedTime = parse("2019-11-15T11:13:19.314Z[UTC]");
         final LocalDate publishDate = LocalDate.now();
 
-        when(aggregateService.get(eventStream, PublishCourtListRequestAggregate.class)).thenReturn(publishCourtListRequestAggregate);
+        givenTheAggregateStoreRuns(PublishCourtListRequestAggregate.class, publishCourtListRequestAggregate);
         when(publishCourtListRequestAggregate.recordCourtListProduced(publishCourtListRequestId, courtCentreId, courtListFileId, fileName, publishCourtListType, producedTime, publishDate))
                 .thenReturn(Stream.of(publishCourtListProduced().build()));
 
@@ -2448,17 +2445,13 @@ class ListingCommandHandlerTest {
         final JsonEnvelope commandEnvelope = createEnvelope("listing.command.store-published-court-list", payload);
         listingCommandHandler.storePublishedCourtList(commandEnvelope);
 
-        assertThat(verifyAppendAndGetArgumentFrom(eventStream),
-                streamContaining(jsonEnvelope(withMetadataEnvelopedFrom(commandEnvelope)
-                                .withName("listing.event.published-court-list-stored")
-                                .withCausationIds(commandEnvelope.metadata().id()),
-                        payload().isJson(allOf(
-                                withJsonPath("$.courtListId", equalTo(courtListId.toString())),
-                                withJsonPath("$.courtCentreId", equalTo(courtCentreId.toString())),
-                                withJsonPath("$.publishCourtListType", equalTo(publishCourtListType.name())),
-                                withJsonPath("$.startDate", equalTo(startDate.toString())),
-                                withJsonPath("$.courtListJson", equalTo(courtListJson))
-                        )))));
+        assertThat(recordedEventJson(commandEnvelope, courtListId, "listing.event.published-court-list-stored"), isJson(allOf(
+                withJsonPath("$.courtListId", equalTo(courtListId.toString())),
+                withJsonPath("$.courtCentreId", equalTo(courtCentreId.toString())),
+                withJsonPath("$.publishCourtListType", equalTo(publishCourtListType.name())),
+                withJsonPath("$.startDate", equalTo(startDate.toString())),
+                withJsonPath("$.courtListJson", equalTo(courtListJson))
+        )));
     }
 
     @Test
@@ -4549,7 +4542,7 @@ class ListingCommandHandlerTest {
     }
 
     private void givenThatThePublishCourtListRequestAggregateExists() {
-        when(aggregateService.get(eventStream, PublishCourtListRequestAggregate.class)).thenReturn(publishCourtListRequestAggregate);
+        givenTheAggregateStoreRuns(PublishCourtListRequestAggregate.class, publishCourtListRequestAggregate);
     }
 
     private void givenThatWeSuccessfullyGetTheStreamForAnyPublishCourtRequest() {
@@ -4900,4 +4893,29 @@ class ListingCommandHandlerTest {
         });
         return multiDateNonDefaultDays;
     }
+
+    /** MBD refactor Phase 1: the store runs the command lambda against {@code aggregate}. */
+    @SuppressWarnings("unchecked")
+    private <A extends uk.gov.justice.domain.aggregate.Aggregate> void givenTheAggregateStoreRuns(final Class<A> type, final A aggregate) {
+        org.mockito.Mockito.doAnswer(invocation -> {
+                    final Stream<Object> raised = ((java.util.function.Function<A, Stream<Object>>) invocation.getArgument(3)).apply(aggregate);
+                    return raised == null ? List.of() : raised.collect(Collectors.toList());
+                }).when(aggregateStore).update(any(), any(UUID.class), eq(type), any());
+    }
+
+    /** MBD refactor Phase 1: the single event recorded for {@code streamId}, as JSON, after checking its name. */
+    @SuppressWarnings("unchecked")
+    private String recordedEventJson(final JsonEnvelope commandEnvelope, final UUID streamId, final String expectedName) {
+        final ArgumentCaptor<List<Object>> recorded = ArgumentCaptor.forClass(List.class);
+        verify(eventRecorder).record(eq(commandEnvelope), eq(streamId), recorded.capture());
+        assertThat(recorded.getValue(), hasSize(1));
+        final Object event = recorded.getValue().get(0);
+        assertThat(event.getClass().getAnnotation(uk.gov.justice.domain.annotation.Event.class).value(), is(expectedName));
+        try {
+            return objectMapper.writeValueAsString(event);
+        } catch (final com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
 }

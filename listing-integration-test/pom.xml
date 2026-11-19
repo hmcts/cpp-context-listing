@@ -144,6 +144,13 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- MBD P1h: Case aggregate class, to deserialise aggregate_snapshot rows (AggregateSnapshotReader) -->
+        <dependency>
+            <groupId>uk.gov.moj.cpp.listing</groupId>
+            <artifactId>listing-domain-aggregate</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>

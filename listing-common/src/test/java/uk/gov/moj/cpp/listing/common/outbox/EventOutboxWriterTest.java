@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.command.api.outbox;
+package uk.gov.moj.cpp.listing.common.outbox;
 
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;

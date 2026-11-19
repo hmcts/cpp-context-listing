@@ -9,14 +9,13 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
-import uk.gov.justice.services.core.aggregate.AggregateService;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
-import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.aggregate.AggregateStore;
 import uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
@@ -37,11 +36,11 @@ public class RemoveCaseFromGroupCasesCommandHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoveCaseFromGroupCasesCommandHandler.class);
     private static final String NUMBER_OF_GROUP_CASES = "numberOfGroupCases";
 
-    @Inject
-    private EventSource eventSource;
 
+
+    // MBD refactor Phase 1 (ADR 011): migrated aggregates
     @Inject
-    private AggregateService aggregateService;
+    private AggregateStore aggregateStore;
 
     @Inject
     private JsonObjectToObjectConverter jsonObjectConverter;
@@ -62,22 +61,19 @@ public class RemoveCaseFromGroupCasesCommandHandler {
                 jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject().getJsonObject("newGroupMaster"), ProsecutionCase.class) : null;
         final Integer numberOfGroupCases = getNumberOfGroupCases(jsonEnvelope.payloadAsJsonObject());
 
-        final EventStream eventStream = eventSource.getStreamById(masterCaseId);
-        final Case caseAggregate = aggregateService.get(eventStream, Case.class);
+        // MBD refactor P1d: Case state in aggregate_snapshot (the master case is only read)
+        final Case caseAggregate = aggregateStore.load(masterCaseId, Case.class);
         final List<UUID> hearingIds = caseAggregate.getHearingIds();
 
         if (nonNull(newGroupMaster) && !hearingIds.isEmpty()) {
-            final EventStream newMasterCaseStream = eventSource.getStreamById(newGroupMaster.getId());
-            final Case newMasterCaseAggregate = aggregateService.get(newMasterCaseStream, Case.class);
-            appendEventsToStream(jsonEnvelope, newMasterCaseStream,
-                    newMasterCaseAggregate.updateMasterCaseForGroup(newGroupMaster.getId(), hearingIds));
+            aggregateStore.update(jsonEnvelope, newGroupMaster.getId(), Case.class,
+                    newMasterCaseAggregate -> newMasterCaseAggregate.updateMasterCaseForGroup(newGroupMaster.getId(), hearingIds));
         }
 
         for (final UUID hearingId : hearingIds) {
-            final EventStream hearingEventStream = eventSource.getStreamById(hearingId);
-            final Hearing hearingAggregate = aggregateService.get(hearingEventStream, Hearing.class);
-            appendEventsToStream(jsonEnvelope, hearingEventStream,
-                    hearingAggregate.removeCaseFromGroupCases(hearingId, groupId,
+            // MBD refactor P1f: Hearing state in aggregate_snapshot, events recorded in-process
+            aggregateStore.update(jsonEnvelope, hearingId, Hearing.class,
+                    hearingAggregate -> hearingAggregate.removeCaseFromGroupCases(hearingId, groupId,
                             commandToDomainConverter.buildListedCases(removedCase),
                             commandToDomainConverter.buildListedCases(newGroupMaster),
                             numberOfGroupCases));
@@ -93,8 +89,4 @@ public class RemoveCaseFromGroupCasesCommandHandler {
                 payload.getInt(NUMBER_OF_GROUP_CASES) : null;
     }
 
-    private void appendEventsToStream(final Envelope<?> envelope, final EventStream eventStream, final Stream<Object> events) throws EventStreamException {
-        final JsonEnvelope jsonEnvelope = envelopeFrom(envelope.metadata(), NULL);
-        eventStream.append(events.map(toEnvelopeWithMetadataFrom(jsonEnvelope)));
-    }
 }

@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
 
+import org.junit.jupiter.api.BeforeEach;
+import uk.gov.moj.cpp.listing.common.aggregate.AggregateStore;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
@@ -126,6 +128,14 @@ class ListNextHearingCommandHandlerTest {
     private EventStream eventStream;
     @Mock
     private AggregateService aggregateService;
+
+    @Mock
+    private AggregateStore aggregateStore;
+
+    @BeforeEach
+    void bridgeMigratedAggregates() {
+        MigratedAggregateTestBridge.bridge(aggregateStore, null, eventSource, aggregateService);
+    }
     @Spy
     private SeedHearingAggregate seedHearingAggregate;
     @Spy

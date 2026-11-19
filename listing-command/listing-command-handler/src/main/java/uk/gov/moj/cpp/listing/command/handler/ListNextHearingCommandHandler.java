@@ -21,13 +21,12 @@ import uk.gov.justice.listing.courts.RemoveOffencesFromExistingHearing;
 import uk.gov.justice.listing.courts.RemoveSelectedOffencesFromExistingHearing;
 import uk.gov.justice.listing.events.DeleteNextHearingRequested;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
-import uk.gov.justice.services.core.aggregate.AggregateService;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
-import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.aggregate.AggregateStore;
 import uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.HearingListingNeedsConverterCommandToCore;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
@@ -57,10 +56,10 @@ public class ListNextHearingCommandHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListNextHearingCommandHandler.class);
 
+
+    // MBD refactor Phase 1 (ADR 011): migrated aggregates
     @Inject
-    private EventSource eventSource;
-    @Inject
-    private AggregateService aggregateService;
+    private AggregateStore aggregateStore;
     @Inject
     private JsonObjectToObjectConverter jsonObjectConverter;
     @Inject
@@ -257,25 +256,22 @@ public class ListNextHearingCommandHandler {
 
     private void updateHearingEventStream(final JsonEnvelope command, final UUID hearingId,
                                           final Function<Hearing, Stream<Object>> aggregatorFunction) throws EventStreamException {
-        final EventStream eventStream = eventSource.getStreamById(hearingId);
-        final Hearing hearing = aggregateService.get(eventStream, Hearing.class);
-
-        final Stream<Object> events = aggregatorFunction.apply(hearing);
-        eventStream.append(events.map(toEnvelopeWithMetadataFrom(command)));
+        // MBD refactor P1f: Hearing state in aggregate_snapshot, events recorded in-process
+        aggregateStore.update(command, hearingId, Hearing.class, aggregatorFunction);
     }
 
     private void updateSeedAggregateEventStream(final JsonEnvelope command, final String sittingDay, final UUID seedHearingId,
                                                 final Function<SeedHearingAggregate, Stream<Object>> aggregatorFunction) throws EventStreamException {
-        final EventStream eventStream = eventSource.getStreamById(seedHearingId);
-        final SeedHearingAggregate seedHearingAggregate = aggregateService.get(eventStream, SeedHearingAggregate.class);
-        final List<DeleteNextHearingRequested> deleteNextHearingRequestedList =
-                seedHearingAggregate.retrieveDeleteHearingsList(seedHearingId, sittingDay);
+        // MBD refactor P1e: SeedHearingAggregate state in aggregate_snapshot, events recorded in-process
+        aggregateStore.update(command, seedHearingId, SeedHearingAggregate.class, seedHearingAggregate -> {
+            final List<DeleteNextHearingRequested> deleteNextHearingRequestedList =
+                    seedHearingAggregate.retrieveDeleteHearingsList(seedHearingId, sittingDay);
 
-        for (final DeleteNextHearingRequested deleteNextHearingRequested : deleteNextHearingRequestedList) {
-            hearingSlotsService.delete(deleteNextHearingRequested.getHearingId());
-        }
-        final Stream<Object> events = aggregatorFunction.apply(seedHearingAggregate);
-        eventStream.append(events.map(toEnvelopeWithMetadataFrom(command)));
+            for (final DeleteNextHearingRequested deleteNextHearingRequested : deleteNextHearingRequestedList) {
+                hearingSlotsService.delete(deleteNextHearingRequested.getHearingId());
+            }
+            return aggregatorFunction.apply(seedHearingAggregate);
+        });
     }
 
 }

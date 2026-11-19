@@ -1,0 +1,575 @@
+{
+ "listing.event.added-cases-for-hearing": {
+  "class": "uk.gov.justice.listing.events.AddedCasesForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.event.cases-added-to-hearing": {
+  "class": "uk.gov.justice.listing.events.CasesAddedToHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.event.court-list-export-requested": {
+  "class": "uk.gov.justice.listing.event.CourtListExportRequested",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate"
+  ]
+ },
+ "listing.event.publish-court-list-export-failed": {
+  "class": "uk.gov.justice.listing.event.PublishCourtListExportFailed",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate"
+  ]
+ },
+ "listing.event.publish-court-list-export-successful": {
+  "class": "uk.gov.justice.listing.event.PublishCourtListExportSuccessful",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate"
+  ]
+ },
+ "listing.event.publish-court-list-produced": {
+  "class": "uk.gov.justice.listing.event.PublishCourtListProduced",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate"
+  ]
+ },
+ "listing.event.publish-court-list-requested": {
+  "class": "uk.gov.justice.listing.event.PublishCourtListRequested",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate"
+  ]
+ },
+ "listing.event.published-court-list-stored": {
+  "class": "uk.gov.justice.listing.event.PublishedCourtListStored",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate"
+  ]
+ },
+ "listing.events.allocated-hearing-deleted": {
+  "class": "uk.gov.justice.listing.events.AllocatedHearingDeleted",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.allocated-hearing-extended-for-listing": {
+  "class": "uk.gov.justice.listing.events.AllocatedHearingExtendedForListing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing",
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.allocated-hearing-extended-for-listing-v2": {
+  "class": "uk.gov.justice.listing.events.AllocatedHearingExtendedForListingV2",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing",
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.allocated-hearing-updated-for-listing": {
+  "class": "uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.allocated-hearing-updated-for-listing-v2": {
+  "class": "uk.gov.justice.listing.events.AllocatedHearingUpdatedForListingV2",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.application-ejected": {
+  "class": "uk.gov.justice.listing.events.ApplicationEjected",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.application-ejected-for-hearings": {
+  "class": "uk.gov.justice.listing.events.ApplicationEjectedForHearings",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Application"
+  ]
+ },
+ "listing.events.case-ejected": {
+  "class": "uk.gov.justice.listing.events.CaseEjected",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing",
+   "uk.gov.moj.cpp.listing.domain.aggregate.Case"
+  ]
+ },
+ "listing.events.case-ejected-for-hearings": {
+  "class": "uk.gov.justice.listing.events.CaseEjectedForHearings",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Case"
+  ]
+ },
+ "listing.events.case-identifier-updated": {
+  "class": "uk.gov.justice.listing.events.CaseIdentifierUpdated",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.case-removed-from-group-cases": {
+  "class": "uk.gov.justice.listing.events.CaseRemovedFromGroupCases",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.case-resulted-defendant-proceedings-updated": {
+  "class": "uk.gov.justice.listing.events.CaseResultedDefendantProceedingsConcluded",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Case"
+  ]
+ },
+ "listing.events.case-update-defendant-proceedings-updated": {
+  "class": "uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.court-application-added-for-hearing": {
+  "class": "uk.gov.justice.listing.events.CourtApplicationAddedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.court-application-added-to-hearing": {
+  "class": "uk.gov.justice.listing.events.CourtApplicationAddedToHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Application"
+  ]
+ },
+ "listing.events.court-application-to-be-updated": {
+  "class": "uk.gov.justice.listing.events.CourtApplicationToBeUpdated",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Application"
+  ]
+ },
+ "listing.events.court-application-updated-for-hearing": {
+  "class": "uk.gov.justice.listing.events.CourtApplicationUpdatedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.court-centre-changed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.CourtCentreChangedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.court-room-assigned-to-hearing": {
+  "class": "uk.gov.justice.listing.events.CourtRoomAssignedToHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.court-room-changed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.CourtRoomChangedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.court-room-removed-from-hearing": {
+  "class": "uk.gov.justice.listing.events.CourtRoomRemovedFromHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.crown-hearing-migrated-to-courtschedule": {
+  "class": "uk.gov.justice.listing.events.CrownHearingMigratedToCourtschedule",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.defendant-court-proceedings-updated-v2": {
+  "class": "uk.gov.justice.listing.events.DefendantCourtProceedingsUpdatedV2",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.defendant-legalaid-status-updated": {
+  "class": "uk.gov.justice.listing.events.DefendantLegalaidStatusUpdated",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Case"
+  ]
+ },
+ "listing.events.defendants-to-be-updated": {
+  "class": "uk.gov.justice.listing.events.DefendantsToBeUpdated",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Case"
+  ]
+ },
+ "listing.events.defendants-to-be-updated-later": {
+  "class": "uk.gov.justice.listing.events.DefendantsToBeUpdatedLater",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Case"
+  ]
+ },
+ "listing.events.delete-next-hearing-requested": {
+  "class": "uk.gov.justice.listing.events.DeleteNextHearingRequested",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate"
+  ]
+ },
+ "listing.events.end-date-changed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.EndDateChangedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.end-date-removed-from-hearing": {
+  "class": "uk.gov.justice.listing.events.EndDateRemovedFromHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.hearing-added-to-case": {
+  "class": "uk.gov.justice.listing.events.HearingAddedToCase",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Case"
+  ]
+ },
+ "listing.events.hearing-allocated-for-listing": {
+  "class": "uk.gov.justice.listing.events.HearingAllocatedForListing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.hearing-allocated-for-listing-v2": {
+  "class": "uk.gov.justice.listing.events.HearingAllocatedForListingV2",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.hearing-day-court-schedule-updated": {
+  "class": "uk.gov.justice.listing.events.HearingDayCourtScheduleUpdated",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.hearing-days-cancelled": {
+  "class": "uk.gov.justice.listing.events.HearingDaysCancelled",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.hearing-days-changed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.HearingDaysChangedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.hearing-days-sequenced": {
+  "class": "uk.gov.justice.listing.events.HearingDaysSequenced",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.hearing-days-without-court-centre-corrected": {
+  "class": "uk.gov.justice.listing.events.HearingDaysWithoutCourtCentreCorrected",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.hearing-deleted": {
+  "class": "uk.gov.justice.listing.events.HearingDeleted",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.hearing-language-changed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.HearingLanguageChangedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.hearing-listed": {
+  "class": "uk.gov.justice.listing.events.HearingListed",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.hearing-listed-case-updated": {
+  "class": "uk.gov.justice.listing.events.HearingListedCaseUpdated",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.hearing-marked-as-duplicate": {
+  "class": "uk.gov.justice.listing.events.HearingMarkedAsDuplicate",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.hearing-marked-as-duplicate-for-case": {
+  "class": "uk.gov.justice.listing.events.HearingMarkedAsDuplicateForCase",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Case"
+  ]
+ },
+ "listing.events.hearing-partially-updated": {
+  "class": "uk.gov.justice.listing.events.HearingPartiallyUpdated",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.hearing-result-status-updated": {
+  "class": "uk.gov.justice.listing.events.HearingResultStatusUpdated",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.hearing-unallocated-for-listing": {
+  "class": "uk.gov.justice.listing.events.HearingUnallocatedForListing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.hearing-updated-to-case": {
+  "class": "uk.gov.justice.listing.events.HearingUpdatedToCase",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Case"
+  ]
+ },
+ "listing.events.hearings-update-completed": {
+  "class": "uk.gov.justice.listing.events.HearingsUpdateCompleted",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.judiciary-assigned-to-hearing": {
+  "class": "uk.gov.justice.listing.events.JudiciaryAssignedToHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.judiciary-changed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.JudiciaryChangedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.judiciary-removed-from-hearing": {
+  "class": "uk.gov.justice.listing.events.JudiciaryRemovedFromHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.jurisdiction-changed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.JurisdictionChangedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.master-case-updated-for-group": {
+  "class": "uk.gov.justice.listing.events.MasterCaseUpdatedForGroup",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Case"
+  ]
+ },
+ "listing.events.new-case-marker-updated": {
+  "class": "uk.gov.justice.listing.events.NewCaseMarkerUpdated",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.new-defendant-added-for-court-proceedings": {
+  "class": "uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.new-defendant-details-updated": {
+  "class": "uk.gov.justice.listing.events.NewDefendantDetailsUpdated",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.next-hearing-replaced": {
+  "class": "uk.gov.justice.listing.events.NextHearingReplaced",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate"
+  ]
+ },
+ "listing.events.next-hearing-requested": {
+  "class": "uk.gov.justice.listing.events.NextHearingRequested",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate"
+  ]
+ },
+ "listing.events.non-default-days-assigned-to-hearing": {
+  "class": "uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.non-default-days-changed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.NonDefaultDaysChangedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.non-sitting-days-assigned-to-hearing": {
+  "class": "uk.gov.justice.listing.events.NonSittingDaysAssignedToHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.non-sitting-days-changed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.NonSittingDaysChangedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.offence-added": {
+  "class": "uk.gov.justice.listing.events.OffenceAdded",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.offence-deleted": {
+  "class": "uk.gov.justice.listing.events.OffenceDeleted",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.offence-updated": {
+  "class": "uk.gov.justice.listing.events.OffenceUpdated",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.offences-removed-from-existing-allocated-hearing": {
+  "class": "uk.gov.justice.listing.events.OffencesRemovedFromExistingAllocatedHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.offences-removed-from-existing-unallocated-hearing": {
+  "class": "uk.gov.justice.listing.events.OffencesRemovedFromExistingUnallocatedHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.offences-removed-from-hearing": {
+  "class": "uk.gov.justice.listing.events.OffencesRemovedFromHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.offences-to-be-added": {
+  "class": "uk.gov.justice.listing.events.OffencesToBeAdded",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Case"
+  ]
+ },
+ "listing.events.offences-to-be-deleted": {
+  "class": "uk.gov.justice.listing.events.OffencesToBeDeleted",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Case"
+  ]
+ },
+ "listing.events.offences-to-be-updated": {
+  "class": "uk.gov.justice.listing.events.OffencesToBeUpdated",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Case"
+  ]
+ },
+ "listing.events.public-list-note-changed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.PublicListNoteChangedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.public-list-note-removed-from-hearing": {
+  "class": "uk.gov.justice.listing.events.PublicListNoteRemovedFromHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.remove-offences-from-existing-hearing-requested": {
+  "class": "uk.gov.justice.listing.events.RemoveOffencesFromExistingHearingRequested",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate"
+  ]
+ },
+ "listing.events.sequences-reset-on-hearing-days": {
+  "class": "uk.gov.justice.listing.events.SequencesResetOnHearingDays",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.start-date-changed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.StartDateChangedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.start-date-removed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.StartDateRemovedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.type-changed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.TypeChangedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.unallocated-hearing-deleted": {
+  "class": "uk.gov.justice.listing.events.UnallocatedHearingDeleted",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.unscheduled-next-hearing-requested": {
+  "class": "uk.gov.justice.listing.events.UnscheduledNextHearingRequested",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate"
+  ]
+ },
+ "listing.events.update-existing-hearing-requested": {
+  "class": "uk.gov.justice.listing.events.UpdateExistingHearingRequested",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate"
+  ]
+ },
+ "listing.events.video-link-changed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.VideoLinkChangedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.video-link-details-assigned-for-hearing": {
+  "class": "uk.gov.justice.listing.events.VideoLinkDetailsAssignedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.video-link-details-changed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.VideoLinkDetailsChangedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.video-link-details-removed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.VideoLinkDetailsRemovedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.week-commencing-date-changed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.WeekCommencingDateChangedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ },
+ "listing.events.week-commencing-date-removed-for-hearing": {
+  "class": "uk.gov.justice.listing.events.WeekCommencingDateRemovedForHearing",
+  "aggregates": [
+   "uk.gov.moj.cpp.listing.domain.aggregate.Hearing"
+  ]
+ }
+}

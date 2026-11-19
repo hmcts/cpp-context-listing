@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <!--
+        MBD refactor Phase 1 (ADR 011): the state of each migrated aggregate, Java-serialised.
+        Replaces replaying the aggregate's stream from the event store.
+    -->
+    <changeSet author="listing" id="030-create-aggregate-snapshot" logicalFilePath="030-create-aggregate-snapshot.xml">
+        <createTable tableName="aggregate_snapshot">
+            <column name="aggregate_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="aggregate_type" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="state" type="BYTEA">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="aggregate_snapshot" columnNames="aggregate_id, aggregate_type"
+                       constraintName="aggregate_snapshot_pk"/>
+
+        <rollback>
+            <dropTable tableName="aggregate_snapshot"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

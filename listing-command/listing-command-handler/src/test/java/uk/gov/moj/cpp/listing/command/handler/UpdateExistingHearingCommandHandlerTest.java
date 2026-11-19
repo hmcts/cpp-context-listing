@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
 
+import org.junit.jupiter.api.BeforeEach;
+import uk.gov.moj.cpp.listing.common.aggregate.AggregateStore;
 import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.is;
@@ -63,6 +65,14 @@ public class UpdateExistingHearingCommandHandlerTest {
 
     @Mock
     private AggregateService aggregateService;
+
+    @Mock
+    private AggregateStore aggregateStore;
+
+    @BeforeEach
+    void bridgeMigratedAggregates() {
+        MigratedAggregateTestBridge.bridge(aggregateStore, null, eventSource, aggregateService);
+    }
 
     @Spy
     private SeedHearingAggregate seedHearingAggregate;
