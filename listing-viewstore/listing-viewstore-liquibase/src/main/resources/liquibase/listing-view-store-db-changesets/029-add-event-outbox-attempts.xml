@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <!-- MBD refactor Phase 1 (ADR 2): failed processing attempts per outbox entry, replacing JMS redelivery -->
+    <changeSet author="listing" id="029-add-event-outbox-attempts" logicalFilePath="029-add-event-outbox-attempts.xml">
+        <addColumn tableName="event_outbox">
+            <column name="attempts" type="INTEGER" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <rollback>
+            <dropColumn tableName="event_outbox" columnName="attempts"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

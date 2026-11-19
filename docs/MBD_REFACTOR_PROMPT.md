@@ -104,9 +104,13 @@ Phase 1 (§10.1) is still the WildFly WAR, but:
 - commands run in framework-free domain services called from the command API, which write the
   viewstore and the outbox in one transaction;
 - the command handler, the aggregates, the event listener and the event-store writes are gone;
-- the event processor **survives through Phase 1**. Its input is a plain JMS entry point fed by
-  the outbox relay, not the event-store-backed `listing` event source. Its `Sender` calls and its
-  inbound `public.*` handlers call the domain services directly.
+- the event processor **survives through Phase 1**, unchanged in shape. It already consumes
+  `listing.event` as plain JMS (P1.0 finding: the framework gives `EVENT_PROCESSOR` a
+  `BackwardsCompatibleSubscriptionManager`, which only runs the interceptor chain: no event buffer,
+  stream positions or `processed_event`). The outbox relay hands migrated events to that same
+  subscription manager in-VM (ADR 2), not via `listing.event`: the event listener's MDB has no
+  message selector and would dead-letter events that have no event-store position. Its `Sender`
+  calls and its inbound `public.*` handlers are switched to the domain services slice by slice.
 
 **Framework-free services (applies from Phase 1).** Domain services use constructor injection
 and take and return POJOs. No `JsonEnvelope`, `javax.json`, DeltaSpike or CDI-specific types in
@@ -278,8 +282,8 @@ their signatures. Framework code stays in thin adapters, so Phase 2 replaces ada
    throwaway JEE code (relay EJB timer, processor MDB, CDI adapters) and the P1.0 spike/fallback
    condition.
 10. **Two-path ordering during Phase 1.** While some slices are migrated, the event processor gets
-    events from two paths: event store → `listing.event` (unmigrated) and outbox → relay
-    (migrated). Nothing orders events across the two paths. Record how slices are cut by complete
+    events from two paths: the event-store publisher via `listing.event` (unmigrated) and the
+    outbox relay in-VM (migrated). Nothing orders events across the two paths. Record how slices are cut by complete
     flows (a command and its follow-up events, including `-enriched` resend chains, move
     together), which flows had to be migrated together, and how the full IT suite after every
     slice is used to catch ordering faults.
@@ -387,7 +391,7 @@ tests are reworked into service tests; handler tests that only check envelopes s
 
 | Phase | Scope | Depends on | Exit criteria |
 |---|---|---|---|
-| **P1.0 Foundation (spike)** | Outbox table (additive Liquibase changeset in the viewstore); relay as an EJB timer, publishing in order per hearing; a plain JMS entry point (MDB) for the event processor that calls the **existing** processor handler methods; framework-free service conventions and their module (`listing-common`) | P0, ADRs 2, 9, 10 | Full IT suite matches the P0 baseline; a test event goes outbox → relay → processor. **Fallback:** if the processor cannot be given this input path without fighting the framework, stop and switch to the direct plan (Phase 2 alone, with the domain work done inside it) |
+| **P1.0 Foundation (spike)** | `event_outbox` table (changeset `028`); `EventOutboxWriter` (domain events → framework envelopes, metadata from the command); `EventOutboxRelay` + `EventOutboxPublisher` + `EventProcessorInvoker` (fixed-delay poll, advisory lock, one event per transaction in id order, handed in-VM to the processor's `SubscriptionManager`, retried up to 10 times then dropped; changeset `029`); framework-free service conventions (`listing-common`, package `…common.domain`); IT harness cleans and drains `event_outbox`. No new processor entry point is needed (see §5) | P0, ADRs 2, 9, 10 | Full IT suite matches the P0 baseline; events go outbox → relay → processor (proved by P1a). **Fallback:** if the relay cannot feed the processor without fighting the framework, stop and switch to the direct plan (Phase 2 alone, with the domain work done inside it) |
 | **P1a–P1h Slices** | One slice per feature group, in this order: P1a listing notes → P1b list court hearing / unscheduled → P1c update / allocate → P1d offences / defendants / cases → P1e delete / next-hearing → P1f judiciary / sequence / vacate → P1g court-list publish & XHIBIT → P1h migrate / duplicate / HMI. Slices are cut by complete flows (ADR 10). Each slice: moves its command-handler, aggregate and event-listener logic into domain services called from the command API, writing the viewstore and outbox in one transaction; adds the columns and backfill for its aggregate-only state (§15.2); makes its processor handlers call the domain services instead of `Sender` → `listing.handler.command`; routes its inbound `public.*` events to the domain services; makes the §9 harness changes for the private events and tables it stops producing | P1.0 | Full IT suite green; every ported aggregate guard unit-tested; its outbound public events schema-valid |
 | **P1.z Clean-up** | Remove the command handler, the aggregates, the event listener, the processor's event-store subscription and the event-store writes | P1h | Full IT suite green; no writes to `event_log` / `publish_queue` |
 
@@ -547,6 +551,7 @@ Update this table as each phase completes, with the date.
     released as a whole (or not at all before the Spring Boot cut-over)? Releasing slices proves
     the backfill and the domain services in production before the platform swap, but conflicts
     with D6 (big-bang) and puts the two-path state (ADR 10) into production.
-12. **Processor input in P1.0.** Confirm that the event processor can run from a plain JMS entry
-    point fed by the outbox relay alongside its event-store-backed `listing` subscription. This is
-    the P1.0 spike; its outcome decides whether D9 stands.
+12. ~~**Processor input in P1.0.**~~ **Resolved 2026-11-19:** the processor's subscription manager
+    only runs the interceptor chain (§5), so the relay calls it in-VM; no new entry point or topic
+    is needed. Publishing to `listing.event` was rejected because the listener dead-letters the
+    events.

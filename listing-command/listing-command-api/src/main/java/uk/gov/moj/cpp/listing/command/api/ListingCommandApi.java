@@ -13,6 +13,7 @@ import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
+import uk.gov.moj.cpp.listing.command.api.note.ListingNoteCommands;
 import uk.gov.moj.cpp.listing.command.api.service.SplitHearingPayloadConverter;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.courts.Courtrooms;
@@ -160,6 +161,9 @@ public class ListingCommandApi {
 
     @Inject
     private Sender sender;
+
+    @Inject
+    private ListingNoteCommands listingNoteCommands;
 
     @Inject
     private CourtCentreFactory courtCentreFactory;
@@ -961,23 +965,21 @@ public class ListingCommandApi {
         sender.send(jsonEnvelope);
     }
 
+    // MBD refactor slice P1a: listing notes run in-process (ListingNoteService + outbox),
+    // no longer via listing.handler.command and the event store.
     @Handles("listing.command.create-listing-note")
     public void handleCreateNote(final JsonEnvelope jsonEnvelope) {
-        sender.send(jsonEnvelope);
+        listingNoteCommands.createNote(jsonEnvelope);
     }
 
     @Handles("listing.command.edit-listing-note")
     public void handleEditNote(final JsonEnvelope jsonEnvelope) {
-        sender.send(JsonEnvelope.envelopeFrom(
-                JsonEnvelope.metadataFrom(jsonEnvelope.metadata()).withName("listing.command.handler.edit-listing-note"),
-                jsonEnvelope.payloadAsJsonObject()));
+        listingNoteCommands.editNote(jsonEnvelope);
     }
 
     @Handles("listing.command.delete-listing-note")
     public void handleDeleteNote(final JsonEnvelope jsonEnvelope) {
-        sender.send(JsonEnvelope.envelopeFrom(
-                JsonEnvelope.metadataFrom(jsonEnvelope.metadata()).withName("listing.command.handler.delete-listing-note"),
-                jsonEnvelope.payloadAsJsonObject()));
+        listingNoteCommands.deleteNote(jsonEnvelope);
     }
 
     @Handles("listing.update-hearing-day-court-schedule")

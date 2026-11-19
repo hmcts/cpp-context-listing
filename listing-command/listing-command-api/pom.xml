@@ -140,6 +140,13 @@
             <groupId>uk.gov.moj.cpp.common</groupId>
             <artifactId>command-api</artifactId>
         </dependency>
+        <!-- MBD refactor Phase 1: the outbox relay hands events to the event processor's
+             SubscriptionManager in-VM (already in listing-service.war) -->
+        <dependency>
+            <groupId>uk.gov.justice.framework-api</groupId>
+            <artifactId>framework-api-subscription</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- Listing Dependencies -->
         <dependency>

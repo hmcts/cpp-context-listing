@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <!--
+        Transactional outbox (MBD refactor, Phase 1 / ADR 2).
+        Domain services write events here in the same transaction as their viewstore changes;
+        EventOutboxRelay publishes them in id order and deletes them.
+    -->
+    <changeSet author="listing" id="028-create-event-outbox" logicalFilePath="028-create-event-outbox.xml">
+        <createTable tableName="event_outbox">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="event_id" type="UUID">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="event_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="stream_id" type="UUID"/>
+            <column name="envelope" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="event_outbox"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

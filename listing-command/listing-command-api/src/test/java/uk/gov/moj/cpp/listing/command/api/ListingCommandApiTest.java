@@ -1,5 +1,9 @@
 package uk.gov.moj.cpp.listing.command.api;
 
+import static org.mockito.Mockito.verifyNoInteractions;
+
+import uk.gov.moj.cpp.listing.command.api.note.ListingNoteCommands;
+
 import static java.util.Arrays.asList;
 import static java.util.Optional.of;
 import static java.util.UUID.fromString;
@@ -130,6 +134,9 @@ public class ListingCommandApiTest {
     private final Enveloper enveloper = createEnveloper();
     @Mock
     private Sender sender;
+
+    @Mock
+    private ListingNoteCommands listingNoteCommands;
     @Mock
     private JsonEnvelope envelope;
     @Mock
@@ -2199,27 +2206,27 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void shouldCreateListingNote() {
-        final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.command.create-listing-note");
-        given(envelope.metadata()).willReturn(metadataBuilder.build());
-
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                forClass(JsonEnvelope.class);
+    public void shouldCreateListingNoteInProcess() {
         listingCommandApi.handleCreateNote(envelope);
-        verify(sender).send(senderJsonEnvelopeCaptor.capture());
-        assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is("listing.command.create-listing-note"));
+
+        verify(listingNoteCommands).createNote(envelope);
+        verifyNoInteractions(sender);
     }
 
     @Test
-    public void shouldDeleteListingNote() {
-        final JsonEnvelope command = mock(JsonEnvelope.class);
-        final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.command.handler.delete-listing-note");
-        when(command.metadata()).thenReturn(metadataBuilder.build());
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = forClass(JsonEnvelope.class);
-        listingCommandApi.handleDeleteNote(command);
+    public void shouldEditListingNoteInProcess() {
+        listingCommandApi.handleEditNote(envelope);
 
-        verify(sender).send(senderJsonEnvelopeCaptor.capture());
-        assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is("listing.command.handler.delete-listing-note"));
+        verify(listingNoteCommands).editNote(envelope);
+        verifyNoInteractions(sender);
+    }
+
+    @Test
+    public void shouldDeleteListingNoteInProcess() {
+        listingCommandApi.handleDeleteNote(envelope);
+
+        verify(listingNoteCommands).deleteNote(envelope);
+        verifyNoInteractions(sender);
     }
 
     @Test
@@ -2236,20 +2243,6 @@ public class ListingCommandApiTest {
         verify(sender).send(senderEnvelopeCaptor.capture());
         assertThat(senderEnvelopeCaptor.getValue().metadata().name(), is("listing.command.migrate-crown-hearings-to-courtschedules"));
         assertThat(senderEnvelopeCaptor.getValue().payload(), is(payload));
-    }
-
-    @Test
-    public void shouldEditNote() {
-        final JsonEnvelope command = mock(JsonEnvelope.class);
-        final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.command.handler.edit-listing-note");
-        when(command.metadata()).thenReturn(metadataBuilder.build());
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = forClass(JsonEnvelope.class);
-
-        listingCommandApi.handleEditNote(command);
-
-        verify(sender).send(senderJsonEnvelopeCaptor.capture());
-        assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is("listing.command.handler.edit-listing-note"));
-
     }
 
     @Test

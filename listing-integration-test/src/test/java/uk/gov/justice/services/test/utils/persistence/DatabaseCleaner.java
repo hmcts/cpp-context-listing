@@ -159,9 +159,12 @@ public class DatabaseCleaner {
     public boolean awaitPublishQueuesEmpty(final String contextName, final long timeoutMillis) {
         final long deadline = System.currentTimeMillis() + timeoutMillis;
         long remaining = -1;
-        try (final Connection connection = testJdbcConnectionProvider.getEventStoreConnection(contextName)) {
+        try (final Connection connection = testJdbcConnectionProvider.getEventStoreConnection(contextName);
+             final Connection viewStoreConnection = testJdbcConnectionProvider.getViewStoreConnection(contextName)) {
             while (System.currentTimeMillis() < deadline) {
-                remaining = countRows(connection, "publish_queue") + countRows(connection, "pre_publish_queue");
+                // MBD refactor Phase 1: migrated slices publish through the viewstore event_outbox relay
+                remaining = countRows(connection, "publish_queue") + countRows(connection, "pre_publish_queue")
+                        + countRows(viewStoreConnection, "event_outbox");
                 if (remaining == 0) {
                     return true;
                 }
@@ -173,7 +176,7 @@ public class DatabaseCleaner {
             Thread.currentThread().interrupt();
             return false;
         }
-        LOGGER.error("Publish relay did not drain within {}ms ({} entries left in publish_queue/pre_publish_queue); "
+        LOGGER.error("Publish relay did not drain within {}ms ({} entries left in publish_queue/pre_publish_queue/event_outbox); "
                 + "proceeding with cleanup — the truncation may race the relay", timeoutMillis, remaining);
         return false;
     }
