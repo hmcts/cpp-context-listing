@@ -1,25 +1,23 @@
 # Prompt — Refactor `cpp-context-listing` (JEE / CQRS-ES framework) → Spring Boot
 
-> Status: DRAFT v0.4. Core decisions are in §14, the remaining open items in §15, and the
-> execution plan and stages in §10.
+> Status: DRAFT v0.6. Core decisions are in §14, the remaining open items in §15, and the
+> execution plan in §10.
+> v0.6 makes the migration two-step (D9): remove CQRS/ES on JEE first (Phase 1), then move to
+> Spring Boot (Phase 2).
+> v0.5 removes the pipeline stages; the plan is now phases and milestones only.
 > v0.3 adds the reference-project blueprint (§2, §6, §11), based on a survey of
 > `cpp-context-listing-courtscheduler` done on 2026-11-17.
 > Branch: `mbd-refactor`
 
 ---
 
-## 1. Role & pipeline
+## 1. Role
 
 You are refactoring `cpp-context-listing` from a WildFly WAR built on the HMCTS/CJS microservice
 framework (CQRS + event sourcing, RAML, Drools access control, DeltaSpike, private JMS topics) into a
 **Spring Boot application**. Follow the conventions of the reference project
 `/Users/hasanshaik/cpp/github/cpp-context-listing-courtscheduler` (see §2).
 
-Follow the HMCTS SDLC pipeline in `CLAUDE.md`, halting at every human gate. The stages are
-Requirements → Architecture → Stories → Test Specs → Code → Review → Build & Test → Deploy.
-Load the context files listed in `CLAUDE.md`. Write an ADR for every non-trivial decision in §7.
-Before writing any code, export an implementation-plan HTML artifact via
-`skills/export-design-artifact/`.
 
 **Reference project vs HMCTS template.** `CLAUDE.md` makes `service-hmcts-crime-springboot-template`
 (via `skills/springboot-service-from-template/`) the master source for build files, Dockerfile and
@@ -35,7 +33,7 @@ Spring Boot 4 / Java 25 / Gradle, under the same "drop-in replacement for client
 Treat it as the blueprint. When this prompt and courtscheduler disagree on a detail, this prompt
 wins. Otherwise, copy courtscheduler.
 
-**Read these before Stage 2 (Architecture):**
+**Read these before designing the architecture:**
 
 | File (relative to courtscheduler root) | Why |
 |---|---|
@@ -100,6 +98,19 @@ integration-test suite must be unable to tell that the implementation changed.
    new app. §9 and §14 D1 set out which harness changes are allowed.
 
 ## 5. Target internal architecture (mirror courtscheduler)
+
+This section describes the **end state** after Phase 2. The intermediate state at the end of
+Phase 1 (§10.1) is still the WildFly WAR, but:
+- commands run in framework-free domain services called from the command API, which write the
+  viewstore and the outbox in one transaction;
+- the command handler, the aggregates, the event listener and the event-store writes are gone;
+- the event processor **survives through Phase 1**. Its input is a plain JMS entry point fed by
+  the outbox relay, not the event-store-backed `listing` event source. Its `Sender` calls and its
+  inbound `public.*` handlers call the domain services directly.
+
+**Framework-free services (applies from Phase 1).** Domain services use constructor injection
+and take and return POJOs. No `JsonEnvelope`, `javax.json`, DeltaSpike or CDI-specific types in
+their signatures. Framework code stays in thin adapters, so Phase 2 replaces adapters, not logic.
 
 - **None of the following survive:** aggregates, private events, the event store, the event
   listener/processor split, the command-handler queue (`listing.handler.command`), the
@@ -246,7 +257,8 @@ integration-test suite must be unable to tell that the implementation changed.
    `hearing.payload` jsonb) is migrated.
 2. Reliable publishing: **transactional outbox** (decided). The outbox table is written in the
    service transaction and a relay publishes to Artemis `public.event`, at-least-once and ordered
-   per hearing.
+   per hearing. The outbox is introduced in Phase 1 on JEE (relay as an EJB timer, also feeding
+   the event processor) and the relay is re-implemented in Spring in Phase 2.
 3. Inbound idempotency and ordering without `processed_event` or the stream buffer. Use a dedup
    table keyed on `_metadata.id`, with concurrency control by `@Version` optimistic locking or
    `SELECT … FOR UPDATE` per hearing.
@@ -261,6 +273,16 @@ integration-test suite must be unable to tell that the implementation changed.
    build layout, Dockerfile/`startup.sh`, config fragments and logging.
 8. Serving two context roots (command and query) from one Boot app: one OpenAPI spec or two, and the
    context-path strategy.
+9. Two-step migration (D9): remove CQRS/ES on JEE first, then move to Spring Boot. Record the
+   rationale (the hardest part runs under the proven IT harness; one cause per failing IT), the
+   throwaway JEE code (relay EJB timer, processor MDB, CDI adapters) and the P1.0 spike/fallback
+   condition.
+10. **Two-path ordering during Phase 1.** While some slices are migrated, the event processor gets
+    events from two paths: event store → `listing.event` (unmigrated) and outbox → relay
+    (migrated). Nothing orders events across the two paths. Record how slices are cut by complete
+    flows (a command and its follow-up events, including `-enriched` resend chains, move
+    together), which flows had to be migrated together, and how the full IT suite after every
+    slice is used to catch ordering faults.
 
 ## 8. Module plan (proposed; naming follows courtscheduler)
 
@@ -292,6 +314,10 @@ Delete after parity (courtscheduler's `doc/REVIEW.md` §2 is the model for docum
 ## 9. Integration tests
 
 - Keep every `*IT` scenario, its inputs and its public-contract assertions.
+- **Phase 1 runs on the existing harness** (WildFly + `cpp-developers-docker`,
+  `mvn clean && ./runIntegrationTests.sh`). The private-event wait and `DatabaseCleaner` /
+  `ListingEventStoreUtility` changes below are made in Phase 1, in the slice that stops producing
+  the event or table in question. The docker-compose, Gradle and port changes are Phase 2 only.
 - **Only the harness changes** (decided). Scenarios, inputs and public-contract assertions are
   untouched. Permitted changes:
   - Replace the 32 `createPrivateConsumer("listing.events.*")` waits with an equivalent observable
@@ -333,60 +359,74 @@ Delete after parity (courtscheduler's `doc/REVIEW.md` §2 is the model for docum
   `EnvelopeAndErrorShapeIntegrationTest`, `AuthorizationIntegrationTest`,
   `RequestSchemaValidationEndToEndIT` and `SmokeIntegrationTest` are the models.
 
-## 10. Execution plan and stages
+## 10. Execution plan
 
-The work runs in two layers:
-- **Pipeline stages (§10.1).** These are the eight `CLAUDE.md` stages. Stages 1–2 run **once** for
-  the whole refactor. Stages 3–7 run **once per phase** (§10.2), so each phase is a story with its
-  own test specs, code, review and green build. Stage 8 runs at each sandbox milestone and once
-  more at cut-over.
-- **Phases (§10.2).** These are vertical slices delivered in order. Each must be green on its IT
-  subset, with no earlier phase's ITs regressing, before the next one starts.
+The migration is done in **two steps** (D9):
+- **Phase 1** removes CQRS/ES while the service is still the WildFly WAR, so the hardest work
+  (aggregates → services, event store → viewstore, outbox) is checked by the existing IT harness.
+- **Phase 2** moves the result to Spring Boot, copying courtscheduler.
 
-### 10.1 Pipeline stages for this refactor
+Each phase and sub-phase is delivered in order. Its exit criteria include the **full** IT suite
+green (not only its own subset), with no test regressing against the P0 baseline, before the next
+one starts.
 
-| # | Stage | Agent | Runs | Inputs | Outputs (`docs/pipeline/` unless stated) | Gate / exit criteria |
-|---|---|---|---|---|---|---|
-| 1 | Requirements | `agents/requirements-analyst.md` | Once | This prompt; both RAML files; subscription and publication descriptors; the DRL files; the IT suite | `requirements.md`: contract inventory (commands, queries, events in and out, authz rules, outbound integrations); the aggregate-only state inventory (§15.2); every §15 open item answered or explicitly deferred | **Human.** Inventories reviewed; §15 items 2, 3, 5, 6, 8 and 10 resolved |
-| 2 | Architecture & Design | `agents/architecture-designer.md` | Once | `requirements.md`; courtscheduler (§2); §5–§8 | `adrs/001…008` (§7 ADRs 1–8); the target module and package layout; the OpenAPI spec(s) ported from RAML; outbox, dedup and backfill schema design; an **implementation-plan artifact** in `artifacts/` (mandatory before any code) | **Human.** ADRs accepted; plan artifact reviewed |
-| 3 | User Story | `agents/story-writer.md` | Per phase | ADRs; the phase scope from §10.2 | `user-stories/<story-id>.md`, one per phase (split further if a phase is too big to review), each with ACs derived from the contract | **Human.** Stories approved; **Jira ticket linked** (§15.1). No Stage 4 without one |
-| 4 | Test Specs | `agents/test-engineer.md` | Per phase | Stories; the existing ITs | `test-specs/<story-id>.feature`; the list of existing ITs the phase must turn green; the IT harness-change mapping table for that phase (§9) | **Human.** Specs and IT list approved |
-| 5 | Code | `agents/implementation.md` | Per phase | Specs; ADRs; plan artifact; courtscheduler classes to port | Code, unit tests, contract tests, new or adapted ITs (at least one IT per new endpoint or entry point) | **Auto.** Unit tests green; the phase's ITs green locally via `./runIntegrationTests.sh` |
-| 6 | Code Review | `agents/code-reviewer.md` | Per phase | The PR diff | Review notes; HMCTS review checklist plus courtscheduler `doc/REVIEW.md` §5 (adapted); §11 pitfalls checked | **Human.** Checklist passed |
-| 7 | Build & Test | `agents/ci-orchestrator.md` | Per phase | The merged branch | CI run: build, unit tests, full IT suite, Sonar, SBOM | **Auto.** Full suite green, no regressions |
-| 8 | Deploy Sandbox | `agents/deployer.md` | Milestones M1–M3 (§10.3) | Image, Helm values, env config | `deploy-notes.md` updated per milestone; at cut-over also the runbook, backfill script and rollback steps (§7 ADR 6) | **Human.** Smoke tests pass in sandbox |
+### 10.1 Phases
 
-### 10.2 Phases
+**Phase 0 — Baseline**
+
+| Phase | Scope | Exit criteria |
+|---|---|---|
+| **P0 Baseline** | Run the current IT suite on the JEE app (`mvn clean && ./runIntegrationTests.sh`). Record the per-test results and the `unexpected-server-errors.txt` summary as the baseline for later comparisons | All ITs pass |
+
+**Phase 1 — Remove CQRS/ES on JEE (with the outbox)**
+
+Phase 1 runs on Java 17, Maven and WildFly, with the existing IT harness (§9). Domain services
+are framework-free (§5). Existing unit tests are kept where they still apply. Aggregate rule
+tests are reworked into service tests; handler tests that only check envelopes sent to
+`listing.handler.command` are removed.
 
 | Phase | Scope | Depends on | Exit criteria |
 |---|---|---|---|
-| **P0 Foundations** | Gradle build alongside Maven (§6); `listing-api` skeleton copied from courtscheduler: health, JSON logging, config fragments, OpenAPI from RAML, `RequestSchemaValidationFilter`, authz with ported DRL, audit, envelope, `GlobalExceptionHandler`, metrics; Docker compose IT stack (db, WireMock, Artemis, app); `runIntegrationTests.sh` wrapper | Stage 2 | App boots in compose; `/actuator/health` up; authz, envelope, error-shape and schema-validation `*IntegrationTest`s green; unknown `Accept` → 406 |
-| **P1 Persistence + queries** | Existing Liquibase wired; entities and repositories (§11 pitfalls 1, 7); all 17 query paths, including the CSV report | P0 | All query ITs green; responses valid against the 8 response schemas |
-| **P2 Messaging infrastructure** | Envelope model; outbox table and relay; `@JmsListener` on `public.event` with dispatcher; dedup table; DLQ handling | P1, ADRs 2 and 3 | Outbox and dedup unit and IT coverage; a published event round-trips through Artemis with `CPPNAME` and the envelope intact |
-| **P3 Command slices** | One sub-phase per feature group, in this order: P3a listing notes → P3b list court hearing / unscheduled → P3c update / allocate → P3d offences / defendants / cases → P3e delete / next-hearing → P3f judiciary / sequence / vacate → P3g court-list publish & XHIBIT → P3h migrate / duplicate / HMI. Each ports the aggregate rules (with unit tests), the enrichment calls and the outbound public events | P2 | The sub-phase's command ITs green; every ported aggregate guard unit-tested; its outbound public events schema-valid |
-| **P4 Inbound event handlers** | Progression ×16, hearing ×9, `public.events.hearing.*` ×2 | P3 (handlers reuse command services) | All inbound-event ITs green; replays are idempotent |
-| **P5 Backfill + cut-over** | Additive changesets and a backfill script for aggregate-only state (§15.2); Dockerfile + `startup.sh`; Helm and pipeline; runbook; `docs/REVIEW.md` and `docs/breaking.md` in courtscheduler's format | P4 | Backfill dry-run against a copy of production-shaped data (no real case data in artefacts); full IT suite green |
-| **P6 Decommission** | Delete the JEE modules, Maven poms and framework descriptors (§8) | P5 cut-over accepted | §12 Definition of done met; no framework artefacts on the classpath |
+| **P1.0 Foundation (spike)** | Outbox table (additive Liquibase changeset in the viewstore); relay as an EJB timer, publishing in order per hearing; a plain JMS entry point (MDB) for the event processor that calls the **existing** processor handler methods; framework-free service conventions and their module (`listing-common`) | P0, ADRs 2, 9, 10 | Full IT suite matches the P0 baseline; a test event goes outbox → relay → processor. **Fallback:** if the processor cannot be given this input path without fighting the framework, stop and switch to the direct plan (Phase 2 alone, with the domain work done inside it) |
+| **P1a–P1h Slices** | One slice per feature group, in this order: P1a listing notes → P1b list court hearing / unscheduled → P1c update / allocate → P1d offences / defendants / cases → P1e delete / next-hearing → P1f judiciary / sequence / vacate → P1g court-list publish & XHIBIT → P1h migrate / duplicate / HMI. Slices are cut by complete flows (ADR 10). Each slice: moves its command-handler, aggregate and event-listener logic into domain services called from the command API, writing the viewstore and outbox in one transaction; adds the columns and backfill for its aggregate-only state (§15.2); makes its processor handlers call the domain services instead of `Sender` → `listing.handler.command`; routes its inbound `public.*` events to the domain services; makes the §9 harness changes for the private events and tables it stops producing | P1.0 | Full IT suite green; every ported aggregate guard unit-tested; its outbound public events schema-valid |
+| **P1.z Clean-up** | Remove the command handler, the aggregates, the event listener, the processor's event-store subscription and the event-store writes | P1h | Full IT suite green; no writes to `event_log` / `publish_queue` |
 
-### 10.3 Milestones
+**Phase 2 — Move to Spring Boot (copy courtscheduler)**
 
-| Milestone | Reached after | Stage 8 run |
+The domain services and the outbox already exist; Phase 2 replaces the adapters and the platform.
+
+| Phase | Scope | Depends on | Exit criteria |
+|---|---|---|---|
+| **P2.0 Foundations** | Gradle build alongside Maven (§6); `listing-api` skeleton copied from courtscheduler: health, JSON logging, config fragments, OpenAPI from RAML, `RequestSchemaValidationFilter`, authz with ported DRL, audit, envelope, `GlobalExceptionHandler`, metrics; Docker compose IT stack (db, WireMock, Artemis, app); `runIntegrationTests.sh` wrapper | P1.z, ADRs (§7) | App boots in compose; `/actuator/health` up; authz, envelope, error-shape and schema-validation `*IntegrationTest`s green; unknown `Accept` → 406 |
+| **P2.1 Persistence + queries** | Existing Liquibase (including the Phase 1 changesets) wired; entities and repositories (§11 pitfalls 1, 7); all 17 query paths, including the CSV report | P2.0 | All query ITs green; responses valid against the 8 response schemas |
+| **P2.2 Messaging** | Envelope model; Spring outbox relay replacing the EJB timer; `@JmsListener` on `public.event` with dispatcher; dedup table; DLQ handling | P2.1, ADRs 2 and 3 | Outbox and dedup unit and IT coverage; a published event round-trips through Artemis with `CPPNAME` and the envelope intact |
+| **P2.3 Commands** | Command controllers wired to the Phase 1 domain services, in the P1a–P1h order; the event-processor logic becomes Spring components on the outbox and inbound paths | P2.2 | All command ITs green; outbound public events schema-valid |
+| **P2.4 Inbound event handlers** | Progression ×16, hearing ×9, `public.events.hearing.*` ×2 on `@JmsListener` | P2.3 | All inbound-event ITs green; replays are idempotent |
+| **P2.5 Cut-over** | Dockerfile + `startup.sh`; Helm and pipeline; runbook; `docs/REVIEW.md` and `docs/breaking.md` in courtscheduler's format | P2.4 | Full IT suite green; cut-over rehearsal (M3) passed |
+| **P2.6 Decommission** | Delete the JEE modules, Maven poms and framework descriptors (§8) | P2.5 cut-over accepted | §12 Definition of done met; no framework artefacts on the classpath |
+
+### 10.2 Milestones
+
+| Milestone | Reached after | Sandbox check |
 |---|---|---|
-| M1 Read parity | P1 | Sandbox deploy of the query side, compared against the existing query responses |
-| M2 Full functional parity | P4 | Sandbox deploy with Artemis; end-to-end smoke tests with upstream and downstream contexts |
-| M3 Cut-over | P5 | Big-bang cut-over rehearsal in sandbox, including the rollback (restore DB snapshot + redeploy WAR) |
+| M0 CQRS/ES removed | P1.z | Sandbox deploy of the Phase 1 WAR; end-to-end smoke tests with upstream and downstream contexts; backfill dry-run against a copy of production-shaped data (no real case data in artefacts) |
+| M1 Read parity | P2.1 | Sandbox deploy of the Boot query side, compared against the existing query responses |
+| M2 Full functional parity | P2.4 | Sandbox deploy with Artemis; end-to-end smoke tests with upstream and downstream contexts |
+| M3 Cut-over | P2.5 | Cut-over rehearsal in sandbox, including the rollback (restore DB snapshot + redeploy WAR) |
 
-### 10.4 Status
+Whether Phase 1 slices are released to production one by one, or only as a whole, is open
+(§15.11). It affects D6.
+
+### 10.3 Status
 
 | Item | Status |
 |---|---|
-| Stage 1 Requirements | Not started |
-| Stage 2 Architecture & Design | Not started |
-| Phases P0–P6 | Not started; blocked on Stage 2 and the implementation-plan artifact |
-| Jira epic (§15.1) | Missing; blocks Stage 4 |
-| Pipeline support files (`agents/`, `skills/`, `context/`) | Not in this repo; they must come from the HMCTS pipeline plugins before Stage 1 |
+| P0 Baseline | **Done 2026-11-19.** Run `it-logs/run-20261119T001211Z.log`: 335 tests, 0 failures, 0 errors, 3 skipped, 60 IT classes. Not run with `errorlog`: unexpected server.log ERROR/WARN lines in 156 test windows, mainly `CourtScheduleEnrichmentService` (127 ERROR, 26 WARN) and the EJB timer `EventPublishingTimerBean` (49 WARN, 9 ERROR) |
+| P1.0–P1.z | Not started |
+| P2.0–P2.6 | Not started |
+| Jira epic (§15.1) | Missing |
 
-Update this table as each stage gate is passed, with the date and approver.
+Update this table as each phase completes, with the date.
 
 ## 11. Pitfalls already hit in courtscheduler (avoid them up front)
 
@@ -471,13 +511,15 @@ Update this table as each stage gate is passed, with the date and approver.
 | D6 | 2026-10-16 | Cut-over | Big-bang; no parallel run |
 | D7 | 2026-10-16 | Persistence ITs & JMeter perf tests | Dropped |
 | D8 | 2026-11-17 | Reference implementation | `cpp-context-listing-courtscheduler` is the blueprint for build, config, web plumbing, persistence and IT harness (§2, §6) |
+| D9 | 2026-11-19 | Migration order | Two-step: remove CQRS/ES on JEE first, with the outbox (Phase 1), then move to Spring Boot (Phase 2) (§10, ADRs 9 and 10). P1.0 is a spike; if it fails, fall back to the direct plan. Supersedes the single-step P0–P6 plan of v0.5 |
 
-## 15. Still open (resolve during Stage 1)
+## 15. Still open
 
-1. **Jira ticket/epic** for this refactor. It is required before Stage 4 (Test Specs).
-2. **Inventory of aggregate-only state.** List exactly which `Hearing`, `Case`, `Application`,
-   `PublishCourtListRequestAggregate` and `SeedHearingAggregate` fields are not in the viewstore and
-   need new columns plus a backfill. Producing the inventory is a Stage 1 task.
+1. **Jira ticket/epic** for this refactor.
+2. **Inventory of aggregate-only state — needed before P1a.** List exactly which `Hearing`, `Case`,
+   `Application`, `PublishCourtListRequestAggregate` and `SeedHearingAggregate` fields are not in
+   the viewstore and need new columns plus a backfill. Under D9 the columns and backfill are added
+   slice by slice in Phase 1, not at cut-over.
 3. **Inbound idempotency.** Confirm that dedup on `_metadata.id` with a retention window is
    acceptable, and how poison messages are handled (DLQ name, retry count).
 4. ~~**Access-control filter**: does `cp-auth-rules-filter` support group-membership checks?~~
@@ -501,3 +543,10 @@ Update this table as each stage gate is passed, with the date and approver.
    `LogstashEncoder`, per `context/logging-standards.md` and the HMCTS template.
 10. **Context roots.** One Boot app serving both `/listing-service/command/api/rest/listing` and
     `/listing-service/query/api/rest/listing` (ADR 8).
+11. **Releasing Phase 1.** Are Phase 1 slices released to production one by one, or is Phase 1
+    released as a whole (or not at all before the Spring Boot cut-over)? Releasing slices proves
+    the backfill and the domain services in production before the platform swap, but conflicts
+    with D6 (big-bang) and puts the two-path state (ADR 10) into production.
+12. **Processor input in P1.0.** Confirm that the event processor can run from a plain JMS entry
+    point fed by the outbox relay alongside its event-store-backed `listing` subscription. This is
+    the P1.0 spike; its outcome decides whether D9 stands.

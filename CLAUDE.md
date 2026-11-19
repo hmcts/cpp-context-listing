@@ -26,7 +26,13 @@ Load on demand when relevant:
 The CPP **Listing** context: a WildFly WAR built on the HMCTS/CJS microservice framework
 (CQRS + event sourcing, RAML-defined APIs, JMS, DeltaSpike, Liquibase). It is **not** Spring Boot
 today. Branch `mbd-refactor` is migrating it to Spring Boot; see `docs/MBD_REFACTOR_PROMPT.md`.
-The pipeline above and the Spring Boot rules in the Hard rules apply to that migration work.
+
+**The `mbd-refactor` migration follows only `docs/MBD_REFACTOR_PROMPT.md`.** For that work, the
+pipeline stages, gates, artefact conventions, shared skills and Hard rules in this file **do not
+apply**. The prompt is the only source of instructions: its phases and milestones (§10),
+invariants (§4), stack rules (§6) and IT rules (§9).
+
+The full pipeline still applies to all other work in this repo.
 
 **Reference Spring Boot project:** `/Users/hasanshaik/cpp/github/cpp-context-listing-courtscheduler`
 (a local checkout with its own `CLAUDE.md`). The migration copies its structure and conventions:
