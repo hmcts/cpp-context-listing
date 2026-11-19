@@ -1,0 +1,274 @@
+{
+  "id": "76813a25-e689-4809-af09-5b348a525163",
+  "type": {
+    "id": "5ba97076-2eda-48c4-93c2-c753796b6db5",
+    "description": "Sentence"
+  },
+  "endDate": "2019-07-18",
+  "allocated": true,
+  "judiciary": [
+    {
+      "isDeputy": true,
+      "judicialId": "3e4dc4d0-56de-4480-8acd-c9bc198a3559",
+      "isBenchChairman": true,
+      "judicialRoleType": {
+        "judiciaryType": "MAGISTRATE"
+      }
+    }
+  ],
+  "startDate": "2019-07-16",
+  "courtRoomId": "955d8769-ca30-4b73-ae7a-7bf3c0fa4b5b",
+  "hearingDays": [
+    {
+      "endTime": "2019-07-16T11:35:00.000Z",
+      "sequence": 0,
+      "startTime": "2019-07-16T09:35:00.000Z",
+      "hearingDate": "2019-07-16",
+      "durationMinutes": 120
+    },
+    {
+      "endTime": "2019-07-18T16:00:00.000Z",
+      "sequence": 0,
+      "startTime": "2019-07-18T09:30:00.000Z",
+      "hearingDate": "2019-07-18",
+      "durationMinutes": 390
+    }
+  ],
+  "listedCases": [
+    {
+      "id": "6440ddbb-a698-4f8c-8524-dd341bf466e5",
+      "defendants": [
+        {
+          "id": "ae31086b-aad0-4358-9050-0e6405d517ac",
+          "masterDefendantId": "ae31086b-aad0-4358-9050-0e6405d517ac",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+          "lastName": "D4m4MZvMC5",
+          "offences": [
+            {
+              "id": "e1b7bbeb-b163-442b-93c4-91c9f64b429c",
+              "startDate": "2019-07-16",
+              "offenceCode": "WzvDF1fZa9",
+              "offenceWording": "MjkvYROlJi",
+              "statementOfOffence": {
+                "title": "RHu3YVEQMf",
+                "welshTitle": "RHu3YVEQMf"
+              }
+            },
+            {
+              "id": "d2a8145b-b644-46a7-b487-1ddeecc9725b",
+              "startDate": "2019-07-16",
+              "offenceCode": "ZDmVA5vSYq",
+              "offenceWording": "kT0CzqIOX1",
+              "statementOfOffence": {
+                "title": "HO3OsezopK",
+                "welshTitle": "HO3OsezopK"
+              }
+            },
+            {
+              "id": "664d78aa-051e-423f-984b-6bb8aa6c6a18",
+              "startDate": "2019-07-16",
+              "offenceCode": "Xdxt3CgAfu",
+              "offenceWording": "wvArWzZM9x",
+              "statementOfOffence": {
+                "title": "3FuJvZgKSW",
+                "welshTitle": "3FuJvZgKSW"
+              }
+            }
+          ],
+          "firstName": "q5mZCkDLOG",
+          "bailStatus": {
+            "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+            "code": "B",
+            "description": "Conditional Bail"
+          },
+          "dateOfBirth": "1998-07-16"
+        },
+        {
+          "id": "3961b1e4-20d7-4087-a5c9-f20fd54200d2",
+          "masterDefendantId": "3961b1e4-20d7-4087-a5c9-f20fd54200d2",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+          "lastName": "zEfXVgbSNA",
+          "offences": [
+            {
+              "id": "5848b1d5-b506-4eb8-86bd-1c464e7f91e2",
+              "startDate": "2019-07-16",
+              "offenceCode": "SEtzysixL3",
+              "offenceWording": "VGgxrWpTuL",
+              "statementOfOffence": {
+                "title": "3niarZwDE3",
+                "welshTitle": "3niarZwDE3"
+              }
+            },
+            {
+              "id": "7c1fbc89-d465-45c2-9caa-6d577fa92e72",
+              "startDate": "2019-07-16",
+              "offenceCode": "qtRNMeBN6C",
+              "offenceWording": "H4iWRkh30b",
+              "statementOfOffence": {
+                "title": "0JUghZsHOX",
+                "welshTitle": "0JUghZsHOX"
+              }
+            },
+            {
+              "id": "67d01d6d-a7a6-4fe6-ac54-f7a09782f6c9",
+              "startDate": "2019-07-16",
+              "offenceCode": "gjURXH8g74",
+              "offenceWording": "rgP0ElJ6hA",
+              "statementOfOffence": {
+                "title": "24M1opJxH8",
+                "welshTitle": "24M1opJxH8"
+              }
+            }
+          ],
+          "firstName": "HaOL6VVmlx",
+          "bailStatus": {
+            "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+            "code": "B",
+            "description": "Conditional Bail"
+          },
+          "dateOfBirth": "1998-07-16"
+        }
+      ],
+      "caseIdentifier": {
+        "authorityId": "1a83040c-756f-4187-ae3f-f976f1c1fcab",
+        "authorityCode": "SYLjfewdyr",
+        "caseReference": "ZcdX8reGRP"
+      }
+    },
+    {
+      "id": "64db0634-ae22-4ac6-b18e-a5fff0c05260",
+      "defendants": [
+        {
+          "id": "aaa077e3-12e4-4497-a2e6-cf9558e1d2c7",
+          "masterDefendantId": "aaa077e3-12e4-4497-a2e6-cf9558e1d2c7",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+          "lastName": "zoRsctyjeK",
+          "offences": [
+            {
+              "id": "66cdee7d-c165-43e0-bae4-9b7ac006d844",
+              "startDate": "2019-07-16",
+              "offenceCode": "aoKzzDOdli",
+              "offenceWording": "laldntUf3n",
+              "statementOfOffence": {
+                "title": "YZLbjWYbX2",
+                "welshTitle": "YZLbjWYbX2"
+              }
+            },
+            {
+              "id": "eb4ec6d6-c376-4e5b-bd64-d53c34f11ed0",
+              "startDate": "2019-07-16",
+              "offenceCode": "KYUN5EcSQB",
+              "offenceWording": "3b5cTXgHhT",
+              "statementOfOffence": {
+                "title": "FrIbQl7841",
+                "welshTitle": "FrIbQl7841"
+              }
+            },
+            {
+              "id": "085ce4cd-8c92-4126-983b-f88a7411a667",
+              "startDate": "2019-07-16",
+              "offenceCode": "8YgmQ4nN7o",
+              "offenceWording": "sdKwR2vwm1",
+              "statementOfOffence": {
+                "title": "68N9ILnt3D",
+                "welshTitle": "68N9ILnt3D"
+              }
+            }
+          ],
+          "firstName": "HFoYBuSWzt",
+          "bailStatus": {
+            "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+            "code": "B",
+            "description": "Conditional Bail"
+          },
+          "dateOfBirth": "1998-07-16"
+        },
+        {
+          "id": "fd9607c4-3dfe-4784-8920-ec458d544b34",
+          "masterDefendantId": "fd9607c4-3dfe-4784-8920-ec458d544b34",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+          "lastName": "A2VrtK5RWH",
+          "offences": [
+            {
+              "id": "32e1c754-f434-47cf-bd5f-0bf73b3162e3",
+              "startDate": "2019-07-16",
+              "offenceCode": "i3ELPARDxa",
+              "offenceWording": "mpmS9pdbU2",
+              "statementOfOffence": {
+                "title": "4UePL5KBOx",
+                "welshTitle": "4UePL5KBOx"
+              }
+            },
+            {
+              "id": "3d11c90a-1b14-4530-9f56-90d38a051143",
+              "startDate": "2019-07-16",
+              "offenceCode": "2VmiJNaAZM",
+              "offenceWording": "RAdmTLapOi",
+              "statementOfOffence": {
+                "title": "6jn6KyNux9",
+                "welshTitle": "6jn6KyNux9"
+              }
+            },
+            {
+              "id": "0ff3badc-10fe-4567-bd71-e0ad57891f7e",
+              "startDate": "2019-07-16",
+              "offenceCode": "ptBfRwAuCe",
+              "offenceWording": "6joYm63LT5",
+              "statementOfOffence": {
+                "title": "VYzz6QT6yz",
+                "welshTitle": "VYzz6QT6yz"
+              }
+            }
+          ],
+          "firstName": "VTGdkq9QPw",
+          "bailStatus": {
+            "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+            "code": "B",
+            "description": "Conditional Bail"
+          },
+          "dateOfBirth": "1998-07-16"
+        }
+      ],
+      "caseIdentifier": {
+        "authorityId": "7bbd8102-141d-4cd4-8d22-86fbeb474394",
+        "authorityCode": "ZF6nny9lVo",
+        "caseReference": "tif2BPTnSm"
+      }
+    }
+  ],
+  "courtCentreId": "6a49a835-8fdd-4f53-bafe-7bc1324d5e6c",
+  "nonDefaultDays": [
+    {
+      "duration": 120,
+      "startTime": "2019-07-16T09:35:00.000Z"
+    }
+  ],
+  "nonSittingDays": [
+    "2019-07-17"
+  ],
+  "hearingLanguage": "WELSH",
+  "estimatedMinutes": 15,
+  "jurisdictionType": "MAGISTRATES",
+  "courtApplications": [
+    {
+      "id": "ba6cfbeb-b959-4a1e-9c95-3fd5e95b0cf0",
+      "applicant": {
+        "lastName": "Ysjfp2J5i6",
+        "firstName": "mAFjeAwLuY",
+        "isRespondent": false
+      },
+      "respondents": [
+        {
+          "lastName": "euLsgp78j0",
+          "firstName": "7eJgusoKmx",
+          "isRespondent": true
+        }
+      ],
+      "linkedCaseId": "3685e3f0-e02e-4aa8-bbad-cfe47da73aae",
+      "applicationType": "4YBs9xvMTW",
+      "parentApplicationId": "53527ebb-b054-499b-ab85-122c1acaede2",
+      "applicationReference": "tekPRyxJAy"
+    }
+  ],
+  "reportingRestrictionReason": "xtJwSGTTJA"
+}

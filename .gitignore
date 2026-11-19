@@ -60,3 +60,8 @@ buildContexts.sh
 
 lightning-jenkins.properties
 **/.DS_Store
+
+# Gradle (Spring Boot build, MBD refactor Phase 2)
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar

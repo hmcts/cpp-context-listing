@@ -1,0 +1,19 @@
+# Config for the @DataJpaTest repository tests. AbstractRepositoryTest starts Postgres 16 in a
+# container (Testcontainers) and Liquibase replays the production changelog against it.
+# The JPA settings mirror listing-api's application-datasource.yml.
+spring:
+  test:
+    database:
+      replace: NONE
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+    properties:
+      hibernate.jdbc.time_zone: UTC
+      hibernate.timezone.default_storage: NORMALIZE_UTC
+  liquibase:
+    change-log: classpath:liquibase/db-changelog.xml

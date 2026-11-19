@@ -1,0 +1,14 @@
+{
+  "organisationunits": [
+    {
+      "id": "b52f805c-2821-4904-a0e0-26f7fda6dd08",
+      "oucode": "C04PR00",
+      "courtrooms": [
+        {
+          "id": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+          "courtroomName": "Courtroom 01"
+        }
+      ]
+    }
+  ]
+}

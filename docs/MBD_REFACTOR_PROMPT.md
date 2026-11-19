@@ -237,15 +237,14 @@ their signatures. Framework code stays in thin adapters, so Phase 2 replaces ada
   (plus `-messaging`, `-xhibit` as needed).
 - `application-integration.yaml` is the IT profile.
 - Every setting is `${ENV_VAR:default}`. The env var prefix is `LISTING_*`, in place of
-  courtscheduler's `CSCHED_*`; confirm this in §15.
+  courtscheduler's `CSCHED_*` (D12).
 - Datasource:
   - Hikari `auto-commit: true`. **Keep it.** Courtscheduler lost connections that sat idle in
     transaction when it was false.
   - `open-in-view: false`, `ddl-auto: none`, `hibernate.jdbc.time_zone: UTC`, batch size 50 with
     ordered inserts and updates.
 - `server.servlet.context-path`: **the command and query context roots in §4 must both be served.**
-  This needs a decision (ADR 8): a shared `/listing-service` context path with full controller
-  paths, or two dispatcher paths.
+  Decided (D11, ADR 8): a shared `/listing-service` context path with full controller paths.
 
 **Packaging and runtime:**
 - `Dockerfile` at the repo root. `ARG BASE_IMAGE` defaults to `eclipse-temurin:25-jre`; CI uses
@@ -350,9 +349,12 @@ Delete after parity (courtscheduler's `doc/REVIEW.md` §2 is the model for docum
 - **Unlike courtscheduler,** the integration profile must **not** exclude `JmsAutoConfiguration`,
   because listing's ITs depend on JMS.
 - `./gradlew clean build` runs everything, including the IT stack, as in courtscheduler.
-  `runIntegrationTests.sh` is rewritten as a thin wrapper around
-  `./gradlew :listing-integration-test:test` (keeping its midnight-UTC guard), so the `CLAUDE.md`
-  rule (`./runIntegrationTests.sh` green locally) still holds. Never skip, `@Disabled` or weaken an
+  `runIntegrationTests.sh` is rewritten as a thin wrapper around the Gradle IT task (keeping its
+  midnight-UTC guard), so the `CLAUDE.md` rule (`./runIntegrationTests.sh` green locally) still
+  holds. **D13:** until cut-over (P2.5) `runIntegrationTests.sh` stays the WildFly runner for the
+  JEE app, and the Spring stack runs through `runSpringIntegrationTests.sh`
+  (`./gradlew :listing-integration-test-spring:test`, same guard). The Gradle IT module is
+  `listing-integration-test-spring` while the Maven `listing-integration-test` still exists. Never skip, `@Disabled` or weaken an
   assertion to go green.
 - Add unit tests for every ported aggregate rule, plus a contract test per command, query and
   public event that validates payloads against the existing JSON schemas.
@@ -408,12 +410,12 @@ The domain services and the outbox already exist; Phase 2 replaces the adapters 
 
 | Phase | Scope | Depends on | Exit criteria |
 |---|---|---|---|
-| **P2.0 Foundations** | Gradle build alongside Maven (§6); `listing-api` skeleton copied from courtscheduler: health, JSON logging, config fragments, OpenAPI from RAML, `RequestSchemaValidationFilter`, authz with ported DRL, audit, envelope, `GlobalExceptionHandler`, metrics; Docker compose IT stack (db, WireMock, Artemis, app); `runIntegrationTests.sh` wrapper | P1.z, ADRs (§7) | App boots in compose; `/actuator/health` up; authz, envelope, error-shape and schema-validation `*IntegrationTest`s green; unknown `Accept` → 406 |
+| **P2.0 Foundations** | Gradle build alongside Maven (§6); `listing-api` skeleton copied from courtscheduler: health, JSON logging, config fragments, OpenAPI from RAML, `RequestSchemaValidationFilter`, authz with ported DRL, audit, envelope, `GlobalExceptionHandler`, metrics; Docker compose IT stack (db, WireMock, Artemis, app); `runSpringIntegrationTests.sh` wrapper (D13: `runIntegrationTests.sh` is switched to the Gradle task at P2.5, not here) | P1.z, ADRs (§7) | App boots in compose; `/actuator/health` up; authz, envelope, error-shape and schema-validation `*IntegrationTest`s green; unknown `Accept` → 406 |
 | **P2.1 Persistence + queries** | Existing Liquibase (including the Phase 1 changesets) wired; entities and repositories (§11 pitfalls 1, 7); all 17 query paths, including the CSV report | P2.0 | All query ITs green; responses valid against the 8 response schemas |
 | **P2.2 Messaging** | Envelope model; Spring outbox relay replacing the EJB timer; `@JmsListener` on `public.event` with dispatcher; dedup table; DLQ handling | P2.1, ADRs 2 and 3 | Outbox and dedup unit and IT coverage; a published event round-trips through Artemis with `CPPNAME` and the envelope intact |
 | **P2.3 Commands** | Command controllers wired to the Phase 1 domain services, in the P1a–P1h order; the event-processor logic becomes Spring components on the outbox and inbound paths | P2.2 | All command ITs green; outbound public events schema-valid |
 | **P2.4 Inbound event handlers** | Progression ×16, hearing ×9, `public.events.hearing.*` ×2 on `@JmsListener` | P2.3 | All inbound-event ITs green; replays are idempotent |
-| **P2.5 Cut-over** | Dockerfile + `startup.sh`; Helm and pipeline; runbook; `docs/REVIEW.md` and `docs/breaking.md` in courtscheduler's format | P2.4 | Full IT suite green; cut-over rehearsal (M3) passed |
+| **P2.5 Cut-over** | Dockerfile + `startup.sh` (added in P2.0); `runIntegrationTests.sh` rewritten as the thin Gradle wrapper and the legacy `*IT` scenarios moved onto the compose stack (D13); Helm and pipeline; runbook; `docs/REVIEW.md` and `docs/breaking.md` in courtscheduler's format | P2.4 | Full IT suite green; cut-over rehearsal (M3) passed |
 | **P2.6 Decommission** | Delete the JEE modules, Maven poms and framework descriptors (§8) | P2.5 cut-over accepted | §12 Definition of done met; no framework artefacts on the classpath |
 
 ### 10.2 Milestones
@@ -434,7 +436,9 @@ Whether Phase 1 slices are released to production one by one, or only as a whole
 |---|---|
 | P0 Baseline | **Done 2026-11-19.** Run `it-logs/run-20261119T001211Z.log`: 335 tests, 0 failures, 0 errors, 3 skipped, 60 IT classes. Not run with `errorlog`: unexpected server.log ERROR/WARN lines in 156 test windows, mainly `CourtScheduleEnrichmentService` (127 ERROR, 26 WARN) and the EJB timer `EventPublishingTimerBean` (49 WARN, 9 ERROR) |
 | Phase 1 (P1.0, P1a–P1h, P1.z) | **Done 2026-11-19.** Run `it-logs/run-20261119T082649Z-p1-complete-3.log`: 335 tests, 0 failures, 0 errors, 3 skipped, 60 IT classes (matches P0). Unexpected server.log lines in 141 test windows (P0: 156), the same `CourtScheduleEnrichmentService` noise as P0; EJB timer warnings down from 58 to 2. Three IT assertion changes approved 2026-11-19 (D10) |
-| P2.0–P2.6 | Not started |
+| P2.0 Foundations | **Done 2026-11-19.** Gradle (`settings.gradle`, `build.gradle`, wrapper 9.6.1) alongside Maven, building only `listing-api` and `listing-integration-test-spring`. `./gradlew --offline build -x test` green; `listing-api` unit tests green; Spring IT stack (db, WireMock, Artemis, app) 27/27 `*IntegrationTest`/`*IT` green via `./gradlew --offline :listing-integration-test-spring:test`; `mvn -o -q validate` green. ADRs 005, 007, 008. Canned test-only endpoints in `P20SkeletonApi` (integration profile only) — delete in P2.1/P2.3 |
+| P2.1 Persistence + queries | **Done 2026-11-19** (ADR 012). New Gradle modules `listing-domain-spring`, `listing-viewstore-persistence-spring` (13 entities, Spring Data repositories in the DeltaSpike style, JDBC repositories on `JdbcTemplate`), `listing-common-spring` (query services, `CppQueryClient`/RestClient, courtscheduler and systemdocgenerator clients) and `:listing-viewstore-liquibase` (the Maven module's changelogs, unchanged, `runtimeOnly`). listing-api: `application-datasource.yml`, 6 query controllers over all 17 paths / 18 names; the query part of `P20SkeletonApi` is removed (command part stays until P2.3). `./gradlew --offline build` green: 28 repository tests (`@DataJpaTest`, Testcontainers Postgres 16, real changelog), 416 query unit tests (ported from listing-query-view/-api), 49 listing-api tests, 82 Spring ITs (27 P2.0 + 23 query-endpoint + 32 denied-access); `mvn -o -q validate` green. Access control: the 21 query DRL rules match the legacy file group for group; the 4 bypasses stay. **Not run:** the legacy query ITs of the Maven `listing-integration-test` (they set data up with commands, P2.3). **Legacy response-schema mismatches (kept, reported):** `/courtListPublishStatus` names a request-parameter schema as its response schema; `/hearings` adds `matchedWithQuery` to hearing days; the court calendar adds `hearingDayCount`/`hearingDayPosition`; `/hearings/allocated-and-unallocated`, `/unscheduled`, `/any-allocation` and `/cotr-search` omit the required `notes`; listing-json `court-schedule-judiciary.json` has a broken `"$ref": "boolean"` |
+| P2.2–P2.6 | Not started |
 | Jira epic (§15.1) | Missing |
 
 Update this table as each phase completes, with the date.
@@ -524,6 +528,9 @@ Update this table as each phase completes, with the date.
 | D8 | 2026-11-17 | Reference implementation | `cpp-context-listing-courtscheduler` is the blueprint for build, config, web plumbing, persistence and IT harness (§2, §6) |
 | D9 | 2026-11-19 | Migration order | Two-step: remove CQRS/ES on JEE first, with the outbox (Phase 1), then move to Spring Boot (Phase 2) (§10, ADRs 9 and 10). P1.0 is a spike; if it fails, fall back to the direct plan. Supersedes the single-step P0–P6 plan of v0.5 |
 | D10 | 2026-11-19 | IT assertion changes in P1h (§9 approval) | Approved: (1) `DefendantOffencesChangedIT` no longer asserts `count`, `orderIndex`, `restrictFromCourtList` of `offence-updated` (the listener drops them; no query exposes them); (2) offence case/defendant/hearing ids checked by lookup, not equality; (3) `ExtendHearingIT` checks the unallocated hearing id on public `hearing-confirmed` (the `Case` aggregate does not store it) |
+| D11 | 2026-11-19 | Context roots (ADR 8) | One Boot app, one OpenAPI spec (`listing-api.openapi.yml`), `server.servlet.context-path=/listing-service`, spec paths `/command/api/rest/listing/…` and `/query/api/rest/listing/…`; actuator at `/listing-service/actuator/*` |
+| D12 | 2026-11-19 | JSON logging (§15.9) | `logback-spring.xml` with `LogstashEncoder`, JSON to stdout, banner off; root `${LOG_LEVEL_ROOT:WARN}`, app `${LOG_LEVEL_LISTING:INFO}`. Env var prefix `LISTING_*` confirmed (§15.7) |
+| D13 | 2026-11-19 | IT runner during Phase 2 | `runIntegrationTests.sh` unchanged (WildFly) until P2.5; Spring ITs via `runSpringIntegrationTests.sh` → `./gradlew :listing-integration-test-spring:test` with the same midnight-UTC guard |
 
 ## 15. Still open
 
@@ -540,21 +547,24 @@ Update this table as each phase completes, with the date.
    group data the listing rules need.
 5. **Known bypasses.** Keep the hearing-slots and CSV-report endpoints bypassing access control
    (exact parity), or fix them? Fixing them is a behaviour change and needs an ADR. In the new
-   filter, a bypass means `exclude-path-prefixes`.
+   filter, a bypass means `exclude-path-prefixes`. *P2.0 (ADR 5):* exact parity implemented. The
+   P2.0 scan found **four** bypasses, not two: `/sessionAvailabilityValidation` and
+   `/courtScheduleDraftStatus` are also hand-written JAX-RS resources that never ran the
+   interceptor chain. All four are excluded; confirm whether the last two should be enforced.
 6. **JMS message properties / envelope.** Confirm that downstream consumers only need the framework
    envelope and the `CPPNAME` property, or list any other headers.
 7. **Deployment.**
    - The Helm chart and pipeline repo need updating for a jar instead of the WAR.
-   - Confirm the env var prefix (`LISTING_*`).
+   - ~~Confirm the env var prefix (`LISTING_*`).~~ **Resolved (D12):** `LISTING_*`.
    - Stay on ADO `azure-pipelines.yaml`, or move to courtscheduler's GitHub Actions +
      `cp-gh-artifact-to-acr` flow?
 8. **System commands.** `runSystemCommand.sh` (JMX CATCHUP etc.) has no equivalent. Confirm it can
    be retired.
-9. **JSON logging config.** Courtscheduler has no logback or structured-logging config. Decide
-   between Boot's built-in `logging.structured.format.console` and a `logback-spring.xml` with
-   `LogstashEncoder`, per `context/logging-standards.md` and the HMCTS template.
-10. **Context roots.** One Boot app serving both `/listing-service/command/api/rest/listing` and
-    `/listing-service/query/api/rest/listing` (ADR 8).
+9. ~~**JSON logging config.**~~ **Resolved 2026-11-19 (D12):** `logback-spring.xml` with
+   `LogstashEncoder`. Differences from `context/logging-standards.md` (composite encoder, root
+   `INFO`, correlation/request-id MDC filter) are recorded in ADR 7.
+10. ~~**Context roots.**~~ **Resolved 2026-11-19 (D11, ADR 8):** one app, one spec, context path
+    `/listing-service`.
 11. **Releasing Phase 1.** Are Phase 1 slices released to production one by one, or is Phase 1
     released as a whole (or not at all before the Spring Boot cut-over)? Releasing slices proves
     the backfill and the domain services in production before the platform swap, but conflicts
@@ -563,3 +573,17 @@ Update this table as each phase completes, with the date.
     only runs the interceptor chain (§5), so the relay calls it in-VM; no new entry point or topic
     is needed. Publishing to `listing.event` was rejected because the listener dead-letters the
     events.
+13. **Schema catalog jars in CI (P2.0).** Request validation resolves the RAML schemas' remote
+    `$ref`s from listing-json (in the repo) and the schema-only jars
+    `uk.gov.moj.cpp.core.domain:common-core-domain` / `criminal-court-public-model` 17.104.6. Gradle
+    fetches those jars (jar only, no POM) from `~/.m2` or the HMCTS Azure feed. Confirm the feed
+    has them, or vendor the referenced schemas into `listing-api` before CI builds the app.
+14. **cp-auth-rules-filter cost per request (P2.0).** Version 1.0.9 builds a Drools KieBase per
+    evaluation (seen in the IT logs) although `reload-on-each-request` is false. Measure before M1;
+    raise with the library owners if it matters.
+15. **P2.1 follow-ups.** (a) Confirm that the Liquibase `DATABASECHANGELOG.FILENAME` values written
+    by Spring Boot (`classpath:liquibase/db-changelog.xml`, `includeAll`) equal the ones the JEE
+    deployment wrote, before the cut-over runs against production data. (b) The authz filter's
+    usersgroups URL uses `/usersgroups-query-api/...` (copied from courtscheduler, P2.0) while the
+    legacy listing calls and stubs use `/usersgroups-service/...`; confirm the gateway serves both.
+    (c) Whether to fix the RAML response-schema defects listed in §10.3 (a contract change).

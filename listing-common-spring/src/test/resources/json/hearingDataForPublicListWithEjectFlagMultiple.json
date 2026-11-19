@@ -1,0 +1,1152 @@
+{
+  "judiciary": null,
+  "hearings":
+  [
+    {
+      "judiciary": [{
+        "judicialId": "e7741d91-aca9-3535-b97a-ab0fa8237099"
+      }, {
+        "judicialId": "6018df18-42f7-330f-9b85-a6f8e911b96b"
+      }, {
+        "judicialId": "f899139d-f5e1-3593-9643-1415e770c6dd"
+      }, {
+        "judicialId": "d397c2b2-be21-38fe-a247-bd50fc97cff2"
+      }, {
+        "judicialId": "f5bf2f80-e092-3a36-a859-e958c6507ea9"
+      }, {
+        "judicialId": "41a60377-ba92-3919-939d-83326ebee5a1"
+      }, {
+        "judicialId": "e520f70a-c393-3490-8588-92665cda6620"
+      }, {
+        "judicialId": "dafc8e8c-de5d-39da-be65-cb6907899656"
+      }, {
+        "judicialId": "e5d29d3c-97a8-38c2-aa1f-19ece2f45a1a"
+      }, {
+        "judicialId": "b6edc1cd-1f36-345d-af6d-7824d7bb2283"
+      }, {
+        "judicialId": "95e6834d-0a3d-39e9-aa88-11855ae9229d"
+      }, {
+        "judicialId": "1dacb10f-0623-367c-b7db-b37587d8b38a"
+      }, {
+        "judicialId": "ae87df00-45b6-38dd-be58-7a5e35b075ec"
+      }, {
+        "judicialId": "23c97e9c-b935-36e4-9d2f-eaf00d0e8502"
+      }, {
+        "judicialId": "225325a0-029a-3046-8c81-731ac8bec58f"
+      }, {
+        "judicialId": "90092a96-d41d-390b-9e56-9b2383465360"
+      }, {
+        "judicialId": "9cea10c7-ff10-3c6e-a172-7a0d45492ead"
+      }, {
+        "judicialId": "29daf944-2f3c-3b60-a42b-14c081b4a556"
+      }, {
+        "judicialId": "657538ca-3ad2-36a7-b345-fb515d41e14b"
+      }, {
+        "judicialId": "2cad8fa4-7bbe-3282-badb-b8de5374b894"
+      }, {
+        "judicialId": "d5cfead9-4f53-30c1-ac32-2b5b664544c1"
+      }, {
+        "judicialId": "00ac8ed3-b432-3bdd-8ebb-ebcb2ba10a00"
+      }, {
+        "judicialId": "eea5d933-e9dc-359c-bdd0-f6532f9ea81b"
+      }, {
+        "judicialId": "9ed19fde-2d99-3d17-8eaf-d0fe127f3176"
+      }, {
+        "judicialId": "fa3dade3-a493-35f2-bf64-203452ac954c"
+      }, {
+        "judicialId": "a952dded-a0b7-32c2-8744-e52e728e5594"
+      }, {
+        "judicialId": "3e555269-69e8-3f9f-baef-e69d1d590825"
+      }, {
+        "judicialId": "3644a684-f98e-38fe-a23c-713b77189a77"
+      }, {
+        "judicialId": "5ef99d16-d195-3578-b0df-2f38b866449b"
+      }, {
+        "judicialId": "c900ced7-451d-3795-82d2-9aa37ebb7b60"
+      }, {
+        "judicialId": "4ff6fa96-179c-3c28-b8e8-d8ce64cd10a7"
+      }, {
+        "judicialId": "7da9fd85-999f-383e-b906-f99a3ee58911"
+      }, {
+        "judicialId": "787ad52b-a90a-342d-b424-ca4601433e42"
+      }, {
+        "judicialId": "1e69276e-3d56-30de-a97e-980aa4f59671"
+      }, {
+        "judicialId": "b73dfe25-b4b8-314c-829b-37a6ad3006fa"
+      }, {
+        "judicialId": "852c44dd-ce7e-3c7e-8c64-d86147300831"
+      }, {
+        "judicialId": "1d7b813d-77ad-392b-8c59-98ec42a3cde9"
+      }, {
+        "judicialId": "3eb71f62-93a2-331f-b569-e10af6552658"
+      }, {
+        "judicialId": "e44e875c-1210-3e4f-a371-6c05008048b2"
+      }, {
+        "judicialId": "894db62f-7b7a-3ed2-b2a2-77dae56a017c"
+      }, {
+        "judicialId": "d4dd111a-4fd9-3339-8238-aca5c05bebe3"
+      }, {
+        "judicialId": "f783ff9b-43ae-304d-8189-456f6b5db403"
+      }, {
+        "judicialId": "999600eb-275c-3719-a161-261972daa59b"
+      }, {
+        "judicialId": "624c5402-1cda-34b5-ac92-aa798ebadd9e"
+      }, {
+        "judicialId": "20ea88ff-2d49-36dc-a1c7-79051ca98a10"
+      }, {
+        "judicialId": "6f3ef77a-c0e3-319e-9815-9e9b6febf557"
+      }, {
+        "judicialId": "d22164fc-c6ce-3e97-a0fd-2f02c953e1a4"
+      }, {
+        "judicialId": "b0490b85-e92b-34db-b5db-76bf8fca6a82"
+      }, {
+        "judicialId": "7a2347d9-6752-380e-bd58-d72e9813cc14"
+      }, {
+        "judicialId": "4c7a167b-b329-3d92-980a-99ce422d6fa6"
+      }, {
+        "judicialId": "663772ea-0883-30f9-9bac-3dc7ffb841be"
+      }, {
+        "judicialId": "96c5c28b-ecf1-3e71-9904-60a9955aa4d8"
+      }, {
+        "judicialId": "26c0a195-973b-36ba-92a0-13c89dd82315"
+      }, {
+        "judicialId": "234e6913-20c0-3d5b-85ee-3c96d0d7b8f8"
+      }, {
+        "judicialId": "c5c3d4fe-6b2c-3463-87d7-ecba17cc9de7"
+      }, {
+        "judicialId": "3a2a9aef-4cbe-3812-8482-0a091667c0bd"
+      }, {
+        "judicialId": "674e68d7-f978-331e-afc8-e7a300ce9bc2"
+      }, {
+        "judicialId": "76f1cfd7-754a-3e4f-8328-1bcccb3d0902"
+      }, {
+        "judicialId": "196268d9-73fe-3102-9e5e-9a9b6ef4c6f1"
+      }, {
+        "judicialId": "ed582716-bfb4-338c-8d92-405301122e66"
+      }, {
+        "judicialId": "dafd2bc3-a016-334d-a1c6-96cb44993a56"
+      }, {
+        "judicialId": "4c144c47-ecba-3f83-9812-8703ca9e2601"
+      }, {
+        "judicialId": "ce2b18dc-dc9e-3f0e-8f16-6ee3f5b7d8ca"
+      }, {
+        "judicialId": "1a5115fc-501e-338f-bbd7-dcae74df992f"
+      }, {
+        "judicialId": "da11e8cd-1811-3cb7-9ccf-0fd62cd58f86"
+      }, {
+        "judicialId": "b28d7c6b-6aec-34f5-925b-453411ff4336"
+      }, {
+        "judicialId": "296472c9-542a-34d4-b88d-543508116cbc"
+      }, {
+        "judicialId": "ff8c1a3b-d0c4-3143-9a0a-081e560c85fc"
+      }, {
+        "judicialId": "f74909ac-e68e-3189-9440-e4da0b65a70c"
+      }, {
+        "judicialId": "06eb61b8-39a0-3efe-a496-7c67ccb099dc"
+      }, {
+        "judicialId": "32fcc8cf-e1fa-3c77-b5c5-8dafd36d1a98"
+      }, {
+        "judicialId": "63dfdeb1-ff9f-309e-8c3f-05d2d7221ffa"
+      }, {
+        "judicialId": "069654d5-ce08-3c13-b642-d19f09a3d1c0"
+      }, {
+        "judicialId": "61d009da-208a-34ae-9554-20e55f97abc7"
+      }, {
+        "judicialId": "54ff9e9e-3a2e-3030-8d4c-e11261f5169f"
+      }, {
+        "judicialId": "9d7aae53-b987-3a75-bd0e-12714b7d0a4b"
+      }, {
+        "judicialId": "da51e350-8985-36db-afd0-fd2d19540e44"
+      }, {
+        "judicialId": "0fc170ec-bb8f-31af-b2c6-de48ea5343e7"
+      }, {
+        "judicialId": "8b406655-4730-3dfa-a026-6346bdc1b202"
+      }, {
+        "judicialId": "a46cc683-49bd-3bdf-b70b-f818525dd173"
+      }, {
+        "judicialId": "3d73b94a-1b27-3bac-9fcf-22ed243127e3"
+      }, {
+        "judicialId": "f187a23c-3ee6-31ef-a913-f31fd6d6446b"
+      }, {
+        "judicialId": "d645920e-395f-3dad-bbbb-ed0eca3fe2e0"
+      }, {
+        "judicialId": "e698959e-9b93-34de-8235-26327ffed84a"
+      }, {
+        "judicialId": "1068c6e4-c805-3cfd-8e9e-a8072e3189e2"
+      }, {
+        "judicialId": "5f8b73c0-d4b1-3f60-9d71-73b660b87c29"
+      }, {
+        "judicialId": "045117b0-e0a1-3a24-ab97-65e79cbf113f"
+      }, {
+        "judicialId": "f1b07759-46bc-3329-b35b-823b86eeb5f5"
+      }, {
+        "judicialId": "03e7d2eb-ec1e-320a-834d-054df7e68f48"
+      }, {
+        "judicialId": "31495436-2f31-3096-a3dc-4765ab4c7030"
+      }, {
+        "judicialId": "f15d337c-7007-3947-8fe1-b5d6f0ed3f13"
+      }, {
+        "judicialId": "675be393-0765-3553-975c-0b140bbf0863"
+      }, {
+        "judicialId": "5812f924-50cc-3f17-a755-00841c70924a"
+      }, {
+        "judicialId": "f6748c55-2542-35e9-9c1e-49d2761a2d1d"
+      }, {
+        "judicialId": "a8abb4bb-284b-3b27-aa7c-b790dc20f80b"
+      }, {
+        "judicialId": "a58337d1-b8c9-3bf3-a251-86673be3407b"
+      }, {
+        "judicialId": "342285bb-2a8c-3def-a2f6-67eeb6a63732"
+      }, {
+        "judicialId": "fccb3cdc-9acc-34a6-a70a-12f74560c026"
+      }, {
+        "judicialId": "806379e2-30b4-383d-82e6-76e99f730621"
+      }, {
+        "judicialId": "0fe71110-2be8-3eb9-b7b5-b82399ac0e2f"
+      }, {
+        "judicialId": "4e0223a8-7610-376e-b0d2-4ef6d2dcde3a"
+      }, {
+        "judicialId": "c20bb2d9-a50d-3ac1-b713-f8b34d9aac5a"
+      }, {
+        "judicialId": "7291c61f-37b6-384b-bc7b-59c6e3aa93c3"
+      }, {
+        "judicialId": "b0d33633-1ae5-3d66-b69b-b655c37032c6"
+      }, {
+        "judicialId": "6f3e29a3-5278-371c-bf65-495871231324"
+      }, {
+        "judicialId": "6da9003b-743b-35f4-80cc-d295cc484e57"
+      }, {
+        "judicialId": "3e98410c-45ea-38ad-9ec5-55019bbae8eb"
+      }, {
+        "judicialId": "eb0ecdb0-70a1-30ac-86de-0cd733d39cf3"
+      }, {
+        "judicialId": "619205da-514e-33f8-a951-5c782a328d3c"
+      }, {
+        "judicialId": "c16a2e5d-3f5c-30f9-9448-8189c3b3fa44"
+      }, {
+        "judicialId": "48653af2-e798-3c96-b6ef-0b76d8a02139"
+      }, {
+        "judicialId": "06bf16f1-f037-3a63-9520-eac6cf7c5af7"
+      }, {
+        "judicialId": "a4f23670-e183-3f3f-9b07-7ca70bbd5d66"
+      }, {
+        "judicialId": "7c60c902-6ff3-3bf4-a05d-00e53fbb773a"
+      }, {
+        "judicialId": "77e86f54-89a2-3d22-9ec4-48dce1fec3a7"
+      }, {
+        "judicialId": "6e52547a-0e7b-3a35-975b-6f1f8761e7ae"
+      }, {
+        "judicialId": "cee63112-1c2e-3923-af3a-2f028ad5c89b"
+      }, {
+        "judicialId": "069d3bb0-02ac-38d7-9d09-5917f9efe4cb"
+      }, {
+        "judicialId": "4c525a48-acc0-384b-8777-50ac333c67c1"
+      }, {
+        "judicialId": "1f74a54f-39b3-323a-9272-ca0a06e7463f"
+      }, {
+        "judicialId": "fd0a5a5e-367a-3955-9812-78062ef37429"
+      }, {
+        "judicialId": "f05f78cb-eb96-31b3-a8c5-4bdf592be604"
+      }, {
+        "judicialId": "0ee08d79-06eb-3d3a-8150-cd644fc0ffd9"
+      }, {
+        "judicialId": "70222949-cc0d-389a-b32c-9969754d4758"
+      }, {
+        "judicialId": "b3dd760e-b02d-3e66-9c60-4f6b2f1e803f"
+      }, {
+        "judicialId": "32072254-9d17-31cf-bf24-7855f937b982"
+      }, {
+        "judicialId": "6eb6e75f-ddec-3218-b51d-c5c0c8464104"
+      }, {
+        "judicialId": "28a76027-24ba-3660-8d5c-cc644c19bf18"
+      }, {
+        "judicialId": "5460b9ea-1986-3c38-acb6-4df22dff37be"
+      }, {
+        "judicialId": "cf67355a-3333-36e1-8343-9161adc2d82e"
+      }, {
+        "judicialId": "46e0eae7-d521-3c79-83ef-6b4c212b8c6f"
+      }, {
+        "judicialId": "e6fc5835-11b1-388c-b4bd-2a2610248a8c"
+      }, {
+        "judicialId": "0799cdd7-1a95-3187-8143-44493100eb2b"
+      }, {
+        "judicialId": "63bfd6e8-f26d-3d35-b7f4-c5038264ef36"
+      }, {
+        "judicialId": "0ba3fe48-d5ab-3fcf-b474-3186c725cef9"
+      }, {
+        "judicialId": "9eb53b50-52d5-34ea-a619-ca03b5649af7"
+      }, {
+        "judicialId": "4f05d482-1fe9-3678-97de-a5a20c4e7b35"
+      }, {
+        "judicialId": "939b9fed-93c7-3ce9-b39b-8aa1b2d5c57c"
+      }, {
+        "judicialId": "4c4e5249-f45d-3cf6-a038-7c58ac13f514"
+      }, {
+        "judicialId": "d3d94468-02a4-3259-b55d-38e6d163e820"
+      }, {
+        "judicialId": "aea7e72c-4dcc-34f8-9df0-0f453becd91a"
+      }, {
+        "judicialId": "8a898f8a-de58-3859-8d11-aee0fa0a1a30"
+      }, {
+        "judicialId": "6b8eba43-5517-3221-8453-411664a0dcc8"
+      }, {
+        "judicialId": "4ebd440d-9950-3722-980d-e606ea8507da"
+      }, {
+        "judicialId": "1a16abf2-a314-3fc7-8d60-83687cce01c2"
+      }, {
+        "judicialId": "49360dcc-9b1e-3052-986b-ac40de101fdb"
+      }, {
+        "judicialId": "4f3d7d38-d24b-340c-95da-2b03dc3a2333"
+      }, {
+        "judicialId": "99e54b30-7561-3527-837e-84b243c2c837"
+      }, {
+        "judicialId": "1b2be96a-d238-32b7-b4c5-4e9425140f20"
+      }, {
+        "judicialId": "9fdb62f9-32ad-355a-b2c0-e09e55861964"
+      }, {
+        "judicialId": "50594af4-af99-31fb-aebe-f89c4c7d7ce3"
+      }, {
+        "judicialId": "51ef8e70-d550-3a28-bc31-7de6fd7aded5"
+      }, {
+        "judicialId": "149e9677-a598-3fd3-82ae-44213df68868"
+      }, {
+        "judicialId": "8eddb379-7212-3edc-8700-43e1d3686176"
+      }, {
+        "judicialId": "2f635a9f-e4a4-38d1-ac9e-3a111cc02f4b"
+      }, {
+        "judicialId": "3a30be93-eb45-366a-90f4-e95ee72a089a"
+      }, {
+        "judicialId": "66cf2135-1023-360e-892b-e950584699cb"
+      }, {
+        "judicialId": "4d771504-ddcd-3803-bb41-99740df767e6"
+      }, {
+        "judicialId": "d0f5722f-11a0-3c83-9fa2-ca6ea49d8585"
+      }, {
+        "judicialId": "96e9f517-d4be-3ec6-9d10-cbd6c5707e30"
+      }, {
+        "judicialId": "2b38c2df-6a49-397f-b06e-c9148ce48d86"
+      }, {
+        "judicialId": "eeea0106-91e5-39dc-ab3d-ce3821f08877"
+      }, {
+        "judicialId": "28b9f8aa-9f07-3b88-8047-21af4a5b6c11"
+      }, {
+        "judicialId": "49f2772f-ac96-3924-98c8-5ad52a644b1e"
+      }, {
+        "judicialId": "a9578c01-989d-340c-a684-f3a2bdb7da35"
+      }, {
+        "judicialId": "4cb81113-4b9d-39fc-b104-bd06ce75abad"
+      }, {
+        "judicialId": "fb4c835f-eb0a-35cc-b973-9320d7a51c02"
+      }, {
+        "judicialId": "f80bf055-2715-3a8c-aa7b-b63b22f49aaa"
+      }, {
+        "judicialId": "08f90c1a-4171-3536-9a5c-4b8d297e0d78"
+      }, {
+        "judicialId": "fe73f687-e5bc-3280-a14e-0486b273a5f9"
+      }, {
+        "judicialId": "cb8a08a2-40f3-3a7c-99b2-20d24f54f477"
+      }, {
+        "judicialId": "f4d0e2e7-fc05-3a58-b7ca-4a391f01940a"
+      }, {
+        "judicialId": "e3437693-7c78-3505-99b4-fcd980c2f1ce"
+      }, {
+        "judicialId": "32508f53-f24c-36f6-8587-0a075eaaa29c"
+      }, {
+        "judicialId": "e7324939-7da1-3711-b853-87d3621fb191"
+      }, {
+        "judicialId": "fa83a11a-198d-3a7f-8bf7-7a1987bcd006"
+      }, {
+        "judicialId": "975ae6d3-ce8a-36e0-b118-21a97a9f5fae"
+      }, {
+        "judicialId": "b7c13b0a-4742-37d7-b6c6-d6ba8a0ed678"
+      }, {
+        "judicialId": "14851003-1349-342d-a5ca-0c544f31b2ef"
+      }, {
+        "judicialId": "49562478-de4c-34fa-bd4e-c46fdb297de5"
+      }, {
+        "judicialId": "15e122e8-39df-3aa7-8e96-9536f94aecf6"
+      }, {
+        "judicialId": "73fed7fd-472e-302d-8908-794430511f4d"
+      }, {
+        "judicialId": "8ce6fc70-4072-3351-a79a-c97d4a985574"
+      }, {
+        "judicialId": "570f6ff5-228e-3ab4-baf4-5555c8710998"
+      }, {
+        "judicialId": "88fcf48a-99a3-3a0f-bb07-8d0d5762dc1b"
+      }, {
+        "judicialId": "703957b6-dd9e-3a79-80e0-40bee50ded65"
+      }, {
+        "judicialId": "335f5352-088d-3d9b-b741-91e006d8e24c"
+      }, {
+        "judicialId": "d4a4ccdd-fa91-3cb3-bb30-f0b1e210c9eb"
+      }, {
+        "judicialId": "4f1927ff-f6e0-3218-9d6a-6f4c8466e421"
+      }, {
+        "judicialId": "e816c635-cad8-3a60-babd-6b97b03cbcc9"
+      }, {
+        "judicialId": "11e2ad6b-f993-30cd-b808-bb105b55d4b8"
+      }, {
+        "judicialId": "9256f177-e09e-3f3f-af86-0a86373b3aad"
+      }, {
+        "judicialId": "cf805500-6271-3985-b75f-f98da57f6cda"
+      }, {
+        "judicialId": "c20a7ce2-a627-3a83-8cfb-ff082db35197"
+      }, {
+        "judicialId": "ee8a21ad-ac76-36c7-8215-1481756c121a"
+      }, {
+        "judicialId": "4e38d30e-656d-35ae-9d3a-425109ce9e04"
+      }, {
+        "judicialId": "d2500d51-d3ed-3791-852f-4ea4b4a2cf03"
+      }, {
+        "judicialId": "fa1839c5-5070-3f5c-b53f-d4a2e523641c"
+      }, {
+        "judicialId": "6dc99b2f-347f-33e5-8e32-ae47a2076fae"
+      }, {
+        "judicialId": "810462d0-1f31-3bd1-be62-8a77fc3f92c0"
+      }, {
+        "judicialId": "87c069be-ae47-3463-a443-93905bea6aa3"
+      }, {
+        "judicialId": "a753a435-64c2-3148-9f31-50afb4475440"
+      }, {
+        "judicialId": "75516177-74bc-3665-a4ab-e990db4f6f83"
+      }, {
+        "judicialId": "a9e18cb5-dd9d-3ab4-a094-6fa19ebbbf52"
+      }, {
+        "judicialId": "0a87257e-5308-397d-b432-30edf4ad1dae"
+      }, {
+        "judicialId": "299a23a2-291e-3126-b91d-54f3601ec162"
+      }, {
+        "judicialId": "c4bbac87-0026-3949-93a9-1cbd99149a13"
+      }, {
+        "judicialId": "1e6e0a04-d20f-3096-bc64-dac2d639a577"
+      }, {
+        "judicialId": "cb8acb1d-c982-3bf7-8e6c-a9068032d623"
+      }, {
+        "judicialId": "94f6d7e0-4a4d-3520-b530-0f18b984988c"
+      }, {
+        "judicialId": "126c2da1-28e5-3044-9c53-405c25b4d8de"
+      }, {
+        "judicialId": "e7b24b11-2a44-3dd9-ae93-bdf998c6ca0e"
+      }, {
+        "judicialId": "7ea4e7fc-dc6a-3f27-b7bd-594a3754e02a"
+      }, {
+        "judicialId": "dcf9082a-1712-3c1a-9c46-b4f19dc90e6c"
+      }, {
+        "judicialId": "5c2fc00b-ef30-39d1-a196-6dcf9cbdab3b"
+      }, {
+        "judicialId": "3900018c-3de7-30c4-ae65-aa4968175c30"
+      }, {
+        "judicialId": "ec24a54d-62ce-37ba-93a5-31b460fa8d18"
+      }, {
+        "judicialId": "2eed43c6-e564-35e8-a256-8f3463d266d3"
+      }, {
+        "judicialId": "47b07872-dbbd-3225-bce3-cf77de4ed5f0"
+      }, {
+        "judicialId": "99f0e91e-4f90-3cc1-83bd-ee598eadca30"
+      }, {
+        "judicialId": "6e7d5d25-9be7-3f56-ad79-029c4e621f44"
+      }, {
+        "judicialId": "0c6fc0ac-5afb-31a7-9fe1-910da98db915"
+      }, {
+        "judicialId": "f8a26bb6-36de-3d3a-9cb4-82a444dad467"
+      }, {
+        "judicialId": "0004289e-e1c7-38b0-8c77-e19878106ae3"
+      }, {
+        "judicialId": "54adbac2-f515-3456-a932-bd70597ffa1c"
+      }, {
+        "judicialId": "47a85128-570a-3482-beea-9592a3cc7ffb"
+      }, {
+        "judicialId": "f724b7bc-b5c5-36ac-96ff-b0dbdd37b138"
+      }, {
+        "judicialId": "8e930496-9277-37aa-80db-d2438cb3f4f6"
+      }, {
+        "judicialId": "9c762cfe-6523-3b31-8c73-97eb152281e4"
+      }, {
+        "judicialId": "a14ac55a-4f27-372c-9d89-4ec1c3c743d2"
+      }, {
+        "judicialId": "cf3c6554-ad00-3edb-bcad-15f7ea7d5879"
+      }, {
+        "judicialId": "2961e81d-fb2d-3aa9-baa4-82cbaebaa91c"
+      }, {
+        "judicialId": "1854b286-45a6-31c7-96bc-3b0b917ca3fd"
+      }, {
+        "judicialId": "7298332f-04ac-304a-8ca4-4cc69ecf6f6b"
+      }, {
+        "judicialId": "23264092-bdaf-3349-83ce-c606151be6bd"
+      }, {
+        "judicialId": "34f9a343-f945-396b-a6f8-07e0eb6249fd"
+      }, {
+        "judicialId": "2f254e66-097f-3653-a5ca-4cfdb33be358"
+      }, {
+        "judicialId": "028ee724-157b-35d0-8e7b-dcf237d12e60"
+      }, {
+        "judicialId": "cda72177-eba3-30ff-96b7-f836e2754370"
+      }, {
+        "judicialId": "ef35613f-c5fa-3c4c-912d-552533f5e6f2"
+      }, {
+        "judicialId": "2ddc6693-81f1-38fa-9cc8-0573e13870fd"
+      }, {
+        "judicialId": "26f5bd4a-a64f-3adf-9615-2ca6e6408068"
+      }, {
+        "judicialId": "30dd2217-4d06-30cd-ae50-c352a8a8a49e"
+      }, {
+        "judicialId": "400c3241-004b-3db7-8a7f-5abfef2794f2"
+      }, {
+        "judicialId": "89d9c467-c292-3de8-af12-d1f3e006d06b"
+      }, {
+        "judicialId": "4f41c525-e66c-3acd-bfb3-e55371cd9f33"
+      }, {
+        "judicialId": "e2fd0fc4-897a-3a69-956b-7bbf61a8706a"
+      }, {
+        "judicialId": "84f5ddd7-3517-3bec-872c-3b1ff424149e"
+      }, {
+        "judicialId": "e7061188-3d27-30c8-bbaf-b4acb29e3446"
+      }, {
+        "judicialId": "47698c15-fb83-31e5-bb14-00accbb17f82"
+      }, {
+        "judicialId": "4469eee1-29fe-3da0-93ed-ce5404418f59"
+      }, {
+        "judicialId": "643d458e-9952-3d88-9c28-fd319debfb91"
+      }, {
+        "judicialId": "aa4bc9ad-6460-3d15-afc6-7ff4b4623089"
+      }, {
+        "judicialId": "3f7bcd0b-3ea8-3268-bbba-8fc530f151bd"
+      }, {
+        "judicialId": "6531b32f-8d02-3ece-98ff-36a64a7c8260"
+      }, {
+        "judicialId": "e7d4c8d4-fe04-39b4-939a-075d809c6d01"
+      }, {
+        "judicialId": "dd17e652-cd2a-38fd-b8bf-7f68e2ad3814"
+      }, {
+        "judicialId": "baed9f51-d412-3251-8ee4-6a0942138ad6"
+      }, {
+        "judicialId": "3d387d26-12f9-3271-94ed-3b99a7427da1"
+      }, {
+        "judicialId": "fd0efcca-272f-304a-b60c-3b61dcc70fd0"
+      }, {
+        "judicialId": "cfecdb27-6f63-3854-b3ef-915e2e980c31"
+      }, {
+        "judicialId": "b7a84864-5973-3bea-9569-414ef76cf03f"
+      }, {
+        "judicialId": "3ce257b3-11e5-3cf8-8999-2f5a675188e8"
+      }, {
+        "judicialId": "ccf68ece-4bf7-3058-9b07-b91d40775d8c"
+      }, {
+        "judicialId": "4f87658e-f0de-3944-9305-6248a00ce009"
+      }, {
+        "judicialId": "4140fe6a-9358-3e3c-9d66-0225c4c2fcb4"
+      }, {
+        "judicialId": "b137fdd1-f79d-36c7-adf3-365fea7520f2"
+      }, {
+        "judicialId": "d73bdb1a-c56e-3271-8da5-63e7949255b2"
+      }, {
+        "judicialId": "b73ce398-c39f-306a-b761-d2277d853a92"
+      }, {
+        "judicialId": "9b72e31d-ac81-3154-a6cd-580a448cf823"
+      }, {
+        "judicialId": "85ef8e89-5264-3e2d-8ab7-bcd0f04d9bea"
+      }, {
+        "judicialId": "9ab8a8a9-349e-31dd-b3ce-155ce64c80fa"
+      }, {
+        "judicialId": "731c83db-8d2f-301b-9c00-0083fd3c3740"
+      }, {
+        "judicialId": "1f506914-2727-3481-b8a5-4524b5beeb58"
+      }, {
+        "judicialId": "acf7e77a-5936-3316-905c-e94cee522f5d"
+      }, {
+        "judicialId": "4ffce04d-92a4-36cb-a1c1-494cdfcd6dc1"
+      }, {
+        "judicialId": "43b52842-663f-36e4-900c-72751d08de6f"
+      }, {
+        "judicialId": "34173cb3-8f07-389d-9beb-c2ac9128303f"
+      }, {
+        "judicialId": "9f0cb6db-d4f0-34e2-a2e0-059501bcc0ad"
+      }, {
+        "judicialId": "6534a843-6e90-3efb-8ced-99edd8d02435"
+      }, {
+        "judicialId": "ec8ce6ab-b3e9-32a8-9b85-51ba726a1227"
+      }, {
+        "judicialId": "f3482a10-2a8d-3a7e-8df5-7d63ec37872a"
+      }, {
+        "judicialId": "091bc544-0296-3c0e-81dd-60ce22fbaf88"
+      }, {
+        "judicialId": "29c4a0e4-ef7d-3969-a94a-5f4aadd20690"
+      }, {
+        "judicialId": "4de1ed74-128a-36a8-b590-0186486aacba"
+      }, {
+        "judicialId": "535ab766-33d9-3208-a36a-2e829ea6d888"
+      }, {
+        "judicialId": "3859754d-7af6-3f27-9198-d32f7ff514d7"
+      }, {
+        "judicialId": "46ba59a6-9948-3234-bd65-9680875fb173"
+      }, {
+        "judicialId": "6e923226-e43c-36fa-87cf-e1e13ad000ac"
+      }, {
+        "judicialId": "de3a79c1-fd2e-3590-a59d-6252082099c0"
+      }, {
+        "judicialId": "6a2e02ab-ed77-3d14-8a4f-c05f6cfd7741"
+      }, {
+        "judicialId": "9808ae38-7588-3450-9ca3-fc0697050e03"
+      }, {
+        "judicialId": "6c9882bb-ac1c-3093-bd25-041881277658"
+      }, {
+        "judicialId": "40008b9a-5380-3cac-8e39-76bf7c08af5b"
+      }, {
+        "judicialId": "0f9a0878-fcaf-3dde-a9b4-e487aa8bbb44"
+      }, {
+        "judicialId": "7f489f64-2a0d-3b10-a72b-5c31057f0663"
+      }, {
+        "judicialId": "cbb68624-5ece-37c9-827c-4bc0d0654a8e"
+      }, {
+        "judicialId": "cbc462e2-7100-3ad7-9cdb-f606d396ddad"
+      }, {
+        "judicialId": "306ce8aa-58ea-3d5a-9a87-e0f348907b59"
+      }, {
+        "judicialId": "82c915bc-a753-3ef1-9265-aa134511f272"
+      }, {
+        "judicialId": "1c474e7b-437a-3729-a31a-4105790a6340"
+      }, {
+        "judicialId": "0109e4e4-4772-37a4-85e6-b95ec6d6603c"
+      }, {
+        "judicialId": "6ea2ef73-11b4-3272-8a9b-7b0bc0dd85c6"
+      }, {
+        "judicialId": "8925f4bf-c315-347a-9fcc-a80a74581f4b"
+      }, {
+        "judicialId": "94a69f0a-7d31-3157-9ee7-d8e089ad900b"
+      }, {
+        "judicialId": "c06d06da-9666-3219-9b15-cf575aff2824"
+      }, {
+        "judicialId": "619a4295-019b-39d1-86b5-7c00594e827b"
+      }, {
+        "judicialId": "bd380c81-db01-3b11-bb6a-b112b847e52b"
+      }, {
+        "judicialId": "d490d7b4-5762-30fa-a0eb-31b5fc917ad1"
+      }, {
+        "judicialId": "55cc7e37-5908-329d-9251-608616cd8a63"
+      }, {
+        "judicialId": "5b658d2a-9255-35f0-b55e-035597f8d22f"
+      }, {
+        "judicialId": "c6036a69-be21-3b66-8499-b75718a3ef24"
+      }, {
+        "judicialId": "9a6a1aaa-fe73-3572-b737-4828b03a1881"
+      }, {
+        "judicialId": "4e5046fc-8d6a-37d1-8a5f-54beaed54dea"
+      }, {
+        "judicialId": "36ed197b-3f31-318f-9bad-b3df86f804bd"
+      }, {
+        "judicialId": "cbfe5681-3693-38a4-8e2d-1b63998099d6"
+      }, {
+        "judicialId": "3557a86d-b669-3367-b0d9-46052d988e46"
+      }, {
+        "judicialId": "29969626-5683-3a97-af4c-5f926fe6f1b0"
+      }, {
+        "judicialId": "08b255a5-d42b-39b0-9852-60b6f2360bdd"
+      }, {
+        "judicialId": "153e0281-5bb0-32bb-be65-ad09509c5a7b"
+      }],
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "hearingsByCourtCentreId": [
+        {
+          "hearingDate": "2020-11-22",
+          "hearingsByHearingDate": [{
+            "hearing": {
+              "id": "e28442c5-42ec-4d75-8b3e-275ba2022dd8",
+              "type": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "endDate": "2020-11-22",
+              "allocated": true,
+              "judiciary": [],
+              "startDate": "2020-11-22",
+              "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+              "hearingDays": [{
+                "endTime": "2020-11-22T09:21:01.001Z",
+                "sequence": 0,
+                "startTime": "2020-11-22T09:01:01.001Z",
+                "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+                "hearingDate": "2020-11-22",
+                "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                "durationMinutes": 20
+              }],
+              "listedCases": [],
+              "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+              "isSlotsBooked": false,
+              "nonDefaultDays": [{
+                "roomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+                "duration": 20,
+                "startTime": "2020-11-22T09:01:01.001Z",
+                "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26"
+              }],
+              "nonSittingDays": [],
+              "hearingLanguage": "ENGLISH",
+              "estimatedMinutes": 20,
+              "jurisdictionType": "MAGISTRATES",
+              "courtApplications": [],
+              "courtCentreDetails": {
+                "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                "defaultDuration": 420,
+                "defaultStartTime": "10:00:00"
+              }
+            }
+          }, {
+            "hearing": {
+              "id": "027238ee-1d39-4d43-9350-1990ddddf700",
+              "type": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "endDate": "2020-11-22",
+              "allocated": true,
+              "judiciary": [],
+              "startDate": "2020-11-22",
+              "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+              "hearingDays": [{
+                "endTime": "2020-11-22T09:21:01.001Z",
+                "sequence": 1,
+                "startTime": "2020-11-22T09:01:01.001Z",
+                "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+                "hearingDate": "2020-11-22",
+                "isCancelled": false,
+                "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                "durationMinutes": 20
+              }],
+              "listedCases": [{
+                "id": "cbeb67bd-3ef9-49a1-a078-c92957dcf5f8",
+                "isEjected": true,
+                "defendants": [{
+                  "id": "adfeb43d-d2f1-484e-8c1c-d42f6ae9575a",
+                  "address": {
+                    "address1": "567",
+                    "address2": "56Police House",
+                    "address3": "StreetDescription1",
+                    "address4": "Locality1",
+                    "address5": "Town2",
+                    "postcode": "TW14 9XD"
+                  },
+                  "isYouth": false,
+                  "lastName": "Jones",
+                  "offences": [{
+                    "id": "17385a90-78ec-45eb-aa3f-31dcd1b0d33b",
+                    "endDate": "2005-05-05",
+                    "startDate": "1996-05-04",
+                    "offenceCode": "TH68010",
+                    "shadowListed": false,
+                    "offenceWording": "Theft from a shop",
+                    "statementOfOffence": {
+                      "title": "Theft from a shop",
+                      "welshTitle": "Theft from a shop",
+                      "legislation": "Contrary to section 1(1) and 7 of the Theft    Act 1968."
+                    },
+                    "restrictFromCourtList": false
+                  }, {
+                    "id": "0780ec45-8ac2-4e1a-aa09-ebed8d10b269",
+                    "endDate": "2005-05-05",
+                    "startDate": "1996-05-04",
+                    "offenceCode": "MH04001",
+                    "shadowListed": false,
+                    "offenceWording": "Start / cause to be started a clinical trial without authority",
+                    "statementOfOffence": {
+                      "title": "Start / cause to be started a clinical trial without authority",
+                      "welshTitle": "Start / cause to be started a clinical trial without authority",
+                      "legislation": "Contrary to regulations 12(1)(a), 49(1)(aa) and 52 of the Medicines for Human Use (Clinical Trials) Regulations 2004."
+                    },
+                    "restrictFromCourtList": false
+                  }, {
+                    "id": "17800439-235b-4d0d-b722-739739162e74",
+                    "endDate": "2005-05-05",
+                    "startDate": "1996-05-04",
+                    "offenceCode": "MT88006",
+                    "shadowListed": false,
+                    "offenceWording": "Send letter / communication / article conveying indecent / offensive message",
+                    "statementOfOffence": {
+                      "title": "Send letter / communication / article conveying indecent / offensive message",
+                      "welshTitle": "Send letter / communication / article conveying indecent / offensive message",
+                      "legislation": "Contrary to section 1(1)(a) and    (4) of the Malicious Communications Act 1988."
+                    },
+                    "restrictFromCourtList": false
+                  }],
+                  "firstName": "David",
+                  "bailStatus": {
+                    "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                    "code": "B",
+                    "description": "Conditional Bail"
+                  },
+                  "dateOfBirth": "1993-10-24",
+                  "masterDefendantId": "adfeb43d-d2f1-484e-8c1c-d42f6ae9575a",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "proceedingsConcluded": true,
+                  "specificRequirements": "SpecialNeeds0",
+                  "restrictFromCourtList": false,
+                  "nationalityDescription": "Pole",
+                  "courtProceedingsInitiated": "2020-11-18T09:42:07.122Z"
+                }],
+                "shadowListed": false,
+                "caseIdentifier": {
+                  "authorityId": "125baa4d-ffeb-448b-852c-5ab695fdfcc7",
+                  "authorityCode": "CPS-SE",
+                  "caseReference": "26GD2897920"
+                }
+              }],
+              "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+              "isSlotsBooked": false,
+              "nonDefaultDays": [{
+                "roomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+                "duration": 20,
+                "startTime": "2020-11-22T09:01:01.001Z",
+                "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26"
+              }],
+              "nonSittingDays": [],
+              "hearingLanguage": "ENGLISH",
+              "estimatedMinutes": 20,
+              "jurisdictionType": "MAGISTRATES",
+              "courtApplications": [],
+              "courtCentreDetails": {
+                "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                "defaultDuration": 420,
+                "defaultStartTime": "10:00:00"
+              }
+            }
+          }, {
+            "hearing": {
+              "id": "36f8ee7c-53c1-4877-acc5-eb0c737b42ee",
+              "type": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "endDate": "2020-11-22",
+              "allocated": true,
+              "judiciary": [],
+              "startDate": "2020-11-22",
+              "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+              "hearingDays": [{
+                "endTime": "2020-11-22T09:21:01.001Z",
+                "sequence": 0,
+                "startTime": "2020-11-22T09:01:01.001Z",
+                "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+                "hearingDate": "2020-11-22",
+                "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                "durationMinutes": 20
+              }],
+              "listedCases": [{
+                "id": "f373492b-e3e5-4f24-aa1e-ab959b5f0b87",
+                "isEjected": true,
+                "defendants": [{
+                  "id": "7bc9033a-4ffe-46d4-8080-29affd0512b2",
+                  "address": {
+                    "address1": "486",
+                    "address2": "56Police House",
+                    "address3": "StreetDescription1",
+                    "address4": "Locality1",
+                    "address5": "Town2",
+                    "postcode": "TW14 9XD"
+                  },
+                  "isYouth": false,
+                  "lastName": "Jones",
+                  "offences": [{
+                    "id": "e7186425-5260-40b8-bc4e-cc925d567c93",
+                    "endDate": "2005-05-05",
+                    "startDate": "1996-05-04",
+                    "offenceCode": "TH68010",
+                    "shadowListed": false,
+                    "offenceWording": "Theft from a shop",
+                    "statementOfOffence": {
+                      "title": "Theft from a shop",
+                      "welshTitle": "Theft from a shop",
+                      "legislation": "Contrary to section 1(1) and 7 of the Theft    Act 1968."
+                    },
+                    "restrictFromCourtList": false
+                  }, {
+                    "id": "7551ce2b-7695-40e1-bf7d-0b279245b97f",
+                    "endDate": "2005-05-05",
+                    "startDate": "1996-05-04",
+                    "offenceCode": "MH04001",
+                    "shadowListed": false,
+                    "offenceWording": "Start / cause to be started a clinical trial without authority",
+                    "statementOfOffence": {
+                      "title": "Start / cause to be started a clinical trial without authority",
+                      "welshTitle": "Start / cause to be started a clinical trial without authority",
+                      "legislation": "Contrary to regulations 12(1)(a), 49(1)(aa) and 52 of the Medicines for Human Use (Clinical Trials) Regulations 2004."
+                    },
+                    "restrictFromCourtList": false
+                  }, {
+                    "id": "546ead56-f748-423e-84d9-8e71da99d7bb",
+                    "endDate": "2005-05-05",
+                    "startDate": "1996-05-04",
+                    "offenceCode": "MT88006",
+                    "shadowListed": false,
+                    "offenceWording": "Send letter / communication / article conveying indecent / offensive message",
+                    "statementOfOffence": {
+                      "title": "Send letter / communication / article conveying indecent / offensive message",
+                      "welshTitle": "Send letter / communication / article conveying indecent / offensive message",
+                      "legislation": "Contrary to section 1(1)(a) and    (4) of the Malicious Communications Act 1988."
+                    },
+                    "restrictFromCourtList": false
+                  }],
+                  "firstName": "David",
+                  "bailStatus": {
+                    "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                    "code": "B",
+                    "description": "Conditional Bail"
+                  },
+                  "dateOfBirth": "1955-07-23",
+                  "masterDefendantId": "7bc9033a-4ffe-46d4-8080-29affd0512b2",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "specificRequirements": "SpecialNeeds0",
+                  "restrictFromCourtList": false,
+                  "nationalityDescription": "Pole",
+                  "courtProceedingsInitiated": "2020-11-18T09:31:16.156Z"
+                }],
+                "shadowListed": false,
+                "caseIdentifier": {
+                  "authorityId": "125baa4d-ffeb-448b-852c-5ab695fdfcc7",
+                  "authorityCode": "CPS-SE",
+                  "caseReference": "23GD3933520"
+                }
+              }],
+              "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+              "isSlotsBooked": false,
+              "nonDefaultDays": [{
+                "roomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+                "duration": 20,
+                "startTime": "2020-11-22T09:01:01.001Z",
+                "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26"
+              }],
+              "nonSittingDays": [],
+              "hearingLanguage": "ENGLISH",
+              "estimatedMinutes": 20,
+              "jurisdictionType": "MAGISTRATES",
+              "courtApplications": [],
+              "courtCentreDetails": {
+                "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                "defaultDuration": 420,
+                "defaultStartTime": "10:00:00"
+              }
+            }
+          }, {
+            "hearing": {
+              "id": "7f6a1a42-00be-45c2-bcae-5455e8ad0faf",
+              "type": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "endDate": "2020-11-22",
+              "allocated": true,
+              "judiciary": [],
+              "startDate": "2020-11-22",
+              "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+              "hearingDays": [{
+                "endTime": "2020-11-22T09:21:01.001Z",
+                "sequence": 1,
+                "startTime": "2020-11-22T09:01:01.001Z",
+                "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+                "hearingDate": "2020-11-22",
+                "isCancelled": false,
+                "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                "durationMinutes": 20
+              }],
+              "listedCases": [{
+                "id": "e8bf3593-0764-409c-85a4-6dc19430814c",
+                "markers": [{
+                  "id": "79b10fb7-0138-42b2-9ab8-112e7e0df360",
+                  "markerTypeid": "e7eff972-189c-4957-8b1e-cb45213aa64e",
+                  "markerTypeCode": "HT",
+                  "markerTypeDescription": "Human Trafficking"
+                }],
+                "caseStatus": "INACTIVE",
+                "defendants": [{
+                  "id": "f1f50e32-6288-4ad5-b626-a0bdda441883",
+                  "address": {
+                    "address1": "116",
+                    "address2": "56Police House",
+                    "address3": "StreetDescription1",
+                    "address4": "Locality1",
+                    "address5": "Town2",
+                    "postcode": "TW14 9XD"
+                  },
+                  "isYouth": false,
+                  "lastName": "Jones",
+                  "offences": [{
+                    "id": "3044f3d1-af7f-471d-a958-59e73663b629",
+                    "endDate": "2005-05-05",
+                    "startDate": "1996-05-04",
+                    "offenceCode": "TH68010",
+                    "shadowListed": false,
+                    "offenceWording": "Theft from a shop",
+                    "statementOfOffence": {
+                      "title": "Theft from a shop",
+                      "welshTitle": "Theft from a shop",
+                      "legislation": "Contrary to section 1(1) and 7 of the Theft    Act 1968."
+                    },
+                    "restrictFromCourtList": false
+                  }, {
+                    "id": "702bd9e0-18e9-4767-8762-a2eba33b00cf",
+                    "endDate": "2005-05-05",
+                    "startDate": "1996-05-04",
+                    "offenceCode": "MH04001",
+                    "shadowListed": false,
+                    "offenceWording": "Start / cause to be started a clinical trial without authority",
+                    "statementOfOffence": {
+                      "title": "Start / cause to be started a clinical trial without authority",
+                      "welshTitle": "Start / cause to be started a clinical trial without authority",
+                      "legislation": "Contrary to regulations 12(1)(a), 49(1)(aa) and 52 of the Medicines for Human Use (Clinical Trials) Regulations 2004."
+                    },
+                    "restrictFromCourtList": false
+                  }, {
+                    "id": "2f04253b-1bc5-47cf-bd31-5929ab87c239",
+                    "endDate": "2005-05-05",
+                    "startDate": "1996-05-04",
+                    "offenceCode": "MT88006",
+                    "shadowListed": false,
+                    "offenceWording": "Send letter / communication / article conveying indecent / offensive message",
+                    "statementOfOffence": {
+                      "title": "Send letter / communication / article conveying indecent / offensive message",
+                      "welshTitle": "Send letter / communication / article conveying indecent / offensive message",
+                      "legislation": "Contrary to section 1(1)(a) and    (4) of the Malicious Communications Act 1988."
+                    },
+                    "restrictFromCourtList": false
+                  }],
+                  "firstName": "David",
+                  "bailStatus": {
+                    "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                    "code": "B",
+                    "description": "Conditional Bail"
+                  },
+                  "dateOfBirth": "1936-08-22",
+                  "masterDefendantId": "f1f50e32-6288-4ad5-b626-a0bdda441883",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "proceedingsConcluded": true,
+                  "specificRequirements": "SpecialNeeds0",
+                  "restrictFromCourtList": false,
+                  "nationalityDescription": "Pole",
+                  "courtProceedingsInitiated": "2020-11-18T09:46:51.113Z"
+                }],
+                "shadowListed": false,
+                "caseIdentifier": {
+                  "authorityId": "125baa4d-ffeb-448b-852c-5ab695fdfcc7",
+                  "authorityCode": "CPS-SE",
+                  "caseReference": "41GD6667120"
+                },
+                "restrictFromCourtList": false
+              }],
+              "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+              "isSlotsBooked": false,
+              "nonDefaultDays": [{
+                "roomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+                "duration": 20,
+                "startTime": "2020-11-22T09:01:01.001Z",
+                "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26"
+              }],
+              "nonSittingDays": [],
+              "hearingLanguage": "ENGLISH",
+              "estimatedMinutes": 20,
+              "jurisdictionType": "MAGISTRATES",
+              "courtApplications": [],
+              "courtCentreDetails": {
+                "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                "defaultDuration": 420,
+                "defaultStartTime": "10:00:00"
+              }
+            }
+          }, {
+            "hearing": {
+              "id": "a8f73f31-3d00-404f-9775-998501b53a29",
+              "type": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "endDate": "2020-11-22",
+              "allocated": true,
+              "judiciary": [],
+              "startDate": "2020-11-22",
+              "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+              "hearingDays": [{
+                "endTime": "2020-11-22T09:21:01.001Z",
+                "sequence": 2,
+                "startTime": "2020-11-22T09:01:01.001Z",
+                "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+                "hearingDate": "2020-11-22",
+                "isCancelled": false,
+                "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                "durationMinutes": 20
+              }],
+              "listedCases": [{
+                "id": "610c0fd6-f6fc-4d6f-9842-b1a9a8bf9016",
+                "markers": [{
+                  "id": "cd957fba-5c35-4db8-853d-efcbbbf53b12",
+                  "markerTypeid": "e7eff972-189c-4957-8b1e-cb45213aa64e",
+                  "markerTypeCode": "HT",
+                  "markerTypeDescription": "Human Trafficking"
+                }],
+                "defendants": [{
+                  "id": "a395ed9f-50de-4b67-8427-e62964d7ba06",
+                  "address": {
+                    "address1": "7haa6wxJfc",
+                    "address2": "56Police HouseD",
+                    "address3": "StreetDescriptionD",
+                    "address4": "LocalityD",
+                    "address5": "TownD",
+                    "postcode": "TW14 9XD"
+                  },
+                  "isYouth": false,
+                  "lastName": "Smith",
+                  "offences": [{
+                    "id": "5603526a-cdcc-4ba0-892f-a61b92bd69f1",
+                    "endDate": "2005-05-05",
+                    "startDate": "1996-05-04",
+                    "offenceCode": "CA03014",
+                    "shadowListed": false,
+                    "offenceWording": "-- Legislation: Has a violent past and fear that he will commit further offences and\n                interfere with witnesse",
+                    "statementOfOffence": {
+                      "title": "Fail    / refuse give assistance to person executing Communications Act search warrant",
+                      "welshTitle": "Fail    / refuse give assistance to person executing Communications Act search warrant",
+                      "legislation": "Contrary to section 366(8)(b) and    (9) of the Communications Act 2003."
+                    },
+                    "restrictFromCourtList": false
+                  }],
+                  "firstName": "Robert",
+                  "bailStatus": {
+                    "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                    "code": "B",
+                    "description": "Conditional Bail"
+                  },
+                  "dateOfBirth": "1949-05-07",
+                  "masterDefendantId": "a395ed9f-50de-4b67-8427-e62964d7ba06",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "specificRequirements": "SpecialNeeds0",
+                  "restrictFromCourtList": false,
+                  "nationalityDescription": "Brazilian",
+                  "courtProceedingsInitiated": "2020-11-18T11:08:41.611Z"
+                }],
+                "shadowListed": false,
+                "caseIdentifier": {
+                  "authorityId": "125baa4d-ffeb-448b-852c-5ab695fdfcc7",
+                  "authorityCode": "CPS-SE",
+                  "caseReference": "44GD2186020"
+                },
+                "restrictFromCourtList": false
+              }],
+              "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+              "isSlotsBooked": false,
+              "nonDefaultDays": [{
+                "roomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+                "duration": 20,
+                "startTime": "2020-11-22T09:01:01.001Z",
+                "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26"
+              }],
+              "nonSittingDays": [],
+              "hearingLanguage": "ENGLISH",
+              "estimatedMinutes": 20,
+              "jurisdictionType": "MAGISTRATES",
+              "courtApplications": [],
+              "courtCentreDetails": {
+                "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                "defaultDuration": 420,
+                "defaultStartTime": "10:00:00"
+              }
+            }
+          }]
+        }
+      ]
+    }]
+}

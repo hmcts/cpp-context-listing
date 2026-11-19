@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/referencedata-service/query/api/rest/referencedata/hearing-types"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/vnd.referencedata.query.hearing-types+json"
+    },
+    "bodyFileName": "referencedata-hearing-types.json"
+  }
+}

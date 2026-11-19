@@ -1,0 +1,34 @@
+// Framework-free services for the Spring Boot port (§8 `listing-common`; "-spring" while the
+// Maven listing-common module still exists). P2.1 content: the query services ported from
+// listing-query-view and listing-query-api (POJO / JsonObject in and out, constructor injection,
+// §5), the reference-data and court-scheduler helpers they use from listing-common, and the
+// outbound REST clients (Spring RestClient on the JDK HttpClient, §6).
+dependencies {
+    api project(':listing-domain-spring')
+    api project(':listing-viewstore-persistence-spring')
+    api 'org.springframework:spring-web'
+    api 'org.springframework:spring-context'
+    api 'org.springframework:spring-tx'
+
+    implementation 'org.springframework.boot:spring-boot'
+    implementation 'com.google.guava:guava:33.6.0-jre'
+    implementation 'org.apache.commons:commons-lang3'
+    implementation 'commons-collections:commons-collections:3.2.2'
+    implementation 'org.apache.commons:commons-collections4:4.5.0'
+    implementation 'org.apache.commons:commons-csv:1.10.0'
+    implementation 'org.slf4j:slf4j-api'
+    implementation 'jakarta.annotation:jakarta.annotation-api'
+    implementation 'jakarta.validation:jakarta.validation-api'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'com.jayway.jsonpath:json-path-assert:2.9.0'
+    testImplementation 'commons-io:commons-io:2.22.0'
+    testImplementation 'org.apache.commons:commons-csv:1.10.0'
+    testRuntimeOnly 'org.eclipse.parsson:parsson:1.1.9'
+}
+
+// Parameter names in class files: the framework-equivalent ObjectMapper (ParameterNamesModule,
+// properties-based creators) deserialises unannotated constructors such as dto.ListedCase.
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << '-parameters'
+}

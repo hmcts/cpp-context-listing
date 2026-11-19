@@ -1,0 +1,28 @@
+{
+  "courtRoomName": "Room 1",
+  "hearingDate": "2020-10-09",
+  "sittings": [
+    {
+      "judiciaryNames": [],
+      "sittingTime": "10:00 am",
+      "hearings": [
+        {
+          "hearingType": "Bail Application",
+          "caseNumber": "41GD9734320",
+          "hearingDay": {
+            "hearingDate": "2020-10-09",
+            "endTime": "10:02 am",
+            "startTime": "10:00 am",
+            "durationMinutes": 2
+          },
+          "defendants": [
+            {
+              "firstName": "Robert",
+              "surname": "Smith"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

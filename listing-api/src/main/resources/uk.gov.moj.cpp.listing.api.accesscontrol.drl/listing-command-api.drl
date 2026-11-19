@@ -1,0 +1,286 @@
+// Ported from listing-command/listing-command-api/src/main/resources/uk/gov/moj/cpp/listing/command/api/accesscontrol/listing-command-api.drl
+// (ADR 005). Group lists are unchanged. Changes from the legacy file:
+//   - imports/global: cp-auth-rules-filter types (uk.gov.moj.cpp.authz.*) replace the framework's
+//     uk.gov.moj.cpp.accesscontrol.*; RuleConstants is a copy in listing-api;
+//   - Action.name: cp-auth-rules-filter resolves the action from the Content-Type vendor token
+//     (§11 pitfall 3), not from the RAML mapping name. Where the two differ, the rule now matches
+//     the vendor token and the legacy name is kept in a comment (4 rules);
+//   - isSystemUser($action): not in cp-auth-rules-filter's UserAndGroupProvider. The framework's
+//     implementation was isMemberOfAnyOfTheSuppliedGroups($action, "System Users"), which is what
+//     those 8 rules now call (RuleConstants.SYSTEM_USERS).
+// Rule names are unchanged, so they still read as the legacy action names.
+package uk.gov.moj.cpp.listing.api.accesscontrol.drl;
+
+import uk.gov.moj.cpp.authz.drools.Outcome;
+import uk.gov.moj.cpp.authz.drools.Action;
+import uk.gov.moj.cpp.listing.api.accesscontrol.RuleConstants;
+
+global uk.gov.moj.cpp.authz.http.providers.UserAndGroupProvider userAndGroupProvider;
+
+rule "Command - API - Action - listing.command.list-court-hearing"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.list-court-hearing");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.LEGAL_ADVISERS,
+    RuleConstants.COURT_CLERKS, RuleConstants.SYSTEM_USERS, RuleConstants.COURT_ASSOCIATE, RuleConstants.MAGISTRATES));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.list-next-hearings-v2"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.next-hearings-v2");   // legacy action name: listing.list-next-hearings-v2
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.LEGAL_ADVISERS,
+    RuleConstants.COURT_CLERKS, RuleConstants.SYSTEM_USERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.update-related-hearing"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.related-hearing");   // legacy action name: listing.update-related-hearing
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.LEGAL_ADVISERS,
+    RuleConstants.COURT_CLERKS, RuleConstants.SYSTEM_USERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.list-unscheduled-court-hearing"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.list-unscheduled-court-hearing");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.LEGAL_ADVISERS,
+    RuleConstants.COURT_CLERKS, RuleConstants.SYSTEM_USERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.list-unscheduled-next-hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.list-unscheduled-next-hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.LEGAL_ADVISERS,
+    RuleConstants.COURT_CLERKS, RuleConstants.SYSTEM_USERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.delete-next-hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.delete-next-hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.LEGAL_ADVISERS,
+    RuleConstants.COURT_CLERKS, RuleConstants.SYSTEM_USERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.update-hearing-for-listing"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.update-hearing-for-listing");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.split-hearing"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.split-hearing");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.update-hearings-for-listing"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.update-hearings-for-listing");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.vacate-trial"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.vacate-trial");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.extend-hearing-for-hearing"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.extend-hearing-for-hearing");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.change-judiciary-for-hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.change-judiciary-for-hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE,RuleConstants.SYSTEM_USERS));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.sequence-hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.sequence-hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.CPS, RuleConstants.YOTS, RuleConstants.NPS, RuleConstants.COURT_ASSOCIATE, RuleConstants.GROUP_POLICE_ADMIN, RuleConstants.GROUP_VICTIMS_WITNESS_CARE_ADMIN, RuleConstants.NON_CPS_PROSECUTOR_GROUP));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.restrict-court-list"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.restrict-court-list");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.CPS, RuleConstants.YOTS, RuleConstants.NPS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.publish-court-list"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.publish-court-list");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.publish-court-lists-for-crown-courts"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.publish-court-lists-for-crown-courts");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.SYSTEM_USERS))
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.court-list-request-export"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.court-list-request-export");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.SYSTEM_USERS))
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.create-listing-note"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.create-listing-note");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.edit-listing-note"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.edit-listing-note");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+rule "Command - API - Action - listing.command.delete-listing-note"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.delete-listing-note");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.correct-hearing-days-without-court-centre"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.correct-hearing-days-without-court-centre");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.SYSTEM_USERS))
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.update-hearing-day-court-schedule"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.update-hearing-day-court-schedule");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.SYSTEM_USERS))
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.migrate-crown-hearings-to-courtschedules"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.migrate-crown-hearings-to-courtschedules");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.SYSTEM_USERS))
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.mark-unallocated-hearing-as-duplicate"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.duplicate-unallocated-hearing");   // legacy action name: listing.mark-unallocated-hearing-as-duplicate
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.SYSTEM_USERS))
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.delete-hearing"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.delete-hearing");   // legacy action name: listing.command.delete-hearing
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.SYSTEM_USERS))
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.delete-previous-hearings-and-create-next-hearing"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.delete-previous-hearings-and-create-next-hearing");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.LEGAL_ADVISERS,
+        RuleConstants.COURT_CLERKS, RuleConstants.SYSTEM_USERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.update-hearing-add-case-bdf"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.update-hearing-add-case-bdf");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.SYSTEM_USERS))
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.move-hearing-to-past-date"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.move-hearing-to-past-date");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.change-court-room-for-multiday-hearing"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.change-court-room-for-multiday-hearing");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+

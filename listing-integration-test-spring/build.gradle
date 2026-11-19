@@ -1,0 +1,88 @@
+// Spring Boot integration tests (MBD refactor, Phase 2). Copied from courtscheduler's
+// listingcourtscheduler-integration-test/build.gradle. Tests only: the app runs in Docker
+// (docker/docker-compose.integration.yml) and the tests call it over HTTP.
+//
+// This is NOT the Maven listing-integration-test module: that one still runs the legacy *IT
+// suite against WildFly (./runIntegrationTests.sh) until cut-over (P2.5), when its scenarios move
+// onto this stack (§9).
+plugins {
+    id 'java-library'
+    id 'com.avast.gradle.docker-compose'
+}
+
+ext {
+    serverPort = project.findProperty('server.port') ?: '8084'
+}
+
+sourceSets {
+    test {
+        java.srcDirs = ['src/test/java']
+        resources.srcDirs = ['src/test/resources']
+    }
+    main {
+        java.srcDirs = []
+        resources.srcDirs = []
+    }
+}
+
+// No production artifact — this module is purely tests.
+jar { enabled = false }
+
+dependencies {
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'junit', module: 'junit'
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+    testImplementation 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.awaitility:awaitility:4.3.0'
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    // P2.1: seed the viewstore over JDBC, and validate query responses against the legacy RAML
+    // response schemas with listing-api's schema catalog (everit draft-04, as request validation).
+    testImplementation 'org.postgresql:postgresql'
+    testImplementation project(':listing-api')
+    testImplementation "com.github.erosb:everit-json-schema:${everitJsonSchemaVersion}"
+}
+
+/* ---------------- Docker Compose (IT stack) ---------------- */
+// The IT image COPYs the api bootJar, so composeBuild waits for it.
+def apiProject = project(':listing-api')
+tasks.named('composeBuild') { dependsOn apiProject.tasks.named('bootJar') }
+
+dockerCompose {
+    useComposeFiles = ['docker/docker-compose.integration.yml']
+    startedServices = ['app', 'db', 'wiremock', 'artemis']
+
+    buildBeforeUp = true
+    waitForTcpPorts = false
+    upAdditionalArgs = ['--wait', '--wait-timeout', '180']
+
+    captureContainersOutput = true
+    removeOrphans = true
+    stopContainers = true
+    removeContainers = true
+
+    projectName = "${rootProject.name}-it".replaceAll('[^A-Za-z0-9]', '')
+
+    useDockerComposeV2 = true
+    dockerExecutable = 'docker'
+}
+
+tasks.named('test') {
+    description = "Runs the Spring integration tests against the IT docker-compose stack"
+    group = "verification"
+
+    dependsOn tasks.named('composeUp')
+    finalizedBy tasks.named('composeDown')
+
+    // ADR 008: one servlet context path for both legacy context roots.
+    systemProperty 'app.baseUrl', "http://localhost:${serverPort}/listing-service"
+    systemProperty 'wiremock.baseUrl', 'http://localhost:8191'
+    systemProperty 'db.url', 'jdbc:postgresql://localhost:55436/listing'
+
+    jvmArgs = ['-Xshare:off']
+    testLogging {
+        showStandardStreams = true
+    }
+}

@@ -1,0 +1,613 @@
+{
+  "hearings": [
+    {
+      "id": "HEARING_ID1",
+      "type": {
+        "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+        "description": "Trial"
+      },
+      "endDate": "2020-10-10",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "JUDICIARY_ID",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2020-10-04",
+      "courtRoomId": "COURT_ROOM_ID",
+      "hearingDays": [
+        {
+          "endTime": "2019-01-29T14:00:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-01-29T08:00:00.000Z",
+          "hearingDate": "2019-01-29",
+          "isCancelled": false,
+          "durationMinutes": 360
+        }
+      ],
+      "prosecutionCounsels": [
+        {
+          "id": "60a43b02-8c66-4fb6-8412-a3d002055ba7",
+          "title": "Mr",
+          "firstName": "Prosecution John",
+          "middleName": "Barclays",
+          "lastName": "Prosecution Turkey",
+          "status": "Junior",
+          "prosecutionCases": [
+            "CASE_ID1"
+          ],
+          "attendanceDays": [
+            "2019-07-17",
+            "2019-01-29",
+            "2019-07-19",
+            "2019-07-21",
+            "2019-07-22"
+          ]
+        },
+        {
+          "id": "f73c4150-18f1-424a-82b3-ba23186ba720",
+          "title": "Mr",
+          "firstName": "Prosecution Barry",
+          "middleName": "Llyods",
+          "lastName": "Prosecution tony",
+          "status": "Senior",
+          "prosecutionCases": [
+            "CASE_ID2"
+          ],
+          "attendanceDays": [
+            "2019-07-17",
+            "2019-01-29",
+            "2019-07-19",
+            "2019-07-21",
+            "2019-07-22"
+          ]
+        }
+      ],
+      "defenceCounsels": [
+        {
+          "id": "60a43b02-8c66-4fb6-8412-a3d002055ba7",
+          "title": "Mr",
+          "firstName": "Defence Rosy",
+          "middleName": "Barclays",
+          "lastName": "Defence Mary",
+          "status": "Junior",
+          "defendants": [
+            "ccf458e1-d543-41cd-a639-8a2f8ab3b43e"
+          ],
+          "attendanceDays": [
+            "2019-07-17",
+            "2019-01-29",
+            "2019-07-19",
+            "2019-07-21",
+            "2019-07-22"
+          ]
+        },
+        {
+          "id": "f73c4150-18f1-424a-82b3-ba23186ba720",
+          "title": "Mr",
+          "firstName": "Sam",
+          "middleName": "Llyods",
+          "lastName": "Lory",
+          "status": "Senior",
+          "defendants": [
+            "1ab168d5-c7e2-4142-b1d8-21324c07c4ed"
+          ],
+          "attendanceDays": [
+            "2019-07-17",
+            "2019-01-29",
+            "2019-07-19",
+            "2019-07-21",
+            "2019-07-22"
+          ]
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "CASE_ID1",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "ccf458e1-d543-41cd-a639-8a2f8ab3b43e",
+              "address": {
+                "address1": "No fixed abode"
+              },
+              "lastName": "Jack",
+              "offences": [
+                {
+                  "id": "94092e95-dff9-48ed-ae62-3a39d2bb77e9",
+                  "startDate": "2020-09-01",
+                  "offenceCode": "CA12055",
+                  "shadowListed": false,
+                  "offenceWording": "On or in 1 September 2020 at Oldham being an employer, failed to ensure that thorough examinations and tests of exhaust ventilation equipment, provided to meet the requirements of the Control of Asbestos Regulations 2012 were carried out at suitable intervals by a competent person",
+                  "statementOfOffence": {
+                    "title": "Employer fail to ensure tests of exhaust ventilation / respiratory protective equipment carried out by competent person",
+                    "welshTitle": "Employer fail to ensure tests of exhaust ventilation / respiratory protective equipment carried out by competent person",
+                    "legislation": "Contrary to regulation 13(2) of the Control of Asbestos Regulations 2012 and section 33(1)(c) of, and Schedule 3A to, the Health and Safety at Work etc Act 1974."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Rayen",
+              "bailStatus": {
+                "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                "code": "A",
+                "description": "Not applicable"
+              },
+              "masterDefendantId": "316bff6e-580a-4b38-bdd2-0e6edfc84981",
+              "restrictFromCourtList": false,
+              "nationalityDescription": "British",
+              "courtProceedingsInitiated": "2020-09-23T08:44:23.576Z"
+            },
+            {
+              "id": "6339f6f2-0b9d-413c-9f17-4d4da7851eaf",
+              "address": {
+                "address1": "No fixed abode"
+              },
+              "lastName": "Ray",
+              "offences": [
+                {
+                  "id": "94092e95-dff9-48ed-ae62-3a39d2bb77e9",
+                  "startDate": "2020-09-01",
+                  "offenceCode": "CA12055",
+                  "shadowListed": false,
+                  "offenceWording": "On or in 1 September 2020 at Oldham being an employer, failed to ensure that thorough examinations and tests of exhaust ventilation equipment, provided to meet the requirements of the Control of Asbestos Regulations 2012 were carried out at suitable intervals by a competent person",
+                  "statementOfOffence": {
+                    "title": "Employer fail to ensure tests of exhaust ventilation / respiratory protective equipment carried out by competent person",
+                    "welshTitle": "Employer fail to ensure tests of exhaust ventilation / respiratory protective equipment carried out by competent person",
+                    "legislation": "Contrary to regulation 13(2) of the Control of Asbestos Regulations 2012 and section 33(1)(c) of, and Schedule 3A to, the Health and Safety at Work etc Act 1974."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Mike",
+              "bailStatus": {
+                "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                "code": "A",
+                "description": "Not applicable"
+              },
+              "masterDefendantId": "316bff6e-580a-4b38-bdd2-0e6edfc84981",
+              "restrictFromCourtList": false,
+              "nationalityDescription": "British",
+              "courtProceedingsInitiated": "2020-09-23T08:44:23.576Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "a98164fc-fd80-3307-9fd1-e8dca4ea7969",
+            "authorityCode": "MERSPF",
+            "caseReference": "CAJ4BGEAG7"
+          },
+          "restrictFromCourtList": false
+        },
+        {
+          "id": "CASE_ID2",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "1ab168d5-c7e2-4142-b1d8-21324c07c4ed",
+              "address": {
+                "address1": "No fixed abode"
+              },
+              "lastName": "Second Jack",
+              "offences": [
+                {
+                  "id": "94092e95-dff9-48ed-ae62-3a39d2bb77e9",
+                  "startDate": "2020-09-01",
+                  "offenceCode": "CA12055",
+                  "shadowListed": false,
+                  "offenceWording": "On or in 1 September 2020 at Oldham being an employer, failed to ensure that thorough examinations and tests of exhaust ventilation equipment, provided to meet the requirements of the Control of Asbestos Regulations 2012 were carried out at suitable intervals by a competent person",
+                  "statementOfOffence": {
+                    "title": "Employer fail to ensure tests of exhaust ventilation / respiratory protective equipment carried out by competent person",
+                    "welshTitle": "Employer fail to ensure tests of exhaust ventilation / respiratory protective equipment carried out by competent person",
+                    "legislation": "Contrary to regulation 13(2) of the Control of Asbestos Regulations 2012 and section 33(1)(c) of, and Schedule 3A to, the Health and Safety at Work etc Act 1974."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Second Rayen",
+              "bailStatus": {
+                "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                "code": "A",
+                "description": "Not applicable"
+              },
+              "masterDefendantId": "316bff6e-580a-4b38-bdd2-0e6edfc84981",
+              "restrictFromCourtList": false,
+              "nationalityDescription": "British",
+              "courtProceedingsInitiated": "2020-09-23T08:44:23.576Z"
+            },
+            {
+              "id": "ccf458e1-d543-41cd-a639-8a2f8ab3b43e",
+              "address": {
+                "address1": "No fixed abode"
+              },
+              "lastName": "Second Ray",
+              "offences": [
+                {
+                  "id": "94092e95-dff9-48ed-ae62-3a39d2bb77e9",
+                  "startDate": "2020-09-01",
+                  "offenceCode": "CA12055",
+                  "shadowListed": false,
+                  "offenceWording": "On or in 1 September 2020 at Oldham being an employer, failed to ensure that thorough examinations and tests of exhaust ventilation equipment, provided to meet the requirements of the Control of Asbestos Regulations 2012 were carried out at suitable intervals by a competent person",
+                  "statementOfOffence": {
+                    "title": "Employer fail to ensure tests of exhaust ventilation / respiratory protective equipment carried out by competent person",
+                    "welshTitle": "Employer fail to ensure tests of exhaust ventilation / respiratory protective equipment carried out by competent person",
+                    "legislation": "Contrary to regulation 13(2) of the Control of Asbestos Regulations 2012 and section 33(1)(c) of, and Schedule 3A to, the Health and Safety at Work etc Act 1974."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Second Mike",
+              "bailStatus": {
+                "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                "code": "A",
+                "description": "Not applicable"
+              },
+              "masterDefendantId": "316bff6e-580a-4b38-bdd2-0e6edfc84981",
+              "restrictFromCourtList": false,
+              "nationalityDescription": "British",
+              "courtProceedingsInitiated": "2020-09-23T08:44:23.576Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "a98164fc-fd80-3307-9fd1-e8dca4ea7969",
+            "authorityCode": "MERSPF",
+            "caseReference": "CAJ4BGEAG2"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "COURT_CENTRE_ID",
+      "isSlotsBooked": false,
+      "isVacatedTrial": false,
+      "nonDefaultDays": [
+        {
+          "duration": 360,
+          "startTime": "2020-10-04T08:00:00.000Z"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 360,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2020-09-23",
+      "courtApplication": {
+        "applicant": {
+          "defendant": {
+            "id": "ccf458e1-d543-41cd-a639-8a2f8ab3b43e",
+            "masterDefendantId": "ccf458e1-d543-41cd-a639-8a2f8ab3b43e",
+            "isYouth": true,
+            "numberOfPreviousConvictionsCited": 1357765773,
+            "offences": [
+              {
+                "allocationDecision": {
+                  "allocationDecisionDate": "2020-02-20",
+                  "courtIndicatedSentence": {
+                    "courtIndicatedSentenceDescription": "GCIjpKmaLj",
+                    "courtIndicatedSentenceTypeId": "f52b459d-bb96-45c8-972d-b7ebeea292bf"
+                  },
+                  "motReasonCode": "xK0RT1WGWG",
+                  "motReasonDescription": "AklQBqfeOZ",
+                  "motReasonId": "76cfe338-3cd7-413c-a47d-f3dbe097e11e",
+                  "offenceId": "9e071fd7-03e9-40cc-addf-fd4c8fa659dd",
+                  "originatingHearingId": "87ffaf44-a4db-49c0-8b6b-3c79311966ba",
+                  "sequenceNumber": 1648016643
+                },
+                "arrestDate": "2019-02-04",
+                "chargeDate": "2018-07-15",
+                "count": 1289495435,
+                "custodyTimeLimit": {
+                  "daysSpent": 395958858,
+                  "timeLimit": "2015-04-21"
+                },
+                "endDate": "2018-09-28",
+                "id": "9e071fd7-03e9-40cc-addf-fd4c8fa659dd",
+                "indicatedPlea": {
+                  "indicatedPleaDate": "2016-10-23",
+                  "indicatedPleaValue": "INDICATED_GUILTY",
+                  "offenceId": "9e071fd7-03e9-40cc-addf-fd4c8fa659dd",
+                  "source": "ONLINE"
+                },
+                "laidDate": "2017-06-23",
+                "modeOfTrial": "4wGPTRP6o7",
+                "notifiedPlea": {
+                  "notifiedPleaDate": "2017-04-11",
+                  "notifiedPleaValue": "NOTIFIED_NOT_GUILTY",
+                  "offenceId": "9e071fd7-03e9-40cc-addf-fd4c8fa659dd"
+                },
+                "offenceCode": "XpyrpjzSer",
+                "offenceDefinitionId": "69bb9ef1-b68b-46ca-82b2-11115f518b06",
+                "offenceFacts": {
+                  "alcoholReadingAmount": 994072352,
+                  "alcoholReadingMethodCode": "pFTQa2RDD7",
+                  "vehicleMake": "iqNZRn4SuC",
+                  "vehicleRegistration": "tayyDXLlC1"
+                },
+                "offenceLegislation": "9jKYoI6Yvd",
+                "offenceLegislationWelsh": "DMQo9fhO9B",
+                "offenceTitle": "s7szr6sQsP",
+                "offenceTitleWelsh": "tN7bXwXkIS",
+                "orderIndex": 1036350152,
+                "startDate": "2015-06-19",
+                "wording": "13okDCK1Ql",
+                "wordingWelsh": "DlXjEdCVcS"
+              }
+            ],
+            "personDefendant": {
+              "arrestSummonsNumber": "4dX1QIweKc",
+              "bailStatus": {
+                "code": "C",
+                "description": "Remanded into Custody",
+                "id": "42b01add-0429-4f45-bfa8-3883a96f6b90"
+              },
+              "custodyTimeLimit": "2017-04-22",
+              "driverNumber": "rkqsK5tKQU",
+              "employerOrganisation": {
+                "address": {
+                  "address1": "5EQtfTPr0i",
+                  "address2": "k0gnyQXtoP",
+                  "address3": "HOlllk9408",
+                  "address4": "4Yogy7qrRk",
+                  "address5": "qulhV6Kv7d",
+                  "postcode": "CO4 1XF",
+                  "welshAddress1": "WXSUZl5e4f",
+                  "welshAddress2": "IL17BD2uRx",
+                  "welshAddress3": "QSjfcOzgK4",
+                  "welshAddress4": "SUQjHVYbE4",
+                  "welshAddress5": "bkK2Yb1x6u"
+                },
+                "contact": {
+                  "fax": "458252991",
+                  "home": "1639901649",
+                  "mobile": "67105125",
+                  "primaryEmail": "2cuygbo2ba@8p2wi3tsnd.qukvzdtib9",
+                  "secondaryEmail": "cvnichuxir@s8ie2scykz.2wmdgtzbw2",
+                  "work": "1918766027"
+                },
+                "incorporationNumber": "sH5plAchS9",
+                "name": "yd5dkJDlUx",
+                "registeredCharityNumber": "eajcs7DGo4"
+              },
+              "employerPayrollReference": "DJl4S9fBfS",
+              "perceivedBirthYear": 2093986100,
+              "personDetails": {
+                "additionalNationalityCode": "54SIXEbKNG",
+                "additionalNationalityId": "af13f267-7c11-48cd-95af-552378853e11",
+                "address": {
+                  "address1": "r4IWyK274i",
+                  "address2": "oBLHefrEzA",
+                  "address3": "BgsDIAx4kC",
+                  "address4": "U2bQh8e63N",
+                  "address5": "GjvX7fZ83a",
+                  "postcode": "MS0 3XS",
+                  "welshAddress1": "jf3qv91P48",
+                  "welshAddress2": "oL1RJMgdro",
+                  "welshAddress3": "rYGJ4BWKqO",
+                  "welshAddress4": "IdJcCvJ0MW",
+                  "welshAddress5": "JTFS6c8lxc"
+                },
+                "contact": {
+                  "fax": "457645910",
+                  "home": "1887016921",
+                  "mobile": "814149260",
+                  "primaryEmail": "nopdh4fktw@9i3rnch6a5.08ex1hu1tc",
+                  "secondaryEmail": "oz7ofgz5ak@qwu1ikbvpm.9z952gt1aq",
+                  "work": "1313030235"
+                },
+                "dateOfBirth": "2019-06-19",
+                "disabilityStatus": "5A5G6OXnYS",
+                "documentationLanguageNeeds": "ENGLISH",
+                "ethnicity": {
+                  "observedEthnicityCode": "PggD0oNc2v"
+                },
+                "firstName": "Fqa4FE3bUS",
+                "gender": "NOT_SPECIFIED",
+                "interpreterLanguageNeeds": "LR58hUaSI8",
+                "lastName": "DKfxNSIN8r",
+                "middleName": "aOoTTET3oS",
+                "nationalInsuranceNumber": "PY159973A",
+                "nationalityCode": "nhXnAYKmu4",
+                "nationalityDescription": "mPaSNzv5R8",
+                "nationalityId": "96db3597-70cc-47d5-aa0b-b35a2be1240e",
+                "occupation": "YSzrrqpbQx",
+                "occupationCode": "f8RiSpi8vC",
+                "specificRequirements": "ZD7RcqnqdS",
+                "title": "Lieutanant"
+              }
+            },
+            "prosecutionAuthorityReference": "CAJ4BGEAG7",
+            "prosecutionCaseId": "CASE_ID1",
+            "courtProceedingsInitiated": "2020-02-21T11:49:18.116Z"
+          },
+          "id": "965feadc-0736-4284-9484-e0b3239e21c3",
+          "organisation": {
+            "name": "OrganisationName"
+          },
+          "personDetails": {
+            "firstName": "Lauren",
+            "gender": "FEMALE",
+            "lastName": "Michelle",
+            "middleName": "Mia"
+          }
+        },
+        "applicationReceivedDate": "2020-02-20",
+        "applicationReference": "12AA3456716",
+        "applicationStatus": "DRAFT",
+        "id": "1f7633a3-e3f9-4e13-baf1-2264205c0c6e",
+        "respondents": [
+          {
+            "partyDetails": {
+              "id": "8f2b4189-40ed-449b-84fb-7e2839b900ff",
+              "organisation": {
+                "name": "OrganisationName"
+              },
+              "personDetails": {
+                "firstName": "Gerald",
+                "gender": "MALE",
+                "lastName": "Harrison"
+              }
+            }
+          },
+          {
+            "partyDetails": {
+              "defendant": {
+                "defenceOrganisation": {
+                  "name": "wHmyGENZZTyCxMCyhlZeOVGhhpQmpSOIhuwkATeccUyFQy"
+                },
+                "id": "44eea6bf-6530-4af5-a1f5-c21d3a4d4bd6",
+                "offences": [
+                  {
+                    "count": 1,
+                    "id": "5b93661d-47cf-403a-956d-81b59e1e48e0",
+                    "offenceCode": "wsVEoLG",
+                    "offenceDefinitionId": "9c021b71-dbaf-4f67-903e-7ae3ae7abf88",
+                    "offenceLegislation": "lBFNhkWazdWYtxppIuXCTDINxtNFitZGiXxrifsAeLdmRokfvhPMDbxnCecafZppACQYNWbFJSmAbIeHE",
+                    "offenceTitle": "WufhvlbrtedJhvdtMlpgWdeGZHOaYNKizaOuIrKNejwWX",
+                    "orderIndex": 1,
+                    "startDate": "2018-01-01",
+                    "wording": "BGmVfydfwkBKwzxaAuMiOxALhvgmlHnAGsVQxPzflMYuvXgxeGfKJmdBcXaypsZUiaRTnvbXJpWtXJSnaCbwqitvCeCpLGzRPmkdn"
+                  }
+                ],
+                "personDefendant": {
+                  "bailStatus": {
+                    "id": "eaf18bf8-9569-3656-a4ab-64299f9bd513",
+                    "code": "U",
+                    "description": "Unconditional Bail"
+                  },
+                  "personDetails": {
+                    "address": {
+                      "address1": "HuqAQvnwGMZPVwnDGIksEKJh",
+                      "address2": "VQAYsdzxrww",
+                      "address3": "gOyBtxziLPAHY"
+                    },
+                    "dateOfBirth": "1963-01-01",
+                    "firstName": "MLaKZMc",
+                    "gender": "MALE",
+                    "lastName": "EUcHgXFA",
+                    "nationalityCode": "Jal",
+                    "nationalityDescription": "nbLKGcr",
+                    "nationalityId": "49433158-3542-49c8-a9af-581a0e746152"
+                  }
+                },
+                "prosecutionCaseId": "5ab9e370-9267-4bcc-97e4-989c160b10bc",
+                "courtProceedingsInitiated": "2020-02-21T11:49:18.116Z"
+              },
+              "id": "1b4e6572-547c-4a02-98aa-23ac4670eda3"
+            }
+          }
+        ],
+        "type": {
+          "applicationCategory": "appCategory",
+          "applicationCode": "appCode",
+          "applicationJurisdictionType": "EITHER",
+          "applicationLegislation": "appLegislation",
+          "applicationType": "applicationType",
+          "id": "50e7f55b-5fac-49ed-943e-5d1985325521",
+          "linkType": "EITHER"
+        }
+      },
+      "courtCentreDetails": {
+        "id": "COURT_CENTRE_ID",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:30:00"
+      },
+      "vacatedTrialReasonId": ""
+    },
+    {
+      "id": "HEARING_ID2",
+      "type": {
+        "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+        "description": "Trial"
+      },
+      "endDate": "2020-10-10",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "JUDICIARY_ID1",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2020-10-04",
+      "courtRoomId": "COURT_ROOM_ID",
+      "hearingDays": [
+        {
+          "endTime": "2019-01-29T14:00:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-01-29T09:00:00.000Z",
+          "hearingDate": "2019-01-29",
+          "isCancelled": false,
+          "durationMinutes": 360
+        }
+      ],
+      "courtApplications": [
+        {
+          "id": "16139251-90e6-11e9-ad85-e79bbff93e2f",
+          "applicant": {
+            "id": "89a87ce1-1cf4-4f10-adb3-004e20baab08",
+            "lastName": "LAST_NAME2",
+            "firstName": "FIRST_NAME2",
+            "isRespondent": false,
+            "address": {
+              "address1": "ADDRESS_1",
+              "address2": "ADDRESS_2",
+              "address3": "ADDRESS_3",
+              "address4": "ADDRESS_4",
+              "address5": "ADDRESS_5",
+              "postcode": "POSTCODE"
+            },
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PERSON"
+          },
+          "respondents": [
+            {
+              "id": "b2de787c-6000-4d74-9951-a6b25cc96608",
+              "lastName": "LAST_NAME3",
+              "firstName": "FIRST_NAME3",
+              "isRespondent": true,
+              "address": {
+                "address1": "ADDRESS_1",
+                "address2": "ADDRESS_2",
+                "address3": "ADDRESS_3",
+                "address4": "ADDRESS_4",
+                "address5": "ADDRESS_5",
+                "postcode": "POSTCODE"
+              },
+              "restrictFromCourtList": false,
+              "courtApplicationPartyType": "PERSON"
+            }
+          ],
+          "applicationType": "APPLICATION_TYPE",
+          "applicationParticulars": "APPLICATION_PARTICULARS",
+          "applicationReference": "CASE_REFERENCE2",
+          "restrictFromCourtList": false,
+          "restrictCourtApplicationType": false
+        }
+      ],
+      "courtCentreId": "COURT_CENTRE_ID",
+      "isSlotsBooked": false,
+      "isVacatedTrial": false,
+      "nonDefaultDays": [
+        {
+          "duration": 360,
+          "startTime": "2020-10-04T08:00:00.000Z"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 360,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2020-09-23",
+      "courtCentreDetails": {
+        "id": "COURT_CENTRE_ID",
+        "defaultDuration": 360,
+        "defaultStartTime": "10:30:00"
+      },
+      "vacatedTrialReasonId": ""
+    }
+  ]
+}

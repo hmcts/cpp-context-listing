@@ -1,0 +1,20 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/defence-service/query/api/rest/defence/case/organisation-defendant"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/vnd.defence.query.get-case-by-organisation-defendant+json"
+    },
+    "jsonBody": {
+      "caseIds": [
+        "0a1b2c3d-1111-4a5b-8c9d-000000000001"
+      ],
+      "defendants": [
+        "0a1b2c3d-2222-4a5b-8c9d-000000000001"
+      ]
+    }
+  }
+}

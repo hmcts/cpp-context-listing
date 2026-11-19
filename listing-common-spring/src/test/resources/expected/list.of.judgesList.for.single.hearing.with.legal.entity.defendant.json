@@ -1,0 +1,29 @@
+{
+  "courtRoomName": "Room 1",
+  "hearingDate": "2019-01-29",
+  "sittings": [
+    {
+      "judiciaryNames": [
+        "Her Majesty"
+      ],
+      "sittingTime": "08:00 am",
+      "hearings": [
+        {
+          "hearingType": "Trial",
+          "caseNumber": "CAJ4BGEAG7",
+          "hearingDay": {
+            "hearingDate": "2019-01-29",
+            "endTime": "02:00 pm",
+            "startTime": "08:00 am",
+            "durationMinutes": 360
+          },
+          "defendants": [
+            {
+              "organisationName": "Test Ltd"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

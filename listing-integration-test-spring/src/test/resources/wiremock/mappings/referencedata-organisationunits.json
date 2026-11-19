@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/referencedata-service/query/api/rest/referencedata/organisationunits"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/vnd.referencedata.query.organisationunits+json"
+    },
+    "bodyFileName": "referencedata-organisationunits.json"
+  }
+}

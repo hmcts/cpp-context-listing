@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/systemdocgenerator-service/command/api/rest/systemdocgenerator/render"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/pdf"
+    },
+    "body": "%PDF-1.4 listing court list"
+  }
+}

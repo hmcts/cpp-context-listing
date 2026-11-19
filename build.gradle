@@ -1,0 +1,136 @@
+// Root Gradle build for the Spring Boot port of cpp-context-listing (MBD refactor, Phase 2).
+// Copied from cpp-context-listing-courtscheduler (the reference project, ADR 007). It builds only
+// the modules listed in settings.gradle; the JEE modules stay on Maven until P2.6.
+plugins {
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+    id 'org.springframework.boot' version '4.1.0' apply false
+    id 'org.openapi.generator' version '7.24.0' apply false
+    id 'org.cyclonedx.bom' version '2.4.1' apply false
+    id 'com.gorylenko.gradle-git-properties' version '4.0.1' apply false
+    id 'com.avast.gradle.docker-compose' version '0.17.21' apply false
+    id 'com.github.ben-manes.versions' version '0.54.0'
+    id 'pmd'
+}
+
+allprojects {
+    group = 'uk.gov.moj.cpp.listing'
+    version = System.getProperty('ARTEFACT_VERSION') ?: '0.0.999'
+}
+
+ext {
+    azureADOArtifactRepository = 'https://pkgs.dev.azure.com/hmcts/Artifacts/_packaging/hmcts-lib/maven/v1'
+    azureADOArtifactActor = System.getenv("AZURE_DEVOPS_ARTIFACT_USERNAME")
+    azureADOArtifactToken = System.getenv("AZURE_DEVOPS_ARTIFACT_TOKEN")
+}
+
+subprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'pmd'
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_25
+        targetCompatibility = JavaVersion.VERSION_25
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs << "-Xlint:unchecked"
+    }
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        maven { url = "https://repo.spring.io/milestone" }
+        maven {
+            url = rootProject.ext.azureADOArtifactRepository
+            if (rootProject.ext.azureADOArtifactActor && rootProject.ext.azureADOArtifactToken) {
+                credentials {
+                    username = rootProject.ext.azureADOArtifactActor
+                    password = rootProject.ext.azureADOArtifactToken
+                }
+            }
+        }
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom 'org.springframework.boot:spring-boot-dependencies:4.1.0'
+            mavenBom "org.testcontainers:testcontainers-bom:${testcontainersBomVersion}"
+            mavenBom 'org.junit:junit-bom:6.1.2'
+        }
+    }
+
+    dependencies {
+        compileOnly "org.projectlombok:lombok:${lombokVersion}"
+        annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+        testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+        testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+        // Pin the test JVM timezone to the operational TZ of the UK court service (§11 pitfall 10):
+        // code that mixes systemDefault() with a hard-coded Europe/London passes on dev machines
+        // and fails on UTC CI runners.
+        systemProperty 'user.timezone', 'Europe/London'
+        // The JDK HttpClient restricts Content-Length; azure-core's JDK transport sets it.
+        systemProperty 'jdk.httpclient.allowRestrictedHeaders', 'content-length'
+        testLogging {
+            events "passed", "skipped", "failed"
+            exceptionFormat = 'full'
+        }
+    }
+
+    pmd {
+        ruleSets = []
+        ignoreFailures = true
+    }
+    tasks.withType(Pmd).configureEach {
+        reports {
+            xml.required.set(true)
+            html.required.set(true)
+        }
+    }
+    // PMD only runs when named explicitly (e.g. ./gradlew :listing-api:pmdMain).
+    tasks.matching { it.name == 'pmdMain' }.configureEach {
+        onlyIf { gradle.startParameter.taskNames.contains(name) }
+    }
+    tasks.matching { it.name == 'pmdTest' || it.name == 'pmdTestFixtures' }.configureEach { enabled = false }
+
+    tasks.withType(AbstractArchiveTask).configureEach {
+        preserveFileTimestamps = false
+        reproducibleFileOrder = true
+    }
+}
+
+// `./gradlew clean build` from the repo root runs `build` on every subproject. The IT
+// subproject's `test` task is the docker-compose integration runner (composeUp → tests →
+// composeDown), so a full build also runs the Spring ITs, as in courtscheduler. Use
+// `./gradlew build -x :listing-integration-test-spring:test` for build + unit tests only.
+
+// Resources-only view of the Maven listing-viewstore-liquibase module (P2.1). The changelogs are
+// used as they are, so the JEE build and the Spring build always run the same changesets.
+// Build output goes to <root>/build/gradle-modules/listing-viewstore-liquibase, never into the
+// Maven module's directory. liquibase.properties (the Maven plugin's config) is left out of the
+// jar: spring.liquibase.change-log is set explicitly (courtscheduler REVIEW).
+project(':listing-viewstore-liquibase') {
+    layout.buildDirectory = rootProject.layout.buildDirectory.dir('gradle-modules/listing-viewstore-liquibase')
+    sourceSets {
+        main {
+            java.srcDirs = []
+            resources.srcDirs = ['src/main/resources']
+            resources.exclude 'liquibase.properties'
+        }
+        test {
+            java.srcDirs = []
+            resources.srcDirs = []
+        }
+    }
+}

@@ -1,0 +1,17 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/listingcourtscheduler-api/rest/courtscheduler/validate-session-availability"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "validationResult": {
+        "status": "SUCCESS"
+      }
+    }
+  }
+}

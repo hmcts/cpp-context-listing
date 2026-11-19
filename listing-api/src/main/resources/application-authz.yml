@@ -1,0 +1,32 @@
+# cp-auth-rules-filter:1.0.9 — replaces the framework's access-control interceptor (Drools).
+# Clients send only CJSCPPUID. The filter resolves Action.name (lower-cased) from:
+#   1. the vendor token of Content-Type (application/vnd.<token>+json), else
+#   2. the first vendor token in Accept, else
+#   3. the CPP-ACTION request header, else
+#   4. "<METHOD> <PATH>" as a fallback.
+# Every listing endpoint uses vendor media types, so the DRL rules match vendor tokens
+# (ADR 005, §11 pitfall 3). AuthzActionGuardFilter runs first: it hides any client-supplied
+# CPP-ACTION header and rejects (406) several Accept vendor types when Content-Type has none.
+# With deny-when-no-rules, an action without a rule is denied (403), as in the framework.
+authz:
+  http:
+    enabled: ${LISTING_AUTHZ_ENABLED:false}
+    identity-url-template: ${LISTING_BASE_URL:http://localhost:8080}/usersgroups-query-api/query/api/rest/usersgroups/users/logged-in-user/permissions
+    user-id-header: "CJSCPPUID"
+    action-header: "CPP-ACTION"
+    accept-header: "application/vnd.usersgroups.get-logged-in-user-permissions+json"
+    drools-classpath-pattern: "classpath:/uk.gov.moj.cpp.listing.api.accesscontrol.drl/**/*.drl"
+    reload-on-each-request: false
+    action-required: false
+    deny-when-no-rules: true
+    # Paths are relative to the servlet context path (/listing-service).
+    exclude-path-prefixes:
+      - "/actuator"
+      - "/error"
+      # Legacy access-control bypasses, kept for exact parity (§15.5, ADR 005): these four query
+      # resources were hand-written JAX-RS adapters that never ran the framework interceptor
+      # chain, so their DRL rules were never evaluated on WildFly.
+      - "/query/api/rest/listing/hearingSlots"
+      - "/query/api/rest/listing/hearings/download-hearing-csv-report"
+      - "/query/api/rest/listing/sessionAvailabilityValidation"
+      - "/query/api/rest/listing/courtScheduleDraftStatus"

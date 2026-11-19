@@ -1,0 +1,34 @@
+# Integration-test profile (listing-integration-test-spring docker-compose stack).
+# Unlike courtscheduler, JmsAutoConfiguration is NOT excluded: listing's ITs depend on JMS (§9).
+
+# Authz and HTTP audit are ON in ITs to prove the filter wiring; the audit JMS publish is off.
+# The usersgroups permissions endpoint is served by WireMock.
+authz:
+  http:
+    enabled: true
+
+audit:
+  http:
+    enabled: true
+
+cp:
+  audit:
+    enabled: false
+
+listing:
+  p20-skeleton:
+    # P2.0 only: canned endpoints for the foundation ITs. Remove with P20SkeletonApi (P2.1/P2.3).
+    enabled: true
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: false
+
+logging:
+  level:
+    root: INFO
+    uk.gov.moj.cpp.listing: DEBUG
+    uk.gov.moj.cpp.authz: DEBUG
+    uk.gov.hmcts.cp.filter.audit: INFO

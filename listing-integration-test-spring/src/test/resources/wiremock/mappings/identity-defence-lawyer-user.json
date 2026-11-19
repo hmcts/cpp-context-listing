@@ -1,0 +1,22 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/usersgroups-query-api/query/api/rest/usersgroups/users/logged-in-user/permissions.*",
+    "headers": {
+      "CJSCPPUID": { "equalTo": "44444444-4444-4444-4444-444444444444" }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/vnd.usersgroups.get-logged-in-user-permissions+json"
+    },
+    "jsonBody": {
+      "groups": [
+        { "groupId": "g-3", "groupName": "Defence Lawyers", "prosecutingAuthority": null }
+      ],
+      "switchableRoles": [],
+      "permissions": []
+    }
+  }
+}

@@ -1,0 +1,154 @@
+{
+  "hearings": [
+    {
+      "judiciary": [
+        {
+          "judicialId": "JUDICIARY_ID"
+        }
+      ],
+      "courtCentreId": "COURT_CENTRE_ID",
+      "hearingsByCourtCentreId": [
+        {
+          "hearingDate": "START_DATE1",
+          "hearingsByHearingDate": [
+            {
+              "hearing": {
+                "id": "27c27688-2a0c-407e-bcad-f40de196b295",
+                "type": {
+                  "id": "633224da-6db3-4df5-8097-62cee52f7a61",
+                  "description": "Bail Application"
+                },
+                "endDate": "2024-11-01",
+                "allocated": true,
+                "judiciary": [],
+                "startDate": "2024-11-01",
+                "courtRoomId": "COURT_ROOM_ID",
+                "hearingDays": [
+                  {
+                    "endTime": "2018-11-20T14:37:00.000Z",
+                    "sequence": 1,
+                    "startTime": "2018-11-21T12:37:00.000Z",
+                    "hearingDate": "2024-11-01",
+                    "durationMinutes": 1
+                  }
+                ],
+                "listedCases": [
+                  {
+                    "id": "b27e91d5-2278-433a-a8dc-1cd62e365902",
+                    "defendants": [
+                      {
+                        "id": "928e8b61-e6a8-44c6-8599-0560fe56cb8b",
+                        "address": {
+                          "address1": "799",
+                          "address2": "StreetDescription",
+                          "address3": "Locality2O",
+                          "postcode": "CR0 1XG"
+                        },
+                        "isYouth": true,
+                        "lastName": "LAST_NAME1",
+                        "offences": [
+                          {
+                            "id": "81207122-dc49-4038-ae94-d79fe4fc294f",
+                            "count": 0,
+                            "startDate": "2018-11-21",
+                            "orderIndex": 1,
+                            "offenceCode": "TH68023",
+                            "shadowListed": false,
+                            "offenceWording": "In charge of a motor vehicle with proportion of specified controlled drug above specified limit",
+                            "statementOfOffence": {
+                              "title": "Robbery",
+                              "welshTitle": "Ysbeilio/Lladrad",
+                              "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                              "welshLegislation": "Yn groes i adran 8(1) Deddf Dwyn 1968."
+                            },
+                            "reportingRestrictions": [
+                              {
+                                "id": "19d803e5-a130-4d8d-953f-23d71aabb81e",
+                                "label": "Section 49 of the Children and Young Persons Act 1933 applies",
+                                "orderedDate": "2018-09-25"
+                              }
+                            ],
+                            "restrictFromCourtList": false
+                          }
+                        ],
+                        "firstName": "FIRST_NAME1",
+                        "bailStatus": {
+                          "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                          "code": "B",
+                          "description": "Conditional bail"
+                        },
+                        "dateOfBirth": "2012-12-18",
+                        "masterDefendantId": "facf8827-0ce9-4e35-9a18-7031eb8e699e",
+                        "restrictFromCourtList": false,
+                        "courtProceedingsInitiated": "2024-09-25T15:44:29.910Z"
+                      }
+                    ],
+                    "shadowListed": false,
+                    "caseIdentifier": {
+                      "authorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+                      "authorityCode": "CITYPF",
+                      "caseReference": "CASE_REFERENCE1"
+                    },
+                    "restrictFromCourtList": true
+                  }
+                ],
+                "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                "isSlotsBooked": true,
+                "nonDefaultDays": [
+                  {
+                    "oucode": "B01LY00",
+                    "roomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+                    "session": "PM",
+                    "duration": 1,
+                    "startTime": "2024-11-01T14:00:00.000Z",
+                    "courtRoomId": 2331,
+                    "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+                    "courtScheduleId": "59080b16-9c7b-3a20-9492-1545c672ba80"
+                  }
+                ],
+                "nonSittingDays": [],
+                "hearingLanguage": "ENGLISH",
+                "estimatedMinutes": 20,
+                "jurisdictionType": "MAGISTRATES",
+                "courtApplications": [
+                  {
+                    "id": "bb009505-7ed8-43ca-862a-392e6407b199",
+                    "offences": [],
+                    "applicant": {
+                      "id": "e13d9811-7657-4b2e-a0e6-b1e82642acea",
+                      "address": {
+                        "address1": "799",
+                        "address2": "StreetDescription",
+                        "address3": "Locality2O",
+                        "postcode": "CR0 1XG"
+                      },
+                      "lastName": "LAST_NAME1",
+                      "firstName": "FIRST_NAME1",
+                      "isRespondent": false,
+                      "restrictFromCourtList": false,
+                      "courtApplicationPartyType": "PERSON_DEFENDANT"
+                    },
+                    "respondents": [],
+                    "linkedCaseIds": [
+                      "b27e91d5-2278-433a-a8dc-1cd62e365902"
+                    ],
+                    "applicationType": "Application for bail following committal/sending/transfer in custody to appear at Crown Court",
+                    "applicationReference": "CASE_REFERENCE1",
+                    "restrictFromCourtList": false,
+                    "applicationParticulars": "aa",
+                    "restrictCourtApplicationType": false
+                  }
+                ],
+                "courtCentreDetails": {
+                  "id": "COURT_CENTRE_ID",
+                  "defaultDuration": 420,
+                  "defaultStartTime": "10:00:00"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

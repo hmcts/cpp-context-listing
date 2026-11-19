@@ -1,0 +1,10 @@
+# Domain messaging (Artemis). P2.0 STUB: only the broker connection, so the JMS auto-configuration
+# (pulled in at runtime by cp-audit-filter-springboot) and the JMS health indicator point at the
+# right broker. Topics, durable subscriptions, transacted sessions, the outbox relay and HA/SSL
+# tuning (modelled on the cp.audit.* block) are added in P2.2.
+spring:
+  artemis:
+    mode: native
+    broker-url: ${LISTING_ARTEMIS_BROKER_URL:tcp://${LISTING_ARTEMIS_HOST_PRIMARY:localhost}:${LISTING_ARTEMIS_PORT:61616}}
+    user: ${LISTING_ARTEMIS_USER:}
+    password: ${LISTING_ARTEMIS_PASSWORD:}

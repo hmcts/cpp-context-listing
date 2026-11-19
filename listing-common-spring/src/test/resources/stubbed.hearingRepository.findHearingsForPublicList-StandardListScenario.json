@@ -1,0 +1,748 @@
+[
+  {
+    "judiciary": [
+      {
+        "judicialId": "JUDICIARY_ID"
+      },
+      {
+        "judicialId": "JUDICIARY2_ID"
+      },
+      {
+        "judicialId": "JUDICIARY3_ID"
+      }
+    ],
+    "courtCentreId": "COURT_CENTRE_ID",
+    "hearingsByCourtCentreId": [
+      {
+        "hearingDate": "2019-01-29",
+        "hearingsByHearingDate": [
+          {
+            "hearing": {
+              "id": "2b784cde-aec2-4998-b556-11f728cd13e5",
+              "type": {
+                "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+                "description": "Plea & Trial Preparation"
+              },
+              "endDate": "2019-01-30",
+              "allocated": true,
+              "judiciary": [
+                {
+                  "isDeputy": true,
+                  "judicialId": "JUDICIARY_ID",
+                  "isBenchChairman": true,
+                  "judicialRoleType": "MAGISTRATE"
+                }
+              ],
+              "startDate": "2019-01-25",
+              "courtRoomId": "COURT_ROOM_ID",
+              "hearingDays": [
+                {
+                  "endTime": "2019-01-25T09:01:00.000Z",
+                  "sequence": 10,
+                  "startTime": "2019-01-25T09:00:00.000Z",
+                  "hearingDate": "2019-01-25",
+                  "durationMinutes": 1
+                },
+                {
+                  "endTime": "2019-01-26T16:30:00.000Z",
+                  "sequence": 0,
+                  "startTime": "2019-01-26T10:30:00.000Z",
+                  "hearingDate": "2019-01-26",
+                  "durationMinutes": 360
+                },
+                {
+                  "endTime": "2019-01-27T16:30:00.000Z",
+                  "sequence": 0,
+                  "startTime": "2019-01-27T10:30:00.000Z",
+                  "hearingDate": "2019-01-27",
+                  "durationMinutes": 360
+                },
+                {
+                  "endTime": "2019-01-29T16:30:00.000Z",
+                  "sequence": 2,
+                  "startTime": "2019-01-29T10:30:00.000Z",
+                  "hearingDate": "2019-01-29",
+                  "durationMinutes": 360
+                },
+                {
+                  "endTime": "2019-01-30T15:02:00.000Z",
+                  "sequence": 0,
+                  "startTime": "2019-01-30T15:00:00.000Z",
+                  "hearingDate": "2019-01-30",
+                  "durationMinutes": 2
+                }
+              ],
+              "listedCases": [
+                {
+                  "id": "b9b0df0d-ff18-4831-a79c-4787c3b24c3c",
+                  "defendants": [
+                    {
+                      "id": "6d98fd20-e994-477f-bc75-bb68ca3b29ca",
+                      "masterDefendantId": "6d98fd20-e994-477f-bc75-bb68ca3b29ca",
+                      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+                      "lastName": "Yost",
+                      "offences": [
+                        {
+                          "id": "b5bfc980-2efb-4eb3-83af-033a77694f51",
+                          "endDate": "2018-08-01",
+                          "startDate": "2010-08-01",
+                          "offenceCode": "OF61131",
+                          "offenceWording": "on 01/08/2009 at  the County public house, unlawfully and maliciously wounded, John Smith",
+                          "statementOfOffence": {
+                            "title": "Wound / inflict grievous bodily harm without intent",
+                            "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
+                            "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
+                            "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
+                          },
+                          "restrictFromCourtList": true,
+                          "listingNumber" : 1
+                        },
+                        {
+                          "id": "77d5da0e-4d97-4668-8933-780e38b9dd98",
+                          "endDate": "2018-08-01",
+                          "startDate": "2010-08-01",
+                          "offenceCode": "OF61131",
+                          "offenceWording": "on 01/08/2009 at  the County public house, unlawfully and maliciously wounded, John Smith",
+                          "statementOfOffence": {
+                            "title": "Wound / inflict grievous bodily harm without intent",
+                            "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
+                            "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
+                            "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
+                          },
+                          "restrictFromCourtList": true,
+                          "listingNumber" : 1
+                        }
+                      ],
+                      "firstName": "Cheyanne",
+                      "bailStatus": {
+                        "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                        "code": "U",
+                        "description": "Unconditional Bail"
+                      },
+                      "dateOfBirth": "DATE_OF_BIRTH",
+                      "defenceOrganisation": "TestOne",
+                      "restrictFromCourtList": true,
+                      "defenceOrganisation": "ABC LTD."
+                    },
+                    {
+                      "id": "86c38cef-cdbb-46d8-96a5-9b31845e95cc",
+                      "lastName": "Mertz",
+                      "offences": [
+                        {
+                          "id": "b0fae4f3-6f55-4ebf-8372-26e2acfa7fb4",
+                          "endDate": "2018-08-01",
+                          "startDate": "2010-08-01",
+                          "offenceCode": "OF61131",
+                          "offenceWording": "on 01/08/2009 at  the County public house, unlawfully and maliciously wounded, John Smith",
+                          "statementOfOffence": {
+                            "title": "Wound / inflict grievous bodily harm without intent",
+                            "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
+                            "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
+                            "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
+                          },
+                          "restrictFromCourtList": true,
+                          "listingNumber" : 1
+                        },
+                        {
+                          "id": "bfc5a983-a064-48c5-93b4-27d992308df0",
+                          "endDate": "2018-08-01",
+                          "startDate": "2010-08-01",
+                          "offenceCode": "OF61131",
+                          "offenceWording": "on 01/08/2009 at  the County public house, unlawfully and maliciously wounded, John Smith",
+                          "statementOfOffence": {
+                            "title": "Wound / inflict grievous bodily harm without intent",
+                            "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
+                            "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
+                            "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
+                          },
+                          "restrictFromCourtList": true,
+                          "listingNumber" : 1
+                        }
+                      ],
+                      "firstName": "Rodger",
+                      "bailStatus": {
+                        "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                        "code": "U",
+                        "description": "Unconditional Bail"
+                      },
+                      "dateOfBirth": "1980-10-12",
+                      "defenceOrganisation": "TestTwo",
+                      "restrictFromCourtList": false,
+                      "defenceOrganisation": "ABC LTD."
+                    }
+                  ],
+                  "caseIdentifier": {
+                    "authorityId": "52b27284-0686-4894-b1c7-7d4b634cacdb",
+                    "authorityCode": "CPS",
+                    "caseReference": "42GD8525719"
+                  },
+                  "prosecutor": {
+                    "address": {
+                      "address1": "6th Floor Windsor House",
+                      "address2": "42-50 Victoria Street",
+                      "address3": "London",
+                      "postcode": "SW1H 0TL"
+                    },
+                    "prosecutorCode": "TFL",
+                    "prosecutorId": "2daefec3-2f76-8109-82d9-2e60544a6c02",
+                    "prosecutorName": "Transport for London"
+                  },
+                  "restrictFromCourtList": true
+                }
+              ],
+              "courtCentreId": "COURT_CENTRE_ID",
+              "nonDefaultDays": [
+                {
+                  "duration": 1,
+                  "startTime": "2019-01-25T09:00:00.000Z"
+                },
+                {
+                  "duration": 2,
+                  "startTime": "2019-01-30T15:00:00.000Z"
+                }
+              ],
+              "nonSittingDays": [
+                "2019-01-28"
+              ],
+              "hearingLanguage": "ENGLISH",
+              "estimatedMinutes": 30,
+              "jurisdictionType": "CROWN",
+              "panel": "ADULT"
+            }
+          },
+          {
+            "hearing": {
+              "id": "4c034f6c-bca3-4fe4-a5b3-9cdb0a25837b",
+              "type": {
+                "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+                "description": "Plea & Trial Preparation"
+              },
+              "endDate": "2019-01-29",
+              "allocated": true,
+              "judiciary": [
+                {
+                  "judicialId": "JUDICIARY_ID",
+                  "judicialRoleType": "CIRCUIT_JUDGE"
+                }
+              ],
+              "startDate": "2019-01-24",
+              "courtRoomId": "COURT_ROOM_ID",
+              "hearingDays": [
+                {
+                  "endTime": "2019-01-24T09:01:00.000Z",
+                  "sequence": 0,
+                  "startTime": "2019-01-24T09:00:00.000Z",
+                  "hearingDate": "2019-01-24",
+                  "durationMinutes": 1
+                },
+                {
+                  "endTime": "2019-01-25T16:30:00.000Z",
+                  "sequence": 6,
+                  "startTime": "2019-01-25T10:30:00.000Z",
+                  "hearingDate": "2019-01-25",
+                  "durationMinutes": 360
+                },
+                {
+                  "endTime": "2019-01-26T16:30:00.000Z",
+                  "sequence": 45,
+                  "startTime": "2019-01-26T10:30:00.000Z",
+                  "hearingDate": "2019-01-26",
+                  "durationMinutes": 360
+                },
+                {
+                  "endTime": "2019-01-28T16:30:00.000Z",
+                  "sequence": 1,
+                  "startTime": "2019-01-28T10:30:00.000Z",
+                  "hearingDate": "2019-01-28",
+                  "durationMinutes": 360
+                },
+                {
+                  "endTime": "2019-01-29T15:02:00.000Z",
+                  "sequence": 1,
+                  "startTime": "2019-01-29T10:30:00.000Z",
+                  "hearingDate": "2019-01-29",
+                  "durationMinutes": 2
+                }
+              ],
+              "listedCases": [
+                {
+                  "id": "6bfc68d4-5748-47de-9f7f-d7713c025d1a",
+                  "defendants": [
+                    {
+                      "id": "b5e9200e-6b2f-4197-95f1-1ccf578c599f",
+                      "lastName": "Christiansen",
+                      "offences": [
+                        {
+                          "id": "09844038-4709-49c1-9c4f-2300c9be7b32",
+                          "endDate": "2018-08-01",
+                          "startDate": "2010-08-01",
+                          "offenceCode": "OF61131",
+                          "offenceWording": "on 01/08/2009 at  the County public house, unlawfully and maliciously wounded, John Smith",
+                          "statementOfOffence": {
+                            "title": "Wound / inflict grievous bodily harm without intent",
+                            "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
+                            "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
+                            "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
+                          },
+                          "listingNumber" : 1
+                        },
+                        {
+                          "id": "cc008012-a259-46ba-890c-17e64c4bb4f4",
+                          "endDate": "2018-08-01",
+                          "startDate": "2010-08-01",
+                          "offenceCode": "OF61131",
+                          "offenceWording": "on 01/08/2009 at  the County public house, unlawfully and maliciously wounded, John Smith",
+                          "statementOfOffence": {
+                            "title": "Wound / inflict grievous bodily harm without intent",
+                            "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
+                            "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
+                            "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
+                          },
+                          "listingNumber" : 1
+                        }
+                      ],
+                      "firstName": "Travon",
+                      "bailStatus": {
+                        "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                        "code": "U",
+                        "description": "Unconditional Bail"
+                      },
+                      "dateOfBirth": "1983-05-23",
+                      "defenceOrganisation": "ABC LTD"
+                    },
+                    {
+                      "id": "62f5ef7d-a2f6-4590-afb0-9ebee70672ba",
+                      "masterDefendantId": "62f5ef7d-a2f6-4590-afb0-9ebee70672ba",
+                      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+                      "lastName": "Orn",
+                      "offences": [
+                        {
+                          "id": "7089e4eb-2d96-45aa-9b54-8796ba8c359e",
+                          "endDate": "2018-08-01",
+                          "startDate": "2010-08-01",
+                          "offenceCode": "OF61131",
+                          "offenceWording": "on 01/08/2009 at  the County public house, unlawfully and maliciously wounded, John Smith",
+                          "statementOfOffence": {
+                            "title": "Wound / inflict grievous bodily harm without intent",
+                            "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
+                            "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
+                            "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
+                          },
+                          "listingNumber" : 1
+                        },
+                        {
+                          "id": "bdb06265-72a4-4f18-b13e-c7d1d738364d",
+                          "endDate": "2018-08-01",
+                          "startDate": "2010-08-01",
+                          "offenceCode": "OF61131",
+                          "offenceWording": "on 01/08/2009 at  the County public house, unlawfully and maliciously wounded, John Smith",
+                          "statementOfOffence": {
+                            "title": "Wound / inflict grievous bodily harm without intent",
+                            "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
+                            "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
+                            "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
+                          },
+                          "listingNumber" : 1
+                        }
+                      ],
+                      "firstName": "Carmela",
+                      "bailStatus": {
+                        "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                        "code": "U",
+                        "description": "Unconditional Bail"
+                      },
+                      "dateOfBirth": "1980-10-12",
+                      "defenceOrganisation": "ABC LTD"
+                    }
+                  ],
+                  "caseIdentifier": {
+                    "authorityId": "52b27284-0686-4894-b1c7-7d4b634cacdb",
+                    "authorityCode": "CPS",
+                    "caseReference": "15GD5595019"
+                  },
+                  "restrictFromCourtList": true
+                }
+              ],
+              "courtCentreId": "COURT_CENTRE_ID",
+              "nonDefaultDays": [
+                {
+                  "duration": 1,
+                  "startTime": "2019-01-24T09:00:00.000Z"
+                },
+                {
+                  "duration": 2,
+                  "startTime": "2019-01-29T15:00:00.000Z"
+                }
+              ],
+              "nonSittingDays": [
+                "2019-01-27"
+              ],
+              "hearingLanguage": "ENGLISH",
+              "estimatedMinutes": 30,
+              "jurisdictionType": "CROWN",
+              "panel": "ADULT"
+            }
+          },
+          {
+            "hearing": {
+              "id": "29385594-66b4-4ae7-8fb5-5a40e92722e3",
+              "type": {
+                "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+                "description": "Plea & Trial Preparation"
+              },
+              "endDate": "2019-01-29",
+              "allocated": true,
+              "judiciary": [
+                {
+                  "judicialId": "JUDICIARY_ID",
+                  "judicialRoleType": "CIRCUIT_JUDGE"
+                }
+              ],
+              "startDate": "2019-01-24",
+              "courtRoomId": "COURT_ROOM_ID",
+              "hearingDays": [
+                {
+                  "endTime": "2019-01-24T09:01:00.000Z",
+                  "sequence": 0,
+                  "startTime": "2019-01-24T09:00:00.000Z",
+                  "hearingDate": "2019-01-24",
+                  "durationMinutes": 1
+                },
+                {
+                  "endTime": "2019-01-25T16:30:00.000Z",
+                  "sequence": 58,
+                  "startTime": "2019-01-25T10:30:00.000Z",
+                  "hearingDate": "2019-01-25",
+                  "durationMinutes": 360
+                },
+                {
+                  "endTime": "2019-01-26T16:30:00.000Z",
+                  "sequence": 43,
+                  "startTime": "2019-01-26T10:30:00.000Z",
+                  "hearingDate": "2019-01-26",
+                  "durationMinutes": 360
+                },
+                {
+                  "endTime": "2019-01-28T16:30:00.000Z",
+                  "sequence": 11,
+                  "startTime": "2019-01-28T10:30:00.000Z",
+                  "hearingDate": "2019-01-28",
+                  "durationMinutes": 360
+                },
+                {
+                  "endTime": "2019-01-29T15:02:00.000Z",
+                  "sequence": 1,
+                  "startTime": "2019-01-29T12:37:00.000Z",
+                  "hearingDate": "2019-01-29",
+                  "durationMinutes": 2
+                }
+              ],
+              "listedCases": [
+                {
+                  "id": "c0702169-fc0c-4fd1-b410-dfde566f6735",
+                  "defendants": [
+                    {
+                      "id": "630fc9f7-e2fb-4503-bff7-d92f41785dfd",
+                      "masterDefendantId": "630fc9f7-e2fb-4503-bff7-d92f41785dfd",
+                      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+                      "lastName": "Zulauf",
+                      "offences": [
+                        {
+                          "id": "f38a18dd-b584-459d-ad54-f33e33013d16",
+                          "endDate": "2018-04-04",
+                          "startDate": "2018-03-30",
+                          "offenceCode": "OF61060",
+                          "offenceWording": "On August/2017 at the County public house, unlawfully and maliciously wounded, John Smith",
+                          "statementOfOffence": {
+                            "title": "Administer poison with intent to endanger life / inflict grievous bodily harm",
+                            "welshTitle": "Gweinyddu gwenwyn gan fwriadu peryglu bywyd / achosi niwed corfforol difrifol",
+                            "legislation": "Contrary to section 23 of the Offences Against the Person Act 1861.",
+                            "welshLegislation": "Yn groes i adran 23 Deddf Troseddau Corfforol 1861."
+                          },
+                          "listingNumber" : 1
+                        },
+                        {
+                          "id": "a5b386ac-d057-412a-9f4e-33cd4df13563",
+                          "endDate": "2018-04-04",
+                          "startDate": "2018-03-30",
+                          "offenceCode": "OF61102C",
+                          "offenceWording": "Conspire to assault a person thereby occasioning them actual bodily harm",
+                          "statementOfOffence": {
+                            "title": "Conspire to assault a person thereby occasioning them actual bodily harm",
+                            "welshTitle": "Cynllwynio i ymosod ar unigolyn a thrwy hynny beri gwir niwed corfforol iddynt",
+                            "legislation": "Contrary to sections 1,1A and 3 of the Criminal Law Act 1977.",
+                            "welshLegislation": "Yn groes i adran 1, 1A a 3 Deddf Cyfraith Trosedd 1977."
+                          },
+                          "listingNumber" : 1
+                        }
+                      ],
+                      "firstName": "Narciso",
+                      "bailStatus": {
+                        "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                        "code": "U",
+                        "description": "Unconditional Bail"
+                      },
+                      "dateOfBirth": "1983-05-23",
+                      "defenceOrganisation": "ABC LTD"
+                    },
+                    {
+                      "id": "323c2b18-3d73-43e6-ba3b-683d572076c5",
+                      "masterDefendantId": "323c2b18-3d73-43e6-ba3b-683d572076c5",
+                      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+                      "lastName": "Marvin",
+                      "offences": [
+                        {
+                          "id": "765f4147-bd1a-41e8-9e6f-48d7511279fd",
+                          "endDate": "2018-04-04",
+                          "startDate": "2018-03-30",
+                          "offenceCode": "OF61102C",
+                          "offenceWording": "Conspire to assault a person thereby occasioning them actual bodily harm",
+                          "statementOfOffence": {
+                            "title": "Conspire to assault a person thereby occasioning them actual bodily harm",
+                            "welshTitle": "Cynllwynio i ymosod ar unigolyn a thrwy hynny beri gwir niwed corfforol iddynt",
+                            "legislation": "Contrary to sections 1,1A and 3 of the Criminal Law Act 1977.",
+                            "welshLegislation": "Yn groes i adran 1, 1A a 3 Deddf Cyfraith Trosedd 1977."
+                          },
+                          "listingNumber" : 1
+                        },
+                        {
+                          "id": "0c04248f-44c2-4de2-ba7a-f06b91e3d8ac",
+                          "endDate": "2018-04-04",
+                          "startDate": "2018-03-30",
+                          "offenceCode": "OF61060",
+                          "offenceWording": "On August/2017 at the County public house, unlawfully and maliciously wounded, John Smith",
+                          "statementOfOffence": {
+                            "title": "Administer poison with intent to endanger life / inflict grievous bodily harm",
+                            "welshTitle": "Gweinyddu gwenwyn gan fwriadu peryglu bywyd / achosi niwed corfforol difrifol",
+                            "legislation": "Contrary to section 23 of the Offences Against the Person Act 1861.",
+                            "welshLegislation": "Yn groes i adran 23 Deddf Troseddau Corfforol 1861."
+                          },
+                          "listingNumber" : 1
+                        }
+                      ],
+                      "firstName": "Margaret",
+                      "bailStatus": {
+                        "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                        "code": "U",
+                        "description": "Unconditional Bail"
+                      },
+                      "dateOfBirth": "1980-10-12",
+                      "defenceOrganisation": "ABC LTD"
+                    }
+                  ],
+                  "caseIdentifier": {
+                    "authorityId": "52b27284-0686-4894-b1c7-7d4b634cacdb",
+                    "authorityCode": "CPS",
+                    "caseReference": "41GD4175919"
+                  },
+                  "restrictFromCourtList": true
+                }
+              ],
+              "courtCentreId": "COURT_CENTRE_ID",
+              "nonDefaultDays": [
+                {
+                  "duration": 1,
+                  "startTime": "2019-01-24T09:00:00.000Z"
+                },
+                {
+                  "duration": 2,
+                  "startTime": "2019-01-29T15:00:00.000Z"
+                }
+              ],
+              "nonSittingDays": [
+                "2019-01-27"
+              ],
+              "hearingLanguage": "ENGLISH",
+              "estimatedMinutes": 4470,
+              "jurisdictionType": "CROWN",
+              "panel": "ADULT"
+            }
+          },
+          {
+            "hearing": {
+              "id": "90371281-8336-4dda-bbcd-f3d664a6688d",
+              "type": {
+                "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+                "description": "Plea & Trial Preparation"
+              },
+              "endDate": "2019-02-02",
+              "allocated": true,
+              "judiciary": [
+                {
+                  "isDeputy": false,
+                  "judicialId": "JUDICIARY3_ID",
+                  "isBenchChairman": true,
+                  "judicialRoleType": "MAGISTRATE"
+                },
+                {
+                  "isDeputy": true,
+                  "judicialId": "JUDICIARY2_ID",
+                  "isBenchChairman": false,
+                  "judicialRoleType": "MAGISTRATE"
+                }
+              ],
+              "startDate": "2019-01-28",
+              "courtRoomId": "COURT_ROOM_2_ID",
+              "hearingDays": [
+                {
+                  "endTime": "2019-01-28T09:01:00.000Z",
+                  "sequence": 0,
+                  "startTime": "2019-01-28T09:00:00.000Z",
+                  "hearingDate": "2019-01-28",
+                  "durationMinutes": 1
+                },
+                {
+                  "endTime": "2019-01-29T16:30:00.000Z",
+                  "sequence": 2,
+                  "startTime": "2019-01-29T12:37:00.000Z",
+                  "hearingDate": "2019-01-29",
+                  "durationMinutes": 360
+                },
+                {
+                  "endTime": "2019-01-30T16:30:00.000Z",
+                  "sequence": 0,
+                  "startTime": "2019-01-30T10:30:00.000Z",
+                  "hearingDate": "2019-01-30",
+                  "durationMinutes": 360
+                },
+                {
+                  "endTime": "2019-02-01T16:30:00.000Z",
+                  "sequence": 0,
+                  "startTime": "2019-02-01T10:30:00.000Z",
+                  "hearingDate": "2019-02-01",
+                  "durationMinutes": 360
+                },
+                {
+                  "endTime": "2019-02-02T15:02:00.000Z",
+                  "sequence": 0,
+                  "startTime": "2019-02-02T15:00:00.000Z",
+                  "hearingDate": "2019-02-02",
+                  "durationMinutes": 2
+                }
+              ],
+              "listedCases": [
+                {
+                  "id": "27b56af4-b4db-4c52-961a-4d7f731d7a6b",
+                  "defendants": [
+                    {
+                      "id": "9bc4e646-e422-433b-ab69-6a706540f346",
+                      "masterDefendantId": "9bc4e646-e422-433b-ab69-6a706540f346",
+                      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+                      "lastName": "Fadel",
+                      "offences": [
+                        {
+                          "id": "c7599120-15a7-4858-90c1-531aa87939c8",
+                          "endDate": "2018-08-01",
+                          "startDate": "2010-08-01",
+                          "offenceCode": "OF61131",
+                          "offenceWording": "on 01/08/2009 at  the County public house, unlawfully and maliciously wounded, John Smith",
+                          "statementOfOffence": {
+                            "title": "Wound / inflict grievous bodily harm without intent",
+                            "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
+                            "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
+                            "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
+                          },
+                          "listingNumber" : 1
+                        },
+                        {
+                          "id": "71d9f6f6-05d9-486a-88a5-a8fdbada7a15",
+                          "endDate": "2018-08-01",
+                          "startDate": "2010-08-01",
+                          "offenceCode": "OF61131",
+                          "offenceWording": "on 01/08/2009 at  the County public house, unlawfully and maliciously wounded, John Smith",
+                          "statementOfOffence": {
+                            "title": "Wound / inflict grievous bodily harm without intent",
+                            "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
+                            "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
+                            "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
+                          },
+                          "listingNumber" : 1
+                        }
+                      ],
+                      "firstName": "Marianne",
+                      "bailStatus": {
+                        "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                        "code": "U",
+                        "description": "Unconditional Bail"
+                      },
+                      "dateOfBirth": "1983-05-23",
+                      "defenceOrganisation": "ABC LTD"
+                    },
+                    {
+                      "id": "2e6dda9d-de3d-40df-9065-65606385e493",
+                      "masterDefendantId": "2e6dda9d-de3d-40df-9065-65606385e493",
+                      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+                      "lastName": "Cummings",
+                      "offences": [
+                        {
+                          "id": "77206841-fd78-4b26-a518-92d22eb1defa",
+                          "endDate": "2018-08-01",
+                          "startDate": "2010-08-01",
+                          "offenceCode": "OF61131",
+                          "offenceWording": "on 01/08/2009 at  the County public house, unlawfully and maliciously wounded, John Smith",
+                          "statementOfOffence": {
+                            "title": "Wound / inflict grievous bodily harm without intent",
+                            "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
+                            "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
+                            "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
+                          },
+                          "listingNumber" : 1
+                        },
+                        {
+                          "id": "0371cfce-8f42-404e-8be2-af904439ad0a",
+                          "endDate": "2018-08-01",
+                          "startDate": "2010-08-01",
+                          "offenceCode": "OF61131",
+                          "offenceWording": "on 01/08/2009 at  the County public house, unlawfully and maliciously wounded, John Smith",
+                          "statementOfOffence": {
+                            "title": "Wound / inflict grievous bodily harm without intent",
+                            "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
+                            "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
+                            "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
+                          },
+                          "listingNumber" : 1
+                        }
+                      ],
+                      "firstName": "Dolly",
+                      "bailStatus": {
+                        "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                        "code": "U",
+                        "description": "Unconditional Bail"
+                      },
+                      "dateOfBirth": "1980-10-12",
+                      "defenceOrganisation": "TestTwo"
+                    }
+                  ],
+                  "caseIdentifier": {
+                    "authorityId": "52b27284-0686-4894-b1c7-7d4b634cacdb",
+                    "authorityCode": "CPS",
+                    "caseReference": "92GD9689919"
+                  },
+                  "restrictFromCourtList": true
+                }
+              ],
+              "courtCentreId": "COURT_CENTRE_ID",
+              "nonDefaultDays": [
+                {
+                  "duration": 1,
+                  "startTime": "2019-01-28T09:00:00.000Z"
+                },
+                {
+                  "duration": 2,
+                  "startTime": "2019-02-02T15:00:00.000Z"
+                }
+              ],
+              "nonSittingDays": [
+                "2019-01-31"
+              ],
+              "hearingLanguage": "ENGLISH",
+              "estimatedMinutes": 30,
+              "jurisdictionType": "CROWN",
+              "panel": "ADULT"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

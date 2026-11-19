@@ -1,0 +1,43 @@
+// Viewstore persistence for the Spring Boot port (§8 `listing-viewstore:listing-viewstore-persistence`;
+// "-spring" while the Maven module of that name still exists). P2.1: the 13 DeltaSpike entities and
+// their repositories ported to Spring Data JPA (declarative style, §11 pitfall 7), the JDBC
+// repositories ported to JdbcTemplate. The schema is the existing Liquibase changelog
+// (:listing-viewstore-liquibase), reused unchanged.
+dependencies {
+    api project(':listing-domain-spring')
+    api 'org.springframework.boot:spring-boot-starter-data-jpa'
+    api 'jakarta.persistence:jakarta.persistence-api'
+
+    implementation 'org.apache.commons:commons-lang3'
+    implementation 'commons-collections:commons-collections:3.2.2'
+    implementation 'org.slf4j:slf4j-api'
+
+    annotationProcessor 'org.hibernate.orm:hibernate-jpamodelgen:7.4.5.Final'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-data-jpa-test'
+    testImplementation 'org.springframework.boot:spring-boot-jdbc-test'
+    testImplementation 'org.springframework.boot:spring-boot-liquibase'
+    testImplementation 'org.liquibase:liquibase-core'
+    // Same resolution as courtscheduler: testcontainers core 2.0.5 (Boot 4.1's version) with the
+    // 1.21.4 postgresql module from the testcontainers BOM.
+    testImplementation 'org.testcontainers:testcontainers:2.0.5'
+    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testRuntimeOnly 'org.postgresql:postgresql'
+    testRuntimeOnly 'org.eclipse.parsson:parsson:1.1.9'
+    testRuntimeOnly project(':listing-viewstore-liquibase')
+}
+
+// Repository tests share one Postgres container and the Spring test-context cache: run them in a
+// single JVM (as courtscheduler does).
+test {
+    maxParallelForks = 1
+    forkEvery = 0
+}
+
+tasks.withType(Test).configureEach {
+    // Testcontainers' Ryuk reaper image is not needed (the container is stopped with the JVM) and
+    // may not be pullable in offline builds.
+    environment 'TESTCONTAINERS_RYUK_DISABLED', 'true'
+}

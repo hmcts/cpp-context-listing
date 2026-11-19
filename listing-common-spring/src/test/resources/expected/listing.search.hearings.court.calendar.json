@@ -1,0 +1,518 @@
+{
+  "notes": [],
+  "results": 3,
+  "pageCount": 1,
+  "hearings": [
+    {
+      "id": "25407d7a-929d-4c9e-b1b2-33210e3318e9",
+      "type": {
+        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+        "description": "First hearing"
+      },
+      "endDate": "2026-02-20",
+      "resulted": true,
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2026-02-20",
+      "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "hearingDays": [
+        {
+          "endTime": "2026-02-20T09:20:00.000Z",
+          "sequence": 1,
+          "startTime": "2026-02-20T09:00:00.000Z",
+          "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "hearingDate": "2026-02-20",
+          "isCancelled": false,
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "courtScheduleId": "17224f85-d6eb-49ee-bd2a-5101bca7a64e",
+          "durationMinutes": 20
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "4a69fb4e-591c-4ecf-90f6-4bdf5c66dc55",
+          "markers": [],
+          "caseStatus": "ACTIVE",
+          "defendants": [
+            {
+              "id": "62f39408-5cee-4d71-b4a7-0255023950ac",
+              "address": {
+                "address1": "m",
+                "address2": "Matteo Burgs",
+                "address3": "Lowell",
+                "address4": "Avon",
+                "postcode": "DA6 7ND"
+              },
+              "isYouth": false,
+              "lastName": "Hills",
+              "offences": [
+                {
+                  "id": "04473997-5085-4eed-8096-68ff0a7888cb",
+                  "count": 0,
+                  "startDate": "2019-11-28",
+                  "orderIndex": 2,
+                  "offenceCode": "CA03012",
+                  "shadowListed": false,
+                  "offenceWording": "From 13th November 2018, an aggravated version of this offence applies where the offence is committed against an emergency worker acting in the exercise of his / her functions as such a worker, as per section 1 of the Assaults on emergency Workers (Offences) Act 2018; see offence wording document H19568.",
+                  "statementOfOffence": {
+                    "title": "Possess / control TV set with intent another use install without a licence",
+                    "welshTitle": "Meddu ar/mewn rheolaeth set deledu gan fwriadu i unigolyn arall ei ddefnyddio/osod heb drwydded",
+                    "legislation": "Contrary to section 363(3)(b) and (4) of the Communications Act 2003.",
+                    "welshLegislation": "Yn groes i adran 363(3)(b) a (4) Deddf Cyfathrebu 2003."
+                  },
+                  "restrictFromCourtList": false
+                },
+                {
+                  "id": "5ecad867-44d7-49a6-9c5e-0020aea586f8",
+                  "count": 0,
+                  "startDate": "2019-11-28",
+                  "orderIndex": 4,
+                  "offenceCode": "CA03013",
+                  "shadowListed": false,
+                  "offenceWording": "From 13th November 2018, an aggravated version of this offence applies where the offence is committed against an emergency worker acting in the exercise of his / her functions as such a worker, as per section 1 of the Assaults on emergency Workers (Offences) Act 2018; see offence wording document H19568.",
+                  "statementOfOffence": {
+                    "title": "Obstruct person executing search warrant for TV receiver",
+                    "welshTitle": "Rhwystro unigolyn a oedd yn gweithredu gwarant chwilio ar gyfer derbynnydd teledu",
+                    "legislation": "Contrary to section 366(8)(a) and (9) of the Communications Act 2003.",
+                    "welshLegislation": "Yn groes i adran 366(8)(a) a (9) Deddf Cyfathrebu 2003."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Osborne",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "2006-09-09",
+              "masterDefendantId": "62f39408-5cee-4d71-b4a7-0255023950ac",
+              "hearingLanguageNeeds": "ENGLISH",
+              "proceedingsConcluded": false,
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-02-17T11:49:00.933Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+            "authorityCode": "DERPF",
+            "caseReference": "30MR3601603"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "MAGISTRATES",
+      "courtApplications": [
+        {
+          "id": "b731f138-5ee3-4601-8cba-2b9b5f58c855",
+          "subject": {
+            "id": "b25e37d6-6b50-455e-bd3e-0fabec8370c6",
+            "address": {
+              "address1": "m",
+              "address2": "Matteo Burgs",
+              "address3": "Lowell",
+              "address4": "Avon",
+              "postcode": "DA6 7ND"
+            },
+            "lastName": "Hills",
+            "firstName": "Osborne",
+            "isRespondent": false,
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PERSON_DEFENDANT"
+          },
+          "offences": [],
+          "applicant": {
+            "id": "b25e37d6-6b50-455e-bd3e-0fabec8370c6",
+            "address": {
+              "address1": "m",
+              "address2": "Matteo Burgs",
+              "address3": "Lowell",
+              "address4": "Avon",
+              "postcode": "DA6 7ND"
+            },
+            "lastName": "Hills",
+            "firstName": "Osborne",
+            "isRespondent": false,
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PERSON_DEFENDANT"
+          },
+          "respondents": [],
+          "linkedCaseIds": [
+            "4a69fb4e-591c-4ecf-90f6-4bdf5c66dc55"
+          ],
+          "applicationType": "Appearance to make statutory declaration (other than SJP)",
+          "applicationTypeCode" : "TYPE_CODE",
+          "applicationReference": "30MR3601603",
+          "restrictFromCourtList": false,
+          "applicationParticulars": "al information. Briefly describe why the application is being made. For example, ‘A witness requires screens for the trial.’",
+          "restrictCourtApplicationType": false
+        }
+      ],
+      "courtCentreDetails": {
+        "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+        "defaultDuration": 420,
+        "defaultStartTime": "10:00:00"
+      },
+      "isGroupProceedings": false,
+      "numberOfGroupCases": 1,
+      "sendNotificationToParties": false,
+      "hearingDayCount": 1,
+      "hearingDayPosition": 1
+    },
+    {
+      "id": "e0507304-24da-42d0-a08e-8cfd4098cc27",
+      "type": {
+        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+        "description": "First hearing"
+      },
+      "endDate": "2026-02-20",
+      "resulted": true,
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2026-02-20",
+      "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "hearingDays": [
+        {
+          "endTime": "2026-02-20T09:20:00.000Z",
+          "sequence": 2,
+          "startTime": "2026-02-20T09:00:00.000Z",
+          "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "hearingDate": "2026-02-20",
+          "isCancelled": false,
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "courtScheduleId": "17224f85-d6eb-49ee-bd2a-5101bca7a64e",
+          "durationMinutes": 20
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "62581cd6-40e2-4317-b994-f579d7fc3e1d",
+          "markers": [],
+          "caseStatus": "INACTIVE",
+          "defendants": [
+            {
+              "id": "bd32d6cd-49b6-461a-ae61-3ec2bc699109",
+              "address": {
+                "address1": "6",
+                "address2": "Deckow Lake",
+                "address3": "Eastvale",
+                "address4": "Avon",
+                "postcode": "DA6 7ND"
+              },
+              "isYouth": false,
+              "lastName": "Beier",
+              "offences": [
+                {
+                  "id": "c7cd3a45-ace4-4691-b1c3-91c939aa99c2",
+                  "count": 0,
+                  "startDate": "2019-11-28",
+                  "orderIndex": 1,
+                  "offenceCode": "SX03224",
+                  "shadowListed": false,
+                  "offenceWording": "From 13th November 2018, an aggravated version of this offence applies where the offence is committed against an emergency worker acting in the exercise of his / her functions as such a worker, as per section 1 of the Assaults on emergency Workers (Offences) Act 2018; see offence wording document H19568.",
+                  "statementOfOffence": {
+                    "title": "Engage in sexual communication with a child",
+                    "welshTitle": "Engage in sexual communication with a child",
+                    "legislation": "Contrary to Section 15A(1) and (3) of the Sexual Offences Act 2003"
+                  },
+                  "reportingRestrictions": [
+                    {
+                      "id": "d6ffe0b2-5e4b-4102-8889-df9c00092be0",
+                      "label": "Complainant's anonymity protected by virtue of Section 1 of the Sexual Offences Amendment Act 1992",
+                      "orderedDate": "2026-02-17"
+                    }
+                  ],
+                  "restrictFromCourtList": false
+                },
+                {
+                  "id": "ba96ed30-e9c4-4376-b40a-c3012a96502b",
+                  "count": 0,
+                  "startDate": "2019-11-28",
+                  "orderIndex": 2,
+                  "offenceCode": "CA03012",
+                  "shadowListed": false,
+                  "offenceWording": "From 13th November 2018, an aggravated version of this offence applies where the offence is committed against an emergency worker acting in the exercise of his / her functions as such a worker, as per section 1 of the Assaults on emergency Workers (Offences) Act 2018; see offence wording document H19568.",
+                  "statementOfOffence": {
+                    "title": "Possess / control TV set with intent another use install without a licence",
+                    "welshTitle": "Meddu ar/mewn rheolaeth set deledu gan fwriadu i unigolyn arall ei ddefnyddio/osod heb drwydded",
+                    "legislation": "Contrary to section 363(3)(b) and (4) of the Communications Act 2003.",
+                    "welshLegislation": "Yn groes i adran 363(3)(b) a (4) Deddf Cyfathrebu 2003."
+                  },
+                  "restrictFromCourtList": false
+                },
+                {
+                  "id": "8f30f07e-851b-46d5-a4fb-50ebe52485e0",
+                  "count": 0,
+                  "startDate": "2019-11-28",
+                  "orderIndex": 3,
+                  "offenceCode": "CA03011",
+                  "shadowListed": false,
+                  "offenceWording": "From 13th November 2018, an aggravated version of this offence applies where the offence is committed against an emergency worker acting in the exercise of his / her functions as such a worker, as per section 1 of the Assaults on emergency Workers (Offences) Act 2018; see offence wording document H19568.",
+                  "statementOfOffence": {
+                    "title": "Possess a television set with intent to install / use without a licence",
+                    "welshTitle": "Meddu ar set deledu gan fwriadu'i osod/ddefnyddio heb drwydded",
+                    "legislation": "Contrary to section 363(3)(a) and (4) of the Communications Act 2003.",
+                    "welshLegislation": "Yn groes i adran 363(3)(a) a (4) Deddf Cyfathrebu 2003."
+                  },
+                  "restrictFromCourtList": false
+                },
+                {
+                  "id": "c1f1fa39-3642-43e6-8f17-157a030ed427",
+                  "count": 0,
+                  "startDate": "2019-11-28",
+                  "orderIndex": 4,
+                  "offenceCode": "CA03013",
+                  "shadowListed": false,
+                  "offenceWording": "From 13th November 2018, an aggravated version of this offence applies where the offence is committed against an emergency worker acting in the exercise of his / her functions as such a worker, as per section 1 of the Assaults on emergency Workers (Offences) Act 2018; see offence wording document H19568.",
+                  "statementOfOffence": {
+                    "title": "Obstruct person executing search warrant for TV receiver",
+                    "welshTitle": "Rhwystro unigolyn a oedd yn gweithredu gwarant chwilio ar gyfer derbynnydd teledu",
+                    "legislation": "Contrary to section 366(8)(a) and (9) of the Communications Act 2003.",
+                    "welshLegislation": "Yn groes i adran 366(8)(a) a (9) Deddf Cyfathrebu 2003."
+                  },
+                  "restrictFromCourtList": false
+                },
+                {
+                  "id": "25aa326a-a95f-4b42-8894-cc320ef09768",
+                  "count": 0,
+                  "startDate": "2019-11-28",
+                  "orderIndex": 5,
+                  "offenceCode": "CA03012",
+                  "shadowListed": false,
+                  "offenceWording": "From 13th November 2018, an aggravated version of this offence applies where the offence is committed against an emergency worker acting in the exercise of his / her functions as such a worker, as per section 1 of the Assaults on emergency Workers (Offences) Act 2018; see offence wording document H19568.",
+                  "statementOfOffence": {
+                    "title": "Possess / control TV set with intent another use install without a licence",
+                    "welshTitle": "Meddu ar/mewn rheolaeth set deledu gan fwriadu i unigolyn arall ei ddefnyddio/osod heb drwydded",
+                    "legislation": "Contrary to section 363(3)(b) and (4) of the Communications Act 2003.",
+                    "welshLegislation": "Yn groes i adran 363(3)(b) a (4) Deddf Cyfathrebu 2003."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Eldora",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "2006-09-09",
+              "masterDefendantId": "bd32d6cd-49b6-461a-ae61-3ec2bc699109",
+              "hearingLanguageNeeds": "ENGLISH",
+              "proceedingsConcluded": true,
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-02-17T11:46:20.959Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+            "authorityCode": "DERPF",
+            "caseReference": "30MR3601602"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "MAGISTRATES",
+      "courtApplications": [],
+      "courtCentreDetails": {
+        "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+        "defaultDuration": 420,
+        "defaultStartTime": "10:00:00"
+      },
+      "isGroupProceedings": false,
+      "numberOfGroupCases": 1,
+      "sendNotificationToParties": false,
+      "hearingDayCount": 1,
+      "hearingDayPosition": 1
+    },
+    {
+      "id": "5956e350-12c5-4404-83dd-8129d420560f",
+      "type": {
+        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+        "description": "First hearing"
+      },
+      "endDate": "2026-02-20",
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2026-02-20",
+      "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "hearingDays": [
+        {
+          "endTime": "2026-02-20T10:50:00.000Z",
+          "sequence": 5,
+          "startTime": "2026-02-20T10:30:00.000Z",
+          "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "hearingDate": "2026-02-20",
+          "isCancelled": false,
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "courtScheduleId": "ce3e78b3-f94a-448b-b563-97ce23f3c421",
+          "durationMinutes": 20
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "6878acf9-7fcf-4b4d-8be1-293bec73ef54",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "5727b36f-a6e3-4081-8b20-cae0d0a5db8f",
+              "address": {
+                "address1": "48 Elm Grove",
+                "address2": "Elm Grove",
+                "address3": "Horsham",
+                "address4": "West Sussex",
+                "postcode": "RH12 1ST"
+              },
+              "isYouth": false,
+              "lastName": "BOTBogisich",
+              "offences": [
+                {
+                  "id": "161317f3-6485-4cd9-be6a-0eab05b3fcd1",
+                  "count": 0,
+                  "startDate": "2025-11-21",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68023",
+                  "shadowListed": false,
+                  "offenceWording": "Robbery",
+                  "statementOfOffence": {
+                    "title": "Robbery",
+                    "welshTitle": "Ysbeilio/Lladrad",
+                    "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                    "welshLegislation": "Yn groes i adran 8(1) Deddf Dwyn 1968."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "JohnAlexander",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "1991-02-19",
+              "masterDefendantId": "5727b36f-a6e3-4081-8b20-cae0d0a5db8f",
+              "hearingLanguageNeeds": "ENGLISH",
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-02-19T16:12:05.372Z"
+            },
+            {
+              "id": "6b601243-918f-498e-b65e-c6cae24e67d0",
+              "address": {
+                "address1": "18 George Square",
+                "address2": "George Square",
+                "address3": "Glasgow",
+                "address4": "Glasgow City",
+                "postcode": "RH12 1ST"
+              },
+              "offences": [
+                {
+                  "id": "73e8be6c-19fb-4464-9863-95062bb97326",
+                  "count": 0,
+                  "startDate": "2025-11-21",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68023",
+                  "shadowListed": false,
+                  "offenceWording": "Robbery",
+                  "statementOfOffence": {
+                    "title": "Robbery",
+                    "welshTitle": "Ysbeilio/Lladrad",
+                    "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                    "welshLegislation": "Yn groes i adran 8(1) Deddf Dwyn 1968."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "organisationName": "Jaskolski-Keebler Ltd.",
+              "masterDefendantId": "6b601243-918f-498e-b65e-c6cae24e67d0",
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2026-02-19T16:12:05.373Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+            "authorityCode": "CITYPF",
+            "caseReference": "PO270759179"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "MAGISTRATES",
+      "courtApplications": [
+        {
+          "id": "9ddaff06-36f0-4c17-add9-82e84571f0fe",
+          "subject": {
+            "id": "37f49b93-0af8-4d7d-973d-3d9f35cd405b",
+            "address": {
+              "address1": "48 Elm Grove",
+              "address2": "Elm Grove",
+              "address3": "Horsham",
+              "address4": "West Sussex",
+              "postcode": "RH12 1ST"
+            },
+            "lastName": "BOTBogisich",
+            "firstName": "JohnAlexander",
+            "isRespondent": false,
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PERSON_DEFENDANT"
+          },
+          "offences": [],
+          "applicant": {
+            "id": "37f49b93-0af8-4d7d-973d-3d9f35cd405b",
+            "address": {
+              "address1": "48 Elm Grove",
+              "address2": "Elm Grove",
+              "address3": "Horsham",
+              "address4": "West Sussex",
+              "postcode": "RH12 1ST"
+            },
+            "lastName": "BOTBogisich",
+            "firstName": "JohnAlexander",
+            "isRespondent": false,
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PERSON_DEFENDANT"
+          },
+          "respondents": [],
+          "linkedCaseIds": [
+            "6878acf9-7fcf-4b4d-8be1-293bec73ef54"
+          ],
+          "applicationType": "Appearance to make statutory declaration (other than SJP)",
+          "applicationTypeCode" : "TYPE_CODE",
+          "applicationReference": "PO270759179",
+          "restrictFromCourtList": false,
+          "applicationParticulars": "ny personal information. Briefly describe why the application is being made. For example, ‘A witness requires screens for the trial.’",
+          "restrictCourtApplicationType": false
+        }
+      ],
+      "courtCentreDetails": {
+        "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+        "defaultDuration": 420,
+        "defaultStartTime": "10:00:00"
+      },
+      "isGroupProceedings": false,
+      "numberOfGroupCases": 1,
+      "sendNotificationToParties": false,
+      "hearingDayCount": 1,
+      "hearingDayPosition": 1
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/referencedata-service/query/api/rest/referencedata/prosecutors/[^/]+"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/vnd.referencedata.query.prosecutor+json"
+    },
+    "bodyFileName": "referencedata-prosecutor.json"
+  }
+}

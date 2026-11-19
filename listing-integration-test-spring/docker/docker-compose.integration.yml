@@ -1,0 +1,103 @@
+# Integration-test stack for the Spring Boot listing app (P2.0). Modelled on courtscheduler's
+# listingcourtscheduler-integration-test/docker/docker-compose.integration.yml.
+# Host ports are chosen so the stack can run next to cpp-developers-docker (8080, 5432, 61616)
+# and courtscheduler's IT stack (8083, 8189, 55433).
+services:
+  db:
+    # The viewstore (P2.1): the app applies the existing Liquibase changelog at start-up; the ITs
+    # seed rows through JDBC on the mapped port.
+    image: postgres:16-alpine
+    container_name: CP_LISTING_db_it
+    environment:
+      POSTGRES_DB: listing
+      POSTGRES_USER: listing
+      POSTGRES_PASSWORD: listing
+    ports:
+      - "55436:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U listing -d listing"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  wiremock:
+    image: wiremock/wiremock:3.9.1
+    container_name: CP_LISTING_wiremock_it
+    command: ["--disable-banner"]
+    ports:
+      - "8191:8080"
+    volumes:
+      - ../src/test/resources/wiremock/mappings:/home/wiremock/mappings
+      - ../src/test/resources/wiremock/__files:/home/wiremock/__files
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/__admin/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  artemis:
+    # New, not in courtscheduler: listing's domain messaging (P2.2) runs on Artemis. In P2.0 it
+    # only has to start; the app's JMS health indicator connects to it.
+    image: apache/activemq-artemis:2.39.0
+    container_name: CP_LISTING_artemis_it
+    environment:
+      ARTEMIS_USER: listing
+      ARTEMIS_PASSWORD: listing
+      ANONYMOUS_LOGIN: "false"
+    ports:
+      - "61626:61616"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/61616' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  app:
+    container_name: CP_LISTING_app_it
+    build:
+      context: ../../listing-api
+      dockerfile: docker/Dockerfile
+    ports:
+      - "${SERVER_PORT:-8084}:${SERVER_PORT:-8084}"
+    environment:
+      SERVER_PORT: ${SERVER_PORT:-8084}
+      SPRING_PROFILES_ACTIVE: integration
+
+      # Authz + HTTP audit ENABLED in integration tests (proves the filter wiring);
+      # the audit JMS publish stays off.
+      LISTING_AUTHZ_ENABLED: "true"
+      LISTING_HTTP_AUDIT_ENABLED: "true"
+      LISTING_AUDIT_ENABLED: "false"
+
+      # Outbound CPP services are WireMock: usersgroups permissions for the auth filter (P2.0) and,
+      # from P2.1, the services the queries call (referencedata, progression, defence, usersgroups,
+      # systemdocgenerator, listingcourtscheduler).
+      LISTING_BASE_URL: "http://wiremock:8080"
+      LISTING_COURTSCHEDULER_BASE_URL: "http://wiremock:8080/listingcourtscheduler-api/rest/courtscheduler"
+      LISTING_SYSTEM_USER_ID: "22222222-2222-2222-2222-222222222222"
+
+      # Viewstore (P2.1).
+      LISTING_DATASOURCE_URL: "jdbc:postgresql://db:5432/listing"
+      LISTING_DATASOURCE_USERNAME: listing
+      LISTING_DATASOURCE_PASSWORD: listing
+
+      # Artemis (domain messaging from P2.2; JMS health from P2.0).
+      LISTING_ARTEMIS_BROKER_URL: "tcp://artemis:61616"
+      LISTING_ARTEMIS_USER: listing
+      LISTING_ARTEMIS_PASSWORD: listing
+
+      # No OTLP collector in the stack.
+      MANAGEMENT_OTLP_METRICS_EXPORT_ENABLED: "false"
+      MANAGEMENT_TRACING_ENABLED: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+      wiremock:
+        condition: service_healthy
+      artemis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:${SERVER_PORT:-8084}/listing-service/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 24

@@ -1,0 +1,689 @@
+openapi: 3.0.3
+info:
+  title: Listing API
+  description: |
+    Spring Boot port of the two RAML 0.8 contracts of the listing context:
+      - listing-command/listing-command-api/src/raml/listing-command-api.raml (command API)
+      - listing-query/listing-query-api/src/raml/listing-query-api.raml (query API)
+    One spec serves both legacy context roots (ADR 008): the servlet context path is
+    /listing-service and every path below starts with /command/api/rest/listing or
+    /query/api/rest/listing, so clients see the same URLs as on WildFly.
+
+    Paths, HTTP methods, query parameters, vendor media types and status codes are ported 1:1.
+    Request and response bodies are typed as PassthroughObject: the legacy draft-04 JSON
+    schemas stay the source of truth. Each vendor media type names its legacy schema file in
+    the `x-json-schema` extension. For request bodies, RequestSchemaValidationFilter validates
+    against that file (classpath request-schemas/); for query responses it names the schema the
+    P2.1 contract tests validate against.
+
+    Dispatch: where one path takes several vendor media types (e.g. POST /hearings/{hearingId}),
+    there is one operation and the controller dispatches on Content-Type, as in courtscheduler.
+    The authorisation action for each request is the vendor token of its media type (see the
+    DRL under uk.gov.moj.cpp.listing.api.accesscontrol.drl/ and ADR 005).
+  version: 0.0.1
+servers:
+  - url: /listing-service
+    description: Servlet context path (WildFly-equivalent)
+
+tags:
+  - name: case-commands
+  - name: hearing-commands
+  - name: court-list-commands
+  - name: listing-note-commands
+  - name: court-schedule-commands
+  - name: hearing-queries
+  - name: court-list-queries
+  - name: court-schedule-queries
+  - name: case-queries
+  - name: cache-queries
+  - name: report-queries
+
+paths:
+
+  # ---------------------------------------------------------------------------------------
+  # Command API  (/listing-service/command/api/rest/listing)  — every command returns 202
+  # ---------------------------------------------------------------------------------------
+
+  /command/api/rest/listing/cases:
+    post:
+      tags: [case-commands]
+      operationId: postCases
+      summary: List case for hearing
+      requestBody:
+        required: true
+        content:
+          application/vnd.listing.command.list-court-hearing+json:
+            x-json-schema: listing.command.list-court-hearing.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.command.list-unscheduled-court-hearing+json:
+            x-json-schema: listing.command.list-unscheduled-court-hearing.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+      responses:
+        '202': { description: Request accepted }
+
+  /command/api/rest/listing/hearings:
+    post:
+      tags: [hearing-commands]
+      operationId: postHearings
+      summary: Update hearings for a listing
+      requestBody:
+        required: true
+        content:
+          application/vnd.listing.command.change-judiciary-for-hearings+json:
+            x-json-schema: listing.command.change-judiciary-for-hearings.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.command.restrict-court-list+json:
+            x-json-schema: listing.command.restrict-court-list.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.delete-previous-hearings-and-create-next-hearing+json:
+            x-json-schema: listing.delete-previous-hearings-and-create-next-hearing.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+      responses:
+        '202': { description: Request accepted }
+
+  /command/api/rest/listing/hearings/update-hearings:
+    post:
+      tags: [hearing-commands]
+      operationId: postUpdateHearings
+      summary: Update multiple hearings in a batch and raise a single public event
+      requestBody:
+        required: true
+        content:
+          application/vnd.listing.command.update-hearings-for-listing+json:
+            x-json-schema: listing.command.update-hearings-for-listing.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+      responses:
+        '202': { description: Request accepted }
+
+  /command/api/rest/listing/hearings/{hearingId}:
+    post:
+      tags: [hearing-commands]
+      operationId: postHearing
+      summary: Update hearing for listing (dispatched on Content-Type)
+      parameters:
+        - { in: path, name: hearingId, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/vnd.listing.command.update-hearing-for-listing+json:
+            x-json-schema: listing.command.update-hearing-for-listing.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.command.split-hearing+json:
+            x-json-schema: listing.command.split-hearing.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.command.update-defendants-for-hearing+json:
+            x-json-schema: listing.command.update-defendants-for-hearing.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.command.delete-offences-for-hearing+json:
+            x-json-schema: listing.command.delete-offences-for-hearing.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.command.add-offences-for-hearing+json:
+            x-json-schema: listing.command.add-offences-for-hearing.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.command.update-offences-for-hearing+json:
+            x-json-schema: listing.command.update-offences-for-hearing.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.command.extend-hearing-for-hearing+json:
+            x-json-schema: listing.command.extend-hearing-for-hearing.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.command.vacate-trial+json:
+            x-json-schema: listing.command.vacate-trial.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.command.move-hearing-to-past-date+json:
+            x-json-schema: listing.command.move-hearing-to-past-date.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.command.change-court-room-for-multiday-hearing+json:
+            x-json-schema: listing.command.change-court-room-for-multiday-hearing.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          # RAML declares this body as !!null (no schema): the body is not schema-validated.
+          application/vnd.listing.duplicate-unallocated-hearing+json:
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.next-hearings-v2+json:
+            x-json-schema: listing.list-next-hearings-v2.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.list-unscheduled-next-hearings+json:
+            x-json-schema: listing.list-unscheduled-next-hearings.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.related-hearing+json:
+            x-json-schema: listing.update-related-hearing.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.delete-next-hearings+json:
+            x-json-schema: listing.delete-next-hearings.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.update-hearing-add-case-bdf+json:
+            x-json-schema: listing.update-hearing-add-case-bdf.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+      responses:
+        '202': { description: Request accepted }
+
+  /command/api/rest/listing/hearings/sequence:
+    post:
+      tags: [hearing-commands]
+      operationId: postSequenceHearings
+      summary: Sequence hearings
+      requestBody:
+        required: true
+        content:
+          application/vnd.listing.command.sequence-hearings+json:
+            x-json-schema: listing.command.sequence-hearings.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+      responses:
+        '202': { description: Request accepted }
+
+  /command/api/rest/listing/publishCourtList/{courtCentreId}:
+    post:
+      tags: [court-list-commands]
+      operationId: postPublishCourtList
+      summary: Publish court list
+      parameters:
+        - { in: path, name: courtCentreId, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/vnd.listing.command.publish-court-list+json:
+            x-json-schema: listing.command.publish-court-list.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+      responses:
+        '202': { description: Request accepted }
+
+  /command/api/rest/listing/publishCourtListsForCrownCourts:
+    post:
+      tags: [court-list-commands]
+      operationId: postPublishCourtListsForCrownCourts
+      summary: Publish 'final' lists for all crown courts, for the next weekday
+      requestBody:
+        required: true
+        content:
+          application/vnd.listing.command.publish-court-lists-for-crown-courts+json:
+            x-json-schema: listing.command.publish-court-lists-for-crown-courts.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+      responses:
+        '202': { description: Request accepted }
+
+  /command/api/rest/listing/courtlist/{courtCentreId}/{publishCourtListType}/{startDate}:
+    post:
+      tags: [court-list-commands]
+      operationId: postCourtListRequestExport
+      summary: Export court list
+      parameters:
+        - { in: path, name: courtCentreId, required: true, schema: { type: string } }
+        - { in: path, name: publishCourtListType, required: true, schema: { type: string } }
+        - { in: path, name: startDate, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/vnd.listing.command.court-list-request-export+json:
+            x-json-schema: listing.command.court-list-request-export.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+      responses:
+        '202': { description: Request accepted }
+
+  /command/api/rest/listing/listing-note:
+    post:
+      tags: [listing-note-commands]
+      operationId: postCreateListingNote
+      summary: Create listing note
+      requestBody:
+        required: true
+        content:
+          application/vnd.listing.command.create-listing-note+json:
+            x-json-schema: listing.command.create-listing-note.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+      responses:
+        '202': { description: Request accepted }
+
+  /command/api/rest/listing/listing-notes/{noteId}:
+    post:
+      tags: [listing-note-commands]
+      operationId: postListingNote
+      summary: Edit or delete an existing note (dispatched on Content-Type)
+      parameters:
+        - { in: path, name: noteId, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/vnd.listing.command.edit-listing-note+json:
+            x-json-schema: listing.command.edit-note-for-listing.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+          application/vnd.listing.command.delete-listing-note+json:
+            x-json-schema: listing.command.delete-listing-note.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+      responses:
+        '202': { description: Request accepted }
+
+  /command/api/rest/listing/update-hearing-day-court-schedule:
+    post:
+      tags: [court-schedule-commands]
+      operationId: postUpdateHearingDayCourtSchedule
+      summary: Update hearing day court schedule id if and only if it is not already present
+      requestBody:
+        required: true
+        content:
+          application/vnd.listing.update-hearing-day-court-schedule+json:
+            x-json-schema: listing.update-hearing-day-court-schedule.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+      responses:
+        '202': { description: Request accepted }
+
+  /command/api/rest/listing/migrate-crown-hearings-to-courtschedules:
+    post:
+      tags: [court-schedule-commands]
+      operationId: postMigrateCrownHearingsToCourtSchedules
+      summary: Bulk-assign courtScheduleId to CROWN hearing days during court-schedule migration
+      requestBody:
+        required: true
+        content:
+          application/vnd.listing.migrate-crown-hearings-to-courtschedules+json:
+            x-json-schema: listing.migrate-crown-hearings-to-courtschedules.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+      responses:
+        '202': { description: Request accepted }
+
+  /command/api/rest/listing/delete-hearing/{hearingId}:
+    post:
+      tags: [hearing-commands]
+      operationId: postDeleteHearing
+      summary: Delete hearing
+      parameters:
+        - { in: path, name: hearingId, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/vnd.listing.delete-hearing+json:
+            x-json-schema: listing.command.delete-hearing.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+      responses:
+        '202': { description: Request accepted }
+
+  # ---------------------------------------------------------------------------------------
+  # Query API  (/listing-service/query/api/rest/listing)
+  # RAML `type: date` parameters are declared as plain strings: the framework passed them
+  # through as strings, so no new date parsing (and no new 400s) is introduced.
+  # ---------------------------------------------------------------------------------------
+
+  /query/api/rest/listing/hearings:
+    get:
+      tags: [hearing-queries]
+      operationId: searchHearings
+      parameters:
+        - { in: query, name: allocated, required: true, schema: { type: boolean } }
+        - { in: query, name: courtCentreId, required: false, schema: { type: string } }
+        - { in: query, name: courtRoomId, required: false, schema: { type: string } }
+        - { in: query, name: authorityId, required: false, schema: { type: string } }
+        - { in: query, name: hearingTypeId, required: false, schema: { type: string } }
+        - { in: query, name: jurisdictionType, required: false, schema: { type: string } }
+        - { in: query, name: searchDate, required: true, description: 'RAML type: date', schema: { type: string } }
+        - { in: query, name: startTime, required: false, schema: { type: string } }
+        - { in: query, name: endTime, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.search.hearings+json:
+              x-json-schema: listing.search.hearings.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/hearings/available-search:
+    get:
+      tags: [hearing-queries]
+      operationId: availableSearchHearings
+      parameters:
+        - { in: query, name: hearingId, required: false, schema: { type: string } }
+        - { in: query, name: caseUrn, required: false, schema: { type: string } }
+        - { in: query, name: searchCriteria, required: false, schema: { type: string } }
+        - { in: query, name: jurisdictionType, required: false, schema: { type: string } }
+        - { in: query, name: matchedDefendantIds, required: false, schema: { type: string } }
+        - { in: query, name: caseUrnForLinkedCases, required: false, schema: { type: string } }
+        - { in: query, name: returnAllHearings, required: false, schema: { type: boolean } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.search.hearings+json:
+              x-json-schema: listing.search.hearings.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/hearings/allocated-and-unallocated:
+    get:
+      tags: [hearing-queries]
+      operationId: allocatedAndUnallocatedHearings
+      parameters:
+        - { in: query, name: caseId, required: false, schema: { type: string } }
+        - { in: query, name: applicationId, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.search.hearings+json:
+              x-json-schema: listing.search.hearings.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/hearings/range-search:
+    get:
+      tags: [hearing-queries]
+      operationId: rangeSearchHearings
+      summary: Range search (listing.search.hearings) or court calendar (listing.search.hearings.court.calendar), negotiated on Accept
+      parameters:
+        - { in: query, name: allocated, required: true, schema: { type: boolean } }
+        - { in: query, name: courtCentreId, required: false, schema: { type: string } }
+        - { in: query, name: ouCode, required: false, schema: { type: string } }
+        - { in: query, name: courtRoomId, required: false, schema: { type: string } }
+        - { in: query, name: authorityId, required: false, schema: { type: string } }
+        - { in: query, name: hearingTypeId, required: false, schema: { type: string } }
+        - { in: query, name: jurisdictionType, required: false, schema: { type: string } }
+        - { in: query, name: startDate, required: false, description: 'RAML type: date', schema: { type: string } }
+        - { in: query, name: endDate, required: false, description: 'RAML type: date', schema: { type: string } }
+        - { in: query, name: weekCommencingStartDate, required: false, description: 'RAML type: date', schema: { type: string } }
+        - { in: query, name: weekCommencingEndDate, required: false, description: 'RAML type: date', schema: { type: string } }
+        - { in: query, name: pageSize, required: false, schema: { type: integer } }
+        - { in: query, name: useMaxPageSize, required: false, schema: { type: boolean } }
+        - { in: query, name: pageNumber, required: false, schema: { type: integer } }
+        - { in: query, name: possibleDisqualification, required: false, schema: { type: boolean } }
+        - { in: query, name: businessType, required: false, schema: { type: string } }
+        - { in: query, name: courtSession, required: false, schema: { type: string } }
+        - { in: query, name: exactHearingStartDateTime, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.search.hearings+json:
+              x-json-schema: listing.search.hearings.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+            application/vnd.listing.search.hearings.court.calendar+json:
+              x-json-schema: listing.search.hearings.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/hearings/{id}:
+    get:
+      tags: [hearing-queries]
+      operationId: searchHearing
+      parameters:
+        - { in: path, name: id, required: true, description: The ID of the hearing; must be a valid UUID, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.search.hearing+json:
+              x-json-schema: listing.search.hearing.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/courtlist:
+    get:
+      tags: [court-list-queries]
+      operationId: searchCourtList
+      summary: Get court list document
+      parameters:
+        - { in: query, name: courtCentreId, required: true, schema: { type: string } }
+        - { in: query, name: courtRoomId, required: false, schema: { type: string } }
+        - { in: query, name: listId, required: true, schema: { type: string } }
+        - { in: query, name: startDate, required: true, description: 'RAML type: date', schema: { type: string } }
+        - { in: query, name: endDate, required: true, description: 'RAML type: date', schema: { type: string } }
+        - { in: query, name: restricted, required: false, schema: { type: boolean, default: false } }
+      responses:
+        '200':
+          description: |
+            The court list PDF rendered by systemdocgenerator. As on WildFly (DefaultQueryApiCourtlistResource),
+            the response Content-Type is application/pdf with Content-Disposition attachment; filename="CourtList.pdf",
+            whatever the Accept. RAML declares no response schema.
+          content:
+            application/vnd.listing.search.court.list+json:
+              schema: { type: string, format: binary }
+        '400':
+          description: No matching list type, or no data found for the supplied parameters
+
+  /query/api/rest/listing/dailylistpayload:
+    get:
+      tags: [court-list-queries]
+      operationId: searchDailyListPayload
+      summary: Get XHIBIT daily list as JSON payload
+      parameters:
+        - { in: query, name: courtCentreId, required: true, schema: { type: string } }
+        - { in: query, name: startDate, required: false, description: 'RAML type: date', schema: { type: string } }
+        - { in: query, name: publishCourtListType, required: true, schema: { type: string } }
+        - { in: query, name: endDate, required: false, description: 'RAML type: date', schema: { type: string } }
+        - { in: query, name: weekCommencingStartDate, required: false, description: 'RAML type: date', schema: { type: string } }
+        - { in: query, name: weekCommencingEndDate, required: false, description: 'RAML type: date', schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.search.daily.list.payload+json:
+              x-json-schema: listing.search.daily.list.payload.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/courtlistpayload:
+    get:
+      tags: [court-list-queries]
+      operationId: searchCourtListPayload
+      summary: Get court list payload
+      parameters:
+        - { in: query, name: courtCentreId, required: true, schema: { type: string } }
+        - { in: query, name: courtRoomId, required: false, schema: { type: string } }
+        - { in: query, name: listId, required: true, schema: { type: string } }
+        - { in: query, name: startDate, required: true, description: 'RAML type: date', schema: { type: string } }
+        - { in: query, name: endDate, required: true, description: 'RAML type: date', schema: { type: string } }
+        - { in: query, name: restricted, required: false, schema: { type: boolean, default: false } }
+        - { in: query, name: includeApplications, required: false, schema: { type: boolean, default: false } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.search.court.list.payload+json:
+              x-json-schema: listing.search.court.list.payload.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/courtListPublishStatus/{courtCentreId}:
+    get:
+      tags: [court-list-queries]
+      operationId: getCourtListPublishStatus
+      summary: Get status of the latest published court list document
+      parameters:
+        - { in: path, name: courtCentreId, required: true, schema: { type: string } }
+        - { in: query, name: publishCourtListTypes, required: true, schema: { type: string } }
+        - { in: query, name: publishDate, required: true, description: 'RAML type: date', schema: { type: string } }
+        - { in: query, name: weekCommencing, required: false, schema: { type: boolean, default: false } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.court.list.publish.status+json:
+              x-json-schema: listing.court.list.publish.status.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/hearingSlots:
+    get:
+      tags: [court-schedule-queries]
+      operationId: searchHearingSlots
+      summary: Retrieve available hearing slots for the given criteria (access-control bypass, ADR 005)
+      parameters:
+        - { in: query, name: panel, required: true, schema: { type: string } }
+        - { in: query, name: sessionStartDate, required: true, schema: { type: string } }
+        - { in: query, name: sessionEndDate, required: true, schema: { type: string } }
+        - { in: query, name: hearingStartTime, required: false, schema: { type: string } }
+        - { in: query, name: oucodeL2Code, required: false, schema: { type: string } }
+        - { in: query, name: ouCode, required: false, schema: { type: string } }
+        - { in: query, name: courtRoomId, required: false, schema: { type: string } }
+        - { in: query, name: courtRoomNumber, required: false, schema: { type: string } }
+        - { in: query, name: businessType, required: false, schema: { type: string } }
+        - { in: query, name: courtSession, required: false, schema: { type: string } }
+        - { in: query, name: isSlotBased, required: false, schema: { type: boolean } }
+        - { in: query, name: showOverbookedSlots, required: false, schema: { type: boolean } }
+        - { in: query, name: pageSize, required: true, schema: { type: string } }
+        - { in: query, name: pageNumber, required: true, schema: { type: string } }
+        - { in: query, name: availableDurationMins, required: false, schema: { type: integer } }
+        - { in: query, name: status, required: false, schema: { type: string, default: ALL, enum: [DRAFT, FINAL, ALL] } }
+        - { in: query, name: jurisdiction, required: true, schema: { type: string, enum: [CROWN, MAGISTRATES] } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.search.hearing.slots+json:
+              x-json-schema: listing.search.hearing.slots.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/sessionAvailabilityValidation:
+    post:
+      tags: [court-schedule-queries]
+      operationId: validateSessionAvailability
+      summary: Validate session availability (access-control bypass, ADR 005)
+      requestBody:
+        required: true
+        content:
+          application/vnd.listing.validate.session.availability+json:
+            x-json-schema: listing.validate.session.availability.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.validate.session.availability.response+json:
+              x-json-schema: listing.validate.session.availability.response.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+        '400':
+          description: Validation failed
+          content:
+            application/vnd.listing.validate.session.availability.response+json:
+              x-json-schema: listing.validate.session.availability.response.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/courtScheduleDraftStatus:
+    post:
+      tags: [court-schedule-queries]
+      operationId: getCourtScheduleDraftStatus
+      summary: |
+        Reports whether any of the supplied courtScheduleIds resolves to a DRAFT (unallocated)
+        court-schedule session. Returns { "anyDraft": true|false } (access-control bypass, ADR 005).
+      requestBody:
+        required: true
+        content:
+          application/vnd.listing.query.court.schedule.draft.status+json:
+            x-json-schema: listing.query.court.schedule.draft.status.json
+            schema: { $ref: '#/components/schemas/PassthroughObject' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.query.court.schedule.draft.status.response+json:
+              x-json-schema: listing.query.court.schedule.draft.status.response.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/hearings/unscheduled:
+    get:
+      tags: [hearing-queries]
+      operationId: unscheduledSearchHearings
+      parameters:
+        - { in: query, name: caseUrn, required: false, schema: { type: string } }
+        - { in: query, name: typeOfList, required: false, schema: { type: string } }
+        - { in: query, name: oucodeL2Code, required: false, schema: { type: string } }
+        - { in: query, name: courtCentreId, required: false, schema: { type: string } }
+        - { in: query, name: pageSize, required: false, schema: { type: integer } }
+        - { in: query, name: pageNumber, required: false, schema: { type: integer } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.search.hearings+json:
+              x-json-schema: listing.search.hearings.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/hearings/any-allocation:
+    get:
+      tags: [hearing-queries]
+      operationId: anyAllocationSearchHearings
+      parameters:
+        - { in: query, name: caseUrn, required: true, schema: { type: string } }
+        - { in: query, name: startDate, required: true, description: 'RAML type: date', schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.search.hearings+json:
+              x-json-schema: listing.search.hearings.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/hearings/cotr-search:
+    get:
+      tags: [hearing-queries]
+      operationId: cotrSearchHearings
+      parameters:
+        - { in: query, name: courtCentreId, required: true, schema: { type: string } }
+        - { in: query, name: startDate, required: true, description: 'RAML type: date', schema: { type: string } }
+        - { in: query, name: endDate, required: true, description: 'RAML type: date', schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.search.hearings+json:
+              x-json-schema: listing.search.hearings.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/cases/by-person-defendant-and-hearingDate:
+    get:
+      tags: [case-queries]
+      operationId: getCasesByPersonDefendant
+      parameters:
+        - { in: query, name: firstName, required: true, schema: { type: string } }
+        - { in: query, name: lastName, required: true, schema: { type: string } }
+        - { in: query, name: dateOfBirth, required: false, schema: { type: string } }
+        - { in: query, name: hearingDate, required: true, schema: { type: string } }
+        - { in: query, name: isCivil, required: false, schema: { type: boolean } }
+        - { in: query, name: isGroupMember, required: false, schema: { type: boolean } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.get.cases-by-person-defendant+json:
+              x-json-schema: listing.search.cases-by-defendant-and-hearingDate.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/cases/by-organisation-defendant-and-hearingDate:
+    get:
+      tags: [case-queries]
+      operationId: getCasesByOrganisationDefendant
+      parameters:
+        - { in: query, name: organisationName, required: true, schema: { type: string } }
+        - { in: query, name: hearingDate, required: true, schema: { type: string } }
+        - { in: query, name: isCivil, required: false, schema: { type: boolean } }
+        - { in: query, name: isGroupMember, required: false, schema: { type: boolean } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.get.cases-by-organisation-defendant+json:
+              x-json-schema: listing.search.cases-by-defendant-and-hearingDate.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/cache-refdata-courtrooms/refresh:
+    get:
+      tags: [cache-queries]
+      operationId: refreshCourtroomsCache
+      summary: Refresh the court room cache from reference data (no payload needed)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.listing.get.cache-refdata-courtrooms-refresh+json:
+              x-json-schema: listing.get.cache-refdata-courtrooms-refresh.json
+              schema: { $ref: '#/components/schemas/PassthroughObject' }
+
+  /query/api/rest/listing/hearings/download-hearing-csv-report:
+    get:
+      tags: [report-queries]
+      operationId: downloadHearingCsvReport
+      summary: Hearing data as CSV (access-control bypass, ADR 005; not enveloped)
+      parameters:
+        - { in: query, name: courtCentreId, required: true, schema: { type: string } }
+        - { in: query, name: startDate, required: true, schema: { type: string } }
+        - { in: query, name: numberOfWeeks, required: false, description: 'RAML integer, default 2; the legacy adapter passed it on as a string unvalidated', schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            text/csv:
+              schema: { type: string }
+
+components:
+  schemas:
+    PassthroughObject:
+      type: object
+      additionalProperties: true

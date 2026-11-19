@@ -1,0 +1,20 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/listingcourtscheduler-api/rest/courtscheduler/sessions"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/vnd.courtscheduler.search.court-schedules-by-id+json"
+    },
+    "jsonBody": {
+      "courtSchedules": [
+        {
+          "courtScheduleId": "0205eb29-5d01-4779-a8c1-3038bc39dc09",
+          "isDraft": true
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: listing-api
+  main:
+    # stdout carries JSON log events only (logback-spring.xml); the ASCII banner is not JSON.
+    banner-mode: "off"
+  jackson:
+    default-property-inclusion: non_null
+  config:
+    import:
+      - "optional:configtree:/mnt/secrets/rpe/"
+      - "optional:classpath:application-server-management.yml"
+      - "optional:classpath:application-authz.yml"
+      - "optional:classpath:application-audit.yml"
+      - "optional:classpath:application-messaging.yml"
+      - "optional:classpath:application-datasource.yml"
+      # application-xhibit.yml arrives with the XHIBIT export.
+  threads:
+    virtual:
+      enabled: ${VIRTUAL_THREADS:false}
+
+server:
+  port: ${SERVER_PORT:8080}
+  # ADR 008: one servlet context path for both legacy context roots. Controllers map the full
+  # /command/api/rest/listing/... and /query/api/rest/listing/... paths (see the OpenAPI spec),
+  # so clients keep calling /listing-service/command/api/rest/listing/... and
+  # /listing-service/query/api/rest/listing/... unchanged. Actuator is therefore served at
+  # /listing-service/actuator/*.
+  servlet:
+    context-path: /listing-service
+
+listing:
+  clients:
+    # Outbound REST calls (§6): referencedata, progression, defence, usersgroups and
+    # systemdocgenerator through the CPP gateway; listingcourtscheduler (legacy courtscheduler.base.url).
+    base-url: ${LISTING_BASE_URL:http://localhost:8080}
+    courtscheduler-base-url: ${LISTING_COURTSCHEDULER_BASE_URL:}
+    # CJSCPPUID for the calls the framework made as admin / as the context system user.
+    system-user-id: ${LISTING_SYSTEM_USER_ID:}
+    connect-timeout-seconds: ${LISTING_HTTP_CONNECT_TIMEOUT_SECONDS:5}
+    read-timeout-seconds: ${LISTING_HTTP_READ_TIMEOUT_SECONDS:30}
+  query:
+    rangeSearch:
+      # Cap on range-search page size (legacy listing.query.rangeSearch.maxPageSize).
+      maxPageSize: ${LISTING_QUERY_RANGE_SEARCH_MAX_PAGE_SIZE:4000}
+  envelope:
+    # Listing's WildFly query API returned the payload only (no _metadata), see
+    # EnvelopeResponseBodyAdvice. Keep false unless a client is proven to need the envelope.
+    enabled: ${LISTING_ENVELOPE_ENABLED:false}
+  p20-skeleton:
+    # Test-only canned command endpoint used by the P2.0 integration tests (P20SkeletonApi). Never true outside ITs.
+    enabled: false
+
+# Logging (JSON to stdout via logback-spring.xml). Root WARN keeps third-party noise down (the
+# WildFly deployment ran at ERROR); the app's own packages stay at INFO. Both overridable per env.
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:WARN}
+    uk.gov.moj.cpp.listing: ${LOG_LEVEL_LISTING:INFO}

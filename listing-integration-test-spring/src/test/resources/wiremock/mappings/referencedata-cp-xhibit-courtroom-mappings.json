@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/referencedata-service/query/api/rest/referencedata/cp-xhibit-courtroom-mappings"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/vnd.referencedata.query.cp-xhibit-courtroom-mappings+json"
+    },
+    "bodyFileName": "referencedata-cp-xhibit-courtroom-mappings.json"
+  }
+}

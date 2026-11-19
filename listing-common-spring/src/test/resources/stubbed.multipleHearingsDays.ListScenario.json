@@ -1,0 +1,122 @@
+{
+  "hearings": [
+    {
+      "id": "HEARING_ID1",
+      "type": {
+        "id": "633224da-6db3-4df5-8097-62cee52f7a61",
+        "description": "Bail Application"
+      },
+      "endDate": "2020-10-09",
+      "allocated": true,
+      "judiciary": [
+      ],
+      "startDate": "2020-10-08",
+      "courtRoomId": "COURT_ROOM_ID",
+      "hearingDays": [
+        {
+          "endTime": "2020-10-08T15:20:00.000Z",
+          "sequence": 0,
+          "startTime": "2020-10-08T14:00:00.000Z",
+          "hearingDate": "2020-10-08",
+          "durationMinutes": 80
+        },
+        {
+          "endTime": "2020-10-09T09:02:00.000Z",
+          "sequence": 1,
+          "startTime": "2020-10-09T09:00:00.000Z",
+          "hearingDate": "2020-10-09",
+          "durationMinutes": 2
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "CASE_ID1",
+          "markers": [
+            {
+              "id": "34972cd2-4675-487a-b70e-78832b19a9ae",
+              "markerTypeid": "e7eff972-189c-4957-8b1e-cb45213aa64e",
+              "markerTypeCode": "HT",
+              "markerTypeDescription": "Human Trafficking"
+            }
+          ],
+          "defendants": [
+            {
+              "id": "a39b6497-372c-4292-bf05-7dd5252ce740",
+              "address": {
+                "address1": "sbHvw7KxoG",
+                "address2": "56Police HouseD",
+                "address3": "StreetDescriptionD",
+                "address4": "LocalityD",
+                "address5": "TownD",
+                "postcode": "TW14 9XD"
+              },
+              "isYouth": false,
+              "lastName": "Smith",
+              "offences": [
+                {
+                  "id": "fa6860e4-e03f-44eb-94e7-6729dceab007",
+                  "endDate": "2005-05-05",
+                  "startDate": "1996-05-04",
+                  "offenceCode": "CA03014",
+                  "shadowListed": false,
+                  "offenceWording": "-- Legislation: Has a violent past and fear that he will commit further offences and\n interfere with witnesse",
+                  "statementOfOffence": {
+                    "title": "Fail / refuse give assistance to person executing Communications Act search warrant",
+                    "welshTitle": "Fail / refuse give assistance to person executing Communications Act search warrant",
+                    "legislation": "Contrary to section 366(8)(b) and (9) of the Communications Act 2003."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Robert",
+              "bailStatus": {
+                "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                "code": "A",
+                "description": "Not applicable"
+              },
+              "dateOfBirth": "1984-02-16",
+              "masterDefendantId": "a39b6497-372c-4292-bf05-7dd5252ce740",
+              "proceedingsConcluded": false,
+              "specificRequirements": "SpecialNeeds0",
+              "restrictFromCourtList": false,
+              "nationalityDescription": "Brazilian",
+              "courtProceedingsInitiated": "2020-10-08T10:08:54.269Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "42880989-5d09-332e-a711-8797af06ecea",
+            "authorityCode": "CPS-EM",
+            "caseReference": "41GD9734320"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "COURT_CENTRE_ID",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [
+        {
+          "duration": 80,
+          "startTime": "2020-10-08T14:00:00.000Z"
+        },
+        {
+          "duration": 2,
+          "startTime": "2020-10-09T09:00:00.000Z"
+        }
+      ],
+      "nonSittingDays": [
+      ],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 1800,
+      "jurisdictionType": "CROWN",
+      "adjournedFromDate": "2020-10-08",
+      "courtApplications": [
+      ],
+      "courtCentreDetails": {
+        "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+        "defaultDuration": 420,
+        "defaultStartTime": "10:00:00"
+      }
+    }
+  ]
+}

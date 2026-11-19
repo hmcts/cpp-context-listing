@@ -1,0 +1,76 @@
+{
+  "id": "COURT_CENTRE_ID",
+  "oucode": "C55BN00",
+  "oucodeL1Code": "C",
+  "oucodeL1Name": "Magistrates' Courts",
+  "oucodeL3Name": "COURT_CENTRE_NAME",
+  "oucodeL3WelshName": "COURT_CENTRE_WELSH_NAME",
+  "address1": "ADDRESS_1",
+  "address2": "ADDRESS_2",
+  "address3": "ADDRESS_3",
+  "address4": "ADDRESS_4",
+  "address5": "ADDRESS_5",
+  "postcode": "POSTCODE",
+  "welshAddress1": "ADDRESS_WELSH_1",
+  "welshAddress2": "ADDRESS_WELSH_2",
+  "welshAddress3": "ADDRESS_WELSH_3",
+  "welshAddress4": "ADDRESS_WELSH_4",
+  "welshAddress5": "ADDRESS_WELSH_5",
+  "defaultStartTime": "COURT_START_TIME",
+  "defaultDurationHrs": "6:30",
+  "isWelsh":true,
+  "courtrooms": [
+    {
+      "id": "COURT_ROOM_1_ID",
+      "venueName": "BOURNEMOUTH COMBINED COURT",
+      "venueNameWelsh": "COURT CYFFREDINOL BOURNEMOUTH",
+      "courtroomName": "COURT_ROOM_1_NAME",
+      "welshCourtroomName": "COURT_ROOM_WELSH_NAME_1"
+    },
+    {
+      "id": "COURT_ROOM_2_ID",
+      "venueName": "BOURNEMOUTH COMBINED COURT",
+      "venueNameWelsh": "COURT CYFFREDINOL BOURNEMOUTH",
+      "courtroomName": "COURT_ROOM_2_NAME",
+      "welshCourtroomName": "COURT_ROOM_WELSH_NAME_2"
+    },
+    {
+      "id": "683dc24d-0d52-4040-9de5-33501abe61d2",
+      "venueName": "BOURNEMOUTH COMBINED COURT",
+      "venueNameWelsh": "COURT CYFFREDINOL BOURNEMOUTH",
+      "courtroomName": "Courtroom 03",
+      "welshCourtroomName": "Ystafell y Llys 03"
+    },
+    {
+      "id": "5e924d91-2157-45c3-9ae2-3aeb9f36e664",
+      "venueName": "BOURNEMOUTH COMBINED COURT",
+      "venueNameWelsh": "COURT CYFFREDINOL BOURNEMOUTH",
+      "courtroomName": "Courtroom 01",
+      "welshCourtroomName": "Ystafell y Llys 01"
+    },
+    {
+      "id": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "venueName": "LAVENDER HILL MAGISTRATES' COURT",
+      "courtroomId": 2330,
+      "courtroomName": "Courtroom 01"
+    },
+    {
+      "id": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+      "venueName": "LAVENDER HILL MAGISTRATES' COURT",
+      "courtroomId": 2331,
+      "courtroomName": "Courtroom 02"
+    },
+    {
+      "id": "f1ead1d2-4b26-3230-b781-508d6aaafd26",
+      "venueName": "LAVENDER HILL MAGISTRATES' COURT",
+      "courtroomId": 2332,
+      "courtroomName": "Courtroom 03"
+    },
+    {
+      "id": "b6cc0e08-6227-3786-8ebe-36febddec7ff",
+      "venueName": "LAVENDER HILL MAGISTRATES' COURT",
+      "courtroomId": 2333,
+      "courtroomName": "Courtroom 04"
+    }
+  ]
+}

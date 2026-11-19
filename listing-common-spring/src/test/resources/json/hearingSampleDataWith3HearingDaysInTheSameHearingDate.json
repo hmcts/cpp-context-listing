@@ -1,0 +1,123 @@
+{
+  "id": "df93e0a5-084a-49e7-8266-56b982f29490",
+  "type": {
+    "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+    "description": "First hearing"
+  },
+  "endDate": "2020-09-22",
+  "allocated": true,
+  "judiciary": [],
+  "startDate": "2020-09-22",
+  "courtRoomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+  "hearingDays": [
+    {
+      "endTime": "2020-09-22T13:00:00.000Z",
+      "sequence": 2,
+      "startTime": "2020-09-22T12:00:00.000Z",
+      "courtRoomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+      "hearingDate": "2020-09-22",
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "courtScheduleId": "11c0d6d1-55ab-316b-9675-d6bf7a993bd7",
+      "durationMinutes": 1
+    },
+    {
+      "endTime": "2020-09-22T12:00:00.000Z",
+      "sequence": 3,
+      "startTime": "2020-09-22T11:00:00.000Z",
+      "courtRoomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+      "hearingDate": "2020-09-22",
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "courtScheduleId": "11c0d6d1-55ab-316b-9675-d6bf7a993bd7",
+      "durationMinutes": 1
+    },
+    {
+      "endTime": "2020-09-22T15:00:00.000Z",
+      "sequence": 1,
+      "startTime": "2020-09-22T14:00:00.000Z",
+      "courtRoomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+      "hearingDate": "2020-09-22",
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "courtScheduleId": "5ce225f1-fd4d-3ecd-a7e8-65fefe4956ec",
+      "durationMinutes": 1
+    }
+  ],
+  "listedCases": [
+    {
+      "id": "439eb552-1677-419a-a62c-b7f438b74cca",
+      "markers": [],
+      "defendants": [
+        {
+          "id": "deafea80-6d2b-495d-ad9e-1de628c27437",
+          "address": {
+            "address1": "LSsrEZHi64",
+            "address2": "StreetDescription",
+            "address3": "Locality2O"
+          },
+          "lastName": "Ormsby",
+          "offences": [
+            {
+              "id": "7a1ffcac-7565-4731-a687-98d65021cd9f",
+              "startDate": "2004-12-09",
+              "offenceCode": "TW01046",
+              "shadowListed": false,
+              "offenceWording": "Has a violent past and fear that he will commit further offences and\n                interfere with witnesse",
+              "statementOfOffence": {
+                "title": "Occupy reserved seat / berth without a valid ticket on the Tyne and Wear Metro",
+                "welshTitle": "Occupy reserved seat / berth without a valid ticket on the Tyne and Wear Metro",
+                "legislation": "Contrary to byelaw 19 and 31(1) of the Tyne and Wear Metro Byelaws made under sections 58 and 62 of the Tyneside Metropolitan Railway Act 1973."
+              },
+              "restrictFromCourtList": false
+            }
+          ],
+          "masterDefendantId": "deafea80-6d2b-495d-ad9e-1de628c27437",
+          "hearingLanguageNeeds": "ENGLISH",
+          "restrictFromCourtList": false,
+          "courtProceedingsInitiated": "2020-09-15T11:33:33.748Z"
+        }
+      ],
+      "shadowListed": false,
+      "caseIdentifier": {
+        "authorityId": "bcdca7df-ab21-45f6-bc19-f883cf3d407e",
+        "authorityCode": "DVL2",
+        "caseReference": "29GD2066220"
+      },
+      "restrictFromCourtList": false
+    }
+  ],
+  "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+  "isSlotsBooked": false,
+  "isVacatedTrial": false,
+  "nonDefaultDays": [
+    {
+      "oucode": "B01LY00",
+      "roomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+      "session": "AD",
+      "duration": 1,
+      "startTime": "2020-09-21T09:00:00.000Z",
+      "courtRoomId": 2331,
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "courtScheduleId": "11c0d6d1-55ab-316b-9675-d6bf7a993bd7"
+    },
+    {
+      "oucode": "B01LY00",
+      "roomId": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+      "session": "AD",
+      "duration": 1,
+      "startTime": "2020-09-22T09:00:00.000Z",
+      "courtRoomId": 2330,
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "courtScheduleId": "5ce225f1-fd4d-3ecd-a7e8-65fefe4956ec"
+    }
+  ],
+  "nonSittingDays": [],
+  "hearingLanguage": "ENGLISH",
+  "estimatedMinutes": 20,
+  "jurisdictionType": "MAGISTRATES",
+  "courtApplications": [],
+  "courtCentreDetails": {
+    "id": "7e967376-eacf-4fca-9b30-21b0c5aad427",
+    "defaultDuration": 420,
+    "defaultStartTime": "10:00:00"
+  },
+  "vacatedTrialReasonId": ""
+}

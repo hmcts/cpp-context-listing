@@ -1,0 +1,117 @@
+{
+  "hearings": [
+    {
+      "judiciary": [
+        {
+          "judicialId": "JUDICIARY_ID"
+        }
+      ],
+      "courtCentreId": "COURT_CENTRE_ID",
+      "hearingsByCourtCentreId": [
+        {
+          "hearingDate": "START_DATE1",
+          "hearingsByHearingDate": [
+            {
+              "hearing": {
+                "id": "c9ce2f57-0b51-48aa-9742-09af649bb69f",
+                "type": {
+                  "id": "3449743b-95d6-4836-8941-57f588b52068",
+                  "description": "Application"
+                },
+                "endDate": "2024-11-01",
+                "allocated": true,
+                "judiciary": [
+
+                ],
+                "startDate": "2024-11-01",
+                "courtRoomId": "COURT_ROOM_ID",
+                "hearingDays": [
+                  {
+                    "endTime": "2018-11-20T14:37:00.000Z",
+                    "sequence": 1,
+                    "startTime": "2018-11-21T12:37:00.000Z",
+                    "courtRoomId": "COURT_ROOM_ID",
+                    "hearingDate": "2024-11-01",
+                    "isCancelled": false,
+                    "courtCentreId": "COURT_CENTRE_ID",
+                    "courtScheduleId": "3d72807f-c96f-38e4-889f-7aac45e0b456",
+                    "durationMinutes": 180
+                  }
+                ],
+                "courtCentreId": "COURT_CENTRE_ID",
+                "isSlotsBooked": true,
+                "nonDefaultDays": [
+                  {
+                    "oucode": "B01DU00",
+                    "roomId": "COURT_ROOM_ID",
+                    "session": "PM",
+                    "duration": 180,
+                    "startTime": "2024-11-01T14:00:00.000Z",
+                    "courtRoomId": 699,
+                    "courtCentreId": "COURT_CENTRE_ID",
+                    "courtScheduleId": "3d72807f-c96f-38e4-889f-7aac45e0b456"
+                  }
+                ],
+                "nonSittingDays": [
+
+                ],
+                "hearingLanguage": "ENGLISH",
+                "estimatedMinutes": 20,
+                "jurisdictionType": "MAGISTRATES",
+                "courtApplications": [
+                  {
+                    "id": "d4b1e2d8-3264-4a2b-bc90-2eaa52807cfa",
+                    "applicant": {
+                      "id": "5e6d143f-40a5-4ca8-9c83-ccba4299bc50",
+                      "address": {
+                        "address1": "y",
+                        "address2": "Reva Coves",
+                        "address3": "West Emmetstad",
+                        "address4": "Avon",
+                        "postcode": "DA6 7ND"
+                      },
+                      "lastName": "LAST_NAME1",
+                      "firstName": "FIRST_NAME1",
+                      "isRespondent": false,
+                      "restrictFromCourtList": true,
+                      "courtApplicationPartyType": "PERSON_DEFENDANT"
+                    },
+                    "respondents": [
+                      {
+                        "id": "ec0446c0-e98d-4cd0-b3cf-4e54a8b07811",
+                        "address": {
+                          "address1": "Norfolk Constabulary",
+                          "address2": "Operations & Communications Centre",
+                          "address3": "Jubilee House, Falconers Chase",
+                          "address4": "Wymondham",
+                          "address5": "Norfolk",
+                          "postcode": "NR18 0WW"
+                        },
+                        "lastName": "NFKPF",
+                        "isRespondent": true,
+                        "restrictFromCourtList": false,
+                        "courtApplicationPartyType": "PROSECUTING_AUTHORITY"
+                      }
+                    ],
+                    "linkedCaseIds": [
+                      "3701183b-a278-44e6-9cdc-3f109252aab1"
+                    ],
+                    "applicationType": "Application to reopen case",
+                    "applicationReference": "CASE_REFERENCE1",
+                    "restrictFromCourtList": false,
+                    "restrictCourtApplicationType": false
+                  }
+                ],
+                "courtCentreDetails": {
+                  "id": "COURT_CENTRE_ID",
+                  "defaultDuration": 420,
+                  "defaultStartTime": "10:00:00"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

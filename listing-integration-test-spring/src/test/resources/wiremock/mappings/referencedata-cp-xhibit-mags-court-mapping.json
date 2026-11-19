@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/referencedata-service/query/api/rest/referencedata/cp-xhibit-mags-court-mapping"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/vnd.referencedata.query.cp-xhibit-mags-court-mapping+json"
+    },
+    "jsonBody": {}
+  }
+}
